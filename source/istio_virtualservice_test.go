@@ -2081,7 +2081,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				fakeIstioClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
-					AnnotationFilter:         ti.annotationFilter,
+					AnnotationFilter:         mustParseAnnotationFilter(ti.annotationFilter),
 					LabelFilter:              ti.labelFilter,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,

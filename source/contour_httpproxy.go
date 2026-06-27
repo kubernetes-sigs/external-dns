@@ -53,7 +53,7 @@ import (
 type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
-	annotationFilter         string
+	annotationFilter         labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	httpProxyInformer        kubeinformers.GenericInformer
@@ -126,10 +126,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
-	httpProxies, err = annotations.Filter(httpProxies, sc.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter HTTPProxies: %w", err)
-	}
+	httpProxies = annotations.Filter(httpProxies, sc.annotationFilter)
 
 	endpoints := []*endpoint.Endpoint{}
 

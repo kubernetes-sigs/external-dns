@@ -166,9 +166,9 @@ func newGatewayRouteSource(
 	if rtLabels == nil {
 		rtLabels = labels.Everything()
 	}
-	rtAnnotations, err := getLabelSelector(config.AnnotationFilter)
-	if err != nil {
-		return nil, err
+	rtAnnotations := config.AnnotationFilter
+	if rtAnnotations == nil {
+		rtAnnotations = labels.Everything()
 	}
 
 	client, err := clients.GatewayClient()

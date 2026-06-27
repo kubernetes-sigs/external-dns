@@ -881,18 +881,11 @@ func TestStartAndSync(t *testing.T) {
 // reached through newCrdSource (which uses fake caches and writers directly).
 func TestNewCRDSource(t *testing.T) {
 	tests := []struct {
-		name             string
-		annotationFilter string
-		makeRestCfg      func(t *testing.T) *rest.Config
-		ctxTimeout       time.Duration // 0 → use t.Context() as-is
-		wantErrContains  string
+		name            string
+		makeRestCfg     func(t *testing.T) *rest.Config
+		ctxTimeout      time.Duration // 0 → use t.Context() as-is
+		wantErrContains string
 	}{
-		{
-			name:             "annotation filter parse error",
-			annotationFilter: "!!!invalid",
-			makeRestCfg:      func(_ *testing.T) *rest.Config { return &rest.Config{Host: "http://ignored"} },
-			wantErrContains:  "couldn't parse the selector string",
-		},
 		{
 			// crcache.New and client.New share the same restConfig and the same
 			// HTTP-client construction path, so they can't be isolated: any config
@@ -924,7 +917,7 @@ func TestNewCRDSource(t *testing.T) {
 				ctx, cancel = context.WithTimeout(ctx, tc.ctxTimeout)
 				t.Cleanup(cancel)
 			}
-			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &Config{AnnotationFilter: tc.annotationFilter})
+			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &Config{})
 			require.ErrorContains(t, err, tc.wantErrContains)
 		})
 	}

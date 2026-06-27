@@ -28,6 +28,7 @@ import (
 	networkingv1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -61,7 +62,7 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string
-	annotationFilter         string
+	annotationFilter         labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer

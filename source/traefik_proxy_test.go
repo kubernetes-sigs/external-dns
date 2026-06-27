@@ -395,7 +395,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				})
 			assert.NoError(t, err)
@@ -692,7 +692,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				})
 			require.NoError(t, err)
@@ -837,7 +837,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				})
 			assert.NoError(t, err)
@@ -1170,7 +1170,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      true,
 				})
@@ -1468,7 +1468,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      true,
 				})
@@ -1614,7 +1614,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      true,
 				})
@@ -1781,7 +1781,7 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=traefik",
+					AnnotationFilter:         mustParseAnnotationFilter("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      ti.enableLegacy,
 					TraefikDisableNew:        ti.disableNew,

@@ -63,7 +63,7 @@ type f5VirtualServerSource struct {
 	dynamicKubeClient     dynamic.Interface
 	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
-	annotationFilter      string
+	annotationFilter      labels.Selector
 	namespace             string
 	templateEngine        template.Engine
 	unstructuredConverter *unstructuredConverter
@@ -135,10 +135,7 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 		virtualServers = append(virtualServers, virtualServer)
 	}
 
-	virtualServers, err = annotations.Filter(virtualServers, vs.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
-	}
+	virtualServers = annotations.Filter(virtualServers, vs.annotationFilter)
 
 	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)
 	if err != nil {
