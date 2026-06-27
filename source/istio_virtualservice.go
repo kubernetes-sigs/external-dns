@@ -31,7 +31,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -63,7 +62,6 @@ const IstioMeshGateway = "mesh"
 // +externaldns:source:provider-specific=true
 type virtualServiceSource struct {
 	namespace                string
-	annotationFilter         labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -131,7 +129,6 @@ func NewIstioVirtualServiceSource(
 
 	return &virtualServiceSource{
 		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
