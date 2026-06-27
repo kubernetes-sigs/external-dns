@@ -125,7 +125,7 @@ func TestNewIngressSource(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				&Config{
-					AnnotationFilter:  mustParseAnnotationFilter(ti.annotationFilter),
+					AnnotationFilter:  parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:    templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IngressClassNames: ti.ingressClassNames,
 				},
@@ -1424,7 +1424,7 @@ func testIngressEndpoints(t *testing.T) {
 				fakeClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
-					AnnotationFilter:         mustParseAnnotationFilter(ti.annotationFilter),
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
@@ -2116,7 +2116,7 @@ func TestIngressIndexer(t *testing.T) {
 			}
 
 			src, err := NewIngressSource(t.Context(), client, &Config{
-				AnnotationFilter: mustParseAnnotationFilter(tt.annotationFilter),
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
 			})

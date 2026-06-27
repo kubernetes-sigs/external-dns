@@ -1499,7 +1499,7 @@ func testGatewayEndpoints(t *testing.T) {
 					Namespace:                targetNamespace,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
-					AnnotationFilter:         mustParseAnnotationFilter(ti.annotationFilter),
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              ti.labelFilter,
 				},
 			)

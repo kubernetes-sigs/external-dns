@@ -385,7 +385,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:        defaultF5TransportServerNamespace,
-					AnnotationFilter: mustParseAnnotationFilter(tc.annotationFilter),
+					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)

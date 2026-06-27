@@ -626,7 +626,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		{
 			name: "multiple routegroups with filter annotations should return only filtered endpoints",
 			source: &routeGroupSource{
-				annotationFilter: mustParseAnnotationFilter("kubernetes.io/ingress.class=skipper"),
+				annotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=skipper"),
 				cli: &fakeRouteGroupClient{
 					rg: &routeGroupList{
 						Items: []*routeGroup{
@@ -695,7 +695,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		{
 			name: "multiple routegroups with set operation annotation filter should return only filtered endpoints",
 			source: &routeGroupSource{
-				annotationFilter: mustParseAnnotationFilter("kubernetes.io/ingress.class in (nginx, skipper)"),
+				annotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class in (nginx, skipper)"),
 				cli: &fakeRouteGroupClient{
 					rg: &routeGroupList{
 						Items: []*routeGroup{

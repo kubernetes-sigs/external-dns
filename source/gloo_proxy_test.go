@@ -934,7 +934,7 @@ func TestGlooProxyIndexer(t *testing.T) {
 
 			src, err := NewGlooSource(t.Context(), dynClient, fakeKube.NewSimpleClientset(), &Config{
 				GlooNamespaces:   tt.glooNamespaces,
-				AnnotationFilter: mustParseAnnotationFilter(tt.annotationFilter),
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 			})
 			require.NoError(t, err)

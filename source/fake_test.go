@@ -31,10 +31,10 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
-// mustParseAnnotationFilter parses an annotation filter string into a labels.Selector for use in tests.
+// parseAnnotationFilterOrNil parses an annotation filter string into a labels.Selector for use in tests.
 // Returns nil for empty or invalid input, matching the production behavior in NewSourceConfig
 // where invalid annotation filters are silently treated as no-op selectors.
-func mustParseAnnotationFilter(s string) labels.Selector {
+func parseAnnotationFilterOrNil(s string) labels.Selector {
 	if s == "" {
 		return nil
 	}

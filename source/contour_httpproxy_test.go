@@ -1024,7 +1024,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				fakeDynamicClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
-					AnnotationFilter:         mustParseAnnotationFilter(ti.annotationFilter),
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},

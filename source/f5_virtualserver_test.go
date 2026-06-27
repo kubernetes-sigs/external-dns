@@ -628,7 +628,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:        defaultF5VirtualServerNamespace,
-					AnnotationFilter: mustParseAnnotationFilter(tc.annotationFilter),
+					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)

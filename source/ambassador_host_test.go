@@ -643,7 +643,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:        namespace,
-					AnnotationFilter: mustParseAnnotationFilter(ti.annotationFilter),
+					AnnotationFilter: parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:      ti.labelSelector,
 				})
 			assert.NoError(t, err)

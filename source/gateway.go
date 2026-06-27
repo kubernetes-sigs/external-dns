@@ -158,7 +158,7 @@ func newGatewayRouteSource(
 	config *Config,
 	kind string,
 	newInformerFn newGatewayRouteInformerFunc) (Source, error) {
-	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
+	gwLabels, err := annotations.ParseFilter(config.GatewayLabelFilter)
 	if err != nil {
 		return nil, err
 	}
