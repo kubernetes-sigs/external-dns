@@ -1147,11 +1147,12 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 	dnsName := "foo.test-zone.example.org"
 
 	tests := []struct {
-		name      string
-		fromType  string
-		fromAlias bool
-		toType    string
-		toAlias   bool
+		name          string
+		fromType      string
+		fromAlias     bool
+		toType        string
+		toAlias       bool
+		cacheInterval time.Duration
 	}{
 		{
 			name:     "CNAME to A alias",
@@ -1165,6 +1166,20 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 			fromAlias: true,
 			toType:    endpoint.RecordTypeCNAME,
 		},
+		{
+			name:          "CNAME to A alias with cache",
+			fromType:      endpoint.RecordTypeCNAME,
+			toType:        endpoint.RecordTypeA,
+			toAlias:       true,
+			cacheInterval: time.Hour,
+		},
+		{
+			name:          "A alias to CNAME with cache",
+			fromType:      endpoint.RecordTypeA,
+			fromAlias:     true,
+			toType:        endpoint.RecordTypeCNAME,
+			cacheInterval: time.Hour,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1174,7 +1189,7 @@ func TestTXTRegistryApplyChangesPromotedToUpdateOnRecordTypeChange(t *testing.T)
 			err := p.CreateZone(testZone)
 			require.NoError(t, err)
 
-			r, _ := newRegistry(p, "%{record_type}-", "", ownerID, 0, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}, []string{}, false, nil, "")
+			r, _ := newRegistry(p, "%{record_type}-", "", ownerID, tt.cacheInterval, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}, []string{}, false, nil, "")
 
 			// Seed provider with the "from" record and its TXT record.
 			fromEp := newEndpointWithOwner(dnsName, target, tt.fromType, ownerID)
