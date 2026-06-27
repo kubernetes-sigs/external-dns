@@ -357,6 +357,12 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
+	// Index pending TXT deletions by key to detect collisions with creates.
+	// CNAME and A alias records share the same "cname-" TXT prefix, so a type change
+	// between them generates a key collision that must be promoted to UpdateOld+UpdateNew
+	// instead of Delete+Create.
+	// Note: a key collision between two deletes (last-write-wins) cannot occur in practice
+	// because DNS forbids a CNAME from coexisting with any other record type for the same name.
 	deleteTXTsByKey := make(map[recordKey]*endpoint.Endpoint)
 	for _, r := range filteredChanges.Delete {
 		for _, txt := range im.generateTXTRecord(r) {
