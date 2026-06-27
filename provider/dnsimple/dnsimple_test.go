@@ -133,6 +133,7 @@ func TestDnsimpleServices(t *testing.T) {
 
 	for _, record := range records {
 		recordName := record.Name
+		recordType := record.Type
 		simpleRecord := dnsimple.ZoneRecordAttributes{
 			Name:    &recordName,
 			Type:    record.Type,
@@ -145,7 +146,7 @@ func TestDnsimpleServices(t *testing.T) {
 			Data:     []dnsimple.ZoneRecord{record},
 		}
 
-		mockDNS.On("ListRecords", t.Context(), "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(&dnsimpleRecordResponse, nil)
+		mockDNS.On("ListRecords", t.Context(), "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, Type: &recordType, ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(&dnsimpleRecordResponse, nil)
 		mockDNS.On("CreateRecord", t.Context(), "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("DeleteRecord", t.Context(), "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("UpdateRecord", t.Context(), "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
@@ -205,24 +206,113 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// ptr is a small helper for building the *string fields the DNSimple options use.
+func ptr[T any](v T) *T { return &v }
+
+// testDnsimpleProviderApplyChanges drives ApplyChanges through a table of cases
+// and verifies the exact DNSimple API calls made for each one. Unlike a bare
+// "no error returned" assertion, it calls AssertExpectations so a no-op
+// ApplyChanges would fail. The dual-stack cases in particular exercise
+// GetRecordID's name+type disambiguation: a host with both an A and an AAAA
+// record at the same name must resolve to the matching record ID per type.
 func testDnsimpleProviderApplyChanges(t *testing.T) {
-	changes := &plan.Changes{}
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
-		{DNSName: "custom-ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
-	}
-	changes.Delete = []*endpoint.Endpoint{
-		{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
-		{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+	zonesResponse := &dnsimple.ZonesResponse{
+		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
+		Data:     []dnsimple.Zone{{ID: 1, AccountID: 12345, Name: "example.com"}},
 	}
 
-	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(t.Context(), changes)
-	if err != nil {
-		t.Errorf("Failed to apply changes: %v", err)
+	// listRecords builds the single-record response GetRecordID expects for a
+	// ListRecords(name, type) lookup.
+	listRecords := func(id int64, name, recordType string) *dnsimple.ZoneRecordsResponse {
+		return &dnsimple.ZoneRecordsResponse{
+			Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
+			Data: []dnsimple.ZoneRecord{
+				{ID: id, ZoneID: "example.com", Name: name, Type: recordType},
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		changes *plan.Changes
+		setup   func(m *mockDnsimpleZoneServiceInterface)
+	}{
+		{
+			name: "create A and AAAA",
+			changes: &plan.Changes{Create: []*endpoint.Endpoint{
+				{DNSName: "www.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "www.example.com", Targets: endpoint.Targets{"fd00::1"}, RecordType: endpoint.RecordTypeAAAA},
+			}},
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr("www"), Type: "A", Content: "127.0.0.1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr("www"), Type: "AAAA", Content: "fd00::1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+			},
+		},
+		{
+			name: "create apex strips name to empty",
+			changes: &plan.Changes{Create: []*endpoint.Endpoint{
+				{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+			}},
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr(""), Type: "A", Content: "127.0.0.1", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+			},
+		},
+		{
+			name: "create with custom ttl",
+			changes: &plan.Changes{Create: []*endpoint.Endpoint{
+				{DNSName: "ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
+			}},
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("CreateRecord", t.Context(), "1", "example.com", dnsimple.ZoneRecordAttributes{Name: ptr("ttl"), Type: "CNAME", Content: "target", TTL: 60}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+			},
+		},
+		{
+			name: "update looks up id by name and type",
+			changes: &plan.Changes{UpdateNew: []*endpoint.Endpoint{
+				{DNSName: "www.example.com", Targets: endpoint.Targets{"127.0.0.2"}, RecordType: endpoint.RecordTypeA},
+			}},
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(10, "www", "A"), nil).Once()
+				m.On("UpdateRecord", t.Context(), "1", "example.com", int64(10), dnsimple.ZoneRecordAttributes{Name: ptr("www"), Type: "A", Content: "127.0.0.2", TTL: defaultTTL}).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+			},
+		},
+		{
+			name: "delete looks up id by name and type",
+			changes: &plan.Changes{Delete: []*endpoint.Endpoint{
+				{DNSName: "www.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+			}},
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(10, "www", "A"), nil).Once()
+				m.On("DeleteRecord", t.Context(), "1", "example.com", int64(10)).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+			},
+		},
+		{
+			name: "dual-stack delete resolves the right id per type",
+			changes: &plan.Changes{Delete: []*endpoint.Endpoint{
+				{DNSName: "www.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "www.example.com", Targets: endpoint.Targets{"fd00::1"}, RecordType: endpoint.RecordTypeAAAA},
+			}},
+			setup: func(m *mockDnsimpleZoneServiceInterface) {
+				// Same name, different types: each lookup must be scoped by type
+				// and return that type's distinct record ID.
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("A"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(11, "www", "A"), nil).Once()
+				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{Name: ptr("www"), Type: ptr("AAAA"), ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(listRecords(12, "www", "AAAA"), nil).Once()
+				m.On("DeleteRecord", t.Context(), "1", "example.com", int64(11)).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+				m.On("DeleteRecord", t.Context(), "1", "example.com", int64(12)).Return(&dnsimple.ZoneRecordResponse{}, nil).Once()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockDNS := &mockDnsimpleZoneServiceInterface{}
+			mockDNS.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
+			tt.setup(mockDNS)
+
+			p := dnsimpleProvider{client: mockDNS, accountID: "1"}
+			require.NoError(t, p.ApplyChanges(t.Context(), tt.changes))
+			mockDNS.AssertExpectations(t)
+		})
 	}
 }
 
@@ -290,11 +380,11 @@ func testDnsimpleGetRecordID(t *testing.T) {
 	var err error
 
 	mockProvider.accountID = "1"
-	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example")
+	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example", "CNAME")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), result)
 
-	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example-beta")
+	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example-beta", "A")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), result)
 }
