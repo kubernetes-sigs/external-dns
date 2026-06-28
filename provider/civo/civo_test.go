@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 func TestNewProvider(t *testing.T) {
@@ -39,6 +40,25 @@ func TestNewProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("CIVO_TOKEN")
+}
+
+func TestNewProviderWithCredentialSource(t *testing.T) {
+	t.Setenv("CIVO_TOKEN", "global")
+
+	_, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"test.civo.com"}),
+		true,
+		credentials.NewMapSource(nil),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "no token found")
+
+	_, err = newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"test.civo.com"}),
+		true,
+		credentials.NewMapSource(map[string]string{"CIVO_TOKEN": "pipeline"}),
+	)
+	require.NoError(t, err)
 }
 
 func TestNewCivoProviderNoToken(t *testing.T) {

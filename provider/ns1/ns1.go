@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -33,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 const (
@@ -106,8 +106,8 @@ type NS1Provider struct {
 }
 
 // New creates an NS1 provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProviderWithCredentialSource(
 		NS1Config{
 			DomainFilter:  domainFilter,
 			ZoneIDFilter:  provider.NewZoneIDFilter(cfg.ZoneIDFilter),
@@ -116,16 +116,21 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 			DryRun:        cfg.DryRun,
 			MinTTLSeconds: cfg.NS1MinTTLSeconds,
 		},
+		credentials.FromContext(ctx),
 	)
 }
 
 // newProvider creates a new NS1 Provider
 func newProvider(config NS1Config) (*NS1Provider, error) {
-	return newNS1ProviderWithHTTPClient(config, http.DefaultClient)
+	return newProviderWithCredentialSource(config, credentials.SystemSource())
 }
 
-func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Provider, error) {
-	token, ok := os.LookupEnv("NS1_APIKEY")
+func newProviderWithCredentialSource(config NS1Config, credentialSource credentials.Source) (*NS1Provider, error) {
+	return newNS1ProviderWithHTTPClient(config, http.DefaultClient, credentialSource)
+}
+
+func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client, credentialSource credentials.Source) (*NS1Provider, error) {
+	token, ok := credentialSource.LookupEnv("NS1_APIKEY")
 	if !ok {
 		return nil, fmt.Errorf("NS1_APIKEY environment variable is not set")
 	}
