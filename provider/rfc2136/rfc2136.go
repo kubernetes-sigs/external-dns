@@ -68,6 +68,8 @@ type rfc2136Provider struct {
 	krb5Username string
 	krb5Password string
 	krb5Realm    string
+	// gssKeyData negotiates a GSS-TSIG context; it defaults to KeyData.
+	gssKeyData func(nameserver string) (string, gssTsigHandle, error)
 
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter *endpoint.DomainFilter
@@ -118,6 +120,12 @@ var tsigAlgs = map[string]string{
 	"hmac-sha256": dns.HmacSHA256,
 	"hmac-sha384": dns.HmacSHA384,
 	"hmac-sha512": dns.HmacSHA512,
+}
+
+// gssTsigHandle is the part of *gss.Client that IncomeTransfer uses.
+type gssTsigHandle interface {
+	dns.TsigProvider
+	Close() error
 }
 
 type rfc2136Actions interface {
@@ -187,6 +195,14 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ax
 		sendCounter:           0,
 		listLastErr:           nil,
 		sendLastErr:           nil,
+	}
+	r.gssKeyData = func(nameserver string) (string, gssTsigHandle, error) {
+		keyName, handle, err := r.KeyData(nameserver)
+		// A nil *gss.Client would become a non-nil interface whose Close panics.
+		if handle == nil {
+			return keyName, nil, err
+		}
+		return keyName, handle, err
 	}
 	if actions != nil {
 		r.actions = actions
@@ -293,7 +309,9 @@ OuterLoop:
 	return eps, nil
 }
 
-// shouldSignAXFR reports whether TSIG should be attached to zone transfers.
+// shouldSignAXFR reports whether a static TSIG key should be attached to zone
+// transfers. GSS-TSIG transfers are signed in IncomeTransfer, once the key is
+// negotiated.
 func (r *rfc2136Provider) shouldSignAXFR() bool {
 	return !r.insecure && !r.gssTsig && !r.axfrInsecure
 }
@@ -334,21 +352,60 @@ func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
-
-	if r.shouldSignAXFR() {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
-	}
-
 	c, err := makeClient(r, nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
+
+	if r.gssTsig && !r.insecure && !r.axfrInsecure {
+		keyName, handle, err := r.gssKeyData(nameserver)
+		if err != nil {
+			if handle != nil {
+				_ = handle.Close()
+			}
+			return nil, fmt.Errorf("failed to negotiate GSS-TSIG: %w", err)
+		}
+		conn, err := c.Dial(nameserver)
+		if err != nil {
+			_ = handle.Close()
+			return nil, fmt.Errorf("failed to connect for transfer: %w", err)
+		}
+		t.Conn = conn
+		t.TsigProvider = handle
+		m = m.Copy()
+		m.SetTsig(keyName, tsig.GSS, clockSkew, time.Now().Unix())
+		env, err := t.In(m, nameserver)
+		if err != nil {
+			_ = conn.Close()
+			_ = handle.Close()
+			return nil, err
+		}
+		// Responses are verified against the GSS context, so close it only once the transfer is drained.
+		wrapped := make(chan *dns.Envelope)
+		go func() {
+			defer close(wrapped)
+			defer func() { _ = handle.Close() }()
+			for e := range env {
+				wrapped <- e
+			}
+		}()
+		return wrapped, nil
+	}
+
 	conn, err := c.Dial(nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
 	t.Conn = conn
-	return t.In(m, nameserver)
+	if r.shouldSignAXFR() {
+		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+	}
+	env, err := t.In(m, nameserver)
+	if err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+	return env, nil
 }
 
 func (r *rfc2136Provider) List() ([]dns.RR, error) {
@@ -700,6 +757,9 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			if r.gssTsig {
 				keyName, handle, err := r.KeyData(nameserver)
 				if err != nil {
+					if handle != nil {
+						_ = handle.Close()
+					}
 					lastErr = err
 					r.sendLastErr = lastErr
 					continue
