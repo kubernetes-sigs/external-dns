@@ -178,12 +178,9 @@ func testDnsimpleProviderZones(t *testing.T) {
 	os.Unsetenv("DNSIMPLE_ZONES")
 }
 
-// testDnsimpleProviderRecords drives Records() through a table of cases with a
-// fresh mock per case, instead of relying on shared global mock state. It
-// covers the supported record types returned together, a dual-stack host where
-// an A and an AAAA record share the same name, the apex domain (empty record
-// name mapping to the zone name), and error propagation from both ListZones and
-// ListRecords.
+// testDnsimpleProviderRecords drives Records() through a table of cases, each
+// with a fresh mock, covering the supported record types, dual-stack hosts,
+// apex names, and error propagation from ListZones and ListRecords.
 func testDnsimpleProviderRecords(t *testing.T) {
 	zonesResponse := &dnsimple.ZonesResponse{
 		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
@@ -203,7 +200,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 		want    []*endpoint.Endpoint
 	}{
 		{
-			name: "all supported types returned together",
+			name: "all supported types including SRV and NS returned together",
 			setup: func(m *mockDnsimpleZoneServiceInterface) {
 				m.On("ListZones", t.Context(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(zonesResponse, nil)
 				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(recordsResponse(
@@ -211,6 +208,8 @@ func testDnsimpleProviderRecords(t *testing.T) {
 					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "aaaa", Content: "fd00::1", TTL: 3600, Type: "AAAA"},
 					dnsimple.ZoneRecord{ID: 3, ZoneID: "example.com", Name: "cname", Content: "target", TTL: 7200, Type: "CNAME"},
 					dnsimple.ZoneRecord{ID: 4, ZoneID: "example.com", Name: "txt", Content: "hello", TTL: 3600, Type: "TXT"},
+					dnsimple.ZoneRecord{ID: 5, ZoneID: "example.com", Name: "srv", Content: "1 10 5060 sip.example.com", TTL: 3600, Type: "SRV"},
+					dnsimple.ZoneRecord{ID: 6, ZoneID: "example.com", Name: "ns", Content: "ns1.example.com", TTL: 3600, Type: "NS"},
 				), nil)
 			},
 			want: []*endpoint.Endpoint{
@@ -218,6 +217,8 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				endpoint.NewEndpointWithTTL("aaaa.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
 				endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, 7200, "target"),
 				endpoint.NewEndpointWithTTL("txt.example.com", endpoint.RecordTypeTXT, 3600, "hello"),
+				endpoint.NewEndpointWithTTL("srv.example.com", endpoint.RecordTypeSRV, 3600, "1 10 5060 sip.example.com"),
+				endpoint.NewEndpointWithTTL("ns.example.com", endpoint.RecordTypeNS, 3600, "ns1.example.com"),
 			},
 		},
 		{
@@ -295,12 +296,9 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	}
 }
 
-// testDnsimpleProviderApplyChanges drives ApplyChanges through a table of cases
-// and verifies the exact DNSimple API calls made for each one. Unlike a bare
-// "no error returned" assertion, it calls AssertExpectations so a no-op
-// ApplyChanges would fail. The dual-stack cases in particular exercise
-// GetRecordID's name+type disambiguation: a host with both an A and an AAAA
-// record at the same name must resolve to the matching record ID per type.
+// testDnsimpleProviderApplyChanges drives ApplyChanges through a table of cases,
+// asserting the exact DNSimple API calls via AssertExpectations so a no-op would
+// fail. The dual-stack cases exercise GetRecordID's name+type disambiguation.
 func testDnsimpleProviderApplyChanges(t *testing.T) {
 	zonesResponse := &dnsimple.ZonesResponse{
 		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{TotalPages: 1}},
