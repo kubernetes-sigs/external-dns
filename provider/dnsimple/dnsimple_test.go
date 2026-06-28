@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -177,13 +178,6 @@ func testDnsimpleProviderZones(t *testing.T) {
 	os.Unsetenv("DNSIMPLE_ZONES")
 }
 
-// wantEndpoint is the comparable shape we assert Records() produced for a case.
-type wantEndpoint struct {
-	dnsName    string
-	recordType string
-	target     string
-}
-
 // testDnsimpleProviderRecords drives Records() through a table of cases with a
 // fresh mock per case, instead of relying on shared global mock state. It
 // covers the supported record types returned together, a dual-stack host where
@@ -203,10 +197,10 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		setup      func(m *mockDnsimpleZoneServiceInterface)
-		wantErr    bool
-		wantRecord []wantEndpoint
+		name    string
+		setup   func(m *mockDnsimpleZoneServiceInterface)
+		wantErr bool
+		want    []*endpoint.Endpoint
 	}{
 		{
 			name: "all supported types returned together",
@@ -215,15 +209,15 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				m.On("ListRecords", t.Context(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: new(1)}}).Return(recordsResponse(
 					dnsimple.ZoneRecord{ID: 1, ZoneID: "example.com", Name: "a", Content: "127.0.0.1", TTL: 3600, Type: "A"},
 					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "aaaa", Content: "fd00::1", TTL: 3600, Type: "AAAA"},
-					dnsimple.ZoneRecord{ID: 3, ZoneID: "example.com", Name: "cname", Content: "target", TTL: 3600, Type: "CNAME"},
+					dnsimple.ZoneRecord{ID: 3, ZoneID: "example.com", Name: "cname", Content: "target", TTL: 7200, Type: "CNAME"},
 					dnsimple.ZoneRecord{ID: 4, ZoneID: "example.com", Name: "txt", Content: "hello", TTL: 3600, Type: "TXT"},
 				), nil)
 			},
-			wantRecord: []wantEndpoint{
-				{"a.example.com", "A", "127.0.0.1"},
-				{"aaaa.example.com", "AAAA", "fd00::1"},
-				{"cname.example.com", "CNAME", "target"},
-				{"txt.example.com", "TXT", "hello"},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
+				endpoint.NewEndpointWithTTL("aaaa.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
+				endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, 7200, "target"),
+				endpoint.NewEndpointWithTTL("txt.example.com", endpoint.RecordTypeTXT, 3600, "hello"),
 			},
 		},
 		{
@@ -235,9 +229,9 @@ func testDnsimpleProviderRecords(t *testing.T) {
 					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "www", Content: "fd00::1", TTL: 3600, Type: "AAAA"},
 				), nil)
 			},
-			wantRecord: []wantEndpoint{
-				{"www.example.com", "A", "127.0.0.1"},
-				{"www.example.com", "AAAA", "fd00::1"},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
+				endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
 			},
 		},
 		{
@@ -248,8 +242,8 @@ func testDnsimpleProviderRecords(t *testing.T) {
 					dnsimple.ZoneRecord{ID: 1, ZoneID: "example.com", Name: "", Content: "127.0.0.1", TTL: 3600, Type: "A"},
 				), nil)
 			},
-			wantRecord: []wantEndpoint{
-				{"example.com", "A", "127.0.0.1"},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
 			},
 		},
 		{
@@ -261,8 +255,8 @@ func testDnsimpleProviderRecords(t *testing.T) {
 					dnsimple.ZoneRecord{ID: 2, ZoneID: "example.com", Name: "soa", Content: "ns.example.com", TTL: 3600, Type: "SOA"},
 				), nil)
 			},
-			wantRecord: []wantEndpoint{
-				{"a.example.com", "A", "127.0.0.1"},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
 			},
 		},
 		{
@@ -295,13 +289,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-
-			got := make([]wantEndpoint, 0, len(result))
-			for _, ep := range result {
-				require.Len(t, ep.Targets, 1)
-				got = append(got, wantEndpoint{ep.DNSName, ep.RecordType, ep.Targets[0]})
-			}
-			assert.ElementsMatch(t, tt.wantRecord, got)
+			assert.True(t, testutils.SameEndpoints(result, tt.want), "expected %v, got %v", tt.want, result)
 			mockDNS.AssertExpectations(t)
 		})
 	}
