@@ -32,6 +32,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/external-dns/source/types"
@@ -63,7 +64,7 @@ type routeGroupSource struct {
 	apiServer                string
 	namespace                string
 	apiEndpoint              string
-	annotationFilter         string
+	annotationFilter         labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 }
@@ -250,10 +251,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 
-	filtered, err := annotations.Filter(rgList.Items, sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
+	filtered := annotations.Filter(rgList.Items, sc.annotationFilter)
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, rg := range filtered {

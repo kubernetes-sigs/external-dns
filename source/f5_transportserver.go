@@ -64,7 +64,7 @@ type f5TransportServerSource struct {
 	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer
 	kubeClient              kubernetes.Interface
-	annotationFilter        string
+	annotationFilter        labels.Selector
 	namespace               string
 	templateEngine          template.Engine
 	unstructuredConverter   *unstructuredConverter
@@ -136,10 +136,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 		transportServers = append(transportServers, transportServer)
 	}
 
-	transportServers, err = annotations.Filter(transportServers, ts.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
-	}
+	transportServers = annotations.Filter(transportServers, ts.annotationFilter)
 
 	endpoints, err := ts.endpointsFromTransportServers(transportServers)
 	if err != nil {

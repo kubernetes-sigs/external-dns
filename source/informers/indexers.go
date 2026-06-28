@@ -21,8 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
-
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -39,16 +37,9 @@ type IndexSelectorOptions struct {
 	conditions      []func(metav1.Object) bool
 }
 
-func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
+func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
-		if input == "" {
-			return
-		}
-		selector, err := annotations.ParseFilter(input)
-		if err != nil {
-			return
-		}
-		options.annotationFilter = selector
+		options.annotationFilter = input
 	}
 }
 

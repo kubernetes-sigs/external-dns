@@ -78,13 +78,8 @@ func NewIngressSource(
 	cfg *Config) (Source, error) {
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
-	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != "" {
-		selector, err := getLabelSelector(cfg.AnnotationFilter)
-		if err != nil {
-			return nil, err
-		}
-
-		requirements, _ := selector.Requirements()
+	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != nil && !cfg.AnnotationFilter.Empty() {
+		requirements, _ := cfg.AnnotationFilter.Requirements()
 		for _, requirement := range requirements {
 			if requirement.Key() == IngressClassAnnotationKey {
 				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")

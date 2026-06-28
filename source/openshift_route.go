@@ -55,7 +55,7 @@ import (
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string
-	annotationFilter         string
+	annotationFilter         labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	routeInformer            routeInformer.RouteInformer
@@ -118,10 +118,7 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		return nil, err
 	}
 
-	ocpRoutes, err = annotations.Filter(ocpRoutes, ors.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
+	ocpRoutes = annotations.Filter(ocpRoutes, ors.annotationFilter)
 
 	endpoints := []*endpoint.Endpoint{}
 

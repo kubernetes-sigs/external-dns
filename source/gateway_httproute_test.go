@@ -40,7 +40,7 @@ import (
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
-	v, err := getLabelSelector(s)
+	v, err := annotations.ParseFilter(s)
 	if err != nil {
 		panic(err)
 	}
@@ -446,7 +446,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "RouteAnnotationFilter",
 			config: &Config{
-				AnnotationFilter: "foo=bar",
+				AnnotationFilter: parseAnnotationFilterOrNil("foo=bar"),
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{

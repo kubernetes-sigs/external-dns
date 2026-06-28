@@ -125,7 +125,7 @@ func TestNewIngressSource(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				&Config{
-					AnnotationFilter:  ti.annotationFilter,
+					AnnotationFilter:  parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:    templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IngressClassNames: ti.ingressClassNames,
 				},
@@ -1424,7 +1424,7 @@ func testIngressEndpoints(t *testing.T) {
 				fakeClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
-					AnnotationFilter:         ti.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
@@ -1963,16 +1963,6 @@ func TestNewIngressSource_Errors(t *testing.T) {
 		wantErr string
 	}{
 		{
-			title: "getLabelSelector error propagates",
-			cfg: &Config{
-				IngressClassNames: []string{"nginx"},
-				AnnotationFilter:  "=invalid",
-				LabelFilter:       labels.Everything(),
-			},
-			ctx:     t.Context,
-			wantErr: "invalid",
-		},
-		{
 			title: "WaitForCacheSync error propagates",
 			cfg: &Config{
 				LabelFilter: labels.Everything(),
@@ -2126,7 +2116,7 @@ func TestIngressIndexer(t *testing.T) {
 			}
 
 			src, err := NewIngressSource(t.Context(), client, &Config{
-				AnnotationFilter: tt.annotationFilter,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
 			})

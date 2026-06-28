@@ -61,7 +61,6 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string
-	annotationFilter         string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -122,7 +121,6 @@ func NewIstioGatewaySource(
 
 	return &gatewaySource{
 		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,

@@ -440,7 +440,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:            "invalid annotation filter expression",
+			title:            "invalid annotation filter expression is silently ignored",
 			targetNamespace:  "",
 			annotationFilter: "contour.heptio.com/ingress.name in (a b)",
 			loadBalancer: fakeLoadBalancerService{
@@ -456,8 +456,13 @@ func testHTTPProxyEndpoints(t *testing.T) {
 					host: "example.org",
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
 		},
 		{
 			title:            "valid matching annotation filter label",
@@ -1019,7 +1024,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				fakeDynamicClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
-					AnnotationFilter:         ti.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},

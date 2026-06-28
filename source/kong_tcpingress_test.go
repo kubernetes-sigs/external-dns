@@ -412,7 +412,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultKongNamespace,
-					AnnotationFilter:         "kubernetes.io/ingress.class=kong",
+					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=kong"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				})
 			assert.NoError(t, err)
