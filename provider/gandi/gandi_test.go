@@ -22,8 +22,10 @@ import (
 	"github.com/go-gandi/go-gandi/livedns"
 	"github.com/maxatome/go-testdeep/td"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -34,6 +36,7 @@ type MockAction struct {
 	Record livedns.DomainRecord
 }
 
+// mockGandiClient implements DomainClientAdapter and LiveDNSClientAdapter for provider tests.
 type mockGandiClient struct {
 	Actions         []MockAction
 	FunctionToFail  string `default:""`
@@ -580,4 +583,120 @@ func TestGandiProvider_FailingCases(t *testing.T) {
 	if err == nil {
 		t.Error("should have failed")
 	}
+}
+
+func TestNew(t *testing.T) {
+	t.Setenv("GANDI_PAT", "myGandiPAT")
+	prov, err := New(t.Context(), &externaldns.Config{DryRun: true}, endpoint.NewDomainFilter([]string{"example.com"}))
+	require.NoError(t, err)
+
+	gp, ok := prov.(*GandiProvider)
+	require.True(t, ok)
+	assert.True(t, gp.DryRun)
+}
+
+func TestGandiProvider_Zones(t *testing.T) {
+	mock := &mockGandiClient{}
+	provider := &GandiProvider{
+		DomainClient: mock,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+	}
+
+	zones, err := provider.Zones()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"example.com"}, zones)
+
+	provider.domainFilter = endpoint.NewDomainFilter([]string{"other.org"})
+	zones, err = provider.Zones()
+	require.NoError(t, err)
+	assert.Empty(t, zones)
+
+	provider.DomainClient = &mockGandiClient{FunctionToFail: "ListDomains"}
+	_, err = provider.Zones()
+	assert.Error(t, err)
+}
+
+func TestGandiProvider_RecordsMultipleValuesPerRecord(t *testing.T) {
+	mock := &mockGandiClient{
+		RecordsToReturn: []livedns.DomainRecord{{
+			RrsetType:   endpoint.RecordTypeA,
+			RrsetTTL:    300,
+			RrsetName:   "multi",
+			RrsetValues: []string{"203.0.113.1", "203.0.113.2"},
+		}},
+	}
+	provider := &GandiProvider{
+		DomainClient:  mock,
+		LiveDNSClient: mock,
+	}
+
+	endpoints, err := provider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, endpoints, 2)
+	assert.Equal(t, "multi.example.com", endpoints[0].DNSName)
+	assert.Equal(t, "multi.example.com", endpoints[1].DNSName)
+	assert.ElementsMatch(t, []string{"203.0.113.1", "203.0.113.2"}, []string{endpoints[0].Targets[0], endpoints[1].Targets[0]})
+}
+
+func TestGandiProvider_ApplyChangesUsesDefaultTTL(t *testing.T) {
+	mock := &mockGandiClient{}
+	provider := &GandiProvider{
+		DomainClient:  mock,
+		LiveDNSClient: mock,
+	}
+
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{{
+			DNSName:    "test.example.com",
+			Targets:    endpoint.Targets{"192.168.0.1"},
+			RecordType: endpoint.RecordTypeA,
+		}},
+	})
+	require.NoError(t, err)
+
+	td.Cmp(t, mock.Actions, []MockAction{
+		{Name: "ListDomains"},
+		{
+			Name: "CreateDomainRecord",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   endpoint.RecordTypeA,
+				RrsetName:   "test",
+				RrsetValues: []string{"192.168.0.1"},
+				RrsetTTL:    defaultTTL,
+			},
+		},
+	})
+}
+
+func TestGandiProvider_ApplyChangesCNAMEKeepsTrailingDot(t *testing.T) {
+	mock := &mockGandiClient{}
+	provider := &GandiProvider{
+		DomainClient:  mock,
+		LiveDNSClient: mock,
+	}
+
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{{
+			DNSName:    "www.example.com",
+			Targets:    endpoint.Targets{"lb.example.net."},
+			RecordType: endpoint.RecordTypeCNAME,
+			RecordTTL:  300,
+		}},
+	})
+	require.NoError(t, err)
+
+	td.Cmp(t, mock.Actions, []MockAction{
+		{Name: "ListDomains"},
+		{
+			Name: "UpdateDomainRecordByNameAndType",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   endpoint.RecordTypeCNAME,
+				RrsetName:   "www",
+				RrsetValues: []string{"lb.example.net."},
+				RrsetTTL:    300,
+			},
+		},
+	})
 }
