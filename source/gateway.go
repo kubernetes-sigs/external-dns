@@ -152,6 +152,153 @@ type gatewayRouteSource struct {
 	ignoreHostnameAnnotation bool
 }
 
+func NewGatewaySource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
+	return newGatewaySource(ctx, clients, config, newGatewayInformerFactory)
+}
+
+// +externaldns:source:name=gateway
+// +externaldns:source:category=Gateway API
+// +externaldns:source:description=Creates DNS entries from Gateway API Gateway resources annotated with external-dns.alpha.kubernetes.io/hostname
+// +externaldns:source:resources=Gateway.gateway.networking.k8s.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=true
+type gatewayResourceSource struct {
+	gwName        string
+	gwNamespace   string
+	gwLabels      labels.Selector
+	gwAnnotations labels.Selector
+	gwInformer    informers_v1.GatewayInformer
+
+	templateEngine           template.Engine
+	ignoreHostnameAnnotation bool
+}
+
+func newGatewaySource(
+	ctx context.Context,
+	clients ClientGenerator,
+	config *Config,
+	newInformerFactory func(gateway.Interface, string, labels.Selector) gwinformers.SharedInformerFactory,
+) (Source, error) {
+	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
+	if err != nil {
+		return nil, err
+	}
+	gwAnnotations, err := getLabelSelector(config.AnnotationFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := clients.GatewayClient()
+	if err != nil {
+		return nil, err
+	}
+
+	gwInformerFactory := newInformerFactory(client, config.GatewayNamespace, gwLabels)
+	gwInformer := gwInformerFactory.Gateway().V1().Gateways()
+	gwInformer.Informer() // Register with factory before starting.
+
+	gwInformerFactory.Start(ctx.Done())
+	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
+		return nil, err
+	}
+
+	return &gatewayResourceSource{
+		gwName:                   config.GatewayName,
+		gwNamespace:              config.GatewayNamespace,
+		gwLabels:                 gwLabels,
+		gwAnnotations:            gwAnnotations,
+		gwInformer:               gwInformer,
+		templateEngine:           config.TemplateEngine,
+		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
+	}, nil
+}
+
+func (src *gatewayResourceSource) AddEventHandler(_ context.Context, handler func()) {
+	log.Debug("Adding event handlers for Gateway")
+	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandlerFunc(handler))
+}
+
+func (src *gatewayResourceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+	gateways, err := src.gwInformer.Lister().Gateways(src.gwNamespace).List(src.gwLabels)
+	if err != nil {
+		return nil, err
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for _, gw := range gateways {
+		if src.gwName != "" && src.gwName != gw.Name {
+			continue
+		}
+
+		meta := &gw.ObjectMeta
+		annots := meta.Annotations
+
+		if !src.gwAnnotations.Matches(labels.Set(annots)) {
+			continue
+		}
+
+		if annotations.IsControllerMismatch(meta, gatewayKind) {
+			continue
+		}
+
+		hostnames, err := src.hostnames(gw)
+		if err != nil {
+			return nil, err
+		}
+		if len(hostnames) == 0 {
+			log.Debugf("No endpoints could be generated from Gateway %s/%s", gw.Namespace, gw.Name)
+			continue
+		}
+
+		targets := src.targets(gw)
+		if len(targets) == 0 {
+			log.Debugf("No targets found for Gateway %s/%s", gw.Namespace, gw.Name)
+			continue
+		}
+
+		resource := fmt.Sprintf("gateway/%s/%s", gw.Namespace, gw.Name)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
+		ttl := annotations.TTLFromAnnotations(annots, resource)
+
+		var gwEndpoints []*endpoint.Endpoint
+		for _, host := range hostnames {
+			gwEndpoints = append(gwEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
+		log.Debugf("Endpoints generated from Gateway %s/%s: %v", gw.Namespace, gw.Name, gwEndpoints)
+		endpoints = append(endpoints, gwEndpoints...)
+	}
+	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+func (src *gatewayResourceSource) hostnames(gw *v1.Gateway) ([]string, error) {
+	var hostnames []string
+	if !src.ignoreHostnameAnnotation {
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(gw.Annotations)...)
+	}
+	if src.templateEngine.IsConfigured() && (len(hostnames) == 0 || src.templateEngine.Combining()) {
+		hosts, err := src.templateEngine.ExecFQDN(gw)
+		if err != nil {
+			return nil, err
+		}
+		hostnames = append(hostnames, hosts...)
+	}
+	return hostnames, nil
+}
+
+func (src *gatewayResourceSource) targets(gw *v1.Gateway) endpoint.Targets {
+	override := annotations.TargetsFromTargetAnnotation(gw.Annotations)
+	if len(override) > 0 {
+		return override
+	}
+	var targets endpoint.Targets
+	for _, addr := range gw.Status.Addresses {
+		targets = append(targets, addr.Value)
+	}
+	return targets
+}
+
 func newGatewayRouteSource(
 	ctx context.Context,
 	clients ClientGenerator,

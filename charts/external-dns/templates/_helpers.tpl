@@ -115,9 +115,19 @@ labelSelector:
 {{- end }}
 
 {{/*
-Check if any Gateway API sources are enabled
+Check if any Gateway API sources are enabled (includes gateway resource source and all route sources)
 */}}
 {{- define "external-dns.hasGatewaySources" -}}
+{{- if or (has "gateway" .Values.sources) (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/*
+Check if any Gateway API route sources are enabled (excludes the gateway resource source).
+Used for namespace-scoped RBAC that requires cross-namespace Gateway discovery.
+*/}}
+{{- define "external-dns.hasGatewayRouteSources" -}}
 {{- if or (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) -}}
 true
 {{- end -}}

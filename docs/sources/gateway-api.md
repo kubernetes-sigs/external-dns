@@ -1,7 +1,65 @@
-# Gateway API Route Sources
+# Gateway API Sources
 
-This describes how to configure ExternalDNS to use Gateway API Route sources.
+This describes how to configure ExternalDNS to use Gateway API sources.
 It is meant to supplement the other provider-specific setup tutorials.
+
+## Gateway Source (`--source=gateway`)
+
+The `gateway` source watches `Gateway` resources directly and creates DNS records
+for each Gateway that has the `external-dns.alpha.kubernetes.io/hostname` annotation.
+Targets are taken from `gateway.status.addresses` (or overridden via the
+`external-dns.alpha.kubernetes.io/target` annotation).
+
+### When to use
+
+Use `--source=gateway` when you want DNS records tied to the Gateway itself rather
+than individual routes. This is useful when:
+
+- All routes share the same DNS name as the Gateway's external address.
+- You manage hostnames at the Gateway level rather than per-route.
+
+### How it works
+
+1. ExternalDNS lists all `Gateway` objects in the configured namespace.
+2. For each Gateway with `external-dns.alpha.kubernetes.io/hostname`, it reads the value as one or more comma-separated hostnames.
+3. Targets are sourced from `gateway.status.addresses`. IP addresses produce A/AAAA records; hostnames produce CNAME records.
+4. The `external-dns.alpha.kubernetes.io/target` annotation overrides `status.addresses`.
+
+### Example
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  namespace: default
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: app.example.com
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+status:
+  addresses:
+    - type: IPAddress
+      value: 203.0.113.1
+```
+
+This produces an A record: `app.example.com → 203.0.113.1`.
+
+### Supported flags
+
+| Flag | Effect on `gateway` source |
+|------|---------------------------|
+| `--gateway-name` | Limit to a single Gateway by name |
+| `--gateway-namespace` | Limit to Gateways in a specific namespace |
+| `--gateway-label-filter` | Filter Gateways by label selector |
+| `--annotation-filter` | Filter Gateways by annotation selector |
+| `--ignore-hostname-annotation` | Skip the hostname annotation (useful with `--fqdn-template`) |
+| `--fqdn-template` | Generate hostnames from a Go template applied to the Gateway object |
 
 ## Supported API Versions
 

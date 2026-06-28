@@ -141,12 +141,13 @@ rules:
 {{- with .Values.rbac.additionalPermissions }}
   {{- toYaml . | nindent 2 }}
 {{- end }}
-{{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewaySources" .) }}
+{{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewayRouteSources" .) }}
 {{- /*
-     If namespaced=true and gatewayNamespace is NOT set, we need to list namespaces
-     cluster-wide to discover Gateways across the cluster. In that case, create a
-     ClusterRole to grant access to namespaces. If gatewayNamespace IS set, we are
-     fully namespaced for both scopes and can skip cluster-wide RBAC.
+     Route sources need cross-namespace Gateway discovery. If namespaced=true and
+     gatewayNamespace is NOT set, create a ClusterRole to list namespaces cluster-wide.
+     If gatewayNamespace IS set, fully namespaced — skip cluster-wide RBAC.
+     Note: the 'gateway' resource source is excluded here; it watches Gateway objects
+     directly and needs no namespace traversal.
   */ -}}
 {{- if not .Values.gatewayNamespace }}
 ---

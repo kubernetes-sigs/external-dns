@@ -404,6 +404,80 @@ tests:
           value: rbac-external-dns-namespaces
         template: clusterrole.yaml
 
+  - it: should create RBAC rules for 'gateway' source (cluster-scoped)
+    set:
+      sources:
+        - gateway
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: clusterrole.yaml
+      - hasDocuments:
+          count: 1
+        template: clusterrolebinding.yaml
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        template: clusterrolebinding.yaml
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["gateway.networking.k8s.io"]
+              resources: ["gateways"]
+              verbs: ["get","watch","list"]
+            - apiGroups: [""]
+              resources: ["namespaces"]
+              verbs: ["get","watch","list"]
+
+  - it: should create single namespaced Role with gateway permissions when namespaced=true and gatewayNamespace is specified with 'gateway' source
+    set:
+      namespaced: true
+      gatewayNamespace: gateway-ns
+      sources:
+        - gateway
+    asserts:
+      # Single Role only — gateway source needs no secondary Role or cluster-scoped RBAC
+      - hasDocuments:
+          count: 1
+        template: clusterrole.yaml
+      - hasDocuments:
+          count: 1
+        template: clusterrolebinding.yaml
+      - isKind:
+          of: Role
+        template: clusterrole.yaml
+      - equal:
+          path: rules
+          value: null
+        template: clusterrole.yaml
+
+  - it: should create single namespaced Role with gateway permissions when namespaced=true and gatewayNamespace not set with 'gateway' source
+    set:
+      namespaced: true
+      sources:
+        - gateway
+    asserts:
+      # Single Role only — gateway source needs no namespace discovery ClusterRole
+      - hasDocuments:
+          count: 1
+        template: clusterrole.yaml
+      - hasDocuments:
+          count: 1
+        template: clusterrolebinding.yaml
+      - isKind:
+          of: Role
+        template: clusterrole.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: ["gateway.networking.k8s.io"]
+            resources: ["gateways"]
+            verbs: ["get","watch","list"]
+        template: clusterrole.yaml
+
   - it: should create ClusterRole with all permissions when namespaced=false and gateway sources exist
     set:
       namespaced: false
