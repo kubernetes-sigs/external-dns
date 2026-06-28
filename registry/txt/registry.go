@@ -257,7 +257,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		// A ALIAS records used the legacy "cname-" prefix. Fall back to it so ownership
 		// survives migration to "a-", and report the stale record once. See issue #2903.
-		if shouldUseCNAMEForTxtRecord(ep) {
+		if isAliasARecord(ep) {
 			legacyKey := key
 			legacyKey.RecordType = endpoint.RecordTypeCNAME
 			if legacyLabels, ok := labelMap[legacyKey]; ok {
@@ -306,9 +306,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-// shouldUseCNAMEForTxtRecord reports whether the endpoint is an A ALIAS record, which external-dns
-// models internally as a CNAME. Used to recognize the legacy "cname-" ownership TXT for migration.
-func shouldUseCNAMEForTxtRecord(ep *endpoint.Endpoint) bool {
+// isAliasARecord reports whether the endpoint is an A ALIAS record (used to recognize the legacy
+// "cname-" ownership TXT during migration to the "a-" prefix).
+func isAliasARecord(ep *endpoint.Endpoint) bool {
 	aliasType := ep.GetAliasProperty()
 	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
 }
