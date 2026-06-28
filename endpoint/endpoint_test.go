@@ -2160,3 +2160,20 @@ func TestEndpointKey_String(t *testing.T) {
 		})
 	}
 }
+
+func TestNewEndpointSourceLabelOverflowReporter(t *testing.T) {
+	prev := SourceLabelOverflowReporter
+	t.Cleanup(func() { SourceLabelOverflowReporter = prev })
+
+	var calls []struct{ recordType, domain string }
+	SourceLabelOverflowReporter = func(recordType, domain string) {
+		calls = append(calls, struct{ recordType, domain string }{recordType, domain})
+	}
+
+	overlongLabel := "a234567890123456789012345678901234567890123456789012345678901234" // 64 chars
+	ep := NewEndpoint(overlongLabel+".example.com", RecordTypeA, "1.2.3.4")
+
+	assert.Nil(t, ep, "NewEndpoint must return nil when a label exceeds 63 chars")
+	assert.Equal(t, []struct{ recordType, domain string }{{RecordTypeA, "example.com"}}, calls,
+		"reporter must be invoked once with the record type and parent domain")
+}
