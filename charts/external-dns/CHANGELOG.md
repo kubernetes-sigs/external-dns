@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add value `.service.enabled` to enable the creation of the Kubernetes service.
 - Add value `replicaCount` to set the number of `external-dns` replicas (bounded to `0` or `1`, since external-dns does not support leader election). [#6503](https://github.com/kubernetes-sigs/external-dns/pull/6503) _@yugstar_
 
+### Changed
+
+- **Breaking:** `policy` no longer defaults to `upsert-only` and is now required. You must set `policy` explicitly to one of `create-only`, `sync`, or `upsert-only`. [#6508](https://github.com/kubernetes-sigs/external-dns/pull/6508) _@mloiseleur_
+
 ### Fixed
 
 - RBAC compliance checkbox for dnsendpoints/status [#6442](https://github.com/kubernetes-sigs/external-dns/pull/6442) _@vflaux_

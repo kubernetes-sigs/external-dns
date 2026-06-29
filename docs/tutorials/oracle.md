@@ -178,7 +178,7 @@ spec:
         - --source=service
         - --source=ingress
         - --provider=oci
-        - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --txt-owner-id=my-identifier
         # Specifies the OCI DNS Zone scope, defaults to GLOBAL.
         # May be GLOBAL, PRIVATE, or an empty value to specify both GLOBAL and PRIVATE OCI DNS Zones
