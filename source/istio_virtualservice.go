@@ -120,10 +120,10 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, cfg.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, istioInformerFactory, cfg.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
 

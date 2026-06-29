@@ -87,6 +87,7 @@ type Config struct {
 	GlooNamespaces                 []string
 	SkipperRouteGroupVersion       string
 	KubeAPIRequestTimeout          time.Duration
+	CacheSyncTimeout               time.Duration
 	KubeAPIQPS                     int
 	KubeAPIBurst                   int
 	DefaultTargets                 []string
@@ -163,6 +164,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		GlooNamespaces:                 cfg.GlooNamespaces,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		KubeAPIRequestTimeout:          cfg.KubeAPIRequestTimeout,
+		CacheSyncTimeout:               cfg.CacheSyncTimeout,
 		KubeAPIQPS:                     cfg.KubeAPIQPS,
 		KubeAPIBurst:                   cfg.KubeAPIBurst,
 		DefaultTargets:                 cfg.DefaultTargets,

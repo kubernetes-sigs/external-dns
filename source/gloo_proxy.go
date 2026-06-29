@@ -203,10 +203,10 @@ func NewGlooSource(
 
 	informerFactory.Start(ctx.Done())
 	dynamicInformerFactory.Start(ctx.Done())
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, informerFactory, cfg.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, dynamicInformerFactory, cfg.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
 

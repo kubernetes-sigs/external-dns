@@ -70,7 +70,7 @@ func TestWaitForCacheSync(t *testing.T) {
 			ctx := t.Context()
 
 			factory := &mockInformerFactory{syncResults: tt.syncResults}
-			err := WaitForCacheSync(ctx, factory)
+			err := WaitForCacheSync(ctx, factory, 0)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -112,7 +112,7 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 			ctx := t.Context()
 
 			factory := &mockDynamicInformerFactory{syncResults: tt.syncResults}
-			err := WaitForDynamicCacheSync(ctx, factory)
+			err := WaitForDynamicCacheSync(ctx, factory, 0)
 
 			if tt.expectError {
 				assert.Error(t, err)
