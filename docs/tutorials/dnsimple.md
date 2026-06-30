@@ -43,6 +43,7 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone you create in DNSimple.
         - --provider=dnsimple
         - --registry=txt
@@ -115,6 +116,7 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone you create in DNSimple.
         - --provider=dnsimple
         - --registry=txt

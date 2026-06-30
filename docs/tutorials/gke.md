@@ -389,6 +389,7 @@ spec:
           args:
             - --source=service
             - --source=ingress
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
             - --provider=google
             - --log-format=json # google cloud logs parses severity of the "text" log format incorrectly

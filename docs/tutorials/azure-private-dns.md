@@ -148,6 +148,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -224,6 +225,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -300,6 +302,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
