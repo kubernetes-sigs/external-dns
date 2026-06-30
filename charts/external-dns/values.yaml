@@ -212,6 +212,9 @@ logFormat: text  # @schema enum:["text", "json"]; type:string; default: "text"
 # -- Interval for DNS updates.
 interval: 1m
 
+# -- [FQDN templates](https://kubernetes-sigs.github.io/external-dns/latest/docs/advanced/fqdn-templating) to use for generating DNS records.
+fqdnTemplates: []  # @schema type: [array, null]; item: string; uniqueItems: true
+
 # -- If `true`, triggers run loop on create/update/delete events in addition of regular interval.
 triggerLoopOnEvent: false
 

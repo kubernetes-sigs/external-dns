@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add value `.fqdnTemplates` to configure [FQDN templates](https://kubernetes-sigs.github.io/external-dns/latest/docs/advanced/fqdn-templating) for generating DNS records.
 - Add value `.sourceNamespace` to watch a namespace which is different from the one that external-dns is installed into when `.namespaced` is true. ([#6297](https://github.com/kubernetes-sigs/external-dns/pull/6297)) _@jplitza_
 - Add option to enable Gateway API ListenerSet support. ([#6381](https://github.com/kubernetes-sigs/external-dns/pull/6381)) _@speer_
 - Add support for bool in extraArgs. ([#6179](https://github.com/kubernetes-sigs/external-dns/pull/6179)) _@farodin91_

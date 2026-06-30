@@ -72,3 +72,17 @@ tests:
             interval: 30s
     asserts:
       - notFailedTemplate: {}
+
+  - it: should not fail when fqdnTemplates is set
+    set:
+      fqdnTemplates:
+        - "{{.Name}}.example.com"
+        - "{{.Name}}.{{.Namespace}}.example.org"
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: should not fail when fqdnTemplates is null
+    set:
+      fqdnTemplates: null
+    asserts:
+      - notFailedTemplate: {}
