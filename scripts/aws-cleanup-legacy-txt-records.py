@@ -65,6 +65,17 @@ SESSION_ID=uuid.uuid4()
 def json_prettify(data):
     return json.dumps(data, indent=4, default=str)
 
+def value_matches(value: str, contain: str) -> bool:
+    """True if `contain` occurs in `value` ending at a token boundary (',' or '"'),
+    so 'owner=prod' does not also match 'owner=prod-2'."""
+    start = value.find(contain)
+    while start != -1:
+        end = start + len(contain)
+        if end == len(value) or value[end] in ',"':
+            return True
+        start = value.find(contain, start + 1)
+    return False
+
 class Record:
 
     def __init__(self, record):
@@ -79,10 +90,7 @@ class Record:
         self.resource_record = resource_record
 
     def is_for_deletion(self, contains):
-
-        if contains in self.resource_record:
-            return True
-        return False
+        return value_matches(self.resource_record, contains)
 
     def __str__(self):
         return f'record: name: {self.name}, type: {self.type}, records: {self.resource_record}'
@@ -135,7 +143,7 @@ def orphaned_alias_cname_records(all_txt: list[Record], contain: str) -> list[Re
     for r in all_txt:
         if "cname-" not in r.name:
             continue
-        if contain not in r.resource_record:
+        if not value_matches(r.resource_record, contain):
             continue
         # Only delete the legacy alias record when the migrated 'a-' record already exists.
         if alias_to_a_name(r.name) in names:
