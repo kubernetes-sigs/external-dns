@@ -75,6 +75,32 @@ for e.g:
 build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run
 ```
 
+As with every source, `--annotation-filter` is optional. If you set it, ExternalDNS applies it to `DNSEndpoint` objects too, so a `DNSEndpoint` must match the filter itself or the CRD source will ignore it.
+
+For example, with:
+
+```sh
+build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1 --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run --annotation-filter=external-dns=public
+```
+
+the `DNSEndpoint` metadata must include a matching annotation:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplednsrecord
+  annotations:
+    external-dns: public
+spec:
+  endpoints:
+  - dnsName: foo.bar.com
+    recordTTL: 180
+    recordType: A
+    targets:
+    - 192.168.99.216
+```
+
 ## Creating DNS Records
 
 Create the objects of CRD type by filling in the fields of CRD and DNS record would be created accordingly.
