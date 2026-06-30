@@ -4650,6 +4650,92 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 	}
 }
 
+func TestGetServiceNamespaces(t *testing.T) {
+	tests := []struct {
+		name              string
+		defaultNamespace  string
+		serviceNamespaces []string
+		want              []string
+	}{
+		{
+			name:             "falls back to global namespace",
+			defaultNamespace: "",
+			want:             []string{v1.NamespaceAll},
+		},
+		{
+			name:             "falls back to single explicit namespace",
+			defaultNamespace: "team-a",
+			want:             []string{"team-a"},
+		},
+		{
+			name:              "uses service namespace list",
+			defaultNamespace:  "ignored",
+			serviceNamespaces: []string{"team-a", "team-b"},
+			want:              []string{"team-a", "team-b"},
+		},
+		{
+			name:              "normalizes empty namespace and removes duplicates",
+			serviceNamespaces: []string{"", "team-a", "team-a"},
+			want:              []string{v1.NamespaceAll, "team-a"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getServiceNamespaces(tt.defaultNamespace, tt.serviceNamespaces)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestServiceSource_EndpointsWithMultipleServiceNamespaces(t *testing.T) {
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+
+	createService := func(namespace, name string) {
+		svc := &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      name,
+				Annotations: map[string]string{
+					annotations.HostnameKey: fmt.Sprintf("%s.example.org", name),
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type: v1.ServiceTypeLoadBalancer,
+			},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+				},
+			},
+		}
+		_, err := fakeClient.CoreV1().Services(namespace).Create(ctx, svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	createService("team-a", "svc-a")
+	createService("team-b", "svc-b")
+	createService("team-c", "svc-c")
+
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		ServiceNamespaces:    []string{"team-a", "team-b"},
+		LabelFilter:          labels.Everything(),
+		ExcludeUnschedulable: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+
+	resources := make([]string, 0, len(endpoints))
+	for _, ep := range endpoints {
+		resources = append(resources, ep.Labels[endpoint.ResourceLabelKey])
+	}
+
+	assert.ElementsMatch(t, []string{"service/team-a/svc-a", "service/team-b/svc-b"}, resources)
+}
+
 func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 	serviceTypeFilter := []string{"ClusterIP", "ServiceTypeNotExist"}
 

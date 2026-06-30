@@ -177,6 +177,7 @@ type Config struct {
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
+	ServiceNamespaces                             []string
 	ResolveServiceLoadBalancerHostname            bool
 	RFC2136Host                                   []string
 	RFC2136Port                                   int
@@ -359,6 +360,7 @@ var defaultConfig = &Config{
 	RFC2136UseTLS:                false,
 	RFC2136Zone:                  []string{},
 	ServiceTypeFilter:            []string{},
+	ServiceNamespaces:            nil,
 	SkipperRouteGroupVersion:     "zalando.org/v1",
 	Sources:                      nil,
 	TargetNetFilter:              []string{},
@@ -547,6 +549,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("pod-source-domain", "Domain to use for pods records (optional)", defaultConfig.PodSourceDomain, &cfg.PodSourceDomain)
 	b.BoolVar("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)", false, &cfg.PublishHostIP)
 	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
+	b.StringsVar("service-namespace", "Limit Service source resources to specific namespace(s); specify multiple times for multiple namespaces (optional, default: value from --namespace)", defaultConfig.ServiceNamespaces, &cfg.ServiceNamespaces)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
 	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)", nil, &cfg.TargetNetFilter)
 	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
