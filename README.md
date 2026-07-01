@@ -117,7 +117,7 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 - Change the desired hostname by modifying the Service's annotation.
 - Recreate the Service and see that the DNS record will be updated to point to the new load balancer IP.
 - Add another Service to create more DNS records.
-- Remove Services to clean up your managed zone.
+- Remove Services to clean up your managed zone (record deletion requires `--policy=sync`; with `--policy=upsert-only` records are never deleted).
 
 </details>
 

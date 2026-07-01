@@ -1,4 +1,6 @@
 suite: Service configuration
+set:
+  policy: upsert-only
 templates:
   - service.yaml
 release:

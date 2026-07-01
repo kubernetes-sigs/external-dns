@@ -45,6 +45,7 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # or ingress or both
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=pdns
         - --pdns-server={{ pdns-api-url }}
         - --pdns-server-id={{ pdns-server-id }}

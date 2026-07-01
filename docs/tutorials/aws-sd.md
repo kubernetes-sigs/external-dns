@@ -188,6 +188,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
         - --provider=aws-sd
         - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)
@@ -258,6 +259,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
         - --provider=aws-sd
         - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)

@@ -235,8 +235,8 @@ sources:
   - service
   - ingress
 
-# -- How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`.
-policy: upsert-only  # @schema enum:[create-only, sync, upsert-only]; type:string; default: "upsert-only"
+# -- (REQUIRED) How DNS records are synchronized between sources and providers; must be set explicitly to one of `create-only`, `sync`, or `upsert-only`.
+policy:  # @schema enum:[create-only, sync, upsert-only]; type:string; required:true
 
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`.

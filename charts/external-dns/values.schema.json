@@ -1,6 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "required": [
+    "policy"
+  ],
   "properties": {
     "affinity": {
       "description": "Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels.",
@@ -297,8 +300,7 @@
       }
     },
     "policy": {
-      "description": "How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, \u0026 `upsert-only`.",
-      "default": "upsert-only",
+      "description": "How DNS records are synchronized between sources and providers; must be set explicitly to one of `create-only`, `sync`, or `upsert-only`.",
       "type": "string",
       "enum": [
         "create-only",

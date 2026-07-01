@@ -1,4 +1,6 @@
 suite: RBAC configuration
+set:
+  policy: upsert-only
 templates:
   - clusterrole.yaml
   - clusterrolebinding.yaml

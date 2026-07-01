@@ -284,6 +284,7 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.gcp.zalan.do
         - --provider=google
         - --google-project=zalando-external-dns-test
@@ -574,6 +575,7 @@ spec:
       containers:
         - args:
             - --source=ingress
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=external-dns-test.gcp.zalan.do
             - --provider=google
             - --google-project=zalando-external-dns-test
