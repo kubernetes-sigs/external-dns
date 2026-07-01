@@ -28,10 +28,15 @@ import (
 	networkingv1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	gwinformers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -42,10 +47,15 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
-// instead of a standard LoadBalancer service type
-// Using var instead of const because annotation keys can be customized
-var IstioGatewayIngressSource = annotations.Ingress
+// IstioGatewayIngressSource returns the annotation key used to determine if the gateway
+// is implemented by an Ingress object instead of a standard LoadBalancer service type.
+// This must be a function (not a package-level var) because the annotation prefix can
+// be customized at runtime via --annotation-prefix / SetAnnotationPrefix.
+func IstioGatewayIngressSource() string { return annotations.Ingress }
+
+// K8sGatewaySource returns the annotation key used to reference a Kubernetes Gateway API
+// Gateway object for endpoint target resolution.
+func K8sGatewaySource() string { return annotations.GatewayKey }
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
@@ -66,6 +76,7 @@ type gatewaySource struct {
 	serviceInformer          coreinformers.ServiceInformer
 	gatewayInformer          networkingv1informer.GatewayInformer
 	ingressInformer          netinformers.IngressInformer
+	gwAPIInformer            gwinformers_v1.GatewayInformer
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -74,6 +85,7 @@ func NewIstioGatewaySource(
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
 	cfg *Config,
+	gwAPIClient gatewayclient.Interface,
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
@@ -108,8 +120,29 @@ func NewIstioGatewaySource(
 	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
 	informers.MustAddEventHandler(gatewayInformer.Informer(), informers.DefaultEventHandler())
 
+	// Optionally set up a Gateway API Gateway informer if a client is provided
+	// and the Gateway API CRDs are installed in the cluster.
+	var gwAPIInformer gwinformers_v1.GatewayInformer
+	var gwAPIInformerFactory gwinformers.SharedInformerFactory
+	if gwAPIClient != nil {
+		if _, err := gwAPIClient.GatewayV1().Gateways("").List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
+			log.Debugf("Gateway API not available, %q annotation will not be supported: %v", K8sGatewaySource(), err)
+		} else {
+			gwAPIInformerFactory = gwinformers.NewSharedInformerFactory(gwAPIClient, 0)
+			gwAPIInformer = gwAPIInformerFactory.Gateway().V1().Gateways()
+			informers.MustSetTransform(gwAPIInformer.Informer(), informers.TransformerWithOptions[*gatewayv1.Gateway](
+				informers.TransformRemoveManagedFields(),
+				informers.TransformRemoveLastAppliedConfig(),
+			))
+			informers.MustAddEventHandler(gwAPIInformer.Informer(), informers.DefaultEventHandler())
+		}
+	}
+
 	informerFactory.Start(ctx.Done())
 	istioInformerFactory.Start(ctx.Done())
+	if gwAPIInformerFactory != nil {
+		gwAPIInformerFactory.Start(ctx.Done())
+	}
 
 	// wait for the local cache to be populated.
 	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
@@ -117,6 +150,11 @@ func NewIstioGatewaySource(
 	}
 	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
 		return nil, err
+	}
+	if gwAPIInformerFactory != nil {
+		if err := informers.WaitForCacheSync(ctx, gwAPIInformerFactory); err != nil {
+			return nil, err
+		}
 	}
 
 	return &gatewaySource{
@@ -126,6 +164,7 @@ func NewIstioGatewaySource(
 		serviceInformer:          serviceInformer,
 		gatewayInformer:          gatewayInformer,
 		ingressInformer:          ingressInformer,
+		gwAPIInformer:            gwAPIInformer,
 	}, nil
 }
 
@@ -151,7 +190,8 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 
 		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
 		if err != nil {
-			return nil, err
+			log.Warnf("Could not generate endpoints for gateway '%s/%s': %v", gateway.Namespace, gateway.Name, err)
+			continue
 		}
 
 		// apply template if host is missing on gateway
@@ -166,7 +206,8 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			},
 		)
 		if err != nil {
-			return nil, err
+			log.Warnf("Could not apply template for gateway '%s/%s': %v", gateway.Namespace, gateway.Name, err)
+			continue
 		}
 
 		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
@@ -190,7 +231,7 @@ func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
-	namespace, name, err := ParseIngress(ingressStr)
+	namespace, name, err := ParseNamespacedName(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}
@@ -215,15 +256,24 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
+func (sc *gatewaySource) targetsFromGatewayAPIGateway(gatewayStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
+	return EndpointTargetsFromK8sGateway(sc.gwAPIInformer, gatewayStr, gateway.Namespace)
+}
+
 func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
 	}
 
-	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource()]
 	if ok && ingressStr != "" {
 		return sc.targetsFromIngress(ingressStr, gateway)
+	}
+
+	gatewayStr, ok := gateway.Annotations[K8sGatewaySource()]
+	if ok && gatewayStr != "" {
+		return sc.targetsFromGatewayAPIGateway(gatewayStr, gateway)
 	}
 
 	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)

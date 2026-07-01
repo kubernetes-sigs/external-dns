@@ -61,6 +61,7 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
+				nil,
 			)
 
 			require.NoError(t, err)
@@ -736,6 +737,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},
+				nil,
 			)
 			require.NoError(t, err)
 

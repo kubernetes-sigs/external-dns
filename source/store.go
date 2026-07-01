@@ -535,7 +535,7 @@ func buildPodSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 }
 
 // buildIstioGatewaySource creates an Istio Gateway source for exposing Istio gateways as DNS records.
-// Requires both Kubernetes and Istio clients. Follows standard parameter pattern.
+// Requires both Kubernetes and Istio clients. Optionally uses a Gateway API client when available.
 func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
@@ -545,11 +545,15 @@ func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *Config
 	if err != nil {
 		return nil, err
 	}
-	return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg)
+	gwAPIClient, err := p.GatewayClient()
+	if err != nil {
+		return nil, err
+	}
+	return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg, gwAPIClient)
 }
 
 // buildIstioVirtualServiceSource creates an Istio VirtualService source for exposing virtual services as DNS records.
-// Requires both Kubernetes and Istio clients. Follows standard parameter pattern.
+// Requires both Kubernetes and Istio clients. Optionally uses a Gateway API client when available.
 func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
@@ -559,7 +563,11 @@ func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg 
 	if err != nil {
 		return nil, err
 	}
-	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg)
+	gwAPIClient, err := p.GatewayClient()
+	if err != nil {
+		return nil, err
+	}
+	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg, gwAPIClient)
 }
 
 func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
