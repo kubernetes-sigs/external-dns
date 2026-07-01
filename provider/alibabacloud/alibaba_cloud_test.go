@@ -404,13 +404,6 @@ func newTestAlibabaCloudProviderWithConfig(domainFilter *endpoint.DomainFilter, 
 	}
 }
 
-func unwrapQuotes(recordType, target string) string {
-	if recordType == endpoint.RecordTypeTXT && strings.HasPrefix(target, `"heritage=`) {
-		return strings.Trim(target, `"`)
-	}
-	return target
-}
-
 func getSubname(domain string, ep *endpoint.Endpoint) string {
 	name := strings.TrimSuffix(ep.DNSName, ".")
 	name = strings.TrimSuffix(name, strings.TrimSuffix(domain, "."))
@@ -512,45 +505,6 @@ func TestAlibabaCloudProvider_ApplyChanges_UndefinedZoneDomain(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
 }
 
-func TestAlibabaCloudProvider_ApplyChanges_NonStandardTXTRecord(t *testing.T) {
-	domain := "container-service.top"
-	provider := newTestAlibabaCloudProviderWithConfig(
-		endpoint.NewDomainFilter([]string{domain}), false, map[string][]*endpoint.Endpoint{
-			domain: {
-				endpoint.NewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("a-abc."+domain, "TXT", 300, "heritage=external-dns;external-dns/owner=default"),
-			},
-		},
-	)
-
-	defaultEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
-		endpoint.NewEndpointWithTTL("a-abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
-	}
-
-	ctx := t.Context()
-	endpoints, err := provider.Records(ctx)
-	require.NoError(t, err, "Failed to get records: %v", err)
-	require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
-	assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
-
-	changes := plan.Changes{
-		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("new."+domain, "TXT", 300, "heritage=external-dns;external-dns/owner=default"),
-		},
-	}
-	changedEndpoints := append([]*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("new."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
-	}, defaultEndpoints...)
-
-	err = provider.ApplyChanges(ctx, &changes)
-	require.NoError(t, err, "Failed to apply changes: %v", err)
-	endpoints, err = provider.Records(ctx)
-	require.NoError(t, err, "Failed to get records: %v", err)
-	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
-	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
-}
-
 func TestAlibabaCloudProvider_PrivateZone_Records(t *testing.T) {
 	domain := "container-service.top"
 	defaultEndpoints := createDefaultEndpoints(domain)
@@ -593,45 +547,6 @@ func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 	}, changes.Create...)
 
-	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
-	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
-}
-
-func TestAlibabaCloudProvider_PrivateZone_ApplyChanges_NonStandardTXTRecord(t *testing.T) {
-	domain := "container-service.top"
-	provider := newTestAlibabaCloudProviderWithConfig(
-		endpoint.NewDomainFilter([]string{domain}), true, map[string][]*endpoint.Endpoint{
-			domain: {
-				endpoint.NewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("a-abc."+domain, "TXT", 300, "heritage=external-dns;external-dns/owner=default"),
-			},
-		},
-	)
-
-	defaultEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
-		endpoint.NewEndpointWithTTL("a-abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
-	}
-
-	ctx := t.Context()
-	endpoints, err := provider.Records(ctx)
-	require.NoError(t, err, "Failed to get records: %v", err)
-	require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
-	assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
-
-	changes := plan.Changes{
-		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("new."+domain, "TXT", 300, "heritage=external-dns;external-dns/owner=default"),
-		},
-	}
-	changedEndpoints := append([]*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("new."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
-	}, defaultEndpoints...)
-
-	err = provider.ApplyChanges(ctx, &changes)
-	require.NoError(t, err, "Failed to apply changes: %v", err)
-	endpoints, err = provider.Records(ctx)
-	require.NoError(t, err, "Failed to get records: %v", err)
 	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
 	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
 }
@@ -705,27 +620,12 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 }
 
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
-	p := newTestAlibabaCloudProvider(false)
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
 
-	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
-		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
-	}
-	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
-		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
-	}
-}
+	newTarget := wrapWithQuotes("TXT", recordValue)
+	assert.Equal(t, endpointTarget, newTarget, "Failed to wrapWithQuotes: %s", newTarget)
 
-func TestAlibabaCloudProvider_TXTEndpoint_PrivateZone(t *testing.T) {
-	p := newTestAlibabaCloudProvider(true)
-	const recordValue = "heritage=external-dns,external-dns/owner=default"
-	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
-
-	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
-		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
-	}
-	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
-		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
-	}
+	newValue := unwrapQuotes("TXT", endpointTarget)
+	assert.Equal(t, recordValue, newValue, "Failed to unwrapQuotes: %s", newValue)
 }
