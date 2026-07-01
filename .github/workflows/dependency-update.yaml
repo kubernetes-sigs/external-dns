@@ -19,10 +19,10 @@ jobs:
       pull-requests: write
     steps:
       - name: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       # https://github.com/renovatebot/github-action
       - name: self-hosted renovate
-        uses: renovatebot/github-action@693b9ef15eec82123529a37c782242f091365961 # v46.1.14
+        uses: renovatebot/github-action@dd5302ec17783b2fc721b19ae7209b57b1587765 # v46.1.17
         with:
           # https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication
           token: ${{ secrets.GITHUB_TOKEN }}
