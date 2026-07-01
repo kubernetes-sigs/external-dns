@@ -21,6 +21,7 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -148,6 +149,10 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 
 	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
+	}
+
+		!strings.Contains(txtPrefix+txtSuffix, mapper.RecordTemplate) {
+		return nil, errors.New("managing TXT records requires %{record_type} in --txt-prefix or --txt-suffix")
 	}
 
 	return &TXTRegistry{
