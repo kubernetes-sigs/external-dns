@@ -65,6 +65,17 @@ SESSION_ID=uuid.uuid4()
 def json_prettify(data):
     return json.dumps(data, indent=4, default=str)
 
+def value_matches(value: str, contain: str) -> bool:
+    """True if `contain` occurs in `value` ending at a token boundary (',' or '"'),
+    so 'owner=prod' does not also match 'owner=prod-2'."""
+    start = value.find(contain)
+    while start != -1:
+        end = start + len(contain)
+        if end == len(value) or value[end] in ',"':
+            return True
+        start = value.find(contain, start + 1)
+    return False
+
 class Record:
 
     def __init__(self, record):
@@ -79,23 +90,65 @@ class Record:
         self.resource_record = resource_record
 
     def is_for_deletion(self, contains):
-
-        if contains in self.resource_record:
-            return True
-        return False
+        return value_matches(self.resource_record, contains)
 
     def __str__(self):
         return f'record: name: {self.name}, type: {self.type}, records: {self.resource_record}'
 
 class Config:
 
-    def __init__(self, zone_id, contain, total_items, batch, run):
+    def __init__(self, zone_id, contain, total_items, batch, run, alias_cname_cleanup=False):
         self.zone_id = zone_id
         self.record_contain = contain
         self.total_items = total_items
         self.batch_size = batch
         self.run = run
         self.contain = contain
+        # Target legacy "cname-" alias records, but only when their "a-" twin exists (#2903).
+        self.alias_cname_cleanup = alias_cname_cleanup
+
+def list_all_txt_records(r53client, zone_id, limit=None) -> list[Record]:
+    """Return TXT records in the zone (handles pagination).
+
+    Stops once `limit` records are collected; pass None to list the whole zone
+    (required by alias cleanup, which needs every 'a-' twin to be visible).
+    """
+    all_txt = []
+    params = {'HostedZoneId': zone_id, 'MaxItems': str(MAX_ITEMS)}
+    dns_in_iteration = r53client.list_resource_record_sets(**params)
+    elements = dns_in_iteration['ResourceRecordSets']
+    while True:
+        for el in elements:
+            if el['Type'] == 'TXT':
+                all_txt.append(Record(el))
+                if limit is not None and len(all_txt) >= limit:
+                    return all_txt
+        if len(elements) == 0 or 'NextRecordName' not in dns_in_iteration:
+            break
+        dns_in_iteration = r53client.list_resource_record_sets(
+            HostedZoneId=zone_id,
+            StartRecordName=dns_in_iteration['NextRecordName'],
+            MaxItems=str(MAX_ITEMS),
+        )
+        elements = dns_in_iteration['ResourceRecordSets']
+    return all_txt
+
+def alias_to_a_name(name: str) -> str:
+    """Map a 'cname-' TXT name to its 'a-' twin. The '%{record_type}' affix template is unsupported."""
+    return name.replace("cname-", "a-", 1)
+
+def orphaned_alias_cname_records(all_txt: list[Record], contain: str) -> list[Record]:
+    names = {r.name for r in all_txt}
+    selected = []
+    for r in all_txt:
+        if "cname-" not in r.name:
+            continue
+        if not value_matches(r.resource_record, contain):
+            continue
+        # Only delete the legacy alias record when the migrated 'a-' record already exists.
+        if alias_to_a_name(r.name) in names:
+            selected.append(r)
+    return selected
 
 def records(config: Config) -> None:
     print(f"calculate TXT records to cleanup for 'zone:{config.zone_id}' and 'max records:{config.total_items}'")
@@ -105,40 +158,20 @@ def records(config: Config) -> None:
     )
     r53client = boto3.client('route53', config=cfg)
     dns_records_to_cleanup = []
-    items = 0
     try:
-        params = {
-            'HostedZoneId': config.zone_id,
-            'MaxItems': str(MAX_ITEMS),
-        }
-        dns_in_iteration = r53client.list_resource_record_sets(**params)
-        elements = dns_in_iteration['ResourceRecordSets']
-        for el in elements:
-            if el['Type'] == 'TXT':
-                record = Record(el)
-                if record.is_for_deletion(config.contain):
-                    dns_records_to_cleanup.append(record)
-                    print("to cleanup >>", record)
-                    items += 1
-                    if items >= config.total_items:
-                        break
+        if config.alias_cname_cleanup:
+            all_txt = list_all_txt_records(r53client, config.zone_id)
+            candidates = orphaned_alias_cname_records(all_txt, config.contain)
+        else:
+            # Default mode: stop early once enough deletion candidates are found.
+            all_txt = list_all_txt_records(r53client, config.zone_id, limit=config.total_items)
+            candidates = [r for r in all_txt if r.is_for_deletion(config.contain)]
 
-        while len(elements) > 0 and 'NextRecordName' in dns_in_iteration.keys() and items < config.total_items:
-            dns_in_iteration = r53client.list_resource_record_sets(
-                HostedZoneId= config.zone_id,
-                StartRecordName= dns_in_iteration['NextRecordName'],
-                MaxItems= str(MAX_ITEMS),
-            )
-            elements = dns_in_iteration['ResourceRecordSets']
-            for el in elements:
-                if el['Type'] == 'TXT':
-                    record = Record(el)
-                    if record.is_for_deletion(config.contain):
-                        dns_records_to_cleanup.append(record)
-                        print("to cleanup >>", record)
-                        items += 1
-                        if items >= config.total_items:
-                            break
+        for record in candidates:
+            dns_records_to_cleanup.append(record)
+            print("to cleanup >>", record)
+            if len(dns_records_to_cleanup) >= config.total_items:
+                break
 
         if len(dns_records_to_cleanup) > 0:
             delete_records(r53client, config, dns_records_to_cleanup)
@@ -195,6 +228,7 @@ if __name__ == "__main__":
     parser.add_argument("--record-match", type=str, required=True, help="Record to match specific value. Example 'external-dns/owner=default'")
     parser.add_argument("--total-items", type=int, required=False, default=10, help="Number of items to delete. Default to 10")
     parser.add_argument("--batch-delete-count", type=int, required=False, default=2, help="Number of items to delete in single DELETE batch. Default to 2")
+    parser.add_argument("--alias-cname-cleanup", action="store_true", help="Delete legacy 'cname-' alias TXT records only when their 'a-' counterpart exists (#2903).")
     parser.add_argument("--run", action="store_true", help="Execute the cleanup. The tool will do a dry-run if --run is not specified.")
 
     answer = input("Run this script at your own RISKS!!! Please enter 'yes' or 'no': ")
@@ -211,5 +245,6 @@ if __name__ == "__main__":
         total_items=args.total_items,
         batch=args.batch_delete_count,
         run=args.run,
+        alias_cname_cleanup=args.alias_cname_cleanup,
     )
     records(cfg)

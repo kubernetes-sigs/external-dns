@@ -6,7 +6,6 @@ metadata:
   name: foo-app
   annotations:
     external-dns.kubernetes.io/hostname: foo-app.example.com
-    dns.why/type: aws-localstack-tutorial
 spec:
   type: ClusterIP
   clusterIP: None
@@ -21,8 +20,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: foo-app
-  annotations:
-    dns.why/type: aws-localstack-tutorial
 spec:
   replicas: 3
   selector:
