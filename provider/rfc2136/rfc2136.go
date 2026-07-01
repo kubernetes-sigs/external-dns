@@ -261,20 +261,59 @@ OuterLoop:
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
-	if !r.insecure && !r.gssTsig {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+	var gssCleanup func()
+	if !r.insecure {
+		if r.gssTsig {
+			keyName, handle, err := r.KeyData(nameserver)
+			if err != nil {
+				return nil, fmt.Errorf("failed to negotiate GSS-TSIG: %w", err)
+			}
+			t.TsigProvider = handle
+			m.SetTsig(keyName, tsig.GSS, clockSkew, time.Now().Unix())
+			gssCleanup = func() {
+				handle.DeleteContext(keyName)
+				handle.Close()
+			}
+		} else {
+			t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+		}
 	}
 
 	c, err := makeClient(r, nameserver)
 	if err != nil {
+		if gssCleanup != nil {
+			gssCleanup()
+		}
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
 	conn, err := c.Dial(nameserver)
 	if err != nil {
+		if gssCleanup != nil {
+			gssCleanup()
+		}
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
 	t.Conn = conn
-	return t.In(m, nameserver)
+	env, err := t.In(m, nameserver)
+	if err != nil {
+		if gssCleanup != nil {
+			gssCleanup()
+		}
+		return nil, err
+	}
+
+	if gssCleanup != nil {
+		wrapped := make(chan *dns.Envelope)
+		go func() {
+			defer gssCleanup()
+			defer close(wrapped)
+			for e := range env {
+				wrapped <- e
+			}
+		}()
+		return wrapped, nil
+	}
+	return env, nil
 }
 
 func (r *rfc2136Provider) List() ([]dns.RR, error) {
@@ -289,6 +328,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		m := new(dns.Msg)
 		m.SetAxfr(dns.Fqdn(zone))
+		// GSS-TSIG signing is handled inside IncomeTransfer after key negotiation.
 		if !r.insecure && !r.gssTsig {
 			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
