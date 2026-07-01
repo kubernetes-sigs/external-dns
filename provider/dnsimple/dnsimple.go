@@ -212,7 +212,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				return nil, err
 			}
 			for _, record := range records.Data {
-				if record.Type != endpoint.RecordTypeA && record.Type != endpoint.RecordTypeCNAME && record.Type != endpoint.RecordTypeTXT {
+				if !provider.SupportedRecordType(record.Type) {
 					continue
 				}
 				// Apex records have an empty string for their name.
@@ -300,7 +300,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleDelete:
-				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name)
+				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name, recordAttributes.Type)
 				if err != nil {
 					return err
 				}
@@ -309,7 +309,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleUpdate:
-				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name)
+				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name, recordAttributes.Type)
 				if err != nil {
 					return err
 				}
@@ -323,10 +323,13 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 	return nil
 }
 
-// GetRecordID returns the record ID for a given record name and zone.
-func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string) (int64, error) {
+// GetRecordID returns the record ID for a given record name, type and zone.
+// The record type is required to disambiguate dual-stack hosts that have both
+// an A and an AAAA record sharing the same name, where matching on name alone
+// could return the wrong record.
+func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string, recordType string) (int64, error) {
 	page := 1
-	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName}
+	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName, Type: &recordType}
 	for {
 		listOptions.Page = &page
 		records, err := p.client.ListRecords(ctx, p.accountID, zone, listOptions)
@@ -335,7 +338,7 @@ func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordN
 		}
 
 		for _, record := range records.Data {
-			if record.Name == recordName {
+			if record.Name == recordName && record.Type == recordType {
 				return record.ID, nil
 			}
 		}
