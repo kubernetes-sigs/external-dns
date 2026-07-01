@@ -21,6 +21,7 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"maps"
+	"sort"
 	"strings"
 	"time"
 
@@ -150,10 +151,23 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
+	// Get zones from the provider's domain filter for zone-aware TXT name generation
+	var zones []string
+	if df := provider.GetDomainFilter(); df != nil {
+		if domainFilter, ok := df.(*endpoint.DomainFilter); ok {
+			zones = domainFilter.Filters
+		}
+	}
+
+	// Sort zones by specificity (longest first) for proper matching
+	sort.Slice(zones, func(i, j int) bool {
+		return len(zones[i]) > len(zones[j])
+	})
+
 	return &TXTRegistry{
 		provider:            provider,
 		ownerID:             ownerID,
-		mapper:              mapper.NewAffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement),
+		mapper:              mapper.NewAffixNameMapperWithZones(txtPrefix, txtSuffix, txtWildcardReplacement, zones),
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
