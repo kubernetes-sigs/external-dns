@@ -249,6 +249,12 @@ txtPrefix:  # @schema type:[string, null]; default: null
 # -- (string) Specify a suffix for the domain names of TXT records created for the `txt` registry.
 # Mutually exclusive with `txtPrefix`.
 txtSuffix:  # @schema type:[string, null]; default: null
+# -- (string) Specify a replacement for the asterisk in TXT registry records for wildcard DNS records.
+txtWildcardReplacement:  # @schema type:[string, null]; default: null
+# -- If `true`, encrypt TXT registry records before storing them.
+txtEncryptEnabled: false
+# -- (string) Specify the 32-byte AES key for TXT registry record encryption. Required when `txtEncryptEnabled` is `true`.
+txtEncryptAesKey:  # @schema type:[string, null]; default: null
 
 # -- Limit possible target zones by domain suffixes.
 domainFilters: []
