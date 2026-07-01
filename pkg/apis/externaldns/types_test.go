@@ -763,6 +763,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 		"--rfc2136-zone=example.org.",
 		"--rfc2136-zone=example.com.",
 		"--rfc2136-insecure",
+		"--rfc2136-insecure-axfr",
 		"--rfc2136-kerberos-realm=EXAMPLE.COM",
 		"--rfc2136-kerberos-username=svc-externaldns",
 		"--rfc2136-kerberos-password=secret",
@@ -778,6 +779,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 	assert.Equal(t, 5353, cfg.RFC2136Port)
 	assert.ElementsMatch(t, []string{"example.org.", "example.com."}, cfg.RFC2136Zone)
 	assert.True(t, cfg.RFC2136Insecure)
+	assert.True(t, cfg.RFC2136InsecureAXFR)
 	assert.Equal(t, "EXAMPLE.COM", cfg.RFC2136KerberosRealm)
 	assert.Equal(t, "svc-externaldns", cfg.RFC2136KerberosUsername)
 	assert.Equal(t, "secret", cfg.RFC2136KerberosPassword)
