@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -984,6 +985,56 @@ func TestCloudflareProvider(t *testing.T) {
 			}
 		})
 
+	}
+}
+
+func TestResolveCloudFlareToken(t *testing.T) {
+	tokenFile := filepath.Join(t.TempDir(), "cf_api_token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("abc123def\n"), 0o600))
+
+	testCases := []struct {
+		Name       string
+		Token      string
+		Expected   string
+		ShouldFail bool
+	}{
+		{
+			Name:     "plain token",
+			Token:    "abc123def",
+			Expected: "abc123def",
+		},
+		{
+			Name:     "token with trailing newline",
+			Token:    "abc123def\n",
+			Expected: "abc123def",
+		},
+		{
+			Name:     "token with surrounding whitespace",
+			Token:    "  abc123def\r\n",
+			Expected: "abc123def",
+		},
+		{
+			Name:     "token from file is trimmed",
+			Token:    "file:" + tokenFile,
+			Expected: "abc123def",
+		},
+		{
+			Name:       "missing file",
+			Token:      "file:/does/not/exist",
+			ShouldFail: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			resolved, err := resolveCloudFlareToken(tc.Token)
+			if tc.ShouldFail {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.Expected, resolved)
+		})
 	}
 }
 

@@ -22,6 +22,9 @@ Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with 
 You may provide the Cloudflare API token through a file by setting the
 `CF_API_TOKEN="file:/path/to/token"`.
 
+Surrounding whitespace, such as a trailing newline (easily introduced when the
+token comes from a Kubernetes secret), is trimmed from the token before use.
+
 Note. The `CF_API_KEY` and `CF_API_EMAIL` should not be present, if you are using a `CF_API_TOKEN`.
 
 When using API Token authentication, the token should be granted Zone `Read`, DNS `Edit` privileges, and access to `All zones`.
