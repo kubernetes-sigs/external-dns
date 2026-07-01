@@ -273,6 +273,21 @@ func convertCloudflareError(err error) error {
 	return err
 }
 
+// resolveCloudFlareToken returns the CloudFlare API token from the given value,
+// reading it from a file when prefixed with "file:". Surrounding whitespace is
+// trimmed so that a trailing newline — easily introduced when the token comes
+// from a Kubernetes secret — does not break authentication.
+func resolveCloudFlareToken(token string) (string, error) {
+	if path, ok := strings.CutPrefix(token, "file:"); ok {
+		tokenBytes, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
+		}
+		token = string(tokenBytes)
+	}
+	return strings.TrimSpace(token), nil
+}
+
 // newProvider initializes a new CloudFlare DNS based Provider.
 func newProvider(
 	domainFilter *endpoint.DomainFilter,
@@ -287,17 +302,13 @@ func newProvider(
 
 	var client *cloudflare.Client
 
-	token := os.Getenv(cfAPITokenEnvKey)
-	if token != "" {
-		if trimmed, ok := strings.CutPrefix(token, "file:"); ok {
-			tokenBytes, err := os.ReadFile(trimmed)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
-			}
-			token = strings.TrimSpace(string(tokenBytes))
+	if token := os.Getenv(cfAPITokenEnvKey); token != "" {
+		resolved, err := resolveCloudFlareToken(token)
+		if err != nil {
+			return nil, err
 		}
 		client = cloudflare.NewClient(
-			option.WithAPIToken(token),
+			option.WithAPIToken(resolved),
 		)
 	} else {
 		apiKey := os.Getenv(cfAPIKeyEnvKey)
