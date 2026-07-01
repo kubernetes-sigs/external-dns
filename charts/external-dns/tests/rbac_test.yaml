@@ -129,6 +129,22 @@ tests:
               resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
               verbs: ["get","watch","list"]
 
+  - it: should create RBAC rules for 'dnsrecords' when registry is 'crd'
+    set:
+      sources: []
+      registry: crd
+    asserts:
+      - template: clusterrole.yaml
+        equal:
+          path: rules
+          value:
+            - apiGroups: ["externaldns.k8s.io"]
+              resources: ["dnsrecords"]
+              verbs: ["get","watch","list","create","update","delete"]
+            - apiGroups: ["externaldns.k8s.io"]
+              resources: ["dnsrecords/status"]
+              verbs: ["update"]
+
   - it: should create default RBAC rules for 'f5' when 'f5-virtualserver' is set
     set:
       sources:
