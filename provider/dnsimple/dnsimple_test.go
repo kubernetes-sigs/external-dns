@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 var (
@@ -263,6 +264,48 @@ func TestNewProvider(t *testing.T) {
 	assert.Equal(t, "12345678", dnsimpleTypedProvider.accountID)
 	os.Unsetenv("DNSIMPLE_OAUTH")
 	os.Unsetenv("DNSIMPLE_ACCOUNT_ID")
+}
+
+func TestNewProviderWithCredentialSource(t *testing.T) {
+	t.Setenv("DNSIMPLE_OAUTH", "global")
+	t.Setenv("DNSIMPLE_ACCOUNT_ID", "global-account")
+
+	_, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		true,
+		credentials.NewMapSource(nil),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "no dnsimple oauth token provided")
+
+	providerTypedProvider, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		true,
+		credentials.NewMapSource(map[string]string{
+			"DNSIMPLE_OAUTH":      "pipeline",
+			"DNSIMPLE_ACCOUNT_ID": "12345678",
+		}),
+	)
+	require.NoError(t, err)
+
+	dnsimpleTypedProvider := providerTypedProvider.(*dnsimpleProvider)
+	assert.Equal(t, "12345678", dnsimpleTypedProvider.accountID)
+}
+
+func TestZonesWithCredentialSource(t *testing.T) {
+	t.Setenv("DNSIMPLE_ZONES", "global-example.com")
+
+	provider := dnsimpleProvider{
+		credentialSource: credentials.NewMapSource(map[string]string{
+			"DNSIMPLE_ZONES": "source-example.com",
+		}),
+	}
+
+	zones, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "source-example.com", zones["0"].Name)
 }
 
 func testDnsimpleGetRecordID(t *testing.T) {

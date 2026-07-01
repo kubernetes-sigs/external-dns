@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
@@ -283,11 +284,33 @@ func newProvider(
 	customHostnamesConfig CustomHostnamesConfig,
 	dnsRecordsConfig DNSRecordsConfig,
 ) (*CloudFlareProvider, error) {
+	return newProviderWithCredentialSource(
+		domainFilter,
+		zoneIDFilter,
+		proxiedByDefault,
+		dryRun,
+		regionalServicesConfig,
+		customHostnamesConfig,
+		dnsRecordsConfig,
+		credentials.SystemSource(),
+	)
+}
+
+func newProviderWithCredentialSource(
+	domainFilter *endpoint.DomainFilter,
+	zoneIDFilter provider.ZoneIDFilter,
+	proxiedByDefault bool,
+	dryRun bool,
+	regionalServicesConfig RegionalServicesConfig,
+	customHostnamesConfig CustomHostnamesConfig,
+	dnsRecordsConfig DNSRecordsConfig,
+	credentialSource credentials.Source,
+) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 
 	var client *cloudflare.Client
 
-	token := os.Getenv(cfAPITokenEnvKey)
+	token := credentialSource.Getenv(cfAPITokenEnvKey)
 	if token != "" {
 		if trimmed, ok := strings.CutPrefix(token, "file:"); ok {
 			tokenBytes, err := os.ReadFile(trimmed)
@@ -300,8 +323,8 @@ func newProvider(
 			option.WithAPIToken(token),
 		)
 	} else {
-		apiKey := os.Getenv(cfAPIKeyEnvKey)
-		apiEmail := os.Getenv(cfAPIEmailEnvKey)
+		apiKey := credentialSource.Getenv(cfAPIKeyEnvKey)
+		apiEmail := credentialSource.Getenv(cfAPIEmailEnvKey)
 		if apiKey == "" || apiEmail == "" {
 			return nil, fmt.Errorf("cloudflare credentials are not configured: set either %s or both %s and %s environment variables", cfAPITokenEnvKey, cfAPIKeyEnvKey, cfAPIEmailEnvKey)
 		}
@@ -328,8 +351,8 @@ func newProvider(
 }
 
 // New creates a Cloudflare provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProviderWithCredentialSource(
 		domainFilter,
 		provider.NewZoneIDFilter(cfg.ZoneIDFilter),
 		cfg.CloudflareProxied,
@@ -349,6 +372,7 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 			BatchChangeSize:     cfg.BatchChangeSize,
 			BatchChangeInterval: cfg.BatchChangeInterval,
 		},
+		credentials.FromContext(ctx),
 	)
 }
 
