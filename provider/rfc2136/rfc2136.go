@@ -261,15 +261,15 @@ OuterLoop:
 	return eps, nil
 }
 
-// attachTSIGSecret evaluates if TSIG secret is attached based on flags provided.
-func attachTSIGSecret(insecure, gssTsig, insecureAXFR bool) bool {
+// shouldSignAXFR evaluates if TSIG secret is attached based on flags provided.
+func shouldSignAXFR(insecure, gssTsig, insecureAXFR bool) bool {
 	return !insecure && !gssTsig && !insecureAXFR
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
 
-	if attachTSIGSecret(r.insecure, r.gssTsig, r.insecureAXFR) {
+	if shouldSignAXFR(r.insecure, r.gssTsig, r.insecureAXFR) {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 	}
 
@@ -297,7 +297,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		m := new(dns.Msg)
 		m.SetAxfr(dns.Fqdn(zone))
-		if attachTSIGSecret(r.insecure, r.gssTsig, r.insecureAXFR) {
+		if shouldSignAXFR(r.insecure, r.gssTsig, r.insecureAXFR) {
 			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
 

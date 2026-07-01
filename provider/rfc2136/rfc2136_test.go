@@ -1138,7 +1138,7 @@ func Test_attachTSIGSecret(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := attachTSIGSecret(tt.insecure, tt.gssTsig, tt.insecureAXFR)
+			got := shouldSignAXFR(tt.insecure, tt.gssTsig, tt.insecureAXFR)
 			assert.Equal(t, tt.want, got)
 		})
 	}
