@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# scan-annotation-prefix.sh — scan for resources that need annotation migration.
+#
+# NOTE
+#   This script is read-only — it makes no changes to the cluster.
+#   It scans resources and reports annotations that need to be migrated, making the work visible.
+#
+# BACKGROUND
+#   The default annotation prefix changed from:
+#     external-dns.alpha.kubernetes.io/
+#   to:
+#     external-dns.kubernetes.io/
+#
+#   Starting from the release that introduced this change, --annotation-prefix is a required flag.
+#   Running external-dns with the new prefix against a cluster where resources still carry the old
+#   prefix annotations causes silent DNS record deletion: the controller sees records it owns in the
+#   registry but no source claiming them, and removes them.
+#
+#   This script performs a read-only scan and prints resources that still carry the old prefix
+#   alongside the new-prefix annotations that need to be added. No changes are made to the cluster.
+#
+# WHAT IT DOES (example)
+#   Given a Service with:
+#     external-dns.alpha.kubernetes.io/hostname=my-app.example.com
+#     external-dns.alpha.kubernetes.io/ttl=300
+#     external-dns.alpha.kubernetes.io/target=1.2.3.4
+#
+#   The script reports the resource and the new-prefix annotations that need to be added:
+#     services/my-service (namespace: default)
+#       external-dns.kubernetes.io/hostname=my-app.example.com
+#       external-dns.kubernetes.io/ttl=300
+#       external-dns.kubernetes.io/target=1.2.3.4
+#
+#   The old annotations are left in place (harmless — external-dns with the new prefix ignores them).
+#   Unrelated annotations are never touched.
+#
+# USAGE
+#   Scan default resource types (services):
+#     ./scan-annotation-prefix.sh
+#
+#   Scan additional resource types:
+#     ./scan-annotation-prefix.sh --resources=services,ingresses,nodes,pods
+#
+#   Flags:
+#     --resources=<list>       comma-separated list of Kubernetes resource types to scan
+#                              (default: services)
+#                              common values: services, ingresses, nodes, pods
+#
+# REQUIREMENTS
+#   kubectl, jq
+
+set -euo pipefail
+
+OLD_PREFIX="external-dns.alpha.kubernetes.io/"
+NEW_PREFIX="external-dns.kubernetes.io/"
+RESOURCES=("services")
+
+for arg in "$@"; do
+  case $arg in
+    --resources=*)
+      IFS=',' read -ra RESOURCES <<< "${arg#*=}"
+      ;;
+    *)
+      echo "Unknown argument: $arg" >&2
+      exit 1
+      ;;
+  esac
+done
+
+for cmd in kubectl jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "Error: $cmd is required but not installed." >&2
+    exit 1
+  fi
+done
+
+echo "NOTE: This script is read-only — it makes no changes to the cluster."
+echo ""
+echo "Scanning for resources with prefix: $OLD_PREFIX"
+echo ""
+
+total_resources=0
+total_annotations=0
+
+for resource in "${RESOURCES[@]}"; do
+  while IFS=$'\t' read -r ns name; do
+    annotations=()
+    while IFS= read -r annotation; do
+      annotations+=("$annotation")
+    done < <(
+      kubectl get "$resource" -n "$ns" "$name" -o json | jq -r \
+        --arg old "$OLD_PREFIX" \
+        --arg new "$NEW_PREFIX" '
+          .metadata.annotations
+          | to_entries
+          | map(select(.key | startswith($old)))
+          | map("\(.key | gsub($old; $new))=\(.value)")
+          | .[]
+        '
+    )
+
+    if [ "${#annotations[@]}" -eq 0 ]; then
+      continue
+    fi
+
+    total_resources=$((total_resources + 1))
+    total_annotations=$((total_annotations + ${#annotations[@]}))
+
+    echo "$resource/$name (namespace: $ns)"
+    for annotation in "${annotations[@]}"; do
+      echo "  $annotation"
+    done
+    echo ""
+  done < <(
+    kubectl get "$resource" --all-namespaces -o json | jq -r \
+      --arg old "$OLD_PREFIX" '
+        .items[]
+        | select(any(.metadata.annotations // {} | keys[]; startswith($old)))
+        | [.metadata.namespace, .metadata.name]
+        | @tsv
+      '
+  )
+done
+
+if [ "$total_resources" -eq 0 ]; then
+  echo "No resources found with prefix $OLD_PREFIX — nothing to migrate."
+  exit 0
+fi
+
+echo "Found $total_resources resource(s) with $total_annotations annotation(s) to migrate."

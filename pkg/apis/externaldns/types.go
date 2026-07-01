@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/flags"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/source/annotations"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -225,7 +224,7 @@ type Config struct {
 var defaultConfig = &Config{
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:         "",
-	AnnotationPrefix:         annotations.DefaultAnnotationPrefix,
+	AnnotationPrefix:         "",
 	APIServerURL:             "",
 	AWSAPIRetries:            3,
 	AWSAssumeRole:            "",
@@ -442,12 +441,10 @@ var allowedSources = []string{
 	"unstructured",
 }
 
-// NewConfig returns new Config object
+// NewConfig returns a new Config with zero values. All defaults are applied via
+// flag binding in bindFlags; do not set defaults here.
 func NewConfig() *Config {
-	return &Config{
-		AnnotationPrefix: annotations.DefaultAnnotationPrefix,
-		AWSSDCreateTag:   map[string]string{},
-	}
+	return &Config{}
 }
 
 func (cfg *Config) String() string {
@@ -517,7 +514,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
-	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
+	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
