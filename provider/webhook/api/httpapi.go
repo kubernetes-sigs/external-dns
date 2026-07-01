@@ -19,11 +19,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -59,9 +61,10 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		return
 	case http.MethodPost:
 		var changes plan.Changes
+		req.Body = http.MaxBytesReader(w, req.Body, extdnshttp.MaxBodyBytes)
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 			log.Errorf("Failed to decode changes: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(requestBodyStatus(err))
 			return
 		}
 		err := p.Provider.ApplyChanges(context.Background(), &changes)
@@ -86,9 +89,10 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 
 	var pve []*endpoint.Endpoint
+	req.Body = http.MaxBytesReader(w, req.Body, extdnshttp.MaxBodyBytes)
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(requestBodyStatus(err))
 		return
 	}
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
@@ -102,6 +106,15 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+// requestBodyStatus maps a request-body decode failure to the right client
+// error: 413 when the MaxBytesReader cap was hit, 400 for malformed JSON.
+func requestBodyStatus(err error) int {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		return http.StatusRequestEntityTooLarge
+	}
+	return http.StatusBadRequest
 }
 
 func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
@@ -135,6 +148,11 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 		Handler:      m,
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
+		// Bound header reads and idle keep-alive connections independently of
+		// the configurable ReadTimeout, which downstream webhook providers may
+		// set arbitrarily high.
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       30 * time.Second,
 	}
 
 	l, err := net.Listen("tcp", providerPort)
