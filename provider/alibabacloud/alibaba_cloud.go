@@ -633,45 +633,45 @@ func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.E
 	return ttl1 == ttl2
 }
 
+// updateRecords updates, deletes, and creates DNS records to match the desired endpoints.
 func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Record, endpoints []*endpoint.Endpoint, hostedZoneDomains []string) {
 	for _, endpoint := range endpoints {
 		key := p.getRecordKeyByEndpoint(endpoint)
 		records := recordMap[key]
-		for _, record := range records {
-			value := record.Value
-			if record.Type == "TXT" {
-				value = p.unescapeTXTRecordValue(value)
-			}
-			found := false
-			for _, target := range endpoint.Targets {
-				// Find matched record to delete
-				if value == target {
-					found = true
-				}
-			}
-			if found {
-				if !p.equals(record, endpoint) {
-					// Update record
-					p.updateRecord(record, endpoint)
-				}
-			} else {
-				p.deleteRecord(record.RecordId)
-			}
+		p.updateOrDeleteRecords(records, endpoint)
+		p.createMissingRecords(records, endpoint, hostedZoneDomains)
+	}
+}
+
+// updateOrDeleteRecords updates records that are different and deletes records that are not in the desired endpoints.
+func (p *AlibabaCloudProvider) updateOrDeleteRecords(records []alidns.Record, endpoint *endpoint.Endpoint) {
+	for _, record := range records {
+		value := record.Value
+		if record.Type == "TXT" {
+			value = p.unescapeTXTRecordValue(value)
 		}
-		for _, target := range endpoint.Targets {
-			if endpoint.RecordType == "TXT" {
-				target = p.escapeTXTRecordValue(target)
+		found := slices.Contains(endpoint.Targets, value)
+		if found {
+			if !p.equals(record, endpoint) {
+				p.updateRecord(record, endpoint)
 			}
-			found := false
-			for _, record := range records {
-				// Find matched record to delete
-				if record.Value == target {
-					found = true
-				}
-			}
-			if !found {
-				p.createRecord(endpoint, target, hostedZoneDomains)
-			}
+		} else {
+			p.deleteRecord(record.RecordId)
+		}
+	}
+}
+
+// createMissingRecords creates records that are missing.
+func (p *AlibabaCloudProvider) createMissingRecords(records []alidns.Record, endpoint *endpoint.Endpoint, hostedZoneDomains []string) {
+	for _, target := range endpoint.Targets {
+		if endpoint.RecordType == "TXT" {
+			target = p.escapeTXTRecordValue(target)
+		}
+		found := slices.ContainsFunc(records, func(record alidns.Record) bool {
+			return record.Value == target
+		})
+		if !found {
+			p.createRecord(endpoint, target, hostedZoneDomains)
 		}
 	}
 }
@@ -1022,6 +1022,7 @@ func (p *AlibabaCloudProvider) equalsPrivateZone(record pvtz.Record, endpoint *e
 	return ttl1 == ttl2
 }
 
+// updatePrivateZoneRecords updates, deletes, and creates records in the private zone to match the desired endpoints.
 func (p *AlibabaCloudProvider) updatePrivateZoneRecords(zones map[string]*alibabaPrivateZone, endpoints []*endpoint.Endpoint) {
 	zoneNames := keys(zones)
 	for _, endpoint := range endpoints {
@@ -1031,43 +1032,53 @@ func (p *AlibabaCloudProvider) updatePrivateZoneRecords(zones map[string]*alibab
 			log.Errorf("Failed to update %s record named '%s' for Alibaba Cloud Private Zone: failed to find private zone '%s'", endpoint.RecordType, endpoint.DNSName, domain)
 			continue
 		}
+		p.updateOrDeletePrivateZoneRecords(zone, endpoint, rr)
+		p.createMissingPrivateZoneRecords(zones, zone, endpoint, rr)
+	}
+}
 
-		for _, record := range zone.records {
-			if record.Rr != rr || record.Type != endpoint.RecordType {
-				continue
-			}
-			value := record.Value
-			if record.Type == "TXT" {
-				value = p.unescapeTXTRecordValue(value)
-			}
-			found := slices.Contains(endpoint.Targets, value)
-			if found {
-				if !p.equalsPrivateZone(record, endpoint) {
-					// Update record
-					p.updatePrivateZoneRecord(record, endpoint)
-				}
-			} else {
-				p.deletePrivateZoneRecord(record.RecordId)
-			}
+// updateOrDeletePrivateZoneRecords updates records in the private zone that are different and
+// deletes records in the private zone that are not in the desired endpoint.
+func (p *AlibabaCloudProvider) updateOrDeletePrivateZoneRecords(
+	zone *alibabaPrivateZone,
+	endpoint *endpoint.Endpoint,
+	rr string,
+) {
+	for _, record := range zone.records {
+		if record.Rr != rr || record.Type != endpoint.RecordType {
+			continue
 		}
-		for _, target := range endpoint.Targets {
-			if endpoint.RecordType == "TXT" {
-				target = p.escapeTXTRecordValue(target)
+		value := record.Value
+		if record.Type == "TXT" {
+			value = p.unescapeTXTRecordValue(value)
+		}
+		found := slices.Contains(endpoint.Targets, value)
+		if found {
+			if !p.equalsPrivateZone(record, endpoint) {
+				p.updatePrivateZoneRecord(record, endpoint)
 			}
-			found := false
-			for _, record := range zone.records {
-				if record.Rr != rr || record.Type != endpoint.RecordType {
-					continue
-				}
-				// Find matched record to delete
-				if record.Value == target {
-					found = true
-					break
-				}
-			}
-			if !found {
-				p.createPrivateZoneRecord(zones, endpoint, target)
-			}
+		} else {
+			p.deletePrivateZoneRecord(record.RecordId)
+		}
+	}
+}
+
+// createMissingPrivateZoneRecords creates records in the private zone that are missing.
+func (p *AlibabaCloudProvider) createMissingPrivateZoneRecords(
+	zones map[string]*alibabaPrivateZone,
+	zone *alibabaPrivateZone,
+	endpoint *endpoint.Endpoint,
+	rr string,
+) {
+	for _, target := range endpoint.Targets {
+		if endpoint.RecordType == "TXT" {
+			target = p.escapeTXTRecordValue(target)
+		}
+		found := slices.ContainsFunc(zone.records, func(record pvtz.Record) bool {
+			return record.Rr == rr && record.Type == endpoint.RecordType && record.Value == target
+		})
+		if !found {
+			p.createPrivateZoneRecord(zones, endpoint, target)
 		}
 	}
 }
