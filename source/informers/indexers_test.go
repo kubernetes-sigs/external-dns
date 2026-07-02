@@ -29,8 +29,10 @@ import (
 )
 
 func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
+	sel, err := annotations.ParseFilter("example-annotation")
+	require.NoError(t, err)
 	indexers := IndexerWithOptions[*unstructured.Unstructured](
-		IndexSelectorWithAnnotationFilter("example-annotation"),
+		IndexSelectorWithAnnotationFilter(sel),
 	)
 
 	obj := &unstructured.Unstructured{}
@@ -110,8 +112,10 @@ func TestIndexerWithOptions_EmptyOptions(t *testing.T) {
 }
 
 func TestIndexerWithOptions_AnnotationFilterNoMatch(t *testing.T) {
+	sel, err := annotations.ParseFilter("example-annotation=value")
+	require.NoError(t, err)
 	indexers := IndexerWithOptions[*unstructured.Unstructured](
-		IndexSelectorWithAnnotationFilter("example-annotation=value"),
+		IndexSelectorWithAnnotationFilter(sel),
 	)
 
 	obj := &unstructured.Unstructured{}
@@ -125,40 +129,20 @@ func TestIndexerWithOptions_AnnotationFilterNoMatch(t *testing.T) {
 }
 
 func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
-	tests := []struct {
-		name           string
-		input          string
-		expectedFilter labels.Selector
-	}{
-		{
-			name:           "valid input",
-			input:          "key=value",
-			expectedFilter: func() labels.Selector { s, _ := annotations.ParseFilter("key=value"); return s }(),
-		},
-		{
-			name:           "empty input",
-			input:          "",
-			expectedFilter: nil,
-		},
-		{
-			name:           "key only filter",
-			input:          "app",
-			expectedFilter: func() labels.Selector { s, _ := annotations.ParseFilter("app"); return s }(),
-		},
-		{
-			name:           "poisoned input",
-			input:          "=app",
-			expectedFilter: nil,
-		},
-	}
+	sel, err := annotations.ParseFilter("key=value")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			options := &IndexSelectorOptions{}
-			IndexSelectorWithAnnotationFilter(tt.input)(options)
-			assert.Equal(t, tt.expectedFilter, options.annotationFilter)
-		})
-	}
+	t.Run("stores selector in options", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationFilter(sel)(options)
+		assert.Equal(t, sel, options.annotationFilter)
+	})
+
+	t.Run("nil selector stored as nil", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationFilter(nil)(options)
+		assert.Nil(t, options.annotationFilter)
+	})
 }
 
 func TestIndexerWithOptions_LabelKey(t *testing.T) {
@@ -313,6 +297,9 @@ func TestListIndexed(t *testing.T) {
 }
 
 func TestIndexSelectorWithFunctions(t *testing.T) {
+	envProdSel, err := annotations.ParseFilter("env=prod")
+	require.NoError(t, err)
+
 	makePod := func(name, namespace string, labelsMap, annotationsMap map[string]string) *corev1.Pod {
 		p := &corev1.Pod{}
 		p.SetName(name)
@@ -385,7 +372,7 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		{
 			name: "combined annotation and predicate both pass includes object",
 			indexers: IndexerWithOptions[*corev1.Pod](
-				IndexSelectorWithAnnotationFilter("env=prod"),
+				IndexSelectorWithAnnotationFilter(envProdSel),
 				IndexSelectorWithConditions(func(p *corev1.Pod) bool { return p.GetLabels()["app"] == "web" }),
 			),
 			obj:      makePod("p", "default", map[string]string{"app": "web"}, map[string]string{"env": "prod"}),
@@ -394,7 +381,7 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		{
 			name: "combined annotation fails excludes object",
 			indexers: IndexerWithOptions[*corev1.Pod](
-				IndexSelectorWithAnnotationFilter("env=prod"),
+				IndexSelectorWithAnnotationFilter(envProdSel),
 				IndexSelectorWithConditions(func(p *corev1.Pod) bool { return p.GetLabels()["app"] == "web" }),
 			),
 			obj: makePod("p", "default", map[string]string{"app": "web"}, map[string]string{"env": "staging"}),
@@ -402,7 +389,7 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		{
 			name: "combined predicate fails excludes object",
 			indexers: IndexerWithOptions[*corev1.Pod](
-				IndexSelectorWithAnnotationFilter("env=prod"),
+				IndexSelectorWithAnnotationFilter(envProdSel),
 				IndexSelectorWithConditions(func(p *corev1.Pod) bool { return p.GetLabels()["app"] == "web" }),
 			),
 			obj: makePod("p", "default", map[string]string{"app": "api"}, map[string]string{"env": "prod"}),

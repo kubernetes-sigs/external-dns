@@ -18,7 +18,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"k8s.io/apimachinery/pkg/labels"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
@@ -32,93 +33,70 @@ func (m mockObj) GetAnnotations() map[string]string {
 	return m.annotations
 }
 
+func mustParseAnnotationFilter(s string) labels.Selector {
+	sel, err := ParseFilter(s)
+	if err != nil {
+		panic(err)
+	}
+	return sel
+}
+
 func TestFilter(t *testing.T) {
 	tests := []struct {
-		name        string
-		items       []mockObj
-		filter      string
-		expected    []mockObj
-		expectError bool
+		name     string
+		items    []mockObj
+		filter   labels.Selector
+		expected []mockObj
 	}{
 		{
-			name: "Empty filter returns all",
+			name: "nil filter returns all",
 			items: []mockObj{
 				{annotations: map[string]string{"foo": "bar"}},
 				{annotations: map[string]string{"baz": "qux"}},
 			},
-			filter: "",
+			filter: nil,
 			expected: []mockObj{
 				{annotations: map[string]string{"foo": "bar"}},
 				{annotations: map[string]string{"baz": "qux"}},
 			},
 		},
 		{
-			name: "Matching items",
+			name: "empty selector returns all",
+			items: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+			filter: labels.Everything(),
+			expected: []mockObj{
+				{annotations: map[string]string{"foo": "bar"}},
+				{annotations: map[string]string{"baz": "qux"}},
+			},
+		},
+		{
+			name: "matching items",
 			items: []mockObj{
 				{annotations: map[string]string{"foo": "bar"}},
 				{annotations: map[string]string{"foo": "baz"}},
 			},
-			filter: "foo=bar",
+			filter: mustParseAnnotationFilter("foo=bar"),
 			expected: []mockObj{
 				{annotations: map[string]string{"foo": "bar"}},
 			},
 		},
 		{
-			name: "No matching items",
+			name: "no matching items",
 			items: []mockObj{
 				{annotations: map[string]string{"foo": "baz"}},
 			},
-			filter:   "foo=bar",
+			filter:   mustParseAnnotationFilter("foo=bar"),
 			expected: []mockObj{},
-		},
-		{
-			name: "Whitespace filter returns all",
-			items: []mockObj{
-				{annotations: map[string]string{"foo": "bar"}},
-				{annotations: map[string]string{"baz": "qux"}},
-			},
-			filter: "   ",
-			expected: []mockObj{
-				{annotations: map[string]string{"foo": "bar"}},
-				{annotations: map[string]string{"baz": "qux"}},
-			},
-		},
-		{
-			name: "empty filter returns all",
-			items: []mockObj{
-				{annotations: map[string]string{"foo": "bar"}},
-				{annotations: map[string]string{"baz": "qux"}},
-			},
-			filter: "",
-			expected: []mockObj{
-				{annotations: map[string]string{"foo": "bar"}},
-				{annotations: map[string]string{"baz": "qux"}},
-			},
-		},
-		{
-			name: "invalid filter returns error",
-			items: []mockObj{
-				{annotations: map[string]string{"foo": "bar"}},
-				{annotations: map[string]string{"baz": "qux"}},
-			},
-			filter: "=invalid",
-			expected: []mockObj{
-				{annotations: map[string]string{"foo": "bar"}},
-				{annotations: map[string]string{"baz": "qux"}},
-			},
-			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := Filter(tt.items, tt.filter)
-			if tt.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
-			}
+			result := Filter(tt.items, tt.filter)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -130,8 +108,7 @@ func TestFilter_LogOutput(t *testing.T) {
 		{annotations: map[string]string{"foo": "bar"}},
 		{annotations: map[string]string{"foo": "baz"}},
 	}
-	filter := "foo=bar"
-	_, _ = Filter(items, filter)
+	Filter(items, mustParseAnnotationFilter("foo=bar"))
 
 	logtest.TestHelperLogContains("filtered '1' services out of '2' with annotation filter 'foo=bar'", hook, t)
 }

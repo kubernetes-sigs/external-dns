@@ -32,7 +32,6 @@ import (
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
-	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -59,11 +58,7 @@ type crdSource struct {
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
 // It builds the scheme, cache, and status-write client from restConfig and cfg.
 func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (Source, error) {
-	annotationSelector, err := annotations.ParseFilter(cfg.AnnotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	opts, err := buildCacheOptions(cfg.Namespace, cfg.LabelFilter, annotationSelector)
+	opts, err := buildCacheOptions(cfg.Namespace, cfg.LabelFilter, cfg.AnnotationFilter)
 	if err != nil {
 		return nil, err
 	}

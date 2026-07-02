@@ -73,7 +73,7 @@ type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface
 	namespace              string
-	annotationFilter       string
+	annotationFilter       labels.Selector
 	ambassadorHostInformer kubeinformers.GenericInformer
 	unstructuredConverter  *unstructuredConverter
 	labelSelector          labels.Selector
@@ -147,10 +147,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	// Filter Ambassador Hosts
-	ambassadorHosts, err = annotations.Filter(ambassadorHosts, sc.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter Ambassador Hosts by annotation: %w", err)
-	}
+	ambassadorHosts = annotations.Filter(ambassadorHosts, sc.annotationFilter)
 
 	var endpoints []*endpoint.Endpoint
 

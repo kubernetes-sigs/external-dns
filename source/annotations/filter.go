@@ -14,8 +14,6 @@ limitations under the License.
 package annotations
 
 import (
-	"strings"
-
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -26,25 +24,18 @@ type AnnotatedObject interface {
 }
 
 // Filter filters a slice of objects by annotation selector.
-// Returns all items if annotationFilter is empty.
-func Filter[T AnnotatedObject](items []T, filter string) ([]T, error) {
-	if filter == "" || strings.TrimSpace(filter) == "" {
-		return items, nil
-	}
-	selector, err := ParseFilter(filter)
-	if err != nil {
-		return nil, err
-	}
-	if selector.Empty() {
-		return items, nil
+// Returns all items if filter is nil or empty.
+func Filter[T AnnotatedObject](items []T, filter labels.Selector) []T {
+	if filter == nil || filter.Empty() {
+		return items
 	}
 
 	filtered := make([]T, 0, len(items))
 	for _, item := range items {
-		if selector.Matches(labels.Set(item.GetAnnotations())) {
+		if filter.Matches(labels.Set(item.GetAnnotations())) {
 			filtered = append(filtered, item)
 		}
 	}
 	log.Debugf("filtered '%d' services out of '%d' with annotation filter '%s'", len(filtered), len(items), filter)
-	return filtered, nil
+	return filtered
 }

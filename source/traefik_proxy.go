@@ -95,7 +95,7 @@ var (
 type traefikSource struct {
 	dynamicKubeClient          dynamic.Interface
 	kubeClient                 kubernetes.Interface
-	annotationFilter           string
+	annotationFilter           labels.Selector
 	namespace                  string
 	ignoreHostnameAnnotation   bool
 	templateEngine             template.Engine
@@ -279,10 +279,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
 
-	ingressRouteTCPs, err = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
-	}
+	ingressRouteTCPs = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
 
 	for _, ingressRouteTCP := range ingressRouteTCPs {
 		var targets endpoint.Targets
@@ -860,7 +857,7 @@ func extractEndpoints[T interface {
 	informer cache.GenericLister,
 	namespace string,
 	convertFunc func(*unstructured.Unstructured) (T, error),
-	annotationFilter string,
+	annotationFilter labels.Selector,
 	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
@@ -885,10 +882,7 @@ func extractEndpoints[T interface {
 		typedObjs = append(typedObjs, typed)
 	}
 
-	typedObjs, err = annotations.Filter(typedObjs, annotationFilter)
-	if err != nil {
-		return nil, err
-	}
+	typedObjs = annotations.Filter(typedObjs, annotationFilter)
 
 	for _, item := range typedObjs {
 		targets := annotations.TargetsFromTargetAnnotation(item.GetAnnotations())

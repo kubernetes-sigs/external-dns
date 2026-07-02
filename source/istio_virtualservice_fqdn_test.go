@@ -57,7 +57,7 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 				istiofake.NewSimpleClientset(),
 				&Config{
 					Namespace:                "",
-					AnnotationFilter:         "",
+					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
@@ -732,7 +732,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				istioClient,
 				&Config{
 					Namespace:                "",
-					AnnotationFilter:         "",
+					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},

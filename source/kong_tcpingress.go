@@ -59,7 +59,7 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:provider-specific=true
 type kongTCPIngressSource struct {
-	annotationFilter         string
+	annotationFilter         labels.Selector
 	ignoreHostnameAnnotation bool
 	dynamicKubeClient        dynamic.Interface
 	kongTCPIngressInformer   kubeinformers.GenericInformer
@@ -133,10 +133,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 		tcpIngresses = append(tcpIngresses, tcpIngress)
 	}
 
-	tcpIngresses, err = annotations.Filter(tcpIngresses, sc.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter TCPIngresses: %w", err)
-	}
+	tcpIngresses = annotations.Filter(tcpIngresses, sc.annotationFilter)
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
