@@ -154,7 +154,7 @@ func TestGatewayResourceSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "AnnotationFilter skips gateways without matching annotation",
-			config: &Config{AnnotationFilter: "custom=yes"},
+			config: &Config{AnnotationFilter: parseAnnotationFilterOrNil("custom=yes")},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", map[string]string{
 					annotations.HostnameKey: "a.example.com",
@@ -237,6 +237,83 @@ func TestGatewayResourceSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("shared.example.com", "1.2.3.4", "5.6.7.8"),
 			},
+		},
+		{
+			title:  "multiple IP addresses produce multi-value A record",
+			config: &Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4", "5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			title:  "multiple hostname addresses produce multi-value CNAME record",
+			config: &Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatusHostname("lb1.example.com", "lb2.example.com"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("foo.example.com", endpoint.RecordTypeCNAME, 0, "lb1.example.com", "lb2.example.com"),
+			},
+		},
+		{
+			title:  "mixed IP and hostname addresses uses only IPs",
+			config: &Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
+					ipTyp := v1.IPAddressType
+					hnTyp := v1.HostnameAddressType
+					return v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+						{Type: &ipTyp, Value: "1.2.3.4"},
+						{Type: &hnTyp, Value: "lb.example.com"},
+					}}
+				}(), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "nil address type treated as IPAddress",
+			config: &Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), v1.GatewayStatus{
+					Addresses: []v1.GatewayStatusAddress{
+						{Type: nil, Value: "1.2.3.4"},
+					},
+				}, nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "NamedAddress type is skipped",
+			config: &Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
+					namedTyp := v1.NamedAddressType
+					return v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+						{Type: &namedTyp, Value: "my-named-address"},
+					}}
+				}(), nil),
+			},
+			endpoints: nil,
+		},
+		{
+			title:  "empty address value is skipped",
+			config: &Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
+					ipTyp := v1.IPAddressType
+					return v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+						{Type: &ipTyp, Value: ""},
+					}}
+				}(), nil),
+			},
+			endpoints: nil,
 		},
 	}
 

@@ -158,7 +158,7 @@ func NewGatewaySource(ctx context.Context, clients ClientGenerator, config *Conf
 
 // +externaldns:source:name=gateway
 // +externaldns:source:category=Gateway API
-// +externaldns:source:description=Creates DNS entries from Gateway API Gateway resources annotated with external-dns.alpha.kubernetes.io/hostname
+// +externaldns:source:description=Creates DNS entries from Gateway API Gateway resources annotated with external-dns.kubernetes.io/hostname
 // +externaldns:source:resources=Gateway.gateway.networking.k8s.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
@@ -181,13 +181,13 @@ func newGatewaySource(
 	config *Config,
 	newInformerFactory func(gateway.Interface, string, labels.Selector) gwinformers.SharedInformerFactory,
 ) (Source, error) {
-	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
+	gwLabels, err := annotations.ParseFilter(config.GatewayLabelFilter)
 	if err != nil {
 		return nil, err
 	}
-	gwAnnotations, err := getLabelSelector(config.AnnotationFilter)
-	if err != nil {
-		return nil, err
+	gwAnnotations := config.AnnotationFilter
+	if gwAnnotations == nil {
+		gwAnnotations = labels.Everything()
 	}
 
 	client, err := clients.GatewayClient()
@@ -292,11 +292,21 @@ func (src *gatewayResourceSource) targets(gw *v1.Gateway) endpoint.Targets {
 	if len(override) > 0 {
 		return override
 	}
-	var targets endpoint.Targets
+	var ips, hostnames endpoint.Targets
 	for _, addr := range gw.Status.Addresses {
-		targets = append(targets, addr.Value)
+		if addr.Value == "" {
+			continue
+		}
+		if addr.Type == nil || *addr.Type == v1.IPAddressType {
+			ips = append(ips, addr.Value)
+		} else if *addr.Type == v1.HostnameAddressType {
+			hostnames = append(hostnames, addr.Value)
+		}
 	}
-	return targets
+	if len(ips) > 0 {
+		return ips
+	}
+	return hostnames
 }
 
 func newGatewayRouteSource(

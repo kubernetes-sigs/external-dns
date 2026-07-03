@@ -6,9 +6,9 @@ It is meant to supplement the other provider-specific setup tutorials.
 ## Gateway Source (`--source=gateway`)
 
 The `gateway` source watches `Gateway` resources directly and creates DNS records
-for each Gateway that has the `external-dns.alpha.kubernetes.io/hostname` annotation.
+for each Gateway that has the `external-dns.kubernetes.io/hostname` annotation.
 Targets are taken from `gateway.status.addresses` (or overridden via the
-`external-dns.alpha.kubernetes.io/target` annotation).
+`external-dns.kubernetes.io/target` annotation).
 
 ### When to use
 
@@ -21,9 +21,9 @@ than individual routes. This is useful when:
 ### How it works
 
 1. ExternalDNS lists all `Gateway` objects in the configured namespace.
-2. For each Gateway with `external-dns.alpha.kubernetes.io/hostname`, it reads the value as one or more comma-separated hostnames.
+2. For each Gateway with `external-dns.kubernetes.io/hostname`, it reads the value as one or more comma-separated hostnames.
 3. Targets are sourced from `gateway.status.addresses`. IP addresses produce A/AAAA records; hostnames produce CNAME records.
-4. The `external-dns.alpha.kubernetes.io/target` annotation overrides `status.addresses`.
+4. The `external-dns.kubernetes.io/target` annotation overrides `status.addresses`.
 
 ### Example
 
@@ -34,8 +34,8 @@ metadata:
   name: my-gateway
   namespace: default
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/ttl: "300"
 spec:
   gatewayClassName: cilium
   listeners:
