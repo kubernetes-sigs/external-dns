@@ -93,6 +93,17 @@ type WebhookProvider struct {
 	client          *http.Client
 	remoteServerURL *url.URL
 	DomainFilter    *endpoint.DomainFilter
+	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
+	maxBodySize int64
+}
+
+// limitBody caps how many bytes are read from a response body; a non-positive
+// limit returns the reader unchanged.
+func limitBody(r io.Reader, maxBodySize int64) io.Reader {
+	if maxBodySize <= 0 {
+		return r
+	}
+	return io.LimitReader(r, maxBodySize)
 }
 
 func init() {
@@ -106,10 +117,10 @@ func init() {
 
 // New creates a webhook provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize)
 }
 
-func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -136,7 +147,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 
 	df := &endpoint.DomainFilter{}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, extdnshttp.MaxBodyBytes)).Decode(df); err != nil {
+	if err := json.NewDecoder(limitBody(resp.Body, maxBodySize)).Decode(df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
@@ -144,6 +155,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 		client:          client,
 		remoteServerURL: parsedURL,
 		DomainFilter:    df,
+		maxBodySize:     maxBodySize,
 	}, nil
 }
 
@@ -215,7 +227,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(io.LimitReader(resp.Body, extdnshttp.MaxBodyBytes)).Decode(&endpoints); err != nil {
+	if err := json.NewDecoder(limitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
@@ -325,7 +337,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	if err := json.NewDecoder(io.LimitReader(resp.Body, extdnshttp.MaxBodyBytes)).Decode(&endpoints); err != nil {
+	if err := json.NewDecoder(limitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err

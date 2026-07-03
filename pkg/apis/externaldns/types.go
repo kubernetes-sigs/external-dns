@@ -40,6 +40,10 @@ const (
 	passwordMask  = "******"
 	LogFormatText = "text"
 	LogFormatJSON = "json"
+
+	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
+	// record, so ~60k records). Override with --webhook-provider-max-body-size.
+	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
 )
 
 // Config is a project-wide configuration
@@ -212,6 +216,7 @@ type Config struct {
 	WebhookProviderURL                            string
 	WebhookProviderReadTimeout                    time.Duration
 	WebhookProviderWriteTimeout                   time.Duration
+	WebhookProviderMaxBodySize                    int64
 	WebhookServer                                 bool
 	TraefikEnableLegacy                           bool
 	TraefikDisableNew                             bool
@@ -381,6 +386,7 @@ var defaultConfig = &Config{
 	WebhookProviderReadTimeout:   5 * time.Second,
 	WebhookProviderURL:           "http://localhost:8888",
 	WebhookProviderWriteTimeout:  10 * time.Second,
+	WebhookProviderMaxBodySize:   defaultWebhookProviderMaxBodySize,
 	WebhookServer:                false,
 	ZoneIDFilter:                 []string{},
 	ForceDefaultTargets:          false,
@@ -704,6 +710,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("webhook-provider-url", "The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)", defaultConfig.WebhookProviderURL, &cfg.WebhookProviderURL)
 	b.DurationVar("webhook-provider-read-timeout", "The read timeout for the webhook provider in duration format (default: 5s)", defaultConfig.WebhookProviderReadTimeout, &cfg.WebhookProviderReadTimeout)
 	b.DurationVar("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)", defaultConfig.WebhookProviderWriteTimeout, &cfg.WebhookProviderWriteTimeout)
+	b.Int64Var("webhook-provider-max-body-size", "Maximum size in bytes of a webhook request or response body; larger payloads are rejected (default: 33554432, i.e. 32 MiB, 0 disables)", defaultConfig.WebhookProviderMaxBodySize, &cfg.WebhookProviderMaxBodySize)
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
 
 	// FQDN Templating
