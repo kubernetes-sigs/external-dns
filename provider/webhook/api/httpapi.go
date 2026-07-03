@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -42,6 +41,16 @@ const (
 
 type WebhookServer struct {
 	Provider provider.Provider
+	// MaxBodySize caps decoded request body bytes; <= 0 disables the limit.
+	MaxBodySize int64
+}
+
+// limitRequestBody caps the request body with MaxBytesReader so oversized
+// bodies fail with 413; a non-positive cap leaves the body unchanged.
+func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Request) {
+	if p.MaxBodySize > 0 {
+		req.Body = http.MaxBytesReader(w, req.Body, p.MaxBodySize)
+	}
 }
 
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
@@ -61,7 +70,7 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		return
 	case http.MethodPost:
 		var changes plan.Changes
-		req.Body = http.MaxBytesReader(w, req.Body, extdnshttp.MaxBodyBytes)
+		p.limitRequestBody(w, req)
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 			log.Errorf("Failed to decode changes: %v", err)
 			w.WriteHeader(requestBodyStatus(err))
@@ -89,7 +98,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 
 	var pve []*endpoint.Endpoint
-	req.Body = http.MaxBytesReader(w, req.Body, extdnshttp.MaxBodyBytes)
+	p.limitRequestBody(w, req)
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(requestBodyStatus(err))
@@ -133,9 +142,10 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request)
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
-func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, providerPort string) {
+func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, maxBodySize int64, providerPort string) {
 	p := WebhookServer{
-		Provider: provider,
+		Provider:    provider,
+		MaxBodySize: maxBodySize,
 	}
 
 	m := http.NewServeMux()

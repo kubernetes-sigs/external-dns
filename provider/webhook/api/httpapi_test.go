@@ -306,7 +306,7 @@ func TestAdjustEndpointsHandlerWithError(t *testing.T) {
 
 func TestStartHTTPApi(t *testing.T) {
 	startedChan := make(chan struct{})
-	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, "127.0.0.1:8887")
+	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, 32<<20, "127.0.0.1:8887")
 	<-startedChan
 	resp, err := http.Get("http://127.0.0.1:8887")
 	require.NoError(t, err)
@@ -373,7 +373,8 @@ func TestRecordsHandlerApplyChangesRequestBodyOverLimit(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		Provider: &FakeWebhookProvider{},
+		Provider:    &FakeWebhookProvider{},
+		MaxBodySize: 1 << 20,
 	}
 	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
@@ -386,7 +387,8 @@ func TestAdjustEndpointsHandlerRequestBodyOverLimit(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		Provider: &FakeWebhookProvider{},
+		Provider:    &FakeWebhookProvider{},
+		MaxBodySize: 1 << 20,
 	}
 	providerAPIServer.AdjustEndpointsHandler(w, req)
 	res := w.Result()
