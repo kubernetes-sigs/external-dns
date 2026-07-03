@@ -395,7 +395,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					AnnotationFilter:     tc.annotationFilter,
+					AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
 					ExposeInternalIPv6:   tc.exposeInternalIPv6,
@@ -509,7 +509,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			t.Context(),
 			kubeClient,
 			&Config{
-				AnnotationFilter:     tc.annotationFilter,
+				AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
 				ExposeInternalIPv6:   tc.exposeInternalIPv6,
@@ -829,7 +829,7 @@ func TestNodeIndexer(t *testing.T) {
 			}
 
 			src, err := NewNodeSource(t.Context(), client, &Config{
-				AnnotationFilter: tt.annotationFilter,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
 			})

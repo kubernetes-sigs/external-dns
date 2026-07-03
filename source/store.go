@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -48,7 +49,7 @@ var ErrSourceNotFound = errors.New("source not found")
 //
 // Common Configuration Fields:
 // - Namespace: Target namespace for source operations
-// - AnnotationFilter: Filter sources by annotation patterns
+// - AnnotationFilter: Filter sources by annotation selector
 // - LabelFilter: Filter sources by label selectors
 // - FQDNTemplate: Template for generating fully qualified domain names
 // - CombineFQDNAndAnnotation: Whether to combine FQDN template with annotations
@@ -58,7 +59,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // type conversions and validation.
 type Config struct {
 	Namespace                      string
-	AnnotationFilter               string
+	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	TemplateEngine                 template.Engine
@@ -126,15 +127,16 @@ func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 }
 
 func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
-	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
+	// errors are explicitly ignored because the filters are already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
+	annotationSelector, _ := annotations.ParseFilter(cfg.AnnotationFilter)
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {
 		return nil, err
 	}
 	c := &Config{
 		Namespace:                      cfg.Namespace,
-		AnnotationFilter:               cfg.AnnotationFilter,
+		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,

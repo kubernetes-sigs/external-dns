@@ -26,6 +26,7 @@ nav:
       - About: docs/registry/registry.md
       - TXT: docs/registry/txt.md
       - DynamoDB: docs/registry/dynamodb.md
+      - CRD: docs/registry/crd.md
   - Advanced Topics:
       - FQDN Templating: docs/advanced/fqdn-templating.md
       - Import Records: docs/advanced/import-records.md

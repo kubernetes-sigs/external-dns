@@ -223,7 +223,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				&Config{
 					Namespace:        tt.namespace,
 					TemplateEngine:   templatetest.MustEngine(t, "{{ .Name }}.tld.org", "", "", false),
-					AnnotationFilter: tt.annotationFilter,
+					AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 					LabelFilter:      selector,
 				})
 			require.NoError(t, err)

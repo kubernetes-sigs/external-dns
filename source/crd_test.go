@@ -18,11 +18,8 @@ package source
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -881,18 +878,11 @@ func TestStartAndSync(t *testing.T) {
 // reached through newCrdSource (which uses fake caches and writers directly).
 func TestNewCRDSource(t *testing.T) {
 	tests := []struct {
-		name             string
-		annotationFilter string
-		makeRestCfg      func(t *testing.T) *rest.Config
-		ctxTimeout       time.Duration // 0 → use t.Context() as-is
-		wantErrContains  string
+		name            string
+		makeRestCfg     func(t *testing.T) *rest.Config
+		ctxTimeout      time.Duration // 0 → use t.Context() as-is
+		wantErrContains string
 	}{
-		{
-			name:             "annotation filter parse error",
-			annotationFilter: "!!!invalid",
-			makeRestCfg:      func(_ *testing.T) *rest.Config { return &rest.Config{Host: "http://ignored"} },
-			wantErrContains:  "couldn't parse the selector string",
-		},
 		{
 			// crcache.New and client.New share the same restConfig and the same
 			// HTTP-client construction path, so they can't be isolated: any config
@@ -909,8 +899,11 @@ func TestNewCRDSource(t *testing.T) {
 		{
 			// A fake discovery server lets crcache.New succeed; returning 500 for
 			// all LIST calls prevents the informer from ever syncing.
-			name:            "cache fails to sync: context deadline exceeded",
-			makeRestCfg:     func(t *testing.T) *rest.Config { return &rest.Config{Host: newFakeDiscoveryServer(t).URL} },
+			name: "cache fails to sync: context deadline exceeded",
+			makeRestCfg: func(t *testing.T) *rest.Config {
+				apiResource := metav1.APIResource{Name: "dnsendpoints", Namespaced: true, Kind: "DNSEndpoint", Verbs: metav1.Verbs{"list", "watch"}}
+				return &rest.Config{Host: testutils.NewFakeExternalDNSDiscoveryServer(t, apiResource).URL}
+			},
 			ctxTimeout:      3 * time.Second,
 			wantErrContains: "cache failed to sync",
 		},
@@ -924,57 +917,10 @@ func TestNewCRDSource(t *testing.T) {
 				ctx, cancel = context.WithTimeout(ctx, tc.ctxTimeout)
 				t.Cleanup(cancel)
 			}
-			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &Config{AnnotationFilter: tc.annotationFilter})
+			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &Config{})
 			require.ErrorContains(t, err, tc.wantErrContains)
 		})
 	}
-}
-
-// newFakeDiscoveryServer starts an httptest.Server that serves just enough of
-// the Kubernetes discovery API for crcache.New + client.New to succeed and the
-// DNSEndpoint informer to be registered.
-func newFakeDiscoveryServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		encode := func(v any) {
-			if err := json.NewEncoder(w).Encode(v); err != nil {
-				t.Errorf("fakeDiscoveryServer: json.Encode %s: %v", r.URL.Path, err)
-			}
-		}
-		switch r.URL.Path {
-		case "/api":
-			encode(metav1.APIVersions{
-				TypeMeta: metav1.TypeMeta{Kind: "APIVersions", APIVersion: "v1"},
-				Versions: []string{"v1"},
-			})
-		case "/apis":
-			encode(metav1.APIGroupList{
-				TypeMeta: metav1.TypeMeta{Kind: "APIGroupList", APIVersion: "v1"},
-				Groups: []metav1.APIGroup{{
-					Name:             "externaldns.k8s.io",
-					Versions:         []metav1.GroupVersionForDiscovery{{GroupVersion: "externaldns.k8s.io/v1alpha1", Version: "v1alpha1"}},
-					PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "externaldns.k8s.io/v1alpha1", Version: "v1alpha1"},
-				}},
-			})
-		case "/apis/externaldns.k8s.io/v1alpha1":
-			encode(metav1.APIResourceList{
-				TypeMeta:     metav1.TypeMeta{Kind: "APIResourceList", APIVersion: "v1"},
-				GroupVersion: "externaldns.k8s.io/v1alpha1",
-				APIResources: []metav1.APIResource{{
-					Name:       "dnsendpoints",
-					Namespaced: true,
-					Kind:       "DNSEndpoint",
-					Verbs:      metav1.Verbs{"list", "watch"},
-				}},
-			})
-		default:
-			// Causes the informer's LIST to fail so the cache never syncs.
-			http.Error(w, `{"kind":"Status","apiVersion":"v1","status":"Failure","code":500}`, http.StatusInternalServerError)
-		}
-	}))
-	t.Cleanup(srv.Close)
-	return srv
 }
 
 // startSyncFakeCache is a minimal crcache.Cache stub for TestStartAndSync.

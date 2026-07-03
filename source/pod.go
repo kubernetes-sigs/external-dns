@@ -124,7 +124,12 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 	for _, pod := range pods {
 		podEndpoints := ps.endpointsFromPodAnnotations(pod)
 
-		podEndpoints, err := ps.templateEngine.CombineWithEndpoints(
+		podEndpoints, err := ps.templateEngine.ApplyFQDNTargetTemplate(podEndpoints, pod)
+		if err != nil {
+			return nil, err
+		}
+
+		podEndpoints, err = ps.templateEngine.CombineWithEndpoints(
 			podEndpoints,
 			func() ([]*endpoint.Endpoint, error) { return ps.endpointsFromPodTemplate(pod) },
 		)

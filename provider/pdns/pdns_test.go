@@ -18,12 +18,11 @@ package pdns
 
 import (
 	"context"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
 
-	pgo "github.com/ffledgling/pdns-go"
+	pgo "github.com/joeig/go-powerdns/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
@@ -36,127 +35,127 @@ import (
 
 var (
 	// Simple RRSets that contain 1 A record and 1 TXT record
-	RRSetSimpleARecord = pgo.RrSet{
-		Name:  "example.com.",
-		Type_: endpoint.RecordTypeA,
-		Ttl:   300,
+	RRSetSimpleARecord = pgo.RRset{
+		Name: new("example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeA),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
+			{Content: new("8.8.8.8"), Disabled: new(false)},
 		},
 	}
-	RRSetSimpleTXTRecord = pgo.RrSet{
-		Name:  "example.com.",
-		Type_: endpoint.RecordTypeTXT,
-		Ttl:   300,
+	RRSetSimpleTXTRecord = pgo.RRset{
+		Name: new("example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeTXT),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "\"heritage=external-dns,external-dns/owner=tower-pdns\"", Disabled: false, SetPtr: false},
+			{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 		},
 	}
-	RRSetLongARecord = pgo.RrSet{
-		Name:  "a.very.long.domainname.example.com.",
-		Type_: endpoint.RecordTypeA,
-		Ttl:   300,
+	RRSetLongARecord = pgo.RRset{
+		Name: new("a.very.long.domainname.example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeA),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
+			{Content: new("8.8.8.8"), Disabled: new(false)},
 		},
 	}
-	RRSetLongTXTRecord = pgo.RrSet{
-		Name:  "a.very.long.domainname.example.com.",
-		Type_: endpoint.RecordTypeTXT,
-		Ttl:   300,
+	RRSetLongTXTRecord = pgo.RRset{
+		Name: new("a.very.long.domainname.example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeTXT),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "\"heritage=external-dns,external-dns/owner=tower-pdns\"", Disabled: false, SetPtr: false},
+			{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 		},
 	}
 	// RRSet with one record disabled
-	RRSetDisabledRecord = pgo.RrSet{
-		Name:  "example.com.",
-		Type_: endpoint.RecordTypeA,
-		Ttl:   300,
+	RRSetDisabledRecord = pgo.RRset{
+		Name: new("example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeA),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
-			{Content: "8.8.4.4", Disabled: true, SetPtr: false},
+			{Content: new("8.8.8.8"), Disabled: new(false)},
+			{Content: new("8.8.4.4"), Disabled: new(true)},
 		},
 	}
 
-	RRSetCNAMERecord = pgo.RrSet{
-		Name:  "cname.example.com.",
-		Type_: endpoint.RecordTypeCNAME,
-		Ttl:   300,
+	RRSetCNAMERecord = pgo.RRset{
+		Name: new("cname.example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeCNAME),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "example.com.", Disabled: false, SetPtr: false},
+			{Content: new("example.com."), Disabled: new(false)},
 		},
 	}
 
-	RRSetALIASRecord = pgo.RrSet{
-		Name:  "alias.example.com.",
-		Type_: "ALIAS",
-		Ttl:   300,
+	RRSetALIASRecord = pgo.RRset{
+		Name: new("alias.example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeALIAS),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "example.by.any.other.name.com.", Disabled: false, SetPtr: false},
+			{Content: new("example.by.any.other.name.com."), Disabled: new(false)},
 		},
 	}
 
-	RRSetTXTRecord = pgo.RrSet{
-		Name:  "example.com.",
-		Type_: endpoint.RecordTypeTXT,
-		Ttl:   300,
+	RRSetTXTRecord = pgo.RRset{
+		Name: new("example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeTXT),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "'would smell as sweet'", Disabled: false, SetPtr: false},
+			{Content: new("'would smell as sweet'"), Disabled: new(false)},
 		},
 	}
 
 	// Multiple PDNS records in an RRSet of a single type
-	RRSetMultipleRecords = pgo.RrSet{
-		Name:  "example.com.",
-		Type_: endpoint.RecordTypeA,
-		Ttl:   300,
+	RRSetMultipleRecords = pgo.RRset{
+		Name: new("example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeA),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "8.8.8.8", Disabled: false, SetPtr: false},
-			{Content: "8.8.4.4", Disabled: false, SetPtr: false},
-			{Content: "4.4.4.4", Disabled: false, SetPtr: false},
+			{Content: new("8.8.8.8"), Disabled: new(false)},
+			{Content: new("8.8.4.4"), Disabled: new(false)},
+			{Content: new("4.4.4.4"), Disabled: new(false)},
 		},
 	}
 
 	// RRSet with MX record
-	RRSetMXRecord = pgo.RrSet{
-		Name:  "example.com.",
-		Type_: endpoint.RecordTypeMX,
-		Ttl:   300,
+	RRSetMXRecord = pgo.RRset{
+		Name: new("example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeMX),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "10 mailhost1.example.com", Disabled: false, SetPtr: false},
-			{Content: "10 mailhost2.example.com", Disabled: false, SetPtr: false},
+			{Content: new("10 mailhost1.example.com"), Disabled: new(false)},
+			{Content: new("10 mailhost2.example.com"), Disabled: new(false)},
 		},
 	}
 
 	// RRSet with SRV record
-	RRSetSRVRecord = pgo.RrSet{
-		Name:  "_service._tls.example.com.",
-		Type_: endpoint.RecordTypeSRV,
-		Ttl:   300,
+	RRSetSRVRecord = pgo.RRset{
+		Name: new("_service._tls.example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeSRV),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "100 1 443 service.example.com", Disabled: false, SetPtr: false},
+			{Content: new("100 1 443 service.example.com"), Disabled: new(false)},
 		},
 	}
 
 	// RRSet with NS record
-	RRSetNSRecord = pgo.RrSet{
-		Name:  "sub.example.com.",
-		Type_: endpoint.RecordTypeNS,
-		Ttl:   300,
+	RRSetNSRecord = pgo.RRset{
+		Name: new("sub.example.com."),
+		Type: pgo.RRTypePtr(pgo.RRTypeNS),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "ns1.example.com", Disabled: false, SetPtr: false},
-			{Content: "ns2.example.com", Disabled: false, SetPtr: false},
+			{Content: new("ns1.example.com"), Disabled: new(false)},
+			{Content: new("ns2.example.com"), Disabled: new(false)},
 		},
 	}
 
 	// RRSet with PTR record
-	RRSetPTRRecord = pgo.RrSet{
-		Name:  "4.3.2.1.in-addr.arpa.",
-		Type_: endpoint.RecordTypePTR,
-		Ttl:   300,
+	RRSetPTRRecord = pgo.RRset{
+		Name: new("4.3.2.1.in-addr.arpa."),
+		Type: pgo.RRTypePtr(pgo.RRTypePTR),
+		TTL:  pgo.Uint32(300),
 		Records: []pgo.Record{
-			{Content: "host.example.com", Disabled: false, SetPtr: false},
+			{Content: new("host.example.com"), Disabled: new(false)},
 		},
 	}
 
@@ -259,420 +258,320 @@ var (
 	}
 
 	ZoneEmptyToPreferAliasPatch = pgo.Zone{
-		Id:    "example.com.",
-		Name:  "example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("example.com."),
+		Name: new("example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "sub.example.com.",
-				Type_:      "ALIAS",
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("sub.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeALIAS),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "target.example.com.",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("target.example.com."), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToCNAMEPatch = pgo.Zone{
-		Id:    "example.com.",
-		Name:  "example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("example.com."),
+		Name: new("example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "sub.example.com.",
-				Type_:      endpoint.RecordTypeCNAME,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("sub.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeCNAME),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "target.example.com.",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("target.example.com."), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmpty = pgo.Zone{
 		// Opaque zone id (string), assigned by the server, should not be interpreted by the application. Guaranteed to be safe for embedding in URLs.
-		Id: "example.com.",
+		ID: new("example.com."),
 		// Name of the zone (e.g. “example.com.”) MUST have a trailing dot
-		Name: "example.com.",
+		Name: new("example.com."),
 		// Set to “Zone”
-		Type_: "Zone",
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
 		// API endpoint for this zone
-		Url: "/api/v1/servers/localhost/zones/example.com.",
+		URL: new("/api/v1/servers/localhost/zones/example.com."),
 		// Zone kind, one of “Native”, “Master”, “Slave”
-		Kind: "Native",
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
 		// RRSets in this zone
-		Rrsets: []pgo.RrSet{},
+		RRsets: []pgo.RRset{},
 	}
 
 	ZoneEmptySimilar = pgo.Zone{
-		Id:     "simexample.com.",
-		Name:   "simexample.com.",
-		Type_:  "Zone",
-		Url:    "/api/v1/servers/localhost/zones/simexample.com.",
-		Kind:   "Native",
-		Rrsets: []pgo.RrSet{},
+		ID:     new("simexample.com."),
+		Name:   new("simexample.com."),
+		Type:   pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:    new("/api/v1/servers/localhost/zones/simexample.com."),
+		Kind:   pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{},
 	}
 
 	ZoneEmptyLong = pgo.Zone{
-		Id:     "long.domainname.example.com.",
-		Name:   "long.domainname.example.com.",
-		Type_:  "Zone",
-		Url:    "/api/v1/servers/localhost/zones/long.domainname.example.com.",
-		Kind:   "Native",
-		Rrsets: []pgo.RrSet{},
+		ID:     new("long.domainname.example.com."),
+		Name:   new("long.domainname.example.com."),
+		Type:   pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:    new("/api/v1/servers/localhost/zones/long.domainname.example.com."),
+		Kind:   pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{},
 	}
 
 	ZoneEmpty2 = pgo.Zone{
-		Id:     "mock.test.",
-		Name:   "mock.test.",
-		Type_:  "Zone",
-		Url:    "/api/v1/servers/localhost/zones/mock.test.",
-		Kind:   "Native",
-		Rrsets: []pgo.RrSet{},
+		ID:     new("mock.test."),
+		Name:   new("mock.test."),
+		Type:   pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:    new("/api/v1/servers/localhost/zones/mock.test."),
+		Kind:   pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{},
 	}
 
 	ZoneMixed = pgo.Zone{
-		Id:     "example.com.",
-		Name:   "example.com.",
-		Type_:  "Zone",
-		Url:    "/api/v1/servers/localhost/zones/example.com.",
-		Kind:   "Native",
-		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord, RRSetPTRRecord},
+		ID:     new("example.com."),
+		Name:   new("example.com."),
+		Type:   pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:    new("/api/v1/servers/localhost/zones/example.com."),
+		Kind:   pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord, RRSetMXRecord, RRSetSRVRecord, RRSetNSRecord, RRSetPTRRecord},
 	}
 
 	ZoneEmptyToSimplePatch = pgo.Zone{
-		Id:    "example.com.",
-		Name:  "example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("example.com."),
+		Name: new("example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeA,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "8.8.8.8",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("8.8.8.8"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToSimplePatchLongRecordIgnoredInDomainFilter = pgo.Zone{
-		Id:    "example.com.",
-		Name:  "example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("example.com."),
+		Name: new("example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "a.very.long.domainname.example.com.",
-				Type_:      endpoint.RecordTypeA,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("a.very.long.domainname.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "9.9.9.9",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("9.9.9.9"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "a.very.long.domainname.example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("a.very.long.domainname.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeA,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "8.8.8.8",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("8.8.8.8"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToLongPatch = pgo.Zone{
-		Id:    "long.domainname.example.com.",
-		Name:  "long.domainname.example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/long.domainname.example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("long.domainname.example.com."),
+		Name: new("long.domainname.example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/long.domainname.example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "a.very.long.domainname.example.com.",
-				Type_:      endpoint.RecordTypeA,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("a.very.long.domainname.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "8.8.8.8",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("8.8.8.8"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "a.very.long.domainname.example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("a.very.long.domainname.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToSimplePatch2 = pgo.Zone{
-		Id:    "mock.test.",
-		Name:  "mock.test.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/mock.test.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("mock.test."),
+		Name: new("mock.test."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/mock.test."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "mock.test.",
-				Type_:      endpoint.RecordTypeA,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("mock.test."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "9.9.9.9",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("9.9.9.9"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "mock.test.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("mock.test."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToSimplePatch3 = pgo.Zone{
-		Id:    "mock.test.",
-		Name:  "mock.test.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/mock.test.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("mock.test."),
+		Name: new("mock.test."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/mock.test."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "abcd.mock.test.",
-				Type_:      endpoint.RecordTypeA,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("abcd.mock.test."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "9.9.9.9",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("9.9.9.9"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "abcd.mock.test.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("abcd.mock.test."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToSimpleDelete = pgo.Zone{
-		Id:    "example.com.",
-		Name:  "example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("example.com."),
+		Name: new("example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeA,
-				Changetype: "DELETE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeA),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeDelete),
 				Records: []pgo.Record{
-					{
-						Content:  "8.8.8.8",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("8.8.8.8"), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Changetype: "DELETE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeDelete),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
 
 	ZoneEmptyToApexPatch = pgo.Zone{
-		Id:    "example.com.",
-		Name:  "example.com.",
-		Type_: "Zone",
-		Url:   "/api/v1/servers/localhost/zones/example.com.",
-		Kind:  "Native",
-		Rrsets: []pgo.RrSet{
+		ID:   new("example.com."),
+		Name: new("example.com."),
+		Type: pgo.ZoneTypePtr(pgo.ZoneZoneType),
+		URL:  new("/api/v1/servers/localhost/zones/example.com."),
+		Kind: pgo.ZoneKindPtr(pgo.NativeZoneKind),
+		RRsets: []pgo.RRset{
 			{
-				Name:       "cname.example.com.",
-				Type_:      endpoint.RecordTypeCNAME,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("cname.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeCNAME),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "example.by.any.other.name.com.",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("example.by.any.other.name.com."), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "cname.example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("cname.example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "example.com.",
-				Type_:      "ALIAS",
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeALIAS),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "example.by.any.other.name.com.",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("example.by.any.other.name.com."), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 			{
-				Name:       "example.com.",
-				Type_:      endpoint.RecordTypeTXT,
-				Ttl:        300,
-				Changetype: "REPLACE",
+				Name:       new("example.com."),
+				Type:       pgo.RRTypePtr(pgo.RRTypeTXT),
+				TTL:        pgo.Uint32(300),
+				ChangeType: pgo.ChangeTypePtr(pgo.ChangeTypeReplace),
 				Records: []pgo.Record{
-					{
-						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
-						Disabled: false,
-						SetPtr:   false,
-					},
+					{Content: new("\"heritage=external-dns,external-dns/owner=tower-pdns\""), Disabled: new(false)},
 				},
-				Comments: []pgo.Comment(nil),
 			},
 		},
 	}
@@ -690,16 +589,16 @@ var (
 // API that returns a zone with multiple record types
 type PDNSAPIClientStub struct{}
 
-func (c *PDNSAPIClientStub) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{ZoneMixed}, nil, nil
+func (c *PDNSAPIClientStub) ListZones() ([]pgo.Zone, error) {
+	return []pgo.Zone{ZoneMixed}, nil
 }
 
-func (c *PDNSAPIClientStub) ListZone(_ string) (pgo.Zone, *http.Response, error) {
-	return ZoneMixed, nil, nil
+func (c *PDNSAPIClientStub) ListZone(_ string) (*pgo.Zone, error) {
+	return &ZoneMixed, nil
 }
 
-func (c *PDNSAPIClientStub) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
-	return &http.Response{}, nil
+func (c *PDNSAPIClientStub) PatchZone(_ string, _ *pgo.Zone) error {
+	return nil
 }
 
 /******************************************************************************/
@@ -709,25 +608,25 @@ type PDNSAPIClientStubEmptyZones struct {
 	patchedZones []pgo.Zone
 }
 
-func (c *PDNSAPIClientStubEmptyZones) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2}, nil, nil
+func (c *PDNSAPIClientStubEmptyZones) ListZones() ([]pgo.Zone, error) {
+	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2}, nil
 }
 
-func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
+func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (*pgo.Zone, error) {
 	switch {
 	case strings.Contains(zoneID, "example.com"):
-		return ZoneEmpty, nil, nil
+		return &ZoneEmpty, nil
 	case strings.Contains(zoneID, "mock.test"):
-		return ZoneEmpty2, nil, nil
+		return &ZoneEmpty2, nil
 	case strings.Contains(zoneID, "long.domainname.example.com"):
-		return ZoneEmptyLong, nil, nil
+		return &ZoneEmptyLong, nil
 	}
-	return pgo.Zone{}, nil, nil
+	return &pgo.Zone{}, nil
 }
 
-func (c *PDNSAPIClientStubEmptyZones) PatchZone(_ string, zoneStruct pgo.Zone) (*http.Response, error) {
-	c.patchedZones = append(c.patchedZones, zoneStruct)
-	return &http.Response{}, nil
+func (c *PDNSAPIClientStubEmptyZones) PatchZone(_ string, zoneStruct *pgo.Zone) error {
+	c.patchedZones = append(c.patchedZones, *zoneStruct)
+	return nil
 }
 
 /******************************************************************************/
@@ -738,8 +637,8 @@ type PDNSAPIClientStubPatchZoneFailure struct {
 }
 
 // Just overwrite the PatchZone method to introduce a failure
-func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
-	return nil, provider.NewSoftErrorf("Generic PDNS Error")
+func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(_ string, _ *pgo.Zone) error {
+	return provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -750,8 +649,8 @@ type PDNSAPIClientStubListZoneFailure struct {
 }
 
 // Just overwrite the ListZone method to introduce a failure
-func (c *PDNSAPIClientStubListZoneFailure) ListZone(_ string) (pgo.Zone, *http.Response, error) {
-	return pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
+func (c *PDNSAPIClientStubListZoneFailure) ListZone(_ string) (*pgo.Zone, error) {
+	return &pgo.Zone{}, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -762,8 +661,8 @@ type PDNSAPIClientStubListZonesFailure struct {
 }
 
 // Just overwrite the ListZones method to introduce a failure
-func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{}, nil, provider.NewSoftErrorf("Generic PDNS Error")
+func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, error) {
+	return []pgo.Zone{}, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
 /******************************************************************************/
@@ -773,20 +672,20 @@ type PDNSAPIClientStubPartitionZones struct {
 	PDNSAPIClientStubEmptyZones
 }
 
-func (c *PDNSAPIClientStubPartitionZones) ListZones() ([]pgo.Zone, *http.Response, error) {
-	return []pgo.Zone{ZoneEmpty, ZoneEmpty2, ZoneEmptySimilar}, nil, nil
+func (c *PDNSAPIClientStubPartitionZones) ListZones() ([]pgo.Zone, error) {
+	return []pgo.Zone{ZoneEmpty, ZoneEmpty2, ZoneEmptySimilar}, nil
 }
 
-func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
+func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (*pgo.Zone, error) {
 	switch {
 	case strings.Contains(zoneID, "example.com"):
-		return ZoneEmpty, nil, nil
+		return &ZoneEmpty, nil
 	case strings.Contains(zoneID, "mock.test"):
-		return ZoneEmpty2, nil, nil
+		return &ZoneEmpty2, nil
 	case strings.Contains(zoneID, "simexample.com"):
-		return ZoneEmptySimilar, nil, nil
+		return &ZoneEmptySimilar, nil
 	}
-	return pgo.Zone{}, nil, nil
+	return &pgo.Zone{}, nil
 }
 
 /******************************************************************************/
@@ -798,19 +697,19 @@ type PDNSAPIClientStubConfigurable struct {
 	listErr error
 }
 
-func (c *PDNSAPIClientStubConfigurable) ListZones() ([]pgo.Zone, *http.Response, error) {
+func (c *PDNSAPIClientStubConfigurable) ListZones() ([]pgo.Zone, error) {
 	if c.listErr != nil {
-		return nil, nil, c.listErr
+		return nil, c.listErr
 	}
-	return c.zones, nil, nil
+	return c.zones, nil
 }
 
-func (c *PDNSAPIClientStubConfigurable) ListZone(_ string) (pgo.Zone, *http.Response, error) {
-	return pgo.Zone{}, nil, nil
+func (c *PDNSAPIClientStubConfigurable) ListZone(_ string) (*pgo.Zone, error) {
+	return &pgo.Zone{}, nil
 }
 
-func (c *PDNSAPIClientStubConfigurable) PatchZone(_ string, _ pgo.Zone) (*http.Response, error) {
-	return &http.Response{}, nil
+func (c *PDNSAPIClientStubConfigurable) PatchZone(_ string, _ *pgo.Zone) error {
+	return nil
 }
 
 /******************************************************************************/
@@ -928,7 +827,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSHasAliasAnnotation() {
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
-	// Function definition: convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpoint.Endpoint, _ error)
+	// Function definition: convertRRSetToEndpoints(rr pgo.RRset) (endpoints []*endpoint.Endpoint, _ error)
 
 	// Create a new provider to run tests against
 	p := &PDNSProvider{
@@ -1039,10 +938,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	)
 
 	for _, z := range zlist {
-		for _, rs := range z.Rrsets {
-			if trailingTypes.Has(rs.Type_) {
+		for _, rs := range z.RRsets {
+			if trailingTypes.Has(string(*rs.Type)) {
 				for _, r := range rs.Records {
-					suite.Equal(uint8(0x2e), r.Content[len(r.Content)-1])
+					content := pgo.StringValue(r.Content)
+					suite.Equal(uint8(0x2e), content[len(content)-1])
 				}
 			}
 		}
@@ -1327,13 +1227,19 @@ func TestNewPDNSProviderTestSuite(t *testing.T) {
 // and shows how the choice of regex affects zone partitioning correctness.
 func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 	newZone := func(name string) pgo.Zone {
-		return pgo.Zone{Id: name, Name: name, Type_: "Zone", Kind: "Native", Rrsets: []pgo.RrSet{}}
+		return pgo.Zone{
+			ID:     new(name),
+			Name:   new(name),
+			Type:   pgo.ZoneTypePtr(pgo.ZoneZoneType),
+			Kind:   pgo.ZoneKindPtr(pgo.NativeZoneKind),
+			RRsets: []pgo.RRset{},
+		}
 	}
 
 	zoneNames := func(zz []pgo.Zone) []string {
 		names := make([]string, len(zz))
 		for i, z := range zz {
-			names[i] = z.Name
+			names[i] = pgo.StringValue(z.Name)
 		}
 		return names
 	}

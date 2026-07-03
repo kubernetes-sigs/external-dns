@@ -1092,7 +1092,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			client, err := NewServiceSource(t.Context(), kubernetes,
 				&Config{
 					TemplateEngine:              templatetest.MustEngine(t, tc.fqdnTemplate, "", "", tc.combineFQDNAndAnnotation),
-					AnnotationFilter:            tc.annotationFilter,
+					AnnotationFilter:            parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:           tc.serviceTypesFilter,
 					Compatibility:               tc.compatibility,
 					Namespace:                   tc.targetNamespace,
@@ -1302,7 +1302,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			client, err := NewServiceSource(t.Context(), kubernetes,
 				&Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", tc.combineFQDNAndAnnotation),
-					AnnotationFilter:         tc.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
@@ -1598,7 +1598,7 @@ func TestClusterIpServices(t *testing.T) {
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
-					AnnotationFilter:         tc.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
 					PublishInternal:          true,
@@ -2455,7 +2455,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
-					AnnotationFilter:         tc.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
 					Namespace:                tc.targetNamespace,
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
@@ -6030,7 +6030,7 @@ func TestServiceIndexer(t *testing.T) {
 			}
 
 			src, err := NewServiceSource(t.Context(), client, &Config{
-				AnnotationFilter:  tt.annotationFilter,
+				AnnotationFilter:  parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:       labelSel,
 				ServiceTypeFilter: tt.serviceTypeFilter,
 			})

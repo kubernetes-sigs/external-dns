@@ -13,5 +13,6 @@ The registry implementation is specified using the `--registry` flag.
 
 * [txt](txt.md) (default) - Stores metadata in TXT records in the same provider.
 * [dynamodb](dynamodb.md) - Stores metadata in an AWS DynamoDB table.
+* [crd](crd.md) - Stores metadata as `DNSRecord` custom resources in the Kubernetes cluster.
 * noop - Passes metadata directly to the provider. For most providers, this means the metadata is not persisted.
 * aws-sd - Stores metadata in AWS Service Discovery. Only usable with the `aws-sd` provider.

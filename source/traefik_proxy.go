@@ -95,7 +95,7 @@ var (
 type traefikSource struct {
 	dynamicKubeClient          dynamic.Interface
 	kubeClient                 kubernetes.Interface
-	annotationFilter           string
+	annotationFilter           labels.Selector
 	namespace                  string
 	ignoreHostnameAnnotation   bool
 	templateEngine             template.Engine
@@ -279,10 +279,7 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
 
-	ingressRouteTCPs, err = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter IngressRouteTCP: %w", err)
-	}
+	ingressRouteTCPs = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
 
 	for _, ingressRouteTCP := range ingressRouteTCPs {
 		var targets endpoint.Targets
@@ -394,17 +391,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 		}
 	}
 
-	endpoints, err := ts.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromFQDNTargetTemplate(ingressRoute) },
-	)
-	if err != nil {
-		return nil, err
-	}
-	return ts.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTemplate(ingressRoute) },
-	)
+	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
 // endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
@@ -437,17 +424,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 		}
 	}
 
-	endpoints, err := ts.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromFQDNTargetTemplate(ingressRoute) },
-	)
-	if err != nil {
-		return nil, err
-	}
-	return ts.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTemplate(ingressRoute) },
-	)
+	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
 // endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
@@ -467,17 +444,7 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 		}
 	}
 
-	endpoints, err := ts.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromFQDNTargetTemplate(ingressRoute) },
-	)
-	if err != nil {
-		return nil, err
-	}
-	return ts.templateEngine.CombineWithEndpoints(
-		endpoints,
-		func() ([]*endpoint.Endpoint, error) { return ts.endpointsFromTemplate(ingressRoute) },
-	)
+	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
 func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
@@ -876,52 +843,6 @@ func (in *IngressRouteUDP) GetAnnotations() map[string]string {
 	return in.Annotations
 }
 
-// traefikObject is satisfied by IngressRoute, IngressRouteTCP, and IngressRouteUDP.
-type traefikObject interface {
-	runtime.Object
-	metav1.Object
-}
-
-// endpointsFromTemplate creates endpoints using the FQDN and target templates.
-func (ts *traefikSource) endpointsFromTemplate(obj traefikObject) ([]*endpoint.Endpoint, error) {
-	hostnames, err := ts.templateEngine.ExecFQDN(obj)
-	if err != nil || len(hostnames) == 0 {
-		return nil, err
-	}
-	targets, err := ts.templateEngine.ExecTarget(obj)
-	if err != nil {
-		return nil, err
-	}
-	return EndpointsForHostsAndTargets(hostnames, targets), nil
-}
-
-// endpointsFromFQDNTargetTemplate creates endpoints from host:target pairs produced by the fqdn-target template.
-func (ts *traefikSource) endpointsFromFQDNTargetTemplate(obj traefikObject) ([]*endpoint.Endpoint, error) {
-	pairs, err := ts.templateEngine.ExecFQDNTarget(obj)
-	if err != nil || len(pairs) == 0 {
-		return nil, err
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
-	for _, pair := range pairs {
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
-				pair, strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind), obj.GetNamespace(), obj.GetName())
-			continue
-		}
-		host := strings.TrimSpace(parts[0])
-		target := strings.TrimSpace(parts[1])
-		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
-				pair, strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind), obj.GetNamespace(), obj.GetName())
-			continue
-		}
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
-	}
-	return endpoint.MergeEndpoints(endpoints), nil
-}
-
 // extractEndpoints is a generic function that extracts endpoints from Kubernetes resources.
 // It performs the following steps:
 // 1. Lists all objects in the specified namespace using the provided informer.
@@ -936,7 +857,7 @@ func extractEndpoints[T interface {
 	informer cache.GenericLister,
 	namespace string,
 	convertFunc func(*unstructured.Unstructured) (T, error),
-	annotationFilter string,
+	annotationFilter labels.Selector,
 	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
@@ -961,10 +882,7 @@ func extractEndpoints[T interface {
 		typedObjs = append(typedObjs, typed)
 	}
 
-	typedObjs, err = annotations.Filter(typedObjs, annotationFilter)
-	if err != nil {
-		return nil, err
-	}
+	typedObjs = annotations.Filter(typedObjs, annotationFilter)
 
 	for _, item := range typedObjs {
 		targets := annotations.TargetsFromTargetAnnotation(item.GetAnnotations())

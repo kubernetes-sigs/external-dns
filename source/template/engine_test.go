@@ -128,52 +128,52 @@ func TestEngine_Combining(t *testing.T) {
 	})
 }
 
-func TestEngine_ExecTarget(t *testing.T) {
+func TestEngine_execTarget(t *testing.T) {
 	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
 
 	t.Run("returns targets from template", func(t *testing.T) {
 		e, err := NewEngine(nil, []string{"{{ .Name }}.target.example.com"}, nil, false)
 		require.NoError(t, err)
-		got, err := e.ExecTarget(obj)
+		got, err := e.execTarget(obj)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"svc.target.example.com"}, got)
 	})
 	t.Run("returns empty when target template is unset", func(t *testing.T) {
 		e, err := NewEngine(nil, nil, nil, false)
 		require.NoError(t, err)
-		got, err := e.ExecTarget(obj)
+		got, err := e.execTarget(obj)
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
 	t.Run("propagates execution error", func(t *testing.T) {
 		e, err := NewEngine(nil, []string{"{{index . 0}}"}, nil, false)
 		require.NoError(t, err)
-		_, err = e.ExecTarget(obj)
+		_, err = e.execTarget(obj)
 		require.Error(t, err)
 	})
 }
 
-func TestEngine_ExecFQDNTarget(t *testing.T) {
+func TestEngine_execFQDNTarget(t *testing.T) {
 	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
 
 	t.Run("returns fqdn:target pairs from template", func(t *testing.T) {
 		e, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:1.2.3.4"}, false)
 		require.NoError(t, err)
-		got, err := e.ExecFQDNTarget(obj)
+		got, err := e.execFQDNTarget(obj)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"svc.example.com:1.2.3.4"}, got)
 	})
 	t.Run("returns empty when fqdn-target template is unset", func(t *testing.T) {
 		e, err := NewEngine(nil, nil, nil, false)
 		require.NoError(t, err)
-		got, err := e.ExecFQDNTarget(obj)
+		got, err := e.execFQDNTarget(obj)
 		require.NoError(t, err)
 		assert.Empty(t, got)
 	})
 	t.Run("propagates execution error", func(t *testing.T) {
 		e, err := NewEngine(nil, nil, []string{"{{index . 0}}"}, false)
 		require.NoError(t, err)
-		_, err = e.ExecFQDNTarget(obj)
+		_, err = e.execFQDNTarget(obj)
 		require.Error(t, err)
 	})
 }

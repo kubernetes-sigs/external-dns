@@ -12,7 +12,11 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: 1
+  {{- /* values.schema.json bounds replicaCount to 0-1, but that is skipped by e.g. `helm template | kubectl apply`, so guard here too. */}}
+  {{- if gt (int .Values.replicaCount) 1 }}
+  {{- fail "replicaCount must be 0 or 1: external-dns does not support leader election" }}
+  {{- end }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}

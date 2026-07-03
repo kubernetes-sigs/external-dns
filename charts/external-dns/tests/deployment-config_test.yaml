@@ -79,3 +79,20 @@ tests:
       - equal:
           path: spec.replicas
           value: 1
+
+  - it: should allow scaling to 0 via replicaCount
+    set:
+      replicaCount: 0
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 0
+
+  - it: should reject replicaCount greater than 1
+    set:
+      replicaCount: 2
+    asserts:
+      - failedTemplate:
+          # Rejected by the values schema (maximum: 1) in schema-validated paths,
+          # or by the template guard when schema validation is skipped.
+          errorPattern: "(replicaCount must be 0 or 1|/replicaCount': maximum: got 2, want 1)"
