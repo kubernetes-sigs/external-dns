@@ -143,7 +143,7 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request)
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
-func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, maxBodySize int64, providerPort string) {
+func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout, readHeaderTimeout, idleTimeout time.Duration, maxBodySize int64, providerPort string) {
 	p := WebhookServer{
 		Provider:    provider,
 		MaxBodySize: maxBodySize,
@@ -159,11 +159,10 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 		Handler:      m,
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
-		// Bound header reads and idle keep-alive connections independently of
-		// the configurable ReadTimeout, which downstream webhook providers may
-		// set arbitrarily high.
-		ReadHeaderTimeout: 5 * time.Second,
-		IdleTimeout:       30 * time.Second,
+		// Separate knobs from ReadTimeout, which an operator may raise for slow
+		// or large request bodies without loosening these bounds.
+		ReadHeaderTimeout: readHeaderTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 
 	l, err := net.Listen("tcp", providerPort)
