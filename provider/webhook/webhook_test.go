@@ -695,7 +695,7 @@ func TestRecords_ResponseBodyOverLimit(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = p.Records(t.Context())
-	require.ErrorContains(t, err, "unexpected EOF")
+	require.ErrorIs(t, err, errResponseTooLarge)
 }
 
 func TestRecords_ResponseBodyLimitDisabled(t *testing.T) {

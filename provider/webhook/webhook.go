@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -97,13 +98,40 @@ type WebhookProvider struct {
 	maxBodySize int64
 }
 
-// limitBody caps how many bytes are read from a response body; a non-positive
-// limit returns the reader unchanged.
+// errResponseTooLarge distinguishes an over-limit body from a malformed or
+// truncated one, which io.LimitReader would report as a plain EOF.
+var errResponseTooLarge = errors.New("webhook response body exceeds the configured max size (--webhook-provider-max-body-size)")
+
+// limitBody caps response body reads at maxBodySize, failing with
+// errResponseTooLarge once exceeded; a non-positive limit disables the cap.
 func limitBody(r io.Reader, maxBodySize int64) io.Reader {
 	if maxBodySize <= 0 {
 		return r
 	}
-	return io.LimitReader(r, maxBodySize)
+	return &maxBytesReader{r: r, remaining: maxBodySize}
+}
+
+// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
+// past the limit instead of reporting EOF like io.LimitReader.
+type maxBytesReader struct {
+	r         io.Reader
+	remaining int64 // bytes still allowed; negative once the limit is passed
+}
+
+func (l *maxBytesReader) Read(p []byte) (int, error) {
+	if l.remaining < 0 {
+		return 0, errResponseTooLarge
+	}
+	// Read one byte past the limit to detect an over-limit body.
+	if int64(len(p)) > l.remaining+1 {
+		p = p[:l.remaining+1]
+	}
+	n, err := l.r.Read(p)
+	l.remaining -= int64(n)
+	if l.remaining < 0 {
+		return n, errResponseTooLarge
+	}
+	return n, err
 }
 
 func init() {
