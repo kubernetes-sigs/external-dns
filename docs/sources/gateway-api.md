@@ -247,6 +247,40 @@ In this example, External DNS will create DNS records only for `company.private.
 For a complete list of supported annotations, see the
 [annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
 
+## Avoiding Dual Ownership Conflicts
+
+Using `--source=gateway` and a route source (e.g. `--source=gateway-httproute`) simultaneously
+for the **same hostname** causes a dual ownership conflict that results in DNS flapping.
+
+### What happens
+
+Both sources independently emit the same A record but with different resource labels:
+
+| Source | Endpoint | TXT ownership record |
+|--------|----------|----------------------|
+| `gateway` | `app.example.com A 1.2.3.4` | `resource=gateway/default/my-gateway` |
+| `gateway-httproute` | `app.example.com A 1.2.3.4` | `resource=httproute/default/my-route` |
+
+The TXT registry tracks ownership separately for each resource. When one source stops
+producing the record (e.g. the hostname annotation is removed from the Gateway), ExternalDNS
+deletes the A record based on its stale TXT entry — even though the other source still wants
+the record. The next sync cycle re-creates it, causing the record to be deleted and re-created
+on every cycle.
+
+### Rule
+
+**Never configure two sources to produce the same hostname for the same Gateway.**
+Choose one approach and apply it consistently:
+
+- Use `--source=gateway` when managing DNS at the Gateway level (one hostname per Gateway,
+  no route-level hostnames).
+- Use `--source=gateway-httproute` (or other route sources) when managing DNS at the route
+  level (hostnames defined in route specs or annotations, no `external-dns.kubernetes.io/hostname`
+  annotation on the Gateway).
+
+If both sources must run together, ensure there is **zero hostname overlap** between Gateway
+annotations and route hostnames.
+
 ## Manifest with RBAC
 
 ```yaml
