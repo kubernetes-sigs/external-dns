@@ -242,6 +242,7 @@ go run main.go --provider=pdns \
   --pdns-api-key=secret \
   --txt-owner-id=local-test \
   --source=service --publish-internal-services \
+  --policy=sync \
   --once --log-level=info
 ```
 

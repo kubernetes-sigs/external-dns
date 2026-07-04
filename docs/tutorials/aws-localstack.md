@@ -156,6 +156,7 @@ go run main.go \
     --txt-owner-id=aws-localstack \
     --domain-filter=example.com \
     --domain-filter=local.tld \
+    --policy=sync \
     --log-level=info
 ```
 

@@ -72,7 +72,7 @@ One can use CRD source by specifying `--source` flag with `crd` and specifying t
 for e.g:
 
 ```sh
-build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run
+build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --policy sync --once --dry-run
 ```
 
 ## Creating DNS Records
@@ -99,7 +99,7 @@ dnsendpoint.externaldns.k8s.io "examplednsrecord" created
 Run external-dns in dry-mode to see whether external-dns picks up the DNS record from CRD.
 
 ```sh
-$ build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run
+$ build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --policy sync --once --dry-run
 INFO[0000] running in dry-run mode. No changes to DNS records will be made.
 INFO[0000] Connected to cluster at https://192.168.99.100:8443
 INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
