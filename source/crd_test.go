@@ -18,8 +18,12 @@ package source
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -126,6 +130,128 @@ func TestBuildCacheOptions(t *testing.T) {
 
 func TestCRDSource(t *testing.T) {
 	t.Run("Endpoints", testCRDSourceEndpoints)
+}
+
+func TestNewCRDSource_CustomGVKUsesConfiguredResource(t *testing.T) {
+	t.Parallel()
+
+	var (
+		listCalled      atomic.Bool
+		statusUpdates   atomic.Int32
+		labelSelectorOK atomic.Bool
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/apis/externaldns.nginx.org/v1":
+			err := json.NewEncoder(w).Encode(&metav1.APIResourceList{
+				GroupVersion: "externaldns.nginx.org/v1",
+				APIResources: []metav1.APIResource{{
+					Name:       "dnsendpoints",
+					Kind:       "DNSEndpoint",
+					Namespaced: true,
+				}},
+			})
+			require.NoError(t, err)
+		case r.Method == http.MethodGet && r.URL.Path == "/apis/externaldns.nginx.org/v1/namespaces/team-a/dnsendpoints":
+			listCalled.Store(true)
+			labelSelectorOK.Store(r.URL.Query().Get("labelSelector") == "app=custom")
+
+			err := json.NewEncoder(w).Encode(&apiv1alpha1.DNSEndpointList{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "externaldns.nginx.org/v1",
+					Kind:       "DNSEndpointList",
+				},
+				Items: []apiv1alpha1.DNSEndpoint{
+					{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: "externaldns.nginx.org/v1",
+							Kind:       "DNSEndpoint",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "custom-record",
+							Namespace:   "team-a",
+							Generation:  3,
+							Annotations: map[string]string{"external-dns": "public"},
+						},
+						Spec: apiv1alpha1.DNSEndpointSpec{
+							Endpoints: []*endpoint.Endpoint{{
+								DNSName:    "api.example.org",
+								Targets:    endpoint.Targets{"1.2.3.4"},
+								RecordType: endpoint.RecordTypeA,
+								RecordTTL:  180,
+							}},
+						},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: "externaldns.nginx.org/v1",
+							Kind:       "DNSEndpoint",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:        "ignored-record",
+							Namespace:   "team-a",
+							Generation:  2,
+							Annotations: map[string]string{"external-dns": "private"},
+						},
+						Spec: apiv1alpha1.DNSEndpointSpec{
+							Endpoints: []*endpoint.Endpoint{{
+								DNSName:    "ignored.example.org",
+								Targets:    endpoint.Targets{"5.6.7.8"},
+								RecordType: endpoint.RecordTypeA,
+								RecordTTL:  180,
+							}},
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+		case r.Method == http.MethodPut && r.URL.Path == "/apis/externaldns.nginx.org/v1/namespaces/team-a/dnsendpoints/custom-record/status":
+			statusUpdates.Add(1)
+
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+
+			var updated apiv1alpha1.DNSEndpoint
+			err = json.Unmarshal(body, &updated)
+			require.NoError(t, err)
+			require.EqualValues(t, 3, updated.Status.ObservedGeneration)
+
+			err = json.NewEncoder(w).Encode(&updated)
+			require.NoError(t, err)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		Namespace:           "team-a",
+		AnnotationFilter:    labels.SelectorFromSet(labels.Set{"external-dns": "public"}),
+		LabelFilter:         labels.SelectorFromSet(labels.Set{"app": "custom"}),
+		CRDSourceAPIVersion: "externaldns.nginx.org/v1",
+		CRDSourceKind:       "DNSEndpoint",
+	}
+
+	src, err := NewCRDSource(t.Context(), &rest.Config{Host: server.URL}, cfg)
+	require.NoError(t, err)
+	require.IsType(t, &legacyCRDSource{}, src)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.True(t, listCalled.Load(), "custom CRD list endpoint should be called")
+	require.True(t, labelSelectorOK.Load(), "label selector should be forwarded to the API server")
+	require.EqualValues(t, 1, statusUpdates.Load(), "only matching custom CRD should get a status update")
+
+	expected := []*endpoint.Endpoint{{
+		DNSName:    "api.example.org",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		RecordTTL:  180,
+	}}
+	testutils.ValidateEndpoints(t, endpoints, expected)
 }
 
 // testCRDSourceEndpoints tests various scenarios of using CRD source.
