@@ -46,7 +46,7 @@ import (
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Contour HTTPProxy resources
 // +externaldns:source:resources=HTTPProxy.projectcontour.io
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
@@ -54,6 +54,7 @@ type httpProxySource struct {
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
 	annotationFilter         labels.Selector
+	labelSelector            labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	httpProxyInformer        kubeinformers.GenericInformer
@@ -92,10 +93,16 @@ func NewContourHTTPProxySource(
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
+	labelSelector := cfg.LabelFilter
+	if labelSelector == nil {
+		labelSelector = labels.Everything()
+	}
+
 	return &httpProxySource{
 		dynamicKubeClient:        dynamicKubeClient,
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
+		labelSelector:            labelSelector,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		httpProxyInformer:        httpProxyInformer,
@@ -106,7 +113,7 @@ func NewContourHTTPProxySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all HTTPProxy resources in the source's namespace(s).
 func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	hps, err := sc.httpProxyInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
+	hps, err := sc.httpProxyInformer.Lister().ByNamespace(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}

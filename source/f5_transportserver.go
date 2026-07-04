@@ -56,7 +56,7 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:category=Load Balancers
 // +externaldns:source:description=Creates DNS entries from F5 TransportServer resources
 // +externaldns:source:resources=TransportServer.cis.f5.com
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
@@ -65,6 +65,7 @@ type f5TransportServerSource struct {
 	transportServerInformer kubeinformers.GenericInformer
 	kubeClient              kubernetes.Interface
 	annotationFilter        labels.Selector
+	labelSelector           labels.Selector
 	namespace               string
 	templateEngine          template.Engine
 	unstructuredConverter   *unstructuredConverter
@@ -98,12 +99,18 @@ func NewF5TransportServerSource(
 		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
+	labelSelector := cfg.LabelFilter
+	if labelSelector == nil {
+		labelSelector = labels.Everything()
+	}
+
 	return &f5TransportServerSource{
 		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
 		namespace:               cfg.Namespace,
 		annotationFilter:        cfg.AnnotationFilter,
+		labelSelector:           labelSelector,
 		templateEngine:          cfg.TemplateEngine,
 		unstructuredConverter:   uc,
 	}, nil
@@ -112,7 +119,7 @@ func NewF5TransportServerSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TransportServers in the source's namespace(s).
 func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	transportServerObjects, err := ts.transportServerInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
+	transportServerObjects, err := ts.transportServerInformer.Lister().ByNamespace(ts.namespace).List(ts.labelSelector)
 	if err != nil {
 		return nil, err
 	}

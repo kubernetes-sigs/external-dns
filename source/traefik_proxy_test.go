@@ -36,6 +36,8 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/types"
@@ -52,6 +54,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 	for _, ti := range []struct {
 		title                    string
 		ingressRoute             IngressRoute
+		labelFilter              labels.Selector
 		ignoreHostnameAnnotation bool
 		expected                 []*endpoint.Endpoint
 	}{
@@ -335,6 +338,56 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: nil,
 		},
 		{
+			title:       "IngressRoute with matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-label-match",
+					Namespace: defaultTraefikNamespace,
+					Labels:    map[string]string{"app": "test"},
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/hostname": "label.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "label.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					Labels:     endpoint.Labels{"resource": "ingressroute/traefik/ingressroute-label-match"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
+			title:       "IngressRoute with non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-label-no-match",
+					Namespace: defaultTraefikNamespace,
+					Labels:    map[string]string{"app": "other"},
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/hostname": "label.example.com",
+						"external-dns.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":         "traefik",
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
 			title: "IngressRoute with provider-specific annotation",
 			ingressRoute: IngressRoute{
 				TypeMeta: metav1.TypeMeta{
@@ -392,11 +445,16 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
+			labelFilter := ti.labelFilter
+			if labelFilter == nil {
+				labelFilter = labels.Everything()
+			}
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultTraefikNamespace,
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					LabelFilter:              labelFilter,
 				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)

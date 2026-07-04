@@ -55,7 +55,7 @@ const (
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
 // +externaldns:source:resources=RouteGroup.zalando.org
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
@@ -65,6 +65,7 @@ type routeGroupSource struct {
 	namespace                string
 	apiEndpoint              string
 	annotationFilter         labels.Selector
+	labelSelector            labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 }
@@ -233,6 +234,7 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 		namespace:                cfg.Namespace,
 		apiEndpoint:              apiEndpoint,
 		annotationFilter:         cfg.AnnotationFilter,
+		labelSelector:            cfg.LabelFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 	}, nil
@@ -251,7 +253,16 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 
-	filtered := annotations.Filter(rgList.Items, sc.annotationFilter)
+	// RouteGroups are fetched over the Kubernetes API without server-side label
+	// filtering, so apply the label selector client-side to match other sources.
+	var labelFiltered []*routeGroup
+	for _, rg := range rgList.Items {
+		if sc.labelSelector == nil || sc.labelSelector.Matches(labels.Set(rg.Labels)) {
+			labelFiltered = append(labelFiltered, rg)
+		}
+	}
+
+	filtered := annotations.Filter(labelFiltered, sc.annotationFilter)
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, rg := range filtered {

@@ -55,7 +55,7 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // +externaldns:source:category=Load Balancers
 // +externaldns:source:description=Creates DNS entries from F5 VirtualServer resources
 // +externaldns:source:resources=VirtualServer.cis.f5.com
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
@@ -64,6 +64,7 @@ type f5VirtualServerSource struct {
 	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
 	annotationFilter      labels.Selector
+	labelSelector         labels.Selector
 	namespace             string
 	templateEngine        template.Engine
 	unstructuredConverter *unstructuredConverter
@@ -97,12 +98,18 @@ func NewF5VirtualServerSource(
 		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
+	labelSelector := cfg.LabelFilter
+	if labelSelector == nil {
+		labelSelector = labels.Everything()
+	}
+
 	return &f5VirtualServerSource{
 		dynamicKubeClient:     dynamicKubeClient,
 		virtualServerInformer: virtualServerInformer,
 		kubeClient:            kubeClient,
 		namespace:             cfg.Namespace,
 		annotationFilter:      cfg.AnnotationFilter,
+		labelSelector:         labelSelector,
 		templateEngine:        cfg.TemplateEngine,
 		unstructuredConverter: uc,
 	}, nil
@@ -111,7 +118,7 @@ func NewF5VirtualServerSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualServers in the source's namespace(s).
 func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	virtualServerObjects, err := vs.virtualServerInformer.Lister().ByNamespace(vs.namespace).List(labels.Everything())
+	virtualServerObjects, err := vs.virtualServerInformer.Lister().ByNamespace(vs.namespace).List(vs.labelSelector)
 	if err != nil {
 		return nil, err
 	}
