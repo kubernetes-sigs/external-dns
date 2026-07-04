@@ -41,7 +41,7 @@ annotation with its own code path baked into the sources (`ingress` for Istio, a
 `gateway` for Gateway API, a proposed `global-accelerator` for AWS), each coupling a source to a
 third-party CRD and its API version.
 
-This proposes one generic annotation, `external-dns.alpha.kubernetes.io/target-from`, that
+This proposes one generic annotation, `external-dns.kubernetes.io/target-from`, that
 dereferences a named field on an arbitrary referenced resource and uses the resolved value(s) as
 the target. It replaces the per-product annotations with one mechanism and imports **no vendor
 CRDs** into the sources.
@@ -111,7 +111,7 @@ that one hard-coded case to any resource and field.
 
 ### API
 
-Key: `external-dns.alpha.kubernetes.io/target-from` (subject to `--annotation-prefix`).
+Key: `external-dns.kubernetes.io/target-from` (subject to `--annotation-prefix`).
 
 Value grammar (comma-separated for multiple references):
 
@@ -139,12 +139,12 @@ Examples:
 
 ```yaml
 # Istio Gateway → Gateway API Gateway in a shared namespace
-external-dns.alpha.kubernetes.io/hostname: my-service.example.com
-external-dns.alpha.kubernetes.io/target-from: "gateways.gateway.networking.k8s.io/istio-ingress/central-gateway#status.addresses[*].value"
+external-dns.kubernetes.io/hostname: my-service.example.com
+external-dns.kubernetes.io/target-from: "gateways.gateway.networking.k8s.io/istio-ingress/central-gateway#status.addresses[*].value"
 # Ingress → AWS Global Accelerator (same namespace)
-external-dns.alpha.kubernetes.io/target-from: "globalaccelerators.aga.k8s.aws/my-accelerator#status.dnsName"
+external-dns.kubernetes.io/target-from: "globalaccelerators.aga.k8s.aws/my-accelerator#status.dnsName"
 # Any resource → shared LoadBalancer Service (IP and hostname)
-external-dns.alpha.kubernetes.io/target-from: "services/lb-ns/shared-lb#status.loadBalancer.ingress[*].hostname,services/lb-ns/shared-lb#status.loadBalancer.ingress[*].ip"
+external-dns.kubernetes.io/target-from: "services/lb-ns/shared-lb#status.loadBalancer.ingress[*].hostname,services/lb-ns/shared-lb#status.loadBalancer.ingress[*].ip"
 ```
 
 ### Behavior
