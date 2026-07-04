@@ -377,10 +377,10 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "label.example.com",
-					Targets:    []string{"lb.example.com"},
-					RecordType: endpoint.RecordTypeCNAME,
-					Labels:     endpoint.Labels{"resource": "tcpingress/kong/tcp-ingress-label-match"},
+					DNSName:          "label.example.com",
+					Targets:          []string{"lb.example.com"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{"resource": "tcpingress/kong/tcp-ingress-label-match"},
 					ProviderSpecific: endpoint.ProviderSpecific{},
 				},
 			},

@@ -358,10 +358,10 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "label.example.com",
-					Targets:    []string{"target.domain.tld"},
-					RecordType: endpoint.RecordTypeCNAME,
-					Labels:     endpoint.Labels{"resource": "ingressroute/traefik/ingressroute-label-match"},
+					DNSName:          "label.example.com",
+					Targets:          []string{"target.domain.tld"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{"resource": "ingressroute/traefik/ingressroute-label-match"},
 					ProviderSpecific: endpoint.ProviderSpecific{},
 				},
 			},
