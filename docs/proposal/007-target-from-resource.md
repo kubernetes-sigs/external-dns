@@ -115,7 +115,7 @@ Key: `external-dns.kubernetes.io/target-from` (subject to `--annotation-prefix`)
 
 Value grammar (comma-separated for multiple references):
 
-```
+```text
 <resource>[.<group>]/[<namespace>/]<name>#<fieldPath>
 ```
 
@@ -176,8 +176,8 @@ works via direct reads but loses change-driven sync.
 
 **Empty / not-found / missing-field (critical)** — an unresolved reference (object not found,
 field absent, empty list) must **not** fall through to native discovery and must **not** delete
-records: the endpoint is **skipped for this sync with a warning**, prior state intact. Avoids the
-#6438 failure mode (stale/empty lookup silently deleting records) and aligns with its
+records: the endpoint is **skipped for this sync with a warning**, prior state intact. Avoids
+the #6438 failure mode (stale/empty lookup silently deleting records) and aligns with its
 log-and-continue resilience fix.
 
 **Edge cases** — multiple refs: de-duplicated union. Non-scalar JSONPath result: config error,
