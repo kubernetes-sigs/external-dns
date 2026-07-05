@@ -2321,33 +2321,49 @@ func (p *droppingProvider) ApplyChanges(_ context.Context, changes *plan.Changes
 }
 
 func TestDriftedTXTWarning(t *testing.T) {
-	warnMsg := "was applied but is absent from the provider"
+	warnMsg := "is missing though the record exists at the provider"
 
-	newReg := func(t *testing.T, p provider.Provider, dryRun bool) *TXTRegistry {
+	managed := []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
+	newReg := func(t *testing.T, p provider.Provider) *TXTRegistry {
 		t.Helper()
-		r, err := newRegistry(p, "", "", "owner", 0, "", []string{}, []string{}, false, nil, "")
+		r, err := newRegistry(p, "", "", "owner", 0, "", managed, []string{}, false, nil, "")
 		require.NoError(t, err)
-		r.dryRun = dryRun
 		return r
 	}
 
 	apex := func() *endpoint.Endpoint { return endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "1.2.3.4") }
 
-	t.Run("warns on next Records when the applied TXT was dropped", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-		p := &droppingProvider{drop: map[string]bool{"a-example.org": true}}
-		r := newReg(t, p, false)
-		ctx := context.Background()
-
-		// First sync: nothing applied yet, then apply the apex A whose TXT the provider drops.
+	// sync mimics one controller cycle: Records() snapshots the provider state, then
+	// AdjustEndpoints() runs the drift check against the desired set.
+	sync := func(t *testing.T, r *TXTRegistry, desired ...*endpoint.Endpoint) {
+		t.Helper()
+		ctx := t.Context()
 		_, err := r.Records(ctx)
 		require.NoError(t, err)
-		require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
-		logtest.TestHelperLogNotContains(warnMsg, hook, t) // first sync: no warn yet
-
-		// Next sync: a-example.org is still absent -> drift warning.
-		_, err = r.Records(ctx)
+		_, err = r.AdjustEndpoints(desired)
 		require.NoError(t, err)
+	}
+
+	t.Run("warns when the record exists but its ownership TXT was dropped", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+		p := &droppingProvider{drop: map[string]bool{"a-example.org": true}}
+		r := newReg(t, p)
+
+		// Apply the apex A; the provider keeps the A but drops its out-of-zone ownership TXT.
+		require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
+
+		sync(t, r, apex())
+		logtest.TestHelperLogContains(warnMsg, hook, t)
+	})
+
+	t.Run("warns on the first sync after a restart", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+		// A freshly started pod finds a pre-existing apex A with no ownership TXT; nothing is
+		// applied this session, yet the drift must still be reported.
+		p := &droppingProvider{records: []*endpoint.Endpoint{apex()}}
+		r := newReg(t, p)
+
+		sync(t, r, apex())
 		logtest.TestHelperLogContains(warnMsg, hook, t)
 	})
 
@@ -2355,48 +2371,40 @@ func TestDriftedTXTWarning(t *testing.T) {
 		// Flat providers (e.g. CoreDNS) store the sibling name, so no drift is observed.
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 		p := &droppingProvider{drop: map[string]bool{}}
-		r := newReg(t, p, false)
-		ctx := context.Background()
+		r := newReg(t, p)
 
-		require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
-		_, err := r.Records(ctx)
-		require.NoError(t, err)
+		require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
+		sync(t, r, apex())
 		logtest.TestHelperLogNotContains(warnMsg, hook, t)
 	})
 
-	t.Run("does not warn under dry-run", func(t *testing.T) {
+	t.Run("does not warn for a record not yet at the provider", func(t *testing.T) {
+		// Pending create: neither the record nor its TXT exist yet, so this is not drift.
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 		p := &droppingProvider{drop: map[string]bool{"a-example.org": true}}
-		r := newReg(t, p, true)
-		ctx := context.Background()
+		r := newReg(t, p)
 
-		require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
-		_, err := r.Records(ctx)
-		require.NoError(t, err)
+		sync(t, r, apex())
 		logtest.TestHelperLogNotContains(warnMsg, hook, t)
 	})
 
-	t.Run("does not warn on the first sync", func(t *testing.T) {
+	t.Run("matches record and TXT names case-insensitively", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-		p := &droppingProvider{drop: map[string]bool{"a-example.org": true}}
-		r := newReg(t, p, false)
+		// The provider returns a lower-cased name; the desired record uses mixed case.
+		p := &droppingProvider{records: []*endpoint.Endpoint{apex()}}
+		r := newReg(t, p)
 
-		// Records before anything is applied must stay silent.
-		_, err := r.Records(context.Background())
-		require.NoError(t, err)
-		logtest.TestHelperLogNotContains(warnMsg, hook, t)
+		sync(t, r, endpoint.NewEndpoint("Example.ORG", endpoint.RecordTypeA, "1.2.3.4"))
+		logtest.TestHelperLogContains(warnMsg, hook, t)
 	})
 
 	t.Run("warns once per name across cycles", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-		p := &droppingProvider{drop: map[string]bool{"a-example.org": true}}
-		r := newReg(t, p, false)
-		ctx := context.Background()
+		p := &droppingProvider{records: []*endpoint.Endpoint{apex()}}
+		r := newReg(t, p)
 
-		require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
-		_, _ = r.Records(ctx)
-		require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{apex()}}))
-		_, _ = r.Records(ctx)
+		sync(t, r, apex())
+		sync(t, r, apex())
 
 		count := 0
 		for _, e := range hook.AllEntries() {
