@@ -72,12 +72,11 @@ type TXTRegistry struct {
 	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
 	obsoleteTXTWarned sets.Set[string]
 
-	// present{TXTNames,RecordKeys} snapshot the last Records() (lower-cased): TXT names present, and
-	// "name/TYPE" of non-TXT records present. AdjustEndpoints diffs the desired set to spot dropped TXTs.
+	// last Records() snapshot (lower-cased): present TXT names, and "name/TYPE" of present records.
 	presentTXTNames   sets.Set[string]
 	presentRecordKeys sets.Set[string]
 
-	// driftTXTWarned dedups the drift warning to once per name.
+	// driftTXTWarned dedups the drift warning, once per name.
 	driftTXTWarned sets.Set[string]
 }
 
@@ -248,7 +247,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		im.existingTXTs.add(record)
 	}
 
-	// Snapshot provider state for the drift check AdjustEndpoints runs later this cycle.
+	// Snapshot provider state for the drift check in AdjustEndpoints.
 	im.presentTXTNames = lowerSet(txtRecordsSet)
 	im.presentRecordKeys = sets.New[string]()
 	for _, record := range endpoints {
@@ -342,16 +341,15 @@ func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
 }
 
-// warnDriftedTXTs warns for desired managed records present at the provider whose ownership TXT is
-// absent — silently dropped, typically because the type prefix pushed it out of zone (apex
-// "example.com" → "a-example.com"). Reads the last Records() snapshot, so provider-agnostic and
-// restart-safe. Deduped once per name.
+// warnDriftedTXTs warns for present managed records whose ownership TXT is absent — dropped by the
+// provider, typically pushed out of zone by the type prefix (apex "example.com" → "a-example.com").
+// Uses the last Records() snapshot: provider-agnostic, restart-safe, deduped once per name.
 func (im *TXTRegistry) warnDriftedTXTs(desired []*endpoint.Endpoint) {
 	for _, ep := range desired {
 		if !plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 			continue
 		}
-		// Record not yet at the provider: pending create, not drift.
+		// Not yet at the provider: pending create, not drift.
 		if !im.presentRecordKeys.Has(recordKeyLower(ep.DNSName, ep.RecordType)) {
 			continue
 		}
@@ -367,13 +365,12 @@ func (im *TXTRegistry) warnDriftedTXTs(desired []*endpoint.Endpoint) {
 	}
 }
 
-// recordKeyLower builds the lower-cased "name/TYPE" key matching desired records to present ones.
+// recordKeyLower builds the lower-cased "name/TYPE" key for matching records.
 func recordKeyLower(dnsName, recordType string) string {
 	return strings.ToLower(dnsName) + "/" + strings.ToUpper(recordType)
 }
 
-// lowerSet returns s with every element lower-cased, for case-insensitive name comparison
-// (providers commonly return lower-cased names).
+// lowerSet lower-cases every element for case-insensitive name comparison.
 func lowerSet(s sets.Set[string]) sets.Set[string] {
 	out := sets.New[string]()
 	for _, v := range s.List() {
@@ -479,7 +476,7 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 	if err != nil {
 		return nil, err
 	}
-	// Runs every sync against the Records() snapshot to spot dropped ownership TXTs.
+	// Spot ownership TXTs dropped by the provider, using the Records() snapshot.
 	im.warnDriftedTXTs(adjusted)
 	return adjusted, nil
 }
