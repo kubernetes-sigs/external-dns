@@ -71,6 +71,16 @@ type TXTRegistry struct {
 
 	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
 	obsoleteTXTWarned sets.Set[string]
+
+	// dryRun disables drift detection: ApplyChanges is a provider no-op, so nothing is written.
+	dryRun bool
+
+	// appliedTXTs holds the ownership TXT names created in the previous ApplyChanges; the next
+	// Records() flags any still absent as drifted (the provider dropped it, typically out of zone).
+	appliedTXTs sets.Set[string]
+
+	// driftTXTWarned dedups the drift warning to once per name.
+	driftTXTWarned sets.Set[string]
 }
 
 // existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
@@ -117,10 +127,15 @@ func (im *existingTXTs) reset() {
 
 // New creates a TXTRegistry from the given configuration.
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	return newRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
+	reg, err := newRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
 		cfg.TXTCacheInterval, cfg.TXTWildcardReplacement,
 		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes,
 		cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
+	if err != nil {
+		return nil, err
+	}
+	reg.dryRun = cfg.DryRun
+	return reg, nil
 }
 
 // newRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -166,6 +181,8 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
 		obsoleteTXTWarned:   sets.New[string](),
+		appliedTXTs:         sets.New[string](),
+		driftTXTWarned:      sets.New[string](),
 	}, nil
 }
 
@@ -236,6 +253,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		txtRecordsSet.Insert(record.DNSName)
 		im.existingTXTs.add(record)
 	}
+
+	// Report ownership TXTs the provider dropped since the last ApplyChanges.
+	im.warnDriftedTXTs(txtRecordsSet)
 
 	for _, ep := range endpoints {
 		if ep.Labels == nil {
@@ -322,6 +342,25 @@ func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 	im.obsoleteTXTWarned.Insert(legacyName)
 	log.Warnf("Obsolete legacy TXT record %q for A ALIAS %q can be removed; now using %q (see scripts/aws-cleanup-legacy-txt-records.py).",
 		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
+}
+
+// warnDriftedTXTs reports ownership TXTs applied last cycle but now absent — silently dropped
+// by the provider, typically because the type prefix pushed them out of zone (apex
+// "example.com" → "a-example.com"). Skipped under --dry-run and on the first sync.
+func (im *TXTRegistry) warnDriftedTXTs(present sets.Set[string]) {
+	if im.dryRun || len(im.appliedTXTs) == 0 {
+		return
+	}
+	for _, txtName := range im.appliedTXTs.List() {
+		if present.Has(txtName) || im.driftTXTWarned.Has(txtName) {
+			continue
+		}
+		im.driftTXTWarned.Insert(txtName)
+		log.Warnf("Ownership TXT %q was applied but is absent from the provider; it likely "+
+			"falls outside a managed zone and cannot track ownership. "+
+			"Set --txt-prefix=\"someprefix-%%{record_type}.\" to keep it in-zone, or use --registry=crd. "+
+			"See docs/registry/txt.md.", txtName)
+	}
 }
 
 // generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
@@ -411,7 +450,20 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	if im.cacheInterval > 0 {
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
 	}
-	return im.provider.ApplyChanges(ctx, filteredChanges)
+
+	if err := im.provider.ApplyChanges(ctx, filteredChanges); err != nil {
+		return err
+	}
+
+	// Track the ownership TXTs just created so the next Records() can spot silent drops.
+	if !im.dryRun {
+		applied := sets.New[string]()
+		for _, r := range changes.Create {
+			applied.Insert(im.mapper.ToTXTName(r.DNSName, r.RecordType))
+		}
+		im.appliedTXTs = applied
+	}
+	return nil
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider

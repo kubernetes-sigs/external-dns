@@ -7,6 +7,8 @@ It stores DNS record metadata in TXT records, using the same provider.
 >
 > - If you plan to manage apex domains with external-dns whilst using a txt registry, you should ensure when using `--txt-prefix` that you specify the record type substitution and that it ends in a period (**.**).
 >   The record should be created under the same domain as the apex record being managed, i.e. `--txt-prefix=someprefix-%{record_type}.`
+> - With `--regex-domain-filter`, make sure the regex also matches the type-prefixed ownership TXT names (e.g. `a-example.org`); otherwise they are filtered out and ownership is not tracked.
+> - The [CRD registry](crd.md) stores ownership in a `DNSRecord` resource instead and is not affected.
 > - `--txt-prefix` and `--txt-suffix` contribute to the 63-byte maximum record length. To avoid errors, use them only if absolutely required and keep them as short as possible.
 
 ## Record Format Options
