@@ -371,8 +371,32 @@ func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoi
 
 func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.HostedZone) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
-	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
-		for _, r := range resp.ResourceRecordSets {
+
+	for _, z := range zones {
+		var recordSets []*route53.ResourceRecordSet
+		f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
+			recordSets = append(recordSets, resp.ResourceRecordSets...)
+			return true
+		}
+
+		params := &route53.ListResourceRecordSetsInput{
+			HostedZoneId: z.Id,
+			MaxItems:     aws.String(route53PageSize),
+		}
+
+		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
+			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s", *z.Id)
+		}
+
+		// A alias keys; a matching AAAA alias is a dualstack pair (#4897).
+		aAliasKeys := make(map[string]bool)
+		for _, r := range recordSets {
+			if r.AliasTarget != nil && aws.StringValue(r.Type) == route53.RRTypeA {
+				aAliasKeys[aliasRecordKey(r)] = true
+			}
+		}
+
+		for _, r := range recordSets {
 			newEndpoints := make([]*endpoint.Endpoint, 0)
 
 			if !p.SupportedRecordType(aws.StringValue(r.Type)) {
@@ -398,8 +422,13 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 				if ttl == 0 {
 					ttl = recordTTL
 				}
+				// Lone AAAA alias -> AAAA; else CNAME (#4897).
+				aliasType := endpoint.RecordTypeCNAME
+				if aws.StringValue(r.Type) == route53.RRTypeAaaa && !aAliasKeys[aliasRecordKey(r)] {
+					aliasType = endpoint.RecordTypeAAAA
+				}
 				ep := endpoint.
-					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
+					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aliasType, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
 					WithProviderSpecific(providerSpecificAlias, "true")
 				newEndpoints = append(newEndpoints, ep)
@@ -440,22 +469,14 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 				endpoints = append(endpoints, ep)
 			}
 		}
-
-		return true
-	}
-
-	for _, z := range zones {
-		params := &route53.ListResourceRecordSetsInput{
-			HostedZoneId: z.Id,
-			MaxItems:     aws.String(route53PageSize),
-		}
-
-		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s", *z.Id)
-		}
 	}
 
 	return endpoints, nil
+}
+
+// aliasRecordKey keys an ALIAS record by name and set identifier.
+func aliasRecordKey(r *route53.ResourceRecordSet) string {
+	return aws.StringValue(r.Name) + "/" + aws.StringValue(r.SetIdentifier)
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
@@ -743,7 +764,12 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 		if val, ok := ep.Labels[endpoint.DualstackLabelKey]; ok {
 			dualstack = val == "true"
 		}
-		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
+		// Keep AAAA alias as AAAA, not A (#4897).
+		aliasType := route53.RRTypeA
+		if ep.RecordType == endpoint.RecordTypeAAAA {
+			aliasType = route53.RRTypeAaaa
+		}
+		change.ResourceRecordSet.Type = aws.String(aliasType)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
 			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
@@ -1021,7 +1047,7 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 // and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
 	prop, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
-	if exists && prop.Value == "true" && ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
+	if exists && prop.Value == "true" && (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) > 0 {
 		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
 
 		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {

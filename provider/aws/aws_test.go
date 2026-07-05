@@ -618,6 +618,116 @@ func TestAWSCreateRecords(t *testing.T) {
 	})
 }
 
+func TestAWSCreateAAAAAlias(t *testing.T) {
+	// AAAA alias created as AAAA; no collision with A alias (#4897).
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+
+	records := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("create-test-a-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
+		endpoint.NewEndpoint("create-test-a-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true"),
+	}
+
+	require.NoError(t, provider.CreateRecords(context.Background(), records))
+
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		{
+			Name: aws.String("create-test-a-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeA),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(true),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+		{
+			Name: aws.String("create-test-a-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeAaaa),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(true),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+	})
+}
+
+func TestAWSAAAAAliasRecords(t *testing.T) {
+	// Lone AAAA alias -> AAAA; AAAA sharing name+setID with an A alias = dualstack, stays CNAME (#4897).
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []*route53.ResourceRecordSet{
+		{
+			Name: aws.String("aaaa-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeAaaa),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(false),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+		{
+			Name: aws.String("dualstack-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeA),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("bar.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(false),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+		{
+			Name: aws.String("dualstack-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeAaaa),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("bar.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(false),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+	})
+
+	records, err := provider.Records(context.Background())
+	require.NoError(t, err)
+
+	validateEndpoints(t, records, []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("aaaa-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
+		endpoint.NewEndpointWithTTL("dualstack-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
+		endpoint.NewEndpointWithTTL("dualstack-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithProviderSpecific(providerSpecificAlias, "true"),
+	})
+}
+
+func TestAWSAAAAAliasRoundtrip(t *testing.T) {
+	// Write then read an AAAA alias -> same endpoint, no plan churn (#4897).
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, nil)
+
+	source := endpoint.NewEndpointWithTTL("aaaa-roundtrip.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false")
+
+	require.NoError(t, provider.CreateRecords(context.Background(), []*endpoint.Endpoint{source}))
+
+	records, err := provider.Records(context.Background())
+	require.NoError(t, err)
+
+	validateEndpoints(t, records, []*endpoint.Endpoint{source})
+}
+
+func TestAWSDeleteAAAAAlias(t *testing.T) {
+	// Delete AAAA alias removes the AAAA record, not an A record (#4897).
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []*route53.ResourceRecordSet{
+		{
+			Name: aws.String("aaaa-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeAaaa),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(false),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+	})
+
+	toDelete := endpoint.NewEndpointWithTTL("aaaa-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false")
+
+	require.NoError(t, provider.DeleteRecords(context.Background(), []*endpoint.Endpoint{toDelete}))
+
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{})
+}
+
 func TestAWSUpdateRecords(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*route53.ResourceRecordSet{
 		{
