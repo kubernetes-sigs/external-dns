@@ -1179,11 +1179,6 @@ func TestContourHTTPProxyLabelFilter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	count := &unstructured.UnstructuredList{}
-	for len(count.Items) < 2 {
-		count, _ = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace("default").List(t.Context(), metav1.ListOptions{})
-	}
-
 	endpoints, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
