@@ -98,18 +98,13 @@ func NewF5VirtualServerSource(
 		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
-	labelSelector := cfg.LabelFilter
-	if labelSelector == nil {
-		labelSelector = labels.Everything()
-	}
-
 	return &f5VirtualServerSource{
 		dynamicKubeClient:     dynamicKubeClient,
 		virtualServerInformer: virtualServerInformer,
 		kubeClient:            kubeClient,
 		namespace:             cfg.Namespace,
 		annotationFilter:      cfg.AnnotationFilter,
-		labelSelector:         labelSelector,
+		labelSelector:         cfg.LabelFilter,
 		templateEngine:        cfg.TemplateEngine,
 		unstructuredConverter: uc,
 	}, nil

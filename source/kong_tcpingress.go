@@ -100,14 +100,9 @@ func NewKongTCPIngressSource(
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
-	labelSelector := cfg.LabelFilter
-	if labelSelector == nil {
-		labelSelector = labels.Everything()
-	}
-
 	return &kongTCPIngressSource{
 		annotationFilter:         cfg.AnnotationFilter,
-		labelSelector:            labelSelector,
+		labelSelector:            cfg.LabelFilter,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:        dynamicKubeClient,
 		kongTCPIngressInformer:   kongTCPIngressInformer,

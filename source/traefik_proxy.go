@@ -175,14 +175,9 @@ func NewTraefikSource(
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
-	labelSelector := cfg.LabelFilter
-	if labelSelector == nil {
-		labelSelector = labels.Everything()
-	}
-
 	return &traefikSource{
 		annotationFilter:           cfg.AnnotationFilter,
-		labelSelector:              labelSelector,
+		labelSelector:              cfg.LabelFilter,
 		ignoreHostnameAnnotation:   cfg.IgnoreHostnameAnnotation,
 		templateEngine:             cfg.TemplateEngine,
 		dynamicKubeClient:          dynamicKubeClient,

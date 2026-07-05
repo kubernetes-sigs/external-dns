@@ -711,7 +711,7 @@ func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
 	fakeClient := fakeKube.NewClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5VirtualServerSource{}, source)
 

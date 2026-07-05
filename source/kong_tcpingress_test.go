@@ -509,7 +509,7 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 	fakeClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &kongTCPIngressSource{}, source)
 

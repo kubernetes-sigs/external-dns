@@ -99,18 +99,13 @@ func NewF5TransportServerSource(
 		return nil, fmt.Errorf("failed to setup unstructured converter: %w", err)
 	}
 
-	labelSelector := cfg.LabelFilter
-	if labelSelector == nil {
-		labelSelector = labels.Everything()
-	}
-
 	return &f5TransportServerSource{
 		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
 		namespace:               cfg.Namespace,
 		annotationFilter:        cfg.AnnotationFilter,
-		labelSelector:           labelSelector,
+		labelSelector:           cfg.LabelFilter,
 		templateEngine:          cfg.TemplateEngine,
 		unstructuredConverter:   uc,
 	}, nil

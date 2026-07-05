@@ -93,16 +93,11 @@ func NewContourHTTPProxySource(
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
 
-	labelSelector := cfg.LabelFilter
-	if labelSelector == nil {
-		labelSelector = labels.Everything()
-	}
-
 	return &httpProxySource{
 		dynamicKubeClient:        dynamicKubeClient,
 		namespace:                cfg.Namespace,
 		annotationFilter:         cfg.AnnotationFilter,
-		labelSelector:            labelSelector,
+		labelSelector:            cfg.LabelFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		httpProxyInformer:        httpProxyInformer,

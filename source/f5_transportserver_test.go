@@ -468,7 +468,7 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{})
+	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5TransportServerSource{}, source)
 

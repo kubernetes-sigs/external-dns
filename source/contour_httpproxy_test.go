@@ -1059,6 +1059,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 		t.Context(),
 		fakeDynamicClient,
 		&Config{
+			LabelFilter:    labels.Everything(),
 			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 		},
 	)
@@ -1199,7 +1200,7 @@ func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
 
 	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
 
-	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{})
+	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &httpProxySource{}, source)
 
