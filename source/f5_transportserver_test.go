@@ -569,14 +569,21 @@ func TestF5TransportServerIndexer(t *testing.T) {
 				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
 			},
 		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
 	}
+
+	uc, err := newTSUnstructuredConverter()
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			uc, err := newTSUnstructuredConverter()
-			require.NoError(t, err)
 
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
@@ -590,16 +597,10 @@ func TestF5TransportServerIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			labelSel := labels.Everything()
-			if tt.labelFilter != "" {
-				labelSel, err = labels.Parse(tt.labelFilter)
-				require.NoError(t, err)
-			}
-
 			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 				Namespace:        defaultF5TransportServerNamespace,
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:      labelSel,
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
 			require.NoError(t, err)
 

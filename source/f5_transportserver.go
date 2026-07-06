@@ -83,6 +83,7 @@ func NewF5TransportServerSource(
 	informers.MustAddIndexers(transportServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
 	informers.MustAddEventHandler(transportServerInformer.Informer(), informers.DefaultEventHandler())

@@ -813,14 +813,21 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 				makeEntity("vs1", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
 			},
 		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			servers: []*f5.VirtualServer{
+				makeEntity("vs1", "1.2.3.1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
 	}
+
+	uc, err := newVSUnstructuredConverter()
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			uc, err := newVSUnstructuredConverter()
-			require.NoError(t, err)
 
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
@@ -834,16 +841,10 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			labelSel := labels.Everything()
-			if tt.labelFilter != "" {
-				labelSel, err = labels.Parse(tt.labelFilter)
-				require.NoError(t, err)
-			}
-
 			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 				Namespace:        defaultF5VirtualServerNamespace,
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:      labelSel,
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
 			require.NoError(t, err)
 

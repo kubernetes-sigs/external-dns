@@ -1294,6 +1294,13 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 				makeEntity("default", "hp1", "a.example.org", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
 			},
 		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			proxies: []*projectcontour.HTTPProxy{
+				makeEntity("default", "hp1", "a.example.org", "1.2.3.1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1308,16 +1315,9 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			labelSel := labels.Everything()
-			if tt.labelFilter != "" {
-				var err error
-				labelSel, err = labels.Parse(tt.labelFilter)
-				require.NoError(t, err)
-			}
-
 			src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:      labelSel,
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
 			require.NoError(t, err)
 

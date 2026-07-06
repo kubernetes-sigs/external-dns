@@ -2122,6 +2122,13 @@ func TestTraefikIndexer(t *testing.T) {
 				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, nil),
 			},
 		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2140,17 +2147,10 @@ func TestTraefikIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			labelSel := labels.Everything()
-			if tt.labelFilter != "" {
-				var err error
-				labelSel, err = labels.Parse(tt.labelFilter)
-				require.NoError(t, err)
-			}
-
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 				Namespace:        defaultTraefikNamespace,
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:      labelSel,
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
 			require.NoError(t, err)
 
@@ -2228,11 +2228,29 @@ func TestTraefikLegacyIndexer(t *testing.T) {
 			},
 		},
 		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ir2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ir3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
 			name:             "no matches on legacy routes",
 			annotationFilter: "tier=missing",
 			expectedCount:    0,
 			routes: []*IngressRoute{
 				makeEntity("ir1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
 			},
 		},
 	}
@@ -2253,17 +2271,10 @@ func TestTraefikLegacyIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			labelSel := labels.Everything()
-			if tt.labelFilter != "" {
-				var err error
-				labelSel, err = labels.Parse(tt.labelFilter)
-				require.NoError(t, err)
-			}
-
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 				Namespace:           defaultTraefikNamespace,
 				AnnotationFilter:    parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:         labelSel,
+				LabelFilter:         parseLabelSelectorOrEverything(t, tt.labelFilter),
 				TraefikDisableNew:   true,
 				TraefikEnableLegacy: true,
 			})

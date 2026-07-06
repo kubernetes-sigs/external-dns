@@ -82,6 +82,7 @@ func NewF5VirtualServerSource(
 	informers.MustAddIndexers(virtualServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
 	informers.MustAddEventHandler(virtualServerInformer.Informer(), informers.DefaultEventHandler())

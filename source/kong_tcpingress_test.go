@@ -612,14 +612,21 @@ func TestKongTCPIngressIndexer(t *testing.T) {
 				makeEntity("ti1", map[string]string{"tier": "frontend"}, nil),
 			},
 		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
 	}
+
+	uc, err := newKongUnstructuredConverter()
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			uc, err := newKongUnstructuredConverter()
-			require.NoError(t, err)
 
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
 			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
@@ -633,16 +640,10 @@ func TestKongTCPIngressIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			labelSel := labels.Everything()
-			if tt.labelFilter != "" {
-				labelSel, err = labels.Parse(tt.labelFilter)
-				require.NoError(t, err)
-			}
-
 			src, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 				Namespace:        defaultKongNamespace,
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:      labelSel,
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
 			require.NoError(t, err)
 

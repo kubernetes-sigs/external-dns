@@ -83,6 +83,7 @@ func NewKongTCPIngressSource(
 	informers.MustAddIndexers(kongTCPIngressInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.

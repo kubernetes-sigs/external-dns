@@ -124,6 +124,7 @@ func NewTraefikSource(
 	indexerOpts := informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	)
 	if !cfg.TraefikDisableNew {
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
@@ -262,42 +263,14 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 
 // ingressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
 func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	irs := informers.ListIndexed[*unstructured.Unstructured](ts.ingressRouteTcpInformer.Informer().GetIndexer())
-
-	var ingressRouteTCPs []*IngressRouteTCP
-	for _, obj := range irs {
-		ingressRouteTCP := &IngressRouteTCP{}
-		if err := ts.unstructuredConverter.scheme.Convert(obj, ingressRouteTCP, nil); err != nil {
-			return nil, err
-		}
-		ingressRouteTCP.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
-		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
-	}
-
-	for _, ingressRouteTCP := range ingressRouteTCPs {
-		var targets endpoint.Targets
-
-		targets = append(targets, annotations.TargetsFromTargetAnnotation(ingressRouteTCP.Annotations)...)
-
-		fullname := fmt.Sprintf("%s/%s", ingressRouteTCP.Namespace, ingressRouteTCP.Name)
-
-		ingressEndpoints, err := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
-		if err != nil {
-			return nil, err
-		}
-		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.TraefikProxy, ingressRouteTCP) {
-			continue
-		}
-
-		endpoint.AttachRefObject(ingressEndpoints, events.NewObjectReference(ingressRouteTCP, types.TraefikProxy))
-
-		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
-		endpoints = append(endpoints, ingressEndpoints...)
-	}
-
-	return endpoints, nil
+	return extractEndpoints(
+		ts.ingressRouteTcpInformer.Informer().GetIndexer(),
+		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
+			typed := &IngressRouteTCP{}
+			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
+		},
+		ts.endpointsFromIngressRouteTCP,
+	)
 }
 
 // ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
@@ -846,23 +819,17 @@ func extractEndpoints[T interface {
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	objs := informers.ListIndexed[*unstructured.Unstructured](indexer)
-
-	var typedObjs []T
-	for _, obj := range objs {
+	for _, obj := range informers.ListIndexed[*unstructured.Unstructured](indexer) {
 		typed, err := convertFunc(obj)
 		if err != nil {
 			return nil, err
 		}
 		typed.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
-		typedObjs = append(typedObjs, typed)
-	}
 
-	for _, item := range typedObjs {
-		targets := annotations.TargetsFromTargetAnnotation(item.GetAnnotations())
+		targets := annotations.TargetsFromTargetAnnotation(typed.GetAnnotations())
+		name := getObjectFullName(typed)
 
-		name := getObjectFullName(item)
-		ingressEndpoints, err := generateEndpoints(item, targets)
+		ingressEndpoints, err := generateEndpoints(typed, targets)
 		if err != nil {
 			return nil, err
 		}
@@ -874,8 +841,8 @@ func extractEndpoints[T interface {
 
 		// All traefik route kinds map to the traefik-proxy source. The concrete
 		// CRD types satisfy client.Object; the assertion guards the generic T.
-		if obj, ok := any(item).(client.Object); ok {
-			endpoint.AttachRefObject(ingressEndpoints, events.NewObjectReference(obj, types.TraefikProxy))
+		if cObj, ok := any(typed).(client.Object); ok {
+			endpoint.AttachRefObject(ingressEndpoints, events.NewObjectReference(cObj, types.TraefikProxy))
 		}
 
 		log.Debugf("Endpoints generated from %s: %v", name, ingressEndpoints)
@@ -886,14 +853,8 @@ func extractEndpoints[T interface {
 }
 
 func getObjectFullName(obj any) string {
-	switch o := obj.(type) {
-	case *IngressRouteUDP:
-		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
-	case *IngressRoute:
-		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
-	case *IngressRouteTCP:
-		return fmt.Sprintf("%s/%s", o.Namespace, o.Name)
-	default:
-		return ""
+	if m, ok := obj.(metav1.Object); ok {
+		return m.GetNamespace() + "/" + m.GetName()
 	}
+	return ""
 }
