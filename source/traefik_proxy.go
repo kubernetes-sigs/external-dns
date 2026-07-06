@@ -18,7 +18,6 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -26,7 +25,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -62,6 +60,10 @@ var (
 		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
 	}
+	// TODO: traefik.containo.us CRDs were removed in Traefik v3 (released 2024).
+	// Traefik v2 active support ended 2025-04-29; security support ends 2026-02-01.
+	// Remove these GVRs and the --traefik-enable-legacy flag after 2026-02-01.
+	// See https://doc.traefik.io/traefik/deprecation/releases/
 	oldIngressRouteGVR = schema.GroupVersionResource{
 		Group:    "traefik.containo.us",
 		Version:  "v1alpha1",
@@ -95,9 +97,6 @@ var (
 type traefikSource struct {
 	dynamicKubeClient          dynamic.Interface
 	kubeClient                 kubernetes.Interface
-	annotationFilter           labels.Selector
-	labelSelector              labels.Selector
-	namespace                  string
 	ignoreHostnameAnnotation   bool
 	templateEngine             template.Engine
 	ingressRouteInformer       kubeinformers.GenericInformer
@@ -122,6 +121,10 @@ func NewTraefikSource(
 	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer kubeinformers.GenericInformer
 
 	// Add default resource event handlers to properly initialize informers.
+	indexerOpts := informers.IndexerWithOptions[*unstructured.Unstructured](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+	)
 	if !cfg.TraefikDisableNew {
 		ingressRouteInformer = informerFactory.ForResource(ingressRouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressRouteTCPGVR)
@@ -138,6 +141,9 @@ func NewTraefikSource(
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
+		informers.MustAddIndexers(ingressRouteInformer.Informer(), indexerOpts)
+		informers.MustAddIndexers(ingressRouteTcpInformer.Informer(), indexerOpts)
+		informers.MustAddIndexers(ingressRouteUdpInformer.Informer(), indexerOpts)
 		informers.MustAddEventHandler(ingressRouteInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(ingressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(ingressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
@@ -158,6 +164,9 @@ func NewTraefikSource(
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
+		informers.MustAddIndexers(oldIngressRouteInformer.Informer(), indexerOpts)
+		informers.MustAddIndexers(oldIngressRouteTcpInformer.Informer(), indexerOpts)
+		informers.MustAddIndexers(oldIngressRouteUdpInformer.Informer(), indexerOpts)
 		informers.MustAddEventHandler(oldIngressRouteInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(oldIngressRouteTcpInformer.Informer(), informers.DefaultEventHandler())
 		informers.MustAddEventHandler(oldIngressRouteUdpInformer.Informer(), informers.DefaultEventHandler())
@@ -176,8 +185,6 @@ func NewTraefikSource(
 	}
 
 	return &traefikSource{
-		annotationFilter:           cfg.AnnotationFilter,
-		labelSelector:              cfg.LabelFilter,
 		ignoreHostnameAnnotation:   cfg.IgnoreHostnameAnnotation,
 		templateEngine:             cfg.TemplateEngine,
 		dynamicKubeClient:          dynamicKubeClient,
@@ -188,7 +195,6 @@ func NewTraefikSource(
 		oldIngressRouteTcpInformer: oldIngressRouteTcpInformer,
 		oldIngressRouteUdpInformer: oldIngressRouteUdpInformer,
 		kubeClient:                 kubeClient,
-		namespace:                  cfg.Namespace,
 		unstructuredConverter:      uc,
 	}, nil
 }
@@ -245,14 +251,11 @@ func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
-		ts.ingressRouteInformer.Lister(),
-		ts.namespace,
+		ts.ingressRouteInformer.Informer().GetIndexer(),
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
 			typed := &IngressRoute{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
-		ts.labelSelector,
-		ts.annotationFilter,
 		ts.endpointsFromIngressRoute,
 	)
 }
@@ -261,28 +264,17 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	irs, err := ts.ingressRouteTcpInformer.Lister().ByNamespace(ts.namespace).List(ts.labelSelector)
-	if err != nil {
-		return nil, err
-	}
+	irs := informers.ListIndexed[*unstructured.Unstructured](ts.ingressRouteTcpInformer.Informer().GetIndexer())
 
 	var ingressRouteTCPs []*IngressRouteTCP
-	for _, ingressRouteTCPObj := range irs {
-		unstructuredHost, ok := ingressRouteTCPObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert IngressRouteTCP object to unstructured")
-		}
-
+	for _, obj := range irs {
 		ingressRouteTCP := &IngressRouteTCP{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRouteTCP, nil)
-		if err != nil {
+		if err := ts.unstructuredConverter.scheme.Convert(obj, ingressRouteTCP, nil); err != nil {
 			return nil, err
 		}
-		ingressRouteTCP.GetObjectKind().SetGroupVersionKind(unstructuredHost.GetObjectKind().GroupVersionKind())
+		ingressRouteTCP.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
-
-	ingressRouteTCPs = annotations.Filter(ingressRouteTCPs, ts.annotationFilter)
 
 	for _, ingressRouteTCP := range ingressRouteTCPs {
 		var targets endpoint.Targets
@@ -311,14 +303,11 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 // ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
-		ts.ingressRouteUdpInformer.Lister(),
-		ts.namespace,
+		ts.ingressRouteUdpInformer.Informer().GetIndexer(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
-		ts.labelSelector,
-		ts.annotationFilter,
 		ts.endpointsFromIngressRouteUDP,
 	)
 }
@@ -326,14 +315,11 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 // oldIngressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
-		ts.oldIngressRouteInformer.Lister(),
-		ts.namespace,
+		ts.oldIngressRouteInformer.Informer().GetIndexer(),
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
 			typed := &IngressRoute{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
-		ts.labelSelector,
-		ts.annotationFilter,
 		ts.endpointsFromIngressRoute,
 	)
 }
@@ -341,14 +327,11 @@ func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error
 // oldIngressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
 func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
-		ts.oldIngressRouteTcpInformer.Lister(),
-		ts.namespace,
+		ts.oldIngressRouteTcpInformer.Informer().GetIndexer(),
 		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
 			typed := &IngressRouteTCP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
-		ts.labelSelector,
-		ts.annotationFilter,
 		ts.endpointsFromIngressRouteTCP,
 	)
 }
@@ -356,14 +339,11 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, er
 // oldIngressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
-		ts.oldIngressRouteUdpInformer.Lister(),
-		ts.namespace,
+		ts.oldIngressRouteUdpInformer.Informer().GetIndexer(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
-		ts.labelSelector,
-		ts.annotationFilter,
 		ts.endpointsFromIngressRouteUDP,
 	)
 }
@@ -852,45 +832,31 @@ func (in *IngressRouteUDP) GetAnnotations() map[string]string {
 
 // extractEndpoints is a generic function that extracts endpoints from Kubernetes resources.
 // It performs the following steps:
-// 1. Lists all objects in the specified namespace using the provided informer.
+// 1. Lists all objects admitted by the indexer (annotation + label filters applied at index time).
 // 2. Converts the unstructured objects to the desired type using the convertFunc.
-// 3. Filters the converted objects based on the annotation filter.
-// 4. Generates endpoints for each filtered object using the generateEndpoints function.
+// 3. Generates endpoints for each object using the generateEndpoints function.
 // Returns a list of generated endpoints or an error if any step fails.
 func extractEndpoints[T interface {
 	annotations.AnnotatedObject
 	runtime.Object
 }](
-	informer cache.GenericLister,
-	namespace string,
+	indexer cache.Indexer,
 	convertFunc func(*unstructured.Unstructured) (T, error),
-	labelSelector labels.Selector,
-	annotationFilter labels.Selector,
 	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	objs, err := informer.ByNamespace(namespace).List(labelSelector)
-	if err != nil {
-		return nil, err
-	}
+	objs := informers.ListIndexed[*unstructured.Unstructured](indexer)
 
 	var typedObjs []T
 	for _, obj := range objs {
-		unstructuredObj, ok := obj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("failed to cast to unstructured.Unstructured")
-		}
-
-		typed, err := convertFunc(unstructuredObj)
+		typed, err := convertFunc(obj)
 		if err != nil {
 			return nil, err
 		}
-		typed.GetObjectKind().SetGroupVersionKind(unstructuredObj.GetObjectKind().GroupVersionKind())
+		typed.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 		typedObjs = append(typedObjs, typed)
 	}
-
-	typedObjs = annotations.Filter(typedObjs, annotationFilter)
 
 	for _, item := range typedObjs {
 		targets := annotations.TargetsFromTargetAnnotation(item.GetAnnotations())

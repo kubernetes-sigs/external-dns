@@ -480,3 +480,132 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 		withRemovedManagedFields(),
 	)
 }
+
+// TestF5TransportServerIndexer verifies that the TransportServer indexer correctly filters resources
+// by annotation filter and label selector at index time, so that only matching resources are
+// returned by Endpoints().
+func TestF5TransportServerIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(name, vsAddress string, ann, lbls map[string]string) *f5.TransportServer {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		return &f5.TransportServer{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: f5TransportServerGVR.GroupVersion().String(),
+				Kind:       "TransportServer",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   defaultF5TransportServerNamespace,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Spec: f5.TransportServerSpec{
+				Host: name + ".example.org",
+			},
+			Status: f5.CustomResourceStatus{
+				VSAddress: vsAddress,
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		servers          []*f5.TransportServer
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all servers",
+			expectedCount: 3,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", nil, nil),
+				makeEntity("ts2", "1.2.3.2", nil, nil),
+				makeEntity("ts3", "1.2.3.3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter includes matching servers",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ts2", "1.2.3.2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ts3", "1.2.3.3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter includes matching servers",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", nil, map[string]string{"env": "prod"}),
+				makeEntity("ts2", "1.2.3.2", nil, map[string]string{"env": "staging"}),
+				makeEntity("ts3", "1.2.3.3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ts2", "1.2.3.2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ts3", "1.2.3.3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches returns empty",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uc, err := newTSUnstructuredConverter()
+			require.NoError(t, err)
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			for _, srv := range tt.servers {
+				data, err := json.Marshal(srv)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespace:        defaultF5TransportServerNamespace,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      labelSel,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}

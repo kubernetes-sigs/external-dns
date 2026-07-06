@@ -521,3 +521,134 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 		withRemovedManagedFields(),
 	)
 }
+
+// TestKongTCPIngressIndexer verifies that the TCPIngress indexer correctly filters resources
+// by annotation filter and label selector at index time, so that only matching resources are
+// returned by Endpoints().
+func TestKongTCPIngressIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(name string, ann, lbls map[string]string) *TCPIngress {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		return &TCPIngress{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: kongGroupdVersionResource.GroupVersion().String(),
+				Kind:       "TCPIngress",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   defaultKongNamespace,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Spec: tcpIngressSpec{
+				Rules: []tcpIngressRule{{Host: name + ".example.org", Port: 80}},
+			},
+			Status: tcpIngressStatus{
+				LoadBalancer: corev1.LoadBalancerStatus{
+					Ingress: []corev1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		ingresses        []*TCPIngress
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all ingresses",
+			expectedCount: 3,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", nil, nil),
+				makeEntity("ti2", nil, nil),
+				makeEntity("ti3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter includes matching ingresses",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ti2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ti3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter includes matching ingresses",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", nil, map[string]string{"env": "prod"}),
+				makeEntity("ti2", nil, map[string]string{"env": "staging"}),
+				makeEntity("ti3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ti2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ti3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches returns empty",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uc, err := newKongUnstructuredConverter()
+			require.NoError(t, err)
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			for _, ing := range tt.ingresses {
+				data, err := json.Marshal(ing)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespace:        defaultKongNamespace,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      labelSel,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
