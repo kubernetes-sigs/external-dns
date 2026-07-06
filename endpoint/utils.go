@@ -163,7 +163,9 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			// This will be caught by the provider when it tries to create the record, but log a warning here to make it more obvious.
 			// TODO: add metric for CNAME conflicts
 			if first, ok := cnameTargets[cnameKey]; ok && first != ep.Targets[0] {
-				log.Warnf("Only one CNAME per name — %s CNAME %s and %s CNAME %s is invalid DNS. A resolver wouldn't know which canonical name to follow.", ep.DNSName, first, ep.DNSName, ep.Targets[0])
+				if shouldWarnCNAMEConflict(ep.DNSName) {
+					log.Warnf("Only one CNAME per name — %s CNAME %s and %s CNAME %s is invalid DNS. A resolver wouldn't know which canonical name to follow.", ep.DNSName, first, ep.DNSName, ep.Targets[0])
+				}
 			}
 			cnameTargets[cnameKey] = ep.Targets[0]
 		}

@@ -106,6 +106,7 @@ func execute(ctx context.Context) {
 		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
 		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
 	)
+	endpoint.SetCNAMEConflictDomainFilter(domainFilter)
 
 	prvdr, err := providerfactory.Select(ctx, cfg, domainFilter)
 	if err != nil {

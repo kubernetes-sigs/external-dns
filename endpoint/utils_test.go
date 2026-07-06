@@ -560,6 +560,32 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
 	})
 
+	t.Run("no warning for CNAME conflict outside domain filter", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+		t.Cleanup(func() { SetCNAMEConflictDomainFilter(nil) })
+		SetCNAMEConflictDomainFilter(NewDomainFilter([]string{"managed.example.internal"}))
+
+		MergeEndpoints([]*Endpoint{
+			NewEndpoint("api-meet.example.com", RecordTypeCNAME, "a.elb.com"),
+			NewEndpoint("api-meet.example.com", RecordTypeCNAME, "b.elb.com"),
+		})
+
+		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
+	})
+
+	t.Run("warns on CNAME conflict inside domain filter", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+		t.Cleanup(func() { SetCNAMEConflictDomainFilter(nil) })
+		SetCNAMEConflictDomainFilter(NewDomainFilter([]string{"example.com"}))
+
+		MergeEndpoints([]*Endpoint{
+			NewEndpoint("app.example.com", RecordTypeCNAME, "a.elb.com"),
+			NewEndpoint("app.example.com", RecordTypeCNAME, "b.elb.com"),
+		})
+
+		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
+	})
+
 	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 

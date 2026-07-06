@@ -29,6 +29,23 @@ import (
 	"sigs.k8s.io/external-dns/internal/idna"
 )
 
+// CNAMEConflictDomainFilter limits CNAME conflict warnings to DNS names matched
+// by the configured domain filter. When unset or unconfigured, all conflicts warn.
+var CNAMEConflictDomainFilter DomainFilterInterface
+
+// SetCNAMEConflictDomainFilter configures which DNS names should emit CNAME
+// conflict warnings during endpoint merging.
+func SetCNAMEConflictDomainFilter(filter DomainFilterInterface) {
+	CNAMEConflictDomainFilter = filter
+}
+
+func shouldWarnCNAMEConflict(dnsName string) bool {
+	if CNAMEConflictDomainFilter == nil {
+		return true
+	}
+	return CNAMEConflictDomainFilter.Match(dnsName)
+}
+
 type MatchAllDomainFilters []DomainFilterInterface
 
 func (f MatchAllDomainFilters) Match(domain string) bool {
