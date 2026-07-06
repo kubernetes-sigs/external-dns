@@ -2131,12 +2131,13 @@ func TestTraefikIndexer(t *testing.T) {
 		},
 	}
 
+	traefikScheme := newTraefikScheme()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(newTraefikScheme())
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
 
 			for _, route := range tt.routes {
 				data, err := json.Marshal(route)
@@ -2255,12 +2256,13 @@ func TestTraefikLegacyIndexer(t *testing.T) {
 		},
 	}
 
+	traefikScheme := newTraefikScheme()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(newTraefikScheme())
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
 
 			for _, route := range tt.routes {
 				data, err := json.Marshal(route)

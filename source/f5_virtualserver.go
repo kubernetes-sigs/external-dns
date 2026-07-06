@@ -58,7 +58,6 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5VirtualServerSource struct {
-	dynamicKubeClient     dynamic.Interface
 	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
 	templateEngine        template.Engine
@@ -100,7 +99,6 @@ func NewF5VirtualServerSource(
 	}
 
 	return &f5VirtualServerSource{
-		dynamicKubeClient:     dynamicKubeClient,
 		virtualServerInformer: virtualServerInformer,
 		kubeClient:            kubeClient,
 		templateEngine:        cfg.TemplateEngine,

@@ -1247,12 +1247,12 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 		expectedCount    int
 	}{
 		{
-			name:          "no filters returns all proxies",
+			name:          "no filters returns all proxies across namespaces",
 			expectedCount: 3,
 			proxies: []*projectcontour.HTTPProxy{
 				makeEntity("default", "hp1", "a.example.org", "1.2.3.1", nil, nil),
-				makeEntity("default", "hp2", "b.example.org", "1.2.3.2", nil, nil),
-				makeEntity("default", "hp3", "c.example.org", "1.2.3.3", nil, nil),
+				makeEntity("staging", "hp2", "b.example.org", "1.2.3.2", nil, nil),
+				makeEntity("production", "hp3", "c.example.org", "1.2.3.3", nil, nil),
 			},
 		},
 		{
@@ -1261,8 +1261,8 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 			expectedCount:    2,
 			proxies: []*projectcontour.HTTPProxy{
 				makeEntity("default", "hp1", "a.example.org", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
-				makeEntity("default", "hp2", "b.example.org", "1.2.3.2", map[string]string{"tier": "frontend"}, nil),
-				makeEntity("default", "hp3", "c.example.org", "1.2.3.3", map[string]string{"tier": "backend"}, nil),
+				makeEntity("staging", "hp2", "b.example.org", "1.2.3.2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("production", "hp3", "c.example.org", "1.2.3.3", map[string]string{"tier": "backend"}, nil),
 			},
 		},
 		{
@@ -1271,8 +1271,8 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 			expectedCount: 1,
 			proxies: []*projectcontour.HTTPProxy{
 				makeEntity("default", "hp1", "a.example.org", "1.2.3.1", nil, map[string]string{"env": "prod"}),
-				makeEntity("default", "hp2", "b.example.org", "1.2.3.2", nil, map[string]string{"env": "staging"}),
-				makeEntity("default", "hp3", "c.example.org", "1.2.3.3", nil, nil),
+				makeEntity("staging", "hp2", "b.example.org", "1.2.3.2", nil, map[string]string{"env": "staging"}),
+				makeEntity("production", "hp3", "c.example.org", "1.2.3.3", nil, nil),
 			},
 		},
 		{
@@ -1282,8 +1282,8 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 			expectedCount:    1,
 			proxies: []*projectcontour.HTTPProxy{
 				makeEntity("default", "hp1", "a.example.org", "1.2.3.1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
-				makeEntity("default", "hp2", "b.example.org", "1.2.3.2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
-				makeEntity("default", "hp3", "c.example.org", "1.2.3.3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+				makeEntity("staging", "hp2", "b.example.org", "1.2.3.2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("production", "hp3", "c.example.org", "1.2.3.3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
 			},
 		},
 		{

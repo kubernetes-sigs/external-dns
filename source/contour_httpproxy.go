@@ -115,19 +115,12 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, hp := range httpProxies {
-		if annotations.IsControllerMismatch(hp, types.ContourHTTPProxy) {
-			continue
-		}
-
-		hpEndpoints := sc.endpointsFromHTTPProxy(hp)
-
 		// apply template if fqdn is missing on HTTPProxy
-		var err error
-		hpEndpoints, err = sc.templateEngine.CombineWithEndpoints(
-			hpEndpoints,
+		hpEndpoints, err := sc.templateEngine.CombineWithEndpoints(
+			sc.endpointsFromHTTPProxy(hp),
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
 		)
 		if err != nil {

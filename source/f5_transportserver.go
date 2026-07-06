@@ -59,7 +59,6 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
-	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer
 	kubeClient              kubernetes.Interface
 	templateEngine          template.Engine
@@ -101,7 +100,6 @@ func NewF5TransportServerSource(
 	}
 
 	return &f5TransportServerSource{
-		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
 		templateEngine:          cfg.TemplateEngine,
