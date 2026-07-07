@@ -45,6 +45,21 @@ type WebhookServer struct {
 	MaxBodySize int64
 }
 
+// ServerOptions configures the webhook HTTP server started by StartHTTPApi.
+type ServerOptions struct {
+	Provider provider.Provider
+	// StartedChan, if non-nil, is signaled once the server is listening.
+	StartedChan chan struct{}
+	// ProviderPort is the listen address, e.g. "127.0.0.1:8888".
+	ProviderPort      string
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	ReadHeaderTimeout time.Duration
+	IdleTimeout       time.Duration
+	// MaxBodySize caps request body bytes; <= 0 disables the limit.
+	MaxBodySize int64
+}
+
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
@@ -143,10 +158,10 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request)
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
-func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout, readHeaderTimeout, idleTimeout time.Duration, maxBodySize int64, providerPort string) {
+func StartHTTPApi(opts ServerOptions) {
 	p := WebhookServer{
-		Provider:    provider,
-		MaxBodySize: maxBodySize,
+		Provider:    opts.Provider,
+		MaxBodySize: opts.MaxBodySize,
 	}
 
 	m := http.NewServeMux()
@@ -155,23 +170,23 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 	m.HandleFunc(UrlAdjustEndpoints, p.AdjustEndpointsHandler)
 
 	s := &http.Server{
-		Addr:         providerPort,
+		Addr:         opts.ProviderPort,
 		Handler:      m,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
+		ReadTimeout:  opts.ReadTimeout,
+		WriteTimeout: opts.WriteTimeout,
 		// Separate knobs from ReadTimeout, which an operator may raise for slow
 		// or large request bodies without loosening these bounds.
-		ReadHeaderTimeout: readHeaderTimeout,
-		IdleTimeout:       idleTimeout,
+		ReadHeaderTimeout: opts.ReadHeaderTimeout,
+		IdleTimeout:       opts.IdleTimeout,
 	}
 
-	l, err := net.Listen("tcp", providerPort)
+	l, err := net.Listen("tcp", opts.ProviderPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if startedChan != nil {
-		startedChan <- struct{}{}
+	if opts.StartedChan != nil {
+		opts.StartedChan <- struct{}{}
 	}
 
 	if err := s.Serve(l); err != nil {

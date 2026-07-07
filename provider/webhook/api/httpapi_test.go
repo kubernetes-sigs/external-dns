@@ -306,7 +306,16 @@ func TestAdjustEndpointsHandlerWithError(t *testing.T) {
 
 func TestStartHTTPApi(t *testing.T) {
 	startedChan := make(chan struct{})
-	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, 5*time.Second, 30*time.Second, 32<<20, "127.0.0.1:8887")
+	go StartHTTPApi(ServerOptions{
+		Provider:          FakeWebhookProvider{},
+		StartedChan:       startedChan,
+		ProviderPort:      "127.0.0.1:8887",
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		MaxBodySize:       32 << 20,
+	})
 	<-startedChan
 	resp, err := http.Get("http://127.0.0.1:8887")
 	require.NoError(t, err)
