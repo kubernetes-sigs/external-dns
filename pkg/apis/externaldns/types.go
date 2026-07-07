@@ -44,44 +44,48 @@ const (
 
 // Config is a project-wide configuration
 type Config struct {
-	APIServerURL                                  string
-	KubeConfig                                    string
-	RequestTimeout                                time.Duration
-	KubeAPIRequestTimeout                         time.Duration
-	KubeAPIQPS                                    int
-	KubeAPIBurst                                  int
-	DefaultTargets                                []string
-	GlooNamespaces                                []string
-	SkipperRouteGroupVersion                      string
-	Sources                                       []string
-	Namespace                                     string
-	AnnotationFilter                              string
-	AnnotationPrefix                              string
-	LabelFilter                                   string
-	IngressClassNames                             []string
-	FQDNTemplate                                  []string
-	TargetTemplate                                []string
-	FQDNTargetTemplate                            []string
-	CombineFQDNAndAnnotation                      bool
-	IgnoreHostnameAnnotation                      bool
-	IgnoreNonHostNetworkPods                      bool
-	IgnoreIngressTLSSpec                          bool
-	IgnoreIngressRulesSpec                        bool
-	ListenEndpointEvents                          bool
-	ExposeInternalIPV6                            bool
-	GatewayName                                   string
-	GatewayNamespace                              string
-	GatewayLabelFilter                            string
-	GatewayListenerSets                           bool
-	Compatibility                                 string
-	PodSourceDomain                               string
-	PublishInternal                               bool
-	PublishHostIP                                 bool
-	AlwaysPublishNotReadyAddresses                bool
-	ConnectorSourceServer                         string
-	Provider                                      string
-	ProviderCacheTime                             time.Duration
-	CreatePTR                                     bool
+	APIServerURL                   string
+	KubeConfig                     string
+	RequestTimeout                 time.Duration
+	KubeAPIRequestTimeout          time.Duration
+	KubeAPIQPS                     int
+	KubeAPIBurst                   int
+	DefaultTargets                 []string
+	GlooNamespaces                 []string
+	SkipperRouteGroupVersion       string
+	Sources                        []string
+	Namespace                      string
+	AnnotationFilter               string
+	AnnotationPrefix               string
+	LabelFilter                    string
+	IngressClassNames              []string
+	FQDNTemplate                   []string
+	TargetTemplate                 []string
+	FQDNTargetTemplate             []string
+	CombineFQDNAndAnnotation       bool
+	IgnoreHostnameAnnotation       bool
+	IgnoreNonHostNetworkPods       bool
+	IgnoreIngressTLSSpec           bool
+	IgnoreIngressRulesSpec         bool
+	ListenEndpointEvents           bool
+	ExposeInternalIPV6             bool
+	GatewayName                    string
+	GatewayNamespace               string
+	GatewayLabelFilter             string
+	GatewayListenerSets            bool
+	Compatibility                  string
+	PodSourceDomain                string
+	PublishInternal                bool
+	PublishHostIP                  bool
+	AlwaysPublishNotReadyAddresses bool
+	ConnectorSourceServer          string
+	Provider                       string
+	ProviderCacheTime              time.Duration
+	CreatePTR                      bool
+	// ACMEDelegation* correspond to the --acme-cname-delegation-* flags.
+	ACMEDelegationTargetTemplate                  string
+	ACMEDelegationDomainFilter                    []string
+	ACMEDelegationTTL                             time.Duration
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
@@ -223,34 +227,37 @@ type Config struct {
 }
 
 var defaultConfig = &Config{
-	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
-	AnnotationFilter:         "",
-	AnnotationPrefix:         annotations.DefaultAnnotationPrefix,
-	APIServerURL:             "",
-	AWSAPIRetries:            3,
-	AWSAssumeRole:            "",
-	AWSAssumeRoleExternalID:  "",
-	AWSBatchChangeInterval:   time.Second,
-	AWSBatchChangeSize:       1000,
-	AWSBatchChangeSizeBytes:  32000,
-	AWSBatchChangeSizeValues: 1000,
-	AWSDynamoDBRegion:        "",
-	AWSDynamoDBTable:         "external-dns",
-	AWSEvaluateTargetHealth:  true,
-	AWSPreferCNAME:           false,
-	AWSSDCreateTag:           map[string]string{},
-	AWSSDServiceCleanup:      false,
-	AWSZoneCacheDuration:     0 * time.Second,
-	AWSZoneMatchParent:       false,
-	AWSZoneTagFilter:         []string{},
-	AWSZoneType:              "",
-	AzureConfigFile:          "/etc/kubernetes/azure.json",
-	AzureResourceGroup:       "",
-	AzureSubscriptionID:      "",
-	AzureZonesCacheDuration:  0 * time.Second,
-	AzureMaxRetriesCount:     3,
-	BatchChangeSize:          200,
-	BatchChangeInterval:      time.Second,
+	ACMEDelegationTargetTemplate: "",
+	ACMEDelegationDomainFilter:   []string{},
+	ACMEDelegationTTL:            0,
+	AlibabaCloudConfigFile:       "/etc/kubernetes/alibaba-cloud.json",
+	AnnotationFilter:             "",
+	AnnotationPrefix:             annotations.DefaultAnnotationPrefix,
+	APIServerURL:                 "",
+	AWSAPIRetries:                3,
+	AWSAssumeRole:                "",
+	AWSAssumeRoleExternalID:      "",
+	AWSBatchChangeInterval:       time.Second,
+	AWSBatchChangeSize:           1000,
+	AWSBatchChangeSizeBytes:      32000,
+	AWSBatchChangeSizeValues:     1000,
+	AWSDynamoDBRegion:            "",
+	AWSDynamoDBTable:             "external-dns",
+	AWSEvaluateTargetHealth:      true,
+	AWSPreferCNAME:               false,
+	AWSSDCreateTag:               map[string]string{},
+	AWSSDServiceCleanup:          false,
+	AWSZoneCacheDuration:         0 * time.Second,
+	AWSZoneMatchParent:           false,
+	AWSZoneTagFilter:             []string{},
+	AWSZoneType:                  "",
+	AzureConfigFile:              "/etc/kubernetes/azure.json",
+	AzureResourceGroup:           "",
+	AzureSubscriptionID:          "",
+	AzureZonesCacheDuration:      0 * time.Second,
+	AzureMaxRetriesCount:         3,
+	BatchChangeSize:              200,
+	BatchChangeInterval:          time.Second,
 	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
@@ -515,6 +522,9 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("skipper-routegroup-groupversion", "The resource version for skipper routegroup", defaultConfig.SkipperRouteGroupVersion, &cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing source
+	b.StringVar("acme-cname-delegation-target-template", "Enable ACME DNS-01 delegation: for every hostname discovered from sources (A, AAAA and CNAME records), additionally create a '_acme-challenge.<hostname>' CNAME record pointing at the rendered Go template. Template fields: {{.Hostname}} and {{.HostnameWithoutWildcard}} (optional)", defaultConfig.ACMEDelegationTargetTemplate, &cfg.ACMEDelegationTargetTemplate)
+	b.StringsVar("acme-cname-delegation-domain-filter", "Limit ACME delegation CNAME records to hostnames matching these domain suffixes; specify multiple times for multiple domains. Requires --acme-cname-delegation-target-template (optional)", nil, &cfg.ACMEDelegationDomainFilter)
+	b.DurationVar("acme-cname-delegation-ttl", "TTL for generated ACME delegation CNAME records. When unset, --min-ttl or the provider default applies. Requires --acme-cname-delegation-target-template (optional)", defaultConfig.ACMEDelegationTTL, &cfg.ACMEDelegationTTL)
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)

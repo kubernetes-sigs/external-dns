@@ -19,11 +19,14 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -74,6 +77,30 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--create-ptr requires PTR in --managed-record-types")
 	}
 
+	if err := validateACMEDelegation(cfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateACMEDelegation checks the consistency of the --acme-cname-delegation-* flags.
+func validateACMEDelegation(cfg *externaldns.Config) error {
+	if cfg.ACMEDelegationTargetTemplate == "" {
+		if len(cfg.ACMEDelegationDomainFilter) > 0 || cfg.ACMEDelegationTTL != 0 {
+			return errors.New("--acme-cname-delegation-domain-filter and --acme-cname-delegation-ttl require --acme-cname-delegation-target-template")
+		}
+		return nil
+	}
+	if cfg.ACMEDelegationTTL < 0 {
+		return errors.New("--acme-cname-delegation-ttl cannot be negative")
+	}
+	if !slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypeCNAME) {
+		return errors.New("--acme-cname-delegation-target-template requires CNAME in --managed-record-types")
+	}
+	if cfg.RegexDomainFilter != nil && cfg.RegexDomainFilter.String() != "" {
+		log.Warn("--regex-domain-filter is set together with --acme-cname-delegation-target-template; the regex must also match the generated '_acme-challenge.*' names or they will be filtered out")
+	}
 	return nil
 }
 

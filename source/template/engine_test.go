@@ -18,6 +18,7 @@ package template
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -678,6 +679,24 @@ func TestValidateTemplates(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParse(t *testing.T) {
+	t.Run("invalid template returns error", func(t *testing.T) {
+		tmpl, err := Parse("{{ .Hostname")
+		require.Error(t, err)
+		assert.Nil(t, tmpl)
+	})
+
+	t.Run("valid template with shared functions", func(t *testing.T) {
+		tmpl, err := Parse(`{{ trimPrefix .Hostname "www." | toLower }}.acme.example.net`)
+		require.NoError(t, err)
+
+		var buf strings.Builder
+		err = tmpl.Execute(&buf, struct{ Hostname string }{Hostname: "www.APP.example.com"})
+		require.NoError(t, err)
+		assert.Equal(t, "app.example.com.acme.example.net", buf.String())
+	})
 }
 
 type testObject struct {

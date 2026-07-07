@@ -109,6 +109,7 @@ spec:
             - --txt-owner-id=external.dns
             - --policy=sync
             - --log-level=debug
+            - --acme-cname-delegation-target-template={{ .HostnameWithoutWildcard }}.acme.external.dns
           env:
             - name: ETCD_URLS
               value: http://etcd-0.etcd:2379
@@ -194,18 +195,34 @@ spec:
           echo "=== Testing DNS server with dig (retrying for up to 180s) ==="
           MAX_ATTEMPTS=18
           ATTEMPT=1
+          A_OK=""
+          ACME_OK=""
           while [ \$ATTEMPT -le \$MAX_ATTEMPTS ]; do
-            echo "Attempt \$ATTEMPT/\$MAX_ATTEMPTS: Querying externaldns-e2e.external.dns A record"
-            RESULT=\$(dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5 2>/dev/null)
-            if echo "\$RESULT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "DNS query successful: \$RESULT"
+            if [ -z "\$A_OK" ]; then
+              echo "Attempt \$ATTEMPT/\$MAX_ATTEMPTS: Querying externaldns-e2e.external.dns A record"
+              RESULT=\$(dig @$NODE_IP -p 5353 externaldns-e2e.external.dns A +short +timeout=5 2>/dev/null)
+              if echo "\$RESULT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+                echo "A record query successful: \$RESULT"
+                A_OK=1
+              fi
+            fi
+            if [ -z "\$ACME_OK" ]; then
+              echo "Attempt \$ATTEMPT/\$MAX_ATTEMPTS: Querying _acme-challenge.externaldns-e2e.external.dns CNAME record"
+              ACME_RESULT=\$(dig @$NODE_IP -p 5353 _acme-challenge.externaldns-e2e.external.dns CNAME +short +timeout=5 2>/dev/null)
+              if echo "\$ACME_RESULT" | grep -q 'externaldns-e2e.external.dns.acme.external.dns.'; then
+                echo "ACME delegation CNAME query successful: \$ACME_RESULT"
+                ACME_OK=1
+              fi
+            fi
+            if [ -n "\$A_OK" ] && [ -n "\$ACME_OK" ]; then
+              echo "All DNS queries successful"
               exit 0
             fi
-            echo "DNS query returned empty result, retrying in 10s..."
+            echo "DNS queries incomplete (A: \${A_OK:-pending}, ACME CNAME: \${ACME_OK:-pending}), retrying in 10s..."
             sleep 10
             ATTEMPT=\$((ATTEMPT + 1))
           done
-          echo "DNS query failed after \$MAX_ATTEMPTS attempts"
+          echo "DNS queries failed after \$MAX_ATTEMPTS attempts (A: \${A_OK:-failed}, ACME CNAME: \${ACME_OK:-failed})"
           exit 1
 
 EOF
