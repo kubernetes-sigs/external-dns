@@ -711,6 +711,37 @@ func TestRecords_ResponseBodyLimitDisabled(t *testing.T) {
 	require.Len(t, endpoints, 1)
 }
 
+// validRecordsServer serves a complete, valid /records body of exactly size bytes.
+func validRecordsServer(t *testing.T, size int) *httptest.Server {
+	t.Helper()
+	const prefix, suffix = `[{"dnsName":"`, `"}]`
+	body := append([]byte(prefix), bytes.Repeat([]byte("a"), size-len(prefix)-len(suffix))...)
+	body = append(body, suffix...)
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		_, _ = w.Write(body)
+	}))
+}
+
+// Valid JSON ending exactly at the limit must decode: the byte read past the
+// limit must not falsely trip errResponseTooLarge at the boundary.
+func TestRecords_ResponseBodyAtLimit(t *testing.T) {
+	const limit = 1 << 20 // 1 MiB
+	svr := validRecordsServer(t, limit)
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, limit)
+	require.NoError(t, err)
+
+	endpoints, err := p.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, endpoints, 1)
+}
+
 func httpDurationSampleCount(t *testing.T, path, method string) uint64 {
 	t.Helper()
 	return testutils.SummaryVecSampleCount(t, &extdnshttp.RequestDurationMetric.SummaryVec, prometheus.Labels{

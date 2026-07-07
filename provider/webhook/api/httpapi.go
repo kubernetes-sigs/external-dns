@@ -45,14 +45,6 @@ type WebhookServer struct {
 	MaxBodySize int64
 }
 
-// limitRequestBody caps the request body with MaxBytesReader so oversized
-// bodies fail with 413; a non-positive cap leaves the body unchanged.
-func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Request) {
-	if p.MaxBodySize > 0 {
-		req.Body = http.MaxBytesReader(w, req.Body, p.MaxBodySize)
-	}
-}
-
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
@@ -115,6 +107,14 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		log.Errorf("Failed to encode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+}
+
+// limitRequestBody caps the request body with MaxBytesReader so oversized
+// bodies fail with 413; a non-positive cap leaves the body unchanged.
+func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Request) {
+	if p.MaxBodySize > 0 {
+		req.Body = http.MaxBytesReader(w, req.Body, p.MaxBodySize)
 	}
 }
 
