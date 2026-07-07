@@ -122,8 +122,9 @@ func (l *maxBytesReader) Read(p []byte) (int, error) {
 	if l.remaining < 0 {
 		return 0, errResponseTooLarge
 	}
-	// Read one byte past the limit to detect an over-limit body.
-	if int64(len(p)) > l.remaining+1 {
+	// Read one byte past the limit to detect an over-limit body; compare
+	// against remaining so the +1 can't overflow near math.MaxInt64.
+	if l.remaining < int64(len(p)) {
 		p = p[:l.remaining+1]
 	}
 	n, err := l.r.Read(p)
