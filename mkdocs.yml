@@ -28,6 +28,7 @@ nav:
       - DynamoDB: docs/registry/dynamodb.md
       - CRD: docs/registry/crd.md
   - Advanced Topics:
+      - ACME DNS-01 Delegation: docs/advanced/acme-dns01-delegation.md
       - FQDN Templating: docs/advanced/fqdn-templating.md
       - Import Records: docs/advanced/import-records.md
       - Initial Design: docs/initial-design.md

@@ -78,6 +78,15 @@ func TestBuildWrappedSource(t *testing.T) {
 			}),
 		},
 		{
+			name: "fake source with acme delegation",
+			cfg: stubConfig(t, &externaldns.Config{
+				Sources:                      []string{types.Fake},
+				ACMEDelegationTargetTemplate: "{{ .HostnameWithoutWildcard }}.acme.example.net",
+				ACMEDelegationDomainFilter:   []string{"example.com"},
+				ACMEDelegationTTL:            300 * time.Second,
+			}),
+		},
+		{
 			name:    "unknown source returns error",
 			cfg:     stubConfig(t, &externaldns.Config{Sources: []string{"does-not-exist"}}),
 			wantErr: true,
@@ -87,6 +96,14 @@ func TestBuildWrappedSource(t *testing.T) {
 			cfg: stubConfig(t, &externaldns.Config{
 				Sources:       []string{types.Fake},
 				NAT64Networks: []string{"not-a-cidr"},
+			}),
+			wantErr: true,
+		},
+		{
+			name: "invalid acme delegation template returns error",
+			cfg: stubConfig(t, &externaldns.Config{
+				Sources:                      []string{types.Fake},
+				ACMEDelegationTargetTemplate: "{{ .Hostname",
 			}),
 			wantErr: true,
 		},

@@ -25,14 +25,15 @@ Wrappers solve these key challenges:
 
 ## Built In Wrappers
 
-|       Wrapper        | Purpose                                 | Use Case                                            |
-|:--------------------:|:----------------------------------------|:----------------------------------------------------|
-|    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
-|    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
-| `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
-|    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
-|   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
-|    `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
+|        Wrapper         | Purpose                                 | Use Case                                              |
+|:----------------------:|:----------------------------------------|:------------------------------------------------------|
+|     `MultiSource`      | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                  |
+|     `DedupSource`      | Remove duplicate DNS records.           | Avoid duplicate records from sources.                 |
+|  `TargetFilterSource`  | Include/exclude targets based on CIDRs. | Exclude internal IPs.                                 |
+|     `NAT64Source`      | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                              |
+|    `PostProcessor`     | Add records post-processing.            | Configure TTL, filter provider-specific properties.   |
+|      `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                        |
+| `ACMEDelegationSource` | Add ACME DNS-01 delegation CNAMEs.      | Delegate certificate challenges to a dedicated zone.  |
 
 ### Use Cases
 
@@ -71,6 +72,19 @@ Applies post-processing to all endpoints after they are collected from sources.
 --min-ttl=60s
 --provider=aws
 --prefer-alias
+```
+
+### 4.1 `ACMEDelegationSource`
+
+Appends an ACME DNS-01 delegation CNAME (`_acme-challenge.<hostname>`) for every A/AAAA/CNAME endpoint,
+pointing at a templated target. See [ACME DNS-01 Delegation](../advanced/acme-dns01-delegation.md).
+
+📌 **Use case**: Delegate DNS-01 challenges to a dedicated zone so the ACME client does not need write access to production zones.
+
+```yaml
+--acme-cname-delegation-target-template={{ .HostnameWithoutWildcard }}.acme.example.net
+--acme-cname-delegation-domain-filter=example.com
+--acme-cname-delegation-ttl=300s
 ```
 
 ---
@@ -118,8 +132,9 @@ source := NewMultiSource(actualSources, defaultTargets)
 source = NewDedupSource(source)
 source = NewNAT64Source(source, cfg.NAT64Networks)
 source = NewTargetFilterSource(source, targetFilter)
-source = NewPostProcessor(source, WithTTL(minTTL), WithPostProcessorPreferAlias(preferAlias))
 source = NewPTRSource(source, createPTR)
+source = NewACMEDelegationSource(source, acmeTargetTemplate, acmeDomainFilter, acmeTTL)
+source = NewPostProcessor(source, WithTTL(minTTL), WithPostProcessorPreferAlias(preferAlias))
 ```
 
 Each wrapper processes the output of the previous one.

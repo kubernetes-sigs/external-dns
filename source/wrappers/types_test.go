@@ -53,6 +53,15 @@ func TestWrapSources(t *testing.T) {
 			},
 		},
 		{
+			name: "configuration with acme delegation",
+			cfg: NewConfig(
+				WithACMEDelegationTargetTemplate("{{ .HostnameWithoutWildcard }}.acme.example.net"),
+			),
+			asserts: func(t *testing.T, cfg *Config) {
+				assert.True(t, cfg.isSourceWrapperInstrumented("acme-delegation"))
+			},
+		},
+		{
 			name: "default configuration",
 			cfg:  NewConfig(),
 			asserts: func(t *testing.T, cfg *Config) {
@@ -60,6 +69,7 @@ func TestWrapSources(t *testing.T) {
 				assert.False(t, cfg.isSourceWrapperInstrumented("nat64"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("target-filter"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
+				assert.False(t, cfg.isSourceWrapperInstrumented("acme-delegation"))
 			},
 		},
 		{
@@ -92,6 +102,14 @@ func TestWrapSources_NAT64Error(t *testing.T) {
 	assert.Nil(t, src)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create NAT64 source wrapper")
+}
+
+func TestWrapSources_ACMEDelegationError(t *testing.T) {
+	cfg := NewConfig(WithACMEDelegationTargetTemplate("{{ .Hostname"))
+	src, err := wrapSources(nil, cfg)
+	assert.Nil(t, src)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create ACME delegation source wrapper")
 }
 
 func TestWrapSources_PTRNotAddedWhenDisabled(t *testing.T) {
@@ -180,6 +198,27 @@ func TestWithMinTTL(t *testing.T) {
 	opt := WithMinTTL(300 * time.Second)
 	opt(cfg)
 	assert.Equal(t, 300*time.Second, cfg.minTTL)
+}
+
+func TestWithACMEDelegationTargetTemplate(t *testing.T) {
+	cfg := &Config{}
+	opt := WithACMEDelegationTargetTemplate("{{ .HostnameWithoutWildcard }}.acme.example.net")
+	opt(cfg)
+	assert.Equal(t, "{{ .HostnameWithoutWildcard }}.acme.example.net", cfg.acmeDelegationTargetTemplate)
+}
+
+func TestWithACMEDelegationDomainFilter(t *testing.T) {
+	cfg := &Config{}
+	opt := WithACMEDelegationDomainFilter([]string{"example.com"})
+	opt(cfg)
+	assert.Equal(t, []string{"example.com"}, cfg.acmeDelegationDomainFilter)
+}
+
+func TestWithACMEDelegationTTL(t *testing.T) {
+	cfg := &Config{}
+	opt := WithACMEDelegationTTL(300 * time.Second)
+	opt(cfg)
+	assert.Equal(t, 300*time.Second, cfg.acmeDelegationTTL)
 }
 
 func TestAddSourceWrapperAndIsSourceWrapperInstrumented(t *testing.T) {
