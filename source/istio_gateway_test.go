@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -124,6 +126,53 @@ func TestGateway(t *testing.T) {
 	suite.Run(t, new(GatewaySuite))
 	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
 	t.Run("Endpoints", testGatewayEndpoints)
+	t.Run("does not warn for out-of-scope cname conflicts", testGatewayEndpointsIgnoreOutOfScopeCNAMEConflicts)
+}
+
+func testGatewayEndpointsIgnoreOutOfScopeCNAMEConflicts(t *testing.T) {
+	t.Parallel()
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	fakeKubernetesClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	for _, gw := range []fakeGatewayConfig{
+		{
+			namespace: "istio-system",
+			name:      "gateway-a",
+			annotations: map[string]string{
+				annotations.TargetKey: "lb-a.example.net",
+			},
+			dnsnames: [][]string{{"api-meet.example.com"}},
+		},
+		{
+			namespace: "istio-system",
+			name:      "gateway-b",
+			annotations: map[string]string{
+				annotations.TargetKey: "lb-b.example.net",
+			},
+			dnsnames: [][]string{{"api-meet.example.com"}},
+		},
+	} {
+		_, err := fakeIstioClient.NetworkingV1().Gateways(gw.namespace).Create(t.Context(), gw.Config(), metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{
+			DomainFilter:   endpoint.NewDomainFilter([]string{"managed.example.internal"}),
+			TemplateEngine: templatetest.MustEngine(t, "{{.FQDN}}", "", "", false),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, endpoints)
+	logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
 }
 
 func testEndpointsFromGatewayConfig(t *testing.T) {

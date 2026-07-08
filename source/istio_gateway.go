@@ -61,6 +61,7 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string
+	domainFilter             endpoint.DomainFilterInterface
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -121,6 +122,7 @@ func NewIstioGatewaySource(
 
 	return &gatewaySource{
 		namespace:                cfg.Namespace,
+		domainFilter:             cfg.DomainFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
@@ -179,7 +181,7 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return endpoint.MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(filterEndpointsByDomain(endpoints, sc.domainFilter)), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.

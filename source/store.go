@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -59,6 +60,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // type conversions and validation.
 type Config struct {
 	Namespace                      string
+	DomainFilter                   endpoint.DomainFilterInterface
 	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
@@ -136,6 +138,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 	}
 	c := &Config{
 		Namespace:                      cfg.Namespace,
+		DomainFilter:                   endpoint.NewDomainFilterWithOptions(endpoint.WithDomainFilter(cfg.DomainFilter), endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter)),
 		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,

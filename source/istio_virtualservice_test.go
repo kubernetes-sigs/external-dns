@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -145,6 +147,53 @@ func TestVirtualService(t *testing.T) {
 	t.Run("virtualServiceBindsToGateway", testVirtualServiceBindsToGateway)
 	t.Run("endpointsFromVirtualServiceConfig", testEndpointsFromVirtualServiceConfig)
 	t.Run("Endpoints", testVirtualServiceEndpoints)
+	t.Run("does not warn for out-of-scope cname conflicts", testVirtualServiceEndpointsIgnoreOutOfScopeCNAMEConflicts)
+}
+
+func testVirtualServiceEndpointsIgnoreOutOfScopeCNAMEConflicts(t *testing.T) {
+	t.Parallel()
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	fakeKubernetesClient := fake.NewClientset()
+	fakeIstioClient := istiofake.NewSimpleClientset()
+
+	for _, vs := range []fakeVirtualServiceConfig{
+		{
+			namespace: "example",
+			name:      "service-a",
+			annotations: map[string]string{
+				annotations.TargetKey: "lb-a.example.net",
+			},
+			dnsnames: []string{"api-meet.example.com"},
+		},
+		{
+			namespace: "example",
+			name:      "service-b",
+			annotations: map[string]string{
+				annotations.TargetKey: "lb-b.example.net",
+			},
+			dnsnames: []string{"api-meet.example.com"},
+		},
+	} {
+		_, err := fakeIstioClient.NetworkingV1().VirtualServices(vs.namespace).Create(t.Context(), vs.Config(), metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewIstioVirtualServiceSource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{
+			DomainFilter:   endpoint.NewDomainFilter([]string{"managed.example.internal"}),
+			TemplateEngine: templatetest.MustEngine(t, "{{ .Name }}", "", "", false),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Empty(t, endpoints)
+	logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
 }
 
 func testVirtualServiceBindsToGateway(t *testing.T) {

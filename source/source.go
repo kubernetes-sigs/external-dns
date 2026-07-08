@@ -56,6 +56,20 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 	return selector.Matches(labels.Set(srcAnnotations))
 }
 
+func filterEndpointsByDomain(endpoints []*endpoint.Endpoint, filter endpoint.DomainFilterInterface) []*endpoint.Endpoint {
+	if filter == nil {
+		return endpoints
+	}
+
+	filtered := make([]*endpoint.Endpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		if filter.Match(ep.DNSName) {
+			filtered = append(filtered, ep)
+		}
+	}
+	return filtered
+}
+
 type eventHandlerFunc func()
 
 func (fn eventHandlerFunc) OnAdd(_ any, _ bool) { fn() }

@@ -62,6 +62,7 @@ const IstioMeshGateway = "mesh"
 // +externaldns:source:provider-specific=true
 type virtualServiceSource struct {
 	namespace                string
+	domainFilter             endpoint.DomainFilterInterface
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -129,6 +130,7 @@ func NewIstioVirtualServiceSource(
 
 	return &virtualServiceSource{
 		namespace:                cfg.Namespace,
+		domainFilter:             cfg.DomainFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
@@ -178,7 +180,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return endpoint.MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(filterEndpointsByDomain(endpoints, sc.domainFilter)), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.
