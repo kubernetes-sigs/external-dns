@@ -41,12 +41,18 @@ significantly reducing the total number of requests made.
 
 The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
 In that case, ExternalDNS automatically retries each record change in the chunk individually.
-Record types that are not supported by the batch PUT operation (e.g. SRV, CAA) are always submitted individually rather than through the batch API.
+Record types whose batch PUT body the SDK does not support (e.g. CAA) are submitted individually rather than through the batch API.
 
 | Flag | Default | Description |
 | :--- | :------ | :---------- |
 | `--batch-change-size` | `200` | Maximum number of DNS operations (creates + updates + deletes) per batch chunk. |
 | `--batch-change-interval` | `1s` | Pause between consecutive batch chunks. |
+
+## Supported record types
+
+A, AAAA, CNAME, TXT, MX, NS, SRV, NAPTR.
+
+NAPTR `regexp` fields with literal double-quote characters are not supported.
 
 ## Deploy ExternalDNS
 

@@ -18,6 +18,7 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -34,6 +35,7 @@ import (
 	"github.com/cloudflare/cloudflare-go/v5/dns"
 	"github.com/cloudflare/cloudflare-go/v5/option"
 	"github.com/cloudflare/cloudflare-go/v5/zones"
+	miekg "github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -92,6 +94,7 @@ var recordTypeProxyNotSupported = sets.New(
 	"SPF",
 	"TXT",
 	"SRV",
+	"NAPTR",
 )
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -584,6 +587,9 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			failedChange = true
 		}
 		bc := p.buildBatchCollections(zoneID, zoneChanges, records)
+		if bc.failed {
+			failedChange = true
+		}
 
 		if p.submitDNSRecordChanges(ctx, zoneID, bc, records) {
 			failedChange = true
@@ -663,6 +669,20 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if p.DNSRecordsConfig.Comment != "" {
 			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !found {
 				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
+			}
+		}
+
+		// Canonicalize SRV/NAPTR targets to the read-back form so multi-space, tab,
+		// or missing-dot input does not re-emit an update on every reconcile.
+		switch e.RecordType {
+		case endpoint.RecordTypeSRV, endpoint.RecordTypeNAPTR:
+			for i, t := range e.Targets {
+				canonical, err := canonicalizeStructuredTarget(e.RecordType, t)
+				if err != nil {
+					log.Debugf("cloudflare: leaving %s target %q unchanged: %v", e.RecordType, t, err)
+					continue
+				}
+				e.Targets[i] = canonical
 			}
 		}
 
@@ -768,6 +788,107 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: r.Content}
 }
 
+// naptrContent rebuilds the canonical NAPTR target from a record's structured Data,
+// adding the quoting and trailing dot that Cloudflare's flat Content drops.
+func naptrContent(r dns.RecordResponse) string {
+	data, ok := r.Data.(dns.NAPTRRecordData)
+	if !ok {
+		// Fallback for cloudflare-go#4300: v5.1.0 union decoder leaves Data nil on List.
+		var naptr dns.NAPTRRecord
+		raw := r.JSON.RawJSON()
+		var unmarshalErr error
+		if raw != "" {
+			unmarshalErr = json.Unmarshal([]byte(raw), &naptr)
+		}
+		if unmarshalErr == nil && raw != "" && (naptr.Data.Service != "" || naptr.Data.Replacement != "") {
+			data = naptr.Data
+		} else {
+			log.Warnf("NAPTR record %q has no structured data (unmarshal err: %v); using raw content %q, which may not match desired targets", r.Name, unmarshalErr, r.Content)
+			return r.Content
+		}
+	}
+	return naptrCanonical(uint16(data.Order), uint16(data.Preference), data.Flags, data.Service, data.Regex, data.Replacement)
+}
+
+// srvContent rebuilds the canonical SRV target from a record's structured Data,
+// adding the priority and trailing dot that Cloudflare's flat Content drops.
+func srvContent(r dns.RecordResponse) string {
+	data, ok := r.Data.(dns.SRVRecordData)
+	if !ok {
+		// Fallback for cloudflare-go#4300: v5.1.0 union decoder leaves Data nil on List.
+		var srv dns.SRVRecord
+		raw := r.JSON.RawJSON()
+		var unmarshalErr error
+		if raw != "" {
+			unmarshalErr = json.Unmarshal([]byte(raw), &srv)
+		}
+		if unmarshalErr == nil && raw != "" && srv.Data.Target != "" {
+			data = srv.Data
+		} else {
+			log.Warnf("SRV record %q has no structured data (unmarshal err: %v); using raw content %q, which may not match desired targets", r.Name, unmarshalErr, r.Content)
+			return r.Content
+		}
+	}
+	return srvCanonical(uint16(data.Priority), uint16(data.Weight), uint16(data.Port), data.Target)
+}
+
+// srvCanonical renders SRV fields in the canonical single-space, trailing-dot form
+// read-back produces, so a desired target normalized here matches the read-back
+// record and the plan converges instead of churning an update every reconcile.
+func srvCanonical(priority, weight, port uint16, target string) string {
+	rr := &miekg.SRV{
+		Priority: priority,
+		Weight:   weight,
+		Port:     port,
+		Target:   provider.EnsureTrailingDot(target),
+	}
+	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
+}
+
+// naptrCanonical mirrors srvCanonical for NAPTR.
+func naptrCanonical(order, preference uint16, flags, service, regexp, replacement string) string {
+	rr := &miekg.NAPTR{
+		Order:       order,
+		Preference:  preference,
+		Flags:       flags,
+		Service:     service,
+		Regexp:      regexp,
+		Replacement: provider.EnsureTrailingDot(replacement),
+	}
+	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
+}
+
+// canonicalizeStructuredTarget rewrites an SRV or NAPTR target into the same
+// canonical form read-back produces. Multi-space, tab, or missing-dot targets
+// otherwise differ from the canonical read-back and re-emit an update every
+// reconcile. The input is returned unchanged on a parse error, so a malformed
+// target still surfaces downstream as a SoftError.
+func canonicalizeStructuredTarget(recordType, target string) (string, error) {
+	switch recordType {
+	case endpoint.RecordTypeSRV:
+		rr, err := miekg.NewRR("x. 0 IN SRV " + target)
+		if err != nil || rr == nil {
+			return target, fmt.Errorf("invalid SRV target %q: %w", target, err)
+		}
+		srv, ok := rr.(*miekg.SRV)
+		if !ok {
+			return target, fmt.Errorf("invalid SRV target %q: parsed as %T", target, rr)
+		}
+		return srvCanonical(srv.Priority, srv.Weight, srv.Port, srv.Target), nil
+	case endpoint.RecordTypeNAPTR:
+		rr, err := miekg.NewRR("x. 0 IN NAPTR " + target)
+		if err != nil || rr == nil {
+			return target, fmt.Errorf("invalid NAPTR target %q: %w", target, err)
+		}
+		naptr, ok := rr.(*miekg.NAPTR)
+		if !ok {
+			return target, fmt.Errorf("invalid NAPTR target %q: parsed as %T", target, rr)
+		}
+		return naptrCanonical(naptr.Order, naptr.Preference, naptr.Flags, naptr.Service, naptr.Regexp, naptr.Replacement), nil
+	}
+	return target, nil
+}
+
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
 func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
@@ -778,6 +899,12 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
+		switch record.Type {
+		case dns.RecordResponseTypeSRV:
+			record.Content = srvContent(record)
+		case dns.RecordResponseTypeNAPTR:
+			record.Content = naptrContent(record)
+		}
 		recordsMap[newDNSRecordIndex(record)] = record
 	}
 	if iter.Err() != nil {
@@ -891,7 +1018,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case endpoint.RecordTypeMX:
+	case endpoint.RecordTypeMX, endpoint.RecordTypeNAPTR:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)

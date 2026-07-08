@@ -141,18 +141,41 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
-	body := params.Body.(dns.RecordNewParamsBody)
-
-	record := dns.RecordResponse{
-		ID:       generateDNSRecordID(body.Type.String(), body.Name.Value, body.Content.Value),
-		Name:     body.Name.Value,
-		TTL:      dns.TTL(body.TTL.Value),
-		Proxied:  body.Proxied.Value,
-		Type:     dns.RecordResponseType(body.Type.String()),
-		Content:  body.Content.Value,
-		Priority: body.Priority.Value,
+// recordResponseFromBody reconstructs a mock RecordResponse from a create/update
+// param body. Typed SRV bodies carry structured Data; the mock rebuilds canonical
+// Content from it.
+func recordResponseFromBody(body any) dns.RecordResponse {
+	switch b := body.(type) {
+	case dns.RecordNewParamsBody:
+		return dns.RecordResponse{
+			Name:     b.Name.Value,
+			TTL:      dns.TTL(b.TTL.Value),
+			Proxied:  b.Proxied.Value,
+			Type:     dns.RecordResponseType(b.Type.String()),
+			Content:  b.Content.Value,
+			Priority: b.Priority.Value,
+		}
+	case dns.RecordUpdateParamsBody:
+		return dns.RecordResponse{
+			Name:     b.Name.Value,
+			TTL:      dns.TTL(b.TTL.Value),
+			Proxied:  b.Proxied.Value,
+			Type:     dns.RecordResponseType(b.Type.String()),
+			Content:  b.Content.Value,
+			Priority: b.Priority.Value,
+		}
+	case dns.SRVRecordParam:
+		return srvResponseFromParam(b)
+	case dns.NAPTRRecordParam:
+		return naptrResponseFromParam(b)
+	default:
+		panic(fmt.Sprintf("mock: unsupported DNS record body type %T", body))
 	}
+}
+
+func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	record := recordResponseFromBody(params.Body)
+	record.ID = generateDNSRecordID(string(record.Type), record.Name, record.Content)
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
@@ -191,17 +214,8 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(_ context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
 	zoneID := params.ZoneID.String()
-	body := params.Body.(dns.RecordUpdateParamsBody)
-
-	record := dns.RecordResponse{
-		ID:       recordID,
-		Name:     body.Name.Value,
-		TTL:      dns.TTL(body.TTL.Value),
-		Proxied:  body.Proxied.Value,
-		Type:     dns.RecordResponseType(body.Type.String()),
-		Content:  body.Content.Value,
-		Priority: body.Priority.Value,
-	}
+	record := recordResponseFromBody(params.Body)
+	record.ID = recordID
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
@@ -677,11 +691,17 @@ func TestCloudflareSetProxied(t *testing.T) {
 			var content string
 			var priority float64
 
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				targets = endpoint.Targets{"10 mx.example.com"}
 				content = "mx.example.com"
 				priority = 10
-			} else {
+			case "SRV":
+				// SRV uses structured Data; the mock returns the canonical Content
+				// rebuilt from Data ("<priority> <weight> <port> <target>").
+				targets = endpoint.Targets{"10 20 443 target.example.com"}
+				content = "10 20 443 target.example.com"
+			default:
 				targets = endpoint.Targets{"127.0.0.1"}
 				content = "127.0.0.1"
 			}
@@ -708,8 +728,14 @@ func TestCloudflareSetProxied(t *testing.T) {
 				TTL:     1,
 				Proxied: testCase.proxiable,
 			}
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				recordData.Priority = priority
+			case "SRV":
+				// SRV records carry structured Data instead of a flat Content string;
+				// the mock rebuilds Content from Data so Priority surfaces here too.
+				recordData.Priority = 10
+				recordData.Data = dns.SRVRecordData{Priority: 10, Weight: 20, Port: 443, Target: "target.example.com"}
 			}
 			AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 				{
@@ -1094,6 +1120,44 @@ func TestCloudflareApplyChangesError(t *testing.T) {
 	if err == nil {
 		t.Errorf("should fail, %s", err)
 	}
+}
+
+// NAPTR field-count errors aren't caught by upstream validation; provider must surface SoftError.
+func TestCloudflareInvalidCreateReturnsSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client, zoneIDFilter: provider.NewZoneIDFilter([]string{"001"})}
+
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "NAPTR",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{`10 20`},
+			RecordTTL:  120,
+		},
+	}
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{Create: endpoints})
+	require.Error(t, err, "invalid create must not be silently swallowed")
+	assert.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
+}
+
+// UPDATE against an unknown record (stale cache) must surface SoftError so the controller retries.
+func TestCloudflareUpdateMissingRecordReturnsSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client, zoneIDFilter: provider.NewZoneIDFilter([]string{"001"})}
+
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: endpoint.RecordTypeA,
+			DNSName:    "missing.bar.com",
+			Targets:    endpoint.Targets{"1.2.3.4"},
+			RecordTTL:  120,
+		},
+	}
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{UpdateNew: endpoints, UpdateOld: endpoints})
+	require.Error(t, err, "update of a record not present in cache must not be silently swallowed")
+	assert.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
 }
 
 func TestCloudflareGetRecordID(t *testing.T) {
@@ -1770,6 +1834,103 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	assert.Empty(t, planned.Changes.Delete, "no new changes should be here")
 }
 
+func TestCanonicalizeStructuredTarget(t *testing.T) {
+	cases := []struct {
+		name       string
+		recordType string
+		in         string
+		want       string
+		wantErr    bool
+	}{
+		{"SRV canonical unchanged", endpoint.RecordTypeSRV, "10 5 5060 sip.bar.com.", "10 5 5060 sip.bar.com.", false},
+		{"SRV multi-space collapsed", endpoint.RecordTypeSRV, "10  5  5060  sip.bar.com.", "10 5 5060 sip.bar.com.", false},
+		{"SRV tab collapsed", endpoint.RecordTypeSRV, "10\t5\t5060\tsip.bar.com.", "10 5 5060 sip.bar.com.", false},
+		{"SRV trailing dot added", endpoint.RecordTypeSRV, "10 5 5060 sip.bar.com", "10 5 5060 sip.bar.com.", false},
+		{"SRV malformed kept", endpoint.RecordTypeSRV, "10 5 sip.bar.com.", "10 5 sip.bar.com.", true},
+		{"NAPTR canonical unchanged", endpoint.RecordTypeNAPTR, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, false},
+		{"NAPTR multi-space collapsed", endpoint.RecordTypeNAPTR, `10  20  "S"  "SIP+D2U"  ""  _sip._udp.bar.com.`, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, false},
+		{"NAPTR trailing dot added", endpoint.RecordTypeNAPTR, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, false},
+		{"NAPTR malformed kept", endpoint.RecordTypeNAPTR, "10 20", "10 20", true},
+		{"non-structured type unchanged", endpoint.RecordTypeA, "1.2.3.4", "1.2.3.4", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := canonicalizeStructuredTarget(c.recordType, c.in)
+			if c.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+// replanAfterApply applies a single SRV/NAPTR endpoint, reads it back, and re-plans
+// against the same desired endpoint. Because AdjustEndpoints canonicalizes the
+// desired target to the read-back form, the second plan must be empty; otherwise the
+// record churns an update on every reconcile.
+func replanAfterApply(t *testing.T, recordType, dnsName, target string) *plan.Plan {
+	t.Helper()
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client}
+	ctx := t.Context()
+
+	desired := func() []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{{
+			DNSName:    dnsName,
+			RecordType: recordType,
+			Targets:    endpoint.Targets{target},
+			RecordTTL:  endpoint.TTL(defaultTTL),
+			Labels:     endpoint.Labels{},
+		}}
+	}
+
+	create, err := p.AdjustEndpoints(desired())
+	require.NoError(t, err)
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: create}))
+
+	records, err := p.Records(ctx)
+	require.NoError(t, err)
+
+	adjusted, err := p.AdjustEndpoints(desired())
+	require.NoError(t, err)
+
+	pl := &plan.Plan{
+		Current:        records,
+		Desired:        adjusted,
+		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"bar.com"})},
+		ManagedRecords: []string{endpoint.RecordTypeSRV, endpoint.RecordTypeNAPTR},
+	}
+	return pl.Calculate()
+}
+
+func TestCloudflareSRVNAPTRConverge(t *testing.T) {
+	cases := []struct {
+		name       string
+		recordType string
+		dnsName    string
+		target     string
+	}{
+		{"SRV canonical", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10 5 5060 sip.bar.com."},
+		{"SRV multi-space", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10  5  5060  sip.bar.com."},
+		{"SRV tab", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10\t5\t5060\tsip.bar.com."},
+		{"SRV no trailing dot", endpoint.RecordTypeSRV, "_sip._udp.bar.com", "10 5 5060 sip.bar.com"},
+		{"NAPTR canonical", endpoint.RecordTypeNAPTR, "bar.com", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`},
+		{"NAPTR multi-space", endpoint.RecordTypeNAPTR, "bar.com", `10  20  "S"  "SIP+D2U"  ""  _sip._udp.bar.com.`},
+		{"NAPTR tab", endpoint.RecordTypeNAPTR, "bar.com", "10\t20\t\"S\"\t\"SIP+D2U\"\t\"\"\t_sip._udp.bar.com."},
+		{"NAPTR no trailing dot", endpoint.RecordTypeNAPTR, "bar.com", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			planned := replanAfterApply(t, c.recordType, c.dnsName, c.target)
+			assert.Empty(t, planned.Changes.Create, "should converge: unexpected create on second reconcile")
+			assert.Empty(t, planned.Changes.UpdateNew, "should converge: unexpected update on second reconcile")
+			assert.Empty(t, planned.Changes.Delete, "should converge: unexpected delete on second reconcile")
+		})
+	}
+}
+
 func TestCloudFlareProvider_Region(t *testing.T) {
 	testutils.TestHelperEnvSetter(t, map[string]string{
 		cfAPITokenEnvKey: "abc123def",
@@ -2382,6 +2543,7 @@ func TestCloudFlareProvider_SupportedAdditionalRecordTypes(t *testing.T) {
 		{endpoint.RecordTypeTXT, true},
 		{endpoint.RecordTypeNS, true},
 		{"SRV", true},
+		{endpoint.RecordTypeNAPTR, true},
 		{"SPF", false},
 		{"LOC", false},
 		{"UNKNOWN", false},
@@ -2890,7 +3052,8 @@ func TestGetUpdateDNSRecordParam(t *testing.T) {
 		},
 	}
 
-	params := getUpdateDNSRecordParam("zone-123", cfc)
+	params, err := getUpdateDNSRecordParam("zone-123", cfc)
+	require.NoError(t, err)
 	body := params.Body.(dns.RecordUpdateParamsBody)
 
 	assert.Equal(t, "zone-123", params.ZoneID.Value)
@@ -2925,7 +3088,8 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("CreateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		params := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		params, err := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		require.NoError(t, err)
 		record, err := client.CreateDNSRecord(ctx, params)
 		assert.Empty(t, record)
 		assert.ErrorIs(t, err, context.Canceled)
@@ -2933,8 +3097,9 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("UpdateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		recordParam := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
-		_, err := client.UpdateDNSRecord(ctx, "1234", recordParam)
+		recordParam, err := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
+		require.NoError(t, err)
+		_, err = client.UpdateDNSRecord(ctx, "1234", recordParam)
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 

@@ -18,10 +18,13 @@ package cloudflare
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cloudflare/cloudflare-go/v5"
 	"github.com/cloudflare/cloudflare-go/v5/dns"
+	miekg "github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -52,6 +55,8 @@ type batchCollections struct {
 	// requires structured Data fields (e.g. SRV, CAA). These are submitted
 	// via individual UpdateDNSRecord calls instead of the batch API.
 	fallbackUpdates []*cloudFlareChange
+
+	failed bool
 }
 
 // batchChunk holds a DNS record batch request alongside the source changes
@@ -68,8 +73,109 @@ func (z zoneService) BatchDNSRecords(ctx context.Context, params dns.RecordBatch
 	return z.service.DNS.Records.Batch(ctx, params)
 }
 
+// buildSRVData parses an SRV target "<priority> <weight> <port> <target>" into the
+// structured data Cloudflare's batch endpoint requires (a flat content string is
+// rejected). Parsing goes through miekg/dns; the trailing dot on target is stripped.
+func buildSRVData(content string) (dns.SRVRecordDataParam, error) {
+	rr, err := miekg.NewRR("x. 0 IN SRV " + content)
+	if err != nil || rr == nil {
+		return dns.SRVRecordDataParam{}, fmt.Errorf("invalid SRV target %q: %w", content, err)
+	}
+	srv, ok := rr.(*miekg.SRV)
+	if !ok {
+		return dns.SRVRecordDataParam{}, fmt.Errorf("invalid SRV target %q: parsed as %T", content, rr)
+	}
+	target := srv.Target
+	if target != "." {
+		target = strings.TrimRight(target, ".")
+	}
+	return dns.SRVRecordDataParam{
+		Priority: cloudflare.F(float64(srv.Priority)),
+		Weight:   cloudflare.F(float64(srv.Weight)),
+		Port:     cloudflare.F(float64(srv.Port)),
+		Target:   cloudflare.F(target),
+	}, nil
+}
+
+// buildNAPTRData parses a NAPTR target into the structured data Cloudflare's batch
+// endpoint requires (a flat content string is rejected). Parsing goes through
+// miekg/dns; the trailing dot on replacement is stripped.
+func buildNAPTRData(content string) (dns.NAPTRRecordDataParam, error) {
+	rr, err := miekg.NewRR("x. 0 IN NAPTR " + content)
+	if err != nil || rr == nil {
+		return dns.NAPTRRecordDataParam{}, fmt.Errorf("invalid NAPTR target %q: %w", content, err)
+	}
+	naptr, ok := rr.(*miekg.NAPTR)
+	if !ok {
+		return dns.NAPTRRecordDataParam{}, fmt.Errorf("invalid NAPTR target %q: parsed as %T", content, rr)
+	}
+	replacement := naptr.Replacement
+	if replacement != "." {
+		replacement = strings.TrimRight(replacement, ".")
+	}
+	return dns.NAPTRRecordDataParam{
+		Order:       cloudflare.F(float64(naptr.Order)),
+		Preference:  cloudflare.F(float64(naptr.Preference)),
+		Flags:       cloudflare.F(naptr.Flags),
+		Service:     cloudflare.F(naptr.Service),
+		Regex:       cloudflare.F(naptr.Regexp),
+		Replacement: cloudflare.F(replacement),
+	}, nil
+}
+
+// naptrRecordParam builds the typed NAPTR record body, shared by the typed batch
+// POST / PUT paths and the individual-fallback chunk retry.
+func naptrRecordParam(r dns.RecordResponse) (dns.NAPTRRecordParam, error) {
+	data, err := buildNAPTRData(r.Content)
+	if err != nil {
+		return dns.NAPTRRecordParam{}, err
+	}
+	return dns.NAPTRRecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.NAPTRRecordTypeNAPTR),
+		Proxied: cloudflare.F(r.Proxied),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+		Data:    cloudflare.F(data),
+	}, nil
+}
+
+// srvRecordParam builds the typed SRV record body, shared by the typed batch
+// POST / PUT paths and the individual-fallback chunk retry.
+func srvRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
+	data, err := buildSRVData(r.Content)
+	if err != nil {
+		return dns.SRVRecordParam{}, err
+	}
+	return dns.SRVRecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.SRVRecordTypeSRV),
+		Proxied: cloudflare.F(r.Proxied),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+		Data:    cloudflare.F(data),
+	}, nil
+}
+
 // getUpdateDNSRecordParam returns the RecordUpdateParams for an individual update.
-func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) dns.RecordUpdateParams {
+// SRV and NAPTR use typed bodies with structured Data; other types use the generic body.
+func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpdateParams, error) {
+	switch cfc.ResourceRecord.Type {
+	case dns.RecordResponseTypeSRV:
+		body, err := srvRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordUpdateParams{}, err
+		}
+		return dns.RecordUpdateParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
+	case dns.RecordResponseTypeNAPTR:
+		body, err := naptrRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordUpdateParams{}, err
+		}
+		return dns.RecordUpdateParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
+	}
 	return dns.RecordUpdateParams{
 		ZoneID: cloudflare.F(zoneID),
 		Body: dns.RecordUpdateParamsBody{
@@ -82,11 +188,26 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) dns.RecordUpda
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
 			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
 		},
-	}
+	}, nil
 }
 
 // getCreateDNSRecordParam returns the RecordNewParams for an individual create.
-func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNewParams {
+// SRV and NAPTR use typed bodies with structured Data; other types use the generic body.
+func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) (dns.RecordNewParams, error) {
+	switch cfc.ResourceRecord.Type {
+	case dns.RecordResponseTypeSRV:
+		body, err := srvRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordNewParams{}, err
+		}
+		return dns.RecordNewParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
+	case dns.RecordResponseTypeNAPTR:
+		body, err := naptrRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordNewParams{}, err
+		}
+		return dns.RecordNewParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
+	}
 	return dns.RecordNewParams{
 		ZoneID: cloudflare.F(zoneID),
 		Body: dns.RecordNewParamsBody{
@@ -99,7 +220,7 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) dns.RecordNew
 			Comment:  cloudflare.F(cfc.ResourceRecord.Comment),
 			Tags:     cloudflare.F(cfc.ResourceRecord.Tags),
 		},
-	}
+	}, nil
 }
 
 // chunkBatchChanges splits DNS record batch operations into batchChunks,
@@ -156,8 +277,16 @@ func tagsFromResponse(tags any) []dns.RecordTagsParam {
 	return nil
 }
 
-// buildBatchPostParam constructs a RecordBatchParamsPost for creating a DNS record in a batch.
-func buildBatchPostParam(r dns.RecordResponse) dns.RecordBatchParamsPost {
+// buildBatchPostParam constructs the batch-POST create param for a DNS record.
+// SRV and NAPTR use typed union members; other types use the generic flat body.
+// Returns an error when typed parsing fails so the caller can skip the record.
+func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, error) {
+	switch r.Type {
+	case dns.RecordResponseTypeSRV:
+		return srvRecordParam(r)
+	case dns.RecordResponseTypeNAPTR:
+		return naptrRecordParam(r)
+	}
 	return dns.RecordBatchParamsPost{
 		Name:     cloudflare.F(r.Name),
 		TTL:      cloudflare.F(r.TTL),
@@ -167,7 +296,7 @@ func buildBatchPostParam(r dns.RecordResponse) dns.RecordBatchParamsPost {
 		Priority: cloudflare.F(r.Priority),
 		Comment:  cloudflare.F(r.Comment),
 		Tags:     cloudflare.F[any](tagsFromResponse(r.Tags)),
-	}
+	}, nil
 }
 
 // buildBatchPutParam constructs a BatchPutUnionParam for updating a DNS record in a batch.
@@ -256,8 +385,21 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 				Tags:    cloudflare.F(tags),
 			},
 		}, true
+	case dns.RecordResponseTypeSRV:
+		body, err := srvRecordParam(r)
+		if err != nil {
+			// Fall back to individual UPDATE, which re-parses and logs the error.
+			return nil, false
+		}
+		return dns.BatchPutSRVRecordParam{ID: cloudflare.F(id), SRVRecordParam: body}, true
+	case dns.RecordResponseTypeNAPTR:
+		body, err := naptrRecordParam(r)
+		if err != nil {
+			return nil, false
+		}
+		return dns.BatchPutNAPTRRecordParam{ID: cloudflare.F(id), NAPTRRecordParam: body}, true
 	default:
-		// Record types that use structured Data fields (SRV, CAA, etc.) are not
+		// Record types that use structured Data fields (e.g. CAA) are not
 		// supported in the generic batch put and fall back to individual updates.
 		return nil, false
 	}
@@ -266,6 +408,7 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 // buildBatchCollections classifies per-zone changes into batch collections.
 // Custom hostname side-effects are handled separately by
 // processCustomHostnameChanges before this is called.
+// Sets bc.failed when a change is skipped and a retry would help reconcile it.
 func (p *CloudFlareProvider) buildBatchCollections(
 	zoneID string,
 	changes []*cloudFlareChange,
@@ -284,13 +427,20 @@ func (p *CloudFlareProvider) buildBatchCollections(
 
 		switch change.Action {
 		case cloudFlareCreate:
-			bc.batchPosts = append(bc.batchPosts, buildBatchPostParam(change.ResourceRecord))
+			postParam, err := buildBatchPostParam(change.ResourceRecord)
+			if err != nil {
+				log.WithFields(logFields).Errorf("failed to build batch POST param, skipping record: %v", err)
+				bc.failed = true
+				continue
+			}
+			bc.batchPosts = append(bc.batchPosts, postParam)
 			bc.createChanges = append(bc.createChanges, change)
 
 		case cloudFlareDelete:
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
-				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				// Record already gone is the desired state; no retry needed.
+				log.WithFields(logFields).Infof("record already gone, treating delete as success: %v", change.ResourceRecord)
 				continue
 			}
 			bc.batchDeletes = append(bc.batchDeletes, dns.RecordBatchParamsDelete{ID: cloudflare.F(recordID)})
@@ -300,13 +450,15 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				bc.failed = true
 				continue
 			}
 			if putParam, ok := buildBatchPutParam(recordID, change.ResourceRecord); ok {
 				bc.batchPuts = append(bc.batchPuts, putParam)
 				bc.updateChanges = append(bc.updateChanges, change)
 			} else {
-				log.WithFields(logFields).Debugf("batch PUT not supported for type %s, using individual update", change.ResourceRecord.Type)
+				// Routing only; parse errors surface in the fallbackUpdates drain.
+				log.WithFields(logFields).Debugf("batch PUT not supported by SDK for this type or content; routing to individual update")
 				bc.fallbackUpdates = append(bc.fallbackUpdates, change)
 			}
 		}
@@ -360,7 +512,12 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 			"zone":   zoneID,
 		}
 		recordID := p.getRecordID(records, change.ResourceRecord)
-		recordParam := getUpdateDNSRecordParam(zoneID, *change)
+		recordParam, err := getUpdateDNSRecordParam(zoneID, *change)
+		if err != nil {
+			failed = true
+			log.WithFields(logFields).Errorf("failed to build update params: %v", err)
+			continue
+		}
 		if _, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam); err != nil {
 			failed = true
 			log.WithFields(logFields).Errorf("failed to update record: %v", err)
@@ -409,7 +566,11 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 			var err error
 			switch change.Action {
 			case cloudFlareCreate:
-				params := getCreateDNSRecordParam(zoneID, change)
+				params, paramErr := getCreateDNSRecordParam(zoneID, change)
+				if paramErr != nil {
+					err = paramErr
+					break
+				}
 				_, err = p.Client.CreateDNSRecord(ctx, params)
 
 			case cloudFlareDelete:
@@ -426,11 +587,16 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 			case cloudFlareUpdate:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					// Record is gone; let the next sync cycle issue a fresh CREATE.
-					log.WithFields(logFields).Info("fallback: record unexpectedly not found for update, will re-evaluate on next sync")
+					// Mirror buildBatchCollections: flag retry on stale UPDATE.
+					log.WithFields(logFields).Errorf("fallback: failed to find previous record: %v", change.ResourceRecord)
+					failed = true
 					continue
 				}
-				params := getUpdateDNSRecordParam(zoneID, *change)
+				params, paramErr := getUpdateDNSRecordParam(zoneID, *change)
+				if paramErr != nil {
+					err = paramErr
+					break
+				}
 				_, err = p.Client.UpdateDNSRecord(ctx, recordID, params)
 			}
 
