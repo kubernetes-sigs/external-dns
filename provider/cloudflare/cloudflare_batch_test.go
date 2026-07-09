@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -31,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error) {
@@ -118,6 +120,12 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 		}
 		if record.Name == "newerror.bar.com" && firstErr == nil {
 			firstErr = fmt.Errorf("failed to create record")
+		}
+		if record.Name == "proxied-private.bar.com" && firstErr == nil {
+			firstErr = newCloudflareErrorWithCodes(http.StatusBadRequest, cloudflare.ErrorData{
+				Code:    cloudflareProxiedTargetNotAllowedCode,
+				Message: fmt.Sprintf("Target %s is not allowed for a proxied record.", record.Content),
+			})
 		}
 	}
 
@@ -226,6 +234,7 @@ func TestBatchFallbackIndividual(t *testing.T) {
 
 		err := p.ApplyChanges(t.Context(), changes)
 		require.Error(t, err, "should return error when individual fallback has failures")
+		assert.ErrorIs(t, err, provider.SoftError, "zone submit failures must be soft errors")
 		assert.Equal(t, 1, client.BatchDNSRecordsCalls, "batch path should be attempted before fallback")
 
 		// The batch should have failed (because of newerror.bar.com), then

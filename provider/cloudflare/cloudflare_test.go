@@ -50,6 +50,11 @@ import (
 // The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
 // so this helper initializes them properly.
 func newCloudflareError(statusCode int) *cloudflare.Error {
+	return newCloudflareErrorWithCodes(statusCode)
+}
+
+// newCloudflareErrorWithCodes is like newCloudflareError but attaches API error codes/messages.
+func newCloudflareErrorWithCodes(statusCode int, errs ...cloudflare.ErrorData) *cloudflare.Error {
 	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.com/client/v4/zones", nil)
 	resp := &http.Response{
 		StatusCode: statusCode,
@@ -60,6 +65,7 @@ func newCloudflareError(statusCode int) *cloudflare.Error {
 		StatusCode: statusCode,
 		Request:    req,
 		Response:   resp,
+		Errors:     errs,
 	}
 }
 
@@ -166,6 +172,12 @@ func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.Rec
 
 	if record.Name == "newerror.bar.com" {
 		return nil, fmt.Errorf("failed to create record")
+	}
+	if record.Name == "proxied-private.bar.com" {
+		return nil, newCloudflareErrorWithCodes(http.StatusBadRequest, cloudflare.ErrorData{
+			Code:    cloudflareProxiedTargetNotAllowedCode,
+			Message: fmt.Sprintf("Target %s is not allowed for a proxied record.", record.Content),
+		})
 	}
 	return &record, nil
 }
@@ -1083,17 +1095,54 @@ func TestCloudflareDryRunApplyChanges(t *testing.T) {
 func TestCloudflareApplyChangesError(t *testing.T) {
 	changes := &plan.Changes{}
 	client := NewMockCloudFlareClient()
-	provider := &CloudFlareProvider{
+	p := &CloudFlareProvider{
 		Client: client,
 	}
 	changes.Create = []*endpoint.Endpoint{{
 		DNSName: "newerror.bar.com",
 		Targets: endpoint.Targets{"target"},
 	}}
-	err := provider.ApplyChanges(t.Context(), changes)
-	if err == nil {
-		t.Errorf("should fail, %s", err)
+	err := p.ApplyChanges(t.Context(), changes)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError, "per-record create failures must soft-fail so reconciliation continues")
+}
+
+func TestCloudflareApplyChangesProxiedPrivateIPSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client}
+
+	// One bad proxied private-IP create must not hard-fail ApplyChanges (issue #5964).
+	err := p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "proxied-private.bar.com",
+				Targets:    endpoint.Targets{"192.168.1.128"},
+				RecordType: endpoint.RecordTypeA,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{Name: annotations.CloudflareProxiedKey, Value: "true"},
+				},
+			},
+			{
+				DNSName:    "ok.bar.com",
+				Targets:    endpoint.Targets{"1.2.3.4"},
+				RecordType: endpoint.RecordTypeA,
+			},
+		},
+	})
+	require.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError)
+	assert.Contains(t, err.Error(), "failed to submit all changes")
+
+	// The valid record in the same zone should still have been attempted (batch may
+	// fall back to individual ops; at least one successful create for ok.bar.com).
+	var createdOK bool
+	for _, a := range client.Actions {
+		if a.Name == "Create" && a.RecordData.Name == "ok.bar.com" {
+			createdOK = true
+			break
+		}
 	}
+	assert.True(t, createdOK, "valid records should still be created when a proxied private IP fails")
 }
 
 func TestCloudflareGetRecordID(t *testing.T) {
@@ -2666,6 +2715,21 @@ func TestConvertCloudflareError(t *testing.T) {
 			inputError:      newCloudflareError(400),
 			expectSoftError: false,
 			description:     "Client error (400) should not be converted to soft error",
+		},
+		{
+			name: "Proxied private target API code 9003",
+			inputError: newCloudflareErrorWithCodes(http.StatusBadRequest, cloudflare.ErrorData{
+				Code:    cloudflareProxiedTargetNotAllowedCode,
+				Message: "Target 192.168.1.128 is not allowed for a proxied record.",
+			}),
+			expectSoftError: true,
+			description:     "Cloudflare rejecting a proxied private/non-routable target should be a soft error",
+		},
+		{
+			name:            "Proxied private target string error",
+			inputError:      errors.New(`POST "https://api.cloudflare.com/client/v4/zones/abc/dns_records": 400 Bad Request {"errors":[{"code":9003,"message":"Target 192.168.1.128 is not allowed for a proxied record."}]}`),
+			expectSoftError: true,
+			description:     "Wrapped/string form of proxied-target rejection should be a soft error",
 		},
 		{
 			name:            "Client error 401",

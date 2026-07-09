@@ -65,6 +65,10 @@ const (
 	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
 	freeZoneMaxCommentLength = 100
 	paidZoneMaxCommentLength = 500
+
+	// cloudflareProxiedTargetNotAllowedCode is returned when a proxied record points at a
+	// non-proxyable target (e.g. RFC1918 / ULA). One bad endpoint must not CrashLoop ExternalDNS.
+	cloudflareProxiedTargetNotAllowedCode = 9003
 )
 
 var changeActionNames = map[changeAction]string{
@@ -246,6 +250,13 @@ func convertCloudflareError(err error) error {
 		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {
 			return provider.NewSoftError(err)
 		}
+		// Proxied-record config rejected by Cloudflare (private/non-routable target). Soft-fail
+		// so a single bad Gateway/HTTPRoute does not take down reconciliation for other records.
+		for _, e := range apierr.Errors {
+			if e.Code == cloudflareProxiedTargetNotAllowedCode {
+				return provider.NewSoftError(err)
+			}
+		}
 		// For other structured API errors (4xx), return the error unchanged
 		// Note: We must NOT call err.Error() on v5 cloudflare.Error types with nil internal fields
 		return err
@@ -266,7 +277,8 @@ func convertCloudflareError(err error) error {
 	if strings.Contains(errMsg, "rate limit") ||
 		strings.Contains(errMsg, "429") ||
 		strings.Contains(errMsg, "exceeded available rate limit retries") ||
-		strings.Contains(errMsg, "too many requests") {
+		strings.Contains(errMsg, "too many requests") ||
+		strings.Contains(errMsg, "not allowed for a proxied record") {
 		return provider.NewSoftError(err)
 	}
 
@@ -610,6 +622,8 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		}
 	}
 
+	// Per-record failures (including Cloudflare rejecting a proxied private IP) mark the zone
+	// failed above; surface that as a soft error so the controller logs and continues.
 	if len(failedZones) > 0 {
 		return provider.NewSoftErrorf("failed to submit all changes for the following zones: %q", failedZones)
 	}
