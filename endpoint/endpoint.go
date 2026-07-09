@@ -129,7 +129,9 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares two Targets and returns true if they are identical (case-insensitive)
+// Same compares two Targets and returns true if they are identical (case-insensitive).
+// Trailing dots are ignored so FQDN wire form (e.g. "foo.example.com.") matches the
+// relative form used by most sources (e.g. "foo.example.com").
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -138,9 +140,11 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(o)
 
 	for i, e := range t {
-		if !strings.EqualFold(e, o[i]) {
+		a := strings.TrimSuffix(e, ".")
+		b := strings.TrimSuffix(o[i], ".")
+		if !strings.EqualFold(a, b) {
 			// IPv6 can be shortened, so it should be parsed for equality checking
-			ipA, err := netip.ParseAddr(e)
+			ipA, err := netip.ParseAddr(a)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"targets":           t,
@@ -148,7 +152,7 @@ func (t Targets) Same(o Targets) bool {
 				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
-			ipB, err := netip.ParseAddr(o[i])
+			ipB, err := netip.ParseAddr(b)
 			if err != nil {
 				log.WithFields(log.Fields{
 					"targets":           t,
