@@ -178,7 +178,7 @@ spec:
     - example.com
 ```
 
-> **Note:** CNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
+> **Note:** CNAME and DNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
 
 * Example for record type `NS`
 
@@ -196,6 +196,35 @@ spec:
     - ns1.example.com
     - ns2.example.com
 ```
+
+* Example for record type `DNAME`
+
+`DNAME` ([RFC 6672](https://www.rfc-editor.org/rfc/rfc6672)) redirects an entire subtree of the DNS namespace to another domain. It has a single domain-name target and, like `CNAME`, accepts both bare hostnames and absolute FQDNs with a trailing dot.
+
+The difference from `CNAME` is what gets aliased:
+
+* `CNAME foo.example.com → bar.example.net` aliases **only** `foo.example.com`. Names beneath it, such as `x.foo.example.com`, are unaffected.
+* `DNAME sub.example.com → example.net` aliases **everything below** `sub.example.com`. A query for `x.sub.example.com` is rewritten by the resolver to `x.example.net` (the owner name `sub.example.com` itself is not redirected), so you don't have to create a `CNAME` for every subdomain.
+
+This makes `DNAME` useful for redirecting or renaming a whole subtree — for example, moving `*.old.example.com` to `new.example.net` — without maintaining a record per name.
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: dname-record
+spec:
+  endpoints:
+  - dnsName: sub.example.com
+    recordTTL: 300
+    recordType: DNAME
+    targets:
+    - example.net
+```
+
+> **Note:** `DNAME` is only stored by providers whose DNS backend supports it (e.g. Gandi, NS1, OCI, PowerDNS, Scaleway, and RFC2136 backends such as BIND or Knot).
+> Providers whose backend has no `DNAME` type (e.g. AWS Route 53, Azure, Google Cloud DNS, Cloudflare) will reject the record on write.
+> Because `DNAME` masks the entire subtree beneath its owner name, do not manage other records below a name that carries a `DNAME`.
 
 ## RBAC configuration
 

@@ -39,6 +39,7 @@ var (
 		endpoint.RecordTypeSRV,
 		endpoint.RecordTypeNAPTR,
 		endpoint.RecordTypeTXT,
+		endpoint.RecordTypeDNAME,
 	}
 )
 
