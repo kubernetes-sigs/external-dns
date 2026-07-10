@@ -120,6 +120,33 @@ func TestOvhZones(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
+func TestOvhZonesMatchParent(t *testing.T) {
+	assert := assert.New(t)
+	client := new(mockOvhClient)
+
+	// Without zoneMatchParent, a subdomain filter does not select the parent zone.
+	provider := &OVHProvider{
+		client:         client,
+		apiRateLimiter: ratelimit.New(10),
+		domainFilter:   endpoint.NewDomainFilter([]string{"pen-euw1-m.corp.com", "other.com"}),
+		cacheInstance:  cache.New(cache.NoExpiration, cache.NoExpiration),
+		dnsClient:      new(mockDnsClient),
+	}
+	client.On("GetWithContext", "/domain/zone").Return([]string{"corp.com", "other.com", "unrelated.net"}, nil).Once()
+	domains, err := provider.zones(t.Context())
+	assert.NoError(err)
+	assert.Equal([]string{"other.com"}, domains)
+	client.AssertExpectations(t)
+
+	// With zoneMatchParent, the parent zone is included for subdomain filters.
+	provider.zoneMatchParent = true
+	client.On("GetWithContext", "/domain/zone").Return([]string{"corp.com", "other.com", "unrelated.net"}, nil).Once()
+	domains, err = provider.zones(t.Context())
+	assert.NoError(err)
+	assert.ElementsMatch([]string{"corp.com", "other.com"}, domains)
+	client.AssertExpectations(t)
+}
+
 func TestOvhZoneRecords(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
@@ -644,13 +671,13 @@ func TestOvhRecordString(t *testing.T) {
 
 func TestNewOvhProvider(t *testing.T) {
 	domainFilter := &endpoint.DomainFilter{}
-	_, err := newProvider(domainFilter, "ovh-eu", 20, false, true)
+	_, err := newProvider(domainFilter, "ovh-eu", 20, false, false, true)
 	td.CmpError(t, err)
 
 	t.Setenv("OVH_APPLICATION_KEY", "aaaaaa")
 	t.Setenv("OVH_APPLICATION_SECRET", "bbbbbb")
 	t.Setenv("OVH_CONSUMER_KEY", "cccccc")
 
-	_, err = newProvider(domainFilter, "ovh-eu", 20, false, true)
+	_, err = newProvider(domainFilter, "ovh-eu", 20, false, false, true)
 	td.CmpNoError(t, err)
 }

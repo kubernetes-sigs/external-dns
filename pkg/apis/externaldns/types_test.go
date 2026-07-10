@@ -706,8 +706,9 @@ func TestParseFlagsNS1(t *testing.T) {
 
 func TestParseFlagsOVH(t *testing.T) {
 	t.Parallel()
-	cfg := parseCfg(t, "--ovh-enable-cname-relative")
+	cfg := parseCfg(t, "--ovh-enable-cname-relative", "--ovh-zone-match-parent")
 	assert.True(t, cfg.OVHEnableCNAMERelative)
+	assert.True(t, cfg.OVHZoneMatchParent)
 }
 
 func TestParseFlagsPihole(t *testing.T) {

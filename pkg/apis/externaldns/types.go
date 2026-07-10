@@ -142,6 +142,7 @@ type Config struct {
 	OVHEndpoint                                   string
 	OVHApiRateLimit                               int
 	OVHEnableCNAMERelative                        bool
+	OVHZoneMatchParent                            bool
 	PDNSServer                                    string
 	PDNSServerID                                  string
 	PDNSAPIKey                                    string `secure:"yes"`
@@ -320,6 +321,7 @@ var defaultConfig = &Config{
 	OVHApiRateLimit:              20,
 	OVHEnableCNAMERelative:       false,
 	OVHEndpoint:                  "ovh-eu",
+	OVHZoneMatchParent:           false,
 	PDNSAPIKey:                   "",
 	PDNSServer:                   "http://localhost:8081",
 	PDNSServerID:                 "localhost",
@@ -613,6 +615,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)", defaultConfig.OVHEndpoint, &cfg.OVHEndpoint)
 	b.IntVar("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)", defaultConfig.OVHApiRateLimit, &cfg.OVHApiRateLimit)
 	b.BoolVar("ovh-enable-cname-relative", "When using the OVH provider, specify if CNAME should be treated as relative on target without final dot (default: false)", defaultConfig.OVHEnableCNAMERelative, &cfg.OVHEnableCNAMERelative)
+	b.BoolVar("ovh-zone-match-parent", "When using the OVH provider, allow domain-filter to match parent zones for subdomain filters (default: disabled)", defaultConfig.OVHZoneMatchParent, &cfg.OVHZoneMatchParent)
 	b.StringVar("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)", defaultConfig.PDNSServer, &cfg.PDNSServer)
 	b.StringVar("pdns-server-id", "When using the PowerDNS/PDNS provider, specify the id of the server to retrieve. Should be `localhost` except when the server is behind a proxy (optional when --provider=pdns) (default: localhost)", defaultConfig.PDNSServerID, &cfg.PDNSServerID)
 	b.StringVar("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)", defaultConfig.PDNSAPIKey, &cfg.PDNSAPIKey)

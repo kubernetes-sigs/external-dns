@@ -63,6 +63,10 @@ type OVHProvider struct {
 
 	domainFilter *endpoint.DomainFilter
 
+	// zoneMatchParent allows --domain-filter values that are subdomains of an
+	// OVH zone (e.g. filter pen-euw1-m.corp.com matching zone corp.com).
+	zoneMatchParent bool
+
 	// DryRun enables dry-run mode
 	DryRun bool
 
@@ -125,7 +129,7 @@ type ovhChange struct {
 
 // New creates an OVH provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.DryRun)
+	return newProvider(domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.OVHEnableCNAMERelative, cfg.OVHZoneMatchParent, cfg.DryRun)
 }
 
 // newProvider initializes a new OVH DNS based Provider.
@@ -134,6 +138,7 @@ func newProvider(
 	endpoint string,
 	apiRateLimit int,
 	enableCNAMERelative,
+	zoneMatchParent,
 	dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
@@ -145,6 +150,7 @@ func newProvider(
 	return &OVHProvider{
 		client:                    client,
 		domainFilter:              domainFilter,
+		zoneMatchParent:           zoneMatchParent,
 		apiRateLimiter:            ratelimit.New(apiRateLimit),
 		DryRun:                    dryRun,
 		cacheInstance:             cache.New(cache.NoExpiration, cache.NoExpiration),
@@ -398,6 +404,10 @@ func (p *OVHProvider) zones(ctx context.Context) ([]string, error) {
 
 	for _, zoneName := range zones {
 		if p.domainFilter == nil || p.domainFilter.Match(zoneName) {
+			filteredZones = append(filteredZones, zoneName)
+			continue
+		}
+		if p.zoneMatchParent && p.domainFilter.MatchParent(zoneName) {
 			filteredZones = append(filteredZones, zoneName)
 		}
 	}

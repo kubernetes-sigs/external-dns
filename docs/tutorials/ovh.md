@@ -75,6 +75,18 @@ curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: applicati
 }'
 ```
 
+## ovh-zone-match-parent
+
+`ovh-zone-match-parent` allows `--domain-filter` values that are subdomains of an OVH zone to still select that parent zone. This mirrors `--aws-zone-match-parent`.
+
+For example, with OVH zone `corp.com` and `--domain-filter=pen-euw1-m.corp.com`, ExternalDNS would otherwise skip `corp.com` and fail to create records under that subdomain. Enabling the flag includes the parent zone:
+
+```yaml
+## OVH zone: corp.com
+--domain-filter=pen-euw1-m.corp.com
+--ovh-zone-match-parent
+```
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster with which you want to test ExternalDNS, and then apply one of the following manifest files for deployment:
