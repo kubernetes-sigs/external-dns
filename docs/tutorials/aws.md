@@ -775,6 +775,18 @@ Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 
 
 `external-dns.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
 
+### hosted-zone-id
+
+`external-dns.alpha.kubernetes.io/aws-hosted-zone-id` pins a record to a specific Route53 hosted zone by ID, bypassing suffix-based zone selection. Use it when overlapping zones share the same name (e.g. a public and a private `a.my.com`) and you need each record to land in exactly one zone. If the pinned zone is not among the configured zones, the record is skipped rather than fanned out.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/aws-hosted-zone-id: "Z1234567890ABC"
+```
+
+Not to be confused with [target-hosted-zone](#target-hosted-zone), which sets the ALIAS *target's* hosted zone ID and does not affect record placement.
+
 ### aws-zone-match-parent
 
 `aws-zone-match-parent` allows support subdomains within the same zone by using their parent domain, i.e --domain-filter=x.example.com would create a DNS entry for x.example.com (and subdomains thereof).
