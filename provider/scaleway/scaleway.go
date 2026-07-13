@@ -22,6 +22,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
@@ -31,12 +32,18 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
 const (
 	defaultTTL              uint32 = 300
 	scalewayDefaultPriority uint32 = 0
 	scalewayPriorityKey     string = "scw/priority"
+	// zonesCacheDuration is the TTL of the zone list. Zones is called several
+	// times per reconciliation loop (Records, AdjustEndpoints and ApplyChanges),
+	// this keeps them down to a single API call while staying well below the
+	// default sync interval so new zones are still picked up quickly.
+	zonesCacheDuration = 30 * time.Second
 )
 
 // ScalewayProvider implements the DNS provider for Scaleway DNS
@@ -46,6 +53,8 @@ type ScalewayProvider struct {
 	dryRun    bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter *endpoint.DomainFilter
+	// zones from the last listing, shared by Records, AdjustEndpoints and ApplyChanges
+	zonesCache *blueprint.ZoneCache[[]*domain.DNSZone]
 }
 
 // ScalewayChange differentiates between ChangActions
@@ -106,11 +115,13 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayPro
 		domainAPI:    domainAPI,
 		dryRun:       dryRun,
 		domainFilter: domainFilter,
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](zonesCacheDuration),
 	}, nil
 }
 
 // AdjustEndpoints is used to normalize the endpoints
 func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	apexNames := p.apexNames(context.Background())
 	eps := make([]*endpoint.Endpoint, len(endpoints))
 	for i := range endpoints {
 		eps[i] = endpoints[i]
@@ -120,12 +131,50 @@ func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*e
 		if _, ok := eps[i].GetProviderSpecificProperty(scalewayPriorityKey); !ok {
 			eps[i] = eps[i].WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", scalewayDefaultPriority))
 		}
+		adjustAliasProperty(eps[i], apexNames)
 	}
 	return eps, nil
 }
 
+// apexNames returns the apex name of every zone handled by the provider.
+func (p *ScalewayProvider) apexNames(ctx context.Context) map[string]struct{} {
+	zones, err := p.Zones(ctx)
+	if err != nil {
+		log.Errorf("Failed listing zones, CNAME endpoints at a zone apex are treated as regular CNAME records: %v", err)
+		return nil
+	}
+	names := make(map[string]struct{}, len(zones))
+	for _, zone := range zones {
+		names[getCompleteZoneName(zone)] = struct{}{}
+	}
+	return names
+}
+
+// adjustAliasProperty normalizes the alias property: "true" on CNAME endpoints
+// stored as ALIAS records (zone apex or alias annotation), absent otherwise.
+func adjustAliasProperty(ep *endpoint.Endpoint, apexNames map[string]struct{}) {
+	_, atApex := apexNames[ep.DNSName]
+	if isAliasCNAME(ep, atApex) {
+		ep.WithAliasProperty(endpoint.AliasTrue)
+	} else {
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+	}
+}
+
+// isAliasCNAME reports whether a CNAME endpoint has to be stored as a Scaleway
+// ALIAS record: either it sits at the zone apex, where Scaleway rejects CNAME
+// records, or it opts in through the alias property.
+func isAliasCNAME(ep *endpoint.Endpoint, atApex bool) bool {
+	return ep.RecordType == endpoint.RecordTypeCNAME &&
+		(atApex || ep.GetAliasProperty() == endpoint.AliasTrue)
+}
+
 // Zones returns the list of hosted zones.
 func (p *ScalewayProvider) Zones(ctx context.Context) ([]*domain.DNSZone, error) {
+	if !p.zonesCache.Expired() {
+		return p.zonesCache.Get(), nil
+	}
+
 	res := []*domain.DNSZone{}
 
 	dnsZones, err := p.domainAPI.ListDNSZones(&domain.ListDNSZonesRequest{}, scw.WithAllPages(), scw.WithContext(ctx))
@@ -138,6 +187,8 @@ func (p *ScalewayProvider) Zones(ctx context.Context) ([]*domain.DNSZone, error)
 			res = append(res, dnsZone)
 		}
 	}
+
+	p.zonesCache.Reset(res)
 
 	return res, nil
 }
@@ -164,8 +215,15 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 			// trim any leading or ending dot
 			fullRecordName := strings.Trim(name+getCompleteZoneName(zone), ".")
 
-			if !provider.SupportedRecordType(record.Type.String()) {
-				log.Infof("Skipping record %s because type %s is not supported", fullRecordName, record.Type.String())
+			recordType := record.Type.String()
+			// ExternalDNS writes ALIAS records for CNAME endpoints, read them back as CNAME
+			isAliasRecord := record.Type == domain.RecordTypeALIAS
+			if isAliasRecord {
+				recordType = endpoint.RecordTypeCNAME
+			}
+
+			if !provider.SupportedRecordType(recordType) {
+				log.Infof("Skipping record %s because type %s is not supported", fullRecordName, recordType)
 				continue
 			}
 
@@ -174,13 +232,19 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 			// the record is modified without going through ExternalDNS, we could have
 			// different priorities of ttls for a same name.
 			// In this case, we juste take the first one.
-			if existingEndpoint, ok := endpoints[record.Type.String()+"/"+fullRecordName]; ok {
+			// The key uses the Scaleway record type so that an ALIAS and a CNAME
+			// record sharing a name never merge into a single endpoint.
+			mapKey := record.Type.String() + "/" + fullRecordName
+			if existingEndpoint, ok := endpoints[mapKey]; ok {
 				existingEndpoint.Targets = append(existingEndpoint.Targets, record.Data)
 				log.Infof("Appending target %s to record %s, using TTL and priority of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
 			} else {
-				ep := endpoint.NewEndpointWithTTL(fullRecordName, record.Type.String(), endpoint.TTL(record.TTL), record.Data)
+				ep := endpoint.NewEndpointWithTTL(fullRecordName, recordType, endpoint.TTL(record.TTL), record.Data)
 				ep = ep.WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", record.Priority))
-				endpoints[record.Type.String()+"/"+fullRecordName] = ep
+				if isAliasRecord {
+					ep = ep.WithAliasProperty(endpoint.AliasTrue)
+				}
+				endpoints[mapKey] = ep
 			}
 		}
 	}
@@ -303,6 +367,16 @@ func getCompleteZoneName(zone *domain.DNSZone) string {
 	return subdomain + zone.Domain
 }
 
+// scalewayRecordType returns the record type to write: ALIAS for CNAME
+// endpoints at the zone apex (where Scaleway rejects CNAME) or with the
+// alias property set, the endpoint's own type otherwise.
+func scalewayRecordType(ep *endpoint.Endpoint, relativeRecordName string) domain.RecordType {
+	if isAliasCNAME(ep, relativeRecordName == "") {
+		return domain.RecordTypeALIAS
+	}
+	return domain.RecordType(ep.RecordType)
+}
+
 func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain.Record {
 	// no annotation results in a TTL of 0, default to 300 for consistency with other providers
 	ttl := defaultTTL
@@ -321,6 +395,9 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 
 	records := []*domain.Record{}
 
+	recordName := strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". ")
+	recordType := scalewayRecordType(ep, recordName)
+
 	for _, target := range ep.Targets {
 		finalTargetName := target
 		if endpoint.RequiresTrailingDot(ep.RecordType) {
@@ -329,10 +406,10 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 
 		records = append(records, &domain.Record{
 			Data:     finalTargetName,
-			Name:     strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
+			Name:     recordName,
 			Priority: priority,
 			TTL:      ttl,
-			Type:     domain.RecordType(ep.RecordType),
+			Type:     recordType,
 		})
 	}
 
@@ -341,6 +418,9 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 
 func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoint) []*domain.RecordChange {
 	records := []*domain.RecordChange{}
+
+	recordName := strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". ")
+	recordType := scalewayRecordType(ep, recordName)
 
 	for _, target := range ep.Targets {
 		finalTargetName := target
@@ -352,8 +432,8 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 			Delete: &domain.RecordChangeDelete{
 				IDFields: &domain.RecordIdentifier{
 					Data: &finalTargetName,
-					Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
-					Type: domain.RecordType(ep.RecordType),
+					Name: recordName,
+					Type: recordType,
 				},
 			},
 		})
