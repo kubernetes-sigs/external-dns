@@ -30,50 +30,78 @@ import (
 // ValidateConfig performs validation on the Config object
 func ValidateConfig(cfg *externaldns.Config) error {
 	// TODO: Should probably return field.ErrorList
-
-	if err := preValidateConfig(cfg); err != nil {
-		return err
+	validators := []func(*externaldns.Config) error{
+		preValidateConfig,
+		validateConfigForProvider,
+		validateHostnameConfig,
+		validateTXTRegistryConfig,
+		validateLabelSelectors,
+		validateAnnotationPrefix,
+		validateKubeAPILimits,
+		validatePTRConfig,
 	}
-
-	if err := validateConfigForProvider(cfg); err != nil {
-		return err
+	for _, validate := range validators {
+		if err := validate(cfg); err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
+// validateHostnameConfig ensures an FQDN template is set when hostname annotations are ignored.
+func validateHostnameConfig(cfg *externaldns.Config) error {
 	if cfg.IgnoreHostnameAnnotation && len(cfg.FQDNTemplate) == 0 {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
+	return nil
+}
 
+// validateTXTRegistryConfig ensures the TXT registry prefix and suffix are not set together.
+func validateTXTRegistryConfig(cfg *externaldns.Config) error {
 	if len(cfg.TXTPrefix) > 0 && len(cfg.TXTSuffix) > 0 {
 		return errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
+	return nil
+}
 
-	_, err := labels.Parse(cfg.LabelFilter)
-	if err != nil {
+// validateLabelSelectors ensures the label and annotation filters are valid selectors.
+func validateLabelSelectors(cfg *externaldns.Config) error {
+	if _, err := labels.Parse(cfg.LabelFilter); err != nil {
 		return errors.New("--label-filter does not specify a valid label selector")
 	}
-
 	if _, err := metav1.ParseToLabelSelector(cfg.AnnotationFilter); err != nil {
 		return errors.New("--annotation-filter does not specify a valid label selector")
 	}
+	return nil
+}
 
+// validateAnnotationPrefix ensures the annotation prefix is set and ends with a slash.
+func validateAnnotationPrefix(cfg *externaldns.Config) error {
 	if cfg.AnnotationPrefix == "" {
 		return errors.New("--annotation-prefix cannot be empty")
 	}
 	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
 		return errors.New("--annotation-prefix must end with '/'")
 	}
+	return nil
+}
 
+// validateKubeAPILimits ensures the Kubernetes API QPS and burst limits are positive.
+func validateKubeAPILimits(cfg *externaldns.Config) error {
 	if cfg.KubeAPIQPS <= 0 {
 		return errors.New("--kube-api-qps must be greater than 0")
 	}
 	if cfg.KubeAPIBurst <= 0 {
 		return errors.New("--kube-api-burst must be greater than 0")
 	}
+	return nil
+}
 
+// validatePTRConfig ensures PTR is a managed record type when PTR creation is enabled.
+func validatePTRConfig(cfg *externaldns.Config) error {
 	if cfg.CreatePTR && !cfg.IsPTRSupported() {
 		return errors.New("--create-ptr requires PTR in --managed-record-types")
 	}
-
 	return nil
 }
 
