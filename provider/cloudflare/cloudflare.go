@@ -694,10 +694,37 @@ func (p *CloudFlareProvider) changesByZone(zones []zones.Zone, changeSet []*clou
 }
 
 func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record dns.RecordResponse) string {
-	if zoneRecord, ok := records[DNSRecordIndex{Name: record.Name, Type: string(record.Type), Content: record.Content}]; ok {
+	if zoneRecord, ok := records[newDNSRecordIndex(record)]; ok {
 		return zoneRecord.ID
 	}
 	return ""
+}
+
+func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
+	if record.Type != dns.RecordResponseTypeSRV {
+		return record.Content
+	}
+
+	switch data := record.Data.(type) {
+	case dns.SRVRecordData:
+		if data.Target != "" {
+			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+		}
+	case map[string]any:
+		priority, priorityOK := data["priority"].(float64)
+		weight, weightOK := data["weight"].(float64)
+		port, portOK := data["port"].(float64)
+		target, targetOK := data["target"].(string)
+		if priorityOK && weightOK && portOK && targetOK {
+			return fmt.Sprintf("%v %v %v %s", priority, weight, port, externalDNSSRVTarget(target))
+		}
+	}
+
+	if parsed, err := parseSRVRecordTarget(record.Content); err == nil {
+		return fmt.Sprintf("%v %v %v %s", parsed.priority, parsed.weight, parsed.port, externalDNSSRVTarget(parsed.target))
+	}
+
+	return record.Content
 }
 
 func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) (*cloudFlareChange, error) {
@@ -745,6 +772,11 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			target = *mxRecord.GetHost()
 		}
 	}
+	if ep.RecordType == "SRV" {
+		if _, err := parseSRVRecordTarget(target); err != nil {
+			return &cloudFlareChange{}, fmt.Errorf("failed to parse SRV record target %q: %w", target, err)
+		}
+	}
 
 	return &cloudFlareChange{
 		Action: action,
@@ -765,7 +797,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 }
 
 func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
-	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: r.Content}
+	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: endpointTargetFromCloudflareRecord(r)}
 }
 
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
@@ -853,7 +885,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 			if records[i].Type == "MX" {
 				targets[i] = fmt.Sprintf("%v %v", record.Priority, record.Content)
 			} else {
-				targets[i] = record.Content
+				targets[i] = endpointTargetFromCloudflareRecord(record)
 			}
 		}
 		e := endpoint.NewEndpointWithTTL(
