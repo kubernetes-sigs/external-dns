@@ -42,6 +42,7 @@ type rfc2136Stub struct {
 	output                []*dns.Envelope
 	updateMsgs            []*dns.Msg
 	createMsgs            []*dns.Msg
+	incomeTransferErrors  map[string]error
 	nameservers           []string
 	counter               int
 	randGen               *rand.Rand
@@ -148,7 +149,11 @@ func (r *rfc2136Stub) setOutput(output []string) error {
 	return nil
 }
 
-func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
+func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
+	if err, ok := r.incomeTransferErrors[nameserver]; ok {
+		return nil, err
+	}
+
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {
@@ -551,6 +556,22 @@ func TestRfc2136GetRecords(t *testing.T) {
 	assert.True(t, contains(recs, "v1.foo.com"))
 	assert.True(t, contains(recs, "v2.bar.com"))
 	assert.True(t, contains(recs, "v2.foo.com"))
+}
+
+func TestRfc2136GetRecordsClearsErrorAfterSuccessfulFallback(t *testing.T) {
+	stub := newStub()
+	stub.incomeTransferErrors = map[string]error{
+		"rfc2136-host1:0": assert.AnError,
+	}
+	require.NoError(t, stub.setOutput([]string{"foo.com 3600 IN A 192.0.2.1"}))
+
+	p, err := createRfc2136StubProviderWithHosts(stub)
+	require.NoError(t, err)
+
+	recs, err := p.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, recs, 1)
+	assert.Equal(t, "foo.com", recs[0].DNSName)
 }
 
 // Make sure the test version of SendMessage raises an error

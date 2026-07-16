@@ -304,6 +304,8 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 				r.lastErr = lastErr
 				continue
 			}
+			lastErr = nil
+			r.lastErr = nil
 
 			for e := range env {
 				if e.Error != nil {
