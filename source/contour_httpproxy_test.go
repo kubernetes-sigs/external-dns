@@ -32,6 +32,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 
@@ -99,6 +100,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 		fakeDynamicClient,
 		&Config{
 			Namespace:      "default",
+			LabelFilter:    labels.Everything(),
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
@@ -266,6 +268,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 		title                    string
 		targetNamespace          string
 		annotationFilter         string
+		labelFilter              labels.Selector
 		loadBalancer             fakeLoadBalancerService
 		httpProxyItems           []fakeHTTPProxy
 		expected                 []*endpoint.Endpoint
@@ -1019,12 +1022,17 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
+			labelFilter := ti.labelFilter
+			if labelFilter == nil {
+				labelFilter = labels.Everything()
+			}
 			httpProxySource, err := NewContourHTTPProxySource(
 				t.Context(),
 				fakeDynamicClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
+					LabelFilter:              labelFilter,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				},
@@ -1051,6 +1059,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 		t.Context(),
 		fakeDynamicClient,
 		&Config{
+			LabelFilter:    labels.Everything(),
 			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 		},
 	)
@@ -1120,12 +1129,73 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 	return httpProxy
 }
 
+func TestContourHTTPProxyLabelFilter(t *testing.T) {
+	t.Parallel()
+
+	fakeDynamicClient, scheme := newContourDynamicKubernetesClient()
+
+	for _, hp := range []*projectcontour.HTTPProxy{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "relevant",
+				Namespace: "default",
+				Labels:    map[string]string{"app": "relevant"},
+			},
+			Spec: projectcontour.HTTPProxySpec{
+				VirtualHost: &projectcontour.VirtualHost{Fqdn: "relevant.example.org"},
+			},
+			Status: projectcontour.HTTPProxyStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "other",
+				Namespace: "default",
+				Labels:    map[string]string{"app": "other"},
+			},
+			Spec: projectcontour.HTTPProxySpec{
+				VirtualHost: &projectcontour.VirtualHost{Fqdn: "other.example.org"},
+			},
+			Status: projectcontour.HTTPProxyStatus{
+				LoadBalancer: v1.LoadBalancerStatus{
+					Ingress: []v1.LoadBalancerIngress{{IP: "5.6.7.8"}},
+				},
+			},
+		},
+	} {
+		converted, err := convertHTTPProxyToUnstructured(hp, scheme)
+		require.NoError(t, err)
+		_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(hp.Namespace).Create(t.Context(), converted, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{
+		Namespace:      "default",
+		LabelFilter:    labels.SelectorFromSet(labels.Set{"app": "relevant"}),
+		TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		{
+			DNSName:    "relevant.example.org",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"1.2.3.4"},
+		},
+	})
+}
+
 func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
 	t.Parallel()
 
 	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
 
-	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{})
+	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &httpProxySource{}, source)
 

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
@@ -44,6 +45,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 	tests := []struct {
 		name             string
 		annotationFilter string
+		labelFilter      labels.Selector
 		transportServer  f5.TransportServer
 		expected         []*endpoint.Endpoint
 	}{
@@ -329,6 +331,55 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			expected: nil,
 		},
 		{
+			name:        "F5 TransportServer with matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5TransportServerNamespace,
+					Labels:    map[string]string{"app": "test"},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: "192.168.1.100"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					Labels:     endpoint.Labels{"resource": "f5-transportserver/transportserver/test-vs"},
+				},
+			},
+		},
+		{
+			name:        "F5 TransportServer with non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5TransportServerNamespace,
+					Labels:    map[string]string{"app": "other"},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: "192.168.1.100"},
+			},
+			expected: nil,
+		},
+		{
 			name: "F5 TransportServer does not support provider-specific annotations",
 			transportServer: f5.TransportServer{
 				TypeMeta: metav1.TypeMeta{
@@ -382,10 +433,15 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &transportServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
+			labelFilter := tc.labelFilter
+			if labelFilter == nil {
+				labelFilter = labels.Everything()
+			}
 			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:        defaultF5TransportServerNamespace,
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
+					LabelFilter:      labelFilter,
 				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
@@ -412,7 +468,7 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{})
+	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5TransportServerSource{}, source)
 

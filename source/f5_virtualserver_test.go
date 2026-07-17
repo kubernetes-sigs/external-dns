@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
@@ -44,6 +45,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 	tests := []struct {
 		name             string
 		annotationFilter string
+		labelFilter      labels.Selector
 		virtualServer    f5.VirtualServer
 		expected         []*endpoint.Endpoint
 	}{
@@ -572,6 +574,55 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			},
 		},
 		{
+			name:        "F5 VirtualServer with matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Labels:    map[string]string{"app": "test"},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: "192.168.1.100"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					Labels:     endpoint.Labels{"resource": "f5-virtualserver/virtualserver/test-vs"},
+				},
+			},
+		},
+		{
+			name:        "F5 VirtualServer with non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Labels:    map[string]string{"app": "other"},
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: "192.168.1.100"},
+			},
+			expected: nil,
+		},
+		{
 			name: "F5 VirtualServer does not support provider-specific annotations",
 			virtualServer: f5.VirtualServer{
 				TypeMeta: metav1.TypeMeta{
@@ -625,10 +676,15 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &virtualServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
+			labelFilter := tc.labelFilter
+			if labelFilter == nil {
+				labelFilter = labels.Everything()
+			}
 			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:        defaultF5VirtualServerNamespace,
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
+					LabelFilter:      labelFilter,
 				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
@@ -655,7 +711,7 @@ func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
 	fakeClient := fakeKube.NewClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5VirtualServerSource{}, source)
 
