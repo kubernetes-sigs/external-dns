@@ -20,11 +20,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -572,6 +574,67 @@ func TestRfc2136GetRecordsClearsErrorAfterSuccessfulFallback(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, recs, 1)
 	assert.Equal(t, "foo.com", recs[0].DNSName)
+}
+
+// runLocalDNSServer starts an in-process DNS server on a random local TCP
+// port and answers every query with the rcode returned by rcodeFn.
+func runLocalDNSServer(t *testing.T, rcodeFn func() int) string {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	srv := &dns.Server{
+		Listener: l,
+		Handler: dns.HandlerFunc(func(w dns.ResponseWriter, m *dns.Msg) {
+			resp := new(dns.Msg)
+			resp.SetRcode(m, rcodeFn())
+			_ = w.WriteMsg(resp)
+		}),
+		// The default accept func rejects dynamic updates with NOTIMP
+		// before they ever reach the handler.
+		MsgAcceptFunc: func(dns.Header) dns.MsgAcceptAction { return dns.MsgAccept },
+	}
+	go func() { _ = srv.ActivateAndServe() }()
+	t.Cleanup(func() { _ = srv.Shutdown() })
+	return l.Addr().String()
+}
+
+// With a single nameserver getNextNameserver returns early and never resets
+// lastErr, so only SendMessage itself can clear it after a success.
+func TestRfc2136SendMessageClearsErrorAfterSuccess(t *testing.T) {
+	var rcode atomic.Int32
+	rcode.Store(int32(dns.RcodeServerFailure))
+	addr := runLocalDNSServer(t, func() int { return int(rcode.Load()) })
+
+	p := &rfc2136Provider{
+		nameservers: []string{addr},
+		insecure:    true,
+	}
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+
+	require.Error(t, p.SendMessage(m))
+	require.Error(t, p.lastErr)
+
+	rcode.Store(int32(dns.RcodeSuccess))
+	require.NoError(t, p.SendMessage(m))
+	assert.NoError(t, p.lastErr)
+}
+
+func TestRfc2136SendMessageClearsErrorAfterSuccessfulFallback(t *testing.T) {
+	failAddr := runLocalDNSServer(t, func() int { return dns.RcodeServerFailure })
+	okAddr := runLocalDNSServer(t, func() int { return dns.RcodeSuccess })
+
+	p := &rfc2136Provider{
+		nameservers: []string{failAddr, okAddr},
+		insecure:    true,
+	}
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+
+	require.NoError(t, p.SendMessage(m))
+	assert.NoError(t, p.lastErr)
 }
 
 // Make sure the test version of SendMessage raises an error
