@@ -273,18 +273,20 @@ func convertCloudflareError(err error) error {
 	return err
 }
 
-// resolveCloudFlareToken returns the CloudFlare API token from the given value,
+// resolveAPIToken returns the Cloudflare API token from the given value,
 // reading it from a file when prefixed with "file:". Surrounding whitespace is
-// trimmed
-func resolveCloudFlareToken(token string) (string, error) {
-	if path, ok := strings.CutPrefix(token, "file:"); ok {
-		tokenBytes, err := os.ReadFile(path)
-		if err != nil {
-			return "", fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
-		}
-		token = string(tokenBytes)
+// trimmed.
+func resolveAPIToken(input string) (string, error) {
+	path, ok := strings.CutPrefix(input, "file:")
+	if !ok {
+		return strings.TrimSpace(input), nil
 	}
-	return strings.TrimSpace(token), nil
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
+	}
+	return strings.TrimSpace(string(data)), nil
 }
 
 // newProvider initializes a new CloudFlare DNS based Provider.
@@ -302,7 +304,7 @@ func newProvider(
 	var client *cloudflare.Client
 
 	if token := os.Getenv(cfAPITokenEnvKey); token != "" {
-		resolved, err := resolveCloudFlareToken(token)
+		resolved, err := resolveAPIToken(token)
 		if err != nil {
 			return nil, err
 		}

@@ -988,7 +988,7 @@ func TestCloudflareProvider(t *testing.T) {
 	}
 }
 
-func TestResolveCloudFlareToken(t *testing.T) {
+func TestResolveAPIToken(t *testing.T) {
 	tokenFile := filepath.Join(t.TempDir(), "cf_api_token")
 	require.NoError(t, os.WriteFile(tokenFile, []byte("abc123def\n"), 0o600))
 
@@ -1027,7 +1027,7 @@ func TestResolveCloudFlareToken(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			resolved, err := resolveCloudFlareToken(tc.Token)
+			resolved, err := resolveAPIToken(tc.Token)
 			if tc.ShouldFail {
 				require.Error(t, err)
 				return
