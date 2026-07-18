@@ -378,9 +378,9 @@ func TestValidateHostnameConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &externaldns.Config{IgnoreHostnameAnnotation: tt.ignoreAnnotation, FQDNTemplate: tt.fqdnTemplate}
 			if tt.wantErr {
-				require.Error(t, validateHostnameConfig(cfg))
+				require.NotEmpty(t, validateHostnameConfig(cfg))
 			} else {
-				require.NoError(t, validateHostnameConfig(cfg))
+				require.Empty(t, validateHostnameConfig(cfg))
 			}
 		})
 	}
@@ -402,9 +402,9 @@ func TestValidateTXTRegistryConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &externaldns.Config{TXTPrefix: tt.prefix, TXTSuffix: tt.suffix}
 			if tt.wantErr {
-				require.Error(t, validateTXTRegistryConfig(cfg))
+				require.NotEmpty(t, validateTXTRegistryConfig(cfg))
 			} else {
-				require.NoError(t, validateTXTRegistryConfig(cfg))
+				require.Empty(t, validateTXTRegistryConfig(cfg))
 			}
 		})
 	}
@@ -426,9 +426,9 @@ func TestValidateLabelSelectors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &externaldns.Config{LabelFilter: tt.labelFilter, AnnotationFilter: tt.annotationFilter}
 			if tt.wantErr {
-				require.Error(t, validateLabelSelectors(cfg))
+				require.NotEmpty(t, validateLabelSelectors(cfg))
 			} else {
-				require.NoError(t, validateLabelSelectors(cfg))
+				require.Empty(t, validateLabelSelectors(cfg))
 			}
 		})
 	}
@@ -448,9 +448,9 @@ func TestValidateAnnotationPrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &externaldns.Config{AnnotationPrefix: tt.prefix}
 			if tt.wantErr {
-				require.Error(t, validateAnnotationPrefix(cfg))
+				require.NotEmpty(t, validateAnnotationPrefix(cfg))
 			} else {
-				require.NoError(t, validateAnnotationPrefix(cfg))
+				require.Empty(t, validateAnnotationPrefix(cfg))
 			}
 		})
 	}
@@ -473,9 +473,9 @@ func TestValidateKubeAPILimits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &externaldns.Config{KubeAPIQPS: tt.qps, KubeAPIBurst: tt.burst}
 			if tt.wantErr {
-				require.Error(t, validateKubeAPILimits(cfg))
+				require.NotEmpty(t, validateKubeAPILimits(cfg))
 			} else {
-				require.NoError(t, validateKubeAPILimits(cfg))
+				require.Empty(t, validateKubeAPILimits(cfg))
 			}
 		})
 	}
@@ -485,17 +485,17 @@ func TestValidatePTRConfig(t *testing.T) {
 	t.Run("create-ptr disabled", func(t *testing.T) {
 		cfg := newValidConfig(t)
 		cfg.CreatePTR = false
-		require.NoError(t, validatePTRConfig(cfg))
+		require.Empty(t, validatePTRConfig(cfg))
 	})
 	t.Run("create-ptr without PTR managed", func(t *testing.T) {
 		cfg := newValidConfig(t)
 		cfg.CreatePTR = true
-		require.Error(t, validatePTRConfig(cfg))
+		require.NotEmpty(t, validatePTRConfig(cfg))
 	})
 	t.Run("create-ptr with PTR managed", func(t *testing.T) {
 		cfg := newValidConfig(t)
 		cfg.CreatePTR = true
 		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
-		require.NoError(t, validatePTRConfig(cfg))
+		require.Empty(t, validatePTRConfig(cfg))
 	})
 }
