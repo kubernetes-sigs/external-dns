@@ -705,23 +705,8 @@ func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
 		return record.Content
 	}
 
-	switch data := record.Data.(type) {
-	case dns.SRVRecordData:
-		if data.Target != "" {
-			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
-		}
-	case map[string]any:
-		priority, priorityOK := data["priority"].(float64)
-		weight, weightOK := data["weight"].(float64)
-		port, portOK := data["port"].(float64)
-		target, targetOK := data["target"].(string)
-		if priorityOK && weightOK && portOK && targetOK {
-			return fmt.Sprintf("%v %v %v %s", priority, weight, port, externalDNSSRVTarget(target))
-		}
-	}
-
-	if parsed, err := parseSRVRecordTarget(record.Content); err == nil {
-		return fmt.Sprintf("%v %v %v %s", parsed.priority, parsed.weight, parsed.port, externalDNSSRVTarget(parsed.target))
+	if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
+		return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
 	}
 
 	return record.Content

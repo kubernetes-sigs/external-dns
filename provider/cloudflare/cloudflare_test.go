@@ -729,14 +729,15 @@ func TestCloudflareSetProxied(t *testing.T) {
 			var content string
 			var priority float64
 
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				targets = endpoint.Targets{"10 mx.example.com"}
 				content = "mx.example.com"
 				priority = 10
-			} else if testCase.recordType == "SRV" {
+			case "SRV":
 				targets = endpoint.Targets{"0 1 443 target.bar.com."}
 				content = "0 1 443 target.bar.com."
-			} else {
+			default:
 				targets = endpoint.Targets{"127.0.0.1"}
 				content = "127.0.0.1"
 			}
@@ -763,9 +764,10 @@ func TestCloudflareSetProxied(t *testing.T) {
 				TTL:     1,
 				Proxied: testCase.proxiable,
 			}
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				recordData.Priority = priority
-			} else if testCase.recordType == "SRV" {
+			case "SRV":
 				recordData.Data = dns.SRVRecordData{
 					Priority: 0,
 					Weight:   1,
@@ -2484,15 +2486,10 @@ func TestEndpointTargetFromCloudflareRecordSRV(t *testing.T) {
 		assert.Equal(t, "0 1 443 caldav.fastmail.com.", endpointTargetFromCloudflareRecord(record))
 	})
 
-	t.Run("normalizes map SRV data", func(t *testing.T) {
+	t.Run("falls back to content without typed SRV data", func(t *testing.T) {
 		record := dns.RecordResponse{
-			Type: dns.RecordResponseTypeSRV,
-			Data: map[string]any{
-				"priority": float64(10),
-				"weight":   float64(20),
-				"port":     float64(995),
-				"target":   "pop.fastmail.com",
-			},
+			Type:    dns.RecordResponseTypeSRV,
+			Content: "10 20 995 pop.fastmail.com.",
 		}
 
 		assert.Equal(t, "10 20 995 pop.fastmail.com.", endpointTargetFromCloudflareRecord(record))
