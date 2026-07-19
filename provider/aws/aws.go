@@ -51,6 +51,10 @@ const (
 	// Hence, if AWS ever decides to raise this limit, we will automatically reduce the pressure on rate limits
 	route53PageSize                  int32 = 300
 	providerSpecificTargetHostedZone       = "aws/target-hosted-zone"
+	// providerSpecificHostedZoneID pins the record to a specific hosted zone,
+	// bypassing suffix-based zone selection. Needed when overlapping public/private
+	// zones share the same name.
+	providerSpecificHostedZoneID = "aws/hosted-zone-id"
 	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
 	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
 	// has a `endpoint.ProviderSpecificAlias` value of `true`.
@@ -234,9 +238,10 @@ type Route53API interface {
 // Route53Change wrapper to handle ownership relation throughout the provider implementation
 type Route53Change struct {
 	route53types.Change
-	OwnedRecord string
-	sizeBytes   int
-	sizeValues  int
+	OwnedRecord  string
+	hostedZoneID string
+	sizeBytes    int
+	sizeValues   int
 }
 
 type Route53Changes []*Route53Change
@@ -949,6 +954,9 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		},
 	}
 	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHostedZoneID); ok {
+		change.hostedZoneID = cleanZoneID(prop)
+	}
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
@@ -1296,6 +1304,13 @@ func changesByZone(zones map[string]*profiledZone, changeSet Route53Changes) map
 		hostname := provider.EnsureTrailingDot(*c.ResourceRecordSet.Name)
 
 		zones := suitableZones(hostname, zones)
+		if c.hostedZoneID != "" {
+			zones = filterZonesByID(zones, c.hostedZoneID)
+			if len(zones) == 0 {
+				log.Warnf("Skipping record %s: pinned hosted zone %s is not among the configured/suitable zones", *c.ResourceRecordSet.Name, c.hostedZoneID)
+				continue
+			}
+		}
 		if len(zones) == 0 {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", *c.ResourceRecordSet.Name)
 			continue
@@ -1356,6 +1371,16 @@ func suitableZones(hostname string, zones map[string]*profiledZone) []*profiledZ
 	}
 
 	return matchingZones
+}
+
+// filterZonesByID returns only the zone whose ID matches the given ID (bare or /hostedzone/-prefixed).
+func filterZonesByID(zones []*profiledZone, id string) []*profiledZone {
+	for _, z := range zones {
+		if cleanZoneID(*z.zone.Id) == id {
+			return []*profiledZone{z}
+		}
+	}
+	return nil
 }
 
 // useAlias determines if AWS ALIAS should be used.
