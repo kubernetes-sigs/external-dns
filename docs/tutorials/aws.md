@@ -777,12 +777,12 @@ Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 
 
 ### hosted-zone-id
 
-`external-dns.alpha.kubernetes.io/aws-hosted-zone-id` pins a record to a specific Route53 hosted zone by ID. Use when overlapping zones share the same name (e.g. public + private `a.my.com`). If the pinned zone is not configured, the record is skipped.
+`external-dns.kubernetes.io/aws-hosted-zone-id` pins a record to a specific Route53 hosted zone by ID. Use when overlapping zones share the same name (e.g. public + private `a.my.com`). If the pinned zone is not configured, the record is skipped.
 
 ```yaml
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/aws-hosted-zone-id: "Z1234567890ABC"
+    external-dns.kubernetes.io/aws-hosted-zone-id: "Z1234567890ABC"
 ```
 
 ### aws-zone-match-parent
