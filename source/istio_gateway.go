@@ -59,7 +59,7 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
-type gatewaySource struct {
+type istioGatewaySource struct {
 	namespace                string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
@@ -119,7 +119,7 @@ func NewIstioGatewaySource(
 		return nil, err
 	}
 
-	return &gatewaySource{
+	return &istioGatewaySource{
 		namespace:                cfg.Namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
@@ -131,7 +131,7 @@ func NewIstioGatewaySource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
-func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *istioGatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexer := sc.gatewayInformer.Informer().GetIndexer()
 	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
 
@@ -183,13 +183,13 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.
-func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
+func (sc *istioGatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
 	informers.MustAddEventHandler(sc.gatewayInformer.Informer(), eventHandlerFunc(handler))
 }
 
-func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
+func (sc *istioGatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
 	namespace, name, err := ParseIngress(ingressStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
@@ -215,7 +215,7 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
+func (sc *istioGatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return targets, nil
@@ -230,7 +230,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endp
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *istioGatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	var err error
 
@@ -254,7 +254,7 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *netwo
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1.Gateway) []string {
+func (sc *istioGatewaySource) hostNamesFromGateway(gateway *networkingv1.Gateway) []string {
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {

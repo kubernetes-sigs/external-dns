@@ -164,7 +164,7 @@ func NewGatewaySource(ctx context.Context, clients ClientGenerator, config *Conf
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
-type gatewayResourceSource struct {
+type gatewaySource struct {
 	gwName        string
 	gwNamespace   string
 	gwLabels      labels.Selector
@@ -195,7 +195,12 @@ func newGatewaySource(
 		return nil, err
 	}
 
-	gwInformerFactory := newInformerFactory(client, config.GatewayNamespace, gwLabels)
+	gwNamespace := config.GatewayNamespace
+	if gwNamespace == "" {
+		gwNamespace = config.Namespace
+	}
+
+	gwInformerFactory := newInformerFactory(client, gwNamespace, gwLabels)
 	gwInformer := gwInformerFactory.Gateway().V1().Gateways()
 	gwInformer.Informer() // Register with factory before starting.
 
@@ -204,9 +209,9 @@ func newGatewaySource(
 		return nil, err
 	}
 
-	return &gatewayResourceSource{
+	return &gatewaySource{
 		gwName:                   config.GatewayName,
-		gwNamespace:              config.GatewayNamespace,
+		gwNamespace:              gwNamespace,
 		gwLabels:                 gwLabels,
 		gwAnnotations:            gwAnnotations,
 		gwInformer:               gwInformer,
@@ -215,12 +220,12 @@ func newGatewaySource(
 	}, nil
 }
 
-func (src *gatewayResourceSource) AddEventHandler(_ context.Context, handler func()) {
+func (src *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handlers for Gateway")
 	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandlerFunc(handler))
 }
 
-func (src *gatewayResourceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (src *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	gateways, err := src.gwInformer.Lister().Gateways(src.gwNamespace).List(src.gwLabels)
 	if err != nil {
 		return nil, err
@@ -272,7 +277,7 @@ func (src *gatewayResourceSource) Endpoints(_ context.Context) ([]*endpoint.Endp
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (src *gatewayResourceSource) hostnames(gw *v1.Gateway) ([]string, error) {
+func (src *gatewaySource) hostnames(gw *v1.Gateway) ([]string, error) {
 	var hostnames []string
 	if !src.ignoreHostnameAnnotation {
 		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(gw.Annotations)...)
@@ -287,7 +292,7 @@ func (src *gatewayResourceSource) hostnames(gw *v1.Gateway) ([]string, error) {
 	return hostnames, nil
 }
 
-func (src *gatewayResourceSource) targets(gw *v1.Gateway) endpoint.Targets {
+func (src *gatewaySource) targets(gw *v1.Gateway) endpoint.Targets {
 	override := annotations.TargetsFromTargetAnnotation(gw.Annotations)
 	if len(override) > 0 {
 		return override

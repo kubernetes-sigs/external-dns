@@ -64,7 +64,7 @@ rules:
     verbs: ["update"]
 {{- end }}
 {{- if include "external-dns.hasGatewaySources" . }}
-{{- if or (not .Values.namespaced) (and .Values.namespaced (not .Values.gatewayNamespace)) }}
+{{- if or (not .Values.namespaced) (and .Values.namespaced (not .Values.gatewayNamespace)) (has "gateway" .Values.sources) }}
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
