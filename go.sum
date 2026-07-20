@@ -89,8 +89,8 @@ github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XL
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/civo/civogo v0.7.2/go.mod h1:Nb15x35xtG7TjCt+Hk20UVIAtMOGMLH2eJoaW9zSj4Y=
 github.com/civo/civogo v0.7.2 h1:kaUDRkIM696zRDGsleLChDSV7En7JvBCKtpu9imQC1M=
-github.com/cloudflare/cloudflare-go/v5 v5.1.0/go.mod h1:C6OjOlDHOk/g7lXehothXJRFZrSIJMLzOZB2SXQhcjk=
-github.com/cloudflare/cloudflare-go/v5 v5.1.0 h1:vvWUtrt5ZPEBFidL2ik64QipXLZmhMBgtRTw4bYvPwE=
+github.com/cloudflare/cloudflare-go/v7 v7.6.0/go.mod h1:9zcoIAtu6cmcoPszCNISvqYMXs8wObtVGXE1qGFMrNU=
+github.com/cloudflare/cloudflare-go/v7 v7.6.0 h1:EdHSyuRxn4lvFU2MoqX0DS2daboghs4jWBT4HN5YgwM=
 github.com/coreos/go-semver v0.3.1/go.mod h1:irMmmIw/7yzSRPWryHsK7EYSg09caPQL03VsM8rvUec=
 github.com/coreos/go-semver v0.3.1 h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
 github.com/coreos/go-systemd/v22 v22.7.0/go.mod h1:xNUYtjHu2EDXbsxz1i41wouACIwT7Ybq9o0BQhMwD0w=

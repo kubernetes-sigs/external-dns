@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -765,6 +766,77 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
+		},
+		{
+			name: "multiple routegroups with matching label filter returns only labeled endpoints",
+			source: &routeGroupSource{
+				labelSelector: labels.SelectorFromSet(labels.Set{"app": "test"}),
+				cli: &fakeRouteGroupClient{
+					rg: &routeGroupList{
+						Items: []*routeGroup{
+							{
+								ObjectMeta: metav1.ObjectMeta{
+									Namespace: "namespace1",
+									Name:      "rg-match",
+									Labels:    map[string]string{"app": "test"},
+								},
+								Spec: routeGroupSpec{Hosts: []string{"match.example.org"}},
+								Status: routeGroupStatus{
+									LoadBalancer: routeGroupLoadBalancerStatus{
+										RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
+									},
+								},
+							},
+							{
+								ObjectMeta: metav1.ObjectMeta{
+									Namespace: "namespace1",
+									Name:      "rg-no-match",
+									Labels:    map[string]string{"app": "other"},
+								},
+								Spec: routeGroupSpec{Hosts: []string{"no-match.example.org"}},
+								Status: routeGroupStatus{
+									LoadBalancer: routeGroupLoadBalancerStatus{
+										RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "match.example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+				},
+			},
+		},
+		{
+			name: "multiple routegroups with non-matching label filter returns no endpoints",
+			source: &routeGroupSource{
+				labelSelector: labels.SelectorFromSet(labels.Set{"app": "test"}),
+				cli: &fakeRouteGroupClient{
+					rg: &routeGroupList{
+						Items: []*routeGroup{
+							{
+								ObjectMeta: metav1.ObjectMeta{
+									Namespace: "namespace1",
+									Name:      "rg-no-match",
+									Labels:    map[string]string{"app": "other"},
+								},
+								Spec: routeGroupSpec{Hosts: []string{"no-match.example.org"}},
+								Status: routeGroupStatus{
+									LoadBalancer: routeGroupLoadBalancerStatus{
+										RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []*endpoint.Endpoint{},
 		},
 		{
 			name: "multiple routegroups with controller annotation filter should not return filtered endpoints",

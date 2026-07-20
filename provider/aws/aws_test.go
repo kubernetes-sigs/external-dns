@@ -1600,6 +1600,93 @@ func TestAWSChangesByZones(t *testing.T) {
 	})
 }
 
+func TestAWSChangesByZonesHostedZoneIDPin(t *testing.T) {
+	zones := map[string]*profiledZone{
+		"pub-a-my-com": {
+			profile: defaultAWSProfile,
+			zone: &route53types.HostedZone{
+				Id:     aws.String("pub-a-my-com"),
+				Name:   aws.String("a.my.com."),
+				Config: &route53types.HostedZoneConfig{PrivateZone: false},
+			},
+		},
+		"prv-a-my-com": {
+			profile: defaultAWSProfile,
+			zone: &route53types.HostedZone{
+				Id:     aws.String("prv-a-my-com"),
+				Name:   aws.String("a.my.com."),
+				Config: &route53types.HostedZoneConfig{PrivateZone: true},
+			},
+		},
+	}
+
+	changes := Route53Changes{
+		{
+			Change: route53types.Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String("foo.a.my.com"), TTL: aws.Int64(1),
+				},
+			},
+			hostedZoneID: "prv-a-my-com",
+		},
+		{
+			Change: route53types.Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String("bar.a.my.com"), TTL: aws.Int64(1),
+				},
+			},
+			hostedZoneID: "pub-a-my-com",
+		},
+		{
+			Change: route53types.Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String("baz.a.my.com"), TTL: aws.Int64(1),
+				},
+			},
+		},
+	}
+
+	got := changesByZone(zones, changes)
+
+	require.Len(t, got["prv-a-my-com"], 2, "private zone should receive its pinned record and the unpinned record")
+	require.Len(t, got["pub-a-my-com"], 2, "public zone should receive its pinned record and the unpinned record")
+
+	prvNames := []string{*got["prv-a-my-com"][0].ResourceRecordSet.Name, *got["prv-a-my-com"][1].ResourceRecordSet.Name}
+	pubNames := []string{*got["pub-a-my-com"][0].ResourceRecordSet.Name, *got["pub-a-my-com"][1].ResourceRecordSet.Name}
+	assert.Contains(t, prvNames, "foo.a.my.com")
+	assert.NotContains(t, prvNames, "bar.a.my.com")
+	assert.Contains(t, pubNames, "bar.a.my.com")
+	assert.NotContains(t, pubNames, "foo.a.my.com")
+}
+
+func TestAWSChangesByZonesHostedZoneIDUnknown(t *testing.T) {
+	zones := map[string]*profiledZone{
+		"pub-a-my-com": {
+			profile: defaultAWSProfile,
+			zone: &route53types.HostedZone{
+				Id:   aws.String("pub-a-my-com"),
+				Name: aws.String("a.my.com."),
+			},
+		},
+	}
+	changes := Route53Changes{
+		{
+			Change: route53types.Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String("foo.a.my.com"), TTL: aws.Int64(1),
+				},
+			},
+			hostedZoneID: "does-not-exist",
+		},
+	}
+	got := changesByZone(zones, changes)
+	assert.Empty(t, got, "record pinned to unknown zone must be dropped, not fan-out to other zones")
+}
+
 func TestAWSsubmitChanges(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 	const subnets = 16

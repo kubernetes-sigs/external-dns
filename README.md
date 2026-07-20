@@ -15,7 +15,6 @@ hide:
 [![OpenSSF](https://api.scorecard.dev/projects/github.com/kubernetes-sigs/external-dns/badge)](https://scorecard.dev/viewer/?uri=github.com/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
 [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kubernetes-sigs/external-dns)
 
@@ -173,7 +172,7 @@ from the usage of any externally developed webhook.
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
 | Tencent Cloud         | https://github.com/tkestack/external-dns-tencentcloud-webhook        |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
-| Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
+| Unifi                 | https://github.com/home-operations/external-dns-unifi-webhook        |
 | UniFi                 | https://github.com/lexfrei/external-dns-unifios-webhook              |
 | Volcengine Cloud      | https://github.com/volcengine/external-dns-volcengine-webhook        |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |

@@ -291,6 +291,41 @@ docs/snippets/tutorials/aws-localstack/fetch-records.sh "www.example"
 ]
 ```
 
+### Example 3: A ALIAS Record
+
+A `CNAME` targeting an AWS canonical hostname (e.g. an ELB) becomes an `A`/`AAAA`
+[ALIAS](aws.md#alias) record in Route 53, so its ownership TXT uses the matching
+`a-`/`aaaa-` prefix (see [the TXT registry docs](../registry/txt.md#aws-a-alias-records)
+and [#2903](https://github.com/kubernetes-sigs/external-dns/issues/2903)).
+
+```yaml
+[[% include 'tutorials/aws-localstack/dnsendpoint-alias.yml' %]]
+```
+
+Apply and verify
+
+```sh
+kubectl apply -f docs/snippets/tutorials/aws-localstack/dnsendpoint-alias.yml
+docs/snippets/tutorials/aws-localstack/fetch-records.sh "alias"
+
+❯❯ [
+    {
+        "Name": "a-alias.example.com.",
+        "Type": "TXT",
+        "Value": [
+            "\"heritage=external-dns,external-dns/owner=aws-localstack,...\""
+        ],
+        "TTL": 300
+    },
+    { "Name": "aaaa-alias.example.com.", "Type": "TXT", "...": "..." },
+    { "Name": "alias.example.com.", "Type": "A" },
+    { "Name": "alias.example.com.", "Type": "AAAA" }
+]
+```
+
+The `A`/`AAAA` records show no `Value` because an ALIAS keeps its target in
+`AliasTarget`, not `ResourceRecords`.
+
 ### Example 4: TXT Records
 
 Create TXT records (useful for domain verification, SPF, DKIM, etc.)

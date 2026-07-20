@@ -54,12 +54,13 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Kong TCPIngress resources
 // +externaldns:source:resources=TCPIngress.configuration.konghq.com
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:provider-specific=true
 type kongTCPIngressSource struct {
 	annotationFilter         labels.Selector
+	labelSelector            labels.Selector
 	ignoreHostnameAnnotation bool
 	dynamicKubeClient        dynamic.Interface
 	kongTCPIngressInformer   kubeinformers.GenericInformer
@@ -101,6 +102,7 @@ func NewKongTCPIngressSource(
 
 	return &kongTCPIngressSource{
 		annotationFilter:         cfg.AnnotationFilter,
+		labelSelector:            cfg.LabelFilter,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:        dynamicKubeClient,
 		kongTCPIngressInformer:   kongTCPIngressInformer,
@@ -113,7 +115,7 @@ func NewKongTCPIngressSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TCPIngresses in the source's namespace(s).
 func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	tis, err := sc.kongTCPIngressInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
+	tis, err := sc.kongTCPIngressInformer.Lister().ByNamespace(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}

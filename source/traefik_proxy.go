@@ -88,7 +88,7 @@ var (
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Traefik IngressRoute, IngressRouteTCP, and IngressRouteUDP resources
 // +externaldns:source:resources=IngressRoute.traefik.io,IngressRouteTCP.traefik.io,IngressRouteUDP.traefik.io
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
@@ -96,6 +96,7 @@ type traefikSource struct {
 	dynamicKubeClient          dynamic.Interface
 	kubeClient                 kubernetes.Interface
 	annotationFilter           labels.Selector
+	labelSelector              labels.Selector
 	namespace                  string
 	ignoreHostnameAnnotation   bool
 	templateEngine             template.Engine
@@ -176,6 +177,7 @@ func NewTraefikSource(
 
 	return &traefikSource{
 		annotationFilter:           cfg.AnnotationFilter,
+		labelSelector:              cfg.LabelFilter,
 		ignoreHostnameAnnotation:   cfg.IgnoreHostnameAnnotation,
 		templateEngine:             cfg.TemplateEngine,
 		dynamicKubeClient:          dynamicKubeClient,
@@ -249,6 +251,7 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 			typed := &IngressRoute{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		ts.labelSelector,
 		ts.annotationFilter,
 		ts.endpointsFromIngressRoute,
 	)
@@ -258,7 +261,7 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	irs, err := ts.ingressRouteTcpInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
+	irs, err := ts.ingressRouteTcpInformer.Lister().ByNamespace(ts.namespace).List(ts.labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -314,6 +317,7 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		ts.labelSelector,
 		ts.annotationFilter,
 		ts.endpointsFromIngressRouteUDP,
 	)
@@ -328,6 +332,7 @@ func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error
 			typed := &IngressRoute{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		ts.labelSelector,
 		ts.annotationFilter,
 		ts.endpointsFromIngressRoute,
 	)
@@ -342,6 +347,7 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, er
 			typed := &IngressRouteTCP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		ts.labelSelector,
 		ts.annotationFilter,
 		ts.endpointsFromIngressRouteTCP,
 	)
@@ -356,6 +362,7 @@ func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, er
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		ts.labelSelector,
 		ts.annotationFilter,
 		ts.endpointsFromIngressRouteUDP,
 	)
@@ -857,12 +864,13 @@ func extractEndpoints[T interface {
 	informer cache.GenericLister,
 	namespace string,
 	convertFunc func(*unstructured.Unstructured) (T, error),
+	labelSelector labels.Selector,
 	annotationFilter labels.Selector,
 	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	objs, err := informer.ByNamespace(namespace).List(labels.Everything())
+	objs, err := informer.ByNamespace(namespace).List(labelSelector)
 	if err != nil {
 		return nil, err
 	}

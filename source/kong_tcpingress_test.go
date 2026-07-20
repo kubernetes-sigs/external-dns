@@ -31,6 +31,8 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/types"
@@ -47,6 +49,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 	for _, ti := range []struct {
 		title                    string
 		tcpProxy                 TCPIngress
+		labelFilter              labels.Selector
 		ignoreHostnameAnnotation bool
 		expected                 []*endpoint.Endpoint
 	}{
@@ -348,6 +351,68 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:       "TCPIngress with matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			tcpProxy: TCPIngress{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kongGroupdVersionResource.GroupVersion().String(),
+					Kind:       "TCPIngress",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "tcp-ingress-label-match",
+					Namespace: defaultKongNamespace,
+					Labels:    map[string]string{"app": "test"},
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/hostname": "label.example.com",
+						"kubernetes.io/ingress.class":         "kong",
+					},
+				},
+				Status: tcpIngressStatus{
+					LoadBalancer: corev1.LoadBalancerStatus{
+						Ingress: []corev1.LoadBalancerIngress{
+							{Hostname: "lb.example.com"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:          "label.example.com",
+					Targets:          []string{"lb.example.com"},
+					RecordType:       endpoint.RecordTypeCNAME,
+					Labels:           endpoint.Labels{"resource": "tcpingress/kong/tcp-ingress-label-match"},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
+			title:       "TCPIngress with non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			tcpProxy: TCPIngress{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: kongGroupdVersionResource.GroupVersion().String(),
+					Kind:       "TCPIngress",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "tcp-ingress-label-no-match",
+					Namespace: defaultKongNamespace,
+					Labels:    map[string]string{"app": "other"},
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/hostname": "label.example.com",
+						"kubernetes.io/ingress.class":         "kong",
+					},
+				},
+				Status: tcpIngressStatus{
+					LoadBalancer: corev1.LoadBalancerStatus{
+						Ingress: []corev1.LoadBalancerIngress{
+							{Hostname: "lb.example.com"},
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
+		{
 			title: "TCPIngress with provider-specific annotation",
 			tcpProxy: TCPIngress{
 				TypeMeta: metav1.TypeMeta{
@@ -409,11 +474,16 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &tcpi, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
+			labelFilter := ti.labelFilter
+			if labelFilter == nil {
+				labelFilter = labels.Everything()
+			}
 			source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:                defaultKongNamespace,
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=kong"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
+					LabelFilter:              labelFilter,
 				})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
@@ -439,7 +509,7 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 	fakeClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &kongTCPIngressSource{}, source)
 
