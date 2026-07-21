@@ -341,7 +341,8 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 
-	txtNew := endpoint.NewEndpoint(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	// Preserve the owned record TTL so ownership TXT records match provider/zone TTL expectations.
+	txtNew := endpoint.NewEndpointWithTTL(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.RecordTTL, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName

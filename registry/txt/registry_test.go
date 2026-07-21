@@ -1528,6 +1528,28 @@ func TestGenerateTXT(t *testing.T) {
 	assert.Equal(t, expectedTXT, gotTXT)
 }
 
+func TestGenerateTXTCopiesRecordTTL(t *testing.T) {
+	record := newEndpointWithOwner("foo.test-zone.example.org", "new-foo.loadbalancer.com", endpoint.RecordTypeCNAME, "owner")
+	record.RecordTTL = 600
+	expectedTXT := []*endpoint.Endpoint{
+		{
+			DNSName:    "cname-foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType: endpoint.RecordTypeTXT,
+			RecordTTL:  600,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
+	}
+	p := inmemory.NewInMemoryProvider()
+	err := p.CreateZone(testZone)
+	require.NoError(t, err)
+	r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	gotTXT := r.generateTXTRecord(record)
+	assert.Equal(t, expectedTXT, gotTXT)
+}
+
 func TestGenerateTXTWithMigration(t *testing.T) {
 	record := newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner")
 	expectedTXTBeforeMigration := []*endpoint.Endpoint{
