@@ -24,11 +24,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -69,6 +72,7 @@ type ingressSource struct {
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
+	nsFilter                 *NamespaceFilter
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -86,9 +90,29 @@ func NewIngressSource(
 			}
 		}
 	}
+	var namespaces []string
+	if len(cfg.Namespaces) > 0 {
+		namespaces = cfg.Namespaces
+	} else if cfg.Namespace != "" {
+		namespaces = []string{cfg.Namespace}
+	}
+
+	var informerNamespace string
+	if len(namespaces) == 1 && (cfg.NamespaceLabelFilter == nil || cfg.NamespaceLabelFilter.Empty()) {
+		informerNamespace = namespaces[0]
+	}
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(informerNamespace))
+
+	var namespaceLister corelisters.NamespaceLister
+	if cfg.NamespaceLabelFilter != nil && !cfg.NamespaceLabelFilter.Empty() {
+		namespaceInformer := informerFactory.Core().V1().Namespaces()
+		namespaceLister = namespaceInformer.Lister()
+		informers.MustAddEventHandler(namespaceInformer.Informer(), informers.DefaultEventHandler())
+	}
+	nsFilter := NewNamespaceFilter(namespaces, cfg.NamespaceLabelFilter, namespaceLister)
+
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
@@ -120,6 +144,7 @@ func NewIngressSource(
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
+		nsFilter:                 nsFilter,
 	}, nil
 }
 
@@ -134,6 +159,9 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
+		if !sc.nsFilter.Matches(ing.Namespace) {
+			continue
+		}
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
@@ -310,7 +338,27 @@ func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for ingress")
 
+	wrappedHandler := func(obj any) {
+		if metaObj, ok := obj.(metav1.Object); ok {
+			if !sc.nsFilter.Matches(metaObj.GetNamespace()) {
+				return
+			}
+		}
+		handler()
+	}
+
+	eventHandler := cache.ResourceEventHandlerFuncs{
+		AddFunc:    func(obj any) { wrappedHandler(obj) },
+		UpdateFunc: func(_, newObj any) { wrappedHandler(newObj) },
+		DeleteFunc: func(obj any) {
+			if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+				obj = tombstone.Obj
+			}
+			wrappedHandler(obj)
+		},
+	}
+
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.ingressInformer.Informer(), eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.ingressInformer.Informer(), eventHandler)
 }

@@ -28,11 +28,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
 	"k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -71,6 +73,7 @@ var (
 type serviceSource struct {
 	client         kubernetes.Interface
 	namespace      string
+	nsFilter       *NamespaceFilter
 	templateEngine template.Engine
 
 	ignoreHostnameAnnotation       bool
@@ -97,9 +100,29 @@ func NewServiceSource(
 	kubeClient kubernetes.Interface,
 	config *Config,
 ) (Source, error) {
+	var namespaces []string
+	if len(config.Namespaces) > 0 {
+		namespaces = config.Namespaces
+	} else if config.Namespace != "" {
+		namespaces = []string{config.Namespace}
+	}
+
+	var informerNamespace string
+	if len(namespaces) == 1 && (config.NamespaceLabelFilter == nil || config.NamespaceLabelFilter.Empty()) {
+		informerNamespace = namespaces[0]
+	}
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set the resync period to 0 to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(config.Namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(informerNamespace))
+
+	var namespaceLister corelisters.NamespaceLister
+	if config.NamespaceLabelFilter != nil && !config.NamespaceLabelFilter.Empty() {
+		namespaceInformer := informerFactory.Core().V1().Namespaces()
+		namespaceLister = namespaceInformer.Lister()
+		informers.MustAddEventHandler(namespaceInformer.Informer(), informers.DefaultEventHandler())
+	}
+	nsFilter := NewNamespaceFilter(namespaces, config.NamespaceLabelFilter, namespaceLister)
+
 	serviceInformer := informerFactory.Core().V1().Services()
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
@@ -171,6 +194,7 @@ func NewServiceSource(
 	return &serviceSource{
 		client:                         kubeClient,
 		namespace:                      config.Namespace,
+		nsFilter:                       nsFilter,
 		compatibility:                  config.Compatibility,
 		templateEngine:                 config.TemplateEngine,
 		ignoreHostnameAnnotation:       config.IgnoreHostnameAnnotation,
@@ -196,6 +220,9 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := make([]*endpoint.Endpoint, 0, len(services))
 
 	for _, svc := range services {
+		if !sc.nsFilter.Matches(svc.Namespace) {
+			continue
+		}
 		var err error
 
 		svcEndpoints := sc.endpoints(svc)
@@ -778,11 +805,31 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for service")
 
+	wrappedHandler := func(obj any) {
+		if metaObj, ok := obj.(metav1.Object); ok {
+			if !sc.nsFilter.Matches(metaObj.GetNamespace()) {
+				return
+			}
+		}
+		handler()
+	}
+
+	eventHandler := cache.ResourceEventHandlerFuncs{
+		AddFunc:    func(obj any) { wrappedHandler(obj) },
+		UpdateFunc: func(_, newObj any) { wrappedHandler(newObj) },
+		DeleteFunc: func(obj any) {
+			if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+				obj = tombstone.Obj
+			}
+			wrappedHandler(obj)
+		},
+	}
+
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.serviceInformer.Informer(), eventHandlerFunc(handler))
+	informers.MustAddEventHandler(sc.serviceInformer.Informer(), eventHandler)
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
-		informers.MustAddEventHandler(sc.endpointSlicesInformer.Informer(), eventHandlerFunc(handler))
+		informers.MustAddEventHandler(sc.endpointSlicesInformer.Informer(), eventHandler)
 	}
 }
 

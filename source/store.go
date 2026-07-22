@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,6 +60,8 @@ var ErrSourceNotFound = errors.New("source not found")
 // type conversions and validation.
 type Config struct {
 	Namespace                      string
+	Namespaces                     []string
+	NamespaceLabelFilter           labels.Selector
 	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
@@ -130,12 +133,27 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 	// errors are explicitly ignored because the filters are already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
 	annotationSelector, _ := annotations.ParseFilter(cfg.AnnotationFilter)
+	namespaceLabelSelector, err := labels.Parse(cfg.NamespaceLabelFilter)
+	if err != nil {
+		return nil, fmt.Errorf("invalid namespace label filter: %w", err)
+	}
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {
 		return nil, err
 	}
+	var namespaces []string
+	if cfg.Namespace != "" {
+		for ns := range strings.SplitSeq(cfg.Namespace, ",") {
+			ns = strings.TrimSpace(ns)
+			if ns != "" {
+				namespaces = append(namespaces, ns)
+			}
+		}
+	}
 	c := &Config{
 		Namespace:                      cfg.Namespace,
+		Namespaces:                     namespaces,
+		NamespaceLabelFilter:           namespaceLabelSelector,
 		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
