@@ -16,7 +16,6 @@ package gandi
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 
 	"github.com/go-gandi/go-gandi"
@@ -28,6 +27,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 const (
@@ -53,15 +53,19 @@ type GandiProvider struct {
 }
 
 func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
-	key, ok_key := os.LookupEnv("GANDI_KEY")
-	pat, ok_pat := os.LookupEnv("GANDI_PAT")
+	return newProviderWithCredentialSource(domainFilter, dryRun, credentials.SystemSource())
+}
+
+func newProviderWithCredentialSource(domainFilter *endpoint.DomainFilter, dryRun bool, credentialSource credentials.Source) (*GandiProvider, error) {
+	key, ok_key := credentialSource.LookupEnv("GANDI_KEY")
+	pat, ok_pat := credentialSource.LookupEnv("GANDI_PAT")
 	if !ok_key && !ok_pat {
 		return nil, errors.New("no environment variable GANDI_KEY or GANDI_PAT provided")
 	}
 	if ok_key {
 		log.Warning("Usage of GANDI_KEY (API Key) is deprecated. Please consider creating a Personal Access Token (PAT) instead, see https://api.gandi.net/docs/authentication/")
 	}
-	sharingID, _ := os.LookupEnv("GANDI_SHARING_ID")
+	sharingID, _ := credentialSource.LookupEnv("GANDI_SHARING_ID")
 
 	g := config.Config{
 		APIKey:              key,
@@ -85,8 +89,8 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*GandiProvid
 }
 
 // New creates a Gandi provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(domainFilter, cfg.DryRun)
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProviderWithCredentialSource(domainFilter, cfg.DryRun, credentials.FromContext(ctx))
 }
 
 func (p *GandiProvider) Zones() ([]string, error) {

@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 type MockDomainClient struct {
@@ -151,6 +152,25 @@ func TestNewProvider(t *testing.T) {
 	_ = os.Unsetenv("LINODE_TOKEN")
 	_, err = newProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	require.Error(t, err)
+}
+
+func TestNewProviderWithCredentialSource(t *testing.T) {
+	t.Setenv("LINODE_TOKEN", "global")
+
+	_, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		true,
+		credentials.NewMapSource(nil),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "no token found")
+
+	_, err = newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		true,
+		credentials.NewMapSource(map[string]string{"LINODE_TOKEN": "pipeline"}),
+	)
+	require.NoError(t, err)
 }
 
 func TestLinodeStripRecordName(t *testing.T) {

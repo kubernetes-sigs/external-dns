@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -31,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
@@ -79,13 +79,17 @@ type LinodeChangeDelete struct {
 }
 
 // New creates a Linode provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(domainFilter, cfg.DryRun)
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProviderWithCredentialSource(domainFilter, cfg.DryRun, credentials.FromContext(ctx))
 }
 
 // newProvider initializes a new Linode DNS based Provider.
 func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*LinodeProvider, error) {
-	token, ok := os.LookupEnv("LINODE_TOKEN")
+	return newProviderWithCredentialSource(domainFilter, dryRun, credentials.SystemSource())
+}
+
+func newProviderWithCredentialSource(domainFilter *endpoint.DomainFilter, dryRun bool, credentialSource credentials.Source) (*LinodeProvider, error) {
+	token, ok := credentialSource.LookupEnv("LINODE_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
 	}

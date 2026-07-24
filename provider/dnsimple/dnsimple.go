@@ -19,7 +19,6 @@ package dnsimple
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -31,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 const (
@@ -84,12 +84,13 @@ func (z dnsimpleZoneService) UpdateRecord(ctx context.Context, accountID string,
 
 type dnsimpleProvider struct {
 	provider.BaseProvider
-	client       dnsimpleZoneServiceInterface
-	identity     dnsimpleIdentityService
-	accountID    string
-	domainFilter *endpoint.DomainFilter
-	zoneIDFilter provider.ZoneIDFilter
-	dryRun       bool
+	client           dnsimpleZoneServiceInterface
+	identity         dnsimpleIdentityService
+	accountID        string
+	domainFilter     *endpoint.DomainFilter
+	zoneIDFilter     provider.ZoneIDFilter
+	dryRun           bool
+	credentialSource credentials.Source
 }
 
 type dnsimpleChange struct {
@@ -98,13 +99,17 @@ type dnsimpleChange struct {
 }
 
 // New creates a DNSimple provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.DryRun)
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProviderWithCredentialSource(domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.DryRun, credentials.FromContext(ctx))
 }
 
 // newProvider initializes a new Dnsimple based provider
 func newProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
-	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
+	return newProviderWithCredentialSource(domainFilter, zoneIDFilter, dryRun, credentials.SystemSource())
+}
+
+func newProviderWithCredentialSource(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, credentialSource credentials.Source) (provider.Provider, error) {
+	oauthToken := credentialSource.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")
 	}
@@ -116,14 +121,15 @@ func newProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.Zone
 	client.SetUserAgent(externaldns.UserAgent())
 
 	provider := &dnsimpleProvider{
-		client:       dnsimpleZoneService{service: client.Zones},
-		identity:     dnsimpleIdentityService{service: client.Identity},
-		domainFilter: domainFilter,
-		zoneIDFilter: zoneIDFilter,
-		dryRun:       dryRun,
+		client:           dnsimpleZoneService{service: client.Zones},
+		identity:         dnsimpleIdentityService{service: client.Identity},
+		domainFilter:     domainFilter,
+		zoneIDFilter:     zoneIDFilter,
+		dryRun:           dryRun,
+		credentialSource: credentialSource,
 	}
 
-	provider.accountID = os.Getenv("DNSIMPLE_ACCOUNT_ID")
+	provider.accountID = credentialSource.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if provider.accountID == "" {
 		whoamiResponse, err := provider.identity.Whoami(context.Background())
 		if err != nil {
@@ -132,6 +138,13 @@ func newProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.Zone
 		provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
 	}
 	return provider, nil
+}
+
+func (p *dnsimpleProvider) getCredentialSource() credentials.Source {
+	if p.credentialSource == nil {
+		return credentials.SystemSource()
+	}
+	return p.credentialSource
 }
 
 // GetAccountID returns the account ID given DNSimple credentials.
@@ -162,7 +175,7 @@ func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone,
 	// This is useful for when the DNSIMPLE_OAUTH environment variable is a User API token and
 	// not an Account API token as the User API token will not have permissions to list Zones
 	// belong to another account which the User has access permissions for.
-	envZonesStr := os.Getenv("DNSIMPLE_ZONES")
+	envZonesStr := p.getCredentialSource().Getenv("DNSIMPLE_ZONES")
 	if envZonesStr != "" {
 		return ZonesFromZoneString(envZonesStr), nil
 	}

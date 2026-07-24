@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 type MockAction struct {
@@ -187,6 +188,26 @@ func TestNewProvider(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
+}
+
+func TestNewProviderWithCredentialSource(t *testing.T) {
+	t.Setenv("GANDI_PAT", "global")
+
+	_, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		true,
+		credentials.NewMapSource(nil),
+	)
+	assert.Error(t, err)
+	assert.ErrorContains(t, err, "no environment variable GANDI_KEY or GANDI_PAT provided")
+
+	provider, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		true,
+		credentials.NewMapSource(map[string]string{"GANDI_PAT": "pipeline"}),
+	)
+	assert.NoError(t, err)
+	assert.True(t, provider.DryRun)
 }
 
 func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {

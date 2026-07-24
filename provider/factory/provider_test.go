@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 func TestSelectProvider(t *testing.T) {
@@ -152,6 +153,32 @@ func TestKnownProviders(t *testing.T) {
 		})
 	}
 	assert.ElementsMatch(t, externaldns.ProviderNames, names)
+}
+
+func TestSelectWithCredentialSource(t *testing.T) {
+	t.Setenv("NS1_APIKEY", "global")
+
+	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
+	cfg := &externaldns.Config{
+		Provider: externaldns.ProviderNS1,
+	}
+
+	_, err := SelectWithCredentialSource(t.Context(), cfg, domainFilter, credentials.NewMapSource(nil))
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "NS1_APIKEY environment variable is not set")
+
+	for _, token := range []string{"pipeline-a", "pipeline-b"} {
+		t.Run(token, func(t *testing.T) {
+			p, err := SelectWithCredentialSource(
+				t.Context(),
+				cfg,
+				domainFilter,
+				credentials.NewMapSource(map[string]string{"NS1_APIKEY": token}),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, p)
+		})
+	}
 }
 
 func TestSelectProvider_Webhook(t *testing.T) {

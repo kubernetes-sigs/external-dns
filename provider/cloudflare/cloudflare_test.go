@@ -43,6 +43,7 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
@@ -985,6 +986,35 @@ func TestCloudflareProvider(t *testing.T) {
 		})
 
 	}
+}
+
+func TestCloudflareProviderWithCredentialSource(t *testing.T) {
+	t.Setenv(cfAPITokenEnvKey, "global")
+
+	_, err := newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"bar.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		true,
+		RegionalServicesConfig{Enabled: false},
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{PerPage: 5000, Comment: ""},
+		credentials.NewMapSource(nil),
+	)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "cloudflare credentials are not configured")
+
+	_, err = newProviderWithCredentialSource(
+		endpoint.NewDomainFilter([]string{"bar.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		true,
+		RegionalServicesConfig{Enabled: false},
+		CustomHostnamesConfig{Enabled: false},
+		DNSRecordsConfig{PerPage: 5000, Comment: ""},
+		credentials.NewMapSource(map[string]string{cfAPITokenEnvKey: "pipeline"}),
+	)
+	require.NoError(t, err)
 }
 
 func TestCloudflareApplyChanges(t *testing.T) {

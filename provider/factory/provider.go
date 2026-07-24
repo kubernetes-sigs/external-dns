@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
+	"sigs.k8s.io/external-dns/provider/credentials"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/exoscale"
 	"sigs.k8s.io/external-dns/provider/gandi"
@@ -56,6 +57,24 @@ type ProviderConstructor func(
 
 // Select creates a provider based on the given configuration.
 func Select(
+	ctx context.Context,
+	cfg *externaldns.Config,
+	domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return selectProvider(ctx, cfg, domainFilter)
+}
+
+// SelectWithCredentialSource creates a provider using an explicit credential
+// source. A nil credential source falls back to the process environment.
+func SelectWithCredentialSource(
+	ctx context.Context,
+	cfg *externaldns.Config,
+	domainFilter *endpoint.DomainFilter,
+	credentialSource credentials.Source,
+) (provider.Provider, error) {
+	return selectProvider(credentials.NewContext(ctx, credentialSource), cfg, domainFilter)
+}
+
+func selectProvider(
 	ctx context.Context,
 	cfg *externaldns.Config,
 	domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

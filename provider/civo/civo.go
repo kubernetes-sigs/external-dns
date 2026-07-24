@@ -19,7 +19,6 @@ package civo
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/civo/civogo"
@@ -29,6 +28,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/credentials"
 )
 
 // CivoProvider is an implementation of Provider for Civo's DNS.
@@ -71,13 +71,17 @@ type CivoChangeDelete struct {
 }
 
 // New creates a Civo provider from the given configuration.
-func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(domainFilter, cfg.DryRun)
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProviderWithCredentialSource(domainFilter, cfg.DryRun, credentials.FromContext(ctx))
 }
 
 // newProvider initializes a new Civo DNS based Provider.
 func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*CivoProvider, error) {
-	token, ok := os.LookupEnv("CIVO_TOKEN")
+	return newProviderWithCredentialSource(domainFilter, dryRun, credentials.SystemSource())
+}
+
+func newProviderWithCredentialSource(domainFilter *endpoint.DomainFilter, dryRun bool, credentialSource credentials.Source) (*CivoProvider, error) {
+	token, ok := credentialSource.LookupEnv("CIVO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
 	}
