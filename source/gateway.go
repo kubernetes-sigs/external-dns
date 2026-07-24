@@ -69,7 +69,7 @@ type gatewayRoute interface {
 type newGatewayRouteInformerFunc func(gwinformers.SharedInformerFactory) gatewayRouteInformer
 
 type gatewayRouteInformer interface {
-	List(namespace string, selector labels.Selector) ([]gatewayRoute, error)
+	List() []gatewayRoute
 	Informer() cache.SharedIndexInformer
 }
 
@@ -134,17 +134,12 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type gatewayRouteSource struct {
-	gwName      string
-	gwNamespace string
-	gwLabels    labels.Selector
-	gwInformer  informers_v1.GatewayInformer
-	lsInformer  informers_v1.ListenerSetInformer
+	gwName     string
+	gwInformer informers_v1.GatewayInformer
+	lsInformer informers_v1.ListenerSetInformer
 
-	rtKind        string
-	rtNamespace   string
-	rtLabels      labels.Selector
-	rtAnnotations labels.Selector
-	rtInformer    gatewayRouteInformer
+	rtKind     string
+	rtInformer gatewayRouteInformer
 
 	nsInformer coreinformers.NamespaceInformer
 
@@ -184,6 +179,10 @@ func newGatewayRouteSource(
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
+	informers.MustAddIndexers(gwInformer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
+		informers.IndexSelectorWithLabelSelector(gwLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
+	))
 
 	var lsInformer informers_v1.ListenerSetInformer
 	lsInformerFactory := gwInformerFactory
@@ -197,6 +196,10 @@ func newGatewayRouteSource(
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
+		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
+			informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
+		))
 	}
 
 	rtInformerFactory := gwInformerFactory
@@ -208,6 +211,11 @@ func newGatewayRouteSource(
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(rtInformer.Informer(), informers.IndexerWithOptions[informers.Object](
+		informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+		informers.IndexSelectorWithLabelSelector(rtLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[informers.Object]),
 	))
 
 	kubeClient, err := clients.KubeClient()
@@ -222,6 +230,7 @@ func newGatewayRouteSource(
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
+	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
 
 	gwInformerFactory.Start(ctx.Done())
 	if lsInformerFactory != gwInformerFactory {
@@ -247,17 +256,12 @@ func newGatewayRouteSource(
 	}
 
 	src := &gatewayRouteSource{
-		gwName:      config.GatewayName,
-		gwNamespace: config.GatewayNamespace,
-		gwLabels:    gwLabels,
-		gwInformer:  gwInformer,
-		lsInformer:  lsInformer,
+		gwName:     config.GatewayName,
+		gwInformer: gwInformer,
+		lsInformer: lsInformer,
 
-		rtKind:        kind,
-		rtNamespace:   config.Namespace,
-		rtLabels:      rtLabels,
-		rtAnnotations: rtAnnotations,
-		rtInformer:    rtInformer,
+		rtKind:     kind,
+		rtInformer: rtInformer,
 
 		nsInformer: nsInformer,
 
@@ -279,41 +283,20 @@ func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()
 }
 
 func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-	routes, err := src.rtInformer.List(src.rtNamespace, src.rtLabels)
-	if err != nil {
-		return nil, err
-	}
-	gateways, err := src.gwInformer.Lister().Gateways(src.gwNamespace).List(src.gwLabels)
-	if err != nil {
-		return nil, err
-	}
+	routes := src.rtInformer.List()
+	gateways := informers.ListIndexed[*v1.Gateway](src.gwInformer.Informer().GetIndexer())
 	var listenerSets []*v1.ListenerSet
 	if src.lsInformer != nil {
-		listenerSets, err = src.lsInformer.Lister().List(labels.Everything())
-		if err != nil {
-			return nil, err
-		}
+		listenerSets = informers.ListIndexed[*v1.ListenerSet](src.lsInformer.Informer().GetIndexer())
 	}
-	namespaces, err := src.nsInformer.Lister().List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	namespaces := informers.ListIndexed[*corev1.Namespace](src.nsInformer.Informer().GetIndexer())
 	kind := strings.ToLower(src.rtKind)
 	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
+	var endpoints []*endpoint.Endpoint
 	for _, rt := range routes {
-		// Filter by annotations.
+		// Get Route hostnames and their targets.
 		meta := rt.Metadata()
 		annots := meta.Annotations
-		if !src.rtAnnotations.Matches(labels.Set(annots)) {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(meta, src.rtKind) {
-			continue
-		}
-
-		// Get Route hostnames and their targets.
 		hostTargets, err := resolver.resolve(rt)
 		if err != nil {
 			return nil, err

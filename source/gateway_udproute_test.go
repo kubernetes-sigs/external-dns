@@ -18,9 +18,11 @@ package source
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,4 +136,143 @@ func TestGatewayUDPRouteSource_InformerTransform(t *testing.T) {
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
+}
+
+func TestGatewayUDPRouteIndexer(t *testing.T) {
+	t.Parallel()
+
+	fromAll := v1.NamespacesFromAll
+
+	makeRoute := func(namespace, name string, ann, lbls map[string]string) *v1alpha2.UDPRoute {
+		allAnn := map[string]string{annotations.HostnameKey: name + ".example.com"}
+		maps.Copy(allAnn, ann)
+		return &v1alpha2.UDPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   namespace,
+				Name:        name,
+				Annotations: allAnn,
+				Labels:      lbls,
+			},
+			Spec: v1alpha2.UDPRouteSpec{
+				CommonRouteSpec: v1.CommonRouteSpec{
+					ParentRefs: []v1.ParentReference{gwParentRef("default", "gw")},
+				},
+			},
+			Status: v1alpha2.UDPRouteStatus{
+				RouteStatus: gwRouteStatus(gwParentRef("default", "gw")),
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*v1alpha2.UDPRoute
+		wantCount        int
+	}{
+		{
+			name: "no filters — all namespaces included",
+			routes: []*v1alpha2.UDPRoute{
+				makeRoute("default", "r1", nil, nil),
+				makeRoute("staging", "r2", nil, nil),
+				makeRoute("production", "r3", nil, nil),
+			},
+			wantCount: 3,
+		},
+		{
+			name:             "annotation filter matches",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*v1alpha2.UDPRoute{
+				makeRoute("default", "r1", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
+				makeRoute("default", "r2", nil, nil),
+			},
+			wantCount: 1,
+		},
+		{
+			name:        "label filter matches",
+			labelFilter: "tier=external",
+			routes: []*v1alpha2.UDPRoute{
+				makeRoute("default", "r1", nil, map[string]string{"tier": "external"}),
+				makeRoute("default", "r2", nil, map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			labelFilter:      "tier=external",
+			routes: []*v1alpha2.UDPRoute{
+				makeRoute("default", "r1",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "external"}),
+				makeRoute("default", "r2",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "no-match annotation filter",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*v1alpha2.UDPRoute{
+				makeRoute("default", "r1", nil, nil),
+				makeRoute("default", "r2", nil, nil),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "controller mismatch is excluded",
+			routes: []*v1alpha2.UDPRoute{
+				makeRoute("default", "r1",
+					map[string]string{annotations.ControllerKey: "other-controller"},
+					nil),
+			},
+			wantCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			gwClient := gatewayfake.NewSimpleClientset()
+			kubeClient := kubefake.NewClientset()
+
+			gw := &v1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "gw"},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.UDPProtocolType,
+						AllowedRoutes: &v1.AllowedRoutes{
+							Namespaces: &v1.RouteNamespaces{From: &fromAll},
+						},
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}
+			_, err := gwClient.GatewayV1().Gateways("default").Create(ctx, gw, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			for _, rt := range tc.routes {
+				_, err := gwClient.GatewayV1alpha2().UDPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			clients := new(testutils.MockClientGenerator)
+			clients.On("GatewayClient").Return(gwClient, nil)
+			clients.On("KubeClient").Return(kubeClient, nil)
+
+			src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{
+				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(ctx)
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tc.wantCount)
+		})
+	}
 }
