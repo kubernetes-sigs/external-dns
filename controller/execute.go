@@ -100,12 +100,9 @@ func execute(ctx context.Context) {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
-	domainFilter := endpoint.NewDomainFilterWithOptions(
-		endpoint.WithDomainFilter(cfg.DomainFilter),
-		endpoint.WithDomainExclude(cfg.DomainExclude),
-		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
-		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
-	)
+	// The domain filter is built once by source.NewSourceConfig and shared between
+	// the source wrappers (to scope conflict warnings) and the provider.
+	domainFilter := sCfg.DomainFilter
 
 	prvdr, err := providerfactory.Select(ctx, cfg, domainFilter)
 	if err != nil {

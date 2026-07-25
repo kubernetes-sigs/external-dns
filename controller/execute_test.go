@@ -33,7 +33,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source"
@@ -286,12 +285,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	defer cancel()
 	src, err := wrappers.Build(ctx, sCfg)
 	require.NoError(t, err)
-	domainFilter := endpoint.NewDomainFilterWithOptions(
-		endpoint.WithDomainFilter(cfg.DomainFilter),
-		endpoint.WithDomainExclude(cfg.DomainExclude),
-		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
-		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
-	)
+	domainFilter := sCfg.DomainFilter
 	p, err := provider.Select(ctx, cfg, domainFilter)
 	require.NoError(t, err)
 	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)

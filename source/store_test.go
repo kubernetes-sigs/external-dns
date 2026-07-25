@@ -456,6 +456,28 @@ func TestNewSourceConfig(t *testing.T) {
 	}
 }
 
+func TestNewSourceConfigDomainFilter(t *testing.T) {
+	t.Run("propagates domain filter and exclusions", func(t *testing.T) {
+		cfg := &externaldns.Config{
+			DomainFilter:  []string{"example.com"},
+			DomainExclude: []string{"internal.example.com"},
+		}
+		got, err := NewSourceConfig(cfg)
+		require.NoError(t, err)
+		require.NotNil(t, got.DomainFilter)
+		assert.True(t, got.DomainFilter.Match("api.example.com"))
+		assert.False(t, got.DomainFilter.Match("api.internal.example.com"))
+		assert.False(t, got.DomainFilter.Match("api.other.com"))
+	})
+
+	t.Run("empty configuration matches all domains", func(t *testing.T) {
+		got, err := NewSourceConfig(&externaldns.Config{})
+		require.NoError(t, err)
+		require.NotNil(t, got.DomainFilter)
+		assert.True(t, got.DomainFilter.Match("api.example.com"))
+	})
+}
+
 func TestKubeAPIRateLimitPropagation(t *testing.T) {
 	t.Run("NewSourceConfig propagates QPS and burst", func(t *testing.T) {
 		cfg := &externaldns.Config{

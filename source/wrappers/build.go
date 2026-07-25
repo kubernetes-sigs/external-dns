@@ -41,6 +41,7 @@ func Build(ctx context.Context, cfg *source.Config) (source.Source, error) {
 		WithPreferAlias(cfg.PreferAlias),
 		WithPTRSupported(cfg.PTRSupported),
 		WithCreatePTR(cfg.CreatePTR),
+		WithDomainFilter(cfg.DomainFilter),
 	)
 	return wrapSources(sources, opts)
 }

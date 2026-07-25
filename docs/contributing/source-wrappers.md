@@ -25,14 +25,15 @@ Wrappers solve these key challenges:
 
 ## Built In Wrappers
 
-|       Wrapper        | Purpose                                 | Use Case                                            |
-|:--------------------:|:----------------------------------------|:----------------------------------------------------|
-|    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
-|    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
-| `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
-|    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
-|   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
-|    `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
+|        Wrapper        | Purpose                                 | Use Case                                            |
+|:---------------------:|:----------------------------------------|:----------------------------------------------------|
+|     `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
+|     `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
+| `TargetFilterSource`  | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
+|     `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
+|    `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
+|     `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
+| `CNAMEConflictSource` | Warn about conflicting CNAME records.   | Surface invalid desired state for managed domains.  |
 
 ### Use Cases
 
@@ -57,7 +58,18 @@ Converts IPv4 targets to IPv6 using NAT64 prefixes.
 --nat64-prefix=64:ff9b::/96
 ```
 
-### 3.1 `PostProcessor`
+### 3.1 `CNAMEConflictSource`
+
+Warns when multiple CNAME endpoints share the same DNS name and set identifier but point at different targets, which is invalid DNS.
+Only DNS names matching the configured domain filter are warned about; conflicts on names this ExternalDNS instance will never manage (e.g. Istio or Ingress hosts used purely for in-cluster routing) are logged at debug level instead.
+
+📌 **Use case**: Surface conflicting CNAME desired state for managed domains without noise for out-of-scope hosts.
+
+```yaml
+--domain-filter=example.com
+```
+
+### 4.1 `PostProcessor`
 
 Applies post-processing to all endpoints after they are collected from sources.
 
@@ -120,6 +132,7 @@ source = NewNAT64Source(source, cfg.NAT64Networks)
 source = NewTargetFilterSource(source, targetFilter)
 source = NewPostProcessor(source, WithTTL(minTTL), WithPostProcessorPreferAlias(preferAlias))
 source = NewPTRSource(source, createPTR)
+source = NewCNAMEConflictSource(source, domainFilter)
 ```
 
 Each wrapper processes the output of the previous one.

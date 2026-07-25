@@ -34,9 +34,10 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
-	ptrSupported        bool             // PTR is in --managed-record-types
-	createPTR           bool             // --create-ptr default for all A/AAAA records
-	sourceWrappers      sets.Set[string] // set of source wrappers, e.g. "targetfilter", "nat64"
+	ptrSupported        bool                           // PTR is in --managed-record-types
+	createPTR           bool                           // --create-ptr default for all A/AAAA records
+	domainFilter        endpoint.DomainFilterInterface // --domain-filter and related flags
+	sourceWrappers      sets.Set[string]               // set of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 func NewConfig(opts ...Option) *Config {
@@ -118,6 +119,15 @@ func WithCreatePTR(enabled bool) Option {
 	}
 }
 
+// WithDomainFilter sets the domain filter used to scope warnings about
+// conflicting endpoints to DNS names this ExternalDNS instance manages.
+// A nil filter matches all domains.
+func WithDomainFilter(filter endpoint.DomainFilterInterface) Option {
+	return func(o *Config) {
+		o.domainFilter = filter
+	}
+}
+
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -164,5 +174,7 @@ func wrapSources(
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
 		WithPostProcessorProvider(opts.provider))
 	opts.addSourceWrapper("post-processor")
+	combinedSource = NewCNAMEConflictSource(combinedSource, opts.domainFilter)
+	opts.addSourceWrapper("cname-conflict")
 	return combinedSource, nil
 }

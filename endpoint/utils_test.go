@@ -525,15 +525,17 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 }
 
 func TestMergeEndpointsLogging(t *testing.T) {
-	t.Run("warns on CNAME conflict", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	t.Run("logs CNAME conflict at debug level", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 		MergeEndpoints([]*Endpoint{
 			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
 			NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
 		})
 
-		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
+		// the warn-level message for in-scope conflicts is emitted by the CNAME conflict
+		// source wrapper after domain filtering, not at merge time
+		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.DebugLevel, hook, t)
 		logtest.TestHelperLogContains("example.com CNAME a.elb.com", hook, t)
 		logtest.TestHelperLogContains("example.com CNAME b.elb.com", hook, t)
 	})

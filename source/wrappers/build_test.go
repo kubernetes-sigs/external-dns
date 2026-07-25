@@ -70,6 +70,13 @@ func TestBuildWrappedSource(t *testing.T) {
 			}),
 		},
 		{
+			name: "fake source with domain filter",
+			cfg: stubConfig(t, &externaldns.Config{
+				Sources:      []string{types.Fake},
+				DomainFilter: []string{"example.com"},
+			}),
+		},
+		{
 			name: "fake source with exclude target nets",
 			cfg: stubConfig(t, &externaldns.Config{
 				Sources:           []string{types.Fake},

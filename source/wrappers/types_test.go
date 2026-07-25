@@ -57,6 +57,7 @@ func TestWrapSources(t *testing.T) {
 			cfg:  NewConfig(),
 			asserts: func(t *testing.T, cfg *Config) {
 				assert.True(t, cfg.isSourceWrapperInstrumented("dedup"))
+				assert.True(t, cfg.isSourceWrapperInstrumented("cname-conflict"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("nat64"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("target-filter"))
 				assert.False(t, cfg.isSourceWrapperInstrumented("ptr"))
@@ -180,6 +181,14 @@ func TestWithMinTTL(t *testing.T) {
 	opt := WithMinTTL(300 * time.Second)
 	opt(cfg)
 	assert.Equal(t, 300*time.Second, cfg.minTTL)
+}
+
+func TestWithDomainFilter(t *testing.T) {
+	cfg := &Config{}
+	filter := endpoint.NewDomainFilter([]string{"example.com"})
+	opt := WithDomainFilter(filter)
+	opt(cfg)
+	assert.Equal(t, filter, cfg.domainFilter)
 }
 
 func TestAddSourceWrapperAndIsSourceWrapperInstrumented(t *testing.T) {
