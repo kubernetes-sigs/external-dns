@@ -41,7 +41,7 @@ import (
 func TestRouteGroupClientUpdateToken(t *testing.T) {
 	t.Parallel()
 
-	t.Run("empty token file leaves token unchanged", func(t *testing.T) {
+	t.Run("no token file path leaves token unchanged", func(t *testing.T) {
 		t.Parallel()
 
 		client := &routeGroupClient{token: "initial-token"}
