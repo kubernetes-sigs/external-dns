@@ -363,18 +363,24 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
+	createTXTRecords := make([]*endpoint.Endpoint, 0, 2*len(filteredChanges.Create))
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		createTXTRecords = append(createTXTRecords, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
 	}
+	// Ownership TXT records are created before their corresponding primary records so that,
+	// if a provider only partially applies this batch, the failure mode is an orphan TXT
+	// record (harmless, retried next sync) rather than a primary record with no TXT owner
+	// (which the registry then treats as unowned and stops reconciling forever).
+	filteredChanges.Create = append(createTXTRecords, filteredChanges.Create...)
 
 	for _, r := range filteredChanges.Delete {
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
