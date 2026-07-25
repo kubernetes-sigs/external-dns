@@ -282,6 +282,34 @@ func TestRouteGroupDeepCopyObject(t *testing.T) {
 	assert.Equal(t, "changed", original.Annotations["key"])
 }
 
+func TestNewRouteGroupClientLoadsCustomTokenFile(t *testing.T) {
+	t.Parallel()
+
+	tokenFile := filepath.Join(t.TempDir(), "token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("custom-token"), 0o600))
+
+	client := newRouteGroupClient("initial-token", tokenFile, time.Second)
+	t.Cleanup(func() { close(client.quit) })
+
+	assert.Equal(t, tokenFile, client.tokenFile)
+	assert.Equal(t, "custom-token", client.getToken())
+}
+
+func TestRouteGroupClientReloadsCustomTokenFile(t *testing.T) {
+	t.Parallel()
+
+	tokenFile := filepath.Join(t.TempDir(), "token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("initial-file-token"), 0o600))
+
+	client := newRouteGroupClient("initial-token", tokenFile, time.Second)
+	t.Cleanup(func() { close(client.quit) })
+
+	require.NoError(t, os.WriteFile(tokenFile, []byte("rotated-file-token"), 0o600))
+	client.updateToken()
+
+	assert.Equal(t, "rotated-file-token", client.getToken())
+}
+
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
 		ObjectMeta: metav1.ObjectMeta{

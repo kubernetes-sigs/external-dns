@@ -85,12 +85,8 @@ type routeGroupClient struct {
 
 func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeGroupClient {
 	const (
-		tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 		rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	)
-	if tokenPath != "" {
-		tokenPath = tokenFile
-	}
 
 	tr := &http.Transport{
 		DialContext: (&net.Dialer{
