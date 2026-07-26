@@ -100,6 +100,13 @@
       "description": "Extra containers to add to the `Deployment`.",
       "type": "array"
     },
+    "extraManifests": {
+      "description": "Extra Kubernetes manifests to deploy alongside the chart, templates are allowed inside the manifests themselves.",
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "extraVolumeMounts": {
       "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container.",
       "type": "array"
