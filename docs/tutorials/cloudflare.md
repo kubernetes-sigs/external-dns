@@ -21,6 +21,12 @@ API Token will be preferred for authentication if `CF_API_TOKEN` environment var
 Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
 You may provide the Cloudflare API token through a file by setting the
 `CF_API_TOKEN="file:/path/to/token"`.
+Surrounding whitespace is trimmed from the token before use. This is a fallback safeguard only — the token should be supplied already in the correct format.
+When generating a token for a Kubernetes Secret, use `echo -n` (not `echo`) or `printf` so no trailing newline is written, e.g.:
+
+```shell
+printf '%s' "$CF_API_TOKEN" | kubectl create secret generic cloudflare-api-key --from-file=apiKey=/dev/stdin
+```
 
 Note. The `CF_API_KEY` and `CF_API_EMAIL` should not be present, if you are using a `CF_API_TOKEN`.
 
