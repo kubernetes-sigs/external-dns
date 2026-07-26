@@ -525,6 +525,120 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 	}
 }
 
+func TestOcpRouteIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeRoute := func(namespace, name, host, target string, ann, lbls map[string]string) *routev1.Route {
+		return &routev1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   namespace,
+				Name:        name,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Status: routev1.RouteStatus{
+				Ingress: []routev1.RouteIngress{
+					{
+						Host:                    host,
+						RouterCanonicalHostname: target,
+						Conditions: []routev1.RouteIngressCondition{
+							{Type: routev1.RouteAdmitted, Status: corev1.ConditionTrue},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*routev1.Route
+		wantCount        int
+	}{
+		{
+			name: "no filters — all namespaces included",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, nil),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, nil),
+				makeRoute("production", "r3", "c.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 3,
+		},
+		{
+			name:             "annotation filter matches",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 1,
+		},
+		{
+			name:        "label filter matches",
+			labelFilter: "tier=external",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, map[string]string{"tier": "external"}),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			labelFilter:      "tier=external",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "external"}),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "no-match annotation filter",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, nil),
+				makeRoute("production", "r2", "b.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "controller mismatch is excluded",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/controller": "other-controller"},
+					nil),
+			},
+			wantCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeClient := fake.NewClientset()
+			for _, r := range tc.routes {
+				_, err := fakeClient.RouteV1().Routes(r.Namespace).Create(t.Context(), r, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{
+				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tc.wantCount)
+		})
+	}
+}
+
 func TestOcpRouteSource_InformerTransform(t *testing.T) {
 	t.Parallel()
 

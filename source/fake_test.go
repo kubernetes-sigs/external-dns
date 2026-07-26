@@ -45,6 +45,18 @@ func parseAnnotationFilterOrNil(s string) labels.Selector {
 	return sel
 }
 
+// parseLabelSelectorOrEverything parses a label selector string for use in tests.
+// Returns labels.Everything() for empty input.
+func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
+	t.Helper()
+	if s == "" {
+		return labels.Everything()
+	}
+	sel, err := labels.Parse(s)
+	require.NoError(t, err)
+	return sel
+}
+
 // Validate that fakeSource implements Source.
 var _ Source = &fakeSource{}
 
