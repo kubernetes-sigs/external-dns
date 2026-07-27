@@ -446,22 +446,24 @@ func TestTagsFromResponse(t *testing.T) {
 
 func TestSRVRecordTarget(t *testing.T) {
 	t.Run("parses SRV target", func(t *testing.T) {
-		target, err := parseSRVRecordTarget("0 1 443 caldav.fastmail.com.")
+		target, err := endpoint.NewSRVRecord("0 1 443 caldav.fastmail.com.")
 		require.NoError(t, err)
-		assert.InDelta(t, 0, target.priority, 0)
-		assert.InDelta(t, 1, target.weight, 0)
-		assert.InDelta(t, 443, target.port, 0)
-		assert.Equal(t, "caldav.fastmail.com", target.target)
+		data := srvRecordDataParam(target)
+		assert.InDelta(t, 0, data.Priority.Value, 0)
+		assert.InDelta(t, 1, data.Weight.Value, 0)
+		assert.InDelta(t, 443, data.Port.Value, 0)
+		assert.Equal(t, "caldav.fastmail.com", data.Target.Value)
 	})
 
 	t.Run("keeps root target", func(t *testing.T) {
-		target, err := parseSRVRecordTarget("0 0 0 .")
+		target, err := endpoint.NewSRVRecord("0 0 0 .")
 		require.NoError(t, err)
-		assert.Equal(t, ".", target.target)
+		data := srvRecordDataParam(target)
+		assert.Equal(t, ".", data.Target.Value)
 	})
 
 	t.Run("rejects malformed target", func(t *testing.T) {
-		_, err := parseSRVRecordTarget("0 1 443")
+		_, err := endpoint.NewSRVRecord("0 1 443")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "priority, weight, port, and target host")
 	})
@@ -707,7 +709,7 @@ func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
 			ID:      "srv-1",
 			Name:    "srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 			"001": {srvRecord},
@@ -733,7 +735,7 @@ func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
 			ID:      "newerror-upd-srv",
 			Name:    "newerror-update-srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 			"001": {srvRecord},

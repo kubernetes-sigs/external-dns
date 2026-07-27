@@ -19,13 +19,14 @@ package cloudflare
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/cloudflare/cloudflare-go/v7"
 	"github.com/cloudflare/cloudflare-go/v7/dns"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
@@ -181,40 +182,6 @@ func tagsFromResponse(tags any) []dns.RecordTagsParam {
 	return nil
 }
 
-type srvRecordTarget struct {
-	priority float64
-	weight   float64
-	port     float64
-	target   string
-}
-
-func parseSRVRecordTarget(target string) (srvRecordTarget, error) {
-	parts := strings.Fields(strings.TrimSpace(target))
-	if len(parts) != 4 {
-		return srvRecordTarget{}, fmt.Errorf("SRV record target must have priority, weight, port, and target host")
-	}
-
-	priority, err := strconv.ParseUint(parts[0], 10, 16)
-	if err != nil {
-		return srvRecordTarget{}, fmt.Errorf("invalid SRV priority %q: %w", parts[0], err)
-	}
-	weight, err := strconv.ParseUint(parts[1], 10, 16)
-	if err != nil {
-		return srvRecordTarget{}, fmt.Errorf("invalid SRV weight %q: %w", parts[1], err)
-	}
-	port, err := strconv.ParseUint(parts[2], 10, 16)
-	if err != nil {
-		return srvRecordTarget{}, fmt.Errorf("invalid SRV port %q: %w", parts[2], err)
-	}
-
-	return srvRecordTarget{
-		priority: float64(priority),
-		weight:   float64(weight),
-		port:     float64(port),
-		target:   cloudflareSRVTarget(parts[3]),
-	}, nil
-}
-
 func cloudflareSRVTarget(target string) string {
 	if target == "." {
 		return target
@@ -229,17 +196,17 @@ func externalDNSSRVTarget(target string) string {
 	return target + "."
 }
 
-func srvRecordDataParam(target srvRecordTarget) dns.SRVRecordDataParam {
+func srvRecordDataParam(target *endpoint.SRVTarget) dns.SRVRecordDataParam {
 	return dns.SRVRecordDataParam{
-		Priority: cloudflare.F(target.priority),
-		Weight:   cloudflare.F(target.weight),
-		Port:     cloudflare.F(target.port),
-		Target:   cloudflare.F(target.target),
+		Priority: cloudflare.F(float64(*target.GetPriority())),
+		Weight:   cloudflare.F(float64(*target.GetWeight())),
+		Port:     cloudflare.F(float64(*target.GetPort())),
+		Target:   cloudflare.F(cloudflareSRVTarget(*target.GetHost())),
 	}
 }
 
 func buildSRVRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
-	target, err := parseSRVRecordTarget(r.Content)
+	target, err := endpoint.NewSRVRecord(r.Content)
 	if err != nil {
 		return dns.SRVRecordParam{}, err
 	}

@@ -1144,6 +1144,72 @@ func TestMXTarget_Getters(t *testing.T) {
 	assert.Equal(t, "mail.example.com", *m.GetHost())
 }
 
+func TestNewSRVRecord(t *testing.T) {
+	tests := []struct {
+		description string
+		target      string
+		expected    *SRVTarget
+		expectError bool
+	}{
+		{
+			description: "Valid SRV record",
+			target:      "10 20 5060 service.example.com.",
+			expected:    &SRVTarget{priority: 10, weight: 20, port: 5060, host: "service.example.com."},
+		},
+		{
+			description: "Valid root target",
+			target:      "0 0 0 .",
+			expected:    &SRVTarget{priority: 0, weight: 0, port: 0, host: "."},
+		},
+		{
+			description: "Invalid SRV record with missing part",
+			target:      "10 20 5060",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer priority",
+			target:      "abc 20 5060 service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer weight",
+			target:      "10 abc 5060 service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer port",
+			target:      "10 20 abc service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with missing dot for target host",
+			target:      "10 20 5060 service.example.com",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := NewSRVRecord(tt.target)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestSRVTarget_Getters(t *testing.T) {
+	s, err := NewSRVRecord("10 20 5060 service.example.com.")
+	require.NoError(t, err)
+	assert.Equal(t, uint16(10), *s.GetPriority())
+	assert.Equal(t, uint16(20), *s.GetWeight())
+	assert.Equal(t, uint16(5060), *s.GetPort())
+	assert.Equal(t, "service.example.com.", *s.GetHost())
+}
+
 func TestCheckEndpoint(t *testing.T) {
 	tests := []struct {
 		description string

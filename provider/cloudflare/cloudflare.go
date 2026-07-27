@@ -748,7 +748,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	}
 
 	var priority float64
-	if ep.RecordType == "MX" {
+	if ep.RecordType == endpoint.RecordTypeMX {
 		mxRecord, err := endpoint.NewMXRecord(target)
 		if err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
@@ -757,8 +757,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			target = *mxRecord.GetHost()
 		}
 	}
-	if ep.RecordType == "SRV" {
-		if _, err := parseSRVRecordTarget(target); err != nil {
+	if ep.RecordType == endpoint.RecordTypeSRV {
+		if _, err := endpoint.NewSRVRecord(target); err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse SRV record target %q: %w", target, err)
 		}
 	}

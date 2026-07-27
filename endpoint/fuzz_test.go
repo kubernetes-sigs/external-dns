@@ -83,6 +83,33 @@ func FuzzValidateSRVRecord(f *testing.F) {
 	})
 }
 
+func FuzzNewSRVRecord(f *testing.F) {
+	f.Add("10 5 5060 example.com.")
+	f.Add("0 0 0 .")
+	f.Add("")
+	f.Add("10 5 5060 example.com")
+	f.Add("notanum 5 5060 example.com.")
+	f.Add("10 5 99999 example.com.")
+
+	f.Fuzz(func(t *testing.T, input string) {
+		if len(input) > 1024 {
+			t.Skip()
+		}
+		srv, err := NewSRVRecord(input)
+		if err == nil {
+			for _, value := range []*uint16{srv.GetPriority(), srv.GetWeight(), srv.GetPort()} {
+				if value == nil {
+					t.Error("numeric SRV fields should not be nil on success")
+				}
+			}
+			h := srv.GetHost()
+			if h == nil || *h == "" {
+				t.Error("host should not be empty on success")
+			}
+		}
+	})
+}
+
 func FuzzSuitableType(f *testing.F) {
 	f.Add("1.2.3.4")
 	f.Add("::1")
