@@ -167,25 +167,25 @@ func TestNew(t *testing.T) {
 		wantDryRun bool
 	}{
 		{
-			name:       "GANDI_KEY",
+			name:       "succeeds with API key",
 			env:        map[string]string{"GANDI_KEY": "myGandiKey"},
 			dryRun:     true,
 			wantDryRun: true,
 		},
 		{
-			name:       "GANDI_PAT",
+			name:       "succeeds with PAT",
 			env:        map[string]string{"GANDI_PAT": "myGandiPAT"},
 			dryRun:     true,
 			wantDryRun: true,
 		},
 		{
-			name:       "GANDI_PAT with sharing ID",
+			name:       "succeeds with PAT and sharing ID",
 			env:        map[string]string{"GANDI_PAT": "myGandiPAT", "GANDI_SHARING_ID": "aSharingId"},
 			dryRun:     false,
 			wantDryRun: false,
 		},
 		{
-			name:      "missing credentials",
+			name:      "errors without credentials",
 			env:       map[string]string{},
 			dryRun:    true,
 			wantError: true,
@@ -224,7 +224,6 @@ func TestGandiProvider_Records(t *testing.T) {
 		records      []livedns.DomainRecord
 		domainFilter *endpoint.DomainFilter
 		want         []*endpoint.Endpoint
-		assertFn     func(t *testing.T, endpoints []*endpoint.Endpoint)
 	}{
 		{
 			name: "returns correct endpoints",
@@ -307,11 +306,9 @@ func TestGandiProvider_Records(t *testing.T) {
 				RrsetName:   "multi",
 				RrsetValues: []string{"203.0.113.1", "203.0.113.2"},
 			}},
-			assertFn: func(t *testing.T, endpoints []*endpoint.Endpoint) {
-				require.Len(t, endpoints, 2)
-				assert.Equal(t, "multi.example.com", endpoints[0].DNSName)
-				assert.Equal(t, "multi.example.com", endpoints[1].DNSName)
-				assert.ElementsMatch(t, []string{"203.0.113.1", "203.0.113.2"}, []string{endpoints[0].Targets[0], endpoints[1].Targets[0]})
+			want: []*endpoint.Endpoint{
+				{RecordType: endpoint.RecordTypeA, DNSName: "multi.example.com", Targets: endpoint.Targets{"203.0.113.1"}, RecordTTL: 300},
+				{RecordType: endpoint.RecordTypeA, DNSName: "multi.example.com", Targets: endpoint.Targets{"203.0.113.2"}, RecordTTL: 300},
 			},
 		},
 	}
@@ -328,17 +325,7 @@ func TestGandiProvider_Records(t *testing.T) {
 			endpoints, err := provider.Records(t.Context())
 			require.NoError(t, err)
 
-			if tt.assertFn != nil {
-				tt.assertFn(t, endpoints)
-				return
-			}
-
-			assert.Len(t, endpoints, len(tt.want))
-			for i := range endpoints {
-				if !testutils.SameEndpoint(tt.want[i], endpoints[i]) {
-					t.Errorf("should be equal, expected:%v <> actual:%v", tt.want[i], endpoints[i])
-				}
-			}
+			assert.True(t, testutils.SameEndpoints(tt.want, endpoints), "expected %v, got %v", tt.want, endpoints)
 		})
 	}
 }
