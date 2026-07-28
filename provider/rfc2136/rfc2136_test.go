@@ -978,6 +978,32 @@ func TestRandomLoadBalancing(t *testing.T) {
 	assert.Greater(t, len(nameserverCounts), 1, "Expected multiple nameservers to be used in random strategy")
 }
 
+// TestGetNextNameserverListAndSendCountersAreIndependent guards against the
+// regression described in https://github.com/kubernetes-sigs/external-dns/issues/6562:
+// AXFR/list and update/send nameserver rotation shared a single counter, so a
+// read advancing it would deterministically skew the following write onto a
+// different nameserver.
+func TestGetNextNameserverListAndSendCountersAreIndependent(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers:           []string{"ns1:53", "ns2:53", "ns3:53"},
+		loadBalancingStrategy: "round-robin",
+	}
+
+	// Advance only the list counter, as repeated AXFR attempts within a
+	// single List() call would.
+	assert.Equal(t, "ns1:53", r.getNextNameserverForList())
+	assert.Equal(t, "ns2:53", r.getNextNameserverForList())
+
+	// Send rotation must be unaffected by List()'s advancement and still
+	// start from the first nameserver.
+	assert.Equal(t, "ns1:53", r.getNextNameserverForSend())
+	assert.Equal(t, "ns2:53", r.getNextNameserverForSend())
+
+	// Both counters keep rotating independently from here on.
+	assert.Equal(t, "ns3:53", r.getNextNameserverForList())
+	assert.Equal(t, "ns3:53", r.getNextNameserverForSend())
+}
+
 // TestRfc2136ApplyChangesWithMultipleChunks tests Updates with multiple chunks
 func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	stub := newStub()
