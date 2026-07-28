@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -92,6 +94,45 @@ type WebhookProvider struct {
 	client          *http.Client
 	remoteServerURL *url.URL
 	DomainFilter    *endpoint.DomainFilter
+	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
+	maxBodySize int64
+}
+
+// errResponseTooLarge distinguishes an over-limit body from a malformed or
+// truncated one, which io.LimitReader would report as a plain EOF.
+var errResponseTooLarge = errors.New("webhook response body exceeds the configured max size (--webhook-provider-max-body-size)")
+
+// limitBody caps response body reads at maxBodySize, failing with
+// errResponseTooLarge once exceeded; a non-positive limit disables the cap.
+func limitBody(r io.Reader, maxBodySize int64) io.Reader {
+	if maxBodySize <= 0 {
+		return r
+	}
+	return &maxBytesReader{r: r, remaining: maxBodySize}
+}
+
+// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
+// past the limit instead of reporting EOF like io.LimitReader.
+type maxBytesReader struct {
+	r         io.Reader
+	remaining int64 // bytes still allowed; negative once the limit is passed
+}
+
+func (l *maxBytesReader) Read(p []byte) (int, error) {
+	if l.remaining < 0 {
+		return 0, errResponseTooLarge
+	}
+	// Read one byte past the limit to detect an over-limit body; compare
+	// against remaining so the +1 can't overflow near math.MaxInt64.
+	if l.remaining < int64(len(p)) {
+		p = p[:l.remaining+1]
+	}
+	n, err := l.r.Read(p)
+	l.remaining -= int64(n)
+	if l.remaining < 0 {
+		return n, errResponseTooLarge
+	}
+	return n, err
 }
 
 func init() {
@@ -105,10 +146,10 @@ func init() {
 
 // New creates a webhook provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize)
 }
 
-func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -135,7 +176,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 
 	df := &endpoint.DomainFilter{}
-	if err := json.NewDecoder(resp.Body).Decode(df); err != nil {
+	if err := json.NewDecoder(limitBody(resp.Body, maxBodySize)).Decode(df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
@@ -143,6 +184,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 		client:          client,
 		remoteServerURL: parsedURL,
 		DomainFilter:    df,
+		maxBodySize:     maxBodySize,
 	}, nil
 }
 
@@ -214,7 +256,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	if err := json.NewDecoder(limitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
@@ -324,7 +366,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+	if err := json.NewDecoder(limitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
