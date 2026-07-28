@@ -97,6 +97,9 @@ func (b *KingpinBinder) StringsEnumVar(name, help string, def []string, target *
 }
 
 func (b *KingpinBinder) StringMapVar(name, help string, target *map[string]string) {
+	if *target == nil {
+		*target = make(map[string]string)
+	}
 	b.App.Flag(name, help).StringMapVar(target)
 }
 

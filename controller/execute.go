@@ -64,9 +64,6 @@ func execute(ctx context.Context) {
 
 	// Set annotation prefix (required since init() was removed)
 	annotations.SetAnnotationPrefix(cfg.AnnotationPrefix)
-	if cfg.AnnotationPrefix != annotations.DefaultAnnotationPrefix {
-		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
-	}
 
 	if err := configureLogger(cfg); err != nil {
 		log.Fatal(err)

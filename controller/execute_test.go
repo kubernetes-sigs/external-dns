@@ -162,6 +162,7 @@ func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
+		"--annotation-prefix", "external-dns.kubernetes.io/",
 		"--once",
 		"--dry-run",
 		"--metrics-address", ":0",

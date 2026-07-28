@@ -133,6 +133,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg.Provider = "test-provider"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
 	cfg.KubeAPIBurst = rest.DefaultBurst
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 
 	require.NoError(t, ValidateConfig(cfg))
 
@@ -181,6 +182,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 50
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
@@ -361,4 +363,53 @@ func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 	assert.NoError(t, err)
+}
+
+func TestValidateAnnotationPrefix(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		prefix  string
+		wantErr bool
+	}{
+		// valid
+		{name: "GA prefix", prefix: "external-dns.kubernetes.io/", wantErr: false},
+		{name: "alpha prefix", prefix: "external-dns.alpha.kubernetes.io/", wantErr: false},
+		{name: "custom prefix", prefix: "custom.io/", wantErr: false},
+		{name: "prefix with numbers", prefix: "k8s.io/", wantErr: false},
+		{name: "single label", prefix: "myprefix/", wantErr: false},
+		// empty / blank
+		{name: "empty string", prefix: "", wantErr: true},
+		{name: "whitespace only", prefix: " ", wantErr: true},
+		{name: "tab only", prefix: "\t", wantErr: true},
+		// missing slash
+		{name: "no trailing slash", prefix: "external-dns.kubernetes.io", wantErr: true},
+		// multiple slashes
+		{name: "double trailing slash", prefix: "external-dns.kubernetes.io//", wantErr: true},
+		{name: "triple trailing slash", prefix: "external-dns.kubernetes.io///", wantErr: true},
+		// slash only
+		{name: "slash only", prefix: "/", wantErr: true},
+		{name: "double slash only", prefix: "//", wantErr: true},
+		// leading slash
+		{name: "leading slash", prefix: "/external-dns.kubernetes.io/", wantErr: true},
+		// uppercase
+		{name: "uppercase letters", prefix: "Custom.io/", wantErr: true},
+		{name: "all uppercase", prefix: "EXTERNAL-DNS.KUBERNETES.IO/", wantErr: true},
+		// disallowed characters
+		{name: "underscore", prefix: "custom_prefix.io/", wantErr: true},
+		{name: "space in middle", prefix: "custom .io/", wantErr: true},
+		{name: "leading space", prefix: " custom.io/", wantErr: true},
+		{name: "trailing space after slash", prefix: "custom.io/ ", wantErr: true},
+		{name: "slash in middle", prefix: "custom/io/", wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := newValidConfig(t)
+			cfg.AnnotationPrefix = tc.prefix
+			err := ValidateConfig(cfg)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
