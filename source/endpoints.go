@@ -16,6 +16,8 @@ package source
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 
@@ -55,4 +57,13 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 		}
 	}
 	return endpoint.NewTargets(targets...), nil
+}
+
+// appendEndpointIfValid appends ep to endpoints, skipping it when ep is nil.
+func appendEndpointIfValid(endpoints []*endpoint.Endpoint, ep *endpoint.Endpoint) []*endpoint.Endpoint {
+	if ep == nil {
+		log.Debug("Skipping nil endpoint")
+		return endpoints
+	}
+	return append(endpoints, ep)
 }

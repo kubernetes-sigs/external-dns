@@ -628,6 +628,21 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:         "services with invalid legacy hostnames return no endpoints",
+			svcNamespace:  "testing",
+			svcName:       "foo",
+			svcType:       v1.ServiceTypeLoadBalancer,
+			compatibility: "mate",
+			labels:        map[string]string{},
+			annotations: map[string]string{
+				mateAnnotationKey: strings.Repeat("n", 64) + ".example.org",
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
 			title:         "services annotated with legacy molecule annotations return an endpoint in compatibility mode",
 			svcNamespace:  "testing",
 			svcName:       "foo",

@@ -166,7 +166,8 @@ func (ns *nodeSource) endpointsFromNodeTemplate(node *v1.Node) ([]*endpoint.Endp
 
 // endpointsForDNSNames creates endpoints for the given DNS names using the node's addresses.
 func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]*endpoint.Endpoint, error) {
-	ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
+	resource := fmt.Sprintf("node/%s", node.Name)
+	ttl := annotations.TTLFromAnnotations(node.Annotations, resource)
 
 	addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
 	if len(addrs) == 0 {
@@ -182,11 +183,15 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		log.Debugf("adding endpoint with %d targets", len(addrs))
 
 		for _, addr := range addrs {
-			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
-			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
-			log.Debugf("adding endpoint %s target %s", ep, addr)
-			endpoints = append(endpoints, ep)
+			newEndpoint := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
+			endpoints = appendEndpointIfValid(endpoints, newEndpoint)
 		}
+	}
+
+	// add labels for resource
+	for _, ep := range endpoints {
+		ep.WithLabel(endpoint.ResourceLabelKey, resource)
+		log.Debugf("adding endpoint %s", ep)
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
