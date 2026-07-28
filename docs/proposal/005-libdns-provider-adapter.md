@@ -4,7 +4,7 @@ title: "libdns Provider Adapter for Simple-Zone Providers"
 version: v1alpha1
 authors: "@mloiseleur"
 creation-date: 2026-06-21
-status: draft
+status: not-planned
 ---
 ```
 
