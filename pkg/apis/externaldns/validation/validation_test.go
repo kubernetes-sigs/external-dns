@@ -362,3 +362,140 @@ func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
 	err := ValidateConfig(cfg)
 	assert.NoError(t, err)
 }
+
+func TestValidateHostnameConfig(t *testing.T) {
+	tests := []struct {
+		name             string
+		ignoreAnnotation bool
+		fqdnTemplate     []string
+		wantErr          bool
+	}{
+		{"not ignoring annotations", false, nil, false},
+		{"ignoring annotations with template", true, []string{"{{.Name}}"}, false},
+		{"ignoring annotations without template", true, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{IgnoreHostnameAnnotation: tt.ignoreAnnotation, FQDNTemplate: tt.fqdnTemplate}
+			if tt.wantErr {
+				require.NotEmpty(t, validateHostnameConfig(cfg))
+			} else {
+				require.Empty(t, validateHostnameConfig(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateTXTRegistryConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		prefix  string
+		suffix  string
+		wantErr bool
+	}{
+		{"neither set", "", "", false},
+		{"prefix only", "pre-", "", false},
+		{"suffix only", "", "-suf", false},
+		{"both set", "pre-", "-suf", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{TXTPrefix: tt.prefix, TXTSuffix: tt.suffix}
+			if tt.wantErr {
+				require.NotEmpty(t, validateTXTRegistryConfig(cfg))
+			} else {
+				require.Empty(t, validateTXTRegistryConfig(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateLabelSelectors(t *testing.T) {
+	tests := []struct {
+		name             string
+		labelFilter      string
+		annotationFilter string
+		wantErr          bool
+	}{
+		{"both empty", "", "", false},
+		{"valid label filter", "foo=bar", "", false},
+		{"invalid label filter", "#invalid-selector", "", true},
+		{"invalid annotation filter", "", "kubernetes.io/gateway.name in (a b)", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{LabelFilter: tt.labelFilter, AnnotationFilter: tt.annotationFilter}
+			if tt.wantErr {
+				require.NotEmpty(t, validateLabelSelectors(cfg))
+			} else {
+				require.Empty(t, validateLabelSelectors(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateAnnotationPrefix(t *testing.T) {
+	tests := []struct {
+		name    string
+		prefix  string
+		wantErr bool
+	}{
+		{"valid", "external-dns.kubernetes.io/", false},
+		{"empty", "", true},
+		{"missing trailing slash", "custom.io", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{AnnotationPrefix: tt.prefix}
+			if tt.wantErr {
+				require.NotEmpty(t, validateAnnotationPrefix(cfg))
+			} else {
+				require.Empty(t, validateAnnotationPrefix(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateKubeAPILimits(t *testing.T) {
+	tests := []struct {
+		name    string
+		qps     int
+		burst   int
+		wantErr bool
+	}{
+		{"valid", 5, 10, false},
+		{"zero qps", 0, 10, true},
+		{"negative qps", -1, 10, true},
+		{"zero burst", 5, 0, true},
+		{"negative burst", 5, -1, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{KubeAPIQPS: tt.qps, KubeAPIBurst: tt.burst}
+			if tt.wantErr {
+				require.NotEmpty(t, validateKubeAPILimits(cfg))
+			} else {
+				require.Empty(t, validateKubeAPILimits(cfg))
+			}
+		})
+	}
+}
+
+func TestValidatePTRConfig(t *testing.T) {
+	t.Run("create-ptr disabled", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.CreatePTR = false
+		require.Empty(t, validatePTRConfig(cfg))
+	})
+	t.Run("create-ptr without PTR managed", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.CreatePTR = true
+		require.NotEmpty(t, validatePTRConfig(cfg))
+	})
+	t.Run("create-ptr with PTR managed", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.CreatePTR = true
+		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
+		require.Empty(t, validatePTRConfig(cfg))
+	})
+}
