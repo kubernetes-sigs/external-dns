@@ -191,6 +191,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 		routeGroupVersion string
 		wantServer        string
 		wantAPI           string
+		wantErr           bool
 	}{
 		{
 			name:       "default version across all namespaces",
@@ -218,6 +219,11 @@ func TestNewRouteGroupSource(t *testing.T) {
 			wantServer: "https://[2001:db8::1]",
 			wantAPI:    "https://[2001:db8::1]/apis/zalando.org/v1/routegroups",
 		},
+		{
+			name:      "unparsable API server URL returns an error",
+			apiServer: "://invalid",
+			wantErr:   true,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -228,6 +234,11 @@ func TestNewRouteGroupSource(t *testing.T) {
 				KubeAPIRequestTimeout:    time.Second,
 			}
 			got, err := NewRouteGroupSource(&config, "test-token", "", tt.apiServer)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, got)
+				return
+			}
 			require.NoError(t, err)
 
 			source, ok := got.(*routeGroupSource)
