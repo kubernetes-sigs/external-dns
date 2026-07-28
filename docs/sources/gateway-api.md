@@ -1,7 +1,65 @@
-# Gateway API Route Sources
+# Gateway API Sources
 
-This describes how to configure ExternalDNS to use Gateway API Route sources.
+This describes how to configure ExternalDNS to use Gateway API sources.
 It is meant to supplement the other provider-specific setup tutorials.
+
+## Gateway Source (`--source=gateway`)
+
+The `gateway` source watches `Gateway` resources directly and creates DNS records
+for each Gateway that has the `external-dns.kubernetes.io/hostname` annotation.
+Targets are taken from `gateway.status.addresses` (or overridden via the
+`external-dns.kubernetes.io/target` annotation).
+
+### When to use
+
+Use `--source=gateway` when you want DNS records tied to the Gateway itself rather
+than individual routes. This is useful when:
+
+- All routes share the same DNS name as the Gateway's external address.
+- You manage hostnames at the Gateway level rather than per-route.
+
+### How it works
+
+1. ExternalDNS lists all `Gateway` objects in the configured namespace.
+2. For each Gateway with `external-dns.kubernetes.io/hostname`, it reads the value as one or more comma-separated hostnames.
+3. Targets are sourced from `gateway.status.addresses`. IP addresses produce A/AAAA records; hostnames produce CNAME records.
+4. The `external-dns.kubernetes.io/target` annotation overrides `status.addresses`.
+
+### Example
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  namespace: default
+  annotations:
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/ttl: "300"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+status:
+  addresses:
+    - type: IPAddress
+      value: 203.0.113.1
+```
+
+This produces an A record: `app.example.com → 203.0.113.1`.
+
+### Supported flags
+
+| Flag | Effect on `gateway` source |
+|------|---------------------------|
+| `--gateway-name` | Limit to a single Gateway by name |
+| `--gateway-namespace` | Limit to Gateways in a specific namespace |
+| `--gateway-label-filter` | Filter Gateways by label selector |
+| `--annotation-filter` | Filter Gateways by annotation selector |
+| `--ignore-hostname-annotation` | Skip the hostname annotation (useful with `--fqdn-template`) |
+| `--fqdn-template` | Generate hostnames from a Go template applied to the Gateway object |
 
 ## Supported API Versions
 
@@ -188,6 +246,40 @@ In this example, External DNS will create DNS records only for `company.private.
 
 For a complete list of supported annotations, see the
 [annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
+
+## Avoiding Dual Ownership Conflicts
+
+Using `--source=gateway` and a route source (e.g. `--source=gateway-httproute`) simultaneously
+for the **same hostname** causes a dual ownership conflict that results in DNS flapping.
+
+### What happens
+
+Both sources independently emit the same A record but with different resource labels:
+
+| Source | Endpoint | TXT ownership record |
+|--------|----------|----------------------|
+| `gateway` | `app.example.com A 1.2.3.4` | `resource=gateway/default/my-gateway` |
+| `gateway-httproute` | `app.example.com A 1.2.3.4` | `resource=httproute/default/my-route` |
+
+The TXT registry tracks ownership separately for each resource. When one source stops
+producing the record (e.g. the hostname annotation is removed from the Gateway), ExternalDNS
+deletes the A record based on its stale TXT entry — even though the other source still wants
+the record. The next sync cycle re-creates it, causing the record to be deleted and re-created
+on every cycle.
+
+### Rule
+
+**Never configure two sources to produce the same hostname for the same Gateway.**
+Choose one approach and apply it consistently:
+
+- Use `--source=gateway` when managing DNS at the Gateway level (one hostname per Gateway,
+  no route-level hostnames).
+- Use `--source=gateway-httproute` (or other route sources) when managing DNS at the route
+  level (hostnames defined in route specs or annotations, no `external-dns.kubernetes.io/hostname`
+  annotation on the Gateway).
+
+If both sources must run together, ensure there is **zero hostname overlap** between Gateway
+annotations and route hostnames.
 
 ## Manifest with RBAC
 

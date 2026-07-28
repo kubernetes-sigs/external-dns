@@ -44,8 +44,8 @@ import (
 	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
-// This is a compile-time validation that gatewaySource is a Source.
-var _ Source = &gatewaySource{}
+// This is a compile-time validation that istioGatewaySource is a Source.
+var _ Source = &istioGatewaySource{}
 
 type GatewaySuite struct {
 	suite.Suite
@@ -1624,11 +1624,11 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 }
 
 func TestTransformerInIstioGatewaySource(t *testing.T) {
-	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *gatewaySource {
+	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *istioGatewaySource {
 		t.Helper()
 		src, err := NewIstioGatewaySource(t.Context(), kClient, istioClient, &Config{})
 		require.NoError(t, err)
-		gs, ok := src.(*gatewaySource)
+		gs, ok := src.(*istioGatewaySource)
 		require.True(t, ok)
 		return gs
 	}
@@ -1903,7 +1903,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 }
 
 // gateway specific helper functions
-func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*gatewaySource, error) {
+func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewayService, ingressList []fakeIngress) (*istioGatewaySource, error) {
 	fakeKubernetesClient := fake.NewClientset()
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
@@ -1934,7 +1934,7 @@ func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewaySer
 		return nil, err
 	}
 
-	gwsrc, ok := src.(*gatewaySource)
+	gwsrc, ok := src.(*istioGatewaySource)
 	if !ok {
 		return nil, errors.New("underlying source type was not gateway")
 	}

@@ -419,6 +419,7 @@ var allowedSources = []string{
 	"ingress",
 	"node",
 	"pod",
+	"gateway",
 	"gateway-httproute",
 	"gateway-grpcroute",
 	"gateway-tlsroute",

@@ -23,6 +23,7 @@ const (
 	Service             Type = "service"
 	Ingress             Type = "ingress"
 	Pod                 Type = "pod"
+	Gateway             Type = "gateway"
 	GatewayHttpRoute    Type = "gateway-httproute"
 	GatewayGrpcRoute    Type = "gateway-grpcroute"
 	GatewayTlsRoute     Type = "gateway-tlsroute"
