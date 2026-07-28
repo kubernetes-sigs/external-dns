@@ -227,6 +227,14 @@ func validateTemplates(templates []string, flagName string) error {
 	return nil
 }
 
+// Parse parses a template string with all shared template functions
+// (see functions.go) pre-registered. It is intended for consumers outside
+// the kube-object based Engine, such as the ACME delegation source wrapper,
+// which execute the returned template against their own data structs.
+func Parse(input string) (*template.Template, error) {
+	return parseTemplate(input)
+}
+
 func parseTemplate(input string) (*template.Template, error) {
 	// Clone is cheaper than re-registering all functions on a new template each call.
 	t, err := baseTemplate.Clone()

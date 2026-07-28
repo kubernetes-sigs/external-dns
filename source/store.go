@@ -106,6 +106,9 @@ type Config struct {
 	PreferAlias                    bool
 	PTRSupported                   bool
 	CreatePTR                      bool
+	ACMEDelegationTargetTemplate   string
+	ACMEDelegationDomainFilter     []string
+	ACMEDelegationTTL              time.Duration
 
 	sources []string
 
@@ -183,6 +186,9 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		PreferAlias:                    cfg.PreferAlias,
 		PTRSupported:                   cfg.IsPTRSupported(),
 		CreatePTR:                      cfg.CreatePTR,
+		ACMEDelegationTargetTemplate:   cfg.ACMEDelegationTargetTemplate,
+		ACMEDelegationDomainFilter:     cfg.ACMEDelegationDomainFilter,
+		ACMEDelegationTTL:              cfg.ACMEDelegationTTL,
 		sources:                        cfg.Sources,
 	}
 	for _, opt := range opts {

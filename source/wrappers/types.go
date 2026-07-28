@@ -37,6 +37,11 @@ type Config struct {
 	ptrSupported        bool             // PTR is in --managed-record-types
 	createPTR           bool             // --create-ptr default for all A/AAAA records
 	sourceWrappers      sets.Set[string] // set of source wrappers, e.g. "targetfilter", "nat64"
+
+	// acmeDelegation* correspond to the --acme-cname-delegation-* flags.
+	acmeDelegationTargetTemplate string
+	acmeDelegationDomainFilter   []string
+	acmeDelegationTTL            time.Duration
 }
 
 func NewConfig(opts ...Option) *Config {
@@ -118,6 +123,32 @@ func WithCreatePTR(enabled bool) Option {
 	}
 }
 
+// WithACMEDelegationTargetTemplate sets the target template for ACME DNS-01
+// delegation CNAME generation (the --acme-cname-delegation-target-template flag).
+// A non-empty template enables the ACME delegation source wrapper.
+func WithACMEDelegationTargetTemplate(input string) Option {
+	return func(o *Config) {
+		o.acmeDelegationTargetTemplate = input
+	}
+}
+
+// WithACMEDelegationDomainFilter limits ACME delegation CNAME generation to
+// hostnames matching the given domain suffixes (the --acme-cname-delegation-domain-filter
+// flag). An empty filter matches all hostnames.
+func WithACMEDelegationDomainFilter(input []string) Option {
+	return func(o *Config) {
+		o.acmeDelegationDomainFilter = input
+	}
+}
+
+// WithACMEDelegationTTL sets the TTL for generated ACME delegation CNAME records
+// (the --acme-cname-delegation-ttl flag). Zero leaves the TTL unconfigured.
+func WithACMEDelegationTTL(ttl time.Duration) Option {
+	return func(o *Config) {
+		o.acmeDelegationTTL = ttl
+	}
+}
+
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -160,6 +191,14 @@ func wrapSources(
 	if opts.ptrSupported {
 		combinedSource = NewPTRSource(combinedSource, opts.createPTR)
 		opts.addSourceWrapper("ptr")
+	}
+	if opts.acmeDelegationTargetTemplate != "" {
+		var err error
+		combinedSource, err = NewACMEDelegationSource(combinedSource, opts.acmeDelegationTargetTemplate, opts.acmeDelegationDomainFilter, opts.acmeDelegationTTL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create ACME delegation source wrapper: %w", err)
+		}
+		opts.addSourceWrapper("acme-delegation")
 	}
 	combinedSource = NewPostProcessor(combinedSource, WithTTL(opts.minTTL), WithPostProcessorPreferAlias(opts.preferAlias),
 		WithPostProcessorProvider(opts.provider))

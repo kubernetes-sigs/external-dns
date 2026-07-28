@@ -17,12 +17,17 @@ limitations under the License.
 package validation
 
 import (
+	"regexp"
 	"testing"
+	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/rest"
 
+	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -361,4 +366,66 @@ func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 	assert.NoError(t, err)
+}
+
+func TestValidateACMEDelegation(t *testing.T) {
+	t.Run("valid configuration passes", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.ACMEDelegationTargetTemplate = "{{ .HostnameWithoutWildcard }}.acme.example.net"
+		cfg.ACMEDelegationDomainFilter = []string{"example.com"}
+		cfg.ACMEDelegationTTL = 300 * time.Second
+		cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
+
+		assert.NoError(t, ValidateConfig(cfg))
+	})
+
+	t.Run("domain filter requires target template", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.ACMEDelegationDomainFilter = []string{"example.com"}
+
+		err := ValidateConfig(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "require --acme-cname-delegation-target-template")
+	})
+
+	t.Run("ttl requires target template", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.ACMEDelegationTTL = 300 * time.Second
+
+		err := ValidateConfig(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "require --acme-cname-delegation-target-template")
+	})
+
+	t.Run("negative ttl is rejected", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.ACMEDelegationTargetTemplate = "{{ .HostnameWithoutWildcard }}.acme.example.net"
+		cfg.ACMEDelegationTTL = -1 * time.Second
+
+		err := ValidateConfig(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "--acme-cname-delegation-ttl cannot be negative")
+	})
+
+	t.Run("requires CNAME in managed record types", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.ACMEDelegationTargetTemplate = "{{ .HostnameWithoutWildcard }}.acme.example.net"
+		cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA}
+
+		err := ValidateConfig(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "requires CNAME in --managed-record-types")
+	})
+
+	t.Run("regex domain filter logs a warning", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+		cfg := newValidConfig(t)
+		cfg.ACMEDelegationTargetTemplate = "{{ .HostnameWithoutWildcard }}.acme.example.net"
+		cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
+		cfg.RegexDomainFilter = regexp.MustCompile(`example\.com$`)
+
+		assert.NoError(t, ValidateConfig(cfg))
+		logtest.TestHelperLogContains("--regex-domain-filter is set together with --acme-cname-delegation-target-template", hook, t)
+	})
 }
