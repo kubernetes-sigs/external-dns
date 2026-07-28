@@ -595,6 +595,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=azure
         - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
@@ -667,6 +668,7 @@ spec:
           args:
             - --source=service
             - --source=ingress
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
@@ -743,6 +745,7 @@ spec:
           args:
             - --source=service
             - --source=ingress
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
             - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group

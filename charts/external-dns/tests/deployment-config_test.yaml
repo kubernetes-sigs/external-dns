@@ -1,4 +1,6 @@
 suite: Deployment configuration
+set:
+  policy: upsert-only
 templates:
   - deployment.yaml
 release:

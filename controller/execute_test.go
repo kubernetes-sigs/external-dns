@@ -162,6 +162,7 @@ func TestExecuteOnceDryRunExitsZero(t *testing.T) {
 	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "inmemory",
+		"--policy", "sync",
 		"--once",
 		"--dry-run",
 		"--metrics-address", ":0",
@@ -174,6 +175,19 @@ func TestExecuteUnknownProviderExitsNonZero(t *testing.T) {
 	code, err := runExecuteSubprocess(t, []string{
 		"--source", "fake",
 		"--provider", "unknown",
+		"--policy", "sync",
+		"--metrics-address", ":0",
+	})
+	require.NoError(t, err)
+	assert.NotEqual(t, 0, code)
+}
+
+func TestExecuteMissingPolicyExitsNonZero(t *testing.T) {
+	code, err := runExecuteSubprocess(t, []string{
+		"--source", "fake",
+		"--provider", "inmemory",
+		"--once",
+		"--dry-run",
 		"--metrics-address", ":0",
 	})
 	require.NoError(t, err)

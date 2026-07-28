@@ -237,6 +237,7 @@ spec:
       containers:
       - args:
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=external-dns
@@ -275,6 +276,7 @@ spec:
       containers:
       - args:
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus

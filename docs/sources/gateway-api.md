@@ -250,6 +250,7 @@ spec:
         - --source=gateway-tlsroute
         - --source=gateway-tcproute
         - --source=gateway-udproute
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         # Optionally, limit Routes to those in the given namespace.
         - --namespace=my-route-namespace
         # Optionally, limit Routes to those matching the given label selector.

@@ -328,7 +328,7 @@ var defaultConfig = &Config{
 	PiholeServer:                 "",
 	PiholeTLSInsecureSkipVerify:  false,
 	PodSourceDomain:              "",
-	Policy:                       "sync",
+	Policy:                       "",
 	Provider:                     "",
 	ProviderCacheTime:            0,
 	CreatePTR:                    false,
@@ -663,7 +663,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
 
 	// Flags related to policies
-	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "sync", "upsert-only", "create-only")
+	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (required, no default; options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "", "sync", "upsert-only", "create-only")
 
 	// Flags related to the registry
 	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: aws-sd, crd, dynamodb, noop, txt)", defaultConfig.Registry, &cfg.Registry, RegistryAWSSD, RegistryCRD, RegistryDynamoDB, RegistryNoop, RegistryTXT)
