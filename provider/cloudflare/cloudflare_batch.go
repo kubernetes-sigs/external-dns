@@ -198,10 +198,10 @@ func externalDNSSRVTarget(target string) string {
 
 func srvRecordDataParam(target *endpoint.SRVTarget) dns.SRVRecordDataParam {
 	return dns.SRVRecordDataParam{
-		Priority: cloudflare.F(float64(*target.GetPriority())),
-		Weight:   cloudflare.F(float64(*target.GetWeight())),
-		Port:     cloudflare.F(float64(*target.GetPort())),
-		Target:   cloudflare.F(cloudflareSRVTarget(*target.GetHost())),
+		Priority: cloudflare.F(float64(target.GetPriority())),
+		Weight:   cloudflare.F(float64(target.GetWeight())),
+		Port:     cloudflare.F(float64(target.GetPort())),
+		Target:   cloudflare.F(cloudflareSRVTarget(target.GetHost())),
 	}
 }
 

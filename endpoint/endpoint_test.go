@@ -1141,7 +1141,7 @@ func TestMXTarget_Getters(t *testing.T) {
 	m, err := NewMXRecord("10 mail.example.com")
 	require.NoError(t, err)
 	assert.Equal(t, uint16(10), *m.GetPriority())
-	assert.Equal(t, "mail.example.com", *m.GetHost())
+	assert.Equal(t, "mail.example.com", m.GetHost())
 }
 
 func TestNewSRVRecord(t *testing.T) {
@@ -1204,10 +1204,10 @@ func TestNewSRVRecord(t *testing.T) {
 func TestSRVTarget_Getters(t *testing.T) {
 	s, err := NewSRVRecord("10 20 5060 service.example.com.")
 	require.NoError(t, err)
-	assert.Equal(t, uint16(10), *s.GetPriority())
-	assert.Equal(t, uint16(20), *s.GetWeight())
-	assert.Equal(t, uint16(5060), *s.GetPort())
-	assert.Equal(t, "service.example.com.", *s.GetHost())
+	assert.Equal(t, uint16(10), s.GetPriority())
+	assert.Equal(t, uint16(20), s.GetWeight())
+	assert.Equal(t, uint16(5060), s.GetPort())
+	assert.Equal(t, "service.example.com.", s.GetHost())
 }
 
 func TestCheckEndpoint(t *testing.T) {

@@ -60,7 +60,7 @@ func FuzzNewMXRecord(f *testing.F) {
 				t.Error("priority should not be nil on success")
 			}
 			h := mx.GetHost()
-			if h == nil || *h == "" {
+			if h == "" {
 				t.Error("host should not be empty on success")
 			}
 		}
@@ -97,13 +97,8 @@ func FuzzNewSRVRecord(f *testing.F) {
 		}
 		srv, err := NewSRVRecord(input)
 		if err == nil {
-			for _, value := range []*uint16{srv.GetPriority(), srv.GetWeight(), srv.GetPort()} {
-				if value == nil {
-					t.Error("numeric SRV fields should not be nil on success")
-				}
-			}
 			h := srv.GetHost()
-			if h == nil || *h == "" {
+			if h == "" {
 				t.Error("host should not be empty on success")
 			}
 		}

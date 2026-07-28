@@ -689,28 +689,28 @@ func (m *MXTarget) GetPriority() *uint16 {
 }
 
 // GetHost returns the host of the MX record target.
-func (m *MXTarget) GetHost() *string {
-	return &m.host
+func (m *MXTarget) GetHost() string {
+	return m.host
 }
 
 // GetPriority returns the priority of the SRV record target.
-func (s *SRVTarget) GetPriority() *uint16 {
-	return &s.priority
+func (s *SRVTarget) GetPriority() uint16 {
+	return s.priority
 }
 
 // GetWeight returns the weight of the SRV record target.
-func (s *SRVTarget) GetWeight() *uint16 {
-	return &s.weight
+func (s *SRVTarget) GetWeight() uint16 {
+	return s.weight
 }
 
 // GetPort returns the port of the SRV record target.
-func (s *SRVTarget) GetPort() *uint16 {
-	return &s.port
+func (s *SRVTarget) GetPort() uint16 {
+	return s.port
 }
 
 // GetHost returns the host of the SRV record target.
-func (s *SRVTarget) GetHost() *string {
-	return &s.host
+func (s *SRVTarget) GetHost() string {
+	return s.host
 }
 
 // ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
