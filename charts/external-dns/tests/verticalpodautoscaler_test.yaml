@@ -1,0 +1,60 @@
+suite: VerticalPodAutoscaler configuration
+templates:
+  - verticalpodautoscaler.yaml
+release:
+  namespace: default
+tests:
+  - it: should not create a VerticalPodAutoscaler by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create a VerticalPodAutoscaler when enabled
+    set:
+      verticalPodAutoscaler:
+        enabled: true
+    asserts:
+      - isKind:
+          of: VerticalPodAutoscaler
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: apiVersion
+          value: autoscaling.k8s.io/v1
+      - equal:
+          path: spec.targetRef
+          value:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: RELEASE-NAME-external-dns
+      - equal:
+          path: spec.updatePolicy.updateMode
+          value: Auto
+
+  - it: should support additional labels, annotations, and a custom resource policy
+    set:
+      verticalPodAutoscaler:
+        enabled: true
+        additionalLabels:
+          foo: bar
+        annotations:
+          foo: bar
+        resourcePolicy:
+          containerPolicies:
+            - containerName: external-dns
+              minAllowed:
+                cpu: 10m
+                memory: 32Mi
+    asserts:
+      - equal:
+          path: metadata.labels.foo
+          value: bar
+      - equal:
+          path: metadata.annotations.foo
+          value: bar
+      - equal:
+          path: spec.resourcePolicy.containerPolicies[0].containerName
+          value: external-dns
+      - equal:
+          path: spec.resourcePolicy.containerPolicies[0].minAllowed.cpu
+          value: 10m

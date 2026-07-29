@@ -203,6 +203,19 @@ serviceMonitor:
   # -- Provide target labels for the `ServiceMonitor`.
   targetLabels: []
 
+verticalPodAutoscaler:  # @schema additionalProperties: true
+  # -- If `true`, create a `VerticalPodAutoscaler` resource for the `Deployment`.
+  enabled: false
+  # -- Additional labels for the `VerticalPodAutoscaler`.
+  additionalLabels: {}
+  # -- Annotations to add to the `VerticalPodAutoscaler`.
+  annotations: {}
+  # -- [Update policy](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/API.md#podupdatepolicy) for the `VerticalPodAutoscaler`.
+  updatePolicy:
+    updateMode: Auto
+  # -- [Resource policy](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/API.md#podresourcepolicy) for the `VerticalPodAutoscaler`, allows specifying constraints for individual containers.
+  resourcePolicy: {}
+
 # -- Log level.
 logLevel: info  # @schema enum:[panic, debug, info, warning, error, fatal]; type:string; default: "info"
 

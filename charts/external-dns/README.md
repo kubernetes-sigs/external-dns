@@ -191,6 +191,11 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
+| verticalPodAutoscaler.additionalLabels | object | `{}` | Additional labels for the `VerticalPodAutoscaler`. |
+| verticalPodAutoscaler.annotations | object | `{}` | Annotations to add to the `VerticalPodAutoscaler`. |
+| verticalPodAutoscaler.enabled | bool | `false` | If `true`, create a `VerticalPodAutoscaler` resource for the `Deployment`. |
+| verticalPodAutoscaler.resourcePolicy | object | `{}` | [Resource policy](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/API.md#podresourcepolicy) for the `VerticalPodAutoscaler`, allows specifying constraints for individual containers. |
+| verticalPodAutoscaler.updatePolicy | object | `{"updateMode":"Auto"}` | [Update policy](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/API.md#podupdatepolicy) for the `VerticalPodAutoscaler`. |
 
 ## Usage
 
