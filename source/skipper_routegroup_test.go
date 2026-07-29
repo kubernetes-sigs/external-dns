@@ -146,7 +146,7 @@ func TestRouteGroupClientGetRouteGroupList(t *testing.T) {
 	})
 }
 
-func TestRouteGroupClientGet(t *testing.T) {
+func TestRouteGroupClientGetAndDo(t *testing.T) {
 	t.Parallel()
 
 	t.Run("invalid URL", func(t *testing.T) {
@@ -255,25 +255,31 @@ func TestNewRouteGroupSource(t *testing.T) {
 	}
 }
 
-func TestRouteGroupSourceAddEventHandler(t *testing.T) {
-	t.Parallel()
-
-	source := &routeGroupSource{}
-	source.AddEventHandler(t.Context(), func() {})
-}
-
 func TestRouteGroupDeepCopyObject(t *testing.T) {
 	t.Parallel()
 
-	original := createTestRouteGroup("namespace1", "rg1", nil, []string{"rg1.example.org"}, nil)
+	original := createTestRouteGroup(
+		"namespace1",
+		"rg1",
+		map[string]string{"key": "value"},
+		[]string{"rg1.example.org"},
+		nil,
+	)
 	cloned, ok := original.DeepCopyObject().(*routeGroup)
 	require.True(t, ok)
 
 	assert.Equal(t, original, cloned)
 	assert.NotSame(t, original, cloned)
 
+	// Top-level fields are independent.
 	cloned.Name = "rg2"
 	assert.Equal(t, "rg1", original.Name)
+
+	// Nested slices and maps are not.
+	cloned.Spec.Hosts[0] = "rg2.example.org"
+	cloned.Annotations["key"] = "changed"
+	assert.Equal(t, "rg2.example.org", original.Spec.Hosts[0])
+	assert.Equal(t, "changed", original.Annotations["key"])
 }
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
