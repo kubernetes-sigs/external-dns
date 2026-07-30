@@ -209,12 +209,14 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 	if routeGroupVersion == "" {
 		routeGroupVersion = DefaultRoutegroupVersion
 	}
-	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
-
 	u, err := url.Parse(apiServerURL)
 	if err != nil {
 		return nil, err
 	}
+
+	// created after the URL is validated, because it starts a token refresh
+	// goroutine that would otherwise outlive a discarded source.
+	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
 
 	apiServer := u.String()
 	// strip port if well known port, because of TLS certificate match
