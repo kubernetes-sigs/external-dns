@@ -47,7 +47,8 @@ significantly reducing the total number of requests made.
 
 The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
 In that case, ExternalDNS automatically retries each record change in the chunk individually.
-Record types that are not supported by the batch PUT operation (e.g. SRV, CAA) are always submitted individually rather than through the batch API.
+Record types that are not supported by the batch PUT operation (e.g. CAA) are always submitted individually rather than through the batch API.
+SRV records are submitted with Cloudflare's structured SRV data fields for both batch and individual operations.
 
 | Flag | Default | Description |
 | :--- | :------ | :---------- |
@@ -317,6 +318,28 @@ Check your [Cloudflare dashboard](https://www.cloudflare.com/a/dns/example.com) 
 Substitute the zone for the one created above if a different domain was used.
 
 This should show the external IP address of the service as the A record for your domain.
+
+## Managing SRV records
+
+Cloudflare requires SRV records to be sent as structured fields (`priority`, `weight`, `port`, and `target`).
+ExternalDNS accepts SRV targets in the standard form `<priority> <weight> <port> <target>` and converts them for Cloudflare.
+
+For example, the CRD source can manage an SRV record like this:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: caldav
+spec:
+  endpoints:
+    - dnsName: _caldavs._tcp.example.com
+      recordType: SRV
+      targets:
+        - 0 1 443 caldav.example.com.
+```
+
+After synchronization, the Cloudflare SRV record contains priority `0`, weight `1`, port `443`, and target `caldav.example.com`.
 
 ## Cleanup
 

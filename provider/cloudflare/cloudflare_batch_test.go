@@ -93,19 +93,31 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 
 	// Process Posts (creates).
 	for _, postUnion := range params.Posts.Value {
-		post, ok := postUnion.(dns.RecordBatchParamsPost)
-		if !ok {
+		var record dns.RecordResponse
+		switch post := postUnion.(type) {
+		case dns.SRVRecordParam:
+			record = dns.RecordResponse{
+				ID:      generateDNSRecordID(string(post.Type.Value), post.Name.Value, srvContentFromParam(post.Data.Value)),
+				Name:    post.Name.Value,
+				TTL:     post.TTL.Value,
+				Proxied: post.Proxied.Value,
+				Type:    dns.RecordResponseType(post.Type.Value),
+				Content: srvContentFromParam(post.Data.Value),
+				Data:    srvDataFromParam(post.Data.Value),
+			}
+		case dns.RecordBatchParamsPost:
+			typeStr := string(post.Type.Value)
+			record = dns.RecordResponse{
+				ID:       generateDNSRecordID(typeStr, post.Name.Value, post.Content.Value),
+				Name:     post.Name.Value,
+				TTL:      dns.TTL(post.TTL.Value),
+				Proxied:  post.Proxied.Value,
+				Type:     dns.RecordResponseType(typeStr),
+				Content:  post.Content.Value,
+				Priority: post.Priority.Value,
+			}
+		default:
 			continue
-		}
-		typeStr := string(post.Type.Value)
-		record := dns.RecordResponse{
-			ID:       generateDNSRecordID(typeStr, post.Name.Value, post.Content.Value),
-			Name:     post.Name.Value,
-			TTL:      dns.TTL(post.TTL.Value),
-			Proxied:  post.Proxied.Value,
-			Type:     dns.RecordResponseType(typeStr),
-			Content:  post.Content.Value,
-			Priority: post.Priority.Value,
 		}
 		m.Actions = append(m.Actions, MockAction{
 			Name:       "Create",
@@ -191,6 +203,16 @@ func extractBatchPutData(put dns.BatchPutUnionParam) (string, dns.RecordResponse
 			Proxied: p.Proxied.Value,
 			Type:    dns.RecordResponseTypeNS,
 			Content: p.Content.Value,
+		}
+	case dns.BatchPutSRVRecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeSRV,
+			Content: srvContentFromParam(p.Data.Value),
+			Data:    srvDataFromParam(p.Data.Value),
 		}
 	default:
 		panic(fmt.Sprintf("extractBatchPutData: unexpected BatchPutUnionParam type %T", put))
@@ -422,6 +444,68 @@ func TestTagsFromResponse(t *testing.T) {
 	})
 }
 
+func TestSRVRecordTarget(t *testing.T) {
+	t.Run("parses SRV target", func(t *testing.T) {
+		target, err := endpoint.NewSRVRecord("0 1 443 caldav.fastmail.com.")
+		require.NoError(t, err)
+		data := srvRecordDataParam(target)
+		assert.InDelta(t, 0, data.Priority.Value, 0)
+		assert.InDelta(t, 1, data.Weight.Value, 0)
+		assert.InDelta(t, 443, data.Port.Value, 0)
+		assert.Equal(t, "caldav.fastmail.com", data.Target.Value)
+	})
+
+	t.Run("keeps root target", func(t *testing.T) {
+		target, err := endpoint.NewSRVRecord("0 0 0 .")
+		require.NoError(t, err)
+		data := srvRecordDataParam(target)
+		assert.Equal(t, ".", data.Target.Value)
+	})
+
+	t.Run("rejects malformed target", func(t *testing.T) {
+		_, err := endpoint.NewSRVRecord("0 1 443")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "priority, weight, port, and target host")
+	})
+}
+
+func TestBuildSRVRecordParam(t *testing.T) {
+	record := dns.RecordResponse{
+		Name:    "_caldavs._tcp.example.com",
+		TTL:     120,
+		Type:    dns.RecordResponseTypeSRV,
+		Content: "0 1 443 caldav.fastmail.com.",
+		Comment: "test-comment",
+	}
+
+	param, err := buildSRVRecordParam(record)
+	require.NoError(t, err)
+
+	assert.Equal(t, "_caldavs._tcp.example.com", param.Name.Value)
+	assert.Equal(t, dns.SRVRecordTypeSRV, param.Type.Value)
+	assert.InDelta(t, 0, param.Data.Value.Priority.Value, 0)
+	assert.InDelta(t, 1, param.Data.Value.Weight.Value, 0)
+	assert.InDelta(t, 443, param.Data.Value.Port.Value, 0)
+	assert.Equal(t, "caldav.fastmail.com", param.Data.Value.Target.Value)
+	assert.Equal(t, "test-comment", param.Comment.Value)
+}
+
+func TestBuildBatchPostParamSRV(t *testing.T) {
+	record := dns.RecordResponse{
+		Name:    "_caldavs._tcp.example.com",
+		TTL:     120,
+		Type:    dns.RecordResponseTypeSRV,
+		Content: "0 1 443 caldav.fastmail.com.",
+	}
+
+	param, ok := buildBatchPostParam(record)
+	require.True(t, ok)
+	srvParam, cast := param.(dns.SRVRecordParam)
+	require.True(t, cast)
+	assert.Equal(t, dns.SRVRecordTypeSRV, srvParam.Type.Value)
+	assert.Equal(t, "caldav.fastmail.com", srvParam.Data.Value.Target.Value)
+}
+
 func TestBuildBatchPutParam(t *testing.T) {
 	base := dns.RecordResponse{
 		Name:    "example.bar.com",
@@ -494,13 +578,20 @@ func TestBuildBatchPutParam(t *testing.T) {
 		assert.Equal(t, dns.NSRecordTypeNS, p.Type.Value)
 	})
 
-	t.Run("SRV record falls back (returns nil, false)", func(t *testing.T) {
+	t.Run("SRV record", func(t *testing.T) {
 		r := base
 		r.Type = dns.RecordResponseTypeSRV
-		r.Content = "10 20 443 target.bar.com"
+		r.Content = "10 20 443 target.bar.com."
 		param, ok := buildBatchPutParam("id-srv", r)
-		assert.False(t, ok)
-		assert.Nil(t, param)
+		require.True(t, ok)
+		p, cast := param.(dns.BatchPutSRVRecordParam)
+		require.True(t, cast)
+		assert.Equal(t, "id-srv", p.ID.Value)
+		assert.Equal(t, dns.SRVRecordTypeSRV, p.Type.Value)
+		assert.Equal(t, "target.bar.com", p.Data.Value.Target.Value)
+		assert.InDelta(t, 10, float64(p.Data.Value.Priority.Value), 0)
+		assert.InDelta(t, 20, float64(p.Data.Value.Weight.Value), 0)
+		assert.InDelta(t, 443, float64(p.Data.Value.Port.Value), 0)
 	})
 
 	t.Run("CAA record falls back (returns nil, false)", func(t *testing.T) {
@@ -534,12 +625,12 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 		assert.Empty(t, bc.fallbackUpdates)
 	})
 
-	t.Run("SRV update goes to fallbackUpdates", func(t *testing.T) {
+	t.Run("SRV update goes to batchPuts", func(t *testing.T) {
 		srvRecord := dns.RecordResponse{
 			ID:      "srv-1",
 			Name:    "srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		records := DNSRecordsMap{
 			newDNSRecordIndex(srvRecord): srvRecord,
@@ -551,10 +642,9 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 			},
 		}
 		bc := p.buildBatchCollections("zone1", changes, records)
-		assert.Empty(t, bc.batchPuts, "SRV should not be in batch puts")
-		assert.Empty(t, bc.updateChanges)
-		require.Len(t, bc.fallbackUpdates, 1)
-		assert.Equal(t, "srv.bar.com", bc.fallbackUpdates[0].ResourceRecord.Name)
+		require.Len(t, bc.batchPuts, 1)
+		require.Len(t, bc.updateChanges, 1)
+		assert.Empty(t, bc.fallbackUpdates)
 	})
 
 	t.Run("delete with missing record ID is skipped", func(t *testing.T) {
@@ -619,7 +709,7 @@ func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
 			ID:      "srv-1",
 			Name:    "srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 			"001": {srvRecord},
@@ -645,7 +735,7 @@ func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
 			ID:      "newerror-upd-srv",
 			Name:    "newerror-update-srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 			"001": {srvRecord},
