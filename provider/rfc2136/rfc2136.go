@@ -286,15 +286,15 @@ OuterLoop:
 	return eps, nil
 }
 
-// shouldSignAXFR evaluates if TSIG secret is attached based on flags provided.
-func shouldSignAXFR(insecure, gssTsig, insecureAXFR bool) bool {
-	return !insecure && !gssTsig && !insecureAXFR
+// shouldSignAXFR reports whether TSIG should be attached to zone transfers.
+func (r *rfc2136Provider) shouldSignAXFR() bool {
+	return !r.insecure && !r.gssTsig && !r.insecureAXFR
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
 
-	if shouldSignAXFR(r.insecure, r.gssTsig, r.insecureAXFR) {
+	if r.shouldSignAXFR() {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 	}
 
@@ -328,7 +328,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 			// Signing strips the TSIG RR, so a reused message goes out unsigned.
 			m := new(dns.Msg)
 			m.SetAxfr(dns.Fqdn(zone))
-			if shouldSignAXFR(r.insecure, r.gssTsig, r.insecureAXFR) {
+			if r.shouldSignAXFR() {
 				m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 			}
 
