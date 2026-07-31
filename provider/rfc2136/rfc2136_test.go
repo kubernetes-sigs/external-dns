@@ -553,6 +553,60 @@ func TestRfc2136GetRecords(t *testing.T) {
 	assert.True(t, contains(recs, "v2.foo.com"))
 }
 
+// gssTsigSpyStub wraps rfc2136Stub to capture the dns.Msg passed to IncomeTransfer,
+// so tests can verify that List() does not pre-set TSIG for the GSS-TSIG case.
+type gssTsigSpyStub struct {
+	rfc2136Stub
+	incomeTransferMsg *dns.Msg
+}
+
+func (r *gssTsigSpyStub) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
+	r.incomeTransferMsg = m
+	return r.rfc2136Stub.IncomeTransfer(m, nameserver)
+}
+
+func TestRfc2136GetRecordsGssTsig(t *testing.T) {
+	spy := &gssTsigSpyStub{}
+	err := spy.setOutput([]string{
+		"v1.foo.com 3600 A 1.2.3.4",
+		"v1.foo.com 3600 TXT \"heritage=external-dns,external-dns/owner=owner\"",
+	})
+	require.NoError(t, err)
+
+	tlsConfig := TLSConfig{}
+	p, err := newProvider([]string{""}, 0, []string{"foo.com"}, false, "", "", "", true, &endpoint.DomainFilter{}, false, 300*time.Second, true, "user", "pass", "REALM", 50, tlsConfig, "", spy)
+	require.NoError(t, err)
+
+	recs, err := p.Records(t.Context())
+	require.NoError(t, err)
+
+	assert.Len(t, recs, 2)
+	assert.True(t, contains(recs, "v1.foo.com"))
+
+	// List() must not pre-set TSIG when gssTsig is enabled;
+	// signing is deferred to the production IncomeTransfer method.
+	require.NotNil(t, spy.incomeTransferMsg)
+	assert.Nil(t, spy.incomeTransferMsg.IsTsig(), "List() must not set TSIG when gssTsig is enabled")
+}
+
+func TestRfc2136IncomeTransferGssTsigPath(t *testing.T) {
+	tlsConfig := TLSConfig{}
+	p, err := newProvider([]string{"127.0.0.1"}, 53, []string{"foo.com"}, false, "", "", "", true, &endpoint.DomainFilter{}, false, 300*time.Second, true, "user", "pass", "REALM", 50, tlsConfig, "", nil)
+	require.NoError(t, err)
+
+	rawProvider := p.(*rfc2136Provider)
+
+	m := new(dns.Msg)
+	m.SetAxfr(dns.Fqdn("foo.com"))
+
+	// Call IncomeTransfer directly to exercise the production GSS-TSIG path.
+	// Without a Kerberos server, negotiation fails; the error confirms
+	// the GSS-TSIG code path in IncomeTransfer was reached.
+	_, err = rawProvider.IncomeTransfer(m, "127.0.0.1:53")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to negotiate GSS-TSIG")
+}
+
 // Make sure the test version of SendMessage raises an error
 // if a zone update ever contains records outside of its zone
 // as the TestRfc2136ApplyChanges tests all assume this
