@@ -171,6 +171,18 @@ func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
 	return result
 }
 
+// ListIndexedAll is ListIndexed over several indexers, concatenated in the order given.
+func ListIndexedAll[T metav1.Object](indexers ...cache.Indexer) []T {
+	if len(indexers) == 1 {
+		return ListIndexed[T](indexers[0])
+	}
+	result := make([]T, 0)
+	for _, indexer := range indexers {
+		result = append(result, ListIndexed[T](indexer)...)
+	}
+	return result
+}
+
 // GetByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
 // It returns the object and an error if the retrieval or type assertion fails.
 // If the object does not exist, it returns the zero value of T and nil.
