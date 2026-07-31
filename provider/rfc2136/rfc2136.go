@@ -200,6 +200,10 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, in
 		r.tsigSecretAlg = secretAlgChecked
 	}
 
+	if insecureAXFR && axfr {
+		log.Warn("--rfc2136-insecure-axfr is set: zone transfers are unauthenticated")
+	}
+
 	log.Infof("Configured RFC2136 with zones '%v' and nameservers '%v'", r.zoneNames, hosts)
 	return r, nil
 }
