@@ -72,7 +72,7 @@ func NewKongTCPIngressSource(
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, informers.SingleNamespace(cfg.Namespaces), nil)
 	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
 
 	informers.MustSetTransform(kongTCPIngressInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](

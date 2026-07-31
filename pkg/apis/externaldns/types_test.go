@@ -43,7 +43,7 @@ var (
 		GlooNamespaces:                         []string{"gloo-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
-		Namespace:                              "",
+		Namespaces:                             nil,
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
 		FQDNTemplate:                           nil,
 		Compatibility:                          "",
@@ -141,7 +141,7 @@ var (
 		GlooNamespaces:                         []string{"gloo-not-system", "gloo-second-system"},
 		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
-		Namespace:                              "namespace",
+		Namespaces:                             []string{"namespace"},
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
 		IgnoreHostnameAnnotation:               true,
 		IgnoreNonHostNetworkPods:               true,
@@ -577,7 +577,7 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
 	assert.Equal(t, "/some/path", cfg.KubeConfig)
 	assert.Equal(t, 2*time.Second, cfg.KubeAPIRequestTimeout)
-	assert.Equal(t, "ns", cfg.Namespace)
+	assert.Equal(t, []string{"ns"}, cfg.Namespaces)
 	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
 	assert.Equal(t, "default", cfg.OCPRouterName)
 }
@@ -591,6 +591,67 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	require.NoError(t, cfg.ParseFlags(args))
 	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
+}
+
+func TestParseFlagsNamespaces(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "unset watches all namespaces",
+			want: nil,
+		},
+		{
+			name: "single value",
+			args: []string{"--namespace=team-a"},
+			want: []string{"team-a"},
+		},
+		{
+			name: "repeated flag",
+			args: []string{"--namespace=team-a", "--namespace=team-b"},
+			want: []string{"team-a", "team-b"},
+		},
+		{
+			name: "comma-separated list",
+			args: []string{"--namespace=team-a,team-b"},
+			want: []string{"team-a", "team-b"},
+		},
+		{
+			name: "both forms combined, with spaces and duplicates",
+			args: []string{"--namespace=team-a, team-b", "--namespace=team-b,team-c"},
+			want: []string{"team-a", "team-b", "team-c"},
+		},
+		{
+			name: "blank values are dropped",
+			args: []string{"--namespace=,team-a,"},
+			want: []string{"team-a"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewConfig()
+			require.NoError(t, cfg.ParseFlags(append([]string{"--provider=aws", "--source=service"}, tt.args...)))
+			assert.Equal(t, tt.want, cfg.Namespaces)
+		})
+	}
+}
+
+func TestParseFlagsNamespacesFromEnv(t *testing.T) {
+	t.Setenv("EXTERNAL_DNS_NAMESPACE", "team-a,team-b")
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service"}))
+
+	assert.Equal(t, []string{"team-a", "team-b"}, cfg.Namespaces)
+}
+
+func TestSourceSupportsMultipleNamespaces(t *testing.T) {
+	assert.True(t, SourceSupportsMultipleNamespaces("node"))
+	assert.False(t, SourceSupportsMultipleNamespaces("ingress"))
+	assert.False(t, SourceSupportsMultipleNamespaces("not-a-source"))
 }
 
 func TestPasswordsNotLogged(t *testing.T) {

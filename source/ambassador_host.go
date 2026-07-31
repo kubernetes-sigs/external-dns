@@ -88,7 +88,8 @@ func NewAmbassadorHostSource(
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	namespace := informers.SingleNamespace(cfg.Namespaces)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
 	informers.MustSetTransform(ambassadorHostInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
@@ -114,7 +115,7 @@ func NewAmbassadorHostSource(
 	return &ambassadorHostSource{
 		dynamicKubeClient:      dynamicKubeClient,
 		kubeClient:             kubeClient,
-		namespace:              cfg.Namespace,
+		namespace:              namespace,
 		annotationFilter:       cfg.AnnotationFilter,
 		ambassadorHostInformer: ambassadorHostInformer,
 		unstructuredConverter:  uc,

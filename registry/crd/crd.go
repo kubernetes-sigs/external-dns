@@ -60,7 +60,12 @@ type CRDRegistry struct {
 }
 
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
+	// Validation guarantees a single namespace with this registry.
+	namespace := ""
+	if len(cfg.Namespaces) > 0 {
+		namespace = cfg.Namespaces[0]
+	}
+	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
 }
 
 // NewCRDRegistry returns new CRDRegistry object backed by a controller-runtime

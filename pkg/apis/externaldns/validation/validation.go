@@ -19,6 +19,7 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,6 +75,32 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--create-ptr requires PTR in --managed-record-types")
 	}
 
+	if err := validateNamespaces(cfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateNamespaces rejects several --namespace values for sources watching a single one,
+// which would otherwise silently watch only the first.
+func validateNamespaces(cfg *externaldns.Config) error {
+	if len(cfg.Namespaces) < 2 {
+		return nil
+	}
+	var unsupported []string
+	for _, source := range cfg.Sources {
+		if !externaldns.SourceSupportsMultipleNamespaces(source) && !slices.Contains(unsupported, source) {
+			unsupported = append(unsupported, source)
+		}
+	}
+	if len(unsupported) > 0 {
+		return fmt.Errorf("--namespace accepts a single value with the following sources: %s", strings.Join(unsupported, ", "))
+	}
+	// The CRD registry stores its records in one namespace.
+	if cfg.Registry == externaldns.RegistryCRD {
+		return errors.New("--namespace accepts a single value with the crd registry")
+	}
 	return nil
 }
 

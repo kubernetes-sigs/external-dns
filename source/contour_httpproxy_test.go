@@ -99,7 +99,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 		context.TODO(),
 		fakeDynamicClient,
 		&Config{
-			Namespace:      "default",
+			Namespaces:     []string{"default"},
 			LabelFilter:    labels.Everything(),
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
@@ -1030,7 +1030,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 				t.Context(),
 				fakeDynamicClient,
 				&Config{
-					Namespace:                ti.targetNamespace,
+					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              labelFilter,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
@@ -1173,7 +1173,7 @@ func TestContourHTTPProxyLabelFilter(t *testing.T) {
 	}
 
 	src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{
-		Namespace:      "default",
+		Namespaces:     []string{"default"},
 		LabelFilter:    labels.SelectorFromSet(labels.Set{"app": "relevant"}),
 		TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
 	})

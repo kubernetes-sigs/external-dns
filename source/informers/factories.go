@@ -52,6 +52,12 @@ func NormalizeNamespaces(namespaces []string) []string {
 	return result
 }
 
+// SingleNamespace returns the only namespace to watch, NamespaceAll when there is none.
+// Used by sources watching a single namespace, which ValidateConfig guarantees.
+func SingleNamespace(namespaces []string) string {
+	return NormalizeNamespaces(namespaces)[0]
+}
+
 // Factories holds one informer factory per watched namespace, so that a tenant allowed to
 // list only its own namespaces still works. Request cluster-scoped resources from a single
 // factory: they ignore its namespace, so every factory would watch the same objects.

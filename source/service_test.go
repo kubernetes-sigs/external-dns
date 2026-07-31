@@ -1095,7 +1095,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 					AnnotationFilter:            parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:           tc.serviceTypesFilter,
 					Compatibility:               tc.compatibility,
-					Namespace:                   tc.targetNamespace,
+					Namespaces:                  []string{tc.targetNamespace},
 					ResolveLoadBalancerHostname: tc.resolveLoadBalancerHostname,
 					IgnoreHostnameAnnotation:    tc.ignoreHostnameAnnotation,
 					LabelFilter:                 sourceLabel,
@@ -1305,7 +1305,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labels.Everything(),
 				},
@@ -1600,7 +1600,7 @@ func TestClusterIpServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					PublishInternal:          true,
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labelSelector,
@@ -2457,7 +2457,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExposeInternalIPv6:       tc.exposeInternalIPv6,
 					ExcludeUnschedulable:     tc.ignoreUnscheduledNodes,
@@ -3359,7 +3359,7 @@ func TestHeadlessServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExposeInternalIPv6:       tc.exposeInternalIPv6,
 					LabelFilter:              labels.Everything(),
@@ -3485,7 +3485,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -3840,7 +3840,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			LabelFilter:          labels.Everything(),
 			ExcludeUnschedulable: true,
 		},
@@ -4287,7 +4287,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					LabelFilter:              labels.Everything(),
 					Compatibility:            tc.compatibility,
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
@@ -4494,7 +4494,7 @@ func TestExternalServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					Compatibility:            tc.compatibility,
 					ServiceTypeFilter:        tc.serviceTypeFilter,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExcludeUnschedulable:     true,
 					LabelFilter:              labels.Everything(),
@@ -4546,7 +4546,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 
 	client, err := NewServiceSource(b.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -4634,7 +4634,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
 				&Config{
-					Namespace:                      "default",
+					Namespaces:                     []string{"default"},
 					ServiceTypeFilter:              tc.svcFilter,
 					AlwaysPublishNotReadyAddresses: true,
 					LabelFilter:                    labels.Everything(),
@@ -4655,7 +4655,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 
 	svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
 		&Config{
-			Namespace:         "default",
+			Namespaces:        []string{"default"},
 			ServiceTypeFilter: serviceTypeFilter,
 			LabelFilter:       labels.Everything(),
 		},
@@ -4783,7 +4783,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	src, err := NewServiceSource(ctx, fakeClient,
 		&Config{
 			TemplateEngine:       templatetest.MustEngine(t, "{{.Name}}", "", "", false),
-			Namespace:            "default",
+			Namespaces:           []string{"default"},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -5012,7 +5012,7 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 	fakeClient := fake.NewClientset(svc)
 
 	src, err := NewServiceSource(ctx, fakeClient, &Config{
-		Namespace:   svc.Namespace,
+		Namespaces:  []string{svc.Namespace},
 		LabelFilter: labels.Everything(),
 	})
 	require.NoError(t, err)

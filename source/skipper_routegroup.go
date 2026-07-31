@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 )
 
@@ -225,15 +226,16 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 		apiServer = "https://" + strings.TrimSuffix(u.Host, ":443")
 	}
 
+	namespace := informers.SingleNamespace(cfg.Namespaces)
 	apiEndpoint := apiServer + fmt.Sprintf(routeGroupListResource, routeGroupVersion)
-	if cfg.Namespace != "" {
-		apiEndpoint = apiServer + fmt.Sprintf(routeGroupNamespacedResource, routeGroupVersion, cfg.Namespace)
+	if namespace != "" {
+		apiEndpoint = apiServer + fmt.Sprintf(routeGroupNamespacedResource, routeGroupVersion, namespace)
 	}
 
 	return &routeGroupSource{
 		cli:                      cli,
 		apiServer:                apiServer,
-		namespace:                cfg.Namespace,
+		namespace:                namespace,
 		apiEndpoint:              apiEndpoint,
 		annotationFilter:         cfg.AnnotationFilter,
 		labelSelector:            cfg.LabelFilter,

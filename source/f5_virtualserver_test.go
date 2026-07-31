@@ -682,7 +682,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			}
 			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        defaultF5VirtualServerNamespace,
+					Namespaces:       []string{defaultF5VirtualServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
 				})
@@ -842,7 +842,7 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 			}
 
 			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultF5VirtualServerNamespace,
+				Namespaces:       []string{defaultF5VirtualServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})

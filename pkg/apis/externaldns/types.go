@@ -54,7 +54,7 @@ type Config struct {
 	GlooNamespaces                                []string
 	SkipperRouteGroupVersion                      string
 	Sources                                       []string
-	Namespace                                     string
+	Namespaces                                    []string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
 	LabelFilter                                   string
@@ -309,7 +309,7 @@ var defaultConfig = &Config{
 	MetricsAddress:               ":7979",
 	MinEventSyncInterval:         5 * time.Second,
 	MinTTL:                       0,
-	Namespace:                    "",
+	Namespaces:                   []string{},
 	NAT64Networks:                []string{},
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
@@ -442,6 +442,21 @@ var allowedSources = []string{
 	"unstructured",
 }
 
+// multiNamespaceSources watch every namespace given to --namespace. The others watch at
+// most one, either because they ignore the flag or because they are not migrated yet.
+var multiNamespaceSources = []string{
+	"connector",
+	"empty",
+	"fake",
+	"gloo-proxy",
+	"node",
+}
+
+// SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
+func SourceSupportsMultipleNamespaces(source string) bool {
+	return slices.Contains(multiNamespaceSources, source)
+}
+
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
@@ -483,7 +498,26 @@ func (cfg *Config) ParseFlags(args []string) error {
 		return err
 	}
 	cfg.resolveDeprecatedFlags()
+	cfg.Namespaces = uniqueCommaSeparated(cfg.Namespaces)
 	return nil
+}
+
+// uniqueCommaSeparated expands the comma-separated values of a repeatable flag, dropping
+// blanks and duplicates. Kingpin only splits them when the value comes from an env var.
+func uniqueCommaSeparated(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	var result []string
+	for _, value := range values {
+		for item := range strings.SplitSeq(value, ",") {
+			item = strings.TrimSpace(item)
+			if _, ok := seen[item]; ok || item == "" {
+				continue
+			}
+			seen[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
@@ -541,7 +575,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector (default: all resources)", defaultConfig.LabelFilter, &cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)
-	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
+	b.StringsVar("namespace", "Limit resources queried for endpoints to specific namespaces; specify multiple times or as a comma-separated list (default: all namespaces)", defaultConfig.Namespaces, &cfg.Namespaces)
 	b.StringsVar("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)", nil, &cfg.NAT64Networks)
 	b.StringVar("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.", defaultConfig.OCPRouterName, &cfg.OCPRouterName)
 	b.StringVar("pod-source-domain", "Domain to use for pods records (optional)", defaultConfig.PodSourceDomain, &cfg.PodSourceDomain)

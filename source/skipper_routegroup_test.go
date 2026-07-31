@@ -229,7 +229,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 			t.Parallel()
 
 			config := Config{
-				Namespace:                tt.namespace,
+				Namespaces:               []string{tt.namespace},
 				SkipperRouteGroupVersion: tt.routeGroupVersion,
 				KubeAPIRequestTimeout:    time.Second,
 			}

@@ -439,7 +439,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			}
 			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        defaultF5TransportServerNamespace,
+					Namespaces:       []string{defaultF5TransportServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
 				})
@@ -598,7 +598,7 @@ func TestF5TransportServerIndexer(t *testing.T) {
 			}
 
 			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultF5TransportServerNamespace,
+				Namespaces:       []string{defaultF5TransportServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
