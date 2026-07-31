@@ -642,7 +642,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 
 			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        namespace,
+					Namespaces:       []string{namespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:      ti.labelSelector,
 				})
@@ -702,7 +702,7 @@ func TestAmbassadorHostSource_RealApiserverObject(t *testing.T) {
 	require.NoError(t, err)
 
 	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-		&Config{Namespace: "default", LabelFilter: labels.Everything()})
+		&Config{Namespaces: []string{"default"}, LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 
 	endpoints, err := source.Endpoints(t.Context())

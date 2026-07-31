@@ -63,7 +63,7 @@ func NewContourHTTPProxySource(
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of HTTPProxys in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, informers.SingleNamespace(cfg.Namespaces), nil)
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
 	informers.MustSetTransform(httpProxyInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](

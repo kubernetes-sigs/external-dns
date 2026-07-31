@@ -66,7 +66,7 @@ func NewOcpRouteSource(
 ) (Source, error) {
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(cfg.Namespace))
+	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(informers.SingleNamespace(cfg.Namespaces)))
 	informer := informerFactory.Route().V1().Routes()
 
 	informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*routev1.Route](
