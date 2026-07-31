@@ -154,7 +154,7 @@ func (cli *routeGroupClient) updateToken() {
 	}
 
 	cli.mu.Lock()
-	cli.token = string(token)
+	cli.token = strings.TrimSpace(string(token))
 	cli.mu.Unlock()
 }
 

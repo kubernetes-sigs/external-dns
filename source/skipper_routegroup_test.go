@@ -286,7 +286,7 @@ func TestNewRouteGroupClientLoadsCustomTokenFile(t *testing.T) {
 	t.Parallel()
 
 	tokenFile := filepath.Join(t.TempDir(), "token")
-	require.NoError(t, os.WriteFile(tokenFile, []byte("custom-token"), 0o600))
+	require.NoError(t, os.WriteFile(tokenFile, []byte("custom-token\n"), 0o600))
 
 	client := newRouteGroupClient("initial-token", tokenFile, time.Second)
 	t.Cleanup(func() { close(client.quit) })
@@ -304,7 +304,7 @@ func TestRouteGroupClientReloadsCustomTokenFile(t *testing.T) {
 	client := newRouteGroupClient("initial-token", tokenFile, time.Second)
 	t.Cleanup(func() { close(client.quit) })
 
-	require.NoError(t, os.WriteFile(tokenFile, []byte("rotated-file-token"), 0o600))
+	require.NoError(t, os.WriteFile(tokenFile, []byte("rotated-file-token\r\n"), 0o600))
 	client.updateToken()
 
 	assert.Equal(t, "rotated-file-token", client.getToken())
