@@ -1158,7 +1158,7 @@ func TestRfc2136MissingAXFRWarns(t *testing.T) {
 	}
 }
 
-func Test_attachTSIGSecret(t *testing.T) {
+func TestRFC2136ShouldSignAXFR(t *testing.T) {
 	tests := []struct {
 		name         string
 		insecure     bool
@@ -1167,39 +1167,71 @@ func Test_attachTSIGSecret(t *testing.T) {
 		want         bool
 	}{
 		{
-			name:         "secure default: attach TSIG",
+			name:         "no flags set signs the transfer",
 			insecure:     false,
 			gssTsig:      false,
 			insecureAXFR: false,
 			want:         true,
 		},
 		{
-			name:         "insecure-AXFR skips TSIG on zone transfer",
+			name:         "insecureAXFR alone leaves the transfer unsigned",
 			insecure:     false,
 			gssTsig:      false,
 			insecureAXFR: true,
 			want:         false,
 		},
 		{
-			name:         "insecure mode never attaches TSIG",
+			name:         "gssTsig alone leaves the transfer unsigned",
+			insecure:     false,
+			gssTsig:      true,
+			insecureAXFR: false,
+			want:         false,
+		},
+		{
+			name:         "gssTsig with insecureAXFR leaves the transfer unsigned",
+			insecure:     false,
+			gssTsig:      true,
+			insecureAXFR: true,
+			want:         false,
+		},
+		{
+			name:         "insecure alone leaves the transfer unsigned",
 			insecure:     true,
 			gssTsig:      false,
 			insecureAXFR: false,
 			want:         false,
 		},
 		{
-			name:         "gss-tsig manages its own auth",
-			insecure:     false,
+			name:         "insecure with insecureAXFR leaves the transfer unsigned",
+			insecure:     true,
+			gssTsig:      false,
+			insecureAXFR: true,
+			want:         false,
+		},
+		{
+			name:         "insecure with gssTsig leaves the transfer unsigned",
+			insecure:     true,
 			gssTsig:      true,
 			insecureAXFR: false,
+			want:         false,
+		},
+		{
+			name:         "all three set leaves the transfer unsigned",
+			insecure:     true,
+			gssTsig:      true,
+			insecureAXFR: true,
 			want:         false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := shouldSignAXFR(tt.insecure, tt.gssTsig, tt.insecureAXFR)
-			assert.Equal(t, tt.want, got)
+			r := &rfc2136Provider{
+				insecure:     tt.insecure,
+				gssTsig:      tt.gssTsig,
+				insecureAXFR: tt.insecureAXFR,
+			}
+			assert.Equal(t, tt.want, r.shouldSignAXFR())
 		})
 	}
 }
