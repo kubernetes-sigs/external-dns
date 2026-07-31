@@ -189,7 +189,8 @@ type Config struct {
 	RFC2136TSIGKeyName                            string
 	RFC2136TSIGSecret                             string `secure:"yes"`
 	RFC2136TSIGSecretAlg                          string
-	RFC2136TAXFR                                  bool
+	RFC2136AXFR                                   bool
+	RFC2136TAXFR                                  bool // deprecated, use RFC2136AXFR
 	RFC2136MinTTL                                 time.Duration
 	RFC2136LoadBalancingStrategy                  string
 	RFC2136BatchChangeSize                        int
@@ -341,6 +342,7 @@ var defaultConfig = &Config{
 	KubeAPIRequestTimeout:        time.Second * 30,
 	KubeAPIQPS:                   int(rest.DefaultQPS),
 	KubeAPIBurst:                 rest.DefaultBurst,
+	RFC2136AXFR:                  false,
 	RFC2136BatchChangeSize:       50,
 	RFC2136GSSTSIG:               false,
 	RFC2136Host:                  []string{""},
@@ -352,7 +354,7 @@ var defaultConfig = &Config{
 	RFC2136MinTTL:                0,
 	RFC2136Port:                  0,
 	RFC2136SkipTLSVerify:         false,
-	RFC2136TAXFR:                 true,
+	RFC2136TAXFR:                 false,
 	RFC2136TSIGKeyName:           "",
 	RFC2136TSIGSecret:            "",
 	RFC2136TSIGSecretAlg:         "",
@@ -490,10 +492,16 @@ func (cfg *Config) ParseFlags(args []string) error {
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
 // If both are explicitly set, --kube-api-request-timeout takes precedence.
+//
+// --rfc2136-tsig-axfr is OR'd into --rfc2136-axfr: either flag alone enables AXFR.
 func (cfg *Config) resolveDeprecatedFlags() {
 	if cfg.RequestTimeout != defaultConfig.RequestTimeout {
 		logrus.Warn("--request-timeout is deprecated, use --kube-api-request-timeout instead")
 		cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
+	}
+	if cfg.RFC2136TAXFR {
+		logrus.Warn("--rfc2136-tsig-axfr is deprecated, use --rfc2136-axfr instead")
+		cfg.RFC2136AXFR = true
 	}
 }
 
@@ -646,7 +654,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
 	b.StringVar("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecretAlg, &cfg.RFC2136TSIGSecretAlg)
-	b.BoolVar("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", false, &cfg.RFC2136TAXFR)
+	b.BoolVar("rfc2136-axfr", "When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records (without it ExternalDNS cannot read records and behaves as if --policy=upsert-only)", defaultConfig.RFC2136AXFR, &cfg.RFC2136AXFR)
+	b.BoolVar("rfc2136-tsig-axfr", "[DEPRECATED: use --rfc2136-axfr] When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records", defaultConfig.RFC2136TAXFR, &cfg.RFC2136TAXFR)
 	b.DurationVar("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this", defaultConfig.RFC2136MinTTL, &cfg.RFC2136MinTTL)
 	b.BoolVar("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)", defaultConfig.RFC2136GSSTSIG, &cfg.RFC2136GSSTSIG)
 	b.StringVar("rfc2136-kerberos-username", "When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)", defaultConfig.RFC2136KerberosUsername, &cfg.RFC2136KerberosUsername)
