@@ -1881,20 +1881,20 @@ func TestAddEventHandler_AllBranches(t *testing.T) {
 	}{
 		{"all nil", &traefikSource{}, 0},
 		{"all set", &traefikSource{
-			ingressRouteInformer:       fakeInformer,
-			oldIngressRouteInformer:    fakeInformer,
-			ingressRouteTcpInformer:    fakeInformer,
-			oldIngressRouteTcpInformer: fakeInformer,
-			ingressRouteUdpInformer:    fakeInformer,
-			oldIngressRouteUdpInformer: fakeInformer,
+			ingressRouteInformers:       singleInformer[informers.GenericInformer](fakeInformer),
+			oldIngressRouteInformers:    singleInformer[informers.GenericInformer](fakeInformer),
+			ingressRouteTcpInformers:    singleInformer[informers.GenericInformer](fakeInformer),
+			oldIngressRouteTcpInformers: singleInformer[informers.GenericInformer](fakeInformer),
+			ingressRouteUdpInformers:    singleInformer[informers.GenericInformer](fakeInformer),
+			oldIngressRouteUdpInformers: singleInformer[informers.GenericInformer](fakeInformer),
 		}, 6},
 		{"some set", &traefikSource{
-			ingressRouteInformer:       fakeInformer,
-			oldIngressRouteInformer:    fakeInformer,
-			ingressRouteTcpInformer:    nil,
-			oldIngressRouteTcpInformer: fakeInformer,
-			ingressRouteUdpInformer:    nil,
-			oldIngressRouteUdpInformer: nil,
+			ingressRouteInformers:       singleInformer[informers.GenericInformer](fakeInformer),
+			oldIngressRouteInformers:    singleInformer[informers.GenericInformer](fakeInformer),
+			ingressRouteTcpInformers:    nil,
+			oldIngressRouteTcpInformers: singleInformer[informers.GenericInformer](fakeInformer),
+			ingressRouteUdpInformers:    nil,
+			oldIngressRouteUdpInformers: nil,
 		}, 3},
 	}
 
@@ -1957,7 +1957,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			name: "IngressRoute",
 			gvr:  ingressRouteGVR,
 			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.ingressRouteInformer
+				return firstInformer(source.ingressRouteInformers)
 			},
 			enabledLegacy: false,
 		},
@@ -1965,7 +1965,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			name: "IngressRouteTCP",
 			gvr:  ingressRouteTCPGVR,
 			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.ingressRouteTcpInformer
+				return firstInformer(source.ingressRouteTcpInformers)
 			},
 			enabledLegacy: false,
 		},
@@ -1973,7 +1973,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			name: "IngressRouteUDP",
 			gvr:  ingressRouteUDPGVR,
 			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.ingressRouteUdpInformer
+				return firstInformer(source.ingressRouteUdpInformers)
 			},
 			enabledLegacy: false,
 		},
@@ -1981,7 +1981,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			name: "IngressRoute with legacy API group",
 			gvr:  oldIngressRouteGVR,
 			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.oldIngressRouteInformer
+				return firstInformer(source.oldIngressRouteInformers)
 			},
 			enabledLegacy: true,
 		},
@@ -1989,7 +1989,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			name: "IngressRouteTCP with legacy API group",
 			gvr:  oldIngressRouteTCPGVR,
 			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.oldIngressRouteTcpInformer
+				return firstInformer(source.oldIngressRouteTcpInformers)
 			},
 			enabledLegacy: true,
 		},
@@ -1997,7 +1997,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			name: "IngressRouteUDP with legacy API group",
 			gvr:  oldIngressRouteUDPGVR,
 			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.oldIngressRouteUdpInformer
+				return firstInformer(source.oldIngressRouteUdpInformers)
 			},
 			enabledLegacy: true,
 		},

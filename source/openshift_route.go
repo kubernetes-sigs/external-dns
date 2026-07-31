@@ -48,13 +48,13 @@ import (
 // +externaldns:source:description=Creates DNS entries from OpenShift Route resources
 // +externaldns:source:resources=Route.route.openshift.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type ocpRouteSource struct {
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	routeInformer            routeInformer.RouteInformer
+	routeInformers           *informers.Informers[routeInformer.RouteInformer]
 	ocpRouterName            string
 }
 
@@ -66,34 +66,38 @@ func NewOcpRouteSource(
 ) (Source, error) {
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(informers.SingleNamespace(cfg.Namespaces)))
-	informer := informerFactory.Route().V1().Routes()
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) extInformers.SharedInformerFactory {
+		return extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0*time.Second, extInformers.WithNamespace(namespace))
+	})
+	routeInformers := informers.Map(factories, func(_ string, factory extInformers.SharedInformerFactory) routeInformer.RouteInformer {
+		return factory.Route().V1().Routes()
+	})
 
-	informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*routev1.Route](
+	routeInformers.MustSetTransform(informers.TransformerWithOptions[*routev1.Route](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
-	informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*routev1.Route](
+	routeInformers.MustAddIndexers(informers.IndexerWithOptions[*routev1.Route](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*routev1.Route]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
+	routeInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
 	return &ocpRouteSource{
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		routeInformer:            informer,
+		routeInformers:           routeInformers,
 		ocpRouterName:            cfg.OCPRouterName,
 	}, nil
 }
@@ -103,14 +107,14 @@ func (ors *ocpRouteSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(ors.routeInformer.Informer(), eventHandlerFunc(handler))
+	ors.routeInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all OpenShift Route resources on all namespaces, unless an explicit namespace
 // is specified in ocpRouteSource.
 func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	ocpRoutes := informers.ListIndexed[*routev1.Route](ors.routeInformer.Informer().GetIndexer())
+	ocpRoutes := informers.ListIndexedAll[*routev1.Route](ors.routeInformers.Indexers()...)
 
 	var endpoints []*endpoint.Endpoint
 
