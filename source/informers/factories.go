@@ -151,6 +151,15 @@ func Map[T Factory, I SharedInformer](factories *Factories[T], build func(namesp
 	return &Informers[I]{namespaces: factories.namespaces, informers: result}
 }
 
+// Single wraps one informer as a collection watching every namespace, so that callers
+// holding a plain informer can use the same API.
+func Single[I SharedInformer](informer I) *Informers[I] {
+	return &Informers[I]{
+		namespaces: []string{v1.NamespaceAll},
+		informers:  map[string]I{v1.NamespaceAll: informer},
+	}
+}
+
 // Namespaces returns the namespaces the informers are watching, in iteration order.
 func (i *Informers[I]) Namespaces() []string {
 	return i.namespaces

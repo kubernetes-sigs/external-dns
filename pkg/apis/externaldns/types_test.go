@@ -660,7 +660,7 @@ func TestParseFlagsCRDRegistryNamespace(t *testing.T) {
 
 func TestSourceSupportsMultipleNamespaces(t *testing.T) {
 	assert.True(t, SourceSupportsMultipleNamespaces("node"))
-	assert.False(t, SourceSupportsMultipleNamespaces("ingress"))
+	assert.False(t, SourceSupportsMultipleNamespaces("istio-gateway"))
 	assert.False(t, SourceSupportsMultipleNamespaces("not-a-source"))
 }
 

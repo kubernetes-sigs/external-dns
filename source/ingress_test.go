@@ -1898,7 +1898,7 @@ func TestTransformerInIngressSource(t *testing.T) {
 	is, ok := src.(*ingressSource)
 	require.True(t, ok)
 
-	retrieved, err := is.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+	retrieved, err := informerFor(t, is.ingressInformers, ingress.Namespace).Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
 	require.NoError(t, err)
 
 	assert.Equal(t, ingress.Name, retrieved.Name)

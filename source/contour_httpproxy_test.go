@@ -1201,7 +1201,7 @@ func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
 
 	testDynamicInformerTransformHelper(t,
 		projectcontour.HTTPProxyGVR,
-		fakeDynamicClient, source.(*httpProxySource).httpProxyInformer,
+		fakeDynamicClient, informerFor(t, source.(*httpProxySource).httpProxyInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 		withRemovedStatusConditions(),

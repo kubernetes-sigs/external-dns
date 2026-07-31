@@ -516,7 +516,7 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 	testDynamicInformerTransformHelper(t,
 		kongGroupdVersionResource,
 		fakeDynamicClient,
-		source.(*kongTCPIngressSource).kongTCPIngressInformer,
+		informerFor(t, source.(*kongTCPIngressSource).kongTCPIngressInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)

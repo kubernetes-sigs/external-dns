@@ -46,13 +46,13 @@ import (
 // +externaldns:source:description=Creates DNS entries from unstructured Kubernetes resources
 // +externaldns:source:resources=Unstructured
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=false
 type unstructuredSource struct {
 	templateEngine template.Engine
-	informers      []kubeinformers.GenericInformer
+	informers      []*informers.Informers[kubeinformers.GenericInformer]
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
@@ -67,36 +67,35 @@ func NewUnstructuredFQDNSource(
 		return nil, err
 	}
 
-	// Create a single informer factory for all resources
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
-		dynamicClient,
-		0,
-		informers.SingleNamespace(cfg.Namespaces),
-		nil,
-	)
+	// Create one informer factory per watched namespace, shared by all resources
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicClient, 0, namespace, nil)
+	})
 
 	// Create informers for each resource
-	resourceInformers := make([]kubeinformers.GenericInformer, 0, len(gvrs))
+	resourceInformers := make([]*informers.Informers[kubeinformers.GenericInformer], 0, len(gvrs))
 	for _, gvr := range gvrs {
-		informer := informerFactory.ForResource(gvr)
+		resourceInformer := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+			return factory.ForResource(gvr)
+		})
 
 		// Add indexers for efficient lookups by namespace and labels (must be before AddEventHandler)
-		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		resourceInformer.MustAddIndexers(informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 		))
-		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		resourceInformer.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
 
-		informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
-		resourceInformers = append(resourceInformers, informer)
+		resourceInformer.MustAddEventHandler(informers.DefaultEventHandler())
+		resourceInformers = append(resourceInformers, resourceInformer)
 	}
 
-	informerFactory.Start(ctx.Done())
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	factories.Start(ctx.Done())
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -110,12 +109,14 @@ func NewUnstructuredFQDNSource(
 func (us *unstructuredSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	for _, informer := range us.informers {
-		resourceEndpoints, err := us.endpointsFromInformer(informer)
-		if err != nil {
-			return nil, err
+	for _, resourceInformer := range us.informers {
+		for _, informer := range resourceInformer.All() {
+			resourceEndpoints, err := us.endpointsFromInformer(informer)
+			if err != nil {
+				return nil, err
+			}
+			endpoints = append(endpoints, resourceEndpoints...)
 		}
-		endpoints = append(endpoints, resourceEndpoints...)
 	}
 
 	return endpoints, nil
@@ -165,8 +166,8 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 // AddEventHandler adds an event handler that is called when resources change.
 func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
-	for _, informer := range us.informers {
-		informers.MustAddEventHandler(informer.Informer(), eventHandlerFunc(handler))
+	for _, resourceInformer := range us.informers {
+		resourceInformer.MustAddEventHandler(eventHandlerFunc(handler))
 	}
 }
 

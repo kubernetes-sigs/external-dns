@@ -57,7 +57,7 @@ const (
 // +externaldns:source:description=Creates DNS entries based on Kubernetes Ingress resources
 // +externaldns:source:resources=Ingress
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
@@ -66,7 +66,7 @@ type ingressSource struct {
 	ingressClassNames        []string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	ingressInformer          netinformers.IngressInformer
+	ingressInformers         *informers.Informers[netinformers.IngressInformer]
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
 }
@@ -86,29 +86,33 @@ func NewIngressSource(
 			}
 		}
 	}
-	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
+	// Use shared informers to listen for add/update/delete of ingresses in the specified namespaces.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(informers.SingleNamespace(cfg.Namespaces)))
-	ingressInformer := informerFactory.Networking().V1().Ingresses()
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) kubeinformers.SharedInformerFactory {
+		return kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	})
+	ingressInformers := informers.Map(factories, func(_ string, factory kubeinformers.SharedInformerFactory) netinformers.IngressInformer {
+		return factory.Networking().V1().Ingresses()
+	})
 
-	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
+	ingressInformers.MustAddIndexers(informers.IndexerWithOptions[*networkv1.Ingress](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkv1.Ingress]),
 	))
 
-	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+	ingressInformers.MustSetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
+	ingressInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +121,7 @@ func NewIngressSource(
 		ingressClassNames:        cfg.IngressClassNames,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		ingressInformer:          ingressInformer,
+		ingressInformers:         ingressInformers,
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
 	}, nil
@@ -126,7 +130,7 @@ func NewIngressSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.filterByIngressClass(informers.ListIndexed[*networkv1.Ingress](sc.ingressInformer.Informer().GetIndexer()))
+	ingresses, err := sc.filterByIngressClass(informers.ListIndexedAll[*networkv1.Ingress](sc.ingressInformers.Indexers()...))
 	if err != nil {
 		return nil, err
 	}
@@ -312,5 +316,5 @@ func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.ingressInformer.Informer(), eventHandlerFunc(handler))
+	sc.ingressInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }

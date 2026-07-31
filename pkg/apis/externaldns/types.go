@@ -446,11 +446,22 @@ var allowedSources = []string{
 // multiNamespaceSources watch every namespace given to --namespace. The others watch at
 // most one, either because they ignore the flag or because they are not migrated yet.
 var multiNamespaceSources = []string{
+	"ambassador-host",
 	"connector",
+	"contour-httpproxy",
+	"crd",
 	"empty",
+	"f5-transportserver",
+	"f5-virtualserver",
 	"fake",
 	"gloo-proxy",
+	"ingress",
+	"kong-tcpingress",
 	"node",
+	"openshift-route",
+	"service",
+	"traefik-proxy",
+	"unstructured",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.

@@ -65,18 +65,17 @@ var (
 // +externaldns:source:description=Creates DNS entries from Ambassador Host resources
 // +externaldns:source:resources=Host.getambassador.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:events=false
 // +externaldns:source:provider-specific=true
 type ambassadorHostSource struct {
-	dynamicKubeClient      dynamic.Interface
-	kubeClient             kubernetes.Interface
-	namespace              string
-	annotationFilter       labels.Selector
-	ambassadorHostInformer kubeinformers.GenericInformer
-	unstructuredConverter  *unstructuredConverter
-	labelSelector          labels.Selector
+	dynamicKubeClient       dynamic.Interface
+	kubeClient              kubernetes.Interface
+	annotationFilter        labels.Selector
+	ambassadorHostInformers *informers.Informers[kubeinformers.GenericInformer]
+	unstructuredConverter   *unstructuredConverter
+	labelSelector           labels.Selector
 }
 
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
@@ -86,24 +85,27 @@ func NewAmbassadorHostSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
+	// Use shared informers to listen for add/update/delete of Host in the specified namespaces.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	namespace := informers.SingleNamespace(cfg.Namespaces)
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
-	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	})
+	ambassadorHostInformers := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+		return factory.ForResource(ambHostGVR)
+	})
 
-	informers.MustSetTransform(ambassadorHostInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+	ambassadorHostInformers.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(ambassadorHostInformer.Informer(), informers.DefaultEventHandler())
+	ambassadorHostInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -113,22 +115,25 @@ func NewAmbassadorHostSource(
 	}
 
 	return &ambassadorHostSource{
-		dynamicKubeClient:      dynamicKubeClient,
-		kubeClient:             kubeClient,
-		namespace:              namespace,
-		annotationFilter:       cfg.AnnotationFilter,
-		ambassadorHostInformer: ambassadorHostInformer,
-		unstructuredConverter:  uc,
-		labelSelector:          cfg.LabelFilter,
+		dynamicKubeClient:       dynamicKubeClient,
+		kubeClient:              kubeClient,
+		annotationFilter:        cfg.AnnotationFilter,
+		ambassadorHostInformers: ambassadorHostInformers,
+		unstructuredConverter:   uc,
+		labelSelector:           cfg.LabelFilter,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all Hosts in the source's namespace(s).
 func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	hosts, err := sc.ambassadorHostInformer.Lister().ByNamespace(sc.namespace).List(sc.labelSelector)
-	if err != nil {
-		return nil, err
+	var hosts []runtime.Object
+	for _, informer := range sc.ambassadorHostInformers.All() {
+		namespaced, err := informer.Lister().List(sc.labelSelector)
+		if err != nil {
+			return nil, err
+		}
+		hosts = append(hosts, namespaced...)
 	}
 
 	// Get a list of Ambassador Host resources
@@ -164,6 +169,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 		targets := annotations.TargetsFromTargetAnnotation(host.Annotations)
 		if len(targets) == 0 {
+			var err error
 			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 			if err != nil {
 				log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)

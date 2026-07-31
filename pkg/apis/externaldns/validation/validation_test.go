@@ -397,12 +397,12 @@ func TestValidateNamespaces(t *testing.T) {
 	}{
 		{
 			name:       "no namespace",
-			sources:    []string{"ingress"},
+			sources:    []string{"istio-gateway"},
 			namespaces: nil,
 		},
 		{
 			name:       "single namespace with a source watching one",
-			sources:    []string{"ingress"},
+			sources:    []string{"istio-gateway"},
 			namespaces: []string{"team-a"},
 		},
 		{
@@ -412,19 +412,19 @@ func TestValidateNamespaces(t *testing.T) {
 		},
 		{
 			name:        "several namespaces with a source watching one",
-			sources:     []string{"ingress"},
+			sources:     []string{"istio-gateway"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: ingress",
+			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway",
 		},
 		{
 			name:        "several namespaces report every unsupported source once",
-			sources:     []string{"node", "ingress", "crd", "ingress"},
+			sources:     []string{"ingress", "istio-gateway", "pod", "istio-gateway"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: ingress, crd",
+			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway, pod",
 		},
 		{
 			name:       "several namespaces with the crd registry, which has its own namespace flag",
-			sources:    []string{"node"},
+			sources:    []string{"service"},
 			namespaces: []string{"team-a", "team-b"},
 			registry:   externaldns.RegistryCRD,
 		},
