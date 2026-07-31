@@ -648,6 +648,16 @@ func TestParseFlagsNamespacesFromEnv(t *testing.T) {
 	assert.Equal(t, []string{"team-a", "team-b"}, cfg.Namespaces)
 }
 
+func TestParseFlagsCRDRegistryNamespace(t *testing.T) {
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service"}))
+	assert.Empty(t, cfg.CRDRegistryNamespace, "unset, so the current namespace is resolved at startup")
+
+	cfg = NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service", "--crd-registry-namespace=external-dns"}))
+	assert.Equal(t, "external-dns", cfg.CRDRegistryNamespace)
+}
+
 func TestSourceSupportsMultipleNamespaces(t *testing.T) {
 	assert.True(t, SourceSupportsMultipleNamespaces("node"))
 	assert.False(t, SourceSupportsMultipleNamespaces("ingress"))

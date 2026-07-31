@@ -423,11 +423,10 @@ func TestValidateNamespaces(t *testing.T) {
 			expectedErr: "--namespace accepts a single value with the following sources: ingress, crd",
 		},
 		{
-			name:        "several namespaces with the crd registry",
-			sources:     []string{"node"},
-			namespaces:  []string{"team-a", "team-b"},
-			registry:    externaldns.RegistryCRD,
-			expectedErr: "--namespace accepts a single value with the crd registry",
+			name:       "several namespaces with the crd registry, which has its own namespace flag",
+			sources:    []string{"node"},
+			namespaces: []string{"team-a", "team-b"},
+			registry:   externaldns.RegistryCRD,
 		},
 	}
 

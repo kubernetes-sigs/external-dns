@@ -97,10 +97,6 @@ func validateNamespaces(cfg *externaldns.Config) error {
 	if len(unsupported) > 0 {
 		return fmt.Errorf("--namespace accepts a single value with the following sources: %s", strings.Join(unsupported, ", "))
 	}
-	// The CRD registry stores its records in one namespace.
-	if cfg.Registry == externaldns.RegistryCRD {
-		return errors.New("--namespace accepts a single value with the crd registry")
-	}
 	return nil
 }
 

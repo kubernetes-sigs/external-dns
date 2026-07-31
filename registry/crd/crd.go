@@ -60,10 +60,10 @@ type CRDRegistry struct {
 }
 
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	// Validation guarantees a single namespace with this registry.
-	namespace := ""
-	if len(cfg.Namespaces) > 0 {
-		namespace = cfg.Namespaces[0]
+	namespace := cfg.CRDRegistryNamespace
+	if namespace == "" {
+		namespace = kubeclient.CurrentNamespace(cfg.KubeConfig)
+		log.Infof("Registry: --crd-registry-namespace not specified, using `%s`", namespace)
 	}
 	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
 }
@@ -77,7 +77,7 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, namesp
 
 	if namespace == "" {
 		log.Info("Registry: namespace not specified, using `default`")
-		namespace = "default"
+		namespace = metav1.NamespaceDefault
 	}
 
 	// Build the REST config from the shared client package: this registry may run
