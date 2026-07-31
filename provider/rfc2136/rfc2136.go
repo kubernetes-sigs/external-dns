@@ -119,6 +119,12 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		ClientCertFilePath:    cfg.TLSClientCert,
 		ClientCertKeyFilePath: cfg.TLSClientCertKey,
 	}
+
+	// Without AXFR records cannot be listed, so the plan never deletes.
+	if !cfg.RFC2136AXFR && cfg.Policy == "sync" {
+		log.Warn("--policy=sync is set but --rfc2136-axfr is not: ExternalDNS cannot list existing records and will never delete or update them")
+	}
+
 	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 

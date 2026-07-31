@@ -33,7 +33,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -1095,4 +1098,55 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	err = providerInstance.ApplyChanges(t.Context(), p)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
+}
+
+func TestRfc2136SyncWithoutAXFRWarns(t *testing.T) {
+	const warning = "--policy=sync is set but --rfc2136-axfr is not"
+
+	tests := []struct {
+		name     string
+		policy   string
+		axfr     bool
+		wantWarn bool
+	}{
+		{
+			name:     "sync without axfr warns",
+			policy:   "sync",
+			axfr:     false,
+			wantWarn: true,
+		},
+		{
+			name:     "sync with axfr is silent",
+			policy:   "sync",
+			axfr:     true,
+			wantWarn: false,
+		},
+		{
+			name:     "upsert-only without axfr is silent",
+			policy:   "upsert-only",
+			axfr:     false,
+			wantWarn: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			cfg := &externaldns.Config{
+				Policy:          tt.policy,
+				RFC2136Host:     []string{"rfc2136-host"},
+				RFC2136Insecure: true,
+				RFC2136AXFR:     tt.axfr,
+			}
+			_, err := New(t.Context(), cfg, &endpoint.DomainFilter{})
+			require.NoError(t, err)
+
+			if tt.wantWarn {
+				logtest.TestHelperLogContains(warning, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(warning, hook, t)
+			}
+		})
+	}
 }
