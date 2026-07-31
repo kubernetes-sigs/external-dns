@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add value `.service.enabled` to enable the creation of the Kubernetes service.
 - Add value `replicaCount` to set the number of `external-dns` replicas (bounded to `0` or `1`, since external-dns does not support leader election). [#6503](https://github.com/kubernetes-sigs/external-dns/pull/6503) _@yugstar_
+- Add value `.crds.install` to control whether the `DNSEndpoint` `CustomResourceDefinition` is installed. Defaults to `true`; set to `false` on all but one release when running multiple `external-dns` releases (e.g. one per provider) in the same cluster to avoid the CRD being installed more than once. Note: because the CRD is now rendered from `templates/`, Helm may attempt to update it on upgrade and will delete it on uninstall unless it is marked with `helm.sh/resource-policy: keep`.
 
 ### Changed
 

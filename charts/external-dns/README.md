@@ -98,6 +98,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | annotationPrefix | string | `nil` | Annotation prefix for external-dns annotations (useful for split horizon DNS with multiple instances). |
 | automountServiceAccountToken | bool | `true` | Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`. |
 | commonLabels | object | `{}` | Labels to add to all chart resources. |
+| crds.install | bool | `true` | If `true`, install the `DNSEndpoint` `CustomResourceDefinition`. Set this to `false` on all but one release when running multiple `external-dns` releases (e.g. one per provider) in the same cluster, to avoid the CRD being installed more than once. |
 | deploymentAnnotations | object | `{}` | Annotations to add to the `Deployment`. |
 | deploymentStrategy | object | `{"type":"Recreate"}` | [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy). |
 | dnsConfig | object | `nil` | [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used. |

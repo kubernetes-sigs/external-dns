@@ -64,6 +64,10 @@ rbac:  # @schema additionalProperties: true
   # -- Additional rules to add to the `ClusterRole`.
   additionalPermissions: []
 
+crds:
+  # -- If `true`, install the `DNSEndpoint` `CustomResourceDefinition`. Set this to `false` on all but one release when running multiple `external-dns` releases (e.g. one per provider) in the same cluster, to avoid the CRD being installed more than once.
+  install: true
+
 # -- Number of replicas of the `external-dns` `Deployment`. external-dns does not
 # support leader election, so this must be `0` or `1` to avoid duplicate or
 # conflicting DNS record updates. Set to `0` to scale the `Deployment` down.

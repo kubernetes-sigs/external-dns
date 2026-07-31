@@ -31,6 +31,15 @@
       "description": "Labels to add to all chart resources.",
       "type": "object"
     },
+    "crds": {
+      "type": "object",
+      "properties": {
+        "install": {
+          "description": "If `true`, install the `DNSEndpoint` `CustomResourceDefinition`. Set this to `false` on all but one release when running multiple `external-dns` releases (e.g. one per provider) in the same cluster, to avoid the CRD being installed more than once.",
+          "type": "boolean"
+        }
+      }
+    },
     "deploymentAnnotations": {
       "description": "Annotations to add to the `Deployment`.",
       "type": "object"
