@@ -254,8 +254,17 @@ source events (`--events`), throttled by `--min-event-sync-interval` exactly as 
 
 #### Routing Endpoints to a Provider
 
-The shared source produces the full desired endpoint set once per sync. Each pipeline selects the subset
-it should manage using a **two-tier rule** (explicit reference wins, domain match is the fallback):
+Routing is a **single shared pass owned by the pipeline manager**, not a filter each pipeline applies to
+itself: a pipeline only sees its own `spec.domainFilter` and cannot tell that another provider matches the
+same record, which is what [Conflict Resolution](#conflict-resolution) needs.
+
+The manager holds every `DNSProvider` / `ClusterDNSProvider` spec, so on each shared-source refresh it
+builds a **routing table** (`endpoint → []pipeline`) over the full pre-merge endpoint set and publishes it
+as an immutable snapshot. Pipelines keep their independent loops and read their own subset from the current
+snapshot when their `RunOnce` fires — the snapshot is rebuilt on source and CRD events, not per pipeline
+tick, so pipelines on different schedules route consistently.
+
+The table is built with a **two-tier rule** (explicit reference wins, domain match is the fallback):
 
 1. **Explicit reference** — a source resource may name one or more providers via annotation:
 
@@ -272,9 +281,9 @@ it should manage using a **two-tier rule** (explicit reference wins, domain matc
    through several providers (Story 2). A namespaced resource may only reference `DNSProvider`s in its own
    namespace; it may reference any `ClusterDNSProvider`.
 
-2. **Domain match (fallback)** — when no reference annotation is present, the record is routed to every
-   provider whose `spec.domainFilter` matches the record's DNS name. If exactly one matches, it is
-   selected; if several match, see [Conflict Resolution](#conflict-resolution).
+2. **Domain match (fallback)** — when no reference annotation is present, the manager evaluates the
+   record's DNS name against every provider's `spec.domainFilter`. The record is routed **only when
+   exactly one** provider matches — see [Conflict Resolution](#conflict-resolution).
 
 This keeps **zero-annotation flows working** (records land on the provider that owns their zone) while
 giving explicit control where needed.
@@ -321,14 +330,17 @@ the cluster to prevent silent record takeover.
 
 #### Conflict Resolution
 
-When two providers match the same record by **domain** (no explicit reference), this is ambiguous. Rules:
+When two providers match the same record by **domain** (no explicit reference), this is ambiguous. There is
+no winner. Rules:
 
-- **Disjoint `domainFilter`s** are the recommended configuration; the validating webhook **warns** on
-  overlapping include filters across providers of the same scope.
+- **Disjoint `domainFilter`s** are the recommended configuration; the validating webhook **warns** at
+  admission on overlapping include filters across providers of the same scope. That is a static check on
+  specs, so the routing pass repeats it per record to catch filters that only collide for some names.
 - For genuine overlap (e.g. split-horizon by design), users **must** use the explicit reference
-  annotation; implicit domain match selects **at most one** provider.
-- If overlap remains unresolved, the record is **skipped** for the ambiguous providers and a `Warning`
-  event + metric is emitted, rather than published twice non-deterministically.
+  annotation — the only way to publish one record through several providers.
+- On several domain matches the record is **published by none of them**, and the shared routing pass emits
+  a `Warning` event on the source resource plus a metric naming the contenders — rather than publishing
+  twice or picking one non-deterministically.
 
 #### Status and Observability
 
@@ -373,8 +385,10 @@ phase 6 performs the breaking flag removal at the major-version boundary:
 2. **Per-pipeline credential/config boundary** — add a per-pipeline credential source at the provider
    factory boundary; synthesize the source from `spec`. *Acceptance*: two same-type pipelines with
    distinct credentials run concurrently; no global-env mutation. Unit-tested without K8s.
-3. **Pipeline manager** — watch CRDs, build/teardown pipelines via existing factories, shared source store.
-   Domain-match routing only.
+3. **Pipeline manager** — watch CRDs, build/teardown pipelines via existing factories, shared source store,
+   and the shared routing pass (routing-table snapshot rebuilt on source/CRD events). Domain-match routing
+   only. *Acceptance*: a record matched by two providers' `domainFilter`s is published by neither and
+   raises a `Warning` + metric; pipelines on different tick schedules read the same snapshot.
 4. **Explicit reference annotations + split-horizon** — pre-merge two-tier routing, list references.
    *Acceptance*: routing reads provenance from `RefObjects` before `MergeEndpoints`; conflicting refs on a
    merged name are skipped + warned; namespaced references enforced against the referencing object.
