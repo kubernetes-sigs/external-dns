@@ -2,10 +2,14 @@ name: end to end test
 
 on:
   push:
-    branches:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
   workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

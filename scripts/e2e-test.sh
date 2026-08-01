@@ -7,11 +7,14 @@ KIND_VERSION="0.30.0"
 ALPINE_VERSION="3.22"
 KUBECTL_VERSION="1.35.0"
 
+# curl with retries, so transient network errors do not fail the whole run
+CURL="curl --fail --silent --show-error --location --retry 5 --retry-delay 5 --retry-connrefused --retry-all-errors --connect-timeout 10"
+
 echo "Starting end-to-end tests for external-dns with local provider..."
 
 # Install kind
 echo "Installing kind..."
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64
+${CURL} -o ./kind https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 
@@ -31,13 +34,13 @@ trap cleanup EXIT
 
 # Install kubectl
 echo "Installing kubectl..."
-curl -LO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+${CURL} -O "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/kubectl
 
 # Install ko
 echo "Installing ko..."
-curl -sSfL "https://github.com/ko-build/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_linux_x86_64.tar.gz" > ko.tar.gz
+${CURL} -o ko.tar.gz "https://github.com/ko-build/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_linux_x86_64.tar.gz"
 tar xzf ko.tar.gz ko
 chmod +x ./ko
 sudo mv ko /usr/local/bin/ko
