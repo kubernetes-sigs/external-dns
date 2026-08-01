@@ -122,7 +122,7 @@ spec:
                           Targets are the values the DNS record points to. Leaving it empty is only
                           meaningful when --default-targets is configured.
                         items:
-                          maxLength: 1024
+                          maxLength: 255
                           minLength: 1
                           type: string
                         maxItems: 100
@@ -132,10 +132,8 @@ spec:
                       - recordType
                     type: object
                     x-kubernetes-validations:
-                      - message: SRV targets must be '<priority> <weight> <port> <host>' and the host must be absolute (end with a dot), e.g. '10 5 5060 sip.example.com.'
-                        rule: self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.matches('^[0-9]{1,5} [0-9]{1,5} [0-9]{1,5} [^ ]+[.]$'))
-                      - message: MX targets must be '<preference> <host>', e.g. '10 mail.example.com'
-                        rule: self.recordType != 'MX' || !has(self.targets) || self.targets.all(t, t.matches('^[0-9]{1,5} [^ ]+$'))
+                      - message: SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'
+                        rule: self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
                       - message: NAPTR targets must be absolute and end with a dot
                         rule: self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
                       - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa

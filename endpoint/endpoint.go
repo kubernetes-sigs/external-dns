@@ -85,10 +85,11 @@ func (ttl TTL) IsConfigured() bool {
 }
 
 // Targets is a representation of a list of targets for an endpoint.
-// The bounds keep the CEL rules on Endpoint within the API server's cost budget.
+// The bounds keep the CEL rules on Endpoint within the API server's cost budget;
+// 255 is the longest single character-string a DNS record can carry (RFC 1035 §3.3).
 // +kubebuilder:validation:MaxItems=100
 // +kubebuilder:validation:items:MinLength=1
-// +kubebuilder:validation:items:MaxLength=1024
+// +kubebuilder:validation:items:MaxLength=255
 type Targets []string
 
 // MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
@@ -273,11 +274,16 @@ type ObjectRef = events.ObjectReference
 // being silently dropped on a later reconcile. They cover only record types
 // with an unambiguous target grammar: A/AAAA are left alone because
 // provider-native alias records legitimately carry a hostname target.
+//
+// The rules avoid matches(): the API server estimates a regex rule's admission
+// cost as maxItems x maxLength x regex size, which blows the per-schema budget
+// for a list of targets. SRV and MX grammar is therefore left to
+// Targets.ValidateSRVRecord / ValidateMXRecord, surfaced through the Accepted
+// condition and the RecordInvalid event rather than rejected at apply time.
 
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.matches('^[0-9]{1,5} [0-9]{1,5} [0-9]{1,5} [^ ]+[.]$'))",message="SRV targets must be '<priority> <weight> <port> <host>' and the host must be absolute (end with a dot), e.g. '10 5 5060 sip.example.com.'"
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'MX' || !has(self.targets) || self.targets.all(t, t.matches('^[0-9]{1,5} [^ ]+$'))",message="MX targets must be '<preference> <host>', e.g. '10 mail.example.com'"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'"
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="NAPTR targets must be absolute and end with a dot"
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa"
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) == 1",message="CNAME records accept exactly one target"

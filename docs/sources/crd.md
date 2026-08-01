@@ -142,15 +142,18 @@ mistakes surface immediately instead of being dropped during a later reconcile:
 - `recordType` must be one of `A`, `AAAA`, `CNAME`, `TXT`, `SRV`, `NS`, `PTR`, `MX`, `NAPTR`.
 - `recordTTL` must be between `0` and `2147483647` (RFC 2181 §8). `0` means "unset" —
   the provider applies its own default.
-- `SRV` targets must read `<priority> <weight> <port> <host>` with an absolute host,
-  e.g. `10 5 5060 sip.example.com.`.
-- `MX` targets must read `<preference> <host>`, e.g. `10 mail.example.com`.
-- `NAPTR` targets must be absolute (end with a dot).
+- Each target is between 1 and 255 characters, and an endpoint carries at most 100.
+- `SRV` and `NAPTR` targets must be absolute (end with a dot).
 - `PTR` records must use a `dnsName` under `.in-addr.arpa` or `.ip6.arpa`.
 - `CNAME` records accept exactly one target.
 
 `A` and `AAAA` targets are deliberately unconstrained, because provider-native alias
 records legitimately point at a hostname rather than an IP.
+
+The full `SRV` (`<priority> <weight> <port> <host>`) and `MX` (`<preference> <host>`)
+grammars are not in the schema: expressing them needs a regex, which exceeds the API
+server's admission cost budget. They are checked when external-dns reads the object, and
+surface as an `Invalid` [status condition](#status) rather than an `apply` error.
 
 ### Status
 
