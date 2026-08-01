@@ -42,6 +42,15 @@ type EventEmitter interface {
 	Add(...Event)
 }
 
+// discardEmitter drops every event. It is what callers get when --events-emit
+// selected nothing, so they never have to branch on a nil emitter.
+type discardEmitter struct{}
+
+func (discardEmitter) Add(...Event) {}
+
+// Discard is an EventEmitter that emits nothing.
+var Discard EventEmitter = discardEmitter{}
+
 type Controller struct {
 	client          v1.EventsV1Interface
 	queue           workqueue.TypedRateLimitingInterface[*eventsv1.Event]

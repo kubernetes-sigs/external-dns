@@ -37,13 +37,19 @@ import (
 )
 
 const (
-	ActionCreate  Action = "Created"
-	ActionUpdate  Action = "Updated"
-	ActionDelete  Action = "Deleted"
-	ActionFailed  Action = "FailedSync"
+	ActionCreate Action = "Created"
+	ActionUpdate Action = "Updated"
+	ActionDelete Action = "Deleted"
+	ActionFailed Action = "FailedSync"
+	// ActionRejected is used when a source refuses to plan a record that a user
+	// declared, i.e. the record never reaches the provider.
+	ActionRejected Action = "Rejected"
+
 	RecordReady   Reason = "RecordReady"
 	RecordDeleted Reason = "RecordDeleted"
 	RecordError   Reason = "RecordError"
+	// RecordInvalid reports a record that failed source-level validation.
+	RecordInvalid Reason = "RecordInvalid"
 
 	EventTypeNormal  EventType = EventType(apiv1.EventTypeNormal)
 	EventTypeWarning EventType = EventType(apiv1.EventTypeWarning)
@@ -162,6 +168,14 @@ func NewEventFromEndpoint(ep EndpointInfo, a Action, r Reason) Event {
 	}
 }
 
+// NewWarningEvent is NewEvent for conditions the user should act on, such as a
+// record external-dns refused to plan.
+func NewWarningEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
+	event := NewEvent(obj, msg, a, r)
+	event.eType = EventTypeWarning
+	return event
+}
+
 // Action returns the action associated with the event (e.g. Created, Updated, Deleted).
 func (e *Event) Action() Action {
 	return e.action
@@ -264,8 +278,9 @@ func WithEmitEvents(events []string) ConfigOption {
 	return func(c *Config) {
 		if len(events) > 0 {
 			c.emitEvents = sets.New[Reason]()
+			known := []string{string(RecordReady), string(RecordDeleted), string(RecordError), string(RecordInvalid)}
 			for _, event := range events {
-				if slices.Contains([]string{string(RecordReady), string(RecordError)}, event) {
+				if slices.Contains(known, event) {
 					c.emitEvents.Insert(Reason(event))
 				}
 			}

@@ -85,6 +85,10 @@ func (ttl TTL) IsConfigured() bool {
 }
 
 // Targets is a representation of a list of targets for an endpoint.
+// The bounds keep the CEL rules on Endpoint within the API server's cost budget.
+// +kubebuilder:validation:MaxItems=100
+// +kubebuilder:validation:items:MinLength=1
+// +kubebuilder:validation:items:MaxLength=1024
 type Targets []string
 
 // MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
@@ -233,11 +237,20 @@ func (t Targets) IsLess(o Targets) bool {
 
 // ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
 type ProviderSpecificProperty struct {
-	Name  string `json:"name,omitempty"`
+	// Name of the provider-specific property. Accepted names are provider
+	// dependent; see the tutorial for the provider in use.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Name string `json:"name,omitempty"`
+	// Value of the provider-specific property.
+	// +optional
+	// +kubebuilder:validation:MaxLength=1024
 	Value string `json:"value,omitempty"`
 }
 
 // ProviderSpecific holds configuration which is specific to individual DNS providers
+// +kubebuilder:validation:MaxItems=100
 type ProviderSpecific []ProviderSpecificProperty
 
 // EndpointKey is the type of a map key for separating endpoints or targets.
@@ -255,18 +268,44 @@ func (ep EndpointKey) String() string {
 
 type ObjectRef = events.ObjectReference
 
+// The CEL rules on Endpoint mirror the Go checks in CheckEndpoint and
+// source/crd.go, so a malformed record is rejected at apply time instead of
+// being silently dropped on a later reconcile. They cover only record types
+// with an unambiguous target grammar: A/AAAA are left alone because
+// provider-native alias records legitimately carry a hostname target.
+
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.matches('^[0-9]{1,5} [0-9]{1,5} [0-9]{1,5} [^ ]+[.]$'))",message="SRV targets must be '<priority> <weight> <port> <host>' and the host must be absolute (end with a dot), e.g. '10 5 5060 sip.example.com.'"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'MX' || !has(self.targets) || self.targets.all(t, t.matches('^[0-9]{1,5} [^ ]+$'))",message="MX targets must be '<preference> <host>', e.g. '10 mail.example.com'"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="NAPTR targets must be absolute and end with a dot"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) == 1",message="CNAME records accept exactly one target"
 type Endpoint struct {
-	// The hostname of the DNS record
+	// DNSName is the hostname of the DNS record.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$`
 	DNSName string `json:"dnsName,omitempty"`
-	// The targets the DNS record points to
+	// Targets are the values the DNS record points to. Leaving it empty is only
+	// meaningful when --default-targets is configured.
+	// +optional
 	Targets Targets `json:"targets,omitempty"`
-	// RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
+	// RecordType is the DNS record type.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=A;AAAA;CNAME;TXT;SRV;NS;PTR;MX;NAPTR
 	RecordType string `json:"recordType,omitempty"`
-	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+	// SetIdentifier distinguishes multiple records with the same name and type
+	// (e.g. Route53 records with routing policies other than 'simple').
+	// +optional
+	// +kubebuilder:validation:MaxLength=255
 	SetIdentifier string `json:"setIdentifier,omitempty"`
-	// TTL for the record
+	// RecordTTL is the TTL of the record in seconds. 0 means "not set" and lets
+	// the provider apply its own default. The upper bound is the RFC 2181 §8 maximum.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=2147483647
 	RecordTTL TTL `json:"recordTTL,omitempty"`
 	// Labels stores labels defined for the Endpoint
 	// +optional

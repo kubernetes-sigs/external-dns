@@ -17,8 +17,12 @@ limitations under the License.
 package controller
 
 import (
+	"context"
+
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // emitChangeEvent emits a Kubernetes event for each DNS record change.
@@ -39,5 +43,39 @@ func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reas
 	}
 	for _, ep := range ch.Delete {
 		e.Add(events.NewEventFromEndpoint(ep, events.ActionDelete, deleteReason))
+	}
+}
+
+// reportSyncStatus tells every status-reporting source the outcome of the apply,
+// so the Kubernetes objects that produced the plan can show whether the provider
+// programmed them. applyErr is nil on success.
+func reportSyncStatus(ctx context.Context, reporters []source.StatusReporter, ch *plan.Changes, applyErr error) {
+	if len(reporters) == 0 {
+		return
+	}
+
+	// Endpoints merged from several objects carry several refs, and one object
+	// usually contributes several endpoints, so dedupe by ObjectReference.Key.
+	seen := map[string]*events.ObjectReference{}
+	for _, endpoints := range [][]*endpoint.Endpoint{ch.Create, ch.UpdateNew, ch.Delete} {
+		for _, ep := range endpoints {
+			for _, ref := range ep.RefObjects() {
+				if ref != nil {
+					seen[ref.Key()] = ref
+				}
+			}
+		}
+	}
+	if len(seen) == 0 {
+		return
+	}
+
+	refs := make([]*events.ObjectReference, 0, len(seen))
+	for _, ref := range seen {
+		refs = append(refs, ref)
+	}
+
+	for _, reporter := range reporters {
+		reporter.ReportStatus(ctx, refs, applyErr)
 	}
 }
