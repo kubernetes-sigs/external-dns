@@ -164,12 +164,12 @@ examplednsrecord   1           True       Programmed   2m
 
 Two conditions are set:
 
-| Condition  | Reason       | Meaning                                                            |
-|------------|--------------|--------------------------------------------------------------------|
-| `Accepted` | `Accepted`   | Every endpoint in `spec` was taken into the external-dns plan.      |
+| Condition  | Reason       | Meaning                                                                     |
+|------------|--------------|-----------------------------------------------------------------------------|
+| `Accepted` | `Accepted`   | Every endpoint in `spec` was taken into the external-dns plan.              |
 | `Accepted` | `Invalid`    | At least one endpoint was refused; the message names the index and the fix. |
-| `Ready`    | `Programmed` | The DNS provider applied the records.                              |
-| `Ready`    | `Failed`     | The provider rejected the batch; the message carries its error.     |
+| `Ready`    | `Programmed` | The DNS provider applied the records.                                       |
+| `Ready`    | `Failed`     | The provider rejected the batch; the message carries its error.             |
 
 `status.observedGeneration` tracks the last `spec` external-dns processed, and
 `status.endpoints` counts the endpoints that entered the plan.
@@ -203,7 +203,7 @@ external-dns --source=crd \
   --managed-record-types=NS
 ```
 
-* Example for record type `A`
+- Example for record type `A`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -219,7 +219,7 @@ spec:
     - 10.0.0.1
 ```
 
-* Example for record type `CNAME`
+- Example for record type `CNAME`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -237,7 +237,7 @@ spec:
 
 > **Note:** CNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
 
-* Example for record type `NS`
+- Example for record type `NS`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
