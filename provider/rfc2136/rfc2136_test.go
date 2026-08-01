@@ -1100,8 +1100,8 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }
 
-func TestRfc2136SyncWithoutAXFRWarns(t *testing.T) {
-	const warning = "--policy=sync is set but --rfc2136-axfr is not"
+func TestRfc2136MissingAXFRWarns(t *testing.T) {
+	const warning = "--rfc2136-axfr is not set"
 
 	tests := []struct {
 		name     string
@@ -1122,8 +1122,14 @@ func TestRfc2136SyncWithoutAXFRWarns(t *testing.T) {
 			wantWarn: false,
 		},
 		{
-			name:     "upsert-only without axfr is silent",
+			name:     "upsert-only without axfr warns",
 			policy:   "upsert-only",
+			axfr:     false,
+			wantWarn: true,
+		},
+		{
+			name:     "create-only without axfr is silent",
+			policy:   "create-only",
 			axfr:     false,
 			wantWarn: false,
 		},
