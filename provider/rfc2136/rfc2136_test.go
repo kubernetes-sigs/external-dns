@@ -50,6 +50,7 @@ type rfc2136Stub struct {
 	randGen               *rand.Rand
 	lastNameserver        string
 	loadBalancingStrategy string
+	m                     *dns.Msg
 }
 
 func newStub() *rfc2136Stub {
@@ -152,6 +153,7 @@ func (r *rfc2136Stub) setOutput(output []string) error {
 }
 
 func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
+	r.m = m
 	outChan := make(chan *dns.Envelope)
 	go func() {
 		for _, e := range r.output {
@@ -178,6 +180,17 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, 
 	}()
 
 	return outChan, nil
+}
+
+func createRfc2136StubProviderWithoutSignedAXFR(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+	return newProvider([]string{""}, 0, zoneNames, false, true, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error) {
@@ -1154,6 +1167,42 @@ func TestRfc2136MissingAXFRWarns(t *testing.T) {
 			} else {
 				logtest.TestHelperLogNotContains(warning, hook, t)
 			}
+		})
+	}
+}
+
+func TestRFC2136ListInsecureAXFR(t *testing.T) {
+	tests := []struct {
+		name       string
+		providerFn func(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error)
+		want       bool
+	}{
+		{
+			name:       "insecure-axfr sends the AXFR request unsigned",
+			providerFn: createRfc2136StubProviderWithoutSignedAXFR,
+			want:       false,
+		},
+		{
+			name:       "without insecure-axfr the AXFR request carries TSIG",
+			providerFn: createRfc2136StubProvider,
+			want:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := newStub()
+			p, err := tt.providerFn(s)
+			require.NoError(t, err)
+
+			_, err = p.Records(t.Context())
+			require.NoError(t, err)
+
+			if tt.want {
+				require.NotNil(t, s.m.IsTsig(), "TSIG should have been set")
+				return
+			}
+			require.Nil(t, s.m.IsTsig(), "TSIG should not been set")
 		})
 	}
 }
