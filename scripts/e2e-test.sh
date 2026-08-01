@@ -9,7 +9,7 @@ KUBECTL_VERSION="1.35.0"
 
 echo "Starting end-to-end tests for external-dns with local provider..."
 
-CURL_RETRY_OPTS="--retry 5 --retry-all-errors"
+CURL_RETRY_OPTS="--retry 5 --retry-all-errors --retry-max-time 60"
 
 # Install kind
 echo "Installing kind..."
