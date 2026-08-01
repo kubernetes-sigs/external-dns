@@ -3,8 +3,6 @@
 Multiple ExternalDNS instances — typically one per cluster — may need to publish the same hostname, for
 failover clusters, blue/green rollouts, or multi-region deployments.
 
-This page covers the supported patterns and the one case that is not supported.
-
 - [Pattern A](#pattern-a-per-cluster-hostnames-plus-an-aggregating-record) — per-cluster hostnames plus an
   aggregating record. Any provider.
 - [Pattern B](#pattern-b-one-owning-cluster-others-follow) — one owning cluster, the others stay out. Any provider.
@@ -18,12 +16,16 @@ companion TXT record (see [TXT registry](../registry/txt.md)). When a second ins
 owner already holds, it skips it and reports `All records are already up to date`. With `--log-level=debug`:
 
 ```text
-Skipping endpoint ... because owner id does not match for one or more items to create, found: "cluster-a", required: "cluster-b"
+Skipping endpoint app.example.com 60 IN A  198.51.100.20 [] because owner id does not match (found: "cluster-a", required: "cluster-b")
 ```
 
 This is a safety property: without it, two instances would force their own targets onto the same record set and
-flip it back and forth every sync interval. Skips are also counted by
-`external_dns_registry_skipped_records_owner_mismatch_per_sync` — see [Monitoring](../monitoring/index.md).
+flip it back and forth every sync interval.
+
+A near-identical message (`... for one or more items to create ...`) appears when the instance tries to *create* a
+record under a name another owner holds — cluster B publishing an `AAAA` where cluster A owns the `A`. Only that
+case increments the `external_dns_registry_skipped_records_owner_mismatch_per_sync` gauge — see
+[Monitoring](../monitoring/index.md).
 
 Every pattern below requires a distinct `--txt-owner-id` per cluster. Never share one across clusters in a
 shared zone: each cluster would then delete the other's records. See
@@ -32,8 +34,8 @@ shared zone: each cluster would then delete the other's records. See
 ## Pattern A: per-cluster hostnames plus an aggregating record
 
 Works with any provider. Each cluster publishes a hostname unique to itself (`app.eu.example.com`,
-`app.us.example.com`), and the shared `app.example.com` is a separate record targeting those names — managed
-with a [DNSEndpoint CRD](../sources/crd.md) in one designated cluster:
+`app.us.example.com`), and the shared `app.example.com` is a separate record listing every cluster's address —
+managed with a [DNSEndpoint CRD](../sources/crd.md) in one designated cluster:
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -43,24 +45,29 @@ metadata:
 spec:
   endpoints:
     - dnsName: app.example.com
-      recordType: CNAME
+      recordType: A
       recordTTL: 60
       targets:
-        - app.eu.example.com
-        - app.us.example.com
+        - 198.51.100.10 # cluster EU load balancer
+        - 203.0.113.10  # cluster US load balancer
 ```
 
-Because the aggregate points at per-cluster names rather than IP addresses, it keeps working when a cluster's
-load balancer address changes. Adding or removing a cluster is a manual edit. Where health checking is needed,
-a provider-side traffic-management feature can replace the aggregate record — ExternalDNS keeps publishing the
-per-cluster names it points at.
+Note the aggregate is an A record. A CNAME must be the only record for its name
+([RFC 1034 §3.6.2](https://datatracker.ietf.org/doc/html/rfc1034#section-3.6.2)), so a multi-target CNAME is
+invalid and providers handle it inconsistently — some reject it, some silently keep the first target.
+
+The aggregate must therefore be edited whenever a load balancer address changes, or a cluster is added or
+removed. Where addresses are not stable, or health checking is needed, a provider-side traffic-management
+feature can replace the aggregate record and point at the per-cluster hostnames ExternalDNS keeps up to date.
 
 ## Pattern B: one owning cluster, others follow
 
 If the shared record needs a single set of targets and a single manager, designate one cluster as the owner and
-stop the others from managing that name — via `--domain-filter`, `--annotation-filter`, or simply by not
-annotating the resource there. Running the non-owning instances with `--policy=upsert-only` adds defence in
-depth, though ownership already prevents an instance from deleting records it does not own.
+stop the others from managing that name. `--domain-filter` excludes the name itself; `--annotation-filter` and
+`--label-filter` exclude the Kubernetes object using label selector semantics — useful when the same manifest
+ships to every cluster and only one carries the marker. Not annotating the resource elsewhere works too.
+`--policy=upsert-only` on the non-owning instances adds defense in depth, though ownership already prevents
+them from deleting records they do not own.
 
 ## Pattern C: one record per cluster, same hostname (only on AWS)
 
@@ -85,7 +92,9 @@ external-dns.kubernetes.io/aws-weight: "50"
 ```
 
 Resulting zone contents — the ownership TXT records inherit both the set identifier and the routing policy, so
-each cluster gets its own TXT record set and no `--txt-prefix` juggling is required:
+each cluster gets its own TXT record set and no `--txt-prefix` juggling is required. The TXT names below use the
+record-type prefix of the current [TXT registry format](../registry/txt.md#for-version-v018) (v0.18+); older
+formats carry the set identifier too, but without that prefix:
 
 ```text
 app.example.com     A    (set-identifier: cluster-a) -> <cluster A LB address>
@@ -96,9 +105,10 @@ a-app.example.com   TXT  (set-identifier: cluster-b) -> "heritage=external-dns,e
 
 Each cluster manages and deletes only its own record set: removing the Service in cluster B leaves cluster A
 untouched. Shifting weights to `90`/`10` drains a cluster progressively, and weight `0` takes it out of rotation
-without deleting anything. Swap the routing annotation for other behaviours — `aws-region` for latency-based,
-`aws-failover` for active/passive, `aws-multi-value-answer` for round-robin over all clusters. See
-[AWS routing policies](../tutorials/aws.md#routing-policies).
+without deleting anything — Route53 only serves a weight `0` record when *every* record in the group is `0`, so
+do not set all of them to `0` at once. Swap the routing annotation for other behaviors — `aws-region` for
+latency-based, `aws-failover` for active/passive, `aws-multi-value-answer` for round-robin over all clusters.
+See [AWS routing policies](../tutorials/aws.md#routing-policies).
 
 > Route53 does not allow multivalue answer alias records, and a `type: LoadBalancer` Service produces an alias
 > record by default on AWS. `aws-multi-value-answer` therefore only applies to non-alias records — with

@@ -322,6 +322,8 @@ For multi-cluster setups sharing a hosted zone:
 - Assign a **unique** `--txt-owner-id` to each cluster (for example `cluster1`, `cluster2`) and document this convention clearly in your platform configuration.
 - Avoid using a common owner such as `default` across clusters in a shared zone if any cluster will run with `policy=sync` or use `--migrate-from-txt-owner`.
 
+When several clusters must publish the *same* hostname, see [Multi-Cluster Shared DNS Records](../advanced/multi-cluster-shared-records.md).
+
 #### Example migration sequence for shared zones
 
 When migrating from a shared owner (such as `default`) in a shared hosted zone:
