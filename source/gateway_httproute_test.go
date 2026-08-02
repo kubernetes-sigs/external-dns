@@ -1001,6 +1001,43 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// A JSON-style FQDN template (lower-case Spec keys, the shape the unstructured
+			// source expects) fails direct struct field lookup against a typed HTTPRoute's
+			// Go-named fields ("can't evaluate field hostnames in type v1.HTTPRouteSpec") and
+			// falls back to the unstructured representation instead, so the same shared
+			// --fqdn-template value works for both source kinds. Uses combine so the template
+			// runs even though the route already has Spec.Hostnames set, proving the fallback
+			// reads the real data (not just that it avoids erroring on an empty range). See #6593.
+			title: "FQDNTemplate with JSON-style Spec access on typed HTTPRoute",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{range .Spec.hostnames}}{{.}}.json.internal,{{end}}", "", "", true),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "fqdn-json-style"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("fqdn-json-style.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("fqdn-json-style.internal", "1.2.3.4"),
+				newTestEndpoint("fqdn-json-style.internal.json.internal", "1.2.3.4"),
+			},
+		},
+		{
 			title: "CombineFQDN",
 			config: &Config{
 				TemplateEngine: templatetest.MustEngine(t, "combine-{{.Name}}.internal", "", "", true),
