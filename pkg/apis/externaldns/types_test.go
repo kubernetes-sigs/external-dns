@@ -769,7 +769,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 		"--rfc2136-tsig-keyname=keyname.",
 		"--rfc2136-tsig-secret=base64secret",
 		"--rfc2136-tsig-secret-alg=hmac-sha256",
-		"--rfc2136-tsig-axfr",
+		"--rfc2136-axfr",
 		"--rfc2136-min-ttl=30s",
 		"--rfc2136-gss-tsig",
 		"--rfc2136-use-tls",
@@ -784,11 +784,56 @@ func TestParseFlagsRFC2136(t *testing.T) {
 	assert.Equal(t, "keyname.", cfg.RFC2136TSIGKeyName)
 	assert.Equal(t, "base64secret", cfg.RFC2136TSIGSecret)
 	assert.Equal(t, "hmac-sha256", cfg.RFC2136TSIGSecretAlg)
-	assert.True(t, cfg.RFC2136TAXFR)
+	assert.True(t, cfg.RFC2136AXFR)
 	assert.Equal(t, 30*time.Second, cfg.RFC2136MinTTL)
 	assert.True(t, cfg.RFC2136GSSTSIG)
 	assert.True(t, cfg.RFC2136UseTLS)
 	assert.True(t, cfg.RFC2136SkipTLSVerify)
+}
+
+func TestParseFlagsRFC2136AXFR(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		args           []string
+		wantAXFR       bool
+		wantDeprecated bool
+	}{
+		{
+			name:     "neither flag leaves AXFR disabled",
+			args:     nil,
+			wantAXFR: false,
+		},
+		{
+			name:     "new flag enables AXFR",
+			args:     []string{"--rfc2136-axfr"},
+			wantAXFR: true,
+		},
+		{
+			name:           "deprecated flag is promoted",
+			args:           []string{"--rfc2136-tsig-axfr"},
+			wantAXFR:       true,
+			wantDeprecated: true,
+		},
+		{
+			name:           "both flags enable AXFR",
+			args:           []string{"--rfc2136-tsig-axfr", "--rfc2136-axfr"},
+			wantAXFR:       true,
+			wantDeprecated: true,
+		},
+		{
+			name:           "deprecated flag wins over --no-rfc2136-axfr",
+			args:           []string{"--rfc2136-tsig-axfr", "--no-rfc2136-axfr"},
+			wantAXFR:       true,
+			wantDeprecated: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfig()
+			require.NoError(t, cfg.ParseFlags(append([]string{"--provider=rfc2136", "--source=service"}, tc.args...)))
+			assert.Equal(t, tc.wantAXFR, cfg.RFC2136AXFR)
+			assert.Equal(t, tc.wantDeprecated, cfg.RFC2136TAXFR)
+		})
+	}
 }
 
 func TestParseFlagsTraefik(t *testing.T) {
