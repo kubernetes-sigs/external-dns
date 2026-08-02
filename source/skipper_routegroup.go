@@ -106,7 +106,7 @@ func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeG
 		},
 		quit:      make(chan struct{}),
 		tokenFile: tokenPath,
-		token:     token,
+		token:     strings.TrimSpace(token),
 	}
 
 	go func() {
