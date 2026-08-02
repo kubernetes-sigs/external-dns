@@ -17,13 +17,53 @@ limitations under the License.
 package endpoint_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
+
+func TestAppendIfNotNil(t *testing.T) {
+	first := endpoint.NewEndpoint("first.example.com", endpoint.RecordTypeA, "192.168.1.1")
+	second := endpoint.NewEndpoint("second.example.com", endpoint.RecordTypeA, "192.168.1.2")
+	require.NotNil(t, first)
+	require.NotNil(t, second)
+
+	t.Run("appends an endpoint to a nil slice", func(t *testing.T) {
+		assert.Equal(t, []*endpoint.Endpoint{first}, endpoint.AppendIfNotNil(nil, first))
+	})
+
+	t.Run("appends an endpoint to a populated slice", func(t *testing.T) {
+		got := endpoint.AppendIfNotNil([]*endpoint.Endpoint{first}, second)
+		assert.Equal(t, []*endpoint.Endpoint{first, second}, got)
+	})
+
+	t.Run("drops a nil endpoint and leaves the slice untouched", func(t *testing.T) {
+		got := endpoint.AppendIfNotNil([]*endpoint.Endpoint{first}, nil)
+		assert.Equal(t, []*endpoint.Endpoint{first}, got)
+	})
+
+	t.Run("a nil endpoint leaves a nil slice nil rather than empty", func(t *testing.T) {
+		var endpoints []*endpoint.Endpoint
+
+		got := endpoint.AppendIfNotNil(endpoints, nil)
+
+		// Nil rather than merely empty: EndpointsForHostname hands its slice
+		// straight back to callers that compare it against []*Endpoint(nil),
+		// so the helper has to return the input rather than allocate.
+		assert.Nil(t, got)
+	})
+
+	t.Run("drops the endpoint a rejected DNS name produces", func(t *testing.T) {
+		rejected := endpoint.NewEndpoint(strings.Repeat("a", 64)+".example.com", endpoint.RecordTypeA, "192.168.1.1")
+		require.Nil(t, rejected, "an over-long label must be rejected for this case to prove anything")
+		assert.Empty(t, endpoint.AppendIfNotNil(nil, rejected))
+	})
+}
 
 func TestEndpointsForHostsAndTargets(t *testing.T) {
 	tests := []struct {

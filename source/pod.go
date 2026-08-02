@@ -152,7 +152,7 @@ func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoi
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
 		newEndpoint := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...)
-		endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+		endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 	}
 	return endpoints
 }
@@ -166,7 +166,7 @@ func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range hostsMap {
 		newEndpoint := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...)
-		endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+		endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 	}
 	return endpoints, nil
 }

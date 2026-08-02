@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -226,6 +227,61 @@ func TestEndpointsForHostname(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+// TestEndpointsForHostnameSkipsRejectedHostname covers a hostname the constructor
+// refuses to build an endpoint for. Every record type shares the one hostname, so
+// a rejection drops all of them, and none may be collected as a nil element: the
+// metadata pass that follows the construction loop dereferences every element of
+// the slice, as does MergeEndpoints downstream.
+func TestEndpointsForHostnameSkipsRejectedHostname(t *testing.T) {
+	// The two names differ only in the length of the first label, 64 characters
+	// against the 63 that RFC 1035 section 2.3.4 allows.
+	rejected := strings.Repeat("a", 64) + ".example.com"
+	accepted := strings.Repeat("a", 63) + ".example.com"
+
+	// One target per record type, so the hostname yields an A, an AAAA and a
+	// CNAME endpoint and a leaked nil would appear once for each.
+	targets := Targets{"192.0.2.1", "2001:db8::1", "cname.example.com"}
+	providerSpecific := ProviderSpecific{{Name: "provider", Value: "value"}}
+
+	t.Run("hostname is dropped rather than collected as nil", func(t *testing.T) {
+		result := EndpointsForHostname(rejected, targets, TTL(300), providerSpecific, "identifier", "resource")
+
+		assert.Empty(t, result)
+		assert.NotContains(t, result, (*Endpoint)(nil))
+	})
+
+	t.Run("result is safe to merge", func(t *testing.T) {
+		result := EndpointsForHostname(rejected, targets, TTL(300), providerSpecific, "identifier", "resource")
+
+		assert.NotPanics(t, func() {
+			MergeEndpoints(result)
+		})
+	})
+
+	t.Run("an accepted hostname carries the metadata on every record type", func(t *testing.T) {
+		result := EndpointsForHostname(accepted, targets, TTL(300), providerSpecific, "identifier", "resource")
+
+		require.Len(t, result, 3, "one endpoint per record type present in the targets")
+		for _, ep := range result {
+			require.NotNil(t, ep)
+			assert.Equal(t, accepted, ep.DNSName)
+			assert.Equal(t, providerSpecific, ep.ProviderSpecific, "%s endpoint lost its provider-specific config", ep.RecordType)
+			assert.Equal(t, "identifier", ep.SetIdentifier, "%s endpoint lost its set identifier", ep.RecordType)
+			assert.Equal(t, "resource", ep.Labels[ResourceLabelKey], "%s endpoint lost its resource label", ep.RecordType)
+		}
+	})
+
+	t.Run("an empty resource leaves the resource label unset", func(t *testing.T) {
+		result := EndpointsForHostname(accepted, targets, TTL(300), providerSpecific, "identifier", "")
+
+		require.Len(t, result, 3)
+		for _, ep := range result {
+			assert.NotContains(t, ep.Labels, ResourceLabelKey, "%s endpoint gained a resource label", ep.RecordType)
+			assert.Equal(t, "identifier", ep.SetIdentifier, "%s endpoint lost its set identifier", ep.RecordType)
+		}
+	})
 }
 
 func TestAttachRefObject(t *testing.T) {

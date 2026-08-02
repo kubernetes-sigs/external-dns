@@ -184,11 +184,11 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 
 		for _, addr := range addrs {
 			newEndpoint := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
-			endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 		}
 	}
 
-	// add labels for resource
+	// add shared resource labels
 	for _, ep := range endpoints {
 		ep.WithLabel(endpoint.ResourceLabelKey, resource)
 		log.Debugf("adding endpoint %s", ep)

@@ -64,11 +64,11 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
-			endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 		}
 		if lb.Hostname != "" {
 			newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
-			endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 		}
 	}
 
@@ -98,11 +98,11 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
-				endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 			if lb.Hostname != "" {
 				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
-				endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 		}
 	}
@@ -165,11 +165,11 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 				// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 				if isExternal && (address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
 					newEndpoint := endpoint.NewEndpoint(hostname, recordType, address.Address)
-					endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+					endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 				}
 				if isInternal && address.Type == v1.NodeInternalIP {
 					newEndpoint := endpoint.NewEndpoint(hostname, recordType, address.Address)
-					endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+					endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 				}
 			}
 		}
@@ -203,11 +203,11 @@ func legacyEndpointsFromDNSControllerLoadBalancerService(svc *v1.Service) []*end
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
-				endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 			if lb.Hostname != "" {
 				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
-				endpoints = appendEndpointIfValid(endpoints, newEndpoint)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 		}
 	}
