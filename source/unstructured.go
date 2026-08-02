@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -213,13 +214,46 @@ func newUnstructuredWrapper(u *unstructured.Unstructured) *unstructuredWrapper {
 		w.Metadata = metadata
 	}
 	if spec, ok := u.Object["spec"].(map[string]any); ok {
-		w.Spec = spec
+		w.Spec = withTitleCaseAliases(spec)
 	}
 	if status, ok := u.Object["status"].(map[string]any); ok {
-		w.Status = status
+		w.Status = withTitleCaseAliases(status)
 	}
 
 	return w
+}
+
+// withTitleCaseAliases lets a template address a JSON-keyed map field
+// (spec.hostnames) by its Go field name too (Spec.Hostnames), since a map
+// key miss in text/template renders empty instead of erroring.
+func withTitleCaseAliases(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		if nested, ok := v.(map[string]any); ok {
+			v = withTitleCaseAliases(nested)
+		}
+		out[k] = v
+	}
+	for k := range m {
+		title := titleCaseKey(k)
+		if title == k {
+			continue
+		}
+		if _, collision := m[title]; collision {
+			continue
+		}
+		out[title] = out[k]
+	}
+	return out
+}
+
+func titleCaseKey(k string) string {
+	if k == "" {
+		return k
+	}
+	r := []rune(k)
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
 }
 
 // discoverResources parses and validates resource identifiers against the cluster.

@@ -1049,6 +1049,26 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			},
 			want: []string{"reviews.bookinfo.svc.cluster.local"},
 		},
+		{
+			name: "Spec field access matches JSON key casing regardless of template casing",
+			tmpl: `{{index .Spec.Hostnames 0}}`,
+			obj: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "gateway.networking.k8s.io/v1",
+					"kind":       "HTTPRoute",
+					"metadata": map[string]any{
+						"name":      "reviews",
+						"namespace": "bookinfo",
+					},
+					"spec": map[string]any{
+						"hostnames": []any{
+							"reviews.bookinfo.example.com",
+						},
+					},
+				},
+			},
+			want: []string{"reviews.bookinfo.example.com"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1065,4 +1085,36 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestWithTitleCaseAliases(t *testing.T) {
+	in := map[string]any{
+		"hostnames": []any{"a.example.com"},
+		"nested": map[string]any{
+			"innerField": "value",
+		},
+		"Already": "unchanged", // already title-cased; no collision to resolve
+	}
+
+	out := withTitleCaseAliases(in)
+
+	assert.Equal(t, in["hostnames"], out["hostnames"], "original lowercase key must still resolve")
+	assert.Equal(t, in["hostnames"], out["Hostnames"], "title-cased alias must resolve to the same value")
+	assert.Equal(t, "unchanged", out["Already"])
+
+	nested, ok := out["Nested"].(map[string]any)
+	require.True(t, ok, "nested maps must get aliased recursively")
+	assert.Equal(t, "value", nested["InnerField"])
+}
+
+func TestWithTitleCaseAliases_DoesNotClobberExistingKey(t *testing.T) {
+	in := map[string]any{
+		"hostnames": "lower",
+		"Hostnames": "already-title-cased",
+	}
+
+	out := withTitleCaseAliases(in)
+
+	assert.Equal(t, "lower", out["hostnames"])
+	assert.Equal(t, "already-title-cased", out["Hostnames"], "must not overwrite a key the original data already defines")
 }
