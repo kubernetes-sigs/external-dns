@@ -272,13 +272,11 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		// Retry against the unstructured data shape, so JSON-keyed Spec paths work on typed objects too.
 		data, convErr := toTemplateData(obj)
 		if convErr != nil {
-			kind := obj.GetObjectKind().GroupVersionKind().Kind
-			return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+			return nil, wrapTemplateErr(obj, err)
 		}
 		buf.Reset()
 		if err2 := tmpl.Execute(&buf, data); err2 != nil {
-			kind := obj.GetObjectKind().GroupVersionKind().Kind
-			return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+			return nil, fmt.Errorf("%w (unstructured retry also failed: %w)", wrapTemplateErr(obj, err), err2)
 		}
 	}
 	hosts := strings.Split(buf.String(), ",")
@@ -291,6 +289,11 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		}
 	}
 	return sets.Sorted(hostnames), nil
+}
+
+func wrapTemplateErr(obj kubeObject, err error) error {
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
+	return fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
 }
 
 // fqdnTemplateData mirrors source.unstructuredWrapper so typed objects can
