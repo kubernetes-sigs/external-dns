@@ -39,7 +39,7 @@ sudo mv kubectl /usr/local/bin/kubectl
 
 # Install ko
 echo "Installing ko..."
-curl $CURL_RETRY_OPTS -sSfL "https://github.com/ko-build/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_linux_x86_64.tar.gz" > ko.tar.gz
+curl $CURL_RETRY_OPTS -o ko.tar.gz -sSfL "https://github.com/ko-build/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_linux_x86_64.tar.gz"
 tar xzf ko.tar.gz ko
 chmod +x ./ko
 sudo mv ko /usr/local/bin/ko
