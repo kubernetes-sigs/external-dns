@@ -269,11 +269,7 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, obj); err != nil {
-		// Unstructured source wraps objects so templates can use {{ .Spec.hostnames }}
-		// (Spec is a map with JSON keys). Typed sources expose Go field names
-		// (.Spec.Hostnames), so the same shared --fqdn-template fails on
-		// gateway-httproute when hostnames are empty/absent (#6593).
-		// Retry with the same shape unstructuredWrapper provides.
+		// Retry against the unstructured data shape, so JSON-keyed Spec paths work on typed objects too.
 		data, convErr := toTemplateData(obj)
 		if convErr != nil {
 			kind := obj.GetObjectKind().GroupVersionKind().Kind

@@ -425,10 +425,7 @@ func TestExecFQDNNilObject(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// Typed objects expose Go field names (.Spec.Hostnames) while the unstructured
-// source wraps maps so {{ .Spec.hostnames }} works (JSON keys). A shared
-// --fqdn-template must succeed on both; empty/absent hostnames on typed routes
-// previously failed with "can't evaluate field hostnames" (#6593).
+// A shared --fqdn-template using JSON-style Spec keys must succeed on typed objects too.
 func TestExecFQDNJSONFieldNamesOnTypedObject(t *testing.T) {
 	tmpl := `{{ range .Spec.hostnames }}{{ . }},{{ end }}`
 	engine, err := NewEngine([]string{tmpl}, nil, nil, false)

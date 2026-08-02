@@ -1001,13 +1001,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			// A JSON-style FQDN template (lower-case Spec keys, the shape the unstructured
-			// source expects) fails direct struct field lookup against a typed HTTPRoute's
-			// Go-named fields ("can't evaluate field hostnames in type v1.HTTPRouteSpec") and
-			// falls back to the unstructured representation instead, so the same shared
-			// --fqdn-template value works for both source kinds. Uses combine so the template
-			// runs even though the route already has Spec.Hostnames set, proving the fallback
-			// reads the real data (not just that it avoids erroring on an empty range). See #6593.
+			// combine so the template runs even though Spec.Hostnames is already set.
 			title: "FQDNTemplate with JSON-style Spec access on typed HTTPRoute",
 			config: &Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{range .Spec.hostnames}}{{.}}.json.internal,{{end}}", "", "", true),
