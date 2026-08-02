@@ -18,6 +18,7 @@ package template
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -588,6 +589,42 @@ func TestCombineWithEndpoints(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// TestFQDNTargetTemplateSkipsRejectedHostnames covers a fqdn-target template
+// that renders a hostname the constructor refuses to build an endpoint for.
+// It must be dropped before MergeEndpoints, which dereferences every element
+// and so panics on a leaked nil instead of skipping the hostname.
+func TestFQDNTargetTemplateSkipsRejectedHostnames(t *testing.T) {
+	// The two names differ only in the length of the first label, 64 characters
+	// against the 63 that RFC 1035 section 2.3.4 allows.
+	rejected := strings.Repeat("a", 64) + ".example.com"
+	accepted := strings.Repeat("a", 63) + ".example.com"
+
+	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
+
+	t.Run("hostname is dropped rather than collected as nil", func(t *testing.T) {
+		e, err := NewEngine(nil, nil, []string{rejected + ":1.2.3.4"}, false)
+		require.NoError(t, err)
+
+		got, err := e.ApplyFQDNTargetTemplate(nil, obj)
+
+		require.NoError(t, err)
+		assert.Empty(t, got)
+		assert.NotContains(t, got, (*endpoint.Endpoint)(nil))
+	})
+
+	t.Run("remaining hostnames are still returned", func(t *testing.T) {
+		e, err := NewEngine(nil, nil, []string{rejected + ":1.2.3.4", accepted + ":1.2.3.4"}, false)
+		require.NoError(t, err)
+
+		got, err := e.ApplyFQDNTargetTemplate(nil, obj)
+
+		require.NoError(t, err)
+		require.Len(t, got, 1)
+		assert.Equal(t, accepted, got[0].DNSName)
+		assert.Equal(t, endpoint.Targets{"1.2.3.4"}, got[0].Targets)
+	})
 }
 
 func TestNewEngine_DebugLogging(t *testing.T) {

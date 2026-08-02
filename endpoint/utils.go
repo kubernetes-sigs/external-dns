@@ -139,7 +139,7 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 	endpoints := make([]*Endpoint, 0, len(sortedHosts)*len(sortedTypes))
 	for _, hostname := range sortedHosts {
 		for _, recordType := range sortedTypes {
-			endpoints = append(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
+			endpoints = AppendIfNotNil(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
 		}
 	}
 	return endpoints
