@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/ptr"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
@@ -1067,6 +1068,78 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("fqdn-with-hostnames.internal", "1.2.3.4"),
 				newTestEndpoint("combine-fqdn-with-hostnames.internal", "1.2.3.4"),
 			},
+		},
+		{
+			// With --combine-fqdn-annotation, the template must still run and be appended
+			// even when an annotation already produced a hostname (unlike the default,
+			// non-combining behavior covered by AnnotationBeforeFQDNTemplate above).
+			title: "AnnotationWithCombineFQDNTemplate",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "combine-{{.Name}}.internal", "", "", true),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "annotated-combine",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "annotation.internal",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("annotation.internal", "1.2.3.4"),
+				newTestEndpoint("combine-annotated-combine.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// A template result that doesn't match any attached listener's hostname must
+			// produce no endpoint, not silently fall back to the listener's own hostname
+			// (gwMatchingHost's "" rtHost case is the fallback path; a non-empty, non-matching
+			// rtHost must never hit it).
+			title: "FQDNTemplateOutsideListenerDomain",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.other-domain.internal", "", "", false),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: ptr.To(v1.Hostname("gateway.example.com")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "outside-domain"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{},
 		},
 		{
 			title:      "TTL",
