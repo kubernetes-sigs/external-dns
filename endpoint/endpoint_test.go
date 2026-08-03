@@ -1808,11 +1808,16 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
 
-// TestNewEndpointRejectsOverlongDNSLabels pins down what makes the constructor
-// return nil: the length of an individual DNS label, capped at 63 characters by
-// RFC 1035 section 2.3.4. The cap is applied to every dot-separated label
+// TestNewEndpointRejectsOverlongDNSLabels pins down what makes the constructors
+// reject a DNS name: the length of an individual label, capped at 63 characters
+// by RFC 1035 section 2.3.4. The cap is applied to every dot-separated label
 // independently and never to the name as a whole, so a name may be arbitrarily
 // longer than 63 characters as long as each of its labels is not.
+//
+// A rejection surfaces differently per constructor: NewValidatedEndpointWithTTL
+// returns it as an error, while the deprecated NewEndpointWithTTL logs it and
+// returns nil. Both are covered here so the deprecated wrapper keeps its
+// contract for third-party callers until it is removed.
 func TestNewEndpointRejectsOverlongDNSLabels(t *testing.T) {
 	const maxLabelLength = 63
 
@@ -1826,33 +1831,33 @@ func TestNewEndpointRejectsOverlongDNSLabels(t *testing.T) {
 		"this name must exceed the per-label cap for the test case to prove anything")
 
 	tests := []struct {
-		name    string
-		dnsName string
-		wantNil bool
+		name         string
+		dnsName      string
+		wantRejected bool
 	}{
 		{
 			name:    "label of exactly 63 characters is accepted",
 			dnsName: maxLabel + ".example.com",
 		},
 		{
-			name:    "same label one character longer is rejected",
-			dnsName: overlongLabel + ".example.com",
-			wantNil: true,
+			name:         "same label one character longer is rejected",
+			dnsName:      overlongLabel + ".example.com",
+			wantRejected: true,
 		},
 		{
-			name:    "over-long label in the middle of the name is rejected",
-			dnsName: "example." + overlongLabel + ".com",
-			wantNil: true,
+			name:         "over-long label in the middle of the name is rejected",
+			dnsName:      "example." + overlongLabel + ".com",
+			wantRejected: true,
 		},
 		{
-			name:    "over-long label at the end of the name is rejected",
-			dnsName: "example.com." + overlongLabel,
-			wantNil: true,
+			name:         "over-long label at the end of the name is rejected",
+			dnsName:      "example.com." + overlongLabel,
+			wantRejected: true,
 		},
 		{
-			name:    "over-long name with no dots at all is rejected",
-			dnsName: overlongLabel,
-			wantNil: true,
+			name:         "over-long name with no dots at all is rejected",
+			dnsName:      overlongLabel,
+			wantRejected: true,
 		},
 		{
 			name:    "name much longer than 63 characters is accepted while every label is short",
@@ -1864,21 +1869,37 @@ func TestNewEndpointRejectsOverlongDNSLabels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 
-			ep := NewEndpointWithTTL(tt.dnsName, RecordTypeA, TTL(300), "1.2.3.4")
+			validated, err := NewValidatedEndpointWithTTL(tt.dnsName, RecordTypeA, TTL(300), "1.2.3.4")
+			deprecated := NewEndpointWithTTL(tt.dnsName, RecordTypeA, TTL(300), "1.2.3.4")
 
-			if tt.wantNil {
-				require.Nil(t, ep, "a name with an over-long label must not produce an endpoint")
+			if tt.wantRejected {
+				require.Nil(t, validated, "a name with an over-long label must not produce an endpoint")
+				require.ErrorContains(t, err, "is longer than 63 characters",
+					"the error must name the reason the endpoint cannot be created")
+
+				require.Nil(t, deprecated, "the deprecated constructor must keep returning nil")
 				logtest.TestHelperLogContains("is longer than 63 characters", hook, t)
 				return
 			}
 
-			require.NotNil(t, ep, "a name whose labels all fit must produce an endpoint")
-			assert.Equal(t, tt.dnsName, ep.DNSName)
+			require.NoError(t, err)
+			require.NotNil(t, validated, "a name whose labels all fit must produce an endpoint")
+			assert.Equal(t, tt.dnsName, validated.DNSName)
+
+			require.NotNil(t, deprecated)
+			assert.Equal(t, validated, deprecated,
+				"both constructors must build the same endpoint for an accepted name")
 			logtest.TestHelperLogNotContains("is longer than 63 characters", hook, t)
 		})
 	}
 
-	// NewEndpoint delegates to NewEndpointWithTTL, so it rejects the same names.
+	// The TTL-less constructors delegate to the TTL variants, so they reject
+	// the same names.
+	_, err := NewValidatedEndpoint(overlongLabel+".example.com", RecordTypeA, "1.2.3.4")
+	assert.ErrorContains(t, err, "is longer than 63 characters")
+	ep, err := NewValidatedEndpoint(maxLabel+".example.com", RecordTypeA, "1.2.3.4")
+	assert.NoError(t, err)
+	assert.NotNil(t, ep)
 	assert.Nil(t, NewEndpoint(overlongLabel+".example.com", RecordTypeA, "1.2.3.4"))
 	assert.NotNil(t, NewEndpoint(maxLabel+".example.com", RecordTypeA, "1.2.3.4"))
 }

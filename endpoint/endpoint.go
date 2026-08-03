@@ -281,12 +281,39 @@ type Endpoint struct {
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
+//
+// Deprecated: use [NewValidatedEndpoint] instead. It returns the reason the
+// endpoint cannot be created as an error, where this constructor only logs
+// it and returns nil.
 func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
+//
+// Deprecated: use [NewValidatedEndpointWithTTL] instead. It returns the reason
+// the endpoint cannot be created as an error, where this constructor only
+// logs it and returns nil.
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
+	ep, err := NewValidatedEndpointWithTTL(dnsName, recordType, ttl, targets...)
+	if err != nil {
+		log.Errorf("%v. Cannot create endpoint", err)
+		return nil
+	}
+	return ep
+}
+
+// NewValidatedEndpoint creates an endpoint, rejecting DNS names that cannot be
+// represented as a record name. The returned error names the offending label
+// when any dot-separated label of dnsName exceeds the 63 characters allowed by
+// RFC 1035 section 2.3.4.
+func NewValidatedEndpoint(dnsName, recordType string, targets ...string) (*Endpoint, error) {
+	return NewValidatedEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
+}
+
+// NewValidatedEndpointWithTTL creates an endpoint with a TTL, rejecting DNS
+// names that cannot be represented as a record name; see [NewValidatedEndpoint].
+func NewValidatedEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) (*Endpoint, error) {
 	cleanTargets := make([]string, len(targets))
 	for idx, target := range targets {
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
@@ -302,8 +329,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 
 	for label := range strings.SplitSeq(dnsName, ".") {
 		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
+			return nil, fmt.Errorf("label %s in %s is longer than 63 characters", label, dnsName)
 		}
 	}
 
@@ -313,7 +339,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		RecordType: recordType,
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,
-	}
+	}, nil
 }
 
 // WithSetIdentifier applies the given set identifier to the endpoint.
@@ -525,7 +551,7 @@ func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, err
 		return nil, fmt.Errorf("failed to compute reverse address for %s: %w", target, err)
 	}
 	ptrName := strings.TrimSuffix(revAddr, ".")
-	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
+	return NewValidatedEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...)
 }
 
 // String returns a human-readable representation of the endpoint in zone-file style.
