@@ -105,7 +105,8 @@ func (m *mockManagedZonesGetCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZon
 }
 
 type mockManagedZonesClient struct {
-	zonesErr error
+	zonesErr      error
+	listCallCount int
 }
 
 func (m *mockManagedZonesClient) Create(project string, managedZone *dns.ManagedZone) managedZonesCreateCallInterface {
@@ -117,6 +118,7 @@ func (m *mockManagedZonesClient) Get(project string, managedZone string) managed
 }
 
 func (m *mockManagedZonesClient) List(project string) managedZonesListCallInterface {
+	m.listCallCount++
 	return &mockManagedZonesListCall{project: project, zonesListSoftErr: m.zonesErr}
 }
 
@@ -278,9 +280,8 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 	})
 }
 
-// TestGoogleZonesMultipleIDFilterGet verifies that multiple exact zone IDs are each
-// resolved via Get, avoiding the need for dns.managedZones.list.
-func TestGoogleZonesMultipleIDFilterGet(t *testing.T) {
+// TestGoogleZonesMultipleIDFilter verifies that multiple zone ID filters all match correctly.
+func TestGoogleZonesMultipleIDFilter(t *testing.T) {
 	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2", "internal-3"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(t.Context())
@@ -292,11 +293,9 @@ func TestGoogleZonesMultipleIDFilterGet(t *testing.T) {
 	})
 }
 
-// TestGoogleZonesIDFilterGetFallbackToList verifies that a zone ID suffix pattern that
-// does not resolve via Get (404) falls back to List for backward compatibility.
-// "ernal-1" is a suffix of "internal-1" but not an exact zone name, so Get 404s
-// and we fall back to List which applies the suffix filter as before.
-func TestGoogleZonesIDFilterGetFallbackToList(t *testing.T) {
+// TestGoogleZonesIDFilterSuffixMatch verifies that ZoneIDFilter is a suffix match:
+// "ernal-1" matches "internal-1" because "internal-1" ends with "ernal-1".
+func TestGoogleZonesIDFilterSuffixMatch(t *testing.T) {
 	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"ernal-1"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(t.Context())
@@ -307,14 +306,58 @@ func TestGoogleZonesIDFilterGetFallbackToList(t *testing.T) {
 	})
 }
 
-// TestGoogleZonesGetError verifies that a non-404 error from Get is surfaced as an error.
-func TestGoogleZonesGetError(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"some-zone"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to get zone"), nil)
+// TestGoogleZonesListError verifies that a List error is surfaced correctly.
+func TestGoogleZonesListError(t *testing.T) {
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"some-zone"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to list zones"), nil)
 
 	zones, err := p.Zones(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 	require.Empty(t, zones)
+}
+
+// TestGoogleZonesIDFilterGetDropsSuffixSiblings: ZoneIDFilter.Match is a suffix match,
+// so List matches every zone whose name ends with the filter. When the filter is also an
+// exact zone name, the Get fast-path resolves it (no 404, no List fallback) and silently
+// drops the suffix-matched siblings. Filter "public" should match both "public" and
+// "prod-public", but Get("public") returns only "public".
+// This test also asserts that List is called exactly once, confirming suffix-match behavior
+// is preserved via the List path and not short-circuited by a Get fast-path.
+func TestGoogleZonesIDFilterGetDropsSuffixSiblings(t *testing.T) {
+	// createZone hardcodes this project, so the provider must use it too.
+	const project = "zalando-external-dns-test"
+	mock := &mockManagedZonesClient{}
+	p := &GoogleProvider{
+		project:                  project,
+		domainFilter:             endpoint.NewDomainFilter([]string{"example.com."}),
+		zoneIDFilter:             provider.NewZoneIDFilter([]string{"public"}),
+		zoneTypeFilter:           provider.NewZoneTypeFilter(""),
+		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
+		managedZonesClient:       mock,
+		changesClient:            &mockChangesClient{},
+	}
+
+	createZone(t, p, &dns.ManagedZone{
+		Name:       "public",
+		DnsName:    "example.com.",
+		Id:         20001,
+		Visibility: "public",
+	})
+	createZone(t, p, &dns.ManagedZone{
+		Name:       "prod-public",
+		DnsName:    "prod.example.com.",
+		Id:         20002,
+		Visibility: "public",
+	})
+
+	zones, err := p.Zones(t.Context())
+	require.NoError(t, err)
+
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"public":      {Name: "public", DnsName: "example.com.", Id: 20001, Visibility: "public"},
+		"prod-public": {Name: "prod-public", DnsName: "prod.example.com.", Id: 20002, Visibility: "public"},
+	})
+	assert.Equal(t, 1, mock.listCallCount, "Zones must be resolved via List, not a Get fast-path")
 }
 
 func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
