@@ -345,7 +345,12 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RRset) []*endpoint.Endpoin
 	if rrType == string(pgo.RRTypeALIAS) {
 		rrType = endpoint.RecordTypeCNAME
 	}
-	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(pgo.StringValue(rr.Name), rrType, endpoint.TTL(pgo.Uint32Value(rr.TTL)), targets...))
+	ep, err := endpoint.NewValidatedEndpointWithTTL(pgo.StringValue(rr.Name), rrType, endpoint.TTL(pgo.Uint32Value(rr.TTL)), targets...)
+	if err != nil {
+		log.Warnf("Skipping endpoint %s: %v", pgo.StringValue(rr.Name), err)
+		return endpoints
+	}
+	endpoints = append(endpoints, ep)
 	return endpoints
 }
 

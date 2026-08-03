@@ -246,12 +246,16 @@ OuterLoop:
 			}
 		}
 
-		ep := endpoint.NewEndpointWithTTL(
+		ep, err := endpoint.NewValidatedEndpointWithTTL(
 			rrFqdn,
 			rrType,
 			rrTTL,
 			rrValues...,
 		)
+		if err != nil {
+			log.Warnf("Skipping endpoint %s: %v", rrFqdn, err)
+			continue
+		}
 
 		eps = append(eps, ep)
 	}

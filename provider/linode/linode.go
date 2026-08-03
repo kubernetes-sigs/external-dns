@@ -143,7 +143,12 @@ func (p *LinodeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 					name = zone.Domain
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, string(r.Type), endpoint.TTL(r.TTLSec), r.Target))
+				ep, err := endpoint.NewValidatedEndpointWithTTL(name, string(r.Type), endpoint.TTL(r.TTLSec), r.Target)
+				if err != nil {
+					log.Warnf("Skipping endpoint %s: %v", name, err)
+					continue
+				}
+				endpoints = append(endpoints, ep)
 			}
 		}
 	}

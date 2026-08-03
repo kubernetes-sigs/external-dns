@@ -97,7 +97,7 @@ func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			if err != nil {
 				return nil, fmt.Errorf("generating %s endpoint: %w", recordType, err)
 			}
-			endpoints = endpoint.AppendIfNotNil(endpoints, ep)
+			endpoints = append(endpoints, ep)
 		}
 	}
 	return endpoint.MergeEndpoints(endpoints), nil
@@ -105,46 +105,45 @@ func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 func (sc *fakeSource) generateEndpointForType(recordType, dnsName string) (*endpoint.Endpoint, error) {
 	var ep *endpoint.Endpoint
+	var err error
 
 	switch recordType {
 	case endpoint.RecordTypeA:
-		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeA, generateTargets(len(sc.dnsNames), sc.generateIPv4Address)...)
+		ep, err = endpoint.NewValidatedEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeA, generateTargets(len(sc.dnsNames), sc.generateIPv4Address)...)
 	case endpoint.RecordTypeAAAA:
-		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeAAAA, generateTargets(len(sc.dnsNames), sc.generateIPv6Address)...)
+		ep, err = endpoint.NewValidatedEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeAAAA, generateTargets(len(sc.dnsNames), sc.generateIPv6Address)...)
 	case endpoint.RecordTypeCNAME:
-		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeCNAME, sc.generateDNSName(4, dnsName))
+		ep, err = endpoint.NewValidatedEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeCNAME, sc.generateDNSName(4, dnsName))
 	case endpoint.RecordTypeTXT:
-		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=fake"`)
+		ep, err = endpoint.NewValidatedEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=fake"`)
 	case endpoint.RecordTypeSRV:
 		// SRV target format: "priority weight port target." (target must end with a dot per RFC 2782)
 		name := sc.generateDNSName(4, dnsName)
-		ep = endpoint.NewEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeSRV, fmt.Sprintf("10 20 5060 %s.", name))
+		ep, err = endpoint.NewValidatedEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeSRV, fmt.Sprintf("10 20 5060 %s.", name))
 	case endpoint.RecordTypeNS:
-		ep = endpoint.NewEndpoint(dnsName, endpoint.RecordTypeNS, sc.generateDNSName(3, dnsName))
+		ep, err = endpoint.NewValidatedEndpoint(dnsName, endpoint.RecordTypeNS, sc.generateDNSName(3, dnsName))
 	case endpoint.RecordTypePTR:
 		name := sc.generateDNSName(4, dnsName)
-		var err error
 		ep, err = endpoint.NewPTREndpoint(sc.generateIPv4Address(), endpoint.TTL(0), name)
-		if err != nil {
-			return nil, err
-		}
 	case endpoint.RecordTypeMX:
-		ep = endpoint.NewEndpoint(dnsName, endpoint.RecordTypeMX, fmt.Sprintf("10 %s", sc.generateDNSName(4, dnsName)))
+		ep, err = endpoint.NewValidatedEndpoint(dnsName, endpoint.RecordTypeMX, fmt.Sprintf("10 %s", sc.generateDNSName(4, dnsName)))
 	case endpoint.RecordTypeNAPTR:
 		// NAPTR target format: "order preference flags service regexp replacement"
-		ep = endpoint.NewEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeNAPTR, fmt.Sprintf(`100 10 "u" "E2U+sip" "!^.*$!sip:info@%s!" .`, dnsName))
+		ep, err = endpoint.NewValidatedEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeNAPTR, fmt.Sprintf(`100 10 "u" "E2U+sip" "!^.*$!sip:info@%s!" .`, dnsName))
 	default:
 		return nil, fmt.Errorf("unsupported record type: %s", recordType)
 	}
-
-	if ep != nil {
-		pod := fakePod
-		pod.Name = fakePodName(ep.DNSName)
-		ep.SetIdentifier = types.Fake
-		ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("%s/%s/%s", types.Fake, pod.Namespace, ep.DNSName))
-		ep.WithRefObject(events.NewObjectReference(&pod, types.Fake))
-		log.Debugf("fake source generated %s endpoint: %s -> %v", ep.RecordType, ep.DNSName, ep.Targets)
+	if err != nil {
+		return nil, err
 	}
+
+	pod := fakePod
+	pod.Name = fakePodName(ep.DNSName)
+	ep.SetIdentifier = types.Fake
+	ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("%s/%s/%s", types.Fake, pod.Namespace, ep.DNSName))
+	ep.WithRefObject(events.NewObjectReference(&pod, types.Fake))
+	log.Debugf("fake source generated %s endpoint: %s -> %v", ep.RecordType, ep.DNSName, ep.Targets)
+
 	return ep, nil
 }
 

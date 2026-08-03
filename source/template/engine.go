@@ -171,8 +171,13 @@ func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.End
 				pair, kind, obj.GetNamespace(), obj.GetName())
 			continue
 		}
-		newEndpoint := endpoint.NewEndpoint(host, endpoint.SuitableType(target), target)
-		eps = endpoint.AppendIfNotNil(eps, newEndpoint)
+		ep, err := endpoint.NewValidatedEndpoint(host, endpoint.SuitableType(target), target)
+		if err != nil {
+			log.Warnf("Skipping host:target pair %q from %s %s/%s: %v",
+				pair, kind, obj.GetNamespace(), obj.GetName(), err)
+			continue
+		}
+		eps = append(eps, ep)
 	}
 	return endpoint.MergeEndpoints(eps), nil
 }

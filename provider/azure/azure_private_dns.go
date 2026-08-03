@@ -168,7 +168,11 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) ([]*endpoint.Endp
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
 
-				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				ep, err := endpoint.NewValidatedEndpointWithTTL(name, recordType, ttl, targets...)
+				if err != nil {
+					log.Warnf("Skipping endpoint %s: %v", name, err)
+					continue
+				}
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",
 					ep.RecordType,

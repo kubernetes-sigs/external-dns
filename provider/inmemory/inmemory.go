@@ -211,7 +211,12 @@ func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	records := make([]*endpoint.Endpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
-		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...).WithSetIdentifier(ep.SetIdentifier)
+		newEp, err := endpoint.NewValidatedEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...)
+		if err != nil {
+			log.Warnf("Skipping endpoint %s: %v", ep.DNSName, err)
+			continue
+		}
+		newEp = newEp.WithSetIdentifier(ep.SetIdentifier)
 		newEp.Labels = endpoint.NewLabels()
 		maps.Copy(newEp.Labels, ep.Labels)
 		newEp.ProviderSpecific = append(endpoint.ProviderSpecific(nil), ep.ProviderSpecific...)

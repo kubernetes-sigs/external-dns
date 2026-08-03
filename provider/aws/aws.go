@@ -543,7 +543,11 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						targets[idx] = *rr.Value
 					}
 
-					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
+					ep, err := endpoint.NewValidatedEndpointWithTTL(name, string(r.Type), ttl, targets...)
+					if err != nil {
+						log.Warnf("Skipping endpoint %s: %v", name, err)
+						continue
+					}
 					if r.Type == endpoint.RecordTypeCNAME {
 						ep = ep.WithAliasProperty(endpoint.AliasFalse)
 					}
@@ -555,8 +559,12 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					if ttl == 0 {
 						ttl = defaultTTL
 					}
-					ep := endpoint.
-						NewEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName).
+					ep, err := endpoint.NewValidatedEndpointWithTTL(name, string(r.Type), ttl, *r.AliasTarget.DNSName)
+					if err != nil {
+						log.Warnf("Skipping endpoint %s: %v", name, err)
+						continue
+					}
+					ep = ep.
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 						WithAliasProperty(endpoint.AliasTrue)
 					newEndpoints = append(newEndpoints, ep)

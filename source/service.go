@@ -459,14 +459,13 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 			deduppedTargets.Insert(target)
 			targets = append(targets, target)
 		}
-		newEndpoint := endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
-		endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
-	}
-
-	// add labels for resource
-	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
-	for _, ep := range endpoints {
-		ep.WithLabel(endpoint.ResourceLabelKey, resource)
+		ep, err := endpoint.NewValidatedEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
+		if err != nil {
+			log.Warnf("Skipping endpoint for service %s/%s: %v", svc.Namespace, svc.Name, err)
+			continue
+		}
+		ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
+		endpoints = append(endpoints, ep)
 	}
 
 	return endpoints
@@ -768,15 +767,14 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 
 			recordName := fmt.Sprintf("_%s._%s.%s", svc.Name, protocol, hostname)
 
-			newEndpoint := endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
-			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+			ep, err := endpoint.NewValidatedEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
+			if err != nil {
+				log.Warnf("Skipping SRV endpoint for service %s/%s: %v", svc.Namespace, svc.Name, err)
+				continue
+			}
+			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
+			endpoints = append(endpoints, ep)
 		}
-	}
-
-	// add labels for resource
-	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
-	for _, ep := range endpoints {
-		ep.WithLabel(endpoint.ResourceLabelKey, resource)
 	}
 
 	return endpoints

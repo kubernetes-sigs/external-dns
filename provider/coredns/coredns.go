@@ -339,12 +339,16 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				if isPTRDomain(dnsName) {
 					recordType = endpoint.RecordTypePTR
 				}
-				ep = endpoint.NewEndpointWithTTL(
+				ep, err = endpoint.NewValidatedEndpointWithTTL(
 					dnsName,
 					recordType,
 					endpoint.TTL(service.TTL),
 					service.Host,
 				)
+				if err != nil {
+					log.Warnf("Skipping endpoint %s: %v", dnsName, err)
+					continue
+				}
 				if service.Group != "" {
 					ep.WithProviderSpecific(providerSpecificGroup, service.Group)
 				}
@@ -359,11 +363,15 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			result = append(result, ep)
 		}
 		if service.Text != "" {
-			ep := endpoint.NewEndpoint(
+			ep, err := endpoint.NewValidatedEndpoint(
 				dnsName,
 				endpoint.RecordTypeTXT,
 				service.Text,
 			)
+			if err != nil {
+				log.Warnf("Skipping endpoint %s: %v", dnsName, err)
+				continue
+			}
 			if p.strictlyOwned {
 				ep.Labels[endpoint.OwnerLabelKey] = service.Owner
 			}

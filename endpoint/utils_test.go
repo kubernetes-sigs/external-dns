@@ -229,11 +229,10 @@ func TestEndpointsForHostname(t *testing.T) {
 	}
 }
 
-// TestEndpointsForHostnameSkipsRejectedHostname covers a hostname the constructor
-// refuses to build an endpoint for. Every record type shares the one hostname, so
-// a rejection drops all of them, and none may be collected as a nil element: the
-// metadata pass that follows the construction loop dereferences every element of
-// the slice, as does MergeEndpoints downstream.
+// TestEndpointsForHostnameSkipsRejectedHostname covers a hostname the validating
+// constructor refuses to build an endpoint for. Every record type shares the one
+// hostname, so a rejection drops all of them, and nothing unbuildable may reach
+// the result: MergeEndpoints downstream dereferences every element of the slice.
 func TestEndpointsForHostnameSkipsRejectedHostname(t *testing.T) {
 	// The two names differ only in the length of the first label, 64 characters
 	// against the 63 that RFC 1035 section 2.3.4 allows.

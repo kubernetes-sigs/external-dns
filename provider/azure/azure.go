@@ -169,7 +169,11 @@ func (p *AzureProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 				if recordSet.Properties.TTL != nil {
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
-				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				ep, err := endpoint.NewValidatedEndpointWithTTL(name, recordType, ttl, targets...)
+				if err != nil {
+					log.Warnf("Skipping endpoint %s: %v", name, err)
+					continue
+				}
 				extractMetadataFromRecordSet(ep, recordSet)
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",

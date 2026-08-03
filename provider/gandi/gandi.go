@@ -140,10 +140,13 @@ func (p *GandiProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error)
 						"zone":   zone,
 					}).Debug("Returning endpoint record")
 
-					endpoints = append(
-						endpoints,
-						endpoint.NewEndpointWithTTL(name, r.RrsetType, endpoint.TTL(r.RrsetTTL), v),
-					)
+					ep, err := endpoint.NewValidatedEndpointWithTTL(name, r.RrsetType, endpoint.TTL(r.RrsetTTL), v)
+					if err != nil {
+						log.Warnf("Skipping endpoint %s: %v", name, err)
+						continue
+					}
+
+					endpoints = append(endpoints, ep)
 				}
 			}
 		}

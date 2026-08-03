@@ -510,12 +510,17 @@ func ovhGroupByNameAndType(records []ovhRecord) []*endpoint.Endpoint {
 		for _, record := range records {
 			targets = append(targets, record.Target)
 		}
-		ep := endpoint.NewEndpointWithTTL(
-			strings.TrimPrefix(records[0].SubDomain+"."+records[0].Zone, "."),
+		dnsName := strings.TrimPrefix(records[0].SubDomain+"."+records[0].Zone, ".")
+		ep, err := endpoint.NewValidatedEndpointWithTTL(
+			dnsName,
 			records[0].FieldType,
 			endpoint.TTL(records[0].TTL),
 			targets...,
 		)
+		if err != nil {
+			log.Warnf("Skipping endpoint %s: %v", dnsName, err)
+			continue
+		}
 		endpoints = append(endpoints, ep)
 	}
 

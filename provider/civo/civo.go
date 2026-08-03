@@ -141,7 +141,12 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 					name = zone.Name
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value))
+				ep, err := endpoint.NewValidatedEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value)
+				if err != nil {
+					log.Warnf("Skipping endpoint %s: %v", name, err)
+					continue
+				}
+				endpoints = append(endpoints, ep)
 			}
 		}
 	}

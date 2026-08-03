@@ -217,7 +217,11 @@ func mergeEndpointsMultiTargets(endpoints []*endpoint.Endpoint) []*endpoint.Endp
 			targets[i] = e.Targets[0]
 		}
 
-		e := endpoint.NewEndpointWithTTL(dnsName, recordType, recordTTL, targets...)
+		e, err := endpoint.NewValidatedEndpointWithTTL(dnsName, recordType, recordTTL, targets...)
+		if err != nil {
+			log.Warnf("Skipping endpoint %s: %v", dnsName, err)
+			continue
+		}
 		mergedEndpoints = append(mergedEndpoints, e)
 	}
 
@@ -299,14 +303,17 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 				if !provider.SupportedRecordType(*record.Rtype) {
 					continue
 				}
-				endpoints = append(endpoints,
-					endpoint.NewEndpointWithTTL(
-						*record.Domain,
-						*record.Rtype,
-						endpoint.TTL(*record.Ttl),
-						*record.Rdata,
-					),
+				ep, err := endpoint.NewValidatedEndpointWithTTL(
+					*record.Domain,
+					*record.Rtype,
+					endpoint.TTL(*record.Ttl),
+					*record.Rdata,
 				)
+				if err != nil {
+					log.Warnf("Skipping endpoint %s: %v", *record.Domain, err)
+					continue
+				}
+				endpoints = append(endpoints, ep)
 			}
 
 			if page = resp.OpcNextPage; resp.OpcNextPage == nil {

@@ -327,7 +327,11 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				fqdn = record.Name + "." + zoneName
 			}
 
-			e := endpoint.NewEndpointWithTTL(fqdn, string(record.Type), endpoint.TTL(record.Ttl), record.Content)
+			e, err := endpoint.NewValidatedEndpointWithTTL(fqdn, string(record.Type), endpoint.TTL(record.Ttl), record.Content)
+			if err != nil {
+				log.Warnf("Skipping endpoint %s: %v", fqdn, err)
+				continue
+			}
 			endpoints = append(endpoints, e)
 		}
 	}

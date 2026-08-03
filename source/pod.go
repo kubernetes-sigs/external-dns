@@ -151,8 +151,12 @@ func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoi
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
-		newEndpoint := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...)
-		endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+		ep, err := endpoint.NewValidatedEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...)
+		if err != nil {
+			log.Warnf("Skipping endpoint for pod %s/%s: %v", pod.Namespace, pod.Name, err)
+			continue
+		}
+		endpoints = append(endpoints, ep)
 	}
 	return endpoints
 }
@@ -165,8 +169,12 @@ func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range hostsMap {
-		newEndpoint := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...)
-		endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+		ep, err := endpoint.NewValidatedEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...)
+		if err != nil {
+			log.Warnf("Skipping endpoint for pod %s/%s: %v", pod.Namespace, pod.Name, err)
+			continue
+		}
+		endpoints = append(endpoints, ep)
 	}
 	return endpoints, nil
 }

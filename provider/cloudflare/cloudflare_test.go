@@ -2174,8 +2174,9 @@ func TestCloudflareZoneRecordsFail(t *testing.T) {
 	}
 }
 
-// TestCloudflareLongRecordsErrorLog checks if the error is logged when a record name exceeds 63 characters
-// it's not likely to happen in practice, as the Cloudflare API should reject having it
+// TestCloudflareLongRecordsErrorLog checks that a record whose name has a label exceeding
+// 63 characters is skipped with a warning instead of failing the listing.
+// It's not likely to happen in practice, as the Cloudflare API should reject having it.
 func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 		"001": {
@@ -2198,7 +2199,8 @@ func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail - too long record, %s", err)
 	}
-	logtest.TestHelperLogContains("s longer than 63 characters. Cannot create endpoint", hook, t)
+	logtest.TestHelperLogContains("Skipping endpoint", hook, t)
+	logtest.TestHelperLogContains("is longer than 63 characters", hook, t)
 }
 
 // check if the error is expected

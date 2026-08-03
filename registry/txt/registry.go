@@ -341,14 +341,16 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 
-	txtNew := endpoint.NewEndpoint(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
-		txtNew.WithSetIdentifier(r.SetIdentifier)
-		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
-		}
+	txtNew, err := endpoint.NewValidatedEndpoint(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	if err != nil {
+		log.Warnf("Skipping ownership TXT record for %q: %v", r.DNSName, err)
+		return endpoints
+	}
+	txtNew.WithSetIdentifier(r.SetIdentifier)
+	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+	txtNew.ProviderSpecific = r.ProviderSpecific
+	if filter(txtNew) {
+		endpoints = append(endpoints, txtNew)
 	}
 	return endpoints
 }

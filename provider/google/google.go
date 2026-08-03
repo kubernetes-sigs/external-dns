@@ -221,7 +221,12 @@ func (p *GoogleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			if !p.SupportedRecordType(r.Type) {
 				continue
 			}
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), r.Rrdatas...))
+			ep, err := endpoint.NewValidatedEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), r.Rrdatas...)
+			if err != nil {
+				log.Warnf("Skipping endpoint %s: %v", r.Name, err)
+				continue
+			}
+			endpoints = append(endpoints, ep)
 		}
 
 		return nil

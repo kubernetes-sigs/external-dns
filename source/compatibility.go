@@ -19,11 +19,24 @@ package source
 import (
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
+
+// appendValidatedEndpoint constructs an endpoint for the given hostname and
+// appends it, skipping hostnames the endpoint constructor rejects with a
+// warning.
+func appendValidatedEndpoint(endpoints []*endpoint.Endpoint, hostname, recordType, target string) []*endpoint.Endpoint {
+	ep, err := endpoint.NewValidatedEndpoint(hostname, recordType, target)
+	if err != nil {
+		log.Warnf("Skipping %s endpoint for hostname %q: %v", recordType, hostname, err)
+		return endpoints
+	}
+	return append(endpoints, ep)
+}
 
 const (
 	mateAnnotationKey     = "zalando.org/dnsname"
@@ -63,12 +76,10 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
-			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+			endpoints = appendValidatedEndpoint(endpoints, hostname, endpoint.RecordTypeA, lb.IP)
 		}
 		if lb.Hostname != "" {
-			newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
-			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+			endpoints = appendValidatedEndpoint(endpoints, hostname, endpoint.RecordTypeCNAME, lb.Hostname)
 		}
 	}
 
@@ -97,12 +108,10 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
-				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+				endpoints = appendValidatedEndpoint(endpoints, hostname, endpoint.RecordTypeA, lb.IP)
 			}
 			if lb.Hostname != "" {
-				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
-				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+				endpoints = appendValidatedEndpoint(endpoints, hostname, endpoint.RecordTypeCNAME, lb.Hostname)
 			}
 		}
 	}
@@ -164,12 +173,10 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 				recordType := endpoint.SuitableType(address.Address)
 				// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 				if isExternal && (address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
-					newEndpoint := endpoint.NewEndpoint(hostname, recordType, address.Address)
-					endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+					endpoints = appendValidatedEndpoint(endpoints, hostname, recordType, address.Address)
 				}
 				if isInternal && address.Type == v1.NodeInternalIP {
-					newEndpoint := endpoint.NewEndpoint(hostname, recordType, address.Address)
-					endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+					endpoints = appendValidatedEndpoint(endpoints, hostname, recordType, address.Address)
 				}
 			}
 		}
@@ -202,12 +209,10 @@ func legacyEndpointsFromDNSControllerLoadBalancerService(svc *v1.Service) []*end
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
-				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+				endpoints = appendValidatedEndpoint(endpoints, hostname, endpoint.RecordTypeA, lb.IP)
 			}
 			if lb.Hostname != "" {
-				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
-				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
+				endpoints = appendValidatedEndpoint(endpoints, hostname, endpoint.RecordTypeCNAME, lb.Hostname)
 			}
 		}
 	}

@@ -58,22 +58,10 @@ func HasNoEmptyEndpoints(
 	return false
 }
 
-// AppendIfNotNil appends ep to endpoints, skipping it when ep is nil.
-//
-// NewEndpoint and NewEndpointWithTTL return nil for a DNS name that cannot be
-// represented, currently a label longer than the 63 characters allowed by
-// RFC 1035 section 2.3.4, and log the reason. Collecting that nil would panic
-// later in MergeEndpoints or in any caller that sets labels on the result, so
-// every site that appends a freshly constructed endpoint goes through here.
-func AppendIfNotNil(endpoints []*Endpoint, ep *Endpoint) []*Endpoint {
-	if ep == nil {
-		return endpoints
-	}
-	return append(endpoints, ep)
-}
-
 // EndpointsForHostname returns endpoint objects for each host-target combination,
 // grouping targets by their suitable DNS record type (A, AAAA, or CNAME).
+// A hostname the endpoint constructor rejects is skipped with a warning
+// rather than aborting the remaining record types.
 func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpecific ProviderSpecific, setIdentifier string, resource string) []*Endpoint {
 	byType := map[string]Targets{}
 	for _, t := range targets {
@@ -86,16 +74,17 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 		if len(byType[rt]) == 0 {
 			continue
 		}
-		endpoints = AppendIfNotNil(endpoints, NewEndpointWithTTL(hostname, rt, ttl, byType[rt]...))
-	}
-
-	// add the shared metadata to every endpoint that was created
-	for _, ep := range endpoints {
+		ep, err := NewValidatedEndpointWithTTL(hostname, rt, ttl, byType[rt]...)
+		if err != nil {
+			log.Warnf("Skipping %s endpoint for hostname %q: %v", rt, hostname, err)
+			continue
+		}
 		ep.ProviderSpecific = providerSpecific
 		ep.SetIdentifier = setIdentifier
 		if resource != "" {
 			ep.Labels[ResourceLabelKey] = resource
 		}
+		endpoints = append(endpoints, ep)
 	}
 
 	return endpoints
@@ -139,7 +128,12 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 	endpoints := make([]*Endpoint, 0, len(sortedHosts)*len(sortedTypes))
 	for _, hostname := range sortedHosts {
 		for _, recordType := range sortedTypes {
-			endpoints = AppendIfNotNil(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
+			ep, err := NewValidatedEndpoint(hostname, recordType, sortedTargets[recordType]...)
+			if err != nil {
+				log.Warnf("Skipping %s endpoint for hostname %q: %v", recordType, hostname, err)
+				continue
+			}
+			endpoints = append(endpoints, ep)
 		}
 	}
 	return endpoints
