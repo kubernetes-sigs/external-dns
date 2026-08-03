@@ -387,7 +387,7 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, li
 }
 
 func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
-	rtHosts, err := c.resolveHostnames(rt)
+	rtHosts, annotationOnly, err := c.hosts(rt)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		if !ok {
 			continue
 		}
-		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+		c.matchRouteToParent(rt, rtHosts, parent, hostTargets, annotationOnly)
 	}
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
@@ -466,7 +466,7 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets, annotationOnly bool) {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -478,7 +478,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 			}
 			continue
 		}
-		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets) {
+		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets, annotationOnly) {
 			match = true
 		}
 	}
@@ -492,7 +492,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
 }
 
-func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
+func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets, annotationOnly bool) bool {
 	if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
 		return false
 	}
@@ -513,15 +513,25 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		if gwHost == "" && rtHost == "" {
 			continue
 		}
-		host, ok := gwMatchingHost(gwHost, rtHost)
-		if !ok {
-			continue
-		}
-		override := parent.obj.overrides
-		hostTargets[host] = append(hostTargets[host], override...)
-		if len(override) == 0 {
-			for _, addr := range parent.obj.gateway.Status.Addresses {
-				hostTargets[host] = append(hostTargets[host], addr.Value)
+		if !annotationOnly {
+			host, ok := gwMatchingHost(gwHost, rtHost)
+			if !ok {
+				continue
+			}
+			override := parent.obj.overrides
+			hostTargets[host] = append(hostTargets[host], override...)
+			if len(override) == 0 {
+				for _, addr := range parent.obj.gateway.Status.Addresses {
+					hostTargets[host] = append(hostTargets[host], addr.Value)
+				}
+			}
+		} else {
+			override := parent.obj.overrides
+			hostTargets[rtHost] = append(hostTargets[rtHost], override...)
+			if len(override) == 0 {
+				for _, addr := range parent.obj.gateway.Status.Addresses {
+					hostTargets[rtHost] = append(hostTargets[rtHost], addr.Value)
+				}
 			}
 		}
 		match = true
@@ -529,64 +539,55 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-// appendFQDNTemplate appends the template-generated hostnames, unless another source already
-// supplied one and the template is not combining.
-// TODO: The combine-fqdn-annotation flag is similarly vague.
-func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
-	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
-		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
-		if err != nil {
-			return nil, err
-		}
-		hostnames = append(hostnames, hosts...)
-	}
-	return hostnames, nil
-}
-
-// resolveHostnames returns a route's hostnames in the order documented for the gateway sources:
-// spec, annotation, FQDN template, listener fallback, subject to gateway-hostname-source.
-func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, error) {
+func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, bool, error) {
 	var hostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
 	}
+	// TODO: The combine-fqdn-annotation flag is similarly vague.
+	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
+		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
+		if err != nil {
+			return nil, false, err
+		}
+		hostnames = append(hostnames, hosts...)
+	}
 
 	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
-	if hostNameAnnotationExists {
-		switch strings.ToLower(hostNameAnnotation) {
-		case gatewayHostnameSourceAnnotationOnlyValue:
-			if c.src.ignoreHostnameAnnotation {
-				return []string{}, nil
-			}
-			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
-		case gatewayHostnameSourceDefinedHostsOnlyValue:
-			// Explicitly use only defined hostnames (route spec and optional template result)
-			return c.appendFQDNTemplate(hostnames, rt)
-		default:
-			// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
-			log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
-				annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
+	if !hostNameAnnotationExists {
+		// This means that the route doesn't specify a hostname and should use any provided by
+		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
+		// break {TCP,UDP}Routes.
+		if len(rt.Hostnames()) == 0 {
+			hostnames = append(hostnames, "")
 		}
+		if !c.src.ignoreHostnameAnnotation {
+			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		return hostnames, false, nil
 	}
 
-	if !c.src.ignoreHostnameAnnotation {
-		// Skip empty values so an empty annotation does not gate the template below.
-		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
-			if hostname != "" {
-				hostnames = append(hostnames, hostname)
-			}
+	switch strings.ToLower(hostNameAnnotation) {
+	case gatewayHostnameSourceAnnotationOnlyValue:
+		if c.src.ignoreHostnameAnnotation {
+			return []string{}, true, nil
 		}
+		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), true, nil
+	case gatewayHostnameSourceDefinedHostsOnlyValue:
+		// Explicitly use only defined hostnames (route spec and optional template result)
+		return hostnames, false, nil
+	default:
+		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
+		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
+			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
+		if len(rt.Hostnames()) == 0 {
+			hostnames = append(hostnames, "")
+		}
+		if !c.src.ignoreHostnameAnnotation {
+			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		return hostnames, false, nil
 	}
-	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
-	if err != nil {
-		return nil, err
-	}
-	// The route named no hostname of its own, so fall back to the attached listeners' hostnames.
-	// Only useful for {HTTP,TLS}Routes, but it doesn't break {TCP,UDP}Routes.
-	if len(rt.Hostnames()) == 0 {
-		hostnames = append(hostnames, "")
-	}
-	return hostnames, nil
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Listener, rt gatewayRoute) bool {
