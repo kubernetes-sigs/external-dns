@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"testing"
@@ -34,9 +35,39 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-type mockOCIDNSClient struct{}
+type mockOCIDNSClient struct {
+	listZonesCalls int
+	getZoneCalls   int
+	getZoneErrors  map[string]error
+}
+
+type mockOCIServiceError struct {
+	statusCode int
+	code       string
+}
+
+func (e mockOCIServiceError) Error() string {
+	return e.code
+}
+
+func (e mockOCIServiceError) GetHTTPStatusCode() int {
+	return e.statusCode
+}
+
+func (e mockOCIServiceError) GetMessage() string {
+	return e.code
+}
+
+func (e mockOCIServiceError) GetCode() string {
+	return e.code
+}
+
+func (e mockOCIServiceError) GetOpcRequestID() string {
+	return ""
+}
 
 var (
+	compartmentID             = "ocid1.compartment.oc1..aaaaaaaaujjg4lf3v6uaqeml7xfk7stzvrxeweaeyolhh75exuoqxpqjb4qq"
 	zoneIdQux                 = "ocid1.dns-zone.oc1..123456ef0bfbb5c251b9713fd7bf8959"
 	zoneNameQux               = "qux.com"
 	testPrivateZoneSummaryQux = dns.ZoneSummary{
@@ -71,6 +102,7 @@ func buildZoneResponseItems(scope dns.ListZonesScopeEnum, privateZones, globalZo
 }
 
 func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesRequest) (dns.ListZonesResponse, error) {
+	c.listZonesCalls++
 	if request.Page == nil || *request.Page == "0" {
 		return dns.ListZonesResponse{
 			Items:       buildZoneResponseItems(request.Scope, []dns.ZoneSummary{testPrivateZoneSummaryBaz}, []dns.ZoneSummary{testGlobalZoneSummaryFoo}),
@@ -134,7 +166,7 @@ func newOCIProvider(client ociDNSClient, domainFilter *endpoint.DomainFilter, zo
 	return &OCIProvider{
 		client: client,
 		cfg: OCIConfig{
-			CompartmentID: "ocid1.compartment.oc1..aaaaaaaaujjg4lf3v6uaqeml7xfk7stzvrxeweaeyolhh75exuoqxpqjb4qq",
+			CompartmentID: compartmentID,
 		},
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
@@ -144,6 +176,43 @@ func newOCIProvider(client ociDNSClient, domainFilter *endpoint.DomainFilter, zo
 		},
 		dryRun: dryRun,
 	}
+}
+
+func (c *mockOCIDNSClient) GetZone(_ context.Context, request dns.GetZoneRequest) (dns.GetZoneResponse, error) {
+	c.getZoneCalls++
+	if request.ZoneNameOrId == nil {
+		return dns.GetZoneResponse{}, errors.New("no name or id")
+	}
+	if err := c.getZoneErrors[*request.ZoneNameOrId]; err != nil {
+		return dns.GetZoneResponse{}, err
+	}
+
+	var summary dns.ZoneSummary
+	var scope dns.ScopeEnum
+	switch *request.ZoneNameOrId {
+	case zoneIdBaz:
+		summary = testPrivateZoneSummaryBaz
+		scope = dns.ScopePrivate
+	case zoneIdQux:
+		summary = testPrivateZoneSummaryQux
+		scope = dns.ScopePrivate
+	case *testGlobalZoneSummaryFoo.Id:
+		summary = testGlobalZoneSummaryFoo
+		scope = dns.ScopeGlobal
+	case *testGlobalZoneSummaryBar.Id:
+		summary = testGlobalZoneSummaryBar
+		scope = dns.ScopeGlobal
+	default:
+		return dns.GetZoneResponse{}, fmt.Errorf("zone %q not found", *request.ZoneNameOrId)
+	}
+
+	return dns.GetZoneResponse{Zone: dns.Zone{
+		Id:            summary.Id,
+		Name:          summary.Name,
+		Scope:         scope,
+		ZoneType:      dns.ZoneZoneTypePrimary,
+		CompartmentId: new(compartmentID),
+	}}, nil
 }
 
 func validateOCIZones(t *testing.T, actual, expected map[string]dns.ZoneSummary) {
@@ -317,6 +386,90 @@ func TestOCIZones(t *testing.T) {
 			validateOCIZones(t, zones, tc.expected)
 		})
 	}
+}
+
+func TestOCIZonesWithFullZoneIDFiltersUsesGetZone(t *testing.T) {
+	client := &mockOCIDNSClient{}
+	provider := newOCIProvider(
+		client,
+		endpoint.NewDomainFilter([]string{"baz.com"}),
+		provider.NewZoneIDFilter([]string{zoneIdBaz, zoneIdQux}),
+		"PRIVATE",
+		false,
+	)
+
+	zones, err := provider.zones(t.Context())
+
+	require.NoError(t, err)
+	validateOCIZones(t, zones, map[string]dns.ZoneSummary{zoneIdBaz: testPrivateZoneSummaryBaz})
+	require.Zero(t, client.listZonesCalls)
+	require.Equal(t, 2, client.getZoneCalls)
+}
+
+func TestOCIZonesWithFullZoneIDFiltersSkipsNotFoundZone(t *testing.T) {
+	client := &mockOCIDNSClient{
+		getZoneErrors: map[string]error{
+			zoneIdQux: mockOCIServiceError{
+				statusCode: http.StatusNotFound,
+				code:       "NotAuthorizedOrNotFound",
+			},
+		},
+	}
+	ociProvider := newOCIProvider(
+		client,
+		endpoint.NewDomainFilter([]string{"com"}),
+		provider.NewZoneIDFilter([]string{zoneIdBaz, zoneIdQux}),
+		"PRIVATE",
+		false,
+	)
+
+	zones, err := ociProvider.zones(t.Context())
+
+	require.NoError(t, err)
+	validateOCIZones(t, zones, map[string]dns.ZoneSummary{zoneIdBaz: testPrivateZoneSummaryBaz})
+	require.Zero(t, client.listZonesCalls)
+	require.Equal(t, 2, client.getZoneCalls)
+}
+
+func TestOCIZonesWithFullZoneIDFiltersReturnsSoftError(t *testing.T) {
+	client := &mockOCIDNSClient{
+		getZoneErrors: map[string]error{
+			zoneIdQux: errors.New("request timed out"),
+		},
+	}
+	ociProvider := newOCIProvider(
+		client,
+		endpoint.NewDomainFilter([]string{"com"}),
+		provider.NewZoneIDFilter([]string{zoneIdBaz, zoneIdQux}),
+		"PRIVATE",
+		false,
+	)
+
+	zones, err := ociProvider.zones(t.Context())
+
+	require.Nil(t, zones)
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorContains(t, err, zoneIdQux)
+	require.Zero(t, client.listZonesCalls)
+	require.Equal(t, 2, client.getZoneCalls)
+}
+
+func TestOCIZonesWithSuffixZoneIDFilterUsesListZones(t *testing.T) {
+	client := &mockOCIDNSClient{}
+	provider := newOCIProvider(
+		client,
+		endpoint.NewDomainFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{"e1e042ef0bfbb5c251b9713fd7bf8959"}),
+		"GLOBAL",
+		false,
+	)
+
+	zones, err := provider.zones(t.Context())
+
+	require.NoError(t, err)
+	validateOCIZones(t, zones, map[string]dns.ZoneSummary{*testGlobalZoneSummaryFoo.Id: testGlobalZoneSummaryFoo})
+	require.Equal(t, 2, client.listZonesCalls)
+	require.Zero(t, client.getZoneCalls)
 }
 
 func TestOCIRecords(t *testing.T) {
@@ -556,6 +709,25 @@ func (c *mutableMockOCIDNSClient) ListZones(_ context.Context, _ dns.ListZonesRe
 		zones = append(zones, v)
 	}
 	return dns.ListZonesResponse{Items: zones}, nil
+}
+
+func (c *mutableMockOCIDNSClient) GetZone(_ context.Context, request dns.GetZoneRequest) (dns.GetZoneResponse, error) {
+	if request.ZoneNameOrId == nil {
+		return dns.GetZoneResponse{}, errors.New("no name or id")
+	}
+
+	zone, ok := c.zones[*request.ZoneNameOrId]
+	if !ok {
+		return dns.GetZoneResponse{}, errors.New("zone not found")
+	}
+
+	return dns.GetZoneResponse{Zone: dns.Zone{
+		Id:            zone.Id,
+		Name:          zone.Name,
+		Scope:         dns.ScopeGlobal,
+		ZoneType:      dns.ZoneZoneTypePrimary,
+		CompartmentId: new(compartmentID),
+	}}, nil
 }
 
 func (c *mutableMockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
