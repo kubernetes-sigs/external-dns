@@ -880,6 +880,93 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 			expected: nil,
 		},
+		{
+			title: "title-cased Spec field resolves against a lowercase JSON key",
+			cfg: cfg{
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   `{{index .Spec.Hostnames 0}}`,
+				targetTemplate: `{{index .Spec.hosts 0}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+						"kind":       "ProxyService",
+						"metadata": map[string]any{
+							"name":      "reviews",
+							"namespace": "default",
+						},
+						"spec": map[string]any{
+							"hostnames": []any{"reviews.bookinfo.example.com"},
+							"hosts":     []any{"promo.svc.local"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("reviews.bookinfo.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
+			},
+		},
+		{
+			title: "title-cased alias does not clobber a key already present under that name",
+			cfg: cfg{
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   `{{index .Spec.Hostnames 0}}`,
+				targetTemplate: `{{index .Spec.hosts 0}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+						"kind":       "ProxyService",
+						"metadata": map[string]any{
+							"name":      "reviews",
+							"namespace": "default",
+						},
+						"spec": map[string]any{
+							"hostnames": "ignored.example.com",
+							"Hostnames": []any{"real.example.com"},
+							"hosts":     []any{"promo.svc.local"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("real.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
+			},
+		},
+		{
+			title: "title-cased alias resolves through a nested map",
+			cfg: cfg{
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   `{{.Spec.Endpoint.Hostname}}`,
+				targetTemplate: `{{index .Spec.hosts 0}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+						"kind":       "ProxyService",
+						"metadata": map[string]any{
+							"name":      "reviews",
+							"namespace": "default",
+						},
+						"spec": map[string]any{
+							"endpoint": map[string]any{
+								"hostname": "reviews.nested.example.com",
+							},
+							"hosts": []any{"promo.svc.local"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("reviews.nested.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)
@@ -1085,36 +1172,4 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func TestWithTitleCaseAliases(t *testing.T) {
-	in := map[string]any{
-		"hostnames": []any{"a.example.com"},
-		"nested": map[string]any{
-			"innerField": "value",
-		},
-		"Already": "unchanged", // already title-cased; no collision to resolve
-	}
-
-	out := withTitleCaseAliases(in)
-
-	assert.Equal(t, in["hostnames"], out["hostnames"], "original lowercase key must still resolve")
-	assert.Equal(t, in["hostnames"], out["Hostnames"], "title-cased alias must resolve to the same value")
-	assert.Equal(t, "unchanged", out["Already"])
-
-	nested, ok := out["Nested"].(map[string]any)
-	require.True(t, ok, "nested maps must get aliased recursively")
-	assert.Equal(t, "value", nested["InnerField"])
-}
-
-func TestWithTitleCaseAliases_DoesNotClobberExistingKey(t *testing.T) {
-	in := map[string]any{
-		"hostnames": "lower",
-		"Hostnames": "already-title-cased",
-	}
-
-	out := withTitleCaseAliases(in)
-
-	assert.Equal(t, "lower", out["hostnames"])
-	assert.Equal(t, "already-title-cased", out["Hostnames"], "must not overwrite a key the original data already defines")
 }
