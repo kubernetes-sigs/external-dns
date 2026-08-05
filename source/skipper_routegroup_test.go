@@ -282,6 +282,41 @@ func TestRouteGroupDeepCopyObject(t *testing.T) {
 	assert.Equal(t, "changed", original.Annotations["key"])
 }
 
+func TestRouteGroupClientToken(t *testing.T) {
+	t.Parallel()
+
+	t.Run("trims direct token", func(t *testing.T) {
+		client := newRouteGroupClient(" direct-token\r\n", "", time.Second)
+		t.Cleanup(func() { close(client.quit) })
+
+		assert.Equal(t, "direct-token", client.getToken())
+	})
+
+	t.Run("loads custom token file", func(t *testing.T) {
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("custom-token\n"), 0o600))
+
+		client := newRouteGroupClient("initial-token", tokenFile, time.Second)
+		t.Cleanup(func() { close(client.quit) })
+
+		assert.Equal(t, tokenFile, client.tokenFile)
+		assert.Equal(t, "custom-token", client.getToken())
+	})
+
+	t.Run("reloads custom token file", func(t *testing.T) {
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("initial-file-token"), 0o600))
+
+		client := newRouteGroupClient("initial-token", tokenFile, time.Second)
+		t.Cleanup(func() { close(client.quit) })
+
+		require.NoError(t, os.WriteFile(tokenFile, []byte("rotated-file-token\r\n"), 0o600))
+		client.updateToken()
+
+		assert.Equal(t, "rotated-file-token", client.getToken())
+	})
+}
+
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
 		ObjectMeta: metav1.ObjectMeta{
