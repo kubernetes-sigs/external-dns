@@ -55,14 +55,14 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:description=Creates DNS entries from F5 TransportServer resources
 // +externaldns:source:resources=TransportServer.cis.f5.com
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
-	transportServerInformer kubeinformers.GenericInformer
-	kubeClient              kubernetes.Interface
-	templateEngine          template.Engine
-	unstructuredConverter   *unstructuredConverter
+	transportServerInformers *informers.Informers[kubeinformers.GenericInformer]
+	kubeClient               kubernetes.Interface
+	templateEngine           template.Engine
+	unstructuredConverter    *unstructuredConverter
 }
 
 func NewF5TransportServerSource(
@@ -71,26 +71,30 @@ func NewF5TransportServerSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
-	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	})
+	transportServerInformers := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+		return factory.ForResource(f5TransportServerGVR)
+	})
 
-	informers.MustSetTransform(transportServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+	transportServerInformers.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
-	informers.MustAddIndexers(transportServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+	transportServerInformers.MustAddIndexers(informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
-	informers.MustAddEventHandler(transportServerInformer.Informer(), informers.DefaultEventHandler())
+	transportServerInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -100,17 +104,17 @@ func NewF5TransportServerSource(
 	}
 
 	return &f5TransportServerSource{
-		transportServerInformer: transportServerInformer,
-		kubeClient:              kubeClient,
-		templateEngine:          cfg.TemplateEngine,
-		unstructuredConverter:   uc,
+		transportServerInformers: transportServerInformers,
+		kubeClient:               kubeClient,
+		templateEngine:           cfg.TemplateEngine,
+		unstructuredConverter:    uc,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TransportServers in the source's namespace(s).
 func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	transportServerObjects := informers.ListIndexed[*unstructured.Unstructured](ts.transportServerInformer.Informer().GetIndexer())
+	transportServerObjects := informers.ListIndexedAll[*unstructured.Unstructured](ts.transportServerInformers.Indexers()...)
 
 	var transportServers []*f5.TransportServer
 	for _, tsObj := range transportServerObjects {
@@ -136,7 +140,7 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for TransportServer")
 
-	informers.MustAddEventHandler(ts.transportServerInformer.Informer(), eventHandlerFunc(handler))
+	ts.transportServerInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 // endpointsFromTransportServers extracts the endpoints from a slice of TransportServers.

@@ -480,7 +480,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			}
 			source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultKongNamespace,
+					Namespaces:               []string{defaultKongNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=kong"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					LabelFilter:              labelFilter,
@@ -516,7 +516,7 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 	testDynamicInformerTransformHelper(t,
 		kongGroupdVersionResource,
 		fakeDynamicClient,
-		source.(*kongTCPIngressSource).kongTCPIngressInformer,
+		informerFor(t, source.(*kongTCPIngressSource).kongTCPIngressInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
@@ -641,7 +641,7 @@ func TestKongTCPIngressIndexer(t *testing.T) {
 			}
 
 			src, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultKongNamespace,
+				Namespaces:       []string{defaultKongNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})

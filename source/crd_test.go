@@ -69,7 +69,7 @@ func dnsEndpointByObj(t *testing.T, opts crcache.Options) crcache.ByObject {
 
 func TestBuildCacheOptions(t *testing.T) {
 	t.Run("all namespaces when namespace is empty", func(t *testing.T) {
-		opts, err := buildCacheOptions("", nil, nil)
+		opts, err := buildCacheOptions(nil, nil, nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.Contains(t, byObj.Namespaces, "", "empty string key means NamespaceAll")
@@ -77,16 +77,33 @@ func TestBuildCacheOptions(t *testing.T) {
 	})
 
 	t.Run("single namespace", func(t *testing.T) {
-		opts, err := buildCacheOptions("my-ns", nil, nil)
+		opts, err := buildCacheOptions([]string{"my-ns"}, nil, nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.Contains(t, byObj.Namespaces, "my-ns")
 		require.NotContains(t, byObj.Namespaces, "")
 	})
 
+	t.Run("multiple namespaces", func(t *testing.T) {
+		opts, err := buildCacheOptions([]string{"team-a", "team-b"}, nil, nil)
+		require.NoError(t, err)
+		byObj := dnsEndpointByObj(t, opts)
+		require.Contains(t, byObj.Namespaces, "team-a")
+		require.Contains(t, byObj.Namespaces, "team-b")
+		require.NotContains(t, byObj.Namespaces, "", "a namespace list must not widen to NamespaceAll")
+	})
+
+	t.Run("all namespaces subsumes the others", func(t *testing.T) {
+		opts, err := buildCacheOptions([]string{"team-a", ""}, nil, nil)
+		require.NoError(t, err)
+		byObj := dnsEndpointByObj(t, opts)
+		require.Len(t, byObj.Namespaces, 1)
+		require.Contains(t, byObj.Namespaces, "")
+	})
+
 	t.Run("label filter applied", func(t *testing.T) {
 		sel := labels.SelectorFromSet(labels.Set{"app": "foo"})
-		opts, err := buildCacheOptions("", sel, nil)
+		opts, err := buildCacheOptions(nil, sel, nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.NotNil(t, byObj.Label)
@@ -95,14 +112,14 @@ func TestBuildCacheOptions(t *testing.T) {
 	})
 
 	t.Run("empty label selector not applied", func(t *testing.T) {
-		opts, err := buildCacheOptions("", labels.Everything(), nil)
+		opts, err := buildCacheOptions(nil, labels.Everything(), nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.Nil(t, byObj.Label)
 	})
 
 	t.Run("transform keeps object matching annotation filter", func(t *testing.T) {
-		opts, err := buildCacheOptions("", nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
+		opts, err := buildCacheOptions(nil, nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 
@@ -113,7 +130,7 @@ func TestBuildCacheOptions(t *testing.T) {
 	})
 
 	t.Run("transform drops object not matching annotation filter", func(t *testing.T) {
-		opts, err := buildCacheOptions("", nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
+		opts, err := buildCacheOptions(nil, nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 
@@ -139,7 +156,7 @@ func TestCRDSource(t *testing.T) {
 func testCRDSourceEndpoints(t *testing.T) {
 	for _, ti := range []struct {
 		title              string
-		namespaceFilter    string
+		namespaceFilter    []string
 		objectNamespace    string
 		endpoints          []*endpoint.Endpoint
 		expectEndpoints    bool
@@ -150,7 +167,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 	}{
 		{
 			title:           "endpoints within a specific namespace",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -164,7 +181,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "no endpoints within a specific namespace",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "bar",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -177,7 +194,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd with no targets (relies on default-targets)",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -191,7 +208,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with single endpoint",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -205,7 +222,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with multiple endpoints",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -225,7 +242,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:              "valid crd gvk with annotation and non matching annotation filter",
-			namespaceFilter:    "foo",
+			namespaceFilter:    []string{"foo"},
 			objectNamespace:    "foo",
 			annotations:        map[string]string{"test": "that"},
 			annotationSelector: labels.SelectorFromSet(labels.Set{"test": "filter_something_else"}),
@@ -240,7 +257,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:              "valid crd gvk with annotation and matching annotation filter",
-			namespaceFilter:    "foo",
+			namespaceFilter:    []string{"foo"},
 			objectNamespace:    "foo",
 			annotations:        map[string]string{"test": "that"},
 			annotationSelector: labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -256,7 +273,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with label and non matching label filter",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "filter_something_else"}),
@@ -271,7 +288,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid crd gvk with label and matching label filter",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -287,7 +304,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "Create NS record",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -303,7 +320,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "Create SRV record",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -319,7 +336,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "SRV target with trailing dot (RFC 2782 absolute FQDN host) is valid (#6357)",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -335,7 +352,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "Create NAPTR record",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -351,7 +368,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -367,7 +384,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "CNAME target without trailing dot (relative name)",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -383,7 +400,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "illegal target NAPTR",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -398,7 +415,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "valid target TXT",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -414,7 +431,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "illegal target A",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -429,7 +446,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "MX Record allowing trailing dot in target",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -445,7 +462,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "MX Record without trailing dot in target",
-			namespaceFilter: "foo",
+			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
 			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
@@ -461,7 +478,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:           "provider-specific properties are passed through from DNSEndpoint spec",
-			namespaceFilter: "bar",
+			namespaceFilter: []string{"bar"},
 			objectNamespace: "bar",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -588,7 +605,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			}
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil)
 			require.NoError(t, err)
 
 			_, err = cs.Endpoints(t.Context())
@@ -638,7 +655,7 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 		},
 	})
 
-	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, nil, nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -733,7 +750,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	}
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(crds.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil)
 	require.NoError(t, err)
 
 	res, err := cs.Endpoints(t.Context())
@@ -753,7 +770,7 @@ func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
 	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(elements.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -781,7 +798,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	}, 2*time.Second, 10*time.Millisecond)
 
 	fakeCache := newFakeCRDCache(t, informer, fakeCRDCacheFilter{})
-	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, nil, nil)
 	require.NoError(t, err)
 
 	return watcher, cs
@@ -967,7 +984,7 @@ func (*fakeCRDCache) IndexField(_ context.Context, _ client.Object, _ string, _ 
 // fakeCRDCacheFilter holds the admission criteria applied by the real controller-runtime
 // cache (namespace, label selector, annotation selector). Zero value means no filtering.
 type fakeCRDCacheFilter struct {
-	namespace          string
+	namespaces         []string
 	labelSelector      labels.Selector
 	annotationSelector labels.Selector
 }
@@ -989,7 +1006,7 @@ func newFakeCRDCache(t *testing.T, informer toolscache.SharedIndexInformer, filt
 		)
 	}
 	if len(objs) > 0 {
-		cacheOpts, err := buildCacheOptions(filter.namespace, filter.labelSelector, filter.annotationSelector)
+		cacheOpts, err := buildCacheOptions(filter.namespaces, filter.labelSelector, filter.annotationSelector)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, cacheOpts)
 		var admitted []client.Object

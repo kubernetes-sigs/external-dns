@@ -56,7 +56,7 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
 				&Config{
-					Namespace:                "",
+					Namespaces:               nil,
 					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
@@ -731,7 +731,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				kubeClient,
 				istioClient,
 				&Config{
-					Namespace:                "",
+					Namespaces:               nil,
 					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,

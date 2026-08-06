@@ -682,7 +682,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			}
 			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        defaultF5VirtualServerNamespace,
+					Namespaces:       []string{defaultF5VirtualServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
 				})
@@ -718,7 +718,7 @@ func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
 	testDynamicInformerTransformHelper(t,
 		f5VirtualServerGVR,
 		fakeDynamicClient,
-		source.(*f5VirtualServerSource).virtualServerInformer,
+		informerFor(t, source.(*f5VirtualServerSource).virtualServerInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
@@ -842,7 +842,7 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 			}
 
 			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultF5VirtualServerNamespace,
+				Namespaces:       []string{defaultF5VirtualServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})

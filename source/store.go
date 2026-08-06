@@ -48,7 +48,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // config object is passed rather than individual parameters.
 //
 // Common Configuration Fields:
-// - Namespace: Target namespace for source operations
+// - Namespaces: Target namespaces for source operations, empty for all of them
 // - AnnotationFilter: Filter sources by annotation selector
 // - LabelFilter: Filter sources by label selectors
 // - FQDNTemplate: Template for generating fully qualified domain names
@@ -58,7 +58,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // The config is created from externaldns.Config via NewSourceConfig() which handles
 // type conversions and validation.
 type Config struct {
-	Namespace                      string
+	Namespaces                     []string
 	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
@@ -135,7 +135,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		return nil, err
 	}
 	c := &Config{
-		Namespace:                      cfg.Namespace,
+		Namespaces:                     cfg.Namespaces,
 		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,

@@ -302,7 +302,7 @@ func TestF5TransportServerFQDNTemplate(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:      defaultF5TransportServerNamespace,
+				Namespaces:     []string{defaultF5TransportServerNamespace},
 				LabelFilter:    labels.Everything(),
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 			})

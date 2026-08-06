@@ -54,7 +54,7 @@ type Config struct {
 	GlooNamespaces                                []string
 	SkipperRouteGroupVersion                      string
 	Sources                                       []string
-	Namespace                                     string
+	Namespaces                                    []string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
 	LabelFilter                                   string
@@ -151,6 +151,7 @@ type Config struct {
 	TLSClientCertKey                              string
 	Policy                                        string
 	Registry                                      string
+	CRDRegistryNamespace                          string
 	TXTOwnerID                                    string
 	TXTOwnerOld                                   string
 	TXTPrefix                                     string
@@ -310,7 +311,7 @@ var defaultConfig = &Config{
 	MetricsAddress:               ":7979",
 	MinEventSyncInterval:         5 * time.Second,
 	MinTTL:                       0,
-	Namespace:                    "",
+	Namespaces:                   []string{},
 	NAT64Networks:                []string{},
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
@@ -444,6 +445,32 @@ var allowedSources = []string{
 	"unstructured",
 }
 
+// multiNamespaceSources watch every namespace given to --namespace. The others watch at
+// most one, either because they ignore the flag or because they are not migrated yet.
+var multiNamespaceSources = []string{
+	"ambassador-host",
+	"connector",
+	"contour-httpproxy",
+	"crd",
+	"empty",
+	"f5-transportserver",
+	"f5-virtualserver",
+	"fake",
+	"gloo-proxy",
+	"ingress",
+	"kong-tcpingress",
+	"node",
+	"openshift-route",
+	"service",
+	"traefik-proxy",
+	"unstructured",
+}
+
+// SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
+func SourceSupportsMultipleNamespaces(source string) bool {
+	return slices.Contains(multiNamespaceSources, source)
+}
+
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
@@ -485,7 +512,26 @@ func (cfg *Config) ParseFlags(args []string) error {
 		return err
 	}
 	cfg.resolveDeprecatedFlags()
+	cfg.Namespaces = uniqueCommaSeparated(cfg.Namespaces)
 	return nil
+}
+
+// uniqueCommaSeparated expands the comma-separated values of a repeatable flag, dropping
+// blanks and duplicates. Kingpin only splits them when the value comes from an env var.
+func uniqueCommaSeparated(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	var result []string
+	for _, value := range values {
+		for item := range strings.SplitSeq(value, ",") {
+			item = strings.TrimSpace(item)
+			if _, ok := seen[item]; ok || item == "" {
+				continue
+			}
+			seen[item] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
@@ -549,7 +595,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector (default: all resources)", defaultConfig.LabelFilter, &cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)
-	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
+	b.StringsVar("namespace", "Limit resources queried for endpoints to specific namespaces; specify multiple times or as a comma-separated list (default: all namespaces)", defaultConfig.Namespaces, &cfg.Namespaces)
 	b.StringsVar("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)", nil, &cfg.NAT64Networks)
 	b.StringVar("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.", defaultConfig.OCPRouterName, &cfg.OCPRouterName)
 	b.StringVar("pod-source-domain", "Domain to use for pods records (optional)", defaultConfig.PodSourceDomain, &cfg.PodSourceDomain)
@@ -676,6 +722,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// Flags related to the registry
 	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: aws-sd, crd, dynamodb, noop, txt)", defaultConfig.Registry, &cfg.Registry, RegistryAWSSD, RegistryCRD, RegistryDynamoDB, RegistryNoop, RegistryTXT)
+	b.StringVar("crd-registry-namespace", "When using the CRD registry, the namespace the DNSRecord objects are stored in (default: the namespace ExternalDNS runs in)", defaultConfig.CRDRegistryNamespace, &cfg.CRDRegistryNamespace)
 	b.StringVar("txt-owner-id", "When using the TXT, DynamoDB or CRD registry, a name that identifies this instance of ExternalDNS (default: default)", defaultConfig.TXTOwnerID, &cfg.TXTOwnerID)
 	b.StringVar("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!", defaultConfig.TXTPrefix, &cfg.TXTPrefix)
 	b.StringVar("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!", defaultConfig.TXTSuffix, &cfg.TXTSuffix)

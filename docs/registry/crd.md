@@ -95,8 +95,10 @@ instance with `--txt-owner-id`:
 * `--txt-owner-id=my-identifier` — a value unique to this ExternalDNS deployment,
   stable for its lifetime. Deployments sharing a DNS zone must use different
   owner IDs. See [Registries](registry.md).
-* `--namespace=external-dns` — the namespace `DNSRecord` objects are created in.
-  When unset, the registry uses the `default` namespace.
+* `--crd-registry-namespace=external-dns` — the namespace `DNSRecord` objects are
+  created in. When unset, the registry uses the namespace ExternalDNS runs in,
+  falling back to `default` outside of a cluster. It is independent of
+  `--namespace`, which scopes the sources.
 
 ## Status
 

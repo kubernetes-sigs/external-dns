@@ -304,7 +304,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "RouteNamespace",
 			config: &Config{
-				Namespace: "route-namespace",
+				Namespaces: []string{"route-namespace"},
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace", "not-route-namespace"),
 			gateways: []*v1.Gateway{{

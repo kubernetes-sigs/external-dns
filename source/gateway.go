@@ -199,9 +199,10 @@ func newGatewayRouteSource(
 		))
 	}
 
+	rtNamespace := informers.SingleNamespace(config.Namespaces)
 	rtInformerFactory := gwInformerFactory
-	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
-		rtInformerFactory = newGatewayInformerFactory(client, config.Namespace, rtLabels)
+	if rtNamespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
+		rtInformerFactory = newGatewayInformerFactory(client, rtNamespace, rtLabels)
 	}
 	rtInformer := newInformerFn(rtInformerFactory)
 	informers.MustSetTransform(rtInformer.Informer(), informers.TransformerWithOptions[informers.Object](
@@ -254,7 +255,7 @@ func newGatewayRouteSource(
 		lsInformer:  lsInformer,
 
 		rtKind:        kind,
-		rtNamespace:   config.Namespace,
+		rtNamespace:   rtNamespace,
 		rtLabels:      rtLabels,
 		rtAnnotations: rtAnnotations,
 		rtInformer:    rtInformer,

@@ -1496,7 +1496,7 @@ func testGatewayEndpoints(t *testing.T) {
 				fakeKubernetesClient,
 				fakeIstioClient,
 				&Config{
-					Namespace:                targetNamespace,
+					Namespaces:               []string{targetNamespace},
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),

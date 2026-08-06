@@ -45,13 +45,13 @@ import (
 // +externaldns:source:description=Creates DNS entries from Contour HTTPProxy resources
 // +externaldns:source:resources=HTTPProxy.projectcontour.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type httpProxySource struct {
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	httpProxyInformer        kubeinformers.GenericInformer
+	httpProxyInformers       *informers.Informers[kubeinformers.GenericInformer]
 	unstructuredConverter    *UnstructuredConverter
 }
 
@@ -63,28 +63,32 @@ func NewContourHTTPProxySource(
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of HTTPProxys in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
-	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	})
+	httpProxyInformers := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+		return factory.ForResource(projectcontour.HTTPProxyGVR)
+	})
 
-	informers.MustSetTransform(httpProxyInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+	httpProxyInformers.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
 
-	informers.MustAddIndexers(httpProxyInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+	httpProxyInformers.MustAddIndexers(informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(httpProxyInformer.Informer(), informers.DefaultEventHandler())
+	httpProxyInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -96,7 +100,7 @@ func NewContourHTTPProxySource(
 	return &httpProxySource{
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		httpProxyInformer:        httpProxyInformer,
+		httpProxyInformers:       httpProxyInformers,
 		unstructuredConverter:    uc,
 	}, nil
 }
@@ -104,7 +108,7 @@ func NewContourHTTPProxySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all HTTPProxy resources in the source's namespace(s).
 func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	hps := informers.ListIndexed[*unstructured.Unstructured](sc.httpProxyInformer.Informer().GetIndexer())
+	hps := informers.ListIndexedAll[*unstructured.Unstructured](sc.httpProxyInformers.Indexers()...)
 
 	var httpProxies []*projectcontour.HTTPProxy
 	for _, hp := range hps {
@@ -216,5 +220,5 @@ func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.httpProxyInformer.Informer(), eventHandlerFunc(handler))
+	sc.httpProxyInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
