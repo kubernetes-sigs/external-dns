@@ -48,7 +48,7 @@ Main loop in `controller.Run()` calls `RunOnce()` on interval (default 1 min), o
 
 ## Key Data Structures
 
-**`endpoint.Endpoint`** (`endpoint/endpoint.go`) — one DNS record: `DNSName`, `RecordType` (A, AAAA, CNAME, TXT, MX, NS, SRV, PTR, NAPTR), `Targets`, `TTL`, `SetIdentifier`, `ProviderSpecific`, routing fields (Weights, Latency, Geolocation).
+**`endpoint.Endpoint`** (`endpoint/endpoint.go`) — one DNS record: `DNSName`, `RecordType` (A, AAAA, CNAME, TXT, MX, NS, SRV, PTR, NAPTR, DNAME), `Targets`, `TTL`, `SetIdentifier`, `ProviderSpecific`, routing fields (Weights, Latency, Geolocation).
 
 **`plan.Changes`** (`plan/plan.go`) — diff output: `Create`, `UpdateOld`, `UpdateNew`, `Delete` slices of `*endpoint.Endpoint`.
 

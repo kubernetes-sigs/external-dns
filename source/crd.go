@@ -112,11 +112,15 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 			illegalTarget := false
 			for _, target := range ep.Targets {
+				// CNAME/DNAME targets are domain names where a trailing dot is
+				// valid (RFC 1035 §5.1 absolute FQDN), so accept both dotted and
+				// bare forms.
+				if endpoint.RequiresTrailingDot(ep.RecordType) {
+					continue
+				}
 				switch ep.RecordType {
 				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
 					continue // no format constraint on targets
-				case endpoint.RecordTypeCNAME:
-					continue // RFC 1035 §5.1: trailing dot denotes an absolute FQDN in zone file notation; both forms are valid
 				case endpoint.RecordTypeSRV:
 					// SRV targets are "<prio> <weight> <port> <host>"; RFC 2782
 					// requires the host to be an absolute FQDN and
