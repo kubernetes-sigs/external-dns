@@ -92,6 +92,7 @@ var recordTypeProxyNotSupported = sets.New(
 	"SPF",
 	"TXT",
 	"SRV",
+	"TLSA",
 )
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -712,12 +713,21 @@ func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record dns.Recor
 }
 
 func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
-	if record.Type != dns.RecordResponseTypeSRV {
-		return record.Content
-	}
-
-	if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
-		return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+	switch record.Type {
+	case dns.RecordResponseTypeSRV:
+		if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
+			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+		}
+	case dns.RecordResponseTypeTLSA:
+		// Cloudflare renders the certificate association data in its own style
+		// (uppercase, whitespace-separated). Normalising it back to the canonical
+		// form keeps a record read from the API comparable to the record that was
+		// written, without which every reconciliation would see a difference and
+		// issue a redundant update.
+		if tlsa, err := endpoint.NewTLSARecord(record.Content); err == nil {
+			return tlsa.String()
+		}
+		log.Debugf("could not parse TLSA content %q for %s, using it verbatim", record.Content, record.Name)
 	}
 
 	return record.Content
@@ -919,7 +929,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case endpoint.RecordTypeMX:
+	case endpoint.RecordTypeMX, endpoint.RecordTypeTLSA:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)
