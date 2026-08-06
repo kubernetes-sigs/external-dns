@@ -916,6 +916,37 @@
         "string",
         "null"
       ]
+    },
+    "verticalPodAutoscaler": {
+      "type": "object",
+      "properties": {
+        "additionalLabels": {
+          "description": "Additional labels for the `VerticalPodAutoscaler`.",
+          "type": "object"
+        },
+        "annotations": {
+          "description": "Annotations to add to the `VerticalPodAutoscaler`.",
+          "type": "object"
+        },
+        "enabled": {
+          "description": "If `true`, create a `VerticalPodAutoscaler` resource for the `Deployment`.",
+          "type": "boolean"
+        },
+        "resourcePolicy": {
+          "description": "[Resource policy](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/API.md#podresourcepolicy) for the `VerticalPodAutoscaler`, allows specifying constraints for individual containers.",
+          "type": "object"
+        },
+        "updatePolicy": {
+          "description": "[Update policy](https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/API.md#podupdatepolicy) for the `VerticalPodAutoscaler`.",
+          "type": "object",
+          "properties": {
+            "updateMode": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true
