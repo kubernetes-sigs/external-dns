@@ -546,11 +546,7 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
-	var hostnames []string
-	for _, name := range rt.Hostnames() {
-		hostnames = append(hostnames, string(name))
-	}
+func (c *gatewayRouteResolver) applyGatewayTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
 	// TODO: The combine-fqdn-annotation flag is similarly vague.
 	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
 		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
@@ -559,42 +555,48 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		}
 		hostnames = append(hostnames, hosts...)
 	}
+	return hostnames, nil
+}
+
+func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
+	var hostnames []string
+	for _, name := range rt.Hostnames() {
+		hostnames = append(hostnames, string(name))
+	}
 
 	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
-	if !hostNameAnnotationExists {
-		// This means that the route doesn't specify a hostname and should use any provided by
-		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
-		// break {TCP,UDP}Routes.
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
+	if hostNameAnnotationExists {
+		switch strings.ToLower(hostNameAnnotation) {
+		case gatewayHostnameSourceAnnotationOnlyValue:
+			if c.src.ignoreHostnameAnnotation {
+				return []string{}, nil
+			}
+			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+		case gatewayHostnameSourceDefinedHostsOnlyValue:
+			// Explicitly use only defined hostnames (route spec and optional template result)
+			return c.applyGatewayTemplate(hostnames, rt)
+		default:
+			// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
+			log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
+				annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
 		}
-		if !c.src.ignoreHostnameAnnotation {
-			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-		}
-		return hostnames, nil
 	}
 
-	switch strings.ToLower(hostNameAnnotation) {
-	case gatewayHostnameSourceAnnotationOnlyValue:
-		if c.src.ignoreHostnameAnnotation {
-			return []string{}, nil
-		}
-		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
-	case gatewayHostnameSourceDefinedHostsOnlyValue:
-		// Explicitly use only defined hostnames (route spec and optional template result)
-		return hostnames, nil
-	default:
-		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
-		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
-			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
-		}
-		if !c.src.ignoreHostnameAnnotation {
-			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-		}
-		return hostnames, nil
+	// Default behavior: spec.hostnames → annotation → template → listener fallback.
+	if !c.src.ignoreHostnameAnnotation {
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
+	hostnames, err := c.applyGatewayTemplate(hostnames, rt)
+	if err != nil {
+		return nil, err
+	}
+	// Only fall back to the attached listener hostname when nothing else supplied a name.
+	// Appending "" earlier would publish wildcard listener hostnames (e.g. *.example.com)
+	// even when an annotation already named the record.
+	if len(hostnames) == 0 {
+		hostnames = append(hostnames, "")
+	}
+	return hostnames, nil
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Listener, rt gatewayRoute) bool {
