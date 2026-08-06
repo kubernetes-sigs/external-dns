@@ -55,6 +55,40 @@ SRV records are submitted with Cloudflare's structured SRV data fields for both 
 | `--batch-change-size` | `200` | Maximum number of DNS operations (creates + updates + deletes) per batch chunk. |
 | `--batch-change-interval` | `1s` | Pause between consecutive batch chunks. |
 
+## TLSA records
+
+TLSA records ([RFC 6698](https://datatracker.ietf.org/doc/html/rfc6698), the basis of DANE) are supported. Add `TLSA` to
+`--managed-record-types`, since the default managed set is `A`, `AAAA` and `CNAME` only:
+
+```sh
+--managed-record-types=A --managed-record-types=AAAA --managed-record-types=CNAME --managed-record-types=TLSA
+```
+
+Targets use RFC 6698 presentation format, `<usage> <selector> <matchingType> <certificate>`:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: mail-tlsa
+spec:
+  endpoints:
+    - dnsName: _25._tcp.mail.example.com
+      recordType: TLSA
+      recordTTL: 300
+      targets:
+        - 3 1 1 0b9fa5a59eed715c26c1020c711b4f6ec42d58b0015e14337a39dad301c5afc3
+```
+
+The certificate association data is normalised to lowercase hex without separators, so records written by ExternalDNS
+compare equal to the same records read back from Cloudflare.
+
+Two caveats:
+
+- Cloudflare cannot proxy TLSA records, so proxying is always disabled for them regardless of `--cloudflare-proxied`.
+- DANE requires DNSSEC on the zone. Enable it in Cloudflare and add the DS record at your registrar; ExternalDNS does
+  not check this.
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
