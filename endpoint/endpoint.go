@@ -54,6 +54,8 @@ const (
 	RecordTypeNAPTR = "NAPTR"
 	// RecordTypeDNAME is a RecordType enum value
 	RecordTypeDNAME = "DNAME"
+	// RecordTypeTLSA is a RecordType enum value
+	RecordTypeTLSA = "TLSA"
 
 	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
 	// provider-native alias record (e.g. AWS ALIAS).
@@ -76,6 +78,7 @@ var (
 		RecordTypeMX,
 		RecordTypeNAPTR,
 		RecordTypeDNAME,
+		RecordTypeTLSA,
 	}
 )
 
