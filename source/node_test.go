@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -107,6 +108,26 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			// Paired with the case below: the two names differ only in the
+			// length of the first label, 64 characters against 63.
+			title:              "node with a 64 character fqdn template label returns no endpoints",
+			fqdnTemplate:       strings.Repeat("n", 64) + ".example.org",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
+			title:              "node with a 63 character fqdn template label returns one endpoint",
+			fqdnTemplate:       strings.Repeat("n", 63) + ".example.org",
+			nodeName:           "node1",
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: strings.Repeat("n", 63) + ".example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{

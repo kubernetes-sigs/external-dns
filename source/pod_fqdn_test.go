@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -121,6 +122,10 @@ func TestPodFQDNTemplate(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "pod." + podName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{podIP}},
 			},
+		},
+		{
+			title:        "fqdn-template with an invalid label returns no endpoints",
+			fqdnTemplate: strings.Repeat("n", 64) + ".example.com",
 		},
 		{
 			title:              "fqdn-target-template can reference .APIVersion",

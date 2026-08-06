@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -1805,6 +1806,81 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
+}
+
+// TestNewEndpointRejectsOverlongDNSLabels pins down what makes the constructor
+// return nil: the length of an individual DNS label, capped at 63 characters by
+// RFC 1035 section 2.3.4. The cap is applied to every dot-separated label
+// independently and never to the name as a whole, so a name may be arbitrarily
+// longer than 63 characters as long as each of its labels is not.
+func TestNewEndpointRejectsOverlongDNSLabels(t *testing.T) {
+	const maxLabelLength = 63
+
+	maxLabel := strings.Repeat("a", maxLabelLength)
+	overlongLabel := strings.Repeat("a", maxLabelLength+1)
+
+	// 25 labels of 8 characters, 224 characters in total. Far longer than the
+	// per-label cap, and still a valid name because no single label exceeds it.
+	longNameShortLabels := strings.TrimSuffix(strings.Repeat("shortlbl.", 25), ".")
+	require.Greater(t, len(longNameShortLabels), maxLabelLength,
+		"this name must exceed the per-label cap for the test case to prove anything")
+
+	tests := []struct {
+		name    string
+		dnsName string
+		wantNil bool
+	}{
+		{
+			name:    "label of exactly 63 characters is accepted",
+			dnsName: maxLabel + ".example.com",
+		},
+		{
+			name:    "same label one character longer is rejected",
+			dnsName: overlongLabel + ".example.com",
+			wantNil: true,
+		},
+		{
+			name:    "over-long label in the middle of the name is rejected",
+			dnsName: "example." + overlongLabel + ".com",
+			wantNil: true,
+		},
+		{
+			name:    "over-long label at the end of the name is rejected",
+			dnsName: "example.com." + overlongLabel,
+			wantNil: true,
+		},
+		{
+			name:    "over-long name with no dots at all is rejected",
+			dnsName: overlongLabel,
+			wantNil: true,
+		},
+		{
+			name:    "name much longer than 63 characters is accepted while every label is short",
+			dnsName: longNameShortLabels,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
+
+			ep := NewEndpointWithTTL(tt.dnsName, RecordTypeA, TTL(300), "1.2.3.4")
+
+			if tt.wantNil {
+				require.Nil(t, ep, "a name with an over-long label must not produce an endpoint")
+				logtest.TestHelperLogContains("is longer than 63 characters", hook, t)
+				return
+			}
+
+			require.NotNil(t, ep, "a name whose labels all fit must produce an endpoint")
+			assert.Equal(t, tt.dnsName, ep.DNSName)
+			logtest.TestHelperLogNotContains("is longer than 63 characters", hook, t)
+		})
+	}
+
+	// NewEndpoint delegates to NewEndpointWithTTL, so it rejects the same names.
+	assert.Nil(t, NewEndpoint(overlongLabel+".example.com", RecordTypeA, "1.2.3.4"))
+	assert.NotNil(t, NewEndpoint(maxLabel+".example.com", RecordTypeA, "1.2.3.4"))
 }
 
 func TestGetAliasProperty(t *testing.T) {

@@ -171,7 +171,8 @@ func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.End
 				pair, kind, obj.GetNamespace(), obj.GetName())
 			continue
 		}
-		eps = append(eps, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+		newEndpoint := endpoint.NewEndpoint(host, endpoint.SuitableType(target), target)
+		eps = endpoint.AppendIfNotNil(eps, newEndpoint)
 	}
 	return endpoint.MergeEndpoints(eps), nil
 }

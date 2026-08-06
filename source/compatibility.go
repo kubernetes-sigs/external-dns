@@ -63,10 +63,12 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP))
+			newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
+			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname))
+			newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
+			endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 		}
 	}
 
@@ -95,10 +97,12 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP))
+				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname))
+				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 		}
 	}
@@ -160,10 +164,12 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 				recordType := endpoint.SuitableType(address.Address)
 				// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 				if isExternal && (address.Type == v1.NodeExternalIP || (sc.exposeInternalIPv6 && address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA)) {
-					endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, address.Address))
+					newEndpoint := endpoint.NewEndpoint(hostname, recordType, address.Address)
+					endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 				}
 				if isInternal && address.Type == v1.NodeInternalIP {
-					endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, address.Address))
+					newEndpoint := endpoint.NewEndpoint(hostname, recordType, address.Address)
+					endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 				}
 			}
 		}
@@ -196,10 +202,12 @@ func legacyEndpointsFromDNSControllerLoadBalancerService(svc *v1.Service) []*end
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP))
+				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, lb.IP)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname))
+				newEndpoint := endpoint.NewEndpoint(hostname, endpoint.RecordTypeCNAME, lb.Hostname)
+				endpoints = endpoint.AppendIfNotNil(endpoints, newEndpoint)
 			}
 		}
 	}

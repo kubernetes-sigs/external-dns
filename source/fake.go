@@ -97,9 +97,7 @@ func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 			if err != nil {
 				return nil, fmt.Errorf("generating %s endpoint: %w", recordType, err)
 			}
-			if ep != nil {
-				endpoints = append(endpoints, ep)
-			}
+			endpoints = endpoint.AppendIfNotNil(endpoints, ep)
 		}
 	}
 	return endpoint.MergeEndpoints(endpoints), nil

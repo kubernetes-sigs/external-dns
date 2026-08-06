@@ -19,6 +19,7 @@ package source
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -702,6 +703,58 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "10.0.1.1",
+					},
+				},
+			},
+		},
+		{
+			// Paired with the case below: the two annotations differ only in
+			// the length of the first label, 64 characters against 63.
+			"internal hostname with a 64 character label returns no endpoints",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid-hostname",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: strings.Repeat("h", 64) + ".example.com",
+						},
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.1.2.3",
+					},
+				},
+			},
+		},
+		{
+			"internal hostname with a 63 character label returns one endpoint",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: strings.Repeat("h", 63) + ".example.com", Targets: endpoint.Targets{"10.1.2.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "valid-hostname",
+						Namespace: "default",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: strings.Repeat("h", 63) + ".example.com",
+						},
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.1.2.3",
 					},
 				},
 			},
