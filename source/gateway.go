@@ -404,7 +404,7 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, li
 }
 
 func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
-	rtHosts, err := c.hosts(rt)
+	rtHosts, annotationOnly, err := c.hosts(rt)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +422,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		if !ok {
 			continue
 		}
-		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+		c.matchRouteToParent(rt, rtHosts, parent, hostTargets, annotationOnly)
 	}
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
@@ -483,7 +483,7 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets, annotationOnly bool) {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -495,7 +495,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 			}
 			continue
 		}
-		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets) {
+		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets, annotationOnly) {
 			match = true
 		}
 	}
@@ -509,7 +509,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
 }
 
-func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
+func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets, annotationOnly bool) bool {
 	if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
 		return false
 	}
@@ -530,15 +530,25 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		if gwHost == "" && rtHost == "" {
 			continue
 		}
-		host, ok := gwMatchingHost(gwHost, rtHost)
-		if !ok {
-			continue
-		}
-		override := parent.obj.overrides
-		hostTargets[host] = append(hostTargets[host], override...)
-		if len(override) == 0 {
-			for _, addr := range parent.obj.gateway.Status.Addresses {
-				hostTargets[host] = append(hostTargets[host], addr.Value)
+		if !annotationOnly {
+			host, ok := gwMatchingHost(gwHost, rtHost)
+			if !ok {
+				continue
+			}
+			override := parent.obj.overrides
+			hostTargets[host] = append(hostTargets[host], override...)
+			if len(override) == 0 {
+				for _, addr := range parent.obj.gateway.Status.Addresses {
+					hostTargets[host] = append(hostTargets[host], addr.Value)
+				}
+			}
+		} else {
+			override := parent.obj.overrides
+			hostTargets[rtHost] = append(hostTargets[rtHost], override...)
+			if len(override) == 0 {
+				for _, addr := range parent.obj.gateway.Status.Addresses {
+					hostTargets[rtHost] = append(hostTargets[rtHost], addr.Value)
+				}
 			}
 		}
 		match = true
@@ -546,7 +556,7 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
+func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, bool, error) {
 	var hostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
@@ -555,7 +565,7 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
 		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		hostnames = append(hostnames, hosts...)
 	}
@@ -571,18 +581,18 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		if !c.src.ignoreHostnameAnnotation {
 			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 		}
-		return hostnames, nil
+		return hostnames, false, nil
 	}
 
 	switch strings.ToLower(hostNameAnnotation) {
 	case gatewayHostnameSourceAnnotationOnlyValue:
 		if c.src.ignoreHostnameAnnotation {
-			return []string{}, nil
+			return []string{}, true, nil
 		}
-		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), true, nil
 	case gatewayHostnameSourceDefinedHostsOnlyValue:
 		// Explicitly use only defined hostnames (route spec and optional template result)
-		return hostnames, nil
+		return hostnames, false, nil
 	default:
 		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
 		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
@@ -593,7 +603,7 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		if !c.src.ignoreHostnameAnnotation {
 			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 		}
-		return hostnames, nil
+		return hostnames, false, nil
 	}
 }
 
