@@ -191,6 +191,9 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
+| txtWildcardReplacement | string | `nil` | Specify a replacement for the asterisk in TXT registry records for wildcard DNS records. |
+| txtEncryptEnabled | bool | `false` | If `true`, encrypt TXT registry records before storing them. |
+| txtEncryptAesKey | string | `nil` | Specify the 32-byte AES key for TXT registry record encryption. Required when `txtEncryptEnabled` is `true`. |
 
 ## Usage
 
