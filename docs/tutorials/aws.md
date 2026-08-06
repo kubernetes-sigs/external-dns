@@ -1178,6 +1178,9 @@ spec:
 
 > Route53 will direct each user to the region with the lowest latency.
 
+Routing policies also let several ExternalDNS instances — one per cluster — publish the same hostname, each
+owning its own record set. See [Multi-Cluster Shared DNS Records](../advanced/multi-cluster-shared-records.md).
+
 ### Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using
