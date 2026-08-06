@@ -73,9 +73,12 @@ type rfc2136Provider struct {
 	dryRun       bool
 	actions      rfc2136Actions
 
-	// Counter for load balancing, and error handling
-	counter int
-	mu      sync.Mutex // Mutex for thread-safe counter
+	// Counters for load balancing, and error handling.
+	// List (AXFR) and Send (update) paths rotate independently so that
+	// one operation advancing its counter does not skew the other.
+	listCounter int
+	sendCounter int
+	mu          sync.Mutex // Mutex for thread-safe counters
 
 	// Load balancing strategy "round-robin", "random", or "disabled"
 	loadBalancingStrategy string
@@ -167,7 +170,8 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		tlsConfig:             tlsConfig,
 		loadBalancingStrategy: loadBalancingStrategy,
 		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-		counter:               0,
+		listCounter:           0,
+		sendCounter:           0,
 		lastErr:               nil,
 	}
 	if actions != nil {
@@ -301,7 +305,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		var lastErr error
 		for i := 0; i < len(r.nameservers); i++ {
-			nameserver := r.getNextNameserver()
+			nameserver := r.getNextNameserverForList()
 			log.Debugf("Fetching records from nameserver: %s", nameserver)
 
 			env, err := r.actions.IncomeTransfer(m, nameserver)
@@ -501,7 +505,11 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
-func (r *rfc2136Provider) getNextNameserver() string {
+// getNextNameserver picks the next nameserver to use according to the
+// configured load balancing strategy, advancing the given counter. List
+// (AXFR) and Send (update) callers each pass their own counter so that the
+// two paths rotate independently instead of skewing each other.
+func (r *rfc2136Provider) getNextNameserver(counter *int) string {
 	if len(r.nameservers) == 1 {
 		return r.nameservers[0]
 	}
@@ -510,7 +518,7 @@ func (r *rfc2136Provider) getNextNameserver() string {
 	defer r.mu.Unlock()
 
 	if r.lastErr != nil {
-		log.Warnf("Last operation failed for nameserver %s", r.nameservers[r.counter])
+		log.Warnf("Last operation failed for nameserver %s", r.nameservers[*counter])
 		log.Warnf("Last operation error message: %v", r.lastErr)
 	}
 
@@ -520,25 +528,33 @@ func (r *rfc2136Provider) getNextNameserver() string {
 		for {
 			nameserver = r.nameservers[r.randGen.Intn(len(r.nameservers))]
 			// Ensure that we don't get the same nameserver as the last one
-			if nameserver != r.nameservers[r.counter] {
+			if nameserver != r.nameservers[*counter] {
 				break
 			}
 		}
 	case "round-robin":
-		nameserver = r.nameservers[r.counter]
-		r.counter = (r.counter + 1) % len(r.nameservers)
+		nameserver = r.nameservers[*counter]
+		*counter = (*counter + 1) % len(r.nameservers)
 	default:
 		if r.lastErr != nil {
-			r.counter = (r.counter + 1) % len(r.nameservers)
-			nameserver = r.nameservers[r.counter]
+			*counter = (*counter + 1) % len(r.nameservers)
+			nameserver = r.nameservers[*counter]
 		} else {
-			nameserver = r.nameservers[r.counter]
+			nameserver = r.nameservers[*counter]
 		}
 	}
 
 	// Last error has been logged, reset it for the next operation
 	r.lastErr = nil
 	return nameserver
+}
+
+func (r *rfc2136Provider) getNextNameserverForList() string {
+	return r.getNextNameserver(&r.listCounter)
+}
+
+func (r *rfc2136Provider) getNextNameserverForSend() string {
+	return r.getNextNameserver(&r.sendCounter)
 }
 
 func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
@@ -550,7 +566,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 	var lastErr error
 	for i := 0; i < len(r.nameservers); i++ {
-		nameserver := r.getNextNameserver()
+		nameserver := r.getNextNameserverForSend()
 		log.Debugf("Sending message to nameserver: %s", nameserver)
 
 		c, err := makeClient(r, nameserver)
