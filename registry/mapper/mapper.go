@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	recordTemplate = "%{record_type}"
+	RecordTemplate = "%{record_type}"
 )
 
 var (
@@ -40,6 +40,17 @@ var (
 		endpoint.RecordTypeNAPTR,
 		endpoint.RecordTypeTXT,
 	}
+
+	// requiresTemplateRecords are record types that can only be mapped when
+	// %{record_type} is present in the prefix/suffix. Without it,
+	// "txt-" in default position collides with TXT ownership record naming.
+	requiresTemplateRecords = []string{
+		endpoint.RecordTypeTXT,
+	}
+
+	// allMappableRecords is the union of supportedRecords and requiresTemplateRecords,
+	// pre-computed to avoid allocation on every call to dropAffixExtractType.
+	allMappableRecords = append(supportedRecords, requiresTemplateRecords...)
 )
 
 // NameMapper is the interface for mapping between the endpoint for the source
@@ -115,18 +126,18 @@ func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 }
 
 func (a AffixNameMapper) recordTypeInAffix() bool {
-	if strings.Contains(a.prefix, recordTemplate) {
+	if strings.Contains(a.prefix, RecordTemplate) {
 		return true
 	}
-	if strings.Contains(a.suffix, recordTemplate) {
+	if strings.Contains(a.suffix, RecordTemplate) {
 		return true
 	}
 	return false
 }
 
 func (a AffixNameMapper) normalizeAffixTemplate(afix, recordType string) string {
-	if strings.Contains(afix, recordTemplate) {
-		return strings.ReplaceAll(afix, recordTemplate, recordType)
+	if strings.Contains(afix, RecordTemplate) {
+		return strings.ReplaceAll(afix, RecordTemplate, recordType)
 	}
 	return afix
 }
@@ -140,7 +151,7 @@ func (a AffixNameMapper) isSuffix() bool {
 }
 
 func (a AffixNameMapper) dropAffixTemplate(name string) string {
-	return strings.ReplaceAll(name, recordTemplate, "")
+	return strings.ReplaceAll(name, RecordTemplate, "")
 }
 
 // dropAffixExtractType strips TXT record to find an endpoint name it manages.
@@ -150,10 +161,10 @@ func (a AffixNameMapper) dropAffixExtractType(name string) (string, string) {
 	suffix := a.suffix
 
 	if a.recordTypeInAffix() {
-		for _, t := range supportedRecords {
+		for _, t := range allMappableRecords {
 			tLower := strings.ToLower(t)
-			iPrefix := strings.ReplaceAll(prefix, recordTemplate, tLower)
-			iSuffix := strings.ReplaceAll(suffix, recordTemplate, tLower)
+			iPrefix := strings.ReplaceAll(prefix, RecordTemplate, tLower)
+			iSuffix := strings.ReplaceAll(suffix, RecordTemplate, tLower)
 
 			if a.isPrefix() && strings.HasPrefix(name, iPrefix) {
 				return strings.TrimPrefix(name, iPrefix), t

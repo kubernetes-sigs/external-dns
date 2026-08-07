@@ -88,6 +88,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypePTR,
 		},
 		{
+			name:             "prefix with TXT record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "txt-foo.example.com",
+			wantEndpointName: "foo.example.com",
+			wantRecordType:   endpoint.RecordTypeTXT,
+		},
+		{
 			name:             "prefix with NAPTR record type in affix",
 			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
 			input:            "naptr-foo.example.com",
@@ -280,6 +287,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			wantTXTName: "ptr-2.49.168.192.in-addr.arpa",
 		},
 		{
+			name:        "prefix with TXT record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-foo.example.com",
+		},
+		{
 			name:        "prefix with NAPTR record type in affix",
 			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
 			dns:         "foo.example.com",
@@ -383,6 +397,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "2.49.168.192.in-addr.arpa",
 			recordType:  endpoint.RecordTypePTR,
 			wantTXTName: "ptr-2.49.168.192.in-addr.arpa",
+		},
+		{
+			name:        "default prefix with TXT record",
+			mapper:      NewAffixNameMapper("", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeTXT,
+			wantTXTName: "txt-foo.example.com",
 		},
 		{
 			name:        "no affix with NAPTR record",
@@ -659,6 +680,11 @@ func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 			input:        "ptr-zone.example.com",
 			expectedName: "zone.example.com",
 			expectedType: "PTR",
+		},
+		{
+			input:        "txt-zone.example.com",
+			expectedName: "txt-zone.example.com",
+			expectedType: "",
 		},
 		{
 			input:        "zone.example.com",
