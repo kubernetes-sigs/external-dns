@@ -54,6 +54,7 @@ type AffixNameMapper struct {
 	prefix              string
 	suffix              string
 	wildcardReplacement string
+	zones               []string
 }
 
 // NewAffixNameMapper returns a new AffixNameMapper.
@@ -63,6 +64,28 @@ func NewAffixNameMapper(prefix, suffix, wildcardReplacement string) AffixNameMap
 		suffix:              strings.ToLower(suffix),
 		wildcardReplacement: strings.ToLower(wildcardReplacement),
 	}
+}
+
+// NewAffixNameMapperWithZones returns a new AffixNameMapper with zone awareness.
+// zones should be sorted by specificity (longest/most specific first).
+func NewAffixNameMapperWithZones(prefix, suffix, wildcardReplacement string, zones []string) AffixNameMapper {
+	return AffixNameMapper{
+		prefix:              strings.ToLower(prefix),
+		suffix:              strings.ToLower(suffix),
+		wildcardReplacement: strings.ToLower(wildcardReplacement),
+		zones:               zones,
+	}
+}
+
+// findZone finds the matching zone for the given DNS name.
+// Returns the zone if found, empty string otherwise.
+func (a AffixNameMapper) findZone(dns string) string {
+	for _, zone := range a.zones {
+		if strings.HasSuffix(dns, "."+zone) || dns == zone {
+			return zone
+		}
+	}
+	return ""
 }
 
 func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
@@ -91,27 +114,42 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 }
 
 func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
-	parts := strings.SplitN(dns, ".", 2)
 	recordType = strings.ToLower(recordType)
 	recordT := recordType + "-"
 
 	prefix := a.normalizeAffixTemplate(a.prefix, recordType)
 	suffix := a.normalizeAffixTemplate(a.suffix, recordType)
 
+	// Find the zone boundary to properly split the DNS name
+	zone := a.findZone(dns)
+	var hostname, domain string
+	if zone != "" {
+		// Split at the zone boundary
+		hostname = strings.TrimSuffix(dns, "."+zone)
+		domain = zone
+	} else {
+		// Fallback: split at first dot (legacy behavior)
+		parts := strings.SplitN(dns, ".", 2)
+		hostname = parts[0]
+		if len(parts) > 1 {
+			domain = parts[1]
+		}
+	}
+
 	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if a.wildcardReplacement != "" && parts[0] == "*" {
-		parts[0] = a.wildcardReplacement
+	if a.wildcardReplacement != "" && hostname == "*" {
+		hostname = a.wildcardReplacement
 	}
 
 	if !a.recordTypeInAffix() {
-		parts[0] = recordT + parts[0]
+		hostname = recordT + hostname
 	}
 
-	if len(parts) < 2 {
-		return prefix + parts[0] + suffix
+	if domain == "" {
+		return prefix + hostname + suffix
 	}
 
-	return prefix + parts[0] + suffix + "." + parts[1]
+	return prefix + hostname + suffix + "." + domain
 }
 
 func (a AffixNameMapper) recordTypeInAffix() bool {
