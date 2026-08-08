@@ -71,6 +71,17 @@ type TXTRegistry struct {
 
 	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
 	obsoleteTXTWarned sets.Set[string]
+
+	// Last Records() snapshot (lower-cased): present TXT names, and "name/TYPE" of present records.
+	presentTXTNames   sets.Set[string]
+	presentRecordKeys sets.Set[string]
+
+	// appliedTXTNames (lower-cased) are ownership TXTs this process pushed; the drift check warns
+	// only for these, so a record we never created is not misreported. Reset on restart.
+	appliedTXTNames sets.Set[string]
+
+	// driftTXTWarned dedups the drift warning, once per name.
+	driftTXTWarned sets.Set[string]
 }
 
 // existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
@@ -166,6 +177,10 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
 		obsoleteTXTWarned:   sets.New[string](),
+		presentTXTNames:     sets.New[string](),
+		presentRecordKeys:   sets.New[string](),
+		appliedTXTNames:     sets.New[string](),
+		driftTXTWarned:      sets.New[string](),
 	}, nil
 }
 
@@ -206,6 +221,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
 	txtRecordsSet := make(sets.Set[string], len(records))
 
+	// Reset the drift-check snapshot; presentTXTNames is filled below.
+	im.presentTXTNames = sets.New[string]()
+	im.presentRecordKeys = sets.New[string]()
+
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
@@ -234,7 +253,13 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		labelMap[key] = labels
 		txtRecordsSet.Insert(record.DNSName)
+		im.presentTXTNames.Insert(strings.ToLower(record.DNSName))
 		im.existingTXTs.add(record)
+	}
+
+	// Snapshot present records for the drift check.
+	for _, record := range endpoints {
+		im.presentRecordKeys.Insert(recordKeyLower(record.DNSName, record.RecordType))
 	}
 
 	for _, ep := range endpoints {
@@ -324,6 +349,36 @@ func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
 }
 
+// warnDriftedTXTs warns for managed records whose ownership TXT this process applied but the provider
+// no longer returns — typically pushed out of zone by the type prefix (apex "example.com" →
+// "a-example.com"). Scoped to appliedTXTNames and deduped once per name.
+func (im *TXTRegistry) warnDriftedTXTs(desired []*endpoint.Endpoint) {
+	for _, ep := range desired {
+		if !plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
+			continue
+		}
+		// Not yet at the provider: pending create, not drift.
+		if !im.presentRecordKeys.Has(recordKeyLower(ep.DNSName, ep.RecordType)) {
+			continue
+		}
+		txtName := strings.ToLower(im.mapper.ToTXTName(ep.DNSName, ep.RecordType))
+		// Only warn for a TXT we actually applied and that is now gone from the provider.
+		if !im.appliedTXTNames.Has(txtName) || im.presentTXTNames.Has(txtName) || im.driftTXTWarned.Has(txtName) {
+			continue
+		}
+		im.driftTXTWarned.Insert(txtName)
+		log.Warnf("Ownership TXT for %q %s was applied but is missing from the provider though the "+
+			"record exists; it likely falls outside a managed zone and cannot track ownership. "+
+			"Set --txt-prefix=\"someprefix-%%{record_type}.\" to keep it in-zone, or use --registry=crd. "+
+			"See docs/registry/txt.md.", ep.DNSName, ep.RecordType)
+	}
+}
+
+// recordKeyLower builds the lower-cased "name/TYPE" key for matching records.
+func recordKeyLower(dnsName, recordType string) string {
+	return strings.ToLower(dnsName) + "/" + strings.ToUpper(recordType)
+}
+
 // generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
@@ -369,7 +424,12 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		txts := im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)
+		for _, txt := range txts {
+			// Arm the drift check: a later Records() missing this TXT means the provider dropped it.
+			im.appliedTXTNames.Insert(strings.ToLower(txt.DNSName))
+		}
+		filteredChanges.Create = append(filteredChanges.Create, txts...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
@@ -411,12 +471,19 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	if im.cacheInterval > 0 {
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
 	}
+
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return im.provider.AdjustEndpoints(endpoints)
+	adjusted, err := im.provider.AdjustEndpoints(endpoints)
+	if err != nil {
+		return nil, err
+	}
+	// Spot ownership TXTs dropped by the provider, using the Records() snapshot.
+	im.warnDriftedTXTs(adjusted)
+	return adjusted, nil
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
