@@ -34,8 +34,6 @@ sub-example-com-a-1a2b3c4d   sub.example.com      A                1.2.3.4    Pr
 
 * Only the **in-cluster** Kubernetes API is currently supported (the cluster
   ExternalDNS runs in). Using another kubeconfig is planned for a follow-up.
-* The Helm chart does not yet wire the required RBAC; it must be added manually
-  (see below).
 
 ## Install the DNSRecord CRD
 
@@ -51,7 +49,11 @@ kubectl apply -f config/crd/standard/dnsrecords.externaldns.k8s.io.yaml
 ## RBAC
 
 ExternalDNS needs to read and write `DNSRecord` objects (including their status)
-in the namespace where they are stored:
+in the namespace where they are stored.
+
+When installing with the [Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
+setting `registry: crd` grants this RBAC automatically — skip the manual `Role`
+and `RoleBinding` below. Otherwise, create them yourself:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -97,6 +99,13 @@ instance with `--txt-owner-id`:
   owner IDs. See [Registries](registry.md).
 * `--namespace=external-dns` — the namespace `DNSRecord` objects are created in.
   When unset, the registry uses the `default` namespace.
+
+With the Helm chart, the equivalent values are:
+
+```yaml
+registry: crd
+txtOwnerId: my-identifier
+```
 
 ## Status
 
