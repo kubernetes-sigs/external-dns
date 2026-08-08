@@ -189,7 +189,12 @@ func newGatewayRouteSource(
 	lsInformerFactory := gwInformerFactory
 	if config.GatewayListenerSets {
 		// Gateway filters should apply only to Gateways, not ListenerSets.
-		if config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
+		// In fully namespaced mode (--namespace and --gateway-namespace), keep ListenerSets
+		// scoped to gatewayNamespace so namespaced Role RBAC can sync. Otherwise, when
+		// GatewayNamespace or gateway labels are set, watch ListenerSets cluster-wide so
+		// cross-namespace AllowedListeners still work (requires cluster RBAC).
+		fullyNamespaced := config.Namespace != "" && config.GatewayNamespace != ""
+		if !fullyNamespaced && (config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty())) {
 			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
 		}
 		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
@@ -210,24 +215,35 @@ func newGatewayRouteSource(
 		informers.TransformRemoveStatusConditions(),
 	))
 
-	kubeClient, err := clients.KubeClient()
-	if err != nil {
-		return nil, err
+	// Fully namespaced mode (--namespace and --gateway-namespace both set) must not watch
+	// cluster-scoped Namespace objects: Helm skips Namespace ClusterRole in that mode, and
+	// Namespaces cannot be granted via a namespaced Role. Route attachment still works for
+	// NamespacesFromAll / NamespacesFromSame without a Namespace informer; NamespacesFromSelector
+	// requires cluster-scoped Namespace list/get and is unsupported in fully namespaced mode.
+	fullyNamespaced := config.Namespace != "" && config.GatewayNamespace != ""
+	var nsInformer coreinformers.NamespaceInformer
+	var kubeInformerFactory kubeinformers.SharedInformerFactory
+	if !fullyNamespaced {
+		kubeClient, err := clients.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		kubeInformerFactory = kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+		nsInformer = kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
+		informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+			informers.TransformRemoveStatusConditions(),
+		))
 	}
-
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
-	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
-	informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
-		informers.TransformRemoveManagedFields(),
-		informers.TransformRemoveLastAppliedConfig(),
-		informers.TransformRemoveStatusConditions(),
-	))
 
 	gwInformerFactory.Start(ctx.Done())
 	if lsInformerFactory != gwInformerFactory {
 		lsInformerFactory.Start(ctx.Done())
 	}
-	kubeInformerFactory.Start(ctx.Done())
+	if kubeInformerFactory != nil {
+		kubeInformerFactory.Start(ctx.Done())
+	}
 	if rtInformerFactory != gwInformerFactory {
 		rtInformerFactory.Start(ctx.Done())
 	}
@@ -242,8 +258,10 @@ func newGatewayRouteSource(
 	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
-		return nil, err
+	if kubeInformerFactory != nil {
+		if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+			return nil, err
+		}
 	}
 
 	src := &gatewayRouteSource{
@@ -275,7 +293,9 @@ func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()
 		informers.MustAddEventHandler(src.lsInformer.Informer(), eventHandler)
 	}
 	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
-	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
+	if src.nsInformer != nil {
+		informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
+	}
 }
 
 func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -295,9 +315,12 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 			return nil, err
 		}
 	}
-	namespaces, err := src.nsInformer.Lister().List(labels.Everything())
-	if err != nil {
-		return nil, err
+	var namespaces []*corev1.Namespace
+	if src.nsInformer != nil {
+		namespaces, err = src.nsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			return nil, err
+		}
 	}
 	kind := strings.ToLower(src.rtKind)
 	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
@@ -619,7 +642,11 @@ func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Lis
 			log.Debugf("Listener %q has invalid namespace selector: %v", lis.Name, err)
 			return false
 		}
-		// Get namespace.
+		// Get namespace. Fully namespaced mode has no Namespace informer (cluster-scoped).
+		if c.nss == nil {
+			log.Debugf("Listener %q uses NamespacesFromSelector which requires cluster-scoped Namespace access; skipping %s %s/%s", lis.Name, c.src.rtKind, meta.Namespace, meta.Name)
+			return false
+		}
 		ns, ok := c.nss[meta.Namespace]
 		if !ok {
 			log.Errorf("Namespace not found for %s %s/%s", c.src.rtKind, meta.Namespace, meta.Name)
@@ -760,6 +787,10 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 		selector, err := metav1.LabelSelectorAsSelector(gw.Spec.AllowedListeners.Namespaces.Selector)
 		if err != nil {
 			log.Debugf("Gateway %s/%s has invalid AllowedListeners selector: %v", gw.Namespace, gw.Name, err)
+			return false
+		}
+		if namespaces == nil {
+			log.Debugf("Gateway %s/%s AllowedListeners selector requires cluster-scoped Namespace access; denying ListenerSet %s/%s in namespaced mode", gw.Namespace, gw.Name, ls.Namespace, ls.Name)
 			return false
 		}
 		ns, ok := namespaces[ls.Namespace]
