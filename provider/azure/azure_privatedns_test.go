@@ -18,13 +18,15 @@ package azure
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
-
-	"sigs.k8s.io/external-dns/provider/blueprint"
-
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -242,6 +244,180 @@ func newAzurePrivateDNSProvider(domainFilter *endpoint.DomainFilter, zoneNameFil
 		zonesCache:       blueprint.NewZoneCache[[]privatedns.PrivateZone](0),
 		recordSetsClient: privateRecordsClient,
 		maxRetriesCount:  maxRetriesCount,
+	}
+}
+
+func TestNewAzurePrivateDNSProvider(t *testing.T) {
+	tests := []struct {
+		name                         string
+		configFile                   string
+		domainFilter                 endpoint.DomainFilter
+		zoneNameFilter               endpoint.DomainFilter
+		zoneIDFilter                 provider.ZoneIDFilter
+		subscriptionID               string
+		resourceGroup                string
+		userAssignedGroup            string
+		activeDirectoryAuthorityHost string
+		zonesCacheDuration           time.Duration
+		dryRun                       bool
+		cfg                          string
+		expectedError                string
+		wantErr                      bool
+	}{
+		{
+			name:                         "working",
+			configFile:                   "config.json",
+			domainFilter:                 endpoint.DomainFilter{},
+			zoneNameFilter:               endpoint.DomainFilter{},
+			zoneIDFilter:                 provider.ZoneIDFilter{},
+			subscriptionID:               "4321",
+			resourceGroup:                "group_1234",
+			userAssignedGroup:            "1234",
+			zonesCacheDuration:           time.Second * 1,
+			activeDirectoryAuthorityHost: "4321",
+			dryRun:                       false,
+			cfg: `{
+"cloud": "azurecloud",
+"tenantId": "123",
+"location":"config.json",
+"aadClientId": "123",
+"subscriptionId": "4321",
+"resourceGroup": "resource_group_1",
+"useManagedIdentityExtension": true,
+"useWorkloadIdentityExtension": false
+}`,
+			wantErr:       false,
+			expectedError: "",
+		},
+
+		{
+			name:                         "no config file",
+			configFile:                   "",
+			domainFilter:                 endpoint.DomainFilter{},
+			zoneNameFilter:               endpoint.DomainFilter{},
+			zoneIDFilter:                 provider.ZoneIDFilter{},
+			subscriptionID:               "",
+			resourceGroup:                "",
+			userAssignedGroup:            "",
+			zonesCacheDuration:           time.Second * 1,
+			activeDirectoryAuthorityHost: "",
+			dryRun:                       false,
+			cfg:                          `{}`,
+			wantErr:                      true,
+			expectedError:                "failed to read Azure config file",
+		},
+
+		{
+			name:                         "no api credentials",
+			configFile:                   "config.json",
+			domainFilter:                 endpoint.DomainFilter{},
+			zoneNameFilter:               endpoint.DomainFilter{},
+			zoneIDFilter:                 provider.ZoneIDFilter{},
+			subscriptionID:               "4321",
+			resourceGroup:                "group_1234",
+			userAssignedGroup:            "1234",
+			zonesCacheDuration:           time.Second * 1,
+			activeDirectoryAuthorityHost: "4321",
+			dryRun:                       false,
+			cfg:                          `{}`,
+			wantErr:                      true,
+			expectedError:                "failed to get credentials: no credentials provided for Azure API",
+		},
+		{
+			name:                         "on nil cred",
+			configFile:                   "config.json",
+			domainFilter:                 endpoint.DomainFilter{},
+			zoneNameFilter:               endpoint.DomainFilter{},
+			zoneIDFilter:                 provider.ZoneIDFilter{},
+			subscriptionID:               "",
+			resourceGroup:                "",
+			userAssignedGroup:            "",
+			zonesCacheDuration:           time.Second * 1,
+			activeDirectoryAuthorityHost: "",
+			dryRun:                       false,
+			cfg:                          `"hello_world"`,
+			wantErr:                      true,
+			expectedError:                "failed to read Azure config file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+
+			file := ""
+
+			if tt.configFile != "" {
+				file = filepath.Join(dir, tt.configFile)
+
+				require.NoError(
+					t,
+					os.WriteFile(file, []byte(tt.cfg), 0o644),
+				)
+			}
+
+			got, err := NewAzurePrivateDNSProvider(
+				file,
+				endpoint.DomainFilter{},
+				endpoint.DomainFilter{},
+				provider.ZoneIDFilter{},
+				tt.subscriptionID,
+				tt.resourceGroup,
+				tt.userAssignedGroup,
+				tt.activeDirectoryAuthorityHost,
+				time.Second,
+				tt.dryRun,
+			)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedError)
+				require.Nil(t, got)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, got)
+
+			require.Equal(t, endpoint.DomainFilter{}, got.domainFilter)
+			require.Equal(t, endpoint.DomainFilter{}, got.zoneNameFilter)
+			require.Equal(t, provider.ZoneIDFilter{}, got.zoneIDFilter)
+			require.Equal(t, tt.dryRun, got.dryRun)
+			require.Equal(t, tt.resourceGroup, got.resourceGroup)
+			require.Equal(t, time.Second, got.zonesCache.duration)
+
+			require.NotNil(t, got.zonesClient)
+			require.NotNil(t, got.recordSetsClient)
+		})
+	}
+}
+
+func TestExtractAzurePrivateDNSTargets_NoRecords(t *testing.T) {
+	tests := []struct {
+		name              string
+		recordSet         *privatedns.RecordSet
+		expectedRecordSet []string
+	}{
+		{
+			name: "properties are nil",
+			recordSet: &privatedns.RecordSet{
+				Properties: nil,
+			},
+			expectedRecordSet: []string{},
+		},
+		{
+			name: "properties are empty",
+			recordSet: &privatedns.RecordSet{
+				Properties: &privatedns.RecordSetProperties{},
+			},
+			expectedRecordSet: []string{},
+		},
+	}
+
+	for _, test := range tests {
+
+		actual := extractAzurePrivateDNSTargets(test.recordSet)
+		assert.Equal(t, test.expectedRecordSet, actual)
 	}
 }
 
