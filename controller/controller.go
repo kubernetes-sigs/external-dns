@@ -126,15 +126,17 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
 			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError)
-			reportSyncStatus(ctx, c.StatusReporters, plan.Changes, err)
+			reportSyncStatus(ctx, c.StatusReporters, plan, err)
 			return err
 		}
 		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady)
-		reportSyncStatus(ctx, c.StatusReporters, plan.Changes, nil)
 	} else {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")
 	}
+
+	// Also on the no-change branch: an object already in sync still needs a status.
+	reportSyncStatus(ctx, c.StatusReporters, plan, nil)
 
 	lastSyncTimestamp.Gauge.SetToCurrentTime()
 

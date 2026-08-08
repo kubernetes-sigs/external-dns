@@ -136,10 +136,10 @@ spec:
                         rule: self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
                       - message: NAPTR targets must be absolute and end with a dot
                         rule: self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
-                      - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa
+                      - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'
                         rule: self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')
-                      - message: CNAME records accept exactly one target
-                        rule: self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) == 1
+                      - message: CNAME records accept at most one target; leave targets empty only when --default-targets is configured
+                        rule: self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) <= 1
                   maxItems: 1000
                   type: array
               type: object
@@ -210,9 +210,9 @@ spec:
                   x-kubernetes-list-type: map
                 endpoints:
                   description: |-
-                    Endpoints is the number of endpoints from spec that external-dns accepted
-                    into its plan on the last reconcile. Endpoints dropped by validation or by
-                    domain/record-type filtering are not counted.
+                    Endpoints is the number of endpoints from spec that external-dns took into
+                    its plan on the last reconcile. Endpoints dropped by validation, or excluded
+                    by --domain-filter or the managed record types, are not counted.
                   format: int32
                   type: integer
                 observedGeneration:

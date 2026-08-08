@@ -23,6 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -56,7 +57,7 @@ type crdSource struct {
 	crWriter client.Client // status writes
 	informer crcache.Informer
 	listOpts []client.ListOption
-	emitter  events.EventEmitter // nil unless --events-emit is set
+	emitter  events.EventEmitter // events.Discard unless --events-emit is set
 }
 
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
@@ -188,16 +189,16 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 	return ""
 }
 
-// reportAccepted records the source-level verdict on a DNSEndpoint: how many of
-// its endpoints entered the plan, and why the others did not. It runs on every
-// reconcile but only issues an API write when the computed status differs from
-// what is already stored.
+// reportAccepted records the source-level verdict on a DNSEndpoint: whether
+// external-dns understood its spec, and why it refused any endpoint. The plan
+// outcome lands later, in ReportStatus. It runs on every reconcile but only
+// issues an API write when the computed status differs from what is stored.
 func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, accepted int, rejections []string) {
 	condition := metav1.Condition{
 		Type:               apiv1alpha1.AcceptedCondition,
 		Status:             metav1.ConditionTrue,
 		Reason:             apiv1alpha1.AcceptedReason,
-		Message:            fmt.Sprintf("%d endpoint(s) accepted into the external-dns plan", accepted),
+		Message:            fmt.Sprintf("%d endpoint(s) accepted", accepted),
 		ObservedGeneration: dnsEndpoint.Generation,
 	}
 
@@ -210,45 +211,60 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 
 	cs.updateStatus(ctx, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
 		status.ObservedGeneration = dnsEndpoint.Generation
-		status.Endpoints = int32(accepted) // #nosec G115 -- bounded by spec.endpoints MaxItems=1000
 		meta.SetStatusCondition(&status.Conditions, condition)
 	})
 }
 
-// ReportStatus implements StatusReporter. The controller calls it after
-// ApplyChanges with every object reference that contributed to the plan, so a
-// DNSEndpoint learns whether the provider actually programmed its records.
-func (cs *crdSource) ReportStatus(ctx context.Context, refs []*events.ObjectReference, applyErr error) {
-	condition := metav1.Condition{
-		Type:    apiv1alpha1.ReadyCondition,
-		Status:  metav1.ConditionTrue,
-		Reason:  apiv1alpha1.ProgrammedReason,
-		Message: "Records applied to the DNS provider",
-	}
-	if applyErr != nil {
-		condition.Status = metav1.ConditionFalse
-		condition.Reason = apiv1alpha1.FailedReason
-		condition.Message = truncateConditionMessage(fmt.Sprintf("Provider rejected the batch: %v", applyErr))
-	}
-
-	for _, ref := range refs {
-		if ref == nil || ref.Source() != types.CRD {
+// ReportStatus implements StatusReporter. The controller calls it once per sync
+// with every object that contributed a desired endpoint, so a DNSEndpoint learns
+// how many of its endpoints external-dns planned and how the provider answered.
+func (cs *crdSource) ReportStatus(ctx context.Context, objects []PlannedObject, applyErr error) {
+	for _, obj := range objects {
+		if obj.Ref == nil || obj.Ref.Source() != types.CRD {
 			continue
 		}
 
 		dnsEndpoint := &apiv1alpha1.DNSEndpoint{}
-		key := client.ObjectKey{Namespace: ref.Namespace(), Name: ref.Name()}
+		key := client.ObjectKey{Namespace: obj.Ref.Namespace(), Name: obj.Ref.Name()}
 		if err := cs.crReader.Get(ctx, key, dnsEndpoint); err != nil {
 			// The object may have been deleted between the plan and the apply.
 			log.Debugf("Could not read dnsendpoint %s to report sync status: %v", key, err)
 			continue
 		}
 
+		condition := readyCondition(obj.Endpoints, applyErr)
 		condition.ObservedGeneration = dnsEndpoint.Generation
+		planned := int32(obj.Endpoints) // #nosec G115 -- bounded by spec.endpoints MaxItems=1000
+
 		cs.updateStatus(ctx, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
+			status.Endpoints = planned
 			meta.SetStatusCondition(&status.Conditions, condition)
 		})
 	}
+}
+
+// readyCondition describes what became of the endpoints an object contributed:
+// excluded by the filters before reaching the provider, rejected by it, or
+// programmed.
+func readyCondition(planned int, applyErr error) metav1.Condition {
+	condition := metav1.Condition{Type: apiv1alpha1.ReadyCondition}
+
+	switch {
+	case planned == 0:
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = apiv1alpha1.FilteredReason
+		condition.Message = "No endpoint reached the DNS provider: --domain-filter or the managed record types excluded all of them"
+	case applyErr != nil:
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = apiv1alpha1.FailedReason
+		condition.Message = truncateConditionMessage(fmt.Sprintf("Provider rejected the batch: %v", applyErr))
+	default:
+		condition.Status = metav1.ConditionTrue
+		condition.Reason = apiv1alpha1.ProgrammedReason
+		condition.Message = fmt.Sprintf("%d endpoint(s) applied to the DNS provider", planned)
+	}
+
+	return condition
 }
 
 // updateStatus applies mutate to the object's status and writes it back only if
@@ -256,26 +272,30 @@ func (cs *crdSource) ReportStatus(ctx context.Context, refs []*events.ObjectRefe
 // alone when a condition's status is unchanged, so an unchanging DNSEndpoint
 // costs no API writes across reconciles.
 //
-// The Accepted and Ready conditions are written at different points of a sync
-// and the read path is a cache that may lag the last write, so the update is a
-// read-modify-write against the API server: mutating a stale copy would drop
-// whichever condition the other writer had just set.
+// Accepted and Ready are written at different points of a sync and the read path
+// is a cache that may lag the last write. Writing a stale copy would drop
+// whichever condition the other writer had just set — but a stale copy also
+// carries a stale resourceVersion, so the API server rejects it with a conflict.
+// Only then is a re-read worth its round trip.
 func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, mutate func(*apiv1alpha1.DNSEndpointStatus)) {
-	probe := dnsEndpoint.Status.DeepCopy()
-	mutate(probe)
-	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, probe) {
+	updated := dnsEndpoint.DeepCopy()
+	mutate(&updated.Status)
+	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, &updated.Status) {
 		return
 	}
 
-	key := client.ObjectKeyFromObject(dnsEndpoint)
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		latest := &apiv1alpha1.DNSEndpoint{}
-		if err := cs.crWriter.Get(ctx, key, latest); err != nil {
-			return err
-		}
-		mutate(&latest.Status)
-		return cs.crWriter.Status().Update(ctx, latest)
-	})
+	err := cs.crWriter.Status().Update(ctx, updated)
+	if apierrors.IsConflict(err) {
+		key := client.ObjectKeyFromObject(dnsEndpoint)
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			latest := &apiv1alpha1.DNSEndpoint{}
+			if err := cs.crWriter.Get(ctx, key, latest); err != nil {
+				return err
+			}
+			mutate(&latest.Status)
+			return cs.crWriter.Status().Update(ctx, latest)
+		})
+	}
 	if err != nil {
 		log.Warnf("Could not update status of [%s/%s/%s]: %v",
 			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)

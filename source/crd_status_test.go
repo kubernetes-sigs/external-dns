@@ -59,7 +59,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 		endpoints       []*endpoint.Endpoint
 		wantStatus      metav1.ConditionStatus
 		wantReason      string
-		wantEndpoints   int32
 		wantMessagePart string
 	}{
 		{
@@ -70,7 +69,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			},
 			wantStatus:      metav1.ConditionTrue,
 			wantReason:      apiv1alpha1.AcceptedReason,
-			wantEndpoints:   2,
 			wantMessagePart: "2 endpoint(s) accepted",
 		},
 		{
@@ -81,7 +79,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			},
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.InvalidReason,
-			wantEndpoints:   1,
 			wantMessagePart: `spec.endpoints[1] (A bad.example.org): target "1.2.3.4." must not end with a dot`,
 		},
 		{
@@ -92,7 +89,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			},
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.InvalidReason,
-			wantEndpoints:   1,
 			wantMessagePart: "spec.endpoints[0]: entry is null",
 		},
 		{
@@ -100,7 +96,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			endpoints:       nil,
 			wantStatus:      metav1.ConditionTrue,
 			wantReason:      apiv1alpha1.AcceptedReason,
-			wantEndpoints:   0,
 			wantMessagePart: "0 endpoint(s) accepted",
 		},
 	} {
@@ -119,7 +114,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 
 			got := readDNSEndpoint(t, fakeCache.Client)
 			assert.Equal(t, int64(3), got.Status.ObservedGeneration)
-			assert.Equal(t, ti.wantEndpoints, got.Status.Endpoints)
 
 			cond := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.AcceptedCondition)
 			require.NotNil(t, cond, "Accepted condition must be set")
@@ -173,6 +167,48 @@ func TestCRDSourceStatusIsNotRewrittenWhenUnchanged(t *testing.T) {
 	assert.Equal(t, 1, writes, "unchanged status must not be rewritten")
 }
 
+// The status write goes out on the copy the source already holds. Re-reading
+// first would double the round trips of the reconcile after an upgrade, where
+// every DNSEndpoint's status changes at once.
+func TestCRDSourceStatusWriteDoesNotReReadWithoutAConflict(t *testing.T) {
+	obj := &apiv1alpha1.DNSEndpoint{
+		ObjectMeta: metav1.ObjectMeta{Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1},
+		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
+			{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+		}},
+	}
+
+	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
+
+	var gets, writes int
+	counting := interceptor.NewClient(fakeCache.Client.(client.WithWatch), interceptor.Funcs{
+		Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, o client.Object, opts ...client.GetOption) error {
+			gets++
+			return c.Get(ctx, key, o, opts...)
+		},
+		SubResourceUpdate: func(
+			ctx context.Context,
+			c client.Client,
+			subResource string,
+			o client.Object,
+			opts ...client.SubResourceUpdateOption) error {
+			if subResource == "status" {
+				writes++
+			}
+			return c.Status().Update(ctx, o, opts...)
+		},
+	})
+
+	cs, err := newCrdSource(t.Context(), fakeCache, counting, "", nil, nil)
+	require.NoError(t, err)
+
+	_, err = cs.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, writes)
+	assert.Equal(t, 0, gets, "an uncontended status write costs one round trip")
+}
+
 func TestCRDSourceEmitsEventOnRejectedEndpoint(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		ObjectMeta: metav1.ObjectMeta{Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1},
@@ -221,6 +257,7 @@ func TestCRDSourceEmitsNoEventWhenAllEndpointsValid(t *testing.T) {
 func TestCRDSourceReportStatus(t *testing.T) {
 	for _, ti := range []struct {
 		title           string
+		planned         int
 		applyErr        error
 		wantStatus      metav1.ConditionStatus
 		wantReason      string
@@ -228,17 +265,28 @@ func TestCRDSourceReportStatus(t *testing.T) {
 	}{
 		{
 			title:           "provider applied the batch",
+			planned:         1,
 			applyErr:        nil,
 			wantStatus:      metav1.ConditionTrue,
 			wantReason:      apiv1alpha1.ProgrammedReason,
-			wantMessagePart: "applied to the DNS provider",
+			wantMessagePart: "1 endpoint(s) applied to the DNS provider",
 		},
 		{
 			title:           "provider rejected the batch",
+			planned:         1,
 			applyErr:        errors.New("route53: throttled"),
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.FailedReason,
 			wantMessagePart: "route53: throttled",
+		},
+		{
+			// Nothing was offered to the provider, so Programmed would be a lie.
+			title:           "every endpoint excluded by the filters",
+			planned:         0,
+			applyErr:        nil,
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      apiv1alpha1.FilteredReason,
+			wantMessagePart: "No endpoint reached the DNS provider",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -253,10 +301,12 @@ func TestCRDSourceReportStatus(t *testing.T) {
 			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 			require.NoError(t, err)
 
-			ref := events.NewObjectReference(obj, types.CRD)
-			cs.ReportStatus(t.Context(), []*events.ObjectReference{ref}, ti.applyErr)
+			planned := PlannedObject{Ref: events.NewObjectReference(obj, types.CRD), Endpoints: ti.planned}
+			cs.ReportStatus(t.Context(), []PlannedObject{planned}, ti.applyErr)
 
 			got := readDNSEndpoint(t, fakeCache.Client)
+			assert.Equal(t, int32(ti.planned), got.Status.Endpoints) // #nosec G115 -- test data
+
 			cond := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
 			require.NotNil(t, cond, "Ready condition must be set")
 			assert.Equal(t, ti.wantStatus, cond.Status)
@@ -267,8 +317,8 @@ func TestCRDSourceReportStatus(t *testing.T) {
 	}
 }
 
-// The controller hands every source the full ref set, so a crd source must not
-// touch references produced elsewhere, nor blow up on a deleted object.
+// The controller hands every source the full object set, so a crd source must
+// not touch references produced elsewhere, nor blow up on a deleted object.
 func TestCRDSourceReportStatusIgnoresForeignAndMissingRefs(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		ObjectMeta: metav1.ObjectMeta{Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1},
@@ -281,16 +331,20 @@ func TestCRDSourceReportStatusIgnoresForeignAndMissingRefs(t *testing.T) {
 	foreign := events.NewObjectReferenceFromParts("Ingress", "networking.k8s.io/v1", "foo", "test", "", types.Ingress)
 	deleted := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "foo", "gone", "", types.CRD)
 
-	cs.ReportStatus(t.Context(), []*events.ObjectReference{nil, foreign, deleted}, nil)
+	cs.ReportStatus(t.Context(), []PlannedObject{
+		{Ref: nil, Endpoints: 1},
+		{Ref: foreign, Endpoints: 1},
+		{Ref: deleted, Endpoints: 1},
+	}, nil)
 
 	got := readDNSEndpoint(t, fakeCache.Client)
 	assert.Empty(t, got.Status.Conditions, "no condition must be written for foreign or missing refs")
 }
 
 // Accepted is written from the listed (cache-backed) copy while Ready is written
-// after the apply. The read path can lag the last write, so updateStatus must
-// re-read before writing: mutating and pushing the stale copy would drop the
-// condition the other writer had just set.
+// after the apply. The read path can lag the last write, so pushing the stale
+// copy would drop the condition the other writer had just set. Its stale
+// resourceVersion makes the API server reject it, and updateStatus then re-reads.
 func TestCRDSourceStatusUpdateDoesNotClobberAStaleCondition(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		ObjectMeta: metav1.ObjectMeta{Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1},
@@ -311,7 +365,9 @@ func TestCRDSourceStatusUpdateDoesNotClobberAStaleCondition(t *testing.T) {
 	stale := readDNSEndpoint(t, fakeCache.Client)
 	require.Nil(t, meta.FindStatusCondition(stale.Status.Conditions, apiv1alpha1.ReadyCondition))
 
-	cs.ReportStatus(t.Context(), []*events.ObjectReference{events.NewObjectReference(obj, types.CRD)}, nil)
+	cs.ReportStatus(t.Context(), []PlannedObject{
+		{Ref: events.NewObjectReference(obj, types.CRD), Endpoints: 1},
+	}, nil)
 
 	// Now write Accepted again from the stale copy, changing it so a write happens.
 	cs.updateStatus(t.Context(), stale, func(status *apiv1alpha1.DNSEndpointStatus) {

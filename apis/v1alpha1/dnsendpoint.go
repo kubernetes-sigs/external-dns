@@ -32,8 +32,9 @@ const (
 	// refused to plan, e.g. an SRV target without a trailing dot.
 	InvalidReason string = "Invalid"
 
-	// FilteredReason marks a spec whose endpoints were all understood but excluded
-	// by the domain filters or managed record types.
+	// FilteredReason is a ReadyCondition reason: external-dns understood every
+	// endpoint in spec but --domain-filter or the managed record types excluded
+	// all of them, so none was ever offered to the provider.
 	FilteredReason string = "Filtered"
 )
 
@@ -82,11 +83,11 @@ type DNSEndpointStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Endpoints is the number of endpoints from spec that external-dns accepted
-	// into its plan on the last reconcile. Endpoints dropped by validation or by
-	// domain/record-type filtering are not counted.
+	// Endpoints is the number of endpoints from spec that external-dns took into
+	// its plan on the last reconcile. Endpoints dropped by validation, or excluded
+	// by --domain-filter or the managed record types, are not counted.
 	// +optional
-	Endpoints int32 `json:"endpoints,omitempty"`
+	Endpoints int32 `json:"endpoints"`
 
 	// Conditions represent the latest available observations of the DNSEndpoint
 	// state: Accepted (external-dns understood the spec) and Ready (the provider

@@ -22,16 +22,27 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
+// PlannedObject is an object that contributed endpoints to a sync.
+type PlannedObject struct {
+	Ref *events.ObjectReference
+	// Endpoints counts this object's endpoints that survived --domain-filter and
+	// the managed record types. Zero means none reached the provider.
+	Endpoints int
+}
+
 // StatusReporter is implemented by sources that write the outcome of a reconcile
 // back onto the Kubernetes objects their endpoints came from. A source only
 // learns the provider's verdict after the plan has run, so this cannot live in
-// Source.Endpoints; the controller calls it after ApplyChanges.
+// Source.Endpoints; the controller calls it once per sync.
 type StatusReporter interface {
-	// ReportStatus records that the changes derived from refs were applied
-	// (applyErr == nil) or rejected (applyErr != nil) by the provider. refs may
-	// hold references from other sources; implementations must ignore those,
-	// typically by matching ObjectReference.Source().
-	ReportStatus(ctx context.Context, refs []*events.ObjectReference, applyErr error)
+	// ReportStatus records what became of the endpoints each object contributed:
+	// applied by the provider (applyErr == nil), rejected by it (applyErr != nil),
+	// or never offered to it (Endpoints == 0).
+	//
+	// objects covers every object that produced an endpoint this sync, not only
+	// those whose records changed. It may hold objects from other sources;
+	// implementations must ignore those by matching ObjectReference.Source().
+	ReportStatus(ctx context.Context, objects []PlannedObject, applyErr error)
 }
 
 // StatusReporters returns the sources built from this Config that report status

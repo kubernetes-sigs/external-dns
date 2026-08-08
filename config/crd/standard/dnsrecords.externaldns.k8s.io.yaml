@@ -135,10 +135,10 @@ spec:
                       rule: self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
                     - message: NAPTR targets must be absolute and end with a dot
                       rule: self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
-                    - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa
+                    - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'
                       rule: self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')
-                    - message: CNAME records accept exactly one target
-                      rule: self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) == 1
+                    - message: CNAME records accept at most one target; leave targets empty only when --default-targets is configured
+                      rule: self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) <= 1
               required:
                 - endpoint
               type: object

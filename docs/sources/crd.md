@@ -144,8 +144,10 @@ mistakes surface immediately instead of being dropped during a later reconcile:
   the provider applies its own default.
 - Each target is between 1 and 255 characters, and an endpoint carries at most 100.
 - `SRV` and `NAPTR` targets must be absolute (end with a dot).
-- `PTR` records must use a `dnsName` under `.in-addr.arpa` or `.ip6.arpa`.
-- `CNAME` records accept exactly one target.
+- `PTR` records must use a `dnsName` under `.in-addr.arpa` or `.ip6.arpa`, written
+  without a trailing dot (`1.0.0.10.in-addr.arpa`).
+- `CNAME` records accept at most one target. Leave `targets` empty only when
+  `--default-targets` is configured.
 
 `A` and `AAAA` targets are deliberately unconstrained, because provider-native alias
 records legitimately point at a hostname rather than an IP.
@@ -163,22 +165,32 @@ external-dns reports what it did with each `DNSEndpoint` on the object itself:
 $ kubectl get dnsendpoint
 NAME               ENDPOINTS   ACCEPTED   READY        AGE
 examplednsrecord   1           True       Programmed   2m
+otherdnsrecord     0           True       Filtered     2m
 ```
 
-Two conditions are set:
+Two conditions are set. `Accepted` is the source-level verdict, written before any
+provider call; `Ready` reports what became of the records afterwards:
 
-| Condition  | Reason       | Meaning                                                                     |
-|------------|--------------|-----------------------------------------------------------------------------|
-| `Accepted` | `Accepted`   | Every endpoint in `spec` was taken into the external-dns plan.              |
-| `Accepted` | `Invalid`    | At least one endpoint was refused; the message names the index and the fix. |
-| `Ready`    | `Programmed` | The DNS provider applied the records.                                       |
-| `Ready`    | `Failed`     | The provider rejected the batch; the message carries its error.             |
+| Condition  | Reason       | Meaning                                                                            |
+|------------|--------------|------------------------------------------------------------------------------------|
+| `Accepted` | `Accepted`   | external-dns understood every endpoint in `spec`.                                  |
+| `Accepted` | `Invalid`    | At least one endpoint was refused; the message names the index and the fix.        |
+| `Ready`    | `Programmed` | The DNS provider applied the records.                                              |
+| `Ready`    | `Failed`     | The provider rejected the batch; the message carries its error.                    |
+| `Ready`    | `Filtered`   | No endpoint reached the provider: `--domain-filter` or `--managed-record-types` excluded them all. |
 
-`status.observedGeneration` tracks the last `spec` external-dns processed, and
-`status.endpoints` counts the endpoints that entered the plan.
+`status.observedGeneration` tracks the last `spec` external-dns processed.
+`status.endpoints` counts the endpoints that entered the plan — those left after
+validation, `--domain-filter` and `--managed-record-types`.
 
-Status writes only happen when the computed status differs from what is stored, so a
-steady-state `DNSEndpoint` costs no API writes per sync interval.
+Both conditions are refreshed on every sync, including syncs where nothing changed,
+so a resource already in sync still reports `Programmed`. A write only happens when
+the computed status differs from what is stored, so a steady-state `DNSEndpoint`
+costs no API writes per sync interval.
+
+`Ready` describes the sync, not the individual resource: providers apply changes as
+a batch, so a failed batch marks every `DNSEndpoint` that contributed to it `Failed`,
+including resources whose own records were fine.
 
 Rejected endpoints can additionally raise a Kubernetes `Warning` event by starting
 external-dns with `--events-emit=RecordInvalid`:

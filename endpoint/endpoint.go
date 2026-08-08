@@ -285,8 +285,8 @@ type ObjectRef = events.ObjectReference
 // +kubebuilder:object:generate=true
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'"
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="NAPTR targets must be absolute and end with a dot"
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa"
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) == 1",message="CNAME records accept exactly one target"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) <= 1",message="CNAME records accept at most one target; leave targets empty only when --default-targets is configured"
 type Endpoint struct {
 	// DNSName is the hostname of the DNS record.
 	// +kubebuilder:validation:Required

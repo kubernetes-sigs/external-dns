@@ -108,9 +108,9 @@ type Config struct {
 	PTRSupported                   bool
 	CreatePTR                      bool
 
-	// EventEmitter, when non-nil, lets sources emit Kubernetes events on the
-	// objects they read. Sources must tolerate a nil emitter: events are opt-in
-	// via --events-emit and the emitter is absent when none are enabled.
+	// EventEmitter lets sources emit Kubernetes events on the objects they read.
+	// execute() always sets it, to events.Discard when --events-emit selected
+	// nothing; sources must still tolerate nil, which is what tests pass.
 	EventEmitter events.EventEmitter
 
 	sources []string
