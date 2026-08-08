@@ -95,6 +95,14 @@ func execute(ctx context.Context) {
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
+
+	// The emitter is created before the sources so that sources can report on the
+	// objects they read (e.g. a DNSEndpoint whose spec external-dns refused).
+	sCfg.EventEmitter, err = newEventEmitter(ctx, cfg, sCfg)
+	if err != nil {
+		log.Fatal(err) // nolint: gocritic // exitAfterDefer
+	}
+
 	endpointsSource, err := wrappers.Build(ctx, sCfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
@@ -160,21 +168,14 @@ func buildController(
 	if err != nil {
 		return nil, err
 	}
-	eventsCfg := events.NewConfig(
-		events.WithEmitEvents(cfg.EmitEvents),
-		events.WithDryRun(cfg.DryRun))
-	var eventEmitter events.EventEmitter
-	if eventsCfg.IsEnabled() {
-		kubeClient, err := sCfg.ClientGenerator().KubeClient()
+	// execute() builds the emitter before the sources so they can emit too; only
+	// callers that skip that step (tests) reach the fallback here.
+	eventEmitter := sCfg.EventEmitter
+	if eventEmitter == nil {
+		eventEmitter, err = newEventEmitter(ctx, cfg, sCfg)
 		if err != nil {
 			return nil, err
 		}
-		eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
-		if err != nil {
-			return nil, err
-		}
-		eventCtrl.Run(ctx)
-		eventEmitter = eventCtrl
 	}
 
 	return &Controller{
@@ -188,7 +189,31 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
+		StatusReporters:      sCfg.StatusReporters(),
 	}, nil
+}
+
+// newEventEmitter starts the event controller when --events-emit selected at
+// least one reason, and returns events.Discard otherwise.
+func newEventEmitter(ctx context.Context, cfg *externaldns.Config, sCfg *source.Config) (events.EventEmitter, error) {
+	eventsCfg := events.NewConfig(
+		events.WithEmitEvents(cfg.EmitEvents),
+		events.WithDryRun(cfg.DryRun))
+	if !eventsCfg.IsEnabled() {
+		return events.Discard, nil
+	}
+
+	kubeClient, err := sCfg.ClientGenerator().KubeClient()
+	if err != nil {
+		return nil, err
+	}
+	eventCtrl, err := events.NewEventController(kubeClient.EventsV1(), eventsCfg)
+	if err != nil {
+		return nil, err
+	}
+	eventCtrl.Run(ctx)
+
+	return eventCtrl, nil
 }
 
 // This function configures the logger format and level based on the provided configuration.

@@ -498,7 +498,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{
 				ti.namespaceFilter, ti.labelSelector, ti.annotationSelector}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector, nil)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
@@ -536,7 +536,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			wantWarning: `illegal target "1.2.3.4." for A record — use "1.2.3.4" not "1.2.3.4."`,
+			wantWarning: `target "1.2.3.4." must not end with a dot for a A record — use "1.2.3.4"`,
 		},
 		{
 			title: "NAPTR record without trailing dot warns with fix suggestion",
@@ -548,7 +548,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
+			wantWarning: `target "_sip._udp.example.org" must be absolute for a NAPTR record — use "_sip._udp.example.org."`,
 		},
 		{
 			title: "CNAME with empty targets produces no warning",
@@ -588,7 +588,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			}
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 			require.NoError(t, err)
 
 			_, err = cs.Endpoints(t.Context())
@@ -638,14 +638,14 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 		},
 	})
 
-	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil, nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
 	require.NoError(t, err, "status update failure must not propagate as an error")
 	require.Len(t, endpoints, 1, "endpoints must still be returned despite the update failure")
 
-	logtest.TestHelperLogContainsWithLogLevel("Could not update ObservedGeneration", log.WarnLevel, hook, t)
+	logtest.TestHelperLogContainsWithLogLevel("Could not update status", log.WarnLevel, hook, t)
 }
 
 func TestCRDSource_AddEventHandler(t *testing.T) {
@@ -733,7 +733,7 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 	}
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(crds.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 	require.NoError(t, err)
 
 	res, err := cs.Endpoints(t.Context())
@@ -753,7 +753,7 @@ func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
 	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
 
 	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(elements.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -781,7 +781,7 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	}, 2*time.Second, 10*time.Millisecond)
 
 	fakeCache := newFakeCRDCache(t, informer, fakeCRDCacheFilter{})
-	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil)
+	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil, nil)
 	require.NoError(t, err)
 
 	return watcher, cs

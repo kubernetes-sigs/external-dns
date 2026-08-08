@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -107,7 +108,16 @@ type Config struct {
 	PTRSupported                   bool
 	CreatePTR                      bool
 
+	// EventEmitter lets sources emit Kubernetes events on the objects they read.
+	// execute() always sets it, to events.Discard when --events-emit selected
+	// nothing; sources must still tolerate nil, which is what tests pass.
+	EventEmitter events.EventEmitter
+
 	sources []string
+
+	// statusReporters holds the subset of the sources built from this Config that
+	// implement StatusReporter. Populated by ByNames, consumed by the controller.
+	statusReporters []StatusReporter
 
 	// clientGen is lazily initialized on first access for efficiency.
 	// It may be overridden at construction time via WithClientGenerator.
@@ -371,12 +381,16 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
 	sources := make([]Source, 0, len(cfg.sources))
+	cfg.statusReporters = nil
 	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err
 		}
 		sources = append(sources, source)
+		if reporter, ok := source.(StatusReporter); ok {
+			cfg.statusReporters = append(cfg.statusReporters, reporter)
+		}
 	}
 
 	return sources, nil

@@ -17,8 +17,11 @@ limitations under the License.
 package controller
 
 import (
+	"context"
+
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source"
 )
 
 // emitChangeEvent emits a Kubernetes event for each DNS record change.
@@ -39,5 +42,57 @@ func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reas
 	}
 	for _, ep := range ch.Delete {
 		e.Add(events.NewEventFromEndpoint(ep, events.ActionDelete, deleteReason))
+	}
+}
+
+// reportSyncStatus tells every status-reporting source the outcome of the sync.
+// It covers every object that contributed a desired endpoint, not just the ones
+// whose records changed, so an already-in-sync object still gets a status.
+// applyErr is nil on success.
+func reportSyncStatus(ctx context.Context, reporters []source.StatusReporter, p *plan.Plan, applyErr error) {
+	if len(reporters) == 0 {
+		return
+	}
+
+	// Endpoints merged from several objects carry several refs, and one object
+	// usually contributes several endpoints, so dedupe by ObjectReference.Key.
+	// Map order is unstable, hence the separate key list.
+	byKey := map[string]*source.PlannedObject{}
+	var keys []string
+	for _, ep := range p.Desired {
+		for _, ref := range ep.RefObjects() {
+			if ref == nil {
+				continue
+			}
+			if _, ok := byKey[ref.Key()]; !ok {
+				byKey[ref.Key()] = &source.PlannedObject{Ref: ref}
+				keys = append(keys, ref.Key())
+			}
+		}
+	}
+	if len(byKey) == 0 {
+		return
+	}
+
+	// Filtered-out endpoints never reach p.Planned, so their objects keep a count
+	// of zero and their source reports them as filtered rather than programmed.
+	for _, ep := range p.Planned {
+		for _, ref := range ep.RefObjects() {
+			if ref == nil {
+				continue
+			}
+			if obj, ok := byKey[ref.Key()]; ok {
+				obj.Endpoints++
+			}
+		}
+	}
+
+	objects := make([]source.PlannedObject, 0, len(keys))
+	for _, key := range keys {
+		objects = append(objects, *byKey[key])
+	}
+
+	for _, reporter := range reporters {
+		reporter.ReportStatus(ctx, objects, applyErr)
 	}
 }

@@ -14,7 +14,20 @@ spec:
     singular: dnsendpoint
   scope: Namespaced
   versions:
-    - name: v1alpha1
+    - additionalPrinterColumns:
+        - jsonPath: .status.endpoints
+          name: Endpoints
+          type: integer
+        - jsonPath: .status.conditions[?(@.type=="Accepted")].status
+          name: Accepted
+          type: string
+        - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+          name: Ready
+          type: string
+        - jsonPath: .metadata.creationTimestamp
+          name: Age
+          type: date
+      name: v1alpha1
       schema:
         openAPIV3Schema:
           description: |-
@@ -42,11 +55,15 @@ spec:
               description: DNSEndpointSpec defines the desired state of DNSEndpoint
               properties:
                 endpoints:
+                  description: Endpoints is the list of DNS records this resource declares.
                   items:
                     description: Endpoint is a high-level way of a connection between a service and an IP
                     properties:
                       dnsName:
-                        description: The hostname of the DNS record
+                        description: DNSName is the hostname of the DNS record.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$
                         type: string
                       labels:
                         additionalProperties:
@@ -59,32 +76,146 @@ spec:
                           description: ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
                           properties:
                             name:
+                              description: |-
+                                Name of the provider-specific property. Accepted names are provider
+                                dependent; see the tutorial for the provider in use.
+                              maxLength: 253
+                              minLength: 1
                               type: string
                             value:
+                              description: Value of the provider-specific property.
+                              maxLength: 1024
                               type: string
+                          required:
+                            - name
                           type: object
+                        maxItems: 100
                         type: array
                       recordTTL:
-                        description: TTL for the record
+                        description: |-
+                          RecordTTL is the TTL of the record in seconds. 0 means "not set" and lets
+                          the provider apply its own default. The upper bound is the RFC 2181 §8 maximum.
                         format: int64
+                        maximum: 2147483647
+                        minimum: 0
                         type: integer
                       recordType:
-                        description: RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
+                        description: RecordType is the DNS record type.
+                        enum:
+                          - A
+                          - AAAA
+                          - CNAME
+                          - TXT
+                          - SRV
+                          - NS
+                          - PTR
+                          - MX
+                          - NAPTR
                         type: string
                       setIdentifier:
-                        description: Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+                        description: |-
+                          SetIdentifier distinguishes multiple records with the same name and type
+                          (e.g. Route53 records with routing policies other than 'simple').
+                        maxLength: 255
                         type: string
                       targets:
-                        description: The targets the DNS record points to
+                        description: |-
+                          Targets are the values the DNS record points to. Leaving it empty is only
+                          meaningful when --default-targets is configured.
                         items:
+                          maxLength: 255
+                          minLength: 1
                           type: string
+                        maxItems: 100
                         type: array
+                    required:
+                      - dnsName
+                      - recordType
                     type: object
+                    x-kubernetes-validations:
+                      - message: SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'
+                        rule: self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
+                      - message: NAPTR targets must be absolute and end with a dot
+                        rule: self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
+                      - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'
+                        rule: self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')
+                      - message: CNAME records accept at most one target; leave targets empty only when --default-targets is configured
+                        rule: self.recordType != 'CNAME' || !has(self.targets) || size(self.targets) <= 1
+                  maxItems: 1000
                   type: array
               type: object
             status:
               description: DNSEndpointStatus defines the observed state of DNSEndpoint
               properties:
+                conditions:
+                  description: |-
+                    Conditions represent the latest available observations of the DNSEndpoint
+                    state: Accepted (external-dns understood the spec) and Ready (the provider
+                    applied it).
+                  items:
+                    description: Condition contains details for one aspect of the current state of this API Resource.
+                    properties:
+                      lastTransitionTime:
+                        description: |-
+                          lastTransitionTime is the last time the condition transitioned from one status to another.
+                          This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                        format: date-time
+                        type: string
+                      message:
+                        description: |-
+                          message is a human readable message indicating details about the transition.
+                          This may be an empty string.
+                        maxLength: 32768
+                        type: string
+                      observedGeneration:
+                        description: |-
+                          observedGeneration represents the .metadata.generation that the condition was set based upon.
+                          For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                          with respect to the current state of the instance.
+                        format: int64
+                        minimum: 0
+                        type: integer
+                      reason:
+                        description: |-
+                          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                          Producers of specific condition types may define expected values and meanings for this field,
+                          and whether the values are considered a guaranteed API.
+                          The value should be a CamelCase string.
+                          This field may not be empty.
+                        maxLength: 1024
+                        minLength: 1
+                        pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                        type: string
+                      status:
+                        description: status of the condition, one of True, False, Unknown.
+                        enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                        type: string
+                      type:
+                        description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        maxLength: 316
+                        pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                        type: string
+                    required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                    - type
+                  x-kubernetes-list-type: map
+                endpoints:
+                  description: |-
+                    Endpoints is the number of endpoints from spec that external-dns took into
+                    its plan on the last reconcile. Endpoints dropped by validation, or excluded
+                    by --domain-filter or the managed record types, are not counted.
+                  format: int32
+                  type: integer
                 observedGeneration:
                   description: The generation observed by the external-dns controller.
                   format: int64
