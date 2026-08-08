@@ -22,11 +22,14 @@ import (
 	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 type PlanTestSuite struct {
@@ -159,11 +162,11 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 				Value: "true",
 			},
 		},
@@ -177,11 +180,11 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 		},
@@ -195,7 +198,7 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 		},
@@ -272,13 +275,13 @@ func TestPlan_ChangesJson_DecodeEncode(t *testing.T) {
 		},
 	}
 	jsonBytes, err := json.Marshal(ch)
-	assert.NoError(t, err)
-	assert.Equal(t,
+	require.NoError(t, err)
+	assert.JSONEq(t,
 		`{"create":[{"dnsName":"foo"}],"updateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"delete":[{"dnsName":"qux"}]}`,
 		string(jsonBytes))
 	var changes Changes
 	err = json.NewDecoder(bytes.NewBuffer(jsonBytes)).Decode(&changes)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, ch, &changes)
 }
 
@@ -286,7 +289,7 @@ func TestPlan_ChangesJson_DecodeMixedCase(t *testing.T) {
 	input := `{"Create":[{"dnsName":"foo"}],"UpdateOld":[{"dnsName":"bar"}],"updateNew":[{"dnsName":"baz"}],"Delete":[{"dnsName":"qux"}]}`
 	var changes Changes
 	err := json.NewDecoder(strings.NewReader(input)).Decode(&changes)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, changes.Create, 1)
 }
 
@@ -412,7 +415,21 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().False(changes.HasChanges())
+	suite.False(changes.HasChanges())
+}
+
+func (suite *PlanTestSuite) TestHasChangesCreate() {
+	changes := &Changes{
+		Create: []*endpoint.Endpoint{suite.fooV1Cname},
+	}
+	suite.True(changes.HasChanges())
+}
+
+func (suite *PlanTestSuite) TestHasChangesDelete() {
+	changes := &Changes{
+		Delete: []*endpoint.Endpoint{suite.fooV1Cname},
+	}
+	suite.True(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestHasChanges() {
@@ -427,7 +444,7 @@ func (suite *PlanTestSuite) TestHasChanges() {
 	}
 
 	changes := p.Calculate().Changes
-	suite.Assert().True(changes.HasChanges())
+	suite.True(changes.HasChanges())
 }
 
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {
@@ -600,7 +617,7 @@ func (suite *PlanTestSuite) TestExistingDualStackWithCNameDesired() {
 
 // TestExistingOwnerNotMatchingDualStackDesired validates that if there is an existing
 // record for a domain but there is no ownership claim over it and there are desired
-// records no changes are planed. Only domains that have explicit ownership claims should
+// records no changes are planned. Only domains that have explicit ownership claims should
 // be updated.
 func (suite *PlanTestSuite) TestExistingOwnerNotMatchingDualStackDesired() {
 	suite.fooA5.Labels = nil
@@ -656,7 +673,7 @@ func (suite *PlanTestSuite) TestConflictingCurrentNonConflictingDesired() {
 
 // TestConflictingCurrentNoDesired is a bit of a corner case as it would indicate
 // that the provider is not following valid DNS rules or there may be some
-// caching issues. In this case there are no desired enpoint candidates so plan
+// caching issues. In this case there are no desired endpoint candidates so plan
 // on deleting the records.
 func (suite *PlanTestSuite) TestConflictingCurrentNoDesired() {
 	suite.fooA5.Labels[endpoint.OwnerLabelKey] = suite.fooV1Cname.Labels[endpoint.OwnerLabelKey]
@@ -710,7 +727,7 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 }
 
 // TestNoCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
-// This could be the result of multiple sources generating conflicting records types. In this case there the
+// This could be the result of multiple sources generating conflicting records types. In this case, the
 // conflict resolver should prefer the A and AAAA record and drop the other candidate record types.
 func (suite *PlanTestSuite) TestNoCurrentWithConflictingDesired() {
 	current := []*endpoint.Endpoint{}
@@ -901,7 +918,7 @@ func (suite *PlanTestSuite) TestDomainFiltersInitial() {
 		Policies:       []Policy{&SyncPolicy{}},
 		Current:        current,
 		Desired:        desired,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -925,7 +942,7 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 		Policies:       []Policy{&SyncPolicy{}},
 		Current:        current,
 		Desired:        desired,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -1016,6 +1033,32 @@ func (suite *PlanTestSuite) TestDualStackToSingleStack() {
 	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
 }
 
+func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
+	suite.fooA5.Labels[endpoint.OwnerLabelKey] = "bar"
+	current := []*endpoint.Endpoint{suite.fooA5}
+	desired := []*endpoint.Endpoint{suite.fooA5}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooA5}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
+		OldOwnerID:     "foo",
+	}
+
+	changes := p.Calculate().Changes
+
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
 func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }
@@ -1024,62 +1067,6 @@ func TestPlan(t *testing.T) {
 func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(entries, expected) {
 		t.Fatalf("expected %q to match %q", entries, expected)
-	}
-}
-
-func TestNormalizeDNSName(t *testing.T) {
-	records := []struct {
-		dnsName string
-		expect  string
-	}{
-		{
-			"3AAAA.FOO.BAR.COM    ",
-			"3aaaa.foo.bar.com.",
-		},
-		{
-			"   example.foo.com.",
-			"example.foo.com.",
-		},
-		{
-			"example123.foo.com ",
-			"example123.foo.com.",
-		},
-		{
-			"foo",
-			"foo.",
-		},
-		{
-			"123foo.bar",
-			"123foo.bar.",
-		},
-		{
-			"foo.com",
-			"foo.com.",
-		},
-		{
-			"foo.com.",
-			"foo.com.",
-		},
-		{
-			"foo123.COM",
-			"foo123.com.",
-		},
-		{
-			"my-exaMple3.FOO.BAR.COM",
-			"my-example3.foo.bar.com.",
-		},
-		{
-			"   my-example1214.FOO-1235.BAR-foo.COM   ",
-			"my-example1214.foo-1235.bar-foo.com.",
-		},
-		{
-			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
-			"my-example-my-example-1214.foo-1235.bar-foo.com.",
-		},
-	}
-	for _, r := range records {
-		gotName := normalizeDNSName(r.dnsName)
-		assert.Equal(t, r.expect, gotName)
 	}
 }
 
@@ -1155,8 +1142,40 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 				Desired:        []*endpoint.Endpoint{test.desired},
 				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
-			b := plan.shouldUpdateProviderSpecific(test.desired, test.current)
+			b := plan.providerSpecificChanged(test.desired, test.current)
 			assert.Equal(t, test.shouldUpdate, b)
 		})
 	}
+}
+
+func TestOwnerMismatchLogsDebug(t *testing.T) {
+	const wantMsg = "owner id does not match"
+
+	// current A record owned by someone else; desired CNAME owned by us.
+	// The CNAME has no current record → triggers a create, which activates
+	// the owner-check block and the debug log.
+	current := &endpoint.Endpoint{
+		DNSName:    "foo",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		Labels:     map[string]string{endpoint.OwnerLabelKey: "other"},
+	}
+	desired := &endpoint.Endpoint{
+		DNSName:    "foo",
+		RecordType: endpoint.RecordTypeCNAME,
+		Targets:    endpoint.Targets{"bar.example.com"},
+		Labels:     map[string]string{endpoint.OwnerLabelKey: "pwner"},
+	}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	p.Calculate()
+	logtest.TestHelperLogContainsWithLogLevel(wantMsg, log.DebugLevel, hook, t)
 }

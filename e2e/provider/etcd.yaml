@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: default
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: etcd
+  publishNotReadyAddresses: true
+  ports:
+  - name: etcd-client
+    port: 2379
+  - name: etcd-server
+    port: 2380
+  - name: etcd-metrics
+    port: 8080
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: default
+  name: etcd
+spec:
+  serviceName: etcd
+  replicas: 1
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+      annotations:
+        serviceName: etcd
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - etcd
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: etcd
+        image: quay.io/coreos/etcd:v3.6.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: etcd-client
+          containerPort: 2379
+        - name: etcd-server
+          containerPort: 2380
+        - name: etcd-metrics
+          containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 30
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        env:
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+             fieldPath: metadata.namespace
+        - name: HOSTNAME
+          valueFrom:
+            fieldRef:
+             fieldPath: metadata.name
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['serviceName']
+        - name: ETCDCTL_ENDPOINTS
+          value: $(HOSTNAME).$(SERVICE_NAME):2379
+        - name: URI_SCHEME
+          value: "http"
+        command:
+        - /usr/local/bin/etcd
+        args:
+        - --name=$(HOSTNAME)
+        - --data-dir=/data
+        - --wal-dir=/data/wal
+        - --listen-peer-urls=$(URI_SCHEME)://0.0.0.0:2380
+        - --listen-client-urls=$(URI_SCHEME)://0.0.0.0:2379
+        - --advertise-client-urls=$(URI_SCHEME)://$(HOSTNAME).$(SERVICE_NAME):2379
+        - --initial-cluster-state=new
+        - --initial-cluster-token=etcd-$(K8S_NAMESPACE)
+        - --initial-cluster=etcd-0=$(URI_SCHEME)://etcd-0.$(SERVICE_NAME):2380
+        - --initial-advertise-peer-urls=$(URI_SCHEME)://$(HOSTNAME).$(SERVICE_NAME):2380
+        - --listen-metrics-urls=http://0.0.0.0:8080
+        volumeMounts:
+        - name: etcd-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: etcd-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi

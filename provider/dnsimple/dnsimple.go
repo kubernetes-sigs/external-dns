@@ -87,7 +87,7 @@ type dnsimpleProvider struct {
 	client       dnsimpleZoneServiceInterface
 	identity     dnsimpleIdentityService
 	accountID    string
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
 	dryRun       bool
 }
@@ -97,8 +97,13 @@ type dnsimpleChange struct {
 	ResourceRecordSet dnsimple.ZoneRecord
 }
 
-// NewDnsimpleProvider initializes a new Dnsimple based provider
-func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
+// New creates a DNSimple provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.DryRun)
+}
+
+// newProvider initializes a new Dnsimple based provider
+func newProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")
@@ -130,7 +135,7 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 }
 
 // GetAccountID returns the account ID given DNSimple credentials.
-func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, err error) {
+func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (string, error) {
 	// get DNSimple client accountID
 	whoamiResponse, err := p.identity.Whoami(ctx)
 	if err != nil {
@@ -191,11 +196,12 @@ func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone,
 }
 
 // Records returns a list of endpoints in a given zone
-func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *dnsimpleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
+	endpoints := make([]*endpoint.Endpoint, 0)
 	for _, zone := range zones {
 		page := 1
 		listOptions := &dnsimple.ZoneRecordListOptions{}
@@ -206,10 +212,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				return nil, err
 			}
 			for _, record := range records.Data {
-				switch record.Type {
-				case "A", "CNAME", "TXT":
-					break
-				default:
+				if !provider.SupportedRecordType(record.Type) {
 					continue
 				}
 				// Apex records have an empty string for their name.
@@ -297,7 +300,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleDelete:
-				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name)
+				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name, recordAttributes.Type)
 				if err != nil {
 					return err
 				}
@@ -306,7 +309,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleUpdate:
-				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name)
+				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name, recordAttributes.Type)
 				if err != nil {
 					return err
 				}
@@ -320,10 +323,13 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 	return nil
 }
 
-// GetRecordID returns the record ID for a given record name and zone.
-func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string) (recordID int64, err error) {
+// GetRecordID returns the record ID for a given record name, type and zone.
+// The record type is required to disambiguate dual-stack hosts that have both
+// an A and an AAAA record sharing the same name, where matching on name alone
+// could return the wrong record.
+func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string, recordType string) (int64, error) {
 	page := 1
-	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName}
+	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName, Type: &recordType}
 	for {
 		listOptions.Page = &page
 		records, err := p.client.ListRecords(ctx, p.accountID, zone, listOptions)
@@ -332,7 +338,7 @@ func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordN
 		}
 
 		for _, record := range records.Data {
-			if record.Name == recordName {
+			if record.Name == recordName && record.Type == recordType {
 				return record.ID, nil
 			}
 		}

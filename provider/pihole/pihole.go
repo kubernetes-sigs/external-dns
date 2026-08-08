@@ -19,6 +19,9 @@ package pihole
 import (
 	"context"
 	"errors"
+	"slices"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -44,11 +47,9 @@ type PiholeConfig struct {
 	// Disable verification of TLS certificates.
 	TLSInsecureSkipVerify bool
 	// A filter to apply when looking up and applying records.
-	DomainFilter endpoint.DomainFilter
+	DomainFilter *endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
 	DryRun bool
-	// PiHole API version =<5 or >=6, default is 5
-	APIVersion string
 }
 
 // Helper struct for de-duping DNS entry updates.
@@ -57,16 +58,22 @@ type piholeEntryKey struct {
 	RecordType string
 }
 
-// NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
-func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
-	var api piholeAPI
-	var err error
-	switch cfg.APIVersion {
-	case "6":
-		api, err = newPiholeClientV6(cfg)
-	default:
-		api, err = newPiholeClient(cfg)
-	}
+// New creates a Pi-hole provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(
+		PiholeConfig{
+			Server:                cfg.PiholeServer,
+			Password:              cfg.PiholePassword,
+			TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+			DomainFilter:          domainFilter,
+			DryRun:                cfg.DryRun,
+		},
+	)
+}
+
+// newProvider initializes a new Pi-hole Local DNS based Provider.
+func newProvider(cfg PiholeConfig) (*PiholeProvider, error) {
+	api, err := newPiholeClient(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +112,16 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	updateNew := make(map[piholeEntryKey]*endpoint.Endpoint)
 	for _, ep := range changes.UpdateNew {
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+
+		if existing, ok := updateNew[key]; ok {
+			existing.Targets = append(existing.Targets, ep.Targets...)
+
+			// Deduplicate targets
+			slices.Sort(existing.Targets)
+			existing.Targets = slices.Compact(existing.Targets)
+
+			ep = existing
+		}
 		updateNew[key] = ep
 	}
 
@@ -112,14 +129,18 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// Check if this existing entry has an exact match for an updated entry and skip it if so.
 		key := piholeEntryKey{ep.DNSName, ep.RecordType}
 		if newRecord := updateNew[key]; newRecord != nil {
-			// PiHole only has a single target; no need to compare other fields.
-			if newRecord.Targets[0] == ep.Targets[0] {
+			oldTargets := slices.Clone(ep.Targets)
+			slices.Sort(oldTargets)
+			newTargets := slices.Clone(newRecord.Targets)
+			slices.Sort(newTargets)
+			if slices.Equal(oldTargets, newTargets) {
 				delete(updateNew, key)
 				continue
 			}
-		}
-		if err := p.api.deleteRecord(ctx, ep); err != nil {
-			return err
+
+			if err := p.api.deleteRecord(ctx, ep); err != nil {
+				return err
+			}
 		}
 	}
 

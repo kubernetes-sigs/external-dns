@@ -27,6 +27,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -47,18 +49,18 @@ var actionNames = []string{
 }
 
 type gdClient interface {
-	Patch(string, interface{}, interface{}) error
-	Post(string, interface{}, interface{}) error
-	Put(string, interface{}, interface{}) error
-	Get(string, interface{}) error
-	Delete(string, interface{}) error
+	Patch(string, any, any) error
+	Post(string, any, any) error
+	Put(string, any, any) error
+	Get(string, any) error
+	Delete(string, any) error
 }
 
 // GDProvider declare GoDaddy provider
 type GDProvider struct {
 	provider.BaseProvider
 
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	client       gdClient
 	ttl          int64
 	DryRun       bool
@@ -121,7 +123,9 @@ func (z gdZoneIDName) add(zoneID string, zoneRecord *gdRecords) {
 	z[zoneID] = zoneRecord
 }
 
-func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, suitableZoneRecord *gdRecords) {
+func (z gdZoneIDName) findZoneRecord(hostname string) (string, *gdRecords) {
+	var suitableZoneID string
+	var suitableZoneRecord *gdRecords
 	for zoneID, zoneRecord := range z {
 		if hostname == zoneRecord.zone || strings.HasSuffix(hostname, "."+zoneRecord.zone) {
 			if suitableZoneRecord == nil || len(zoneRecord.zone) > len(suitableZoneRecord.zone) {
@@ -131,11 +135,11 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, su
 		}
 	}
 
-	return
+	return suitableZoneID, suitableZoneRecord
 }
 
-// NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
-func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
+// newProvider initializes a new GoDaddy DNS based Provider.
+func newProvider(domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
 	client, err := NewClient(useOTE, apiKey, apiSecret)
 	if err != nil {
 		return nil, err
@@ -147,6 +151,11 @@ func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 		ttl:          maxOf(defaultTTL, ttl),
 		DryRun:       dryRun,
 	}, nil
+}
+
+// New creates a GoDaddy provider from the given configuration.
+func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 }
 
 func (p *GDProvider) zones() ([]string, error) {
@@ -176,16 +185,17 @@ func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gd
 		return nil, nil, err
 	}
 
-	if len(zones) == 0 {
+	switch len(zones) {
+	case 0:
 		allRecords = []gdRecords{}
-	} else if len(zones) == 1 {
+	case 1:
 		record, err := p.records(&ctx, zones[0], all)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		allRecords = append(allRecords, *record)
-	} else {
+	default:
 		chRecords := make(chan gdRecords, len(zones))
 
 		eg, ctx := errgroup.WithContext(ctx)
@@ -218,7 +228,7 @@ func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gd
 	return zones, allRecords, nil
 }
 
-func (p *GDProvider) records(ctx *context.Context, zone string, all bool) (*gdRecords, error) {
+func (p *GDProvider) records(_ *context.Context, zone string, all bool) (*gdRecords, error) {
 	var recordsIds []gdRecordField
 
 	log.Debugf("GoDaddy: Getting records for %s", zone)
@@ -387,29 +397,27 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 
 	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
 
-	iOldSkip := make(map[int]bool)
-	iNewSkip := make(map[int]bool)
+	iOldSkip := sets.New[int]()
+	iNewSkip := sets.New[int]()
 
 	for iOld, recOld := range changes.UpdateOld {
 		for iNew, recNew := range changes.UpdateNew {
 			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
 				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
 				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
-				iOldSkip[iOld] = true
-				iNewSkip[iNew] = true
+				iOldSkip.Insert(iOld)
+				iNewSkip.Insert(iNew)
 				break
 			}
 		}
 	}
 
 	for iOld, recOld := range changes.UpdateOld {
-		_, found := iOldSkip[iOld]
-		if found {
+		if iOldSkip.Has(iOld) {
 			continue
 		}
 		for iNew, recNew := range changes.UpdateNew {
-			_, found := iNewSkip[iNew]
-			if found {
+			if iNewSkip.Has(iNew) {
 				continue
 			}
 
@@ -593,7 +601,7 @@ func maxOf(vars ...int64) int64 {
 	return slices.Max(vars)
 }
 
-func toString(obj interface{}) string {
+func toString(obj any) string {
 	b, err := json.MarshalIndent(obj, "", "	")
 	if err != nil {
 		return fmt.Sprintf("<%v>", err)

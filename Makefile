@@ -23,14 +23,12 @@ cover:
 cover-html: cover
 	@go tool cover -html=cover.out
 
-#? controller-gen: download controller-gen if necessary
-controller-gen-install:
-	@scripts/install-tools.sh --generator
-ifeq (, $(shell which controller-gen))
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
+#? go-tools: list installed go tools
+go-tools:
+	@echo ">> go tools installed in go.mod"
+	@go tool  -n
+	@echo ">> go tools installed in go.tool.mod"
+	@go tool -modfile=go.tool.mod
 
 #? golangci-lint-install: Install golangci-lint tool
 golangci-lint-install:
@@ -48,31 +46,43 @@ go-lint: golangci-lint-install
 licensecheck:
 	@echo ">> checking license header"
 	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
-               awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
-       done); \
-       if [ -n "$${licRes}" ]; then \
-               echo "license header checking failed:"; echo "$${licRes}"; \
-               exit 1; \
-       fi
-
-#? oas-lint: Requires to install spectral. See github.com/stoplightio/spectral
-oas-lint:
-	spectral lint api/*.yaml
+			awk 'NR<=5' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
+		done); \
+		if [ -n "$${licRes}" ]; then \
+			echo "license header checking failed:"; echo "$${licRes}"; \
+			exit 1; \
+		fi
 
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint oas-lint
+lint: licensecheck go-lint validate-json-yaml
+
+#? validate-json-yaml: Validate JSON and YAML files
+.PHONY: validate-json-yaml
+validate-json-yaml:
+	bash scripts/validate-json-yaml.sh
 
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
-crd: controller-gen-install
-	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > config/crd/standard/dnsendpoint.yaml
-	cp -f config/crd/standard/dnsendpoint.yaml charts/external-dns/crds/dnsendpoint.yaml
+crd:
+	@./scripts/generate-crd.sh
+
+# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
+#? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
+update-tools-deps:
+	@go get -modfile=go.tool.mod tool
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
 test:
+	go test -race ./...
+
+
+.PHONY: test
+go-test:
 	go test -race -coverprofile=profile.cov ./...
+	go tool cover -func=profile.cov > coverage.summary
+	@tail -n 1 coverage.summary
 
 #? build: The build targets allow to build the binary and container image
 .PHONY: build
@@ -83,7 +93,9 @@ IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
 IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
+GIT_REVISION  ?= $(shell git rev-parse HEAD)
 GIT_COMMIT    ?= $(shell git rev-parse --short HEAD)
+GIT_COMMIT    := $(or $(GIT_COMMIT),$(shell echo "$(GIT_REVISION)" | cut -c1-7))
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 LDFLAGS       += -X sigs.k8s.io/external-dns/pkg/apis/externaldns.GitCommit=$(GIT_COMMIT)
@@ -100,11 +112,11 @@ build/$(BINARY): $(SOURCES)
 
 build.push/multiarch: ko
 	KO_DOCKER_REPO=${IMAGE} \
-    VERSION=${VERSION} \
-    ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
-      --image-label org.opencontainers.image.source="https://github.com/kubernetes-sigs/external-dns" \
-      --image-label org.opencontainers.image.revision=$(shell git rev-parse HEAD) \
-      --platform=${IMG_PLATFORM}  --push=${IMG_PUSH} .
+	VERSION=${VERSION} \
+	ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
+		--image-label org.opencontainers.image.source="https://github.com/kubernetes-sigs/external-dns" \
+		--image-label org.opencontainers.image.revision=$(GIT_REVISION) \
+		--platform=${IMG_PLATFORM}  --push=${IMG_PUSH} .
 
 build.image/multiarch:
 	$(MAKE) IMG_PUSH=false build.push/multiarch
@@ -168,18 +180,14 @@ generate-flags-documentation:
 generate-metrics-documentation:
 	go run internal/gen/docs/metrics/main.go
 
-#? pre-commit-install: Install pre-commit hooks
-pre-commit-install:
-	@pre-commit install
-	@pre-commit gc
+.PHONY: generate-sources-documentation
+#? generate-sources-documentation: Generate documentation (docs/sources/index.md)
+generate-sources-documentation:
+	go run internal/gen/docs/sources/main.go
 
-#? pre-commit-uninstall: Uninstall pre-commit hooks
-pre-commit-uninstall:
-	@pre-commit uninstall
-
-#? pre-commit-validate: Validate files with pre-commit hooks
-pre-commit-validate:
-	@pre-commit run --all-files
+#? file-hygiene: Run repository file hygiene checks (replaces pre-commit)
+file-hygiene:
+	@./scripts/file-hygiene.sh
 
 .PHONY: help
 #? help: Get more info on available commands
@@ -200,5 +208,12 @@ helm-lint:
 	scripts/helm-tools.sh --docs
 
 .PHONY: go-dependency
-go-dependency: ## Dependency maintanance
+#? go-dependency: Dependency maintenance
+go-dependency:
 	go mod tidy
+
+.PHONY: mkdocs-serve
+#? mkdocs-serve: Run the builtin development server for mkdocs
+mkdocs-serve:
+	@$(info "contribute to documentation docs/contributing/dev-guide.md")
+	@mkdocs serve

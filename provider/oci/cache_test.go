@@ -17,10 +17,11 @@ limitations under the License.
 package oci
 
 import (
-	"github.com/oracle/oci-go-sdk/v65/dns"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/oracle/oci-go-sdk/v65/dns"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneCache(t *testing.T) {

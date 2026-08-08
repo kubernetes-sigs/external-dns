@@ -3,7 +3,7 @@
 ExternalDNS's sources of DNS records live in package [source](https://github.com/kubernetes-sigs/external-dns/tree/master/source).
 They implement the `Source` interface that has a single method `Endpoints` which returns the represented source's objects converted to `Endpoints`. Endpoints are just a tuple of DNS name and target where target can be an IP or another hostname.
 
-For example, the `ServiceSource` returns all Services converted to `Endpoints` where the hostname is the value of the `external-dns.alpha.kubernetes.io/hostname` annotation and the target is the IP of the load balancer or the target is the IP of the service ClusterIP.
+For example, the `ServiceSource` returns all Services converted to `Endpoints` where the hostname is the value of the `external-dns.kubernetes.io/hostname` annotation and the target is the IP of the load balancer or the target is the IP of the service ClusterIP.
 
 This list of endpoints is passed to the [Plan](https://github.com/kubernetes-sigs/external-dns/tree/master/plan) which determines the difference between the current DNS records and the desired list of `Endpoints`.
 
@@ -19,7 +19,7 @@ You can pick which `Source` and `Provider` to use at runtime via the `--source` 
 
 ## Adding a DNS Provider
 
-A typical way to start on, e.g. a CoreDNS provider, would be to add a `coredns.go` to the providers package and implement the interface methods. Then you would have to register your provider under a name in `main.go`, e.g. `coredns`, and would be able to trigger it's functions via setting `--provider=coredns`.
+A typical way to start on, e.g. a CoreDNS provider, would be to add a `coredns.go` to the providers package and implement the interface methods. Then you would have to register your provider under a name in `main.go`, e.g. `coredns`, and would be able to trigger its functions via setting `--provider=coredns`.
 
 Note, how your provider doesn't need to know anything about where the DNS records come from, nor does it have to figure out the difference between the current and the desired state, it merely executes the actions calculated by the plan.
 

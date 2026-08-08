@@ -35,11 +35,12 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --log-level=debug
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --namespace=dev
         - --domain-filter=example.org.
         - --provider=aws
@@ -61,7 +62,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -101,11 +105,12 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --log-level=debug
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --namespace=dev
         - --domain-filter=example.org.
         - --provider=aws
@@ -166,7 +171,7 @@ Very important here, is to set the `hostPort`(only works if the PodSecurityPolic
 
 Now we need to define a headless service to use to expose the Kafka pods. There are generally two approaches to use expose the nodeport of a Headless service:
 
-1. Add `--fqdn-template={{name}}.example.org`
+1. Add `--fqdn-template={{ .Name }}.example.org`
 2. Use a full annotation
 
 If you go with #1, you just need to define the headless service, here is an example of the case #2:
@@ -177,7 +182,7 @@ kind: Service
 metadata:
   name: ksvc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname:  example.org
+    external-dns.kubernetes.io/hostname:  example.org
 spec:
   ports:
   - port: 9092
@@ -187,22 +192,24 @@ spec:
     component: kafka
 ```
 
-This will create 3 dns records:
+This will create 4 dns records:
 
 ```sh
-kafka-0.example.org
-kafka-1.example.org
-kafka-2.example.org
+kafka-0.example.org IP-0
+kafka-1.example.org IP-1
+kafka-2.example.org IP-2
+example.org IP-0,IP-1,IP-2
 ```
 
-If you set `--fqdn-template={{name}}.example.org` you can omit the annotation.
-Generally it is a better approach to use  `--fqdn-template={{name}}.example.org`, because then
-you would get the service name inside the generated A records:
+> !Notice rood domain with records `example.org`
+
+If you set `--fqdn-template={{ .Name }}.example.org` you can omit the annotation.
 
 ```sh
-kafka-0.ksvc.example.org
-kafka-1.ksvc.example.org
-kafka-2.ksvc.example.org
+kafka-0.ksvc.example.org IP-0
+kafka-1.ksvc.example.org IP-1
+kafka-2.ksvc.example.org IP-2
+ksvc.example.org IP-0,IP-1,IP-2
 ```
 
 #### Using pods' HostIPs as targets
@@ -210,7 +217,7 @@ kafka-2.ksvc.example.org
 Add the following annotation to your `Service`:
 
 ```yaml
-external-dns.alpha.kubernetes.io/endpoints-type: HostIP
+external-dns.kubernetes.io/endpoints-type: HostIP
 ```
 
 external-dns will now publish the value of the `.status.hostIP` field of the pods backing your `Service`.
@@ -220,7 +227,7 @@ external-dns will now publish the value of the `.status.hostIP` field of the pod
 Add the following annotation to your `Service`:
 
 ```yaml
-external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP
+external-dns.kubernetes.io/endpoints-type: NodeExternalIP
 ```
 
 external-dns will now publish the node external IP (`.status.addresses` entries of with `type: NodeExternalIP`) of the nodes on which the pods backing your `Service` are running.
@@ -230,7 +237,7 @@ external-dns will now publish the node external IP (`.status.addresses` entries 
 Add the following annotation to the **pods** backing your `Service`:
 
 ```yaml
-external-dns.alpha.kubernetes.io/target: "1.2.3.4"
+external-dns.kubernetes.io/target: "1.2.3.4"
 ```
 
 external-dns will publish the IP specified in the annotation of each pod instead of using the podIP advertised by Kubernetes.

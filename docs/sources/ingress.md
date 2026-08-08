@@ -19,19 +19,19 @@ The domain names of the DNS entries created from an Ingress are sourced from the
 
   This behavior is suppressed if the `--ignore-ingress-rules-spec` flag was specified
 or the Ingress had an
-`external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only` annotation.
+`external-dns.kubernetes.io/ingress-hostname-source: annotation-only` annotation.
 
 2. Iterates over the Ingress's `spec.tls`, adding each member of `hosts`.
 
   This behavior is suppressed if the `--ignore-ingress-tls-spec` flag was specified
 or the Ingress had an
-`external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only` annotation,
+`external-dns.kubernetes.io/ingress-hostname-source: annotation-only` annotation,
 
-3. Adds the hostnames from any `external-dns.alpha.kubernetes.io/hostname` annotation.
+3. Adds the hostnames from any `external-dns.kubernetes.io/hostname` annotation.
 
   This behavior is suppressed if the `--ignore-hostname-annotation` flag was specified
 or the Ingress had an
-`external-dns.alpha.kubernetes.io/ingress-hostname-source: defined-hosts-only` annotation.
+`external-dns.kubernetes.io/ingress-hostname-source: defined-hosts-only` annotation.
 
 4. If no DNS entries were produced for an Ingress by the previous steps
 or the `--combine-fqdn-annotation` flag was specified, then adds hostnames
@@ -41,7 +41,7 @@ generated from any`--fqdn-template` flag.
 
 The targets of the DNS entries created from an Ingress are sourced from the following places:
 
-1. If the Ingress has an `external-dns.alpha.kubernetes.io/target` annotation, uses
+1. If the Ingress has an `external-dns.kubernetes.io/target` annotation, uses
 the values from that.
 
 2. Otherwise, iterates over the Ingress's `status.loadBalancer.ingress`,

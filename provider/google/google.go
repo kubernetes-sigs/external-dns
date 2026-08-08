@@ -20,18 +20,19 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 	dns "google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -109,7 +110,7 @@ type GoogleProvider struct {
 	// Interval between batch updates.
 	batchChangeInterval time.Duration
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter endpoint.DomainFilter
+	domainFilter *endpoint.DomainFilter
 	// filter for zones based on visibility
 	zoneTypeFilter provider.ZoneTypeFilter
 	// only consider hosted zones ending with this zone id
@@ -124,19 +125,19 @@ type GoogleProvider struct {
 	ctx context.Context
 }
 
-// NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
+// New creates a Google Cloud DNS provider from the given configuration.
+func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(ctx, cfg.GoogleProject, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
+}
+
+// newProvider initializes a new Google CloudDNS based Provider.
+func newProvider(ctx context.Context, project string, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
 	}
 
-	gcloud = instrumented_http.NewClient(gcloud, &instrumented_http.Callbacks{
-		PathProcessor: func(path string) string {
-			parts := strings.Split(path, "/")
-			return parts[len(parts)-1]
-		},
-	})
+	gcloud = extdnshttp.NewInstrumentedClient(gcloud)
 
 	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud))
 	if err != nil {
@@ -192,7 +193,7 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter)
 	if err := p.managedZonesClient.List(p.project).Pages(ctx, f); err != nil {
-		return nil, provider.NewSoftError(fmt.Errorf("failed to list zones: %w", err))
+		return nil, provider.NewSoftErrorf("failed to list zones: %w", err)
 	}
 
 	if len(zones) == 0 {
@@ -207,11 +208,13 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 }
 
 // Records returns the list of records in all relevant zones.
-func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *GoogleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
 
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
@@ -226,7 +229,7 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, z := range zones {
 		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
-			return nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone %s: %w", z.Name, err))
+			return nil, provider.NewSoftErrorf("failed to list records in zone %s: %v", z.Name, err)
 		}
 	}
 
@@ -300,7 +303,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 			}
 
 			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
-				return provider.NewSoftError(fmt.Errorf("failed to create changes: %w", err))
+				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
 
 			time.Sleep(p.batchChangeInterval)

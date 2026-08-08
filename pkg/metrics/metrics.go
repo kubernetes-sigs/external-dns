@@ -17,30 +17,50 @@ limitations under the License.
 package metrics
 
 import (
-	"runtime"
+	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+)
+
+const (
+	Namespace = "external_dns"
 )
 
 var (
 	RegisterMetric = NewMetricsRegister()
 )
 
+func init() {
+	RegisterMetric.MustRegister(NewGaugeFuncMetric(prometheus.GaugeOpts{
+		Namespace: Namespace,
+		Name:      "build_info",
+		Help: fmt.Sprintf(
+			"A metric with a constant '1' value labeled with 'version' and 'revision' of %s and the 'go_version', 'os' and the 'arch' used the build.",
+			Namespace,
+		),
+		ConstLabels: prometheus.Labels{
+			"version":    cfg.Version,
+			"revision":   version.GetRevision(),
+			"go_version": version.GoVersion,
+			"os":         version.GoOS,
+			"arch":       version.GoArch,
+		},
+	}))
+}
+
 func NewMetricsRegister() *MetricRegistry {
 	reg := prometheus.WrapRegistererWith(
-		prometheus.Labels{
-			"version":    cfg.Version,
-			"arch":       runtime.GOARCH,
-			"go_version": runtime.Version(),
-		},
+		prometheus.Labels{},
 		prometheus.DefaultRegisterer)
 	return &MetricRegistry{
 		Registerer: reg,
 		Metrics:    []*Metric{},
-		mName:      make(map[string]bool),
+		mName:      sets.New[string](),
 	}
 }
 
@@ -54,20 +74,25 @@ func NewMetricsRegister() *MetricRegistry {
 //	}
 func (m *MetricRegistry) MustRegister(cs IMetric) {
 	switch v := cs.(type) {
-	case CounterMetric, GaugeMetric, CounterVecMetric:
-		if _, exists := m.mName[cs.Get().FQDN]; exists {
+	case CounterMetric, GaugeMetric, SummaryVecMetric, CounterVecMetric, GaugeVecMetric, GaugeFuncMetric:
+		if m.mName.Has(cs.Get().FQDN) {
 			return
-		} else {
-			m.mName[cs.Get().FQDN] = true
 		}
+		m.mName.Insert(cs.Get().FQDN)
 		m.Metrics = append(m.Metrics, cs.Get())
 		switch metric := v.(type) {
 		case CounterMetric:
 			m.Registerer.MustRegister(metric.Counter)
 		case GaugeMetric:
 			m.Registerer.MustRegister(metric.Gauge)
+		case SummaryVecMetric:
+			m.Registerer.MustRegister(metric.SummaryVec)
+		case GaugeVecMetric:
+			m.Registerer.MustRegister(metric.Gauge)
 		case CounterVecMetric:
 			m.Registerer.MustRegister(metric.CounterVec)
+		case GaugeFuncMetric:
+			m.Registerer.MustRegister(metric.GaugeFunc)
 		}
 		log.Debugf("Register metric: %s", cs.Get().FQDN)
 	default:

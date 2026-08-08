@@ -17,7 +17,6 @@ limitations under the License.
 package webhook
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -26,46 +25,57 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/events"
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
+	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
+const (
+	testReadTimeout  = 5 * time.Second
+	testWriteTimeout = 5 * time.Second
+)
+
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
-	_, err := NewWebhookProvider("://invalid-url")
+	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
-	_, err := NewWebhookProvider("http://nonexistent.url")
+	_, err := newProvider(t.Context(), "http://nonexistent.url", testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("invalid-json")) // Invalid JSON
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
 }
 
 func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "status code < 500")
+	require.Contains(t, err.Error(), "unexpected status code 400")
 }
 
 func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
@@ -78,7 +88,7 @@ func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong content type returned from server")
 }
@@ -87,7 +97,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		w.Write([]byte(`[{
@@ -96,7 +106,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.Error(t, err)
 }
 
@@ -112,7 +122,7 @@ func TestValidDomainfilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
@@ -124,16 +134,16 @@ func TestRecords(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/records", r.URL.Path)
+		assert.Equal(t, "/records", r.URL.Path)
 		w.Write([]byte(`[{
 			"dnsName" : "test.example.com"
 		}]`))
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
-	endpoints, err := provider.Records(context.TODO())
+	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, endpoints)
 	require.Equal(t, []*endpoint.Endpoint{{
@@ -148,15 +158,15 @@ func TestRecordsWithErrors(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/records", r.URL.Path)
+		assert.Equal(t, "/records", r.URL.Path)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
-	_, err = p.Records(context.Background())
-	require.NotNil(t, err)
+	_, err = p.Records(t.Context())
+	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
@@ -166,7 +176,7 @@ func TestRecords_HTTPRequestErrorMissingHost0(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := wpr.Records(nil)
+	_, err := wpr.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid URL escape")
 }
@@ -177,7 +187,7 @@ func TestRecords_HTTPRequestErrorMissingHost(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := wpr.Records(nil)
+	_, err := wpr.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unsupported protocol scheme")
 }
@@ -198,13 +208,13 @@ func TestRecords_DecodeError(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := p.Records(context.Background())
+	_, err := p.Records(t.Context())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid character 'i' looking for beginning of value")
 }
 
 func TestRecords_NonOKStatusCode(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
 		return
 	}))
@@ -217,7 +227,7 @@ func TestRecords_NonOKStatusCode(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	_, err := p.Records(nil)
+	_, err := p.Records(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get records with code 511")
 }
@@ -230,7 +240,7 @@ func TestApplyChanges(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, "/records", r.URL.Path)
+		assert.Equal(t, "/records", r.URL.Path)
 		if successfulApplyChanges {
 			w.WriteHeader(http.StatusNoContent)
 		} else {
@@ -239,15 +249,15 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
-	err = p.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(t.Context(), nil)
 	require.NoError(t, err)
 
 	successfulApplyChanges = false
 
-	err = p.ApplyChanges(context.TODO(), nil)
-	require.NotNil(t, err)
+	err = p.ApplyChanges(t.Context(), nil)
+	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
@@ -257,7 +267,7 @@ func TestApplyChanges_HTTPNewRequestErrorWrongHost(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := wpr.ApplyChanges(context.Background(), nil)
+	err := wpr.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid URL escape")
 }
@@ -268,7 +278,7 @@ func TestApplyChanges_GetFailed(t *testing.T) {
 		client:          &http.Client{},
 	}
 
-	err := p.ApplyChanges(context.TODO(), &plan.Changes{})
+	err := p.ApplyChanges(t.Context(), &plan.Changes{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported protocol scheme")
 }
@@ -280,16 +290,16 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, webhookapi.UrlRecords, r.URL.Path)
+		assert.Equal(t, webhookapi.UrlRecords, r.URL.Path)
 		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 
-	err = p.ApplyChanges(context.TODO(), nil)
-	require.NotNil(t, err)
+	err = p.ApplyChanges(t.Context(), nil)
+	require.Error(t, err)
 	require.NotErrorIs(t, err, provider.SoftError)
 	assert.Contains(t, err.Error(), "failed to apply changes with code 511")
 }
@@ -301,7 +311,7 @@ func TestAdjustEndpoints(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
+		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 
 		var endpoints []*endpoint.Endpoint
 		defer r.Body.Close()
@@ -322,7 +332,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -346,6 +356,67 @@ func TestAdjustEndpoints(t *testing.T) {
 	}}, adjustedEndpoints)
 }
 
+func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
+	echoSvr := func(t *testing.T) *httptest.Server {
+		t.Helper()
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+				w.Write([]byte(`{}`))
+				return
+			}
+			var eps []*endpoint.Endpoint
+			defer r.Body.Close()
+			b, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			assert.NoError(t, json.Unmarshal(b, &eps))
+			j, _ := json.Marshal(eps)
+			w.Write(j)
+		}))
+	}
+
+	t.Run("single refObject is preserved across round-trip", func(t *testing.T) {
+		svr := echoSvr(t)
+		defer svr.Close()
+
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+		require.NoError(t, err)
+
+		ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "uid-1", "service")
+		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
+		})
+		require.NoError(t, err)
+		require.Len(t, adjusted, 1)
+		refs := adjusted[0].RefObjects()
+		require.NotEmpty(t, refs)
+		assert.Equal(t, ref, refs[0])
+	})
+
+	t.Run("multiple refObjects are all preserved across round-trip", func(t *testing.T) {
+		svr := echoSvr(t)
+		defer svr.Close()
+
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+		require.NoError(t, err)
+
+		ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
+		ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
+		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").
+				WithRefObject(ref1).
+				WithRefObject(ref2),
+		})
+		require.NoError(t, err)
+		require.Len(t, adjusted, 1)
+
+		refs := adjusted[0].RefObjects()
+		require.Len(t, refs, 2)
+		uids := []string{string(refs[0].UID()), string(refs[1].UID())}
+		assert.ElementsMatch(t, []string{"uid-1", "uid-2"}, uids)
+	})
+}
+
 func TestAdjustendpointsWithError(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
@@ -353,12 +424,12 @@ func TestAdjustendpointsWithError(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
-		require.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
+		assert.Equal(t, webhookapi.UrlAdjustEndpoints, r.URL.Path)
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -385,24 +456,24 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 		}
 		if r.URL.Path == "/records" {
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-			// assert that the request contains the provider specific property
+			// assert that the request contains the provider-specific property
 			var changes plan.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
-			require.Nil(t, err)
+			assert.NoError(t, err)
 			err = json.Unmarshal(b, &changes)
-			require.Nil(t, err)
-			require.Len(t, changes.Create, 1)
-			require.Len(t, changes.Create[0].ProviderSpecific, 1)
-			require.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
-			require.Equal(t, "value1", changes.Create[0].ProviderSpecific[0].Value)
+			assert.NoError(t, err)
+			assert.Len(t, changes.Create, 1)
+			assert.Len(t, changes.Create[0].ProviderSpecific, 1)
+			assert.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
+			assert.Equal(t, "value1", changes.Create[0].ProviderSpecific[0].Value)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 	}))
 	defer svr.Close()
 
-	p, err := NewWebhookProvider(svr.URL)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
 	require.NoError(t, err)
 	e := &endpoint.Endpoint{
 		DNSName:    "test.example.com",
@@ -418,7 +489,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			},
 		},
 	}
-	err = p.ApplyChanges(context.TODO(), &plan.Changes{
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			e,
 		},
@@ -448,7 +519,7 @@ func TestAdjustEndpoints_HTTPRequestErrorMissingHost(t *testing.T) {
 }
 
 func TestAdjustEndpoints_NonOKStatusCode(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNetworkAuthenticationRequired)
 		return
 	}))
@@ -472,7 +543,7 @@ func TestAdjustEndpoints_NonOKStatusCode(t *testing.T) {
 
 	_, err := p.AdjustEndpoints(endpoints)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to AdjustEndpoints with code  511")
+	assert.Contains(t, err.Error(), "failed to AdjustEndpoints with code 511")
 }
 
 func TestAdjustEndpoints_DecodeError(t *testing.T) {
@@ -500,7 +571,7 @@ func TestAdjustEndpoints_DecodeError(t *testing.T) {
 }
 
 func TestRequestWithRetry_Success(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, "ok")
 	}))
@@ -517,7 +588,7 @@ func TestRequestWithRetry_Success(t *testing.T) {
 }
 
 func TestRequestWithRetry_NonRetriableStatus(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer server.Close()
@@ -529,4 +600,73 @@ func TestRequestWithRetry_NonRetriableStatus(t *testing.T) {
 	resp, err := requestWithRetry(client, req)
 	require.Error(t, err)
 	require.Nil(t, resp)
+}
+
+func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		if attempts < 3 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "ok")
+	}))
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, 3, attempts)
+}
+
+func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	assert.IsType(t, &extdnshttp.CustomRoundTripper{}, p.client.Transport, "webhook provider client should use an instrumented transport")
+}
+
+func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+		case webhookapi.UrlRecords:
+			assert.NoError(t, json.NewEncoder(w).Encode([]*endpoint.Endpoint{}))
+		}
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout)
+	require.NoError(t, err)
+
+	before := httpDurationSampleCount(t, "records", http.MethodGet)
+
+	_, err = p.Records(t.Context())
+	require.NoError(t, err)
+
+	assert.Greater(t, httpDurationSampleCount(t, "records", http.MethodGet), before,
+		"external_dns_http_request_duration_seconds should be incremented for a Records call")
+}
+
+func httpDurationSampleCount(t *testing.T, path, method string) uint64 {
+	t.Helper()
+	return testutils.SummaryVecSampleCount(t, &extdnshttp.RequestDurationMetric.SummaryVec, prometheus.Labels{
+		metrics.LabelPath:   path,
+		metrics.LabelMethod: method,
+	})
 }

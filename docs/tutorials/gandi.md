@@ -42,9 +42,10 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=gandi
         env:
@@ -66,7 +67,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -107,9 +111,10 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=gandi
         env:
@@ -147,7 +152,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: my-app.example.com
+    external-dns.kubernetes.io/hostname: my-app.example.com
 spec:
   selector:
     app: nginx

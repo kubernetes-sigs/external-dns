@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "external-dns.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "external-dns.namespace" . }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
@@ -12,7 +12,11 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: 1
+  {{- /* values.schema.json bounds replicaCount to 0-1, but that is skipped by e.g. `helm template | kubectl apply`, so guard here too. */}}
+  {{- if gt (int .Values.replicaCount) 1 }}
+  {{- fail "replicaCount must be 0 or 1: external-dns does not support leader election" }}
+  {{- end }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
@@ -109,7 +113,13 @@ spec:
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- if .Values.namespaced }}
-            - --namespace={{ .Release.Namespace }}
+            - --namespace={{ default (include "external-dns.namespace" .) .Values.sourceNamespace }}
+            {{- end }}
+            {{- if .Values.gatewayNamespace }}
+            - --gateway-namespace={{ .Values.gatewayNamespace }}
+            {{- end }}
+            {{- if .Values.enableGatewayListenerSets }}
+            - --gateway-listener-sets
             {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
@@ -120,6 +130,12 @@ spec:
             {{- if .Values.labelFilter }}
             - --label-filter={{ .Values.labelFilter }}
             {{- end }}
+            {{- if .Values.annotationFilter }}
+            - --annotation-filter={{ .Values.annotationFilter }}
+            {{- end }}
+            {{- if .Values.annotationPrefix }}
+            - --annotation-prefix={{ .Values.annotationPrefix }}
+            {{- end }}
             {{- range .Values.managedRecordTypes }}
             - --managed-record-types={{ . }}
             {{- end }}
@@ -129,19 +145,25 @@ spec:
             {{- if not (kindIs "invalid" $value) }}
             {{- if kindIs "slice" $value }}
             {{- range $value }}
-            - --{{ $key }}={{ tpl (. | toString) $ }}
+            - {{ print "--" $key "=" (tpl (. | toString) $) | quote }}
             {{- end }}
-            {{- else }}
-            - --{{ $key }}={{ tpl ($value | toString) $ }}
-            {{- end }}
-            {{- else }}
+            {{- else if kindIs "bool" $value }}
+            {{- if $value }}
             - --{{ $key }}
+            {{- else }}
+            - --no-{{ $key }}
+            {{- end }}
+            {{- else }}
+            - {{ print "--" $key "=" (tpl ($value | toString) $) | quote }}
+            {{- end }}
+            {{- else }}
+            - {{ print "--" $key | quote }}
             {{- end }}
             {{- end }}
             {{- end }}
             {{- if kindIs "slice" .Values.extraArgs }}
             {{- range .Values.extraArgs }}
-            - {{ tpl . $ }}
+            - {{ tpl . $ | quote }}
             {{- end }}
             {{- end }}
           ports:
@@ -285,7 +307,7 @@ spec:
           {{- if not (hasKey . "labelSelector") }}
           labelSelector:
             matchLabels:
-              {{- include "external-dns.selectorLabels" $ | nindent 12 }}
+              {{- include "external-dns.selectorLabels" $ | nindent 14 }}
           {{- end }}
         {{- end }}
       {{- end }}

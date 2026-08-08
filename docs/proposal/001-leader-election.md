@@ -141,5 +141,7 @@ When a spot instance running the leader is preempted, the failover process enabl
 This guarantees operational continuity even in the face of unexpected failures, supporting robust disaster recovery strategies.
 - **High Availability (HA) Scenarios**: In highly available systems, leader election ensures that a single active leader manages essential processes or state, while backups remain ready to step in instantly in case of failure.
 This minimizes recovery time objectives (RTO) and eliminates single points of failure.
-- **Enhanced Reliability in Distributed Systems**: Incorporating leader election into your distributed system enhances its overall reliability. It avoids the pitfalls of uncoordinated task execution, providing deterministic behavior and ensuring only one instance manages critical tasks at any given time.
-- **Conflict Prevention**: Leader election serves as a guard against conflicts arising from multiple instances attempting to execute the same tasks. By ensuring that only the elected leader acts on shared resources or processes, it prevents data corruption, inconsistencies, and wasted computational effort.
+- **Enhanced Reliability in Distributed Systems**: Incorporating leader election into your distributed system enhances its overall reliability.
+It avoids the pitfalls of uncoordinated task execution, providing deterministic behavior and ensuring only one instance manages critical tasks at any given time.
+- **Conflict Prevention**: Leader election serves as a guard against conflicts arising from multiple instances attempting to execute the same tasks.
+By ensuring that only the elected leader acts on shared resources or processes, it prevents data corruption, inconsistencies, and wasted computational effort.

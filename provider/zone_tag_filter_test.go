@@ -123,11 +123,56 @@ func TestZoneTagFilterNotMatchGeneratedValues(t *testing.T) {
 	}
 }
 
+func TestNewZoneTagFilter_EdgeCases(t *testing.T) {
+	for _, tt := range []struct {
+		title string
+		input []string
+		want  map[string]string
+	}{
+		{
+			title: "nil input produces empty filter",
+			input: nil,
+			want:  map[string]string{},
+		},
+		{
+			title: "whitespace-only key is skipped",
+			input: []string{"  =value"},
+			want:  map[string]string{},
+		},
+		{
+			title: "whitespace around key and value is trimmed",
+			input: []string{"  tag1  =  value1  "},
+			want:  map[string]string{"tag1": "value1"},
+		},
+		{
+			title: "duplicate key — last value wins",
+			input: []string{"tag1=first", "tag1=second"},
+			want:  map[string]string{"tag1": "second"},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			assert.Equal(t, tt.want, NewZoneTagFilter(tt.input).tagsMap)
+		})
+	}
+}
+
+func TestZoneTagFilterMatch_NilZoneTags(t *testing.T) {
+	// A non-empty filter against a nil zone tags map must not match.
+	assert.False(t, NewZoneTagFilter([]string{"tag1=value1"}).Match(nil))
+	// An empty filter matches everything, including nil.
+	assert.True(t, NewZoneTagFilter(nil).Match(nil))
+}
+
+func TestZoneTagFilter_IsEmpty(t *testing.T) {
+	assert.True(t, NewZoneTagFilter([]string{}).IsEmpty())
+	assert.False(t, NewZoneTagFilter([]string{"tag1=value1"}).IsEmpty())
+}
+
 // benchmarks
 func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 	for _, tc := range basicZoneTags {
 		zoneTagFilter := NewZoneTagFilter(tc.tagsFilter)
-		for range b.N {
+		for b.Loop() {
 			zoneTagFilter.Match(tc.zoneTags)
 		}
 	}
@@ -148,7 +193,7 @@ var benchFixtures = []struct {
 
 func BenchmarkZoneTagFilterComplex(b *testing.B) {
 	for _, tc := range benchFixtures {
-		for range b.N {
+		for b.Loop() {
 			tc.source.ZoneTagFilter.Match(tc.source.inputTags)
 		}
 	}
@@ -176,7 +221,7 @@ func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
 	toFilterTags := make([]string, 0, filter)
 	inputTags := make(map[string]string, zone)
 
-	for i := 0; i < filter; i++ {
+	for i := range filter {
 		tagIndex := i
 		if !match {
 			tagIndex += 50
@@ -184,7 +229,7 @@ func generateTagFilterAndZoneTags(filter, zone int, match bool) filterZoneTags {
 		toFilterTags = append(toFilterTags, fmt.Sprintf("tag-%d=value-%d", tagIndex, i))
 	}
 
-	for i := 0; i < zone; i++ {
+	for i := range zone {
 		tagIndex := i
 		if !match {
 			// Make sure the input tags are different from the filter tags

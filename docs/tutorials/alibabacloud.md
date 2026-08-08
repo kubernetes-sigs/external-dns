@@ -113,13 +113,13 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=external-dns-test.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=alibabacloud
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -147,7 +147,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -187,13 +190,13 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=external-dns-test.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=alibabacloud
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -248,7 +251,7 @@ spec:
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -256,7 +259,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.com.
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.com.
 spec:
   type: LoadBalancer
   ports:
@@ -355,7 +358,7 @@ $ curl nginx.external-dns-test.com.
 
 ## Custom TTL
 
-The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.kubernetes.io/ttl`.
 e.g., modify the service manifest YAML file above:
 
 ```yaml
@@ -364,8 +367,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.com
-    external-dns.alpha.kubernetes.io/ttl: 60
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.com
+    external-dns.kubernetes.io/ttl: 60
 spec:
     ...
 ```

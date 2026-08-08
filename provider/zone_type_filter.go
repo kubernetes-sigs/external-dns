@@ -36,7 +36,7 @@ func NewZoneTypeFilter(zoneType string) ZoneTypeFilter {
 }
 
 // Match checks whether a zone matches the zone type that's filtered for.
-func (f ZoneTypeFilter) Match(rawZoneType interface{}) bool {
+func (f ZoneTypeFilter) Match(rawZoneType any) bool {
 	// An empty zone filter includes all hosted zones.
 	if f.zoneType == "" {
 		return true

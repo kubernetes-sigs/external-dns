@@ -50,7 +50,7 @@ spec:
 ### Prepare ROUTER_CANONICAL_HOSTNAME in default/router deployment
 
 Read and go through [Finding the Host Name of the Router](https://docs.openshift.com/container-platform/3.11/install_config/router/default_haproxy_router.html#finding-router-hostname).
-If no ROUTER_CANONICAL_HOSTNAME is set, you must annotate each route with external-dns.alpha.kubernetes.io/target!
+If no ROUTER_CANONICAL_HOSTNAME is set, you must annotate each route with external-dns.kubernetes.io/target!
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -72,12 +72,12 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=openshift-route
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -97,7 +97,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -140,12 +143,12 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=openshift-route
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier

@@ -28,11 +28,12 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --log-level=debug
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --namespace=dev
         - --domain-filter=example.org.
         - --provider=aws
@@ -48,7 +49,7 @@ apiVersion: v1
 metadata:
   name: aws-service
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
+    external-dns.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
 spec:
   type: ExternalName
   externalName: aws.example.org
@@ -71,7 +72,7 @@ apiVersion: v1
 metadata:
   name: aws-service
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
+    external-dns.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
 spec:
   type: ExternalName
   externalName: 111.111.111.111

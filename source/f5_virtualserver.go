@@ -18,27 +18,27 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
+	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/cache"
-
-	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var f5VirtualServerGVR = schema.GroupVersionResource{
@@ -48,12 +48,19 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 }
 
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
+//
+// +externaldns:source:name=f5-virtualserver
+// +externaldns:source:category=Load Balancers
+// +externaldns:source:description=Creates DNS entries from F5 VirtualServer resources
+// +externaldns:source:resources=VirtualServer.cis.f5.com
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single
+// +externaldns:source:fqdn-template=true
+// +externaldns:source:provider-specific=false
 type f5VirtualServerSource struct {
-	dynamicKubeClient     dynamic.Interface
-	virtualServerInformer informers.GenericInformer
+	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
-	annotationFilter      string
-	namespace             string
+	templateEngine        template.Engine
 	unstructuredConverter *unstructuredConverter
 }
 
@@ -61,23 +68,28 @@ func NewF5VirtualServerSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string,
-	annotationFilter string,
+	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
-	virtualServerInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	informers.MustSetTransform(virtualServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
+	informers.MustAddIndexers(virtualServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
+	))
+
+	informers.MustAddEventHandler(virtualServerInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
@@ -87,41 +99,29 @@ func NewF5VirtualServerSource(
 	}
 
 	return &f5VirtualServerSource{
-		dynamicKubeClient:     dynamicKubeClient,
 		virtualServerInformer: virtualServerInformer,
 		kubeClient:            kubeClient,
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
+		templateEngine:        cfg.TemplateEngine,
 		unstructuredConverter: uc,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualServers in the source's namespace(s).
-func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	virtualServerObjects, err := vs.virtualServerInformer.Lister().ByNamespace(vs.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+	virtualServerObjects := informers.ListIndexed[*unstructured.Unstructured](vs.virtualServerInformer.Informer().GetIndexer())
 
 	var virtualServers []*f5.VirtualServer
 	for _, vsObj := range virtualServerObjects {
-		unstructuredHost, ok := vsObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert")
-		}
-
 		virtualServer := &f5.VirtualServer{}
-		err := vs.unstructuredConverter.scheme.Convert(unstructuredHost, virtualServer, nil)
-		if err != nil {
+		if err := vs.unstructuredConverter.scheme.Convert(vsObj, virtualServer, nil); err != nil {
 			return nil, err
 		}
+		virtualServer.TypeMeta = metav1.TypeMeta{
+			Kind:       "VirtualServer",
+			APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+		}
 		virtualServers = append(virtualServers, virtualServer)
-	}
-
-	virtualServers, err = vs.filterByAnnotations(virtualServers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
 
 	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)
@@ -129,45 +129,57 @@ func (vs *f5VirtualServerSource) Endpoints(ctx context.Context) ([]*endpoint.End
 		return nil, err
 	}
 
-	// Sort endpoints
-	for _, ep := range endpoints {
-		sort.Sort(ep.Targets)
-	}
-
-	return endpoints, nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (vs *f5VirtualServerSource) AddEventHandler(ctx context.Context, handler func()) {
+func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for VirtualServer")
 
-	vs.virtualServerInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	informers.MustAddEventHandler(vs.virtualServerInformer.Informer(), eventHandlerFunc(handler))
 }
 
-// endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers
+// endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers.
 func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f5.VirtualServer) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		if !isVirtualServerReady(virtualServer) {
-			log.Warnf("F5 VirtualServer %s/%s is not ready or is missing an IP address, skipping endpoint creation.",
+		var vsEndpoints []*endpoint.Endpoint
+
+		if hasValidVirtualServerIP(virtualServer) {
+			resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
+
+			ttl := annotations.TTLFromAnnotations(virtualServer.Annotations, resource)
+
+			targets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
+			if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
+				targets = append(targets, virtualServer.Spec.VirtualServerAddress)
+			}
+			if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
+				targets = append(targets, virtualServer.Status.VSAddress)
+			}
+
+			vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+			for _, alias := range virtualServer.Spec.HostAliases {
+				if alias != "" {
+					vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+				}
+			}
+		}
+
+		var err error
+		vsEndpoints, err = vs.templateEngine.ApplyTemplates(vsEndpoints, virtualServer)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(vsEndpoints) == 0 {
+			log.Warnf("F5 VirtualServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				virtualServer.Namespace, virtualServer.Name)
-			continue
 		}
 
-		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
+		endpoint.AttachRefObject(vsEndpoints, events.NewObjectReference(virtualServer, types.F5VirtualServer))
 
-		ttl := getTTLFromAnnotations(virtualServer.Annotations, resource)
-
-		targets := getTargetsFromTargetAnnotation(virtualServer.Annotations)
-		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
-		}
-
-		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
-			targets = append(targets, virtualServer.Status.VSAddress)
-		}
-
-		endpoints = append(endpoints, endpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, vsEndpoints...)
 	}
 
 	return endpoints, nil
@@ -188,40 +200,7 @@ func newVSUnstructuredConverter() (*unstructuredConverter, error) {
 	return uc, nil
 }
 
-// filterByAnnotations filters a list of VirtualServers by a given annotation selector.
-func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.VirtualServer) ([]*f5.VirtualServer, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(vs.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	// empty filter returns original list
-	if selector.Empty() {
-		return virtualServers, nil
-	}
-
-	filteredList := []*f5.VirtualServer{}
-
-	for _, vs := range virtualServers {
-		// include VirtualServer if its annotations match the selector
-		if selector.Matches(labels.Set(vs.Annotations)) {
-			filteredList = append(filteredList, vs)
-		}
-	}
-
-	return filteredList, nil
-}
-
-func isVirtualServerReady(vs *f5.VirtualServer) bool {
-	if strings.ToLower(vs.Status.Status) != "ok" {
-		return false
-	}
-
+func hasValidVirtualServerIP(vs *f5.VirtualServer) bool {
 	normalizedAddress := strings.ToLower(vs.Status.VSAddress)
 	return normalizedAddress != "none" && normalizedAddress != ""
 }

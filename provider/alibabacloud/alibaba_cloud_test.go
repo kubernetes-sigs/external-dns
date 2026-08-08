@@ -17,377 +17,546 @@ limitations under the License.
 package alibabacloud
 
 import (
-	"context"
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 )
 
 type MockAlibabaCloudDNSAPI struct {
-	records []alidns.Record
+	counter int64
+	domains []*alidns.Domain
+	records map[string][]*alidns.Record
 }
 
-func NewMockAlibabaCloudDNSAPI() *MockAlibabaCloudDNSAPI {
-	api := MockAlibabaCloudDNSAPI{}
-	api.records = []alidns.Record{
-		{
-			RecordId:   "1",
-			DomainName: "container-service.top",
-			Type:       "A",
-			TTL:        300,
-			RR:         "abc",
-			Value:      "1.2.3.4",
-		},
-		{
-			RecordId:   "2",
-			DomainName: "container-service.top",
-			Type:       "TXT",
-			TTL:        300,
-			RR:         "abc",
-			Value:      "heritage=external-dns;external-dns/owner=default",
-		},
+func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (*alidns.AddDomainRecordResponse, error) {
+	if _, exist := m.records[request.DomainName]; !exist {
+		return alidns.CreateAddDomainRecordResponse(), fmt.Errorf("Domain not found")
 	}
-	return &api
-}
 
-func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (response *alidns.AddDomainRecordResponse, err error) {
-	ttl, _ := request.TTL.GetValue()
-	m.records = append(m.records, alidns.Record{
-		RecordId:   "3",
+	// Check if the record already exists.
+	value := unwrapQuotes(request.Type, request.Value)
+	records, _ := m.records[request.DomainName]
+	for _, record := range records {
+		if record.Type == request.Type && record.RR == request.RR && record.Value == value {
+			return alidns.CreateAddDomainRecordResponse(), fmt.Errorf("The DNS record already exists")
+		}
+	}
+
+	ttl, _ := request.TTL.GetValue64()
+	recordId := m.nextID()
+	m.records[request.DomainName] = append(m.records[request.DomainName], &alidns.Record{
+		RecordId:   recordId,
 		DomainName: request.DomainName,
 		Type:       request.Type,
-		TTL:        int64(ttl),
 		RR:         request.RR,
-		Value:      request.Value,
+		TTL:        ttl,
+		Value:      value,
 	})
-	response = alidns.CreateAddDomainRecordResponse()
+
+	response := alidns.CreateAddDomainRecordResponse()
+	response.RecordId = recordId
 	return response, nil
 }
 
-func (m *MockAlibabaCloudDNSAPI) DeleteDomainRecord(request *alidns.DeleteDomainRecordRequest) (response *alidns.DeleteDomainRecordResponse, err error) {
-	var result []alidns.Record
-	for _, record := range m.records {
-		if record.RecordId != request.RecordId {
-			result = append(result, record)
-		}
+func (m *MockAlibabaCloudDNSAPI) DeleteDomainRecord(request *alidns.DeleteDomainRecordRequest) (*alidns.DeleteDomainRecordResponse, error) {
+	if request == nil || request.RecordId == "" {
+		return alidns.CreateDeleteDomainRecordResponse(), fmt.Errorf("Invalid request")
 	}
-	m.records = result
-	response = alidns.CreateDeleteDomainRecordResponse()
+
+	for domain, records := range m.records {
+		m.records[domain] = slices.DeleteFunc(records, func(item *alidns.Record) bool {
+			return item.RecordId == request.RecordId
+		})
+	}
+	response := alidns.CreateDeleteDomainRecordResponse()
 	response.RecordId = request.RecordId
 	return response, nil
 }
 
-func (m *MockAlibabaCloudDNSAPI) UpdateDomainRecord(request *alidns.UpdateDomainRecordRequest) (response *alidns.UpdateDomainRecordResponse, err error) {
+func (m *MockAlibabaCloudDNSAPI) UpdateDomainRecord(request *alidns.UpdateDomainRecordRequest) (*alidns.UpdateDomainRecordResponse, error) {
+	if request == nil || request.RecordId == "" {
+		return alidns.CreateUpdateDomainRecordResponse(), fmt.Errorf("Invalid request")
+	}
+
 	ttl, _ := request.TTL.GetValue64()
-	for i := range m.records {
-		if m.records[i].RecordId == request.RecordId {
-			m.records[i].TTL = ttl
+	for _, records := range m.records {
+		idx := slices.IndexFunc(records, func(item *alidns.Record) bool {
+			return item.RecordId == request.RecordId
+		})
+		if idx != -1 {
+			record := records[idx]
+			if request.Value != "" {
+				value := unwrapQuotes(record.Type, request.Value)
+				// Check if the modified value already exists.
+				if exist := slices.ContainsFunc(records, func(item *alidns.Record) bool {
+					return item.RecordId != request.RecordId &&
+						item.Type == record.Type &&
+						item.RR == record.RR &&
+						item.Value == value
+				}); exist {
+					return alidns.CreateUpdateDomainRecordResponse(), fmt.Errorf("The DNS record value is duplicated.")
+				}
+				records[idx].Value = value
+			}
+			if ttl > 0 {
+				records[idx].TTL = ttl
+			}
+			break
 		}
 	}
-	response = alidns.CreateUpdateDomainRecordResponse()
+	response := alidns.CreateUpdateDomainRecordResponse()
 	response.RecordId = request.RecordId
 	return response, nil
 }
 
-func (m *MockAlibabaCloudDNSAPI) DescribeDomains(request *alidns.DescribeDomainsRequest) (response *alidns.DescribeDomainsResponse, err error) {
+func (m *MockAlibabaCloudDNSAPI) DescribeDomains(_ *alidns.DescribeDomainsRequest) (*alidns.DescribeDomainsResponse, error) {
 	var result alidns.DomainsInDescribeDomains
-	for _, record := range m.records {
-		domain := alidns.Domain{}
-		domain.DomainName = record.DomainName
+	for _, domain := range m.domains {
 		result.Domain = append(result.Domain, alidns.DomainInDescribeDomains{
+			DomainId:   domain.DomainId,
 			DomainName: domain.DomainName,
 		})
 	}
-	response = alidns.CreateDescribeDomainsResponse()
+	response := alidns.CreateDescribeDomainsResponse()
 	response.Domains = result
 	return response, nil
 }
 
-func (m *MockAlibabaCloudDNSAPI) DescribeDomainRecords(request *alidns.DescribeDomainRecordsRequest) (response *alidns.DescribeDomainRecordsResponse, err error) {
+func (m *MockAlibabaCloudDNSAPI) DescribeDomainRecords(request *alidns.DescribeDomainRecordsRequest) (*alidns.DescribeDomainRecordsResponse, error) {
+	if request == nil || request.DomainName == "" {
+		return alidns.CreateDescribeDomainRecordsResponse(), fmt.Errorf("Invalid request")
+	}
+
 	var result []alidns.Record
-	for _, record := range m.records {
-		if record.DomainName == request.DomainName {
-			result = append(result, record)
+	if records, exist := m.records[request.DomainName]; exist {
+		for _, record := range records {
+			result = append(result, *record)
 		}
 	}
-	response = alidns.CreateDescribeDomainRecordsResponse()
+	response := alidns.CreateDescribeDomainRecordsResponse()
 	response.DomainRecords.Record = result
 	return response, nil
 }
 
+func (m *MockAlibabaCloudDNSAPI) nextID() string {
+	id := atomic.AddInt64(&m.counter, 1)
+	return strconv.FormatInt(id, 10)
+}
+
+func (m *MockAlibabaCloudDNSAPI) newRecord(ep *endpoint.Endpoint, target, domain string) *alidns.Record {
+	subname := getSubname(domain, ep)
+	value := unwrapQuotes(ep.RecordType, target)
+
+	return &alidns.Record{
+		DomainName: domain,
+		RecordId:   m.nextID(),
+		Type:       ep.RecordType,
+		TTL:        int64(ep.RecordTTL),
+		RR:         subname,
+		Value:      value,
+	}
+}
+
 type MockAlibabaCloudPrivateZoneAPI struct {
-	zone    pvtz.Zone
-	records []pvtz.Record
+	counter int64
+	zones   []*pvtz.Zone
+	records map[string][]*pvtz.Record
 }
 
-func NewMockAlibabaCloudPrivateZoneAPI() *MockAlibabaCloudPrivateZoneAPI {
-	vpc := pvtz.Vpc{
-		RegionId: "cn-beijing",
-		VpcId:    "vpc-xxxxxx",
+func (m *MockAlibabaCloudPrivateZoneAPI) AddZoneRecord(request *pvtz.AddZoneRecordRequest) (*pvtz.AddZoneRecordResponse, error) {
+	if _, exist := m.records[request.ZoneId]; !exist {
+		return pvtz.CreateAddZoneRecordResponse(), fmt.Errorf("Zone not found")
 	}
 
-	api := MockAlibabaCloudPrivateZoneAPI{zone: pvtz.Zone{
-		ZoneId:   "test-zone",
-		ZoneName: "container-service.top",
-		Vpcs: pvtz.Vpcs{
-			Vpc: []pvtz.Vpc{vpc},
-		},
-	}}
-
-	api.records = []pvtz.Record{
-		{
-			RecordId: 1,
-			Type:     "A",
-			Ttl:      300,
-			Rr:       "abc",
-			Value:    "1.2.3.4",
-		},
-		{
-			RecordId: 2,
-			Type:     "TXT",
-			Ttl:      300,
-			Rr:       "abc",
-			Value:    "heritage=external-dns;external-dns/owner=default",
-		},
+	// Check if the record already exists.
+	value := unwrapQuotes(request.Type, request.Value)
+	records, _ := m.records[request.ZoneId]
+	for _, record := range records {
+		if record.Type == request.Type && record.Rr == request.Rr && record.Value == value {
+			return pvtz.CreateAddZoneRecordResponse(), fmt.Errorf("The DNS record already exists")
+		}
 	}
-	return &api
-}
 
-func (m *MockAlibabaCloudPrivateZoneAPI) AddZoneRecord(request *pvtz.AddZoneRecordRequest) (response *pvtz.AddZoneRecordResponse, err error) {
 	ttl, _ := request.Ttl.GetValue()
-	m.records = append(m.records, pvtz.Record{
-		RecordId: 3,
+	recordId := m.nextID()
+	m.records[request.ZoneId] = append(m.records[request.ZoneId], &pvtz.Record{
+		RecordId: recordId,
+		ZoneId:   request.ZoneId,
 		Type:     request.Type,
-		Ttl:      ttl,
 		Rr:       request.Rr,
-		Value:    request.Value,
+		Ttl:      ttl,
+		Value:    value,
 	})
-	response = pvtz.CreateAddZoneRecordResponse()
+
+	response := pvtz.CreateAddZoneRecordResponse()
+	response.RecordId = recordId
 	return response, nil
 }
 
-func (m *MockAlibabaCloudPrivateZoneAPI) DeleteZoneRecord(request *pvtz.DeleteZoneRecordRequest) (response *pvtz.DeleteZoneRecordResponse, err error) {
+func (m *MockAlibabaCloudPrivateZoneAPI) DeleteZoneRecord(request *pvtz.DeleteZoneRecordRequest) (*pvtz.DeleteZoneRecordResponse, error) {
+	if request == nil || request.RecordId == "" {
+		return pvtz.CreateDeleteZoneRecordResponse(), fmt.Errorf("Invalid request")
+	}
+
 	recordID, _ := request.RecordId.GetValue64()
+	for domain, records := range m.records {
+		m.records[domain] = slices.DeleteFunc(records, func(item *pvtz.Record) bool {
+			return item.RecordId == recordID
+		})
+	}
+	response := pvtz.CreateDeleteZoneRecordResponse()
+	response.RecordId = recordID
+	return response, nil
+}
+
+func (m *MockAlibabaCloudPrivateZoneAPI) UpdateZoneRecord(request *pvtz.UpdateZoneRecordRequest) (*pvtz.UpdateZoneRecordResponse, error) {
+	if request == nil || request.RecordId == "" {
+		return pvtz.CreateUpdateZoneRecordResponse(), fmt.Errorf("Invalid request")
+	}
+
+	ttl, _ := request.Ttl.GetValue()
+	recordID, _ := request.RecordId.GetValue64()
+	for _, records := range m.records {
+		idx := slices.IndexFunc(records, func(item *pvtz.Record) bool {
+			return item.RecordId == recordID
+		})
+		if idx != -1 {
+			record := records[idx]
+			if request.Value != "" {
+				value := unwrapQuotes(record.Type, request.Value)
+				// Check if the modified value already exists.
+				if exist := slices.ContainsFunc(records, func(item *pvtz.Record) bool {
+					return item.RecordId != recordID &&
+						item.Type == record.Type &&
+						item.Rr == record.Rr &&
+						item.Value == value
+				}); exist {
+					return pvtz.CreateUpdateZoneRecordResponse(), fmt.Errorf("The DNS record value is duplicated.")
+				}
+				records[idx].Value = value
+			}
+			if ttl > 0 {
+				records[idx].Ttl = ttl
+			}
+			break
+		}
+	}
+	response := pvtz.CreateUpdateZoneRecordResponse()
+	response.RecordId = recordID
+	return response, nil
+}
+
+func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneRecords(request *pvtz.DescribeZoneRecordsRequest) (*pvtz.DescribeZoneRecordsResponse, error) {
+	if request == nil || request.ZoneId == "" {
+		return pvtz.CreateDescribeZoneRecordsResponse(), fmt.Errorf("Invalid request")
+	}
 
 	var result []pvtz.Record
-	for _, record := range m.records {
-		if record.RecordId != recordID {
-			result = append(result, record)
+	if records, exist := m.records[request.ZoneId]; exist {
+		for _, record := range records {
+			result = append(result, *record)
 		}
 	}
-	m.records = result
-	response = pvtz.CreateDeleteZoneRecordResponse()
+	response := pvtz.CreateDescribeZoneRecordsResponse()
+	response.Records.Record = result
 	return response, nil
 }
 
-func (m *MockAlibabaCloudPrivateZoneAPI) UpdateZoneRecord(request *pvtz.UpdateZoneRecordRequest) (response *pvtz.UpdateZoneRecordResponse, err error) {
-	recordID, _ := request.RecordId.GetValue64()
-	ttl, _ := request.Ttl.GetValue()
-	for i := range m.records {
-		if m.records[i].RecordId == recordID {
-			m.records[i].Ttl = ttl
+func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZones(_ *pvtz.DescribeZonesRequest) (*pvtz.DescribeZonesResponse, error) {
+	var result pvtz.ZonesInDescribeZones
+	for _, zone := range m.zones {
+		result.Zone = append(result.Zone, pvtz.Zone{
+			ZoneId:   zone.ZoneId,
+			ZoneName: zone.ZoneName,
+		})
+	}
+	response := pvtz.CreateDescribeZonesResponse()
+	response.Zones = result
+	return response, nil
+}
+
+func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneInfo(request *pvtz.DescribeZoneInfoRequest) (*pvtz.DescribeZoneInfoResponse, error) {
+	if request == nil || request.ZoneId == "" {
+		return pvtz.CreateDescribeZoneInfoResponse(), fmt.Errorf("Invalid request")
+	}
+
+	response := pvtz.CreateDescribeZoneInfoResponse()
+	for _, zone := range m.zones {
+		if zone.ZoneId == request.ZoneId {
+			response.ZoneId = zone.ZoneId
+			response.ZoneName = zone.ZoneName
+			response.BindVpcs = pvtz.BindVpcsInDescribeZoneInfo{Vpc: make([]pvtz.VpcInDescribeZoneInfo, len(zone.Vpcs.Vpc))}
+			for i, vpc := range zone.Vpcs.Vpc {
+				response.BindVpcs.Vpc[i] = pvtz.VpcInDescribeZoneInfo{VpcName: vpc.VpcName, VpcId: vpc.VpcId, VpcType: vpc.VpcType, RegionName: vpc.RegionName, RegionId: vpc.RegionId}
+			}
 		}
 	}
-	response = pvtz.CreateUpdateZoneRecordResponse()
 	return response, nil
 }
 
-func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneRecords(request *pvtz.DescribeZoneRecordsRequest) (response *pvtz.DescribeZoneRecordsResponse, err error) {
-	response = pvtz.CreateDescribeZoneRecordsResponse()
-	response.Records.Record = append(response.Records.Record, m.records...)
-	return response, nil
+func (m *MockAlibabaCloudPrivateZoneAPI) nextID() int64 {
+	id := atomic.AddInt64(&m.counter, 1)
+	return id
 }
 
-func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZones(request *pvtz.DescribeZonesRequest) (response *pvtz.DescribeZonesResponse, err error) {
-	response = pvtz.CreateDescribeZonesResponse()
-	response.Zones.Zone = append(response.Zones.Zone, m.zone)
-	return response, nil
-}
+func (m *MockAlibabaCloudPrivateZoneAPI) newRecord(ep *endpoint.Endpoint, target, domain, zoneId string) *pvtz.Record {
+	subname := getSubname(domain, ep)
+	value := unwrapQuotes(ep.RecordType, target)
 
-func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneInfo(request *pvtz.DescribeZoneInfoRequest) (response *pvtz.DescribeZoneInfoResponse, err error) {
-	response = pvtz.CreateDescribeZoneInfoResponse()
-	response.ZoneId = m.zone.ZoneId
-	response.ZoneName = m.zone.ZoneName
-	response.BindVpcs = pvtz.BindVpcsInDescribeZoneInfo{Vpc: make([]pvtz.VpcInDescribeZoneInfo, len(m.zone.Vpcs.Vpc))}
-	for idx, vpc := range m.zone.Vpcs.Vpc {
-		response.BindVpcs.Vpc[idx] = pvtz.VpcInDescribeZoneInfo{VpcName: vpc.VpcName, VpcId: vpc.VpcId, VpcType: vpc.VpcType, RegionName: vpc.RegionName, RegionId: vpc.RegionId}
+	return &pvtz.Record{
+		ZoneId:   zoneId,
+		RecordId: m.nextID(),
+		Type:     ep.RecordType,
+		Ttl:      int(ep.RecordTTL),
+		Rr:       subname,
+		Value:    value,
 	}
-	return response, nil
 }
 
 func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
+	domain := "container-service.top"
+	return newTestAlibabaCloudProviderWithConfig(
+		endpoint.NewDomainFilter([]string{domain}),
+		private, map[string][]*endpoint.Endpoint{
+			domain: createDefaultEndpoints(domain),
+		},
+	)
+}
+
+func newTestAlibabaCloudProviderWithConfig(domainFilter *endpoint.DomainFilter, private bool, endpointsMap map[string][]*endpoint.Endpoint) *AlibabaCloudProvider {
 	cfg := alibabaCloudConfig{
-		VPCID: "vpc-xxxxxx",
+		RegionID: "cn-beijing",
+		VPCID:    "vpc-xxxxxx",
 	}
 
-	domainFilterTest := endpoint.NewDomainFilter([]string{"container-service.top.", "example.org"})
+	dnsClient := &MockAlibabaCloudDNSAPI{
+		counter: 0,
+		domains: make([]*alidns.Domain, 0),
+		records: make(map[string][]*alidns.Record, 0),
+	}
+	pvtzClient := &MockAlibabaCloudPrivateZoneAPI{
+		counter: 0,
+		zones:   make([]*pvtz.Zone, 0),
+		records: make(map[string][]*pvtz.Record, 0),
+	}
+
+	if private {
+		for domain, endpoints := range endpointsMap {
+			zoneId := uuid.New().String()
+			pvtzClient.zones = append(pvtzClient.zones, &pvtz.Zone{
+				ZoneId:   zoneId,
+				ZoneName: domain,
+				Vpcs: pvtz.Vpcs{
+					Vpc: []pvtz.Vpc{{
+						RegionId: cfg.RegionID,
+						VpcId:    cfg.VPCID,
+					}},
+				},
+			})
+			pvtzClient.records[zoneId] = make([]*pvtz.Record, 0)
+			for _, ep := range endpoints {
+				for _, target := range ep.Targets {
+					pvtzClient.records[zoneId] = append(
+						pvtzClient.records[zoneId],
+						pvtzClient.newRecord(ep, target, domain, zoneId),
+					)
+				}
+			}
+		}
+	} else {
+		for domain, endpoints := range endpointsMap {
+			dnsClient.domains = append(dnsClient.domains, &alidns.Domain{
+				DomainId:   uuid.New().String(),
+				DomainName: domain,
+			})
+			dnsClient.records[domain] = make([]*alidns.Record, 0)
+			for _, ep := range endpoints {
+				for _, target := range ep.Targets {
+					dnsClient.records[domain] = append(
+						dnsClient.records[domain],
+						dnsClient.newRecord(ep, target, domain),
+					)
+				}
+			}
+		}
+	}
 
 	return &AlibabaCloudProvider{
-		domainFilter: domainFilterTest,
+		domainFilter: domainFilter,
 		vpcID:        cfg.VPCID,
 		dryRun:       false,
-		dnsClient:    NewMockAlibabaCloudDNSAPI(),
-		pvtzClient:   NewMockAlibabaCloudPrivateZoneAPI(),
+		dnsClient:    dnsClient,
+		pvtzClient:   pvtzClient,
 		privateZone:  private,
 	}
 }
 
-func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
-	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records(context.Background())
-	if err != nil {
-		t.Errorf("Failed to get records: %v", err)
-	} else {
-		if len(endpoints) != 2 {
-			t.Errorf("Incorrect number of records: %d", len(endpoints))
-		}
-		for _, ep := range endpoints {
-			t.Logf("Endpoint for %++v", *ep)
-		}
+func getSubname(domain string, ep *endpoint.Endpoint) string {
+	name := strings.TrimSuffix(ep.DNSName, ".")
+	name = strings.TrimSuffix(name, strings.TrimSuffix(domain, "."))
+	name = strings.TrimSuffix(name, ".")
+
+	if name == "" {
+		return "@"
 	}
+	return name
+}
+
+func createDefaultEndpoints(domain string) []*endpoint.Endpoint {
+	endpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.NewEndpointWithTTL("a-abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+	}
+
+	return endpoints
 }
 
 func TestAlibabaCloudProvider_Records(t *testing.T) {
-	p := newTestAlibabaCloudProvider(false)
-	endpoints, err := p.Records(context.Background())
-	if err != nil {
-		t.Errorf("Failed to get records: %v", err)
-	} else {
-		if len(endpoints) != 2 {
-			t.Errorf("Incorrect number of records: %d", len(endpoints))
-		}
-		for _, ep := range endpoints {
-			t.Logf("Endpoint for %++v", *ep)
-		}
-	}
+	domain := "container-service.top"
+	defaultEndpoints := createDefaultEndpoints(domain)
+	provider := newTestAlibabaCloudProviderWithConfig(
+		endpoint.NewDomainFilter([]string{domain}), false, map[string][]*endpoint.Endpoint{
+			domain: defaultEndpoints,
+		},
+	)
+	endpoints, err := provider.Records(t.Context())
+
+	require.NoError(t, err, "Failed to get records: %v", err)
+	require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
+	assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
 }
 
 func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
-	p := newTestAlibabaCloudProvider(false)
-	defaultTtlPlan := &endpoint.Endpoint{
-		DNSName:    "ttl.container-service.top",
-		RecordType: "A",
-		RecordTTL:  defaultTTL,
-		Targets:    endpoint.NewTargets("4.3.2.1"),
-	}
+	provider := newTestAlibabaCloudProvider(false)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
-			{
-				DNSName:    "xyz.container-service.top",
-				RecordType: "A",
-				RecordTTL:  300,
-				Targets:    endpoint.NewTargets("4.3.2.1"),
-			},
-			defaultTtlPlan,
+			endpoint.NewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
+			endpoint.NewEndpointWithTTL("ttl.container-service.top", "A", defaultTTL, "4.3.2.1"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "A",
-				RecordTTL:  500,
-				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
-			},
+			endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+			endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 		Delete: []*endpoint.Endpoint{
-			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "TXT",
-				RecordTTL:  300,
-				Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=default\""),
-			},
+			endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 	}
-	ctx := context.Background()
-	err := p.ApplyChanges(ctx, &changes)
-	assert.NoError(t, err)
-	endpoints, err := p.Records(ctx)
-	if err != nil {
-		t.Errorf("Failed to get records: %v", err)
-	} else {
-		if len(endpoints) != 3 {
-			t.Errorf("Incorrect number of records: %d", len(endpoints))
-		}
-		for _, ep := range endpoints {
-			t.Logf("Endpoint for %++v", *ep)
-		}
-	}
-	for _, ep := range endpoints {
-		if ep.DNSName == defaultTtlPlan.DNSName {
-			if ep.RecordTTL != defaultTtlPlan.RecordTTL {
-				t.Error("default ttl execute error")
-			}
-		}
-	}
+
+	ctx := t.Context()
+	err := provider.ApplyChanges(ctx, &changes)
+	require.NoError(t, err, "Failed to apply changes: %v", err)
+
+	endpoints, err := provider.Records(ctx)
+	require.NoError(t, err, "Failed to get records: %v", err)
+
+	changedEndpoints := append([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+	}, changes.Create...)
+
+	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
+	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
 }
 
-func TestAlibabaCloudProvider_Records_PrivateZone(t *testing.T) {
-	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records(context.Background())
-	if err != nil {
-		t.Errorf("Failed to get records: %v", err)
-	} else {
-		if len(endpoints) != 2 {
-			t.Errorf("Incorrect number of records: %d", len(endpoints))
-		}
-		for _, ep := range endpoints {
-			t.Logf("Endpoint for %++v", *ep)
-		}
-	}
-}
-
-func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
-	p := newTestAlibabaCloudProvider(true)
+func TestAlibabaCloudProvider_ApplyChanges_UndefinedZoneDomain(t *testing.T) {
+	provider := newTestAlibabaCloudProvider(false)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
-			{
-				DNSName:    "xyz.container-service.top",
-				RecordType: "A",
-				RecordTTL:  300,
-				Targets:    endpoint.NewTargets("4.3.2.1"),
-			},
+			// no found this zone by API: DescribeDomains
+			endpoint.NewEndpointWithTTL("www.example.com", "A", 300, "9.9.9.9"),
+			// can create this domain record
+			endpoint.NewEndpointWithTTL("ttl.container-service.top", "A", defaultTTL, "4.3.2.1"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "A",
-				RecordTTL:  500,
-				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
-			},
+			endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
 		},
 		Delete: []*endpoint.Endpoint{
-			{
-				DNSName:    "abc.container-service.top",
-				RecordType: "TXT",
-				RecordTTL:  300,
-				Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=default\""),
-			},
+			endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 	}
-	ctx := context.Background()
-	err := p.ApplyChanges(ctx, &changes)
-	assert.NoError(t, err)
-	endpoints, err := p.Records(ctx)
-	if err != nil {
-		t.Errorf("Failed to get records: %v", err)
-	} else {
-		if len(endpoints) != 2 {
-			t.Errorf("Incorrect number of records: %d", len(endpoints))
-		}
-		for _, ep := range endpoints {
-			t.Logf("Endpoint for %++v", *ep)
-		}
+
+	ctx := t.Context()
+	err := provider.ApplyChanges(ctx, &changes)
+	require.NoError(t, err, "Failed to apply changes: %v", err)
+
+	endpoints, err := provider.Records(ctx)
+	require.NoError(t, err, "Failed to get records: %v", err)
+
+	changedEndpoints := append([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+	}, changes.Create[1]) // Only one new one was created
+
+	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
+	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
+}
+
+func TestAlibabaCloudProvider_PrivateZone_Records(t *testing.T) {
+	domain := "container-service.top"
+	defaultEndpoints := createDefaultEndpoints(domain)
+	provider := newTestAlibabaCloudProviderWithConfig(
+		endpoint.NewDomainFilter([]string{domain}), true, map[string][]*endpoint.Endpoint{
+			domain: defaultEndpoints,
+		},
+	)
+	endpoints, err := provider.Records(t.Context())
+
+	require.NoError(t, err, "Failed to get records: %v", err)
+	require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
+	assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
+}
+
+func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
+	provider := newTestAlibabaCloudProvider(true)
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+			endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		},
 	}
+
+	ctx := t.Context()
+	err := provider.ApplyChanges(ctx, &changes)
+	require.NoError(t, err, "Failed to apply changes: %v", err)
+
+	endpoints, err := provider.Records(ctx)
+	require.NoError(t, err, "Failed to get records: %v", err)
+
+	changedEndpoints := append([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+	}, changes.Create...)
+
+	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
+	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
 }
 
 func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 	p := newTestAlibabaCloudProvider(false)
 	endpoint := &endpoint.Endpoint{}
 	hostedZoneDomains := []string{"container-service.top", "example.org"}
+
+	var emptyZoneDomains []string
 
 	endpoint.DNSName = "www.example.org"
 	rr, domain := p.splitDNSName(endpoint.DNSName, hostedZoneDomains)
@@ -440,31 +609,23 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 	if rr != "a.b" || domain != "c.container-service.top" {
 		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
 	}
+	rr, domain = p.splitDNSName(endpoint.DNSName, emptyZoneDomains)
+	if rr != "@" || domain != "" {
+		t.Errorf("Failed to splitDNSName with emptyZoneDomains for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
+	}
+	rr, domain = p.splitDNSName(endpoint.DNSName, []string{"example.com"})
+	if rr != "@" || domain != "" {
+		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
+	}
 }
 
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
-	p := newTestAlibabaCloudProvider(false)
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
 
-	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
-		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
-	}
-	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
-		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
-	}
-}
+	newTarget := wrapWithQuotes("TXT", recordValue)
+	assert.Equal(t, endpointTarget, newTarget, "Failed to wrapWithQuotes: %s", newTarget)
 
-// TestAlibabaCloudProvider_TXTEndpoint_PrivateZone
-func TestAlibabaCloudProvider_TXTEndpoint_PrivateZone(t *testing.T) {
-	p := newTestAlibabaCloudProvider(true)
-	const recordValue = "heritage=external-dns,external-dns/owner=default"
-	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
-
-	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
-		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
-	}
-	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
-		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
-	}
+	newValue := unwrapQuotes("TXT", endpointTarget)
+	assert.Equal(t, recordValue, newValue, "Failed to unwrapQuotes: %s", newValue)
 }

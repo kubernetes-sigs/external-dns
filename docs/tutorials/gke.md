@@ -1,6 +1,6 @@
 # GKE with default controller
 
-This tutorial describes how to setup ExternalDNS for usage within a [GKE](https://cloud.google.com/kubernetes-engine) ([Google Kuberentes Engine](https://cloud.google.com/kubernetes-engine)) cluster. Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a [GKE](https://cloud.google.com/kubernetes-engine) ([Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine)) cluster. Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial
 
 ## Single project test scenario using access scopes
 
@@ -43,7 +43,7 @@ gcloud container clusters create $GKE_CLUSTER_NAME \
 ```
 
 > [!WARNING]
-> Note that this cluster will use the default [compute engine GSA](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) that contians the overly permissive project editor (`roles/editor`) role.
+> Note that this cluster will use the default [compute engine GSA](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) that contains the overly permissive project editor (`roles/editor`) role.
 > So essentially, anything on the cluster could potentially grant escalated privileges.
 > Also, as mentioned earlier, the access scope `ndev.clouddns.readwrite` will allow anything running on the cluster to have read/write permissions on all Cloud DNS zones within the same project.
 
@@ -341,7 +341,10 @@ metadata:
     app.kubernetes.io/name: external-dns
 rules:
   - apiGroups: [""]
-    resources: ["services","endpoints","pods","nodes"]
+    resources: ["services","pods","nodes"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["get","watch","list"]
   - apiGroups: ["extensions","networking.k8s.io"]
     resources: ["ingresses"]
@@ -382,16 +385,17 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
             - --provider=google
             - --log-format=json # google cloud logs parses severity of the "text" log format incorrectly
     #        - --google-project=my-cloud-dns-project # Use this to specify a project different from the one external-dns is running inside
             - --google-zone-visibility=public # Use this to filter to only zones with this visibility. Set to either 'public' or 'private'. Omitting will match public and private zones
-            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --registry=txt
             - --txt-owner-id=my-identifier
       #     # uncomment below if static credentials are used
@@ -428,7 +432,7 @@ metadata:
   name: nginx
   annotations:
     # change nginx.example.com to match an appropriate value
-    external-dns.alpha.kubernetes.io/hostname: nginx.example.com
+    external-dns.kubernetes.io/hostname: nginx.example.com
 spec:
   type: LoadBalancer
   ports:

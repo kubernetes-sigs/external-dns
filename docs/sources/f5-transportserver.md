@@ -2,7 +2,7 @@
 
 This tutorial describes how to configure ExternalDNS to use the F5 Networks TransportServer Source. It is meant to supplement the other provider-specific setup tutorials.
 
-The F5 Networks TransportServer CRD is part of [this](https://github.com/F5Networks/k8s-bigip-ctlr) project. See more in-depth info regarding the TransportServer CRD [here](https://github.com/F5Networks/k8s-bigip-ctlr/tree/master/docs/cis-20.x/config_examples/customResource/TransportServer).
+The F5 Networks TransportServer CRD is part of [this](https://github.com/F5Networks/k8s-bigip-ctlr) project. See more in-depth info regarding the [TransportServer CRD here](https://github.com/F5Networks/k8s-bigip-ctlr/tree/master/docs/cis-20.x/config_examples/customResource/TransportServer).
 
 ## Start with ExternalDNS with the F5 Networks TransportServer source
 
@@ -60,14 +60,14 @@ spec:
 
 ### Example TransportServer CR w/ target annotation set
 
-If the `external-dns.alpha.kubernetes.io/target` annotation is set, the record created will reflect that and everything else will be ignored.
+If the `external-dns.kubernetes.io/target` annotation is set, the record created will reflect that and everything else will be ignored.
 
 ```yaml
 apiVersion: cis.f5.com/v1
 kind: TransportServer
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/target: 10.172.1.12
+    external-dns.kubernetes.io/target: 10.172.1.12
   labels:
     f5cr: 'true'
   name: test-ts
@@ -85,7 +85,7 @@ spec:
 
 ### Example TransportServer CR w/ VirtualServerAddress set
 
-If `virtualServerAddress` is set, the record created will reflect that. `external-dns.alpha.kubernetes.io/target` will take precedence though.
+If `virtualServerAddress` is set, the record created will reflect that. `external-dns.kubernetes.io/target` will take precedence though.
 
 ```yaml
 apiVersion: cis.f5.com/v1

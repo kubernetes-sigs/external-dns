@@ -23,8 +23,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -43,7 +46,6 @@ const (
 var (
 	recordsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
 			Name:      "records_errors_total",
 			Help:      "Errors with Records method",
@@ -51,7 +53,6 @@ var (
 	)
 	recordsRequestsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
 			Name:      "records_requests_total",
 			Help:      "Requests with Records method",
@@ -59,7 +60,6 @@ var (
 	)
 	applyChangesErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
 			Name:      "applychanges_errors_total",
 			Help:      "Errors with ApplyChanges method",
@@ -67,7 +67,6 @@ var (
 	)
 	applyChangesRequestsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
 			Name:      "applychanges_requests_total",
 			Help:      "Requests with ApplyChanges method",
@@ -75,7 +74,6 @@ var (
 	)
 	adjustEndpointsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
 			Name:      "adjustendpoints_errors_total",
 			Help:      "Errors with AdjustEndpoints method",
@@ -83,7 +81,6 @@ var (
 	)
 	adjustEndpointsRequestsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
 			Name:      "adjustendpoints_requests_total",
 			Help:      "Requests with AdjustEndpoints method",
@@ -94,7 +91,7 @@ var (
 type WebhookProvider struct {
 	client          *http.Client
 	remoteServerURL *url.URL
-	DomainFilter    endpoint.DomainFilter
+	DomainFilter    *endpoint.DomainFilter
 }
 
 func init() {
@@ -106,35 +103,40 @@ func init() {
 	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
 }
 
-func NewWebhookProvider(u string) (*WebhookProvider, error) {
+// New creates a webhook provider from the given configuration.
+func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout)
+}
+
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
 
+	// covers the entire round-trip — writing the request body + waiting for + reading the response
+	client := extdnshttp.NewInstrumentedClient(&http.Client{Timeout: readTimeout + writeTimeout})
+
 	// negotiate API information
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
-	client := &http.Client{}
-
 	resp, err := requestWithRetry(client, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to webhook: %v", err)
+		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
-	// read the serialized DomainFilter from the response body and set it in the webhook provider struct
-	defer resp.Body.Close()
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if ct := resp.Header.Get(webhookapi.ContentTypeHeader); ct != webhookapi.MediaTypeFormatAndVersion {
 		return nil, fmt.Errorf("wrong content type returned from server: %s", ct)
 	}
 
-	df := endpoint.DomainFilter{}
-	if err := json.NewDecoder(resp.Body).Decode(&df); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
+	df := &endpoint.DomainFilter{}
+	if err := json.NewDecoder(resp.Body).Decode(df); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
 	return &WebhookProvider{
@@ -145,15 +147,36 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 }
 
 func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
-	resp, err := backoff.Retry(context.Background(), func() (*http.Response, error) {
+	resp, err := backoff.Retry(req.Context(), func() (*http.Response, error) {
+		// Reset the body before each attempt so retries send the full payload.
+		// GetBody is set automatically by http.NewRequest for in-memory body types;
+		// it is nil for GET requests (no body), so the block is safely skipped.
+		if req.GetBody != nil {
+			body, err := req.GetBody()
+			if err != nil {
+				return nil, backoff.Permanent(fmt.Errorf("failed to reset request body: %w", err))
+			}
+			req.Body = body
+		}
+
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Debugf("Failed to connect to webhook: %v", err)
 			return nil, err
 		}
+		// 5xx: retryable server error
+		if resp.StatusCode >= http.StatusInternalServerError {
+			extdnshttp.DrainAndClose(resp.Body)
+			return nil, fmt.Errorf("server error: status code %d", resp.StatusCode)
+		}
+		// 3xx/4xx: permanent error, not worth retrying.
+		// Note: http.Client follows redirects automatically, so a 3xx here means
+		// either a non-redirect 3xx (e.g. 304) or a custom CheckRedirect policy;
+		// it does not mean a normal redirect was left unhandled.
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
-		if resp.StatusCode >= http.StatusMultipleChoices && resp.StatusCode < http.StatusInternalServerError {
-			return nil, backoff.Permanent(fmt.Errorf("status code < %d", http.StatusInternalServerError))
+		if resp.StatusCode >= http.StatusMultipleChoices {
+			extdnshttp.DrainAndClose(resp.Body)
+			return nil, backoff.Permanent(fmt.Errorf("unexpected status code %d", resp.StatusCode))
 		}
 		return resp, nil
 	}, backoff.WithMaxTries(maxRetries))
@@ -165,7 +188,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	recordsRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
 
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to create request: %s", err.Error())
@@ -178,7 +201,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		log.Debugf("Failed to perform request: %s", err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		recordsErrorsGauge.Gauge.Inc()
@@ -200,7 +223,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
-func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 
@@ -211,7 +234,7 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, u, b)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, b)
 	if err != nil {
 		applyChangesErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to create request: %s", err.Error())
@@ -227,7 +250,7 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 		return err
 	}
 
-	defer resp.Body.Close()
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusNoContent {
 		applyChangesErrorsGauge.Gauge.Inc()
@@ -246,6 +269,16 @@ func (p WebhookProvider) ApplyChanges(_ context.Context, changes *plan.Changes) 
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustEndpointsRequestsGauge.Gauge.Inc()
+
+	// refObjects are not serialized to JSON (tagged json:"-"), so we must
+	// preserve them across the webhook round-trip to keep event emission working.
+	refObjects := make(map[endpoint.EndpointKey][]*endpoint.ObjectRef, len(e))
+	for _, ep := range e {
+		if refs := ep.RefObjects(); len(refs) > 0 {
+			refObjects[ep.Key()] = refs
+		}
+	}
+
 	var endpoints []*endpoint.Endpoint
 	u, err := url.JoinPath(p.remoteServerURL.String(), webhookapi.UrlAdjustEndpoints)
 	if err != nil {
@@ -277,12 +310,14 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		log.Debugf("Failed executing http request, %s", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	// drainAndClose is deferred here and runs after json.Decode below consumes the
+	// success-path body, so the drain only sees any trailing bytes left unread.
+	defer extdnshttp.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to AdjustEndpoints with code %d", resp.StatusCode)
-		err := fmt.Errorf("failed to AdjustEndpoints with code  %d", resp.StatusCode)
+		err := fmt.Errorf("failed to AdjustEndpoints with code %d", resp.StatusCode)
 		if isRetryableError(resp.StatusCode) {
 			return nil, provider.NewSoftError(err)
 		}
@@ -293,6 +328,12 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
+	}
+
+	for _, ep := range endpoints {
+		for _, ref := range refObjects[ep.Key()] {
+			ep.WithRefObject(ref)
+		}
 	}
 
 	return endpoints, nil

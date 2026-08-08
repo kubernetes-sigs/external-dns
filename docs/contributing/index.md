@@ -11,3 +11,7 @@ To get started see: [dev-guide.md](dev-guide.md).
 ## Submit an Issue
 
 In addition to contributions, we welcome [bug reports](https://github.com/kubernetes-sigs/external-dns/issues/new?template=---bug-report.md) and [feature requests](https://github.com/kubernetes-sigs/external-dns/issues/new?template=--enhancement-request.md).
+
+When filing a bug report, follow the **[Bug Report Guide](bug-report.md)** to collect
+the normalized Kubernetes resources, process flags, and logs that maintainers need
+to reproduce and fix the issue.

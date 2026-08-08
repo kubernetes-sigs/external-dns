@@ -24,9 +24,10 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=gloo-proxy
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
@@ -35,7 +36,7 @@ spec:
 
 ## Manifest (for clusters with RBAC enabled)
 
-Could be change if you have mulitple sources
+Could be change if you have multiple sources
 
 ```yaml
 apiVersion: v1
@@ -49,7 +50,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -93,11 +97,61 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=gloo-proxy
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
+```
+
+## Gateway Annotation
+
+To support setups where an Ingress resource is used to provision an external LB you can add the following annotation to your Gateway
+
+**Note:** The Ingress namespace can be omitted if its in the same namespace as the gateway
+
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: gloo.solo.io/v1
+kind: Proxy
+metadata:
+  labels:
+    created_by: gloo-gateway
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  listeners:
+  - bindAddress: '::'
+    metadataStatic:
+      sources:
+      - resourceKind: '*v1.Gateway'
+        resourceRef:
+          name: gateway-proxy
+          namespace: gloo-system
+---
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    external-dns.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    gateway-proxy-id: gateway-proxy
+    gloo: gateway-proxy
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  ingressClassName: alb
+EOF
 ```

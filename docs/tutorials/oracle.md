@@ -10,7 +10,7 @@ Create a DNS zone which will contain the managed DNS records. Let's use
 `example.com` as a reference here.  Make note of the OCID of the compartment
 in which you created the zone; you'll need to provide that later.
 
-For more information about OCI DNS see the documentation [here][1].
+For more information about [OCI DNS see the documentation here][1].
 
 ## Using Private OCI DNS Zones
 
@@ -82,8 +82,8 @@ this type of authentication. Finally, you'll need to add the
 `--oci-compartment-ocid=ocid1.compartment.oc1...` flag to provide the OCID of
 the compartment containing the zone to be managed.
 
-For more information about OCI IAM instance principals, see the documentation [here][2].
-For more information about OCI IAM policy details for the DNS service, see the documentation [here][3].
+For more information about OCI IAM instance principals, see [the documentation here][2].
+For more information about OCI IAM policy details for the DNS service, see [the documentation here][3].
 
 ### OCI IAM Workload Identity
 
@@ -130,7 +130,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -170,12 +173,12 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service
         - --source=ingress
         - --provider=oci
-        - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --txt-owner-id=my-identifier
         # Specifies the OCI DNS Zone scope, defaults to GLOBAL.
         # May be GLOBAL, PRIVATE, or an empty value to specify both GLOBAL and PRIVATE OCI DNS Zones
@@ -196,7 +199,7 @@ spec:
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -204,7 +207,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: example.com
+    external-dns.kubernetes.io/hostname: example.com
 spec:
   type: LoadBalancer
   ports:

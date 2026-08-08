@@ -15,6 +15,8 @@ Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.a
 
 To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. You need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
+> Please be aware that this IAM role grants broad permissions across Route 53, and Service Discovery. For enhanced security, it's strongly recommended to review and restrict the actions and resources to the absolute minimum required for its intended purpose, following the principle of least privilege
+
 ```json
 {
   "Version": "2012-10-17",
@@ -60,6 +62,22 @@ Using tags, your `servicediscovery` policy can become:
 {
   "Version": "2012-10-17",
   "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ],
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": ["*example.com", "marketing.example.com", "*-beta.example.com"],
+          "route53:ChangeResourceRecordSetsActions": ["CREATE", "UPSERT", "DELETE"],
+          "route53:ChangeResourceRecordSetsRecordTypes": ["A", "AAAA", "CNAME", "MX", "TXT"]
+        }
+      }
+    },
     {
       "Effect": "Allow",
       "Action": [
@@ -120,6 +138,10 @@ Using tags, your `servicediscovery` policy can become:
 }
 ```
 
+Additional resources:
+
+* AWS IAM actions [documentation](https://www.awsiamactions.io/?o=servicediscovery%3A)
+
 ## Set up a namespace
 
 Create a DNS namespace using the AWS Cloud Map API:
@@ -159,13 +181,14 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
         - --provider=aws-sd
         - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)
@@ -186,7 +209,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services","pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
@@ -226,13 +252,14 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
         - --provider=aws-sd
         - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)
@@ -243,7 +270,7 @@ spec:
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -251,7 +278,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
 spec:
   type: LoadBalancer
   ports:
@@ -288,7 +315,7 @@ After one minute check that a corresponding DNS record for your service was crea
 
 ## Custom TTL
 
-The default DNS record TTL (time to live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+The default DNS record TTL (time to live) is 300 seconds. You can customize this value by setting the annotation `external-dns.kubernetes.io/ttl`.
 For example, modify the service manifest YAML file above:
 
 ```yaml
@@ -297,8 +324,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.kubernetes.io/ttl: "60"
 spec:
     ...
 ```
@@ -316,8 +343,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
-    external-dns.alpha.kubernetes.io/ttl: "60"
+    external-dns.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
+    external-dns.kubernetes.io/ttl: "60"
 spec:
   ipFamilies:
     - "IPv6"

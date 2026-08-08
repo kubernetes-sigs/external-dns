@@ -17,15 +17,17 @@ limitations under the License.
 package google
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 	dns "google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
 
@@ -46,7 +48,7 @@ type mockManagedZonesCreateCall struct {
 	managedZone *dns.ManagedZone
 }
 
-func (m *mockManagedZonesCreateCall) Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error) {
+func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	zoneKey := zoneKey(m.project, m.managedZone.Name)
 
 	if _, ok := testZones[zoneKey]; ok {
@@ -63,7 +65,7 @@ type mockManagedZonesListCall struct {
 	zonesListSoftErr error
 }
 
-func (m *mockManagedZonesListCall) Pages(ctx context.Context, f func(*dns.ManagedZonesListResponse) error) error {
+func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZonesListResponse) error) error {
 	zones := []*dns.ManagedZone{}
 
 	for k, v := range testZones {
@@ -97,7 +99,7 @@ type mockResourceRecordSetsListCall struct {
 	recordsListSoftErr error
 }
 
-func (m *mockResourceRecordSetsListCall) Pages(ctx context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
+func (m *mockResourceRecordSetsListCall) Pages(_ context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -131,7 +133,7 @@ type mockChangesCreateCall struct {
 	change      *dns.Change
 }
 
-func (m *mockChangesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, error) {
+func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -191,10 +193,8 @@ func isValidRecordSet(recordSet *dns.ResourceRecordSet) bool {
 			}
 		}
 	case endpoint.RecordTypeA, endpoint.RecordTypeTXT:
-		for _, rrd := range recordSet.Rrdatas {
-			if hasTrailingDot(rrd) {
-				return false
-			}
+		if slices.ContainsFunc(recordSet.Rrdatas, hasTrailingDot) {
+			return false
 		}
 	default:
 		panic("unhandled record type")
@@ -208,9 +208,9 @@ func hasTrailingDot(target string) bool {
 }
 
 func TestGoogleZonesIDFilter(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002"}), provider.NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -219,9 +219,9 @@ func TestGoogleZonesIDFilter(t *testing.T) {
 }
 
 func TestGoogleZonesNameFilter(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2"}), provider.NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -230,9 +230,9 @@ func TestGoogleZonesNameFilter(t *testing.T) {
 }
 
 func TestGoogleZonesVisibilityFilterPublic(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -241,9 +241,9 @@ func TestGoogleZonesVisibilityFilterPublic(t *testing.T) {
 }
 
 func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"split-horizon-1"}), provider.NewZoneTypeFilter("public"), []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -252,9 +252,9 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 }
 
 func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"svc.local."}), provider.NewZoneIDFilter([]string{""}), provider.NewZoneTypeFilter("private"), false, []*endpoint.Endpoint{})
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"svc.local."}), provider.NewZoneIDFilter([]string{""}), provider.NewZoneTypeFilter("private"), []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones(context.Background())
+	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -271,7 +271,7 @@ func TestGoogleRecords(t *testing.T) {
 
 	provider := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, originalEndpoints, nil, nil)
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, originalEndpoints)
@@ -314,11 +314,11 @@ func TestGoogleRecordsFilter(t *testing.T) {
 		endpoint.NewEndpoint("filter-delete-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
 	}
 
-	require.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{
+	require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: ignoredEndpoints,
 	}))
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	// assert that due to filtering no changes were made.
@@ -387,9 +387,9 @@ func TestGoogleApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
+	require.NoError(t, provider.ApplyChanges(t.Context(), changes))
 
-	records, err := provider.Records(context.Background())
+	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
@@ -444,7 +444,7 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, provider.ApplyChanges(ctx, changes))
 
 	records, err := provider.Records(ctx)
@@ -455,7 +455,7 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 
 func TestGoogleApplyChangesEmpty(t *testing.T) {
 	provider := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
-	assert.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{}))
+	assert.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{}))
 }
 
 func TestNewFilteredRecords(t *testing.T) {
@@ -552,7 +552,7 @@ func TestGoogleBatchChangeSet(t *testing.T) {
 
 	batchCs := batchChange(cs, googleDefaultBatchChangeSize)
 
-	require.Equal(t, 1, len(batchCs))
+	require.Len(t, batchCs, 1)
 
 	sortChangesByName(cs)
 	validateChange(t, batchCs[0], cs)
@@ -577,7 +577,7 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 
 	batchCs := batchChange(cs, testLimit)
 
-	require.Equal(t, expectedBatchCount, len(batchCs))
+	require.Len(t, batchCs, expectedBatchCount)
 
 	dnsChange := &dns.Change{}
 	for _, c := range batchCs {
@@ -585,8 +585,8 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 		dnsChange.Deletions = append(dnsChange.Deletions, c.Deletions...)
 	}
 
-	require.Equal(t, len(cs.Additions), len(dnsChange.Additions))
-	require.Equal(t, len(cs.Deletions), len(dnsChange.Deletions))
+	require.Len(t, dnsChange.Additions, len(cs.Additions))
+	require.Len(t, dnsChange.Deletions, len(cs.Deletions))
 
 	sortChangesByName(cs)
 	sortChangesByName(dnsChange)
@@ -609,13 +609,13 @@ func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
 
 	batchCs := batchChange(cs, testLimit)
 
-	require.Equal(t, 0, len(batchCs))
+	require.Empty(t, batchCs)
 }
 
 func TestSoftErrListZonesConflict(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, provider.NewSoftError(fmt.Errorf("failed to list zones")), nil)
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to list zones"), nil)
 
-	zones, err := p.Zones(context.Background())
+	zones, err := p.Zones(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 
@@ -623,9 +623,9 @@ func TestSoftErrListZonesConflict(t *testing.T) {
 }
 
 func TestSoftErrListRecordsConflict(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, nil, provider.NewSoftError(fmt.Errorf("failed to list records in zone")))
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{}), false, []*endpoint.Endpoint{}, nil, provider.NewSoftErrorf("failed to list records in zone"))
 
-	records, err := p.Records(context.Background())
+	records, err := p.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 
@@ -676,7 +676,7 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 	assert.Equal(t, expected.Type, record.Type)
 }
 
-func newGoogleProviderZoneOverlap(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, dryRun bool, _ []*endpoint.Endpoint) *GoogleProvider {
+func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, _ []*endpoint.Endpoint) *GoogleProvider {
 	provider := &GoogleProvider{
 		project:                  "zalando-external-dns-test",
 		dryRun:                   false,
@@ -738,12 +738,10 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter endpoint.DomainFilt
 		PeeringConfig: &dns.ManagedZonePeeringConfig{TargetNetwork: nil},
 	})
 
-	provider.dryRun = dryRun
-
 	return provider
 }
 
-func newGoogleProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint, zonesErr, recordsErr error) *GoogleProvider {
+func newGoogleProvider(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint, zonesErr, recordsErr error) *GoogleProvider {
 	provider := &GoogleProvider{
 		project:      "zalando-external-dns-test",
 		dryRun:       false,
@@ -790,7 +788,8 @@ func createZone(t *testing.T, p *GoogleProvider, zone *dns.ManagedZone) {
 	zone.Description = "Testing zone for kubernetes.io/external-dns"
 
 	if _, err := p.managedZonesClient.Create("zalando-external-dns-test", zone).Do(); err != nil {
-		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusConflict {
+		var errs *googleapi.Error
+		if !errors.As(err, &errs) || errs.Code != http.StatusConflict {
 			require.NoError(t, err)
 		}
 	}
@@ -801,12 +800,12 @@ func setupGoogleRecords(t *testing.T, provider *GoogleProvider, endpoints []*end
 	clearGoogleRecords(t, provider, "zone-2-ext-dns-test-2-gcp-zalan-do")
 	clearGoogleRecords(t, provider, "zone-3-ext-dns-test-2-gcp-zalan-do")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	records, _ := provider.Records(ctx)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
 
-	require.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{
+	require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: endpoints,
 	}))
 
@@ -818,7 +817,7 @@ func setupGoogleRecords(t *testing.T, provider *GoogleProvider, endpoints []*end
 func clearGoogleRecords(t *testing.T, provider *GoogleProvider, zone string) {
 	recordSets := []*dns.ResourceRecordSet{}
 
-	provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.Background(), func(resp *dns.ResourceRecordSetsListResponse) error {
+	provider.resourceRecordSetsClient.List(provider.project, zone).Pages(t.Context(), func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			switch r.Type {
 			case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:

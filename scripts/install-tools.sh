@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# renovate: datasource=github-releases depName=kubernetes-sigs/controller-tools
-CONTROLLER_TOOLS_GENERATOR_VERSION=v0.17.2
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANG_CI_LINTER_VERSION=v2.1.6
+GOLANG_CI_LINTER_VERSION=v2.11.4
+GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT=8f3b0c7ed018e57905fbd873c697e0b1ede605a5
+GOLANG_CI_LINTER_INSTALL_SCRIPT_SHA256=edfa587f31bde70db161d1e5b783e086a1627d7e2f7c91de5f7cca79bcdf8631
 
 # Execute
 # scripts/install-tools.sh
@@ -32,27 +32,8 @@ cat << EOF
 Usage: $(basename "$0") <options>
     -h, --help          Display help
     --generator         Install generator
-    --golangci         Install golangci linter
+    --golangci          Install golangci linter
 EOF
-}
-
-install_generator() {
-  # https://github.com/kubernetes-sigs/controller-tools/blob/main/cmd/controller-gen/main.go
-  local install=false
-  if [[ -x $(which controller-gen) ]]; then
-      local version=$(controller-gen --version | sed 's/Version: //')
-      if [[ "${version}" == "${CONTROLLER_TOOLS_GENERATOR_VERSION}" ]]; then
-          install=false
-        else
-          install=true
-      fi
-    else
-      install=true
-  fi
-  if [[ "$install" == true ]]; then
-      set -ex ;\
-	    go install sigs.k8s.io/controller-tools/cmd/controller-gen@${CONTROLLER_TOOLS_GENERATOR_VERSION} ;
-  fi
 }
 
 install_golangci() {
@@ -68,16 +49,17 @@ install_golangci() {
       install=true
   fi
   if [[ "$install" == true ]]; then
-      curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/cc3567e3127d8530afb69be1b7bd20ba9ebcc7c1/install.sh \
-        | sh -s -- -b $(go env GOPATH)/bin "${GOLANG_CI_LINTER_VERSION}"
+      local script
+      script=$(mktemp)
+      curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT}/install.sh" -o "$script"
+      echo "${GOLANG_CI_LINTER_INSTALL_SCRIPT_SHA256}  ${script}" | sha256sum --check --strict
+      sh "$script" -b "$(go env GOPATH)/bin" "${GOLANG_CI_LINTER_VERSION}"
+      rm -f "$script"
   fi
 }
 
 function main() {
   case $1 in
-    --generator)
-      install_generator
-      ;;
     --golangci)
       install_golangci
       ;;

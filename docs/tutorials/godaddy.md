@@ -64,9 +64,10 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=godaddy
         - --txt-prefix=external-dns. # In case of multiple k8s cluster
@@ -94,15 +95,15 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list","watch"]
-- apiGroups: [""]
-  resources: ["endpoints"]
-  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -135,9 +136,10 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=godaddy
         - --txt-prefix=external-dns. # In case of multiple k8s cluster
@@ -175,8 +177,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: example.com
-    external-dns.alpha.kubernetes.io/ttl: "120" #optional
+    external-dns.kubernetes.io/hostname: example.com
+    external-dns.kubernetes.io/ttl: "120" #optional
 spec:
   selector:
     app: nginx

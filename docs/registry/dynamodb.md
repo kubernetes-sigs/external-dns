@@ -81,13 +81,13 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.16.1
+          image: registry.k8s.io/external-dns/external-dns:v0.21.0
           args:
             - --source=service
             - --source=ingress
             - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
             - --provider=aws
-            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
             - --registry=dynamodb # previously, --registry=txt
             - --dynamodb-table=external-dns # defaults to external-dns

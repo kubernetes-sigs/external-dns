@@ -183,7 +183,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: echoserver.mycluster.example.org, echoserver.example.org
+    external-dns.kubernetes.io/hostname: echoserver.mycluster.example.org, echoserver.example.org
   name: echoserver
 spec:
   ingressClassName: skipper
@@ -200,7 +200,7 @@ spec:
 ```
 
 In the above example we create a default path that works for any hostname, and
-make use of the `external-dns.alpha.kubernetes.io/hostname` annotation to create
+make use of the `external-dns.kubernetes.io/hostname` annotation to create
 multiple aliases for the resulting ALB.
 
 ## NLBs

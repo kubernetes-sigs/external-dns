@@ -20,17 +20,22 @@ import (
 	"context"
 	"testing"
 
+	"sigs.k8s.io/external-dns/internal/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/labels"
 
 	routev1 "github.com/openshift/api/route/v1"
-	fake "github.com/openshift/client-go/route/clientset/versioned/fake"
+	"github.com/openshift/client-go/route/clientset/versioned/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type OCPRouteSuite struct {
@@ -40,19 +45,16 @@ type OCPRouteSuite struct {
 }
 
 func (suite *OCPRouteSuite) SetupTest() {
-	fakeClient := fake.NewSimpleClientset()
+	fakeClient := fake.NewClientset()
 	var err error
 
 	suite.sc, err = NewOcpRouteSource(
 		context.TODO(),
 		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-		labels.Everything(),
-		"",
+		&Config{
+			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -91,76 +93,12 @@ func TestOcpRouteSource(t *testing.T) {
 
 	suite.Run(t, new(OCPRouteSuite))
 	t.Run("Interface", testOcpRouteSourceImplementsSource)
-	t.Run("NewOcpRouteSource", testOcpRouteSourceNewOcpRouteSource)
 	t.Run("Endpoints", testOcpRouteSourceEndpoints)
 }
 
 // testOcpRouteSourceImplementsSource tests that ocpRouteSource is a valid Source.
 func testOcpRouteSourceImplementsSource(t *testing.T) {
 	assert.Implements(t, (*Source)(nil), new(ocpRouteSource))
-}
-
-// testOcpRouteSourceNewOcpRouteSource tests that NewOcpRouteSource doesn't return an error.
-func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title            string
-		annotationFilter string
-		fqdnTemplate     string
-		expectError      bool
-		labelFilter      string
-	}{
-		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
-		},
-		{
-			title:       "valid empty template",
-			expectError: false,
-		},
-		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
-		},
-		{
-			title:            "non-empty annotation filter label",
-			expectError:      false,
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
-		},
-		{
-			title:       "valid label selector",
-			expectError: false,
-			labelFilter: "app=web-external",
-		},
-	} {
-		ti := ti
-		labelSelector, err := labels.Parse(ti.labelFilter)
-		require.NoError(t, err)
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := NewOcpRouteSource(
-				context.TODO(),
-				fake.NewSimpleClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				false,
-				false,
-				labelSelector,
-				"",
-			)
-
-			if ti.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 // testOcpRouteSourceEndpoints tests that various OCP routes generate the correct endpoints.
@@ -179,6 +117,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "route-with-target",
+					UID:       "openshift-route-uid",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -196,13 +135,13 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"apps.my-domain.com",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(types.OpenShiftRoute)),
 			},
 		},
 		{
@@ -411,7 +350,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-ignore-annotation",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/controller": "foo",
+						"external-dns.kubernetes.io/controller": "foo",
 					},
 				},
 			},
@@ -424,7 +363,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-annotation-target",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 				},
 				Status: routev1.RouteStatus{
@@ -461,7 +400,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-with-matching-labels",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 					Labels: map[string]string{
 						"app":  "web-external",
@@ -505,7 +444,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					Namespace: "default",
 					Name:      "route-without-matching-labels",
 					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+						"external-dns.kubernetes.io/target": "my.site.foo.com",
 					},
 					Labels: map[string]string{
 						"app":  "web-internal",
@@ -515,32 +454,65 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "route with provider-specific annotation",
+			ocpRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-with-provider-specific",
+					Annotations: map[string]string{
+						annotations.AWSPrefix + "weight": "10",
+					},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-domain.com",
+							RouterCanonicalHostname: "apps.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "my-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    []string{"apps.my-domain.com"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "aws/weight", Value: "10"},
+					},
+				},
+			},
+		},
 	} {
-		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
 			// Create a Kubernetes testing client
-			fakeClient := fake.NewSimpleClientset()
-			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
+			fakeClient := fake.NewClientset()
+			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(t.Context(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			labelSelector, err := labels.Parse(tc.labelFilter)
 			require.NoError(t, err)
 
 			source, err := NewOcpRouteSource(
-				context.TODO(),
+				t.Context(),
 				fakeClient,
-				"",
-				"",
-				"{{.Name}}",
-				false,
-				false,
-				labelSelector,
-				tc.ocpRouterName,
+				&Config{
+					TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
+					LabelFilter:    labelSelector,
+					OCPRouterName:  tc.ocpRouterName,
+				},
 			)
 			require.NoError(t, err)
 
-			res, err := source.Endpoints(context.Background())
+			res, err := source.Endpoints(t.Context())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -548,7 +520,146 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, res, tc.expected)
+			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
+}
+
+func TestOcpRouteIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeRoute := func(namespace, name, host, target string, ann, lbls map[string]string) *routev1.Route {
+		return &routev1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   namespace,
+				Name:        name,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Status: routev1.RouteStatus{
+				Ingress: []routev1.RouteIngress{
+					{
+						Host:                    host,
+						RouterCanonicalHostname: target,
+						Conditions: []routev1.RouteIngressCondition{
+							{Type: routev1.RouteAdmitted, Status: corev1.ConditionTrue},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*routev1.Route
+		wantCount        int
+	}{
+		{
+			name: "no filters — all namespaces included",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, nil),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, nil),
+				makeRoute("production", "r3", "c.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 3,
+		},
+		{
+			name:             "annotation filter matches",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 1,
+		},
+		{
+			name:        "label filter matches",
+			labelFilter: "tier=external",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, map[string]string{"tier": "external"}),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			labelFilter:      "tier=external",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "external"}),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "no-match annotation filter",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, nil),
+				makeRoute("production", "r2", "b.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "controller mismatch is excluded",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/controller": "other-controller"},
+					nil),
+			},
+			wantCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeClient := fake.NewClientset()
+			for _, r := range tc.routes {
+				_, err := fakeClient.RouteV1().Routes(r.Namespace).Create(t.Context(), r, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{
+				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tc.wantCount)
+		})
+	}
+}
+
+func TestOcpRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	route := &routev1.Route{
+		ObjectMeta: informerTransformObjectMeta(),
+	}
+	assert.Contains(t, route.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	assert.NotEmpty(t, route.GetManagedFields())
+
+	fakeClient := fake.NewClientset()
+	_, err := fakeClient.RouteV1().Routes(route.GetNamespace()).Create(t.Context(), route, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &ocpRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*ocpRouteSource).routeInformer.Informer(),
+		route,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

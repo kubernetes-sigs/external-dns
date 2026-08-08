@@ -20,7 +20,9 @@ You first need to create an OVHcloud application: follow the
 [OVHcloud documentation](https://help.ovhcloud.com/csm/en-gb-api-getting-started-ovhcloud-api?id=kb_article_view&sysparm_article=KB0042784#advanced-usage-pair-ovhcloud-apis-with-an-application)
  you will have your `Application key` and `Application secret`
 
-And you will need to generate your consumer key, here the permissions needed :
+And you will need to generate your consumer key, just open this link in a browser and sign in with your OVHCloud account: https://auth.eu.ovhcloud.com/api/createToken?GET=/domain/zone&GET=/domain/zone/*/record&GET=/domain/zone/*/record/*&PUT=/domain/zone/*/record/*&POST=/domain/zone/*/record&DELETE=/domain/zone/*/record/*&GET=/domain/zone/*/soa&POST=/domain/zone/*/refresh
+
+or check here the permissions needed :
 
 - GET on `/domain/zone`
 - GET on `/domain/zone/*/record`
@@ -97,9 +99,10 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=ovh
         env:
@@ -130,15 +133,15 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get","watch","list"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list"]
-- apiGroups: [""]
-  resources: ["endpoints"]
-  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -171,9 +174,10 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.16.1
+        image: registry.k8s.io/external-dns/external-dns:v0.21.0
         args:
         - --source=service # ingress is also possible
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=ovh
         env:
@@ -214,8 +218,8 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: example.com
-    external-dns.alpha.kubernetes.io/ttl: "120" #optional
+    external-dns.kubernetes.io/hostname: example.com
+    external-dns.kubernetes.io/ttl: "120" #optional
 spec:
   selector:
     app: nginx
