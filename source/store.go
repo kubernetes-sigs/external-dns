@@ -129,11 +129,11 @@ func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
 	labelSelector, err := labels.Parse(cfg.LabelFilter)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("--label-filter %q: %w", cfg.LabelFilter, err)
 	}
 	annotationSelector, err := annotations.ParseFilter(cfg.AnnotationFilter)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("--annotation-filter %q: %w", cfg.AnnotationFilter, err)
 	}
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {

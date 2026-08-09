@@ -440,13 +440,13 @@ func TestNewSourceConfig(t *testing.T) {
 			name:        "invalid label filter",
 			cfg:         &externaldns.Config{LabelFilter: "#invalid-selector"},
 			wantErr:     true,
-			errContains: `unable to parse requirement`,
+			errContains: `--label-filter "#invalid-selector": unable to parse requirement`,
 		},
 		{
 			name:        "invalid annotation filter",
 			cfg:         &externaldns.Config{AnnotationFilter: "kubernetes.io/gateway.name in (a b)"},
 			wantErr:     true,
-			errContains: `unable to parse requirement`,
+			errContains: `--annotation-filter "kubernetes.io/gateway.name in (a b)": couldn't parse the selector string`,
 		},
 	}
 
