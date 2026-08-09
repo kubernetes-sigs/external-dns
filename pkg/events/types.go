@@ -265,7 +265,7 @@ func WithEmitEvents(events []string) ConfigOption {
 		if len(events) > 0 {
 			c.emitEvents = sets.New[Reason]()
 			for _, event := range events {
-				if slices.Contains([]string{string(RecordReady), string(RecordError)}, event) {
+				if slices.Contains([]string{string(RecordReady), string(RecordDeleted), string(RecordError)}, event) {
 					c.emitEvents.Insert(Reason(event))
 				}
 			}
