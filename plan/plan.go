@@ -41,6 +41,10 @@ type Plan struct {
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
+	// Desired records that survived DomainFilter, ManagedRecords and
+	// ExcludeRecords, whether or not they needed a change.
+	// Populated after calling Calculate()
+	Planned []*endpoint.Endpoint
 	// DomainFilter matches DNS names
 	DomainFilter endpoint.MatchAllDomainFilters
 	// ManagedRecords are DNS record types that will be considered for management.
@@ -173,7 +177,8 @@ func (p *Plan) Calculate() *Plan {
 	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter, p.ManagedRecords, p.ExcludeRecords) {
 		t.addCurrent(current)
 	}
-	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter, p.ManagedRecords, p.ExcludeRecords) {
+	planned := filterRecordsForPlan(p.Desired, p.DomainFilter, p.ManagedRecords, p.ExcludeRecords)
+	for _, desired := range planned {
 		t.addCandidate(desired)
 	}
 
@@ -191,6 +196,7 @@ func (p *Plan) Calculate() *Plan {
 	plan := &Plan{
 		Current:        p.Current,
 		Desired:        p.Desired,
+		Planned:        planned,
 		Changes:        changes,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	}

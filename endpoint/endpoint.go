@@ -289,7 +289,7 @@ type ObjectRef = events.ObjectReference
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
 // The SRV and MX field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord, which the sources run when they read the object.
+// ValidateMXRecord, surfaced through the Accepted condition.
 
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
