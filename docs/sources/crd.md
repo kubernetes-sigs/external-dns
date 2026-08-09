@@ -132,6 +132,43 @@ INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
 INFO[0000] CREATE: foo.bar.com 0 IN TXT "heritage=external-dns,external-dns/owner=default"
 ```
 
+### Validation
+
+A `DNSEndpoint` is checked in two places. The CRD schema rejects structural mistakes
+at `kubectl apply` time:
+
+- `dnsName` and `recordType` are required. `dnsName` must be a DNS name (a leading
+  `*.` wildcard and `_`-prefixed labels such as `_acme-challenge` are allowed).
+- `recordType` must be one of `A`, `AAAA`, `CNAME`, `TXT`, `SRV`, `NS`, `PTR`, `MX`, `NAPTR`.
+- `recordTTL` must be between `0` and `2147483647` (RFC 2181 §8). `0` means "unset" —
+  the provider applies its own default.
+- Each target is between 1 and 4096 characters, and an endpoint carries at most 1000
+  targets. A `DNSEndpoint` carries at most 1000 endpoints.
+- `SRV` and `NAPTR` targets must be absolute (end with a dot).
+- `PTR` records must use a `dnsName` under `.in-addr.arpa` or `.ip6.arpa`, written
+  without a trailing dot (`1.0.0.10.in-addr.arpa`).
+
+The schema does not count or constrain targets beyond that, because it also validates
+the `DNSRecord` objects the [CRD registry](../registry/crd.md) writes, where external-dns
+is the author: a rejected write there aborts the sync rather than teaching anyone
+anything. A rule may only reject what external-dns cannot legitimately build, which rules
+out capping `CNAME` targets — a load balancer publishing several hostnames yields a
+multi-target `CNAME` — and constraining `A`/`AAAA` targets, which are hostnames on
+providers with native alias records.
+
+The rest is checked when external-dns reads the object, before anything is planned. A
+rejected endpoint is dropped from the plan and reported in the external-dns log:
+
+- `A`/`AAAA` targets must be addresses of the matching family, unless the endpoint sets
+  the `alias` provider-specific property.
+- `MX` targets must be `<preference> <host>`, e.g. `10 mail.example.com`.
+- `SRV` targets must be the full `<priority> <weight> <port> <host>` (RFC 2782).
+- `PTR` records need at least one non-empty target.
+- Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
+  where both forms are valid (RFC 1035 §5.1).
+
+Leave `targets` empty only when `--default-targets` is configured.
+
 ### Using CRD source to manage DNS records in different DNS providers
 
 [CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/sources/crd.md) provides a generic mechanism and declarative way to manage DNS records in different DNS providers using external-dns.
@@ -146,7 +183,7 @@ external-dns --source=crd \
   --managed-record-types=NS
 ```
 
-* Example for record type `A`
+- Example for record type `A`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -162,7 +199,7 @@ spec:
     - 10.0.0.1
 ```
 
-* Example for record type `CNAME`
+- Example for record type `CNAME`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -180,7 +217,7 @@ spec:
 
 > **Note:** CNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
 
-* Example for record type `NS`
+- Example for record type `NS`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
