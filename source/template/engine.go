@@ -274,8 +274,17 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		if convErr != nil {
 			return nil, wrapTemplateErr(obj, err)
 		}
+		// Clone before setting the option: Option mutates the template in place,
+		// and tmpl is the shared, cached parse reused by every call. Left
+		// unguarded, a missing map key silently renders as "<no value>" instead
+		// of failing the retry, masking template typos that should be errors.
+		strict, cloneErr := tmpl.Clone()
+		if cloneErr != nil {
+			return nil, wrapTemplateErr(obj, err)
+		}
+		strict = strict.Option("missingkey=error")
 		buf.Reset()
-		if err2 := tmpl.Execute(&buf, data); err2 != nil {
+		if err2 := strict.Execute(&buf, data); err2 != nil {
 			return nil, fmt.Errorf("%w (unstructured retry also failed: %w)", wrapTemplateErr(obj, err), err2)
 		}
 	}

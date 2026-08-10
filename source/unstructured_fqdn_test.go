@@ -938,10 +938,10 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 		},
 		{
-			title: "title-cased alias resolves through a nested map",
+			title: "title-cased alias resolves the top-level Spec key; nested JSON keys stay literal",
 			cfg: cfg{
 				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
-				fqdnTemplate:   `{{.Spec.Endpoint.Hostname}}`,
+				fqdnTemplate:   `{{.Spec.Endpoint.hostname}}`,
 				targetTemplate: `{{index .Spec.hosts 0}}`,
 			},
 			objects: []*unstructured.Unstructured{
@@ -1171,5 +1171,78 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+// TestUnstructuredWrapper_MapIterationIsNotAliasPolluted guards
+// withTitleCaseAliases against recursing into nested map values: an earlier
+// version aliased every key at every depth, so a template ranging or
+// len()-ing arbitrary nested data (not just the Spec/Status field names the
+// alias exists for) saw twice as many entries as were actually declared.
+// Reported by mloiseleur on #6611.
+func TestUnstructuredWrapper_MapIterationIsNotAliasPolluted(t *testing.T) {
+	obj := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+			"kind":       "ProxyService",
+			"metadata": map[string]any{
+				"name":      "reviews",
+				"namespace": "default",
+			},
+			"spec": map[string]any{
+				"records": map[string]any{
+					"env":  "1.2.3.4",
+					"team": "5.6.7.8",
+				},
+			},
+		},
+	}
+
+	t.Run("range over a nested map yields each key once", func(t *testing.T) {
+		engine := templatetest.MustEngine(t, `{{range $k, $v := .Spec.records}}{{$k}}.example.com,{{end}}`, "", "", false)
+
+		got, err := engine.ExecFQDN(newUnstructuredWrapper(obj))
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"env.example.com", "team.example.com"}, got,
+			"aliases must not leak into map iteration")
+	})
+
+	t.Run("len of a nested map counts declared keys only", func(t *testing.T) {
+		engine := templatetest.MustEngine(t, `{{len .Spec.records}}.example.com`, "", "", false)
+
+		got, err := engine.ExecFQDN(newUnstructuredWrapper(obj))
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"2.example.com"}, got)
+	})
+
+	t.Run("the source object itself is not mutated", func(t *testing.T) {
+		// This one already holds on both sides; kept so a future fix that
+		// aliases in place instead of copying is caught.
+		newUnstructuredWrapper(obj)
+
+		spec, _ := obj.Object["spec"].(map[string]any)
+		records, _ := spec["records"].(map[string]any)
+		assert.Len(t, records, 2, "informer cache object must stay untouched")
+	})
+}
+
+// TestTitleCaseKey_KnownInitialisms guards the CRD field names mloiseleur
+// called out on #6611: a naive first-letter-only titlecase turns "url" into
+// "Url" and "dnsNames" into "DnsNames", neither of which matches the Go
+// field names Kubernetes' code generator actually produces (URL, DNSNames),
+// so templates written against real generated types (cert-manager's
+// CertificateSpec.DNSNames, for one) silently failed to match.
+func TestTitleCaseKey_KnownInitialisms(t *testing.T) {
+	cases := map[string]string{
+		"url":       "URL",
+		"dnsNames":  "DNSNames",
+		"hostname":  "Hostname",
+		"hostnames": "Hostnames",
+		"ipAddress": "IPAddress",
+	}
+	for in, want := range cases {
+		assert.Equal(t, want, titleCaseKey(in), "titleCaseKey(%q)", in)
 	}
 }

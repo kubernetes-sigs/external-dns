@@ -781,3 +781,53 @@ func (h *hostnamesObject) DeepCopyObject() runtime.Object {
 	}
 	return &c
 }
+
+// TestExecFQDNFailsClosedOnUnknownField guards against the unstructured
+// retry (added so JSON-keyed Spec paths work on typed objects too) silently
+// swallowing template typos. text/template's default missingkey mode
+// renders a missing map key as "<no value>" instead of erroring, so without
+// an explicit strict mode the retry could turn a real mistake in
+// --fqdn-template into a wrong-but-valid hostname/target rather than a
+// startup-time-visible error. Reported by mloiseleur on #6611.
+func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "ns"},
+	}
+
+	t.Run("fqdn template", func(t *testing.T) {
+		engine, err := NewEngine([]string{"{{ .Spec.hostname }}.example.com"}, nil, nil, false)
+		require.NoError(t, err)
+
+		got, err := engine.ExecFQDN(svc)
+
+		require.Error(t, err, "unknown field must not render as %q", "<no value>")
+		assert.Contains(t, err.Error(), "can't evaluate field hostname")
+		assert.Empty(t, got)
+	})
+
+	t.Run("target template", func(t *testing.T) {
+		// Same hole on --target-template: the endpoint would otherwise get
+		// "<no value>" as its target, which SuitableType classifies as a CNAME.
+		engine, err := NewEngine([]string{"{{ .Name }}.example.com"}, []string{"{{ .Spec.address }}"}, nil, false)
+		require.NoError(t, err)
+
+		eps, err := engine.ApplyTemplates(nil, svc)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "can't evaluate field address")
+		assert.Empty(t, eps)
+	})
+
+	t.Run("fqdn-target template", func(t *testing.T) {
+		// endpointsFromFQDNTargetTemplate skips pairs with an empty host or
+		// target, but "<no value>" is non-empty, so that guard cannot catch this.
+		engine, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:{{ .Spec.address }}"}, false)
+		require.NoError(t, err)
+
+		eps, err := engine.ApplyFQDNTargetTemplate(nil, svc)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "can't evaluate field address")
+		assert.Empty(t, eps)
+	})
+}
