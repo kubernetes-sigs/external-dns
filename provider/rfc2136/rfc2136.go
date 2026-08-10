@@ -306,10 +306,10 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
-				lastErr = fmt.Errorf("failed to fetch records via AXFR: %w", err)
-				r.lastErr = lastErr
+				lastErr = r.setLastErr(fmt.Errorf("failed to fetch records via AXFR: %w", err))
 				continue
 			}
+			lastErr = r.setLastErr(nil)
 
 			for e := range env {
 				if e.Error != nil {
@@ -329,8 +329,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 		}
 
 		if lastErr != nil {
-			r.lastErr = lastErr
-			return nil, provider.NewSoftError(lastErr)
+			return nil, provider.NewSoftError(r.setLastErr(lastErr))
 		}
 	}
 
@@ -501,6 +500,15 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
+// setLastErr keeps the provider-level error state in sync with the retry
+// loops in List and SendMessage; getNextNameserver reads it to decide
+// failover, so a nil must be recorded once an attempt succeeds. It returns
+// err unchanged so callers can chain it.
+func (r *rfc2136Provider) setLastErr(err error) error {
+	r.lastErr = err
+	return err
+}
+
 func (r *rfc2136Provider) getNextNameserver() string {
 	if len(r.nameservers) == 1 {
 		return r.nameservers[0]
@@ -555,8 +563,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 		c, err := makeClient(r, nameserver)
 		if err != nil {
-			lastErr = fmt.Errorf("error setting up TLS: %w", err)
-			r.lastErr = lastErr
+			lastErr = r.setLastErr(fmt.Errorf("error setting up TLS: %w", err))
 			continue
 		}
 
@@ -564,8 +571,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			if r.gssTsig {
 				keyName, handle, err := r.KeyData(nameserver)
 				if err != nil {
-					lastErr = err
-					r.lastErr = lastErr
+					lastErr = r.setLastErr(err)
 					continue
 				}
 				defer handle.Close()
@@ -584,28 +590,24 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 		if err != nil {
 			if resp != nil && resp.Rcode != dns.RcodeSuccess {
 				log.Infof("error in dns.Client.Exchange: %s", err)
-				lastErr = err
-				r.lastErr = lastErr
+				lastErr = r.setLastErr(err)
 				continue
 			}
 			log.Warnf("warn in dns.Client.Exchange: %s", err)
-			lastErr = err
-			r.lastErr = lastErr
+			lastErr = r.setLastErr(err)
 			continue
 		}
 		if resp != nil && resp.Rcode != dns.RcodeSuccess {
 			log.Infof("Bad dns.Client.Exchange response: %s", resp)
-			lastErr = fmt.Errorf("bad return code: %s", dns.RcodeToString[resp.Rcode])
-			r.lastErr = lastErr
+			lastErr = r.setLastErr(fmt.Errorf("bad return code: %s", dns.RcodeToString[resp.Rcode]))
 			continue
 		}
 
 		log.Debugf("SendMessage.success")
-		return nil
+		return r.setLastErr(nil)
 	}
 
-	r.lastErr = lastErr
-	return provider.NewSoftError(lastErr)
+	return provider.NewSoftError(r.setLastErr(lastErr))
 }
 
 func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
