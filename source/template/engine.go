@@ -74,12 +74,8 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
 }
 
-// WithSource returns a copy of the Engine scoped to the given ExternalDNS source name
-// (e.g. "service", "traefik-proxy" — see source/types.Type). Templates can then call
-// isSource "name" to render conditionally based on which source produced the object being
-// templated. This is deliberately not the same as the object's Kubernetes Kind: some sources
-// (traefik-proxy, unstructured, ...) span multiple Kinds under one source name.
-// An Engine that is never scoped via WithSource always evaluates isSource to false.
+// WithSource returns a copy of the Engine scoped to the given source name, so its
+// templates can use isSource "name" (see source/types.Type).
 func (e Engine) WithSource(name string) Engine {
 	e.source = name
 	e.fqdn = bindSource(e.fqdn, name)
@@ -88,11 +84,8 @@ func (e Engine) WithSource(name string) Engine {
 	return e
 }
 
-// bindSource clones tmpl and rebinds isSource to a closure matching against name, without
-// re-parsing the template body. A nil tmpl (template not configured) is returned unchanged.
-// Cloning is required: Funcs mutates a *template.Template in place, and fqdn/target/fqdnTarget
-// are shared pointers copied by value into every source's Engine — mutating in place would let
-// the last-scoped source silently overwrite isSource for every other source sharing that Engine.
+// bindSource clones tmpl (shared across Engine copies) and rebinds isSource to name,
+// so scoping one source can't affect another sharing the same underlying template.
 func bindSource(tmpl *template.Template, name string) *template.Template {
 	if tmpl == nil {
 		return nil
