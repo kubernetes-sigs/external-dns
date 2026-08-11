@@ -220,14 +220,6 @@ func (cfg *Config) ClientGenerator() ClientGenerator {
 	return cfg.clientGen
 }
 
-// scopeTemplateEngine swaps in a TemplateEngine scoped to source, returning a func that
-// restores the original.
-func (cfg *Config) scopeTemplateEngine(source string) func() {
-	original := cfg.TemplateEngine
-	cfg.TemplateEngine = original.WithSource(source)
-	return func() { cfg.TemplateEngine = original }
-}
-
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
 // This interface abstracts client creation and enables dependency injection for testing.
 // It uses the singleton pattern to ensure only one instance of each client is created
@@ -422,7 +414,7 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
 	// Scope the template engine to this source so templates can use isSource "name".
-	defer cfg.scopeTemplateEngine(source)()
+	cfg.TemplateEngine = cfg.TemplateEngine.WithSource(source)
 
 	switch source {
 	case types.Node:

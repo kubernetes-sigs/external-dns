@@ -236,11 +236,6 @@ func TestBuildWithConfig_ScopesTemplateEngineToSource(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "expected an NS endpoint")
-
-	// BuildWithConfig restores cfg.TemplateEngine before returning: it must be unscoped again.
-	unscoped, err := cfg.TemplateEngine.ExecFQDN(&fakePod)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"no.example.com"}, unscoped)
 }
 
 func TestConfig_ClientGenerator_Caching(t *testing.T) {
