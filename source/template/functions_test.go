@@ -149,6 +149,12 @@ func TestIsIPv4String(t *testing.T) {
 	}
 }
 
+func TestIsSourceDefault(t *testing.T) {
+	for _, name := range []string{"", "service", "Service", "fake"} {
+		assert.False(t, isSource(name), "isSource(%q) should always be false before WithSource scoping", name)
+	}
+}
+
 func TestHasKey(t *testing.T) {
 	for _, tt := range []struct {
 		name     string

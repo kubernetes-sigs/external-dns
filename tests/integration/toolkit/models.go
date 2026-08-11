@@ -106,6 +106,7 @@ type ScenarioConfig struct {
 	ServiceTypeFilter   []string `json:"serviceTypeFilter"`
 	Provider            string   `json:"provider"`
 	PreferAlias         bool     `json:"preferAlias"`
+	FQDNTemplate        []string `json:"fqdnTemplate"`
 }
 
 // ParsedResources holds the parsed Kubernetes resources from a scenario.

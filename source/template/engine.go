@@ -50,6 +50,9 @@ type Engine struct {
 	// combine controls whether template-derived endpoints are merged with annotation-derived endpoints.
 	// Set by --combine-fqdn-annotation.
 	combine bool
+	// source is the ExternalDNS source name (e.g. "service", "traefik-proxy") this Engine
+	// was scoped to via WithSource. Empty for an unscoped Engine.
+	source string
 }
 
 // NewEngine parses the provided Go template strings into a Engine.
@@ -69,6 +72,42 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 		return Engine{}, err
 	}
 	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
+}
+
+// WithSource returns a copy of the Engine scoped to the given ExternalDNS source name
+// (e.g. "service", "traefik-proxy" — see source/types.Type). Templates can then call
+// isSource "name" to render conditionally based on which source produced the object being
+// templated. This is deliberately not the same as the object's Kubernetes Kind: some sources
+// (traefik-proxy, unstructured, ...) span multiple Kinds under one source name.
+// An Engine that is never scoped via WithSource always evaluates isSource to false.
+func (e Engine) WithSource(name string) Engine {
+	e.source = name
+	e.fqdn = bindSource(e.fqdn, name)
+	e.target = bindSource(e.target, name)
+	e.fqdnTarget = bindSource(e.fqdnTarget, name)
+	return e
+}
+
+// bindSource clones tmpl and rebinds isSource to a closure matching against name, without
+// re-parsing the template body. A nil tmpl (template not configured) is returned unchanged.
+// Cloning is required: Funcs mutates a *template.Template in place, and fqdn/target/fqdnTarget
+// are shared pointers copied by value into every source's Engine — mutating in place would let
+// the last-scoped source silently overwrite isSource for every other source sharing that Engine.
+func bindSource(tmpl *template.Template, name string) *template.Template {
+	if tmpl == nil {
+		return nil
+	}
+	clone, err := tmpl.Clone()
+	if err != nil {
+		// Clone only fails when the template is concurrently mutated elsewhere, which cannot
+		// happen here: parsing always completes before an Engine is handed out for scoping.
+		panic(fmt.Errorf("template: clone for source %q: %w", name, err))
+	}
+	return clone.Funcs(template.FuncMap{
+		"isSource": func(want string) bool {
+			return strings.EqualFold(name, want)
+		},
+	})
 }
 
 // IsConfigured reports whether the FQDN template is set and ready to use.

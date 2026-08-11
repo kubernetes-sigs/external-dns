@@ -38,6 +38,7 @@ var (
 			"replace":    replace,
 			"isIPv6":     isIPv6,
 			"isIPv4":     isIPv4,
+			"isSource":   isSource,
 			"hasKey":     hasKey,
 			"fromJson":   fromJson,
 		}).Parse(""),
@@ -59,6 +60,14 @@ func isIPv6(target string) bool {
 // isIPv4 reports whether the target string is an IPv4 address.
 func isIPv4(target string) bool {
 	return endpoint.SuitableType(target) == endpoint.RecordTypeA
+}
+
+// isSource is the default "isSource" implementation registered on baseTemplate.
+// Engine.WithSource overrides it per source by cloning the template and rebinding this name
+// to a closure that matches the bound source name; an Engine that is never scoped via
+// WithSource always evaluates isSource to false.
+func isSource(string) bool {
+	return false
 }
 
 // hasKey checks if a key exists in a map. This is needed because Go templates'

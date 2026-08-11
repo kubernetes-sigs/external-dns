@@ -413,6 +413,19 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
+	// Scope the template engine to this source so templates can use isSource "name" to
+	// render conditionally based on which source produced the object being templated.
+	// Config embeds sync.Once (for lazy ClientGenerator init) and so cannot be copied by
+	// value; instead cfg.TemplateEngine is swapped in place for the duration of this call
+	// and restored via defer. Every buildXSource/NewGatewayXRouteSource call below copies
+	// cfg.TemplateEngine out into its own field synchronously during construction, so the
+	// scoped value is visible where needed and the restore afterward doesn't affect the
+	// already-built source. Callers must not invoke BuildWithConfig concurrently on the same
+	// *Config — ByNames, the only caller, calls it sequentially in a loop.
+	originalEngine := cfg.TemplateEngine
+	cfg.TemplateEngine = originalEngine.WithSource(source)
+	defer func() { cfg.TemplateEngine = originalEngine }()
+
 	switch source {
 	case types.Node:
 		return buildNodeSource(ctx, p, cfg)

@@ -272,6 +272,7 @@ func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigO
 		NAT64Networks:       scenarioCfg.NAT64Networks,
 		Provider:            scenarioCfg.Provider,
 		PreferAlias:         scenarioCfg.PreferAlias,
+		FQDNTemplate:        scenarioCfg.FQDNTemplate,
 	}, opts...)
 }
 

@@ -88,6 +88,7 @@ kubectl explain pod.spec.containers
 | `contains`   | Check if `substr` is in `string`                      | `{{ contains "hello" "ell" }} → true`                                              |
 | `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                                |
 | `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true`<br/>`{{ isIPv6 "::FFFF:192.168.1.1" }} → true` |
+| `isSource`   | Check the ExternalDNS source name (case-insensitive)  | `{{ if isSource "traefik-proxy" }}...{{ end }}`                                    |
 | `replace`    | Replace `old` with `new`                              | `{{ replace "l" "w" "hello" }} → hewwo`                                            |
 | `trim`       | Remove leading and trailing spaces                    | `{{ trim "  hello  " }} → hello`                                                   |
 | `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                    |
@@ -264,6 +265,22 @@ You can also handle multiple kinds in one template:
 args:
   --fqdn-template='{{ if eq .Kind "Service" }}{{ .Name }}.svc.example.com{{ end }}{{ if eq .Kind "Pod" }}{{ .Name }}.pod.example.com{{ end }}'
 ```
+
+### Using `isSource` for Conditional Templating by Source
+
+`isSource` checks which ExternalDNS **source** (the `--source` flag value, e.g. `service`, `ingress`, `traefik-proxy`) produced the object, not its Kubernetes `Kind`. This matters because `Kind` and source don't always map one-to-one: `traefik-proxy` alone produces `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` objects, and `unstructured` can produce arbitrary CRD kinds. `isSource` lets a single `--fqdn-template` (applied across all configured sources) target one source regardless of which kind(s) it emits:
+
+```yml
+args:
+  --source=service
+  --source=traefik-proxy
+  --fqdn-template='{{ if isSource "traefik-proxy" }}{{ .Name }}.proxy.example.com{{ end }}{{ if isSource "service" }}{{ .Name }}.svc.example.com{{ end }}'
+
+# Only objects from the traefik-proxy source get a .proxy.example.com record,
+# regardless of whether they're IngressRoute, IngressRouteTCP, or IngressRouteUDP.
+```
+
+The match is case-insensitive.
 
 ### Using Spec Fields
 
