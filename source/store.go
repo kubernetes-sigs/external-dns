@@ -414,7 +414,10 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
 	// Scope the template engine to this source so templates can use isSource "name".
-	cfg.TemplateEngine = cfg.TemplateEngine.WithSource(source)
+	var err error
+	if cfg.TemplateEngine, err = cfg.TemplateEngine.WithSource(source); err != nil {
+		return nil, err
+	}
 
 	switch source {
 	case types.Node:

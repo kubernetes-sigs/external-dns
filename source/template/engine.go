@@ -76,31 +76,36 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 
 // WithSource returns a copy of the Engine scoped to the given source name, so its
 // templates can use isSource "name" (see source/types.Type).
-func (e Engine) WithSource(name string) Engine {
+func (e Engine) WithSource(name string) (Engine, error) {
 	e.source = name
-	e.fqdn = bindSource(e.fqdn, name)
-	e.target = bindSource(e.target, name)
-	e.fqdnTarget = bindSource(e.fqdnTarget, name)
-	return e
+	var err error
+	if e.fqdn, err = bindSource(e.fqdn, name); err != nil {
+		return Engine{}, err
+	}
+	if e.target, err = bindSource(e.target, name); err != nil {
+		return Engine{}, err
+	}
+	if e.fqdnTarget, err = bindSource(e.fqdnTarget, name); err != nil {
+		return Engine{}, err
+	}
+	return e, nil
 }
 
 // bindSource clones tmpl (shared across Engine copies) and rebinds isSource to name,
 // so scoping one source can't affect another sharing the same underlying template.
-func bindSource(tmpl *template.Template, name string) *template.Template {
+func bindSource(tmpl *template.Template, name string) (*template.Template, error) {
 	if tmpl == nil {
-		return nil
+		return nil, nil //nolint:nilnil // nil signals "not configured"; matches tmpl's own nil-ness
 	}
 	clone, err := tmpl.Clone()
 	if err != nil {
-		// Clone only fails when the template is concurrently mutated elsewhere, which cannot
-		// happen here: parsing always completes before an Engine is handed out for scoping.
-		panic(fmt.Errorf("template: clone for source %q: %w", name, err))
+		return nil, fmt.Errorf("template: clone for source %q: %w", name, err)
 	}
 	return clone.Funcs(template.FuncMap{
 		"isSource": func(want string) bool {
 			return strings.EqualFold(name, want)
 		},
-	})
+	}), nil
 }
 
 // IsConfigured reports whether the FQDN template is set and ready to use.

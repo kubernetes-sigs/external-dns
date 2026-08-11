@@ -134,7 +134,8 @@ func TestEngine_WithSource(t *testing.T) {
 	t.Run("isSource matches the bound name case-insensitively", func(t *testing.T) {
 		e, err := NewEngine([]string{`{{ if isSource "Service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
 		require.NoError(t, err)
-		scoped := e.WithSource("service")
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
 		got, err := scoped.ExecFQDN(obj)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"yes.example.com"}, got)
@@ -143,7 +144,8 @@ func TestEngine_WithSource(t *testing.T) {
 	t.Run("isSource is false for a non-matching name", func(t *testing.T) {
 		e, err := NewEngine([]string{`{{ if isSource "pod" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
 		require.NoError(t, err)
-		scoped := e.WithSource("service")
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
 		got, err := scoped.ExecFQDN(obj)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"no.example.com"}, got)
@@ -161,8 +163,10 @@ func TestEngine_WithSource(t *testing.T) {
 		base, err := NewEngine([]string{`{{ if isSource "service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
 		require.NoError(t, err)
 
-		serviceScoped := base.WithSource("service")
-		podScoped := base.WithSource("pod")
+		serviceScoped, err := base.WithSource("service")
+		require.NoError(t, err)
+		podScoped, err := base.WithSource("pod")
+		require.NoError(t, err)
 
 		gotService, err := serviceScoped.ExecFQDN(obj)
 		require.NoError(t, err)
@@ -181,7 +185,8 @@ func TestEngine_WithSource(t *testing.T) {
 	t.Run("safe to call on an unconfigured Engine", func(t *testing.T) {
 		e, err := NewEngine(nil, nil, nil, false)
 		require.NoError(t, err)
-		scoped := e.WithSource("service")
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
 		assert.False(t, scoped.IsConfigured())
 	})
 }
