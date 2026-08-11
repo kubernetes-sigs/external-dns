@@ -268,7 +268,11 @@ args:
 
 ### Using `isSource` for Conditional Templating by Source
 
-`isSource` checks which ExternalDNS **source** (the `--source` flag value, e.g. `service`, `ingress`, `traefik-proxy`) produced the object, not its Kubernetes `Kind`. This matters because `Kind` and source don't always map one-to-one: `traefik-proxy` alone produces `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` objects, and `unstructured` can produce arbitrary CRD kinds. `isSource` lets a single `--fqdn-template` (applied across all configured sources) target one source regardless of which kind(s) it emits:
+`isSource` checks which ExternalDNS **source** (the `--source` flag value, e.g. `service`, `ingress`, `traefik-proxy`) produced the object, not its Kubernetes `Kind`.
+
+This matters because `Kind` and source don't always map one-to-one: `traefik-proxy` alone produces `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` objects, and `unstructured` can produce arbitrary CRD kinds.
+
+`isSource` lets a single `--fqdn-template` (applied across all configured sources) target one source regardless of which kind(s) it emits:
 
 ```yml
 args:
