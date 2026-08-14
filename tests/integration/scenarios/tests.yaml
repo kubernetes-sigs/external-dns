@@ -88,6 +88,9 @@ scenarios:
           metadata:
             name: my-pod
             namespace: default
+          status:
+            podIPs:
+              - ip: 10.0.0.9
     expected:
       - dnsName: node-1.node.example.com
         targets: ["1.2.3.4"]
