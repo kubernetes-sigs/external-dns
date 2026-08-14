@@ -87,8 +87,7 @@ func (e Engine) WithSource(name string) (Engine, error) {
 	return e, nil
 }
 
-// bindSource clones tmpl (shared across Engine copies) and rebinds isSource to name,
-// so scoping one source can't affect another sharing the same underlying template.
+// bindSource clones tmpl and rebinds isSource to name.
 func bindSource(tmpl *template.Template, name string) (*template.Template, error) {
 	if tmpl == nil {
 		return nil, nil //nolint:nilnil // nil signals "not configured"; matches tmpl's own nil-ness

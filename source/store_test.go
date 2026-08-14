@@ -225,9 +225,7 @@ func TestBuildWithConfig_ScopesTemplateEngineToSource(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, eps)
 
-	// NS record's DNSName is set verbatim to the rendered FQDN template output, so it's an
-	// unambiguous check that BuildWithConfig scoped the template engine to "fake" before
-	// constructing the source (isSource "fake" evaluated to true).
+	// NS record's DNSName is the rendered FQDN template output.
 	var found bool
 	for _, ep := range eps {
 		if ep.RecordType == endpoint.RecordTypeNS {
