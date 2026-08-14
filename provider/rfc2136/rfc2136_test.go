@@ -18,6 +18,7 @@ package rfc2136
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -979,6 +980,53 @@ func TestRandomLoadBalancing(t *testing.T) {
 	}
 
 	assert.Greater(t, len(nameserverCounts), 1, "Expected multiple nameservers to be used in random strategy")
+}
+
+// TestGetNextNameserverListAndSendCountersAreIndependent guards against the
+// regression described in https://github.com/kubernetes-sigs/external-dns/issues/6562:
+// AXFR/list and update/send nameserver rotation shared a single counter, so a
+// read advancing it would deterministically skew the following write onto a
+// different nameserver.
+func TestGetNextNameserverListAndSendCountersAreIndependent(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers:           []string{"ns1:53", "ns2:53", "ns3:53"},
+		loadBalancingStrategy: "round-robin",
+	}
+
+	// Advance only the list counter, as repeated AXFR attempts within a
+	// single List() call would.
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpList))
+	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpList))
+
+	// Send rotation must be unaffected by List()'s advancement and still
+	// start from the first nameserver.
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpSend))
+	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpSend))
+
+	// Both counters keep rotating independently from here on.
+	assert.Equal(t, "ns3:53", r.getNextNameserverFor(nameserverOpList))
+	assert.Equal(t, "ns3:53", r.getNextNameserverFor(nameserverOpSend))
+}
+
+// TestGetNextNameserverListAndSendLastErrAreIndependent guards against the
+// same class of regression for the failover state: under the default
+// (failover) strategy, a List()/AXFR failure must not cause the following
+// Send()/update rotation to fail over too, and vice versa.
+func TestGetNextNameserverListAndSendLastErrAreIndependent(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers: []string{"ns1:53", "ns2:53", "ns3:53"},
+	}
+
+	// Simulate a failed AXFR attempt.
+	r.listLastErr = errors.New("boom")
+
+	// Send rotation must be unaffected by List()'s failure and must not
+	// fail over to the next nameserver.
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpSend))
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpSend))
+
+	// List rotation, however, must fail over since its own last error was set.
+	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpList))
 }
 
 // TestRfc2136ApplyChangesWithMultipleChunks tests Updates with multiple chunks
