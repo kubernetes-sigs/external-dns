@@ -159,6 +159,22 @@ func TestEngine_WithSource(t *testing.T) {
 		assert.Equal(t, []string{"no.example.com"}, got)
 	})
 
+	t.Run("isSource with an unknown source name errors when scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "servics" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		_, err = scoped.ExecFQDN(obj)
+		require.ErrorContains(t, err, `isSource: unknown source "servics"`)
+	})
+
+	t.Run("isSource with an unknown source name errors when never scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "servics" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		_, err = e.ExecFQDN(obj)
+		require.ErrorContains(t, err, `isSource: unknown source "servics"`)
+	})
+
 	t.Run("scoping one source does not affect another built from the same base Engine", func(t *testing.T) {
 		base, err := NewEngine([]string{`{{ if isSource "service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
 		require.NoError(t, err)

@@ -18,10 +18,12 @@ package template
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"text/template"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var (
@@ -38,8 +40,8 @@ var (
 			"replace":    replace,
 			"isIPv6":     isIPv6,
 			"isIPv4":     isIPv4,
-			// stub: the source isn't known at parse time; Engine.WithSource rebinds this per source.
-			"isSource": func(string) bool { return false },
+			// unbound: the source isn't known at parse time; Engine.WithSource rebinds this per source.
+			"isSource": func(want string) (bool, error) { return isSource("", want) },
 			"hasKey":   hasKey,
 			"fromJson": fromJson,
 		}).Parse(""),
@@ -61,6 +63,17 @@ func isIPv6(target string) bool {
 // isIPv4 reports whether the target string is an IPv4 address.
 func isIPv4(target string) bool {
 	return endpoint.SuitableType(target) == endpoint.RecordTypeA
+}
+
+// isSource reports whether active equals want (case-insensitive). It rejects want
+// values that don't name a known ExternalDNS source, so a typo in an isSource
+// argument fails loudly instead of permanently evaluating to false. active is ""
+// before Engine.WithSource binds a real source name.
+func isSource(active, want string) (bool, error) {
+	if !types.IsKnown(want) {
+		return false, fmt.Errorf("isSource: unknown source %q (valid: %s)", want, strings.Join(types.All, ", "))
+	}
+	return strings.EqualFold(active, want), nil
 }
 
 // hasKey checks if a key exists in a map. This is needed because Go templates'
