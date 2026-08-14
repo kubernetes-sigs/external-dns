@@ -50,9 +50,6 @@ type Engine struct {
 	// combine controls whether template-derived endpoints are merged with annotation-derived endpoints.
 	// Set by --combine-fqdn-annotation.
 	combine bool
-	// source is the ExternalDNS source name (e.g. "service", "traefik-proxy") this Engine
-	// was scoped to via WithSource. Empty for an unscoped Engine.
-	source string
 }
 
 // NewEngine parses the provided Go template strings into a Engine.
@@ -77,7 +74,6 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 // WithSource returns a copy of the Engine scoped to the given source name, so its
 // templates can use isSource "name" (see source/types.Type).
 func (e Engine) WithSource(name string) (Engine, error) {
-	e.source = name
 	var err error
 	if e.fqdn, err = bindSource(e.fqdn, name); err != nil {
 		return Engine{}, err
