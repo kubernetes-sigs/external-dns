@@ -36,6 +36,8 @@ import (
 	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/registry/noop"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -263,7 +265,17 @@ func TestRun(t *testing.T) {
 		ctrl.Run(ctx)
 		close(stopped)
 	}()
-	time.Sleep(1500 * time.Millisecond)
+
+	// Wait until the controller goroutine has run once and recorded the verified
+	// records, instead of sleeping a fixed interval. The timeout serves as a safety
+	// net while being large enough to accommodate slow CI environments.
+	deadline := time.Now().Add(15 * time.Second)
+	for testutil.ToFloat64(verifiedRecords.Gauge.With(prometheus.Labels{"record_type": "a"})) < 1 {
+		if time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 	cancel() // start shutdown
 	<-stopped
 
