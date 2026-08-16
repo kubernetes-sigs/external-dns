@@ -106,6 +106,14 @@ func TestEmit_NilEmitter(t *testing.T) {
 	})
 }
 
+// events.Discard is the default. The changes must not be walked at all — a nil
+// Changes would panic if they were.
+func TestEmit_DiscardEmitterSkipsTheChanges(t *testing.T) {
+	assert.NotPanics(t, func() {
+		emitChangeEvent(events.Discard, nil, events.RecordReady)
+	})
+}
+
 func TestEmit_RecordError(t *testing.T) {
 	refObj := &events.ObjectReference{}
 

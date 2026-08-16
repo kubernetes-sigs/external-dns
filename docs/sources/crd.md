@@ -132,6 +132,99 @@ INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
 INFO[0000] CREATE: foo.bar.com 0 IN TXT "heritage=external-dns,external-dns/owner=default"
 ```
 
+### Validation
+
+A `DNSEndpoint` is checked in two places. The CRD schema rejects structural mistakes
+at `kubectl apply` time:
+
+- `dnsName` and `recordType` are required. `dnsName` must be a DNS name (a leading
+  `*.` wildcard and `_`-prefixed labels such as `_acme-challenge` are allowed).
+- `recordType` must be one of `A`, `AAAA`, `CNAME`, `TXT`, `SRV`, `NS`, `PTR`, `MX`, `NAPTR`.
+- `recordTTL` must be between `0` and `2147483647` (RFC 2181 §8). `0` means "unset" —
+  the provider applies its own default.
+- Each target is between 1 and 4096 characters, and an endpoint carries at most 1000
+  targets. A `DNSEndpoint` carries at most 1000 endpoints.
+- `SRV` and `NAPTR` targets must be absolute (end with a dot).
+- `PTR` records must use a `dnsName` under `.in-addr.arpa` or `.ip6.arpa`, written
+  without a trailing dot (`1.0.0.10.in-addr.arpa`).
+
+The schema does not count or constrain targets beyond that, because it also validates
+the `DNSRecord` objects the [CRD registry](../registry/crd.md) writes, where external-dns
+is the author: a rejected write there aborts the sync rather than teaching anyone
+anything. A rule may only reject what external-dns cannot legitimately build, which rules
+out capping `CNAME` targets — a load balancer publishing several hostnames yields a
+multi-target `CNAME` — and constraining `A`/`AAAA` targets, which are hostnames on
+providers with native alias records.
+
+The rest is checked when external-dns reads the object, before anything is planned. A
+rejected endpoint gets an `Invalid` [status condition](#status) and, optionally, a
+`RecordInvalid` event:
+
+- `A`/`AAAA` targets must be addresses of the matching family, unless the endpoint sets
+  the `alias` provider-specific property.
+- `MX` targets must be `<preference> <host>`, e.g. `10 mail.example.com`.
+- `SRV` targets must be the full `<priority> <weight> <port> <host>` (RFC 2782).
+- `PTR` records need at least one non-empty target.
+- Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
+  where both forms are valid (RFC 1035 §5.1).
+
+Leave `targets` empty only when `--default-targets` is configured.
+
+### Status
+
+external-dns reports what it did with each `DNSEndpoint` on the object itself:
+
+```console
+$ kubectl get dnsendpoint
+NAME               ENDPOINTS   ACCEPTED   READY        AGE
+examplednsrecord   1           True       Programmed   2m
+otherdnsrecord     0           True       Filtered     2m
+```
+
+Two conditions are set. `Accepted` is the source-level verdict, written before any
+provider call; `Ready` reports what became of the records afterwards:
+
+| Condition  | Reason       | Meaning                                                                            |
+|------------|--------------|------------------------------------------------------------------------------------|
+| `Accepted` | `Accepted`   | external-dns understood every endpoint in `spec`.                                  |
+| `Accepted` | `Invalid`    | At least one endpoint was refused; the message names the index and the fix.        |
+| `Ready`    | `Programmed` | The DNS provider applied the records.                                              |
+| `Ready`    | `Failed`     | The provider rejected the batch; the message carries its error.                    |
+| `Ready`    | `Filtered`   | No endpoint reached the provider: `--domain-filter` or `--managed-record-types` excluded them all. |
+| `Ready`    | `Invalid`    | No endpoint reached the provider because every one of them was refused.            |
+
+`status.observedGeneration` tracks the last `spec` external-dns processed.
+`status.endpoints` counts the endpoints that entered the plan — those left after
+validation, `--domain-filter` and `--managed-record-types`. On an empty `spec`, `Ready`
+is removed rather than left with a stale verdict.
+
+Both conditions are refreshed on every sync, including syncs where nothing changed,
+so a resource already in sync still reports `Programmed`. A write only happens when
+the computed status differs from what is stored, so a steady-state `DNSEndpoint`
+costs no API writes per sync interval.
+
+`Ready` describes the sync, not the individual resource: providers apply changes as
+a batch, so a failed batch marks every `DNSEndpoint` that contributed to it `Failed`,
+including resources whose own records were fine.
+
+`Programmed` means the provider accepted the batch, not that the record is guaranteed
+live: `--dry-run` writes nothing, and a name owned by another `--txt-owner-id` counts as
+planned but is skipped when the changes are calculated. Check the logs for an owner
+mismatch if a `Programmed` record never appears at the provider.
+
+Rejected endpoints can additionally raise a Kubernetes `Warning` event by starting
+external-dns with `--events-emit=RecordInvalid`. The event is emitted when the verdict
+first appears and again whenever it changes, not on every sync:
+
+```console
+$ kubectl describe dnsendpoint examplednsrecord
+...
+Events:
+  Type     Reason         Age   From          Message
+  ----     ------         ----  ----          -------
+  Warning  RecordInvalid  10s   external-dns  spec.endpoints[1] (A bad.example.com): target "1.2.3.4." must not end with a dot for a A record — use "1.2.3.4"
+```
+
 ### Using CRD source to manage DNS records in different DNS providers
 
 [CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/sources/crd.md) provides a generic mechanism and declarative way to manage DNS records in different DNS providers using external-dns.
@@ -146,7 +239,7 @@ external-dns --source=crd \
   --managed-record-types=NS
 ```
 
-* Example for record type `A`
+- Example for record type `A`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -162,7 +255,7 @@ spec:
     - 10.0.0.1
 ```
 
-* Example for record type `CNAME`
+- Example for record type `CNAME`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -180,7 +273,7 @@ spec:
 
 > **Note:** CNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
 
-* Example for record type `NS`
+- Example for record type `NS`
 
 ```yaml
 apiVersion: externaldns.k8s.io/v1alpha1
@@ -208,4 +301,12 @@ If you use RBAC, extend the `external-dns` ClusterRole with:
 - apiGroups: ["externaldns.k8s.io"]
   resources: ["dnsendpoints/status"]
   verbs: ["*"]
+```
+
+To emit events on `DNSEndpoint` objects (`--events-emit=RecordInvalid`), also grant:
+
+```yaml
+- apiGroups: ["events.k8s.io"]
+  resources: ["events"]
+  verbs: ["create"]
 ```

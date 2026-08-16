@@ -55,6 +55,9 @@ type Controller struct {
 	// The lastRunAt used for throttling and batching reconciliation
 	lastRunAt    time.Time
 	EventEmitter events.EventEmitter
+	// StatusReporters are the sources that write the apply outcome back onto the
+	// Kubernetes objects the endpoints came from (e.g. DNSEndpoint conditions).
+	StatusReporters []source.StatusReporter
 	// MangedRecordTypes are DNS record types that will be considered for management.
 	ManagedRecordTypes []string
 	// ExcludeRecordTypes are DNS record types that will be excluded from management.
@@ -123,6 +126,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
 			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError)
+			reportSyncStatus(ctx, c.StatusReporters, plan, err)
 			return err
 		}
 		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady)
@@ -130,6 +134,9 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")
 	}
+
+	// Also on the no-change branch: an object already in sync still needs a status.
+	reportSyncStatus(ctx, c.StatusReporters, plan, nil)
 
 	lastSyncTimestamp.Gauge.SetToCurrentTime()
 
