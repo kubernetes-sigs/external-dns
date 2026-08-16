@@ -41,6 +41,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -751,8 +752,8 @@ func TestEndpointsFromInformer_GetByKeyError(t *testing.T) {
 	inf := &fakeTestSharedIndexInformer{indexer: idx}
 
 	src := &unstructuredSource{
-		informers: []kubeinformers.GenericInformer{
-			&fakeTestGenericInformer{inf: inf},
+		informers: []*informers.Informers[kubeinformers.GenericInformer]{
+			singleInformer[kubeinformers.GenericInformer](&fakeTestGenericInformer{inf: inf}),
 		},
 	}
 

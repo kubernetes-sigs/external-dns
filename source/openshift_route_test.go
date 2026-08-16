@@ -657,7 +657,7 @@ func TestOcpRouteSource_InformerTransform(t *testing.T) {
 	require.IsType(t, &ocpRouteSource{}, source)
 
 	testInformerTransformHelper(t,
-		source.(*ocpRouteSource).routeInformer.Informer(),
+		informerFor(t, source.(*ocpRouteSource).routeInformers, "").Informer(),
 		route,
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),

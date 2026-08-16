@@ -54,14 +54,14 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // +externaldns:source:description=Creates DNS entries from F5 VirtualServer resources
 // +externaldns:source:resources=VirtualServer.cis.f5.com
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5VirtualServerSource struct {
-	virtualServerInformer kubeinformers.GenericInformer
-	kubeClient            kubernetes.Interface
-	templateEngine        template.Engine
-	unstructuredConverter *unstructuredConverter
+	virtualServerInformers *informers.Informers[kubeinformers.GenericInformer]
+	kubeClient             kubernetes.Interface
+	templateEngine         template.Engine
+	unstructuredConverter  *unstructuredConverter
 }
 
 func NewF5VirtualServerSource(
@@ -70,26 +70,30 @@ func NewF5VirtualServerSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
-	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	})
+	virtualServerInformers := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+		return factory.ForResource(f5VirtualServerGVR)
+	})
 
-	informers.MustSetTransform(virtualServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+	virtualServerInformers.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
-	informers.MustAddIndexers(virtualServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+	virtualServerInformers.MustAddIndexers(informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
-	informers.MustAddEventHandler(virtualServerInformer.Informer(), informers.DefaultEventHandler())
+	virtualServerInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -99,17 +103,17 @@ func NewF5VirtualServerSource(
 	}
 
 	return &f5VirtualServerSource{
-		virtualServerInformer: virtualServerInformer,
-		kubeClient:            kubeClient,
-		templateEngine:        cfg.TemplateEngine,
-		unstructuredConverter: uc,
+		virtualServerInformers: virtualServerInformers,
+		kubeClient:             kubeClient,
+		templateEngine:         cfg.TemplateEngine,
+		unstructuredConverter:  uc,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualServers in the source's namespace(s).
 func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	virtualServerObjects := informers.ListIndexed[*unstructured.Unstructured](vs.virtualServerInformer.Informer().GetIndexer())
+	virtualServerObjects := informers.ListIndexedAll[*unstructured.Unstructured](vs.virtualServerInformers.Indexers()...)
 
 	var virtualServers []*f5.VirtualServer
 	for _, vsObj := range virtualServerObjects {
@@ -135,7 +139,7 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 func (vs *f5VirtualServerSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for VirtualServer")
 
-	informers.MustAddEventHandler(vs.virtualServerInformer.Informer(), eventHandlerFunc(handler))
+	vs.virtualServerInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 // endpointsFromVirtualServers extracts the endpoints from a slice of VirtualServers.

@@ -819,7 +819,7 @@ func TestPodSource(t *testing.T) {
 			}
 
 			client, err := NewPodSource(ctx, kubernetes, &Config{
-				Namespace:                tc.targetNamespace,
+				Namespaces:               []string{tc.targetNamespace},
 				Compatibility:            tc.compatibility,
 				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
 				PodSourceDomain:          tc.PodSourceDomain,

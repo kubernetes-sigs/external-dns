@@ -386,3 +386,67 @@ func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
 	err := ValidateConfig(cfg)
 	assert.NoError(t, err)
 }
+
+func TestValidateNamespaces(t *testing.T) {
+	tests := []struct {
+		name        string
+		namespaces  []string
+		sources     []string
+		registry    string
+		expectedErr string
+	}{
+		{
+			name:       "no namespace",
+			sources:    []string{"istio-gateway"},
+			namespaces: nil,
+		},
+		{
+			name:       "single namespace with a source watching one",
+			sources:    []string{"istio-gateway"},
+			namespaces: []string{"team-a"},
+		},
+		{
+			name:       "several namespaces with sources watching many",
+			sources:    []string{"node", "gloo-proxy"},
+			namespaces: []string{"team-a", "team-b"},
+		},
+		{
+			name:        "several namespaces with a source watching one",
+			sources:     []string{"istio-gateway"},
+			namespaces:  []string{"team-a", "team-b"},
+			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway",
+		},
+		{
+			name:        "several namespaces report every unsupported source once",
+			sources:     []string{"ingress", "istio-gateway", "pod", "istio-gateway"},
+			namespaces:  []string{"team-a", "team-b"},
+			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway, pod",
+		},
+		{
+			name:       "several namespaces with the crd registry, which has its own namespace flag",
+			sources:    []string{"service"},
+			namespaces: []string{"team-a", "team-b"},
+			registry:   externaldns.RegistryCRD,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newValidConfig(t)
+			cfg.Sources = tt.sources
+			cfg.Namespaces = tt.namespaces
+			if tt.registry != "" {
+				cfg.Registry = tt.registry
+			}
+
+			err := ValidateConfig(cfg)
+
+			if tt.expectedErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedErr)
+		})
+	}
+}

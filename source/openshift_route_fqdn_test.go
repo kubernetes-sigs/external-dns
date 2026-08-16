@@ -341,7 +341,7 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					Namespace:        "",
+					Namespaces:       nil,
 					AnnotationFilter: nil,
 					TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					LabelFilter:      labels.Everything(),
