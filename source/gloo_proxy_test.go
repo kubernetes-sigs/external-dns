@@ -468,93 +468,93 @@ func TestGlooSource(t *testing.T) {
 	targetAnnotatedProxySourceUnstructured := unstructured.Unstructured{}
 
 	internalProxyAsJSON, err := json.Marshal(internalProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	externalProxyAsJSON, err := json.Marshal(externalProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	gatewayIngressAnnotatedProxyAsJSON, err := json.Marshal(gatewayIngressAnnotatedProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	gatewayIngressAnnotatedProxyGatewayAsJSON, err := json.Marshal(gatewayIngressAnnotatedProxyGateway)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	proxyMetadataStaticAsJSON, err := json.Marshal(proxyWithMetadataStatic)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	targetAnnotatedProxyAsJSON, err := json.Marshal(targetAnnotatedProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	internalProxySvcAsJSON, err := json.Marshal(internalProxySource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	externalProxySvcAsJSON, err := json.Marshal(externalProxySource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	proxyMetadataStaticSvcAsJSON, err := json.Marshal(proxyWithMetadataStaticSource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	targetAnnotatedProxySvcAsJSON, err := json.Marshal(targetAnnotatedProxySource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, internalProxyUnstructured.UnmarshalJSON(internalProxyAsJSON))
-	assert.NoError(t, externalProxyUnstructured.UnmarshalJSON(externalProxyAsJSON))
-	assert.NoError(t, gatewayIngressAnnotatedProxyUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyAsJSON))
-	assert.NoError(t, gatewayIngressAnnotatedProxyGatewayUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyGatewayAsJSON))
-	assert.NoError(t, proxyMetadataStaticUnstructured.UnmarshalJSON(proxyMetadataStaticAsJSON))
-	assert.NoError(t, targetAnnotatedProxyUnstructured.UnmarshalJSON(targetAnnotatedProxyAsJSON))
+	require.NoError(t, internalProxyUnstructured.UnmarshalJSON(internalProxyAsJSON))
+	require.NoError(t, externalProxyUnstructured.UnmarshalJSON(externalProxyAsJSON))
+	require.NoError(t, gatewayIngressAnnotatedProxyUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyAsJSON))
+	require.NoError(t, gatewayIngressAnnotatedProxyGatewayUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyGatewayAsJSON))
+	require.NoError(t, proxyMetadataStaticUnstructured.UnmarshalJSON(proxyMetadataStaticAsJSON))
+	require.NoError(t, targetAnnotatedProxyUnstructured.UnmarshalJSON(targetAnnotatedProxyAsJSON))
 
-	assert.NoError(t, internalProxySourceUnstructured.UnmarshalJSON(internalProxySvcAsJSON))
-	assert.NoError(t, externalProxySourceUnstructured.UnmarshalJSON(externalProxySvcAsJSON))
-	assert.NoError(t, proxyMetadataStaticSourceUnstructured.UnmarshalJSON(proxyMetadataStaticSvcAsJSON))
-	assert.NoError(t, targetAnnotatedProxySourceUnstructured.UnmarshalJSON(targetAnnotatedProxySvcAsJSON))
+	require.NoError(t, internalProxySourceUnstructured.UnmarshalJSON(internalProxySvcAsJSON))
+	require.NoError(t, externalProxySourceUnstructured.UnmarshalJSON(externalProxySvcAsJSON))
+	require.NoError(t, proxyMetadataStaticSourceUnstructured.UnmarshalJSON(proxyMetadataStaticSvcAsJSON))
+	require.NoError(t, targetAnnotatedProxySourceUnstructured.UnmarshalJSON(targetAnnotatedProxySvcAsJSON))
 
 	_, err = fakeKubernetesClient.CoreV1().Services(internalProxySvc.GetNamespace()).Create(t.Context(), &internalProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(externalProxySvc.GetNamespace()).Create(t.Context(), &externalProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(proxyWithMetadataStaticSvc.GetNamespace()).Create(t.Context(), &proxyWithMetadataStaticSvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(targetAnnotatedProxySvc.GetNamespace()).Create(t.Context(), &targetAnnotatedProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = fakeKubernetesClient.NetworkingV1().Ingresses(gatewayIngressAnnotatedProxyIngress.GetNamespace()).Create(t.Context(), &gatewayIngressAnnotatedProxyIngress, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create proxy resources
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &internalProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &externalProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &proxyMetadataStaticUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &targetAnnotatedProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &gatewayIngressAnnotatedProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create proxy source
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(internalProxySource.Namespace).Create(t.Context(), &internalProxySourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(externalProxySource.Namespace).Create(t.Context(), &externalProxySourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(proxyWithMetadataStaticSource.Namespace).Create(t.Context(), &proxyMetadataStaticSourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(targetAnnotatedProxySource.Namespace).Create(t.Context(), &targetAnnotatedProxySourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create gateway resource
 	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(t.Context(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 		GlooNamespaces: []string{defaultGlooNamespace},
 	})
-	assert.NoError(t, err)
-	assert.NotNil(t, source)
+	require.NoError(t, err)
+	require.NotNil(t, source)
 
 	endpoints, err := source.Endpoints(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, endpoints, 11)
 
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{

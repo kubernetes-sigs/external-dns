@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -304,17 +305,17 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 
 			for _, svc := range tt.services {
 				_, err := client.CoreV1().Services(tt.namespace).Create(t.Context(), svc, metav1.CreateOptions{})
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				err = serviceInformer.Informer().GetIndexer().Add(svc)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			result, err := EndpointTargetsFromServices(serviceInformer, tt.namespace, tt.selector)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, result)
 			}
 		})
@@ -323,11 +324,11 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 
 func TestEndpointTargetsFromServicesWithFixtures(t *testing.T) {
 	svcInformer, err := svcInformerWithServices(2, 9)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
 	targets, err := EndpointTargetsFromServices(svcInformer, corev1.NamespaceDefault, sel)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, targets.Len())
 }

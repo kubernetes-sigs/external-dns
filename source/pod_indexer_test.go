@@ -144,11 +144,11 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				},
 			}
 			if _, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{}); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 		if _, err := client.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{}); err != nil {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 

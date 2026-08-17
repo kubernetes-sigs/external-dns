@@ -121,7 +121,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 
 	// Get endpoints from our source.
 	_, err := source.Endpoints(t.Context())
-	assert.EqualError(t, err, "some error")
+	require.EqualError(t, err, "some error")
 
 	// Validate that the nested source was called.
 	src.AssertExpectations(t)

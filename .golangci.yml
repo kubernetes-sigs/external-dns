@@ -66,9 +66,6 @@ linters:
       # (in addition to default
       #   suite-thelper
       # ).
-      # TODO: enable in follow-up
-      disable:
-        - require-error
     usetesting:
       # Enable/disable `context.Background()` detections.
       context-background: true

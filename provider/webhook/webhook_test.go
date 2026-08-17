@@ -368,8 +368,12 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 			var eps []*endpoint.Endpoint
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
-			assert.NoError(t, err)
-			assert.NoError(t, json.Unmarshal(b, &eps))
+			if !assert.NoError(t, err) {
+				return
+			}
+			if !assert.NoError(t, json.Unmarshal(b, &eps)) {
+				return
+			}
 			j, _ := json.Marshal(eps)
 			w.Write(j)
 		}))
@@ -460,9 +464,13 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			var changes plan.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			err = json.Unmarshal(b, &changes)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Len(t, changes.Create, 1)
 			assert.Len(t, changes.Create[0].ProviderSpecific, 1)
 			assert.Equal(t, "prop1", changes.Create[0].ProviderSpecific[0].Name)
@@ -629,7 +637,9 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-		assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+		if !assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil))) {
+			return
+		}
 	}))
 	defer svr.Close()
 
@@ -644,9 +654,13 @@ func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
 		switch r.URL.Path {
 		case "/":
 			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
-			assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil)))
+			if !assert.NoError(t, json.NewEncoder(w).Encode(endpoint.NewDomainFilter(nil))) {
+				return
+			}
 		case webhookapi.UrlRecords:
-			assert.NoError(t, json.NewEncoder(w).Encode([]*endpoint.Endpoint{}))
+			if !assert.NoError(t, json.NewEncoder(w).Encode([]*endpoint.Endpoint{})) {
+				return
+			}
 		}
 	}))
 	defer svr.Close()

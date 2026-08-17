@@ -19,7 +19,7 @@ package endpoint_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -157,7 +157,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			result := endpoint.EndpointsForHostsAndTargets(tc.hostnames, tc.targets)
 			if tc.expected == nil {
-				assert.Nil(t, result)
+				require.Nil(t, result)
 				return
 			}
 			testutils.ValidateEndpoints(t, result, tc.expected)

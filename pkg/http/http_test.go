@@ -146,9 +146,9 @@ func TestRoundTrip(t *testing.T) {
 			resp, err := customRoundTripper.RoundTrip(req)
 
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			assert.Equal(t, tt.expectedResponse, resp)

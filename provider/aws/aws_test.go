@@ -2134,7 +2134,7 @@ func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoin
 	assert.True(t, testutils.SameEndpoints(endpoints, expected), "actual and expected endpoints don't match. %+v:%+v", endpoints, expected)
 
 	normalized, err := provider.AdjustEndpoints(endpoints)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, testutils.SameEndpoints(normalized, expected), "normalized and expected endpoints don't match. %+v:%+v", normalized, expected)
 }
 
@@ -2674,10 +2674,10 @@ func TestGeoProximityWithAWSRegion(t *testing.T) {
 			assert.Equal(t, tt.expectedSet, result.isSet)
 
 			if tt.expectedSet {
-				assert.NotNil(t, result.location.AWSRegion)
+				require.NotNil(t, result.location.AWSRegion)
 				assert.Equal(t, tt.expectedRegion, *result.location.AWSRegion)
 			} else {
-				assert.Nil(t, result.location.AWSRegion)
+				require.Nil(t, result.location.AWSRegion)
 			}
 
 			// Verify the method returns the same instance for chaining
@@ -2734,10 +2734,10 @@ func TestGeoProximityWithLocalZoneGroup(t *testing.T) {
 			assert.Equal(t, tt.expectedSet, result.isSet)
 
 			if tt.expectedSet {
-				assert.NotNil(t, result.location.LocalZoneGroup)
+				require.NotNil(t, result.location.LocalZoneGroup)
 				assert.Equal(t, tt.expectedLocalZoneGroup, *result.location.LocalZoneGroup)
 			} else {
-				assert.Nil(t, result.location.LocalZoneGroup)
+				require.Nil(t, result.location.LocalZoneGroup)
 			}
 
 			// Verify method returns same instance for chaining
@@ -2830,11 +2830,11 @@ func TestGeoProximityWithCoordinates(t *testing.T) {
 			assert.Equal(t, tt.expectedSet, result.isSet)
 
 			if tt.shouldHaveCoords {
-				assert.NotNil(t, result.location.Coordinates)
+				require.NotNil(t, result.location.Coordinates)
 				assert.Equal(t, tt.expectedLat, *result.location.Coordinates.Latitude)
 				assert.Equal(t, tt.expectedLong, *result.location.Coordinates.Longitude)
 			} else {
-				assert.Nil(t, result.location.Coordinates)
+				require.Nil(t, result.location.Coordinates)
 			}
 		})
 	}
@@ -2930,10 +2930,10 @@ func TestGeoProximityWithBias(t *testing.T) {
 			assert.Equal(t, tt.expectedSet, result.isSet)
 
 			if tt.expectedSet {
-				assert.NotNil(t, result.location.Bias)
+				require.NotNil(t, result.location.Bias)
 				assert.Equal(t, tt.expectedBias, *result.location.Bias)
 			} else {
-				assert.Nil(t, result.location.Bias)
+				require.Nil(t, result.location.Bias)
 			}
 
 			// Verify method returns same instance for chaining

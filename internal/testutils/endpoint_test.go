@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
@@ -484,7 +485,7 @@ func TestWithLabel(t *testing.T) {
 	// should initialize Labels and set the key
 	returned := e.WithLabel("foo", "bar")
 	assert.Equal(t, e, returned)
-	assert.NotNil(t, e.Labels)
+	require.NotNil(t, e.Labels)
 	assert.Equal(t, "bar", e.Labels["foo"])
 
 	// overriding an existing key

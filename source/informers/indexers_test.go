@@ -41,7 +41,7 @@ func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"default/test-object"}, keys)
 }
 
@@ -57,7 +57,7 @@ func TestIndexerWithOptions_FilterByLabel(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"default/test-object"}, keys)
 }
 
@@ -73,8 +73,8 @@ func TestIndexerWithOptions_NoMatch(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
-	assert.Nil(t, keys)
+	require.NoError(t, err)
+	require.Nil(t, keys)
 }
 
 func TestIndexerWithOptions_InvalidType(t *testing.T) {
@@ -83,8 +83,8 @@ func TestIndexerWithOptions_InvalidType(t *testing.T) {
 	obj := "invalid-object"
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.Error(t, err)
-	assert.Nil(t, keys)
+	require.Error(t, err)
+	require.Nil(t, keys)
 	assert.Contains(t, err.Error(), "object is not of type")
 }
 
@@ -96,7 +96,7 @@ func TestIndexerWithOptions_EmptyOptions(t *testing.T) {
 		obj.SetName("test-object")
 
 		keys, err := indexers[IndexWithSelectors](obj)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"default/test-object"}, keys)
 	})
 
@@ -106,7 +106,7 @@ func TestIndexerWithOptions_EmptyOptions(t *testing.T) {
 		node.SetName("my-node")
 
 		keys, err := indexers[IndexWithSelectors](node)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"my-node"}, keys)
 	})
 }
@@ -124,8 +124,8 @@ func TestIndexerWithOptions_AnnotationFilterNoMatch(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
-	assert.Nil(t, keys)
+	require.NoError(t, err)
+	require.Nil(t, keys)
 }
 
 func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
@@ -141,7 +141,7 @@ func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
 	t.Run("nil selector stored as nil", func(t *testing.T) {
 		options := &IndexSelectorOptions{}
 		IndexSelectorWithAnnotationFilter(nil)(options)
-		assert.Nil(t, options.annotationFilter)
+		require.Nil(t, options.annotationFilter)
 	})
 }
 
@@ -158,7 +158,7 @@ func TestIndexerWithOptions_LabelKey(t *testing.T) {
 		es.SetLabels(map[string]string{discoveryv1.LabelServiceName: "my-service"})
 
 		keys, err := indexFn(es)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"default/my-service"}, keys)
 	})
 
@@ -169,14 +169,14 @@ func TestIndexerWithOptions_LabelKey(t *testing.T) {
 		es.SetLabels(map[string]string{})
 
 		keys, err := indexFn(es)
-		assert.NoError(t, err)
-		assert.Nil(t, keys)
+		require.NoError(t, err)
+		require.Nil(t, keys)
 	})
 
 	t.Run("wrong type returns error", func(t *testing.T) {
 		keys, err := indexFn(&corev1.Service{})
-		assert.Error(t, err)
-		assert.Nil(t, keys)
+		require.Error(t, err)
+		require.Nil(t, keys)
 	})
 }
 
@@ -187,11 +187,11 @@ func TestGetByKey_ObjectExists(t *testing.T) {
 	pod.SetName("test-pod")
 
 	err := indexer.Add(pod)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := GetByKey[*corev1.Pod](indexer, "default/test-pod")
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
+	require.NoError(t, err)
+	require.NotNil(t, result)
 	assert.Equal(t, "test-pod", result.GetName())
 }
 
@@ -199,8 +199,8 @@ func TestGetByKey_ObjectDoesNotExist(t *testing.T) {
 	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 
 	result, err := GetByKey[*corev1.Pod](indexer, "default/non-existent-pod")
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	require.NoError(t, err)
+	require.Nil(t, result)
 }
 
 func TestGetByKey_TypeAssertionFailure(t *testing.T) {
@@ -210,12 +210,12 @@ func TestGetByKey_TypeAssertionFailure(t *testing.T) {
 	service.SetName("test-service")
 
 	err := indexer.Add(service)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	result, err := GetByKey[*corev1.Pod](indexer, "default/test-service")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "object is not of type")
-	assert.Nil(t, result)
+	require.Nil(t, result)
 }
 
 type errIndexer struct {
@@ -400,11 +400,11 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			keys, err := tt.indexers[IndexWithSelectors](tt.obj)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, keys)
+				require.Error(t, err)
+				require.Nil(t, keys)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.wantKeys, keys)
 		})
 	}

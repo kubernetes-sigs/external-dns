@@ -75,10 +75,10 @@ func (suite *OCPRouteSuite) SetupTest() {
 		},
 	}
 
-	suite.NoError(err, "should initialize route source")
+	suite.Require().NoError(err, "should initialize route source")
 
 	_, err = fakeClient.RouteV1().Routes(suite.routeWithTargets.Namespace).Create(context.Background(), suite.routeWithTargets, metav1.CreateOptions{})
-	suite.NoError(err, "should successfully create route")
+	suite.Require().NoError(err, "should successfully create route")
 }
 
 func (suite *OCPRouteSuite) TestResourceLabelIsSet() {

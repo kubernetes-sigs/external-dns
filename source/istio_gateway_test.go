@@ -76,7 +76,7 @@ func (suite *GatewaySuite) SetupTest() {
 
 	for _, service := range suite.lbServices {
 		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.ingresses = []*networkv1.Ingress{
@@ -96,7 +96,7 @@ func (suite *GatewaySuite) SetupTest() {
 
 	for _, ingress := range suite.ingresses {
 		_, err = fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.source, err = NewIstioGatewaySource(
@@ -1507,9 +1507,9 @@ func testGatewayEndpoints(t *testing.T) {
 
 			res, err := gatewaySource.Endpoints(t.Context())
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			testutils.ValidateEndpoints(t, res, ti.expected)
@@ -1875,7 +1875,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		},
 	}
 
-	assert.NotNil(t, services)
+	require.NotNil(t, services)
 
 	for _, svc := range services {
 		_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})

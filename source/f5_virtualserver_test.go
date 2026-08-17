@@ -670,11 +670,11 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 
 			virtualServerJSON, err := json.Marshal(tc.virtualServer)
 			require.NoError(t, err)
-			assert.NoError(t, virtualServer.UnmarshalJSON(virtualServerJSON))
+			require.NoError(t, virtualServer.UnmarshalJSON(virtualServerJSON))
 
 			// Create VirtualServer resources
 			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &virtualServer, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			labelFilter := tc.labelFilter
 			if labelFilter == nil {
@@ -687,7 +687,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 					LabelFilter:      labelFilter,
 				})
 			require.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {

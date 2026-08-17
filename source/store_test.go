@@ -111,7 +111,7 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	sources, err := ByNames(context.TODO(), &Config{
 		sources: ss,
 	}, mockClientGenerator)
-	suite.NoError(err, "should not generate errors")
+	suite.Require().NoError(err, "should not generate errors")
 	suite.Len(sources, 9, "should generate all nine sources")
 }
 
@@ -122,7 +122,7 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 	sources, err := ByNames(context.TODO(), &Config{
 		sources: []string{types.Fake},
 	}, mockClientGenerator)
-	suite.NoError(err, "should not generate errors")
+	suite.Require().NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate fake source")
 	suite.Nil(mockClientGenerator.KubeClientValue, "client should not be created")
 }
@@ -315,7 +315,7 @@ func TestSingletonClientGenerator_RESTConfig_SharedAcrossClients(t *testing.T) {
 		"Internal restConfig field should match returned value")
 
 	// All calls should return the same error
-	assert.Error(t, err1, "First call should return error when kubeconfig is invalid")
+	require.Error(t, err1, "First call should return error when kubeconfig is invalid")
 	assert.Equal(t, err1, err2, "Second call should return same error as first call")
 	assert.Equal(t, err1, err3, "Third call should return same error as first call")
 }
@@ -345,16 +345,16 @@ func TestSingletonClientGenerator_ErrorPersistence(t *testing.T) {
 		t.Run(m.name, func(t *testing.T) {
 			client1, err1 := m.call()
 			require.Error(t, err1, "first call must return an error for invalid kubeconfig")
-			assert.Nil(t, client1, "first call must return nil client on error")
+			require.Nil(t, client1, "first call must return nil client on error")
 
 			client2, err2 := m.call()
 			require.Error(t, err2, "second call must still return the init error, not nil")
-			assert.Nil(t, client2, "second call must return nil client on error")
+			require.Nil(t, client2, "second call must return nil client on error")
 			assert.Equal(t, err1, err2, "second call must return the same error as first call")
 
 			client3, err3 := m.call()
 			require.Error(t, err3, "third call must still return the init error, not nil")
-			assert.Nil(t, client3, "third call must return nil client on error")
+			require.Nil(t, client3, "third call must return nil client on error")
 			assert.Equal(t, err1, err3, "third call must return the same error as first call")
 		})
 	}
@@ -444,7 +444,7 @@ func TestNewSourceConfig(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errContains != "" {
-					assert.ErrorContains(t, err, tt.errContains)
+					require.ErrorContains(t, err, tt.errContains)
 				}
 				return
 			}
