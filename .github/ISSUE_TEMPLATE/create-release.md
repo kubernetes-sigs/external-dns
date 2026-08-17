@@ -18,7 +18,7 @@ Full process: [docs/release.md](https://github.com/kubernetes-sigs/external-dns/
 
 ### Release Execution (order matters)
 
-> **Chicken-and-egg:** the git tag must exist before the image is built/promoted; kustomize on that tag will still reference the *previous* image until the version-updater PR merges. See [git tags vs kustomize](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/release.md#git-tags-vs-kustomize-manifests-known-lag).
+> **Chicken-and-egg:** the git tag must exist before the image is built/promoted; See [git tags vs kustomize](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/release.md#git-tags-vs-kustomize-manifests-known-lag).
 
 - [ ] Create the GitHub release / git tag (`scripts/releaser.sh` or GitHub UI)
 - [ ] Confirm staging image built for this tag (`gcr.io/k8s-staging-external-dns/external-dns`)
