@@ -453,17 +453,29 @@ func TestMergeEndpoints(t *testing.T) {
 // endpoints (e.g. two Gateway API routes with different TTLs producing the same target for
 // the same hostname) using slice order, so a randomized result order made DNS record
 // ownership flap non-deterministically between reconciliations.
+//
+// Sources such as the Gateway API HTTPRoute lister are themselves backed by a Go map, so their
+// list order is not guaranteed stable across calls either. The result must therefore be sorted
+// canonically rather than merely preserve whatever order the input happened to arrive in — this
+// is checked below by feeding the same endpoint set in several different input orders and
+// asserting the result is identical every time.
 func TestMergeEndpointsOrderIsDeterministic(t *testing.T) {
-	input := []*Endpoint{
-		NewEndpointWithTTL("pad.example.com", RecordTypeA, 0, "1.2.3.4"),
-		NewEndpointWithTTL("pad.example.com", RecordTypeA, 300, "1.2.3.4"),
-		NewEndpointWithTTL("other.example.com", RecordTypeA, 60, "5.6.7.8"),
+	e1 := NewEndpointWithTTL("pad.example.com", RecordTypeA, 0, "1.2.3.4")
+	e2 := NewEndpointWithTTL("pad.example.com", RecordTypeA, 300, "1.2.3.4")
+	e3 := NewEndpointWithTTL("other.example.com", RecordTypeA, 60, "5.6.7.8")
+
+	orderings := [][]*Endpoint{
+		{e1, e2, e3},
+		{e3, e2, e1},
+		{e2, e1, e3},
 	}
 
-	want := MergeEndpoints(input)
-	for range 100 {
-		got := MergeEndpoints(input)
-		assert.Equal(t, want, got, "MergeEndpoints result order must be stable across calls with the same input")
+	want := MergeEndpoints(orderings[0])
+	for _, input := range orderings {
+		for range 100 {
+			got := MergeEndpoints(input)
+			assert.Equal(t, want, got, "MergeEndpoints result must not depend on input order")
+		}
 	}
 }
 

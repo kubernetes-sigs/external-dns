@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"cmp"
 	"maps"
 	"net/netip"
 	"slices"
@@ -151,17 +152,16 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
 // record references every source object that contributed to it. "First" follows the input slice order.
 //
-// The result preserves the order in which each key was first seen in the input. This keeps the output
-// deterministic across calls with the same input — callers such as the conflict resolver in package
-// plan break ties between competing candidates using slice order, so a map-iteration-order-dependent
-// result would make DNS record ownership flap non-deterministically between reconciliations.
+// The result is sorted by key (DNSName, RecordType, SetIdentifier, RecordTTL, Target), so it is
+// deterministic regardless of the input's order — callers such as the conflict resolver in package
+// plan break ties between competing candidates using slice order, so an order that merely mirrored
+// the (possibly map-derived, and therefore already random) input order would not be a real fix.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
 	}
 
 	endpointMap := make(map[EndpointKey]*Endpoint)
-	order := make([]EndpointKey, 0, len(endpoints))
 	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
 
 	for _, ep := range endpoints {
@@ -193,12 +193,13 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			}
 		} else {
 			endpointMap[key] = ep
-			order = append(order, key)
 		}
 	}
 
+	keys := slices.SortedFunc(maps.Keys(endpointMap), compareEndpointKeys)
+
 	result := make([]*Endpoint, 0, len(endpointMap))
-	for _, key := range order {
+	for _, key := range keys {
 		ep := endpointMap[key]
 		slices.Sort(ep.Targets)
 		ep.Targets = slices.Compact(ep.Targets)
@@ -206,4 +207,22 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	}
 
 	return result
+}
+
+// compareEndpointKeys orders EndpointKeys canonically (independent of any input/map order),
+// so callers that break ties using slice order get a stable, reproducible result.
+func compareEndpointKeys(a, b EndpointKey) int {
+	if c := cmp.Compare(a.DNSName, b.DNSName); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.RecordType, b.RecordType); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.SetIdentifier, b.SetIdentifier); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.RecordTTL, b.RecordTTL); c != 0 {
+		return c
+	}
+	return cmp.Compare(a.Target, b.Target)
 }
