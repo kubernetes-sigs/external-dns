@@ -271,7 +271,8 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 			if status.ParentRef.Port != nil {
 				port = strconv.Itoa(int(*status.ParentRef.Port))
 			}
-			out = append(out, fmt.Sprintf("%s/%s/%s",
+			out = append(out, fmt.Sprintf("%s/%s/%s/%s",
+				strVal((*string)(status.ParentRef.Kind), gatewayKind),
 				status.ParentRef.Name, sectionVal(status.ParentRef.SectionName, "-"), port))
 		}
 		return out
@@ -290,13 +291,13 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 				gwParentRef("default", "gw", withSectionName("foo")),
 				gwParentRef("default", "gw", withSectionName("bar")),
 			),
-			want: []string{"gw/bar/-"},
+			want: []string{"Gateway/gw/bar/-"},
 		},
 		{
 			desc:     "keeps a status the controller has not updated yet",
 			refs:     []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
 			statuses: statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
-			want:     []string{"gw/foo/-"},
+			want:     []string{"Gateway/gw/foo/-"},
 		},
 		{
 			desc: "keeps every listener the route currently attaches to",
@@ -308,7 +309,7 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 				gwParentRef("default", "gw", withSectionName("foo")),
 				gwParentRef("default", "gw", withSectionName("bar")),
 			),
-			want: []string{"gw/foo/-", "gw/bar/-"},
+			want: []string{"Gateway/gw/foo/-", "Gateway/gw/bar/-"},
 		},
 		{
 			desc: "distinguishes references by port",
@@ -317,13 +318,13 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 				gwParentRef("default", "gw", withPortNumber(80)),
 				gwParentRef("default", "gw", withPortNumber(8080)),
 			),
-			want: []string{"gw/-/8080"},
+			want: []string{"Gateway/gw/-/8080"},
 		},
 		{
 			desc:     "a status without a port does not match a ref that names one",
 			refs:     []v1.ParentReference{gwParentRef("default", "gw", withPortNumber(8080))},
 			statuses: statusesFor(gwParentRef("default", "gw")),
-			want:     []string{"gw/-/-"},
+			want:     []string{"Gateway/gw/-/-"},
 		},
 		{
 			desc: "does not depend on the order of the status list",
@@ -332,13 +333,13 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 				gwParentRef("default", "gw", withSectionName("bar")),
 				gwParentRef("default", "gw", withSectionName("foo")),
 			),
-			want: []string{"gw/bar/-"},
+			want: []string{"Gateway/gw/bar/-"},
 		},
 		{
 			desc:     "keeps sectioned statuses when the route names no section",
 			refs:     []v1.ParentReference{gwParentRef("default", "gw")},
 			statuses: statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
-			want:     []string{"gw/foo/-"},
+			want:     []string{"Gateway/gw/foo/-"},
 		},
 		{
 			desc: "treats each parent object independently",
@@ -351,7 +352,21 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 				gwParentRef("default", "gw-a", withSectionName("bar")),
 				gwParentRef("default", "gw-b", withSectionName("foo")),
 			),
-			want: []string{"gw-a/bar/-", "gw-b/foo/-"},
+			want: []string{"Gateway/gw-a/bar/-", "Gateway/gw-b/foo/-"},
+		},
+		{
+			// A ListenerSet parent goes through the same resolver, and a Gateway of
+			// the same name is a different parent object.
+			desc: "filters ListenerSet parents and keeps them apart from a Gateway",
+			refs: []v1.ParentReference{
+				lsParentRef("default", "shared", withSectionName("bar")),
+			},
+			statuses: statusesFor(
+				lsParentRef("default", "shared", withSectionName("foo")),
+				lsParentRef("default", "shared", withSectionName("bar")),
+				gwParentRef("default", "shared", withSectionName("foo")),
+			),
+			want: []string{"ListenerSet/shared/bar/-", "Gateway/shared/foo/-"},
 		},
 		{
 			desc:     "handles a route with no status",
