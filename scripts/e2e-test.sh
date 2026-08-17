@@ -37,6 +37,11 @@ curl $CURL_RETRY_OPTS -fLO "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/li
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/kubectl
 
+# Nothing else checks that generated CRDs are accepted by API Server.
+echo "Installing CRDs"
+kubectl apply -f config/crd/standard/
+kubectl wait --for=condition=established --timeout=60s -f config/crd/standard/
+
 # Install ko
 echo "Installing ko..."
 curl $CURL_RETRY_OPTS -o ko.tar.gz -sSfL "https://github.com/ko-build/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_linux_x86_64.tar.gz"

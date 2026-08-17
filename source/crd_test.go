@@ -382,6 +382,64 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 		},
 		{
+			title:           "DNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
+			namespaceFilter: "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"target.example.net."},
+					RecordType: endpoint.RecordTypeDNAME,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
+			title:           "DNAME target without trailing dot (relative name) is valid",
+			namespaceFilter: "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"target.example.net"},
+					RecordType: endpoint.RecordTypeDNAME,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
+			// A CNAME and a DNAME sharing the same owner name is invalid DNS
+			// (RFC 6672 §2.3), but the CRD source does not enforce coexistence
+			// rules — it emits both endpoints (they have distinct record types
+			// and are not merged) and leaves rejection to the DNS backend.
+			title:           "CNAME and DNAME with the same name are both emitted",
+			namespaceFilter: "foo",
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"cname-target.example.net"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"dname-target.example.net"},
+					RecordType: endpoint.RecordTypeDNAME,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
 			title:           "illegal target NAPTR",
 			namespaceFilter: "foo",
 			objectNamespace: "foo",

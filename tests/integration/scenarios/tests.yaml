@@ -464,6 +464,33 @@ scenarios:
         recordType: CNAME
         recordTTL: 180
 
+  - name: crd-dname-record
+    description: >
+      A DNSEndpoint with a DNAME record creates the correct DNS entry.
+      DNAME (RFC 6672) aliases an entire subtree, unlike CNAME which aliases
+      a single name.
+    config:
+      sources: ["crd"]
+    resources:
+      - resource:
+          apiVersion: externaldns.k8s.io/v1alpha1
+          kind: DNSEndpoint
+          metadata:
+            name: my-dname
+            namespace: default
+          spec:
+            endpoints:
+              - dnsName: sub.example.com
+                targets:
+                  - example.net
+                recordType: DNAME
+                recordTTL: 300
+    expected:
+      - dnsName: sub.example.com
+        targets: ["example.net"]
+        recordType: DNAME
+        recordTTL: 300
+
   - name: crd-multiple-endpoints
     description: >
       A DNSEndpoint with multiple spec.endpoints entries produces one DNS record
