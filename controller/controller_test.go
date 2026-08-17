@@ -259,6 +259,11 @@ func TestRun(t *testing.T) {
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+
+	// Reset the shared gauge so the wait below observes a real 0->1 transition
+	// from this run rather than leftover state from an earlier test.
+	verifiedRecords.Gauge.Reset()
+
 	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
@@ -266,16 +271,9 @@ func TestRun(t *testing.T) {
 		close(stopped)
 	}()
 
-	// Wait until the controller goroutine has run once and recorded the verified
-	// records, instead of sleeping a fixed interval. The timeout serves as a safety
-	// net while being large enough to accommodate slow CI environments.
-	deadline := time.Now().Add(15 * time.Second)
-	for testutil.ToFloat64(verifiedRecords.Gauge.With(prometheus.Labels{"record_type": "a"})) < 1 {
-		if time.Now().After(deadline) {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+	require.Eventually(t, func() bool {
+		return testutil.ToFloat64(verifiedRecords.Gauge.With(prometheus.Labels{"record_type": "a"})) >= 1
+	}, 15*time.Second, 10*time.Millisecond)
 	cancel() // start shutdown
 	<-stopped
 
