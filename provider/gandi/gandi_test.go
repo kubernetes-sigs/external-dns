@@ -638,5 +638,5 @@ func TestGandiProvider_Zones(t *testing.T) {
 
 	provider.DomainClient = &mockGandiClient{FunctionToFail: "ListDomains"}
 	_, err = provider.Zones()
-	assert.Error(t, err)
+	require.Error(t, err)
 }

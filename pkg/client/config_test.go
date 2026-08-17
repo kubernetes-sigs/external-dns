@@ -54,7 +54,7 @@ func TestNewKubeClient(t *testing.T) {
 
 	client, err := NewKubeClient(config)
 	require.NoError(t, err)
-	assert.NotNil(t, client)
+	require.NotNil(t, client)
 }
 
 func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
@@ -67,8 +67,8 @@ func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
 	require.NotNil(t, config)
 
 	assert.Equal(t, timeout, config.Timeout)
-	assert.NotNil(t, config.WrapTransport, "WrapTransport should be set for metrics")
-	assert.NotNil(t, config.RateLimiter, "RateLimiter should always be set")
+	require.NotNil(t, config.WrapTransport, "WrapTransport should be set for metrics")
+	require.NotNil(t, config.RateLimiter, "RateLimiter should always be set")
 }
 
 func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
@@ -120,7 +120,7 @@ func TestInstrumentedRESTConfig_QPSAndBurstApplied(t *testing.T) {
 
 	assert.Equal(t, 20, int(config.QPS))
 	assert.Equal(t, 40, config.Burst)
-	assert.NotNil(t, config.RateLimiter)
+	require.NotNil(t, config.RateLimiter)
 	assert.Equal(t, 20, int(config.RateLimiter.QPS()))
 }
 
@@ -137,7 +137,7 @@ func TestInstrumentedRESTConfig_ZeroQPSKeepsConfigDefaults(t *testing.T) {
 	// qps == 0: client-go defaults applied; rate limiter still installed
 	assert.Equal(t, int(rest.DefaultQPS), int(config.QPS))
 	assert.Equal(t, rest.DefaultBurst, config.Burst)
-	assert.NotNil(t, config.RateLimiter)
+	require.NotNil(t, config.RateLimiter)
 	assert.Equal(t, int(rest.DefaultQPS), int(config.RateLimiter.QPS()))
 }
 
@@ -171,7 +171,7 @@ func TestEnrichingRateLimiter(t *testing.T) {
 	t.Run("Wait returns nil when token is available", func(t *testing.T) {
 		// burst=1: one token available immediately
 		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(100, 1)}
-		assert.NoError(t, rl.Wait(t.Context()))
+		require.NoError(t, rl.Wait(t.Context()))
 	})
 }
 

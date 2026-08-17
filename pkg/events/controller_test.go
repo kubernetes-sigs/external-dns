@@ -155,7 +155,7 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 
 	item, shutdown := ctrl.queue.Get()
 	require.False(t, shutdown)
-	assert.NotNil(t, item)
+	require.NotNil(t, item)
 
 	assert.Contains(t, item.Name, "fake-object.")
 	assert.Contains(t, item.Reason, RecordReady)

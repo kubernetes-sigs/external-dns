@@ -169,7 +169,7 @@ func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 
 	_, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestScalewayProvider_AdjustEndpoints(t *testing.T) {

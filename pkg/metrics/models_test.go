@@ -42,7 +42,7 @@ func TestNewGaugeWithOpts(t *testing.T) {
 	assert.Equal(t, "test_subsystem", gaugeMetric.Subsystem)
 	assert.Equal(t, "This is a test gauge", gaugeMetric.Help)
 	assert.Equal(t, "test_subsystem_test_gauge", gaugeMetric.FQDN)
-	assert.NotNil(t, gaugeMetric.Gauge)
+	require.NotNil(t, gaugeMetric.Gauge)
 }
 
 func TestNewCounterWithOpts(t *testing.T) {
@@ -60,7 +60,7 @@ func TestNewCounterWithOpts(t *testing.T) {
 	assert.Equal(t, "test_subsystem", counterMetric.Subsystem)
 	assert.Equal(t, "This is a test counter", counterMetric.Help)
 	assert.Equal(t, "test_subsystem_test_counter", counterMetric.FQDN)
-	assert.NotNil(t, counterMetric.Counter)
+	require.NotNil(t, counterMetric.Counter)
 }
 
 func TestNewCounterVecWithOpts(t *testing.T) {
@@ -81,7 +81,7 @@ func TestNewCounterVecWithOpts(t *testing.T) {
 	assert.Equal(t, "test_subsystem", counterVecMetric.Subsystem)
 	assert.Equal(t, "This is a test counter vector", counterVecMetric.Help)
 	assert.Equal(t, "test_subsystem_test_counter_vec", counterVecMetric.FQDN)
-	assert.NotNil(t, counterVecMetric.CounterVec)
+	require.NotNil(t, counterVecMetric.CounterVec)
 }
 
 func TestGaugeV_SetWithLabels(t *testing.T) {
@@ -96,19 +96,19 @@ func TestGaugeV_SetWithLabels(t *testing.T) {
 	gv.SetWithLabels(1.23, "Alpha", "BETA")
 
 	g, err := gv.Gauge.GetMetricWithLabelValues("alpha", "beta")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var m dto.Metric
 	err = g.Write(&m)
-	assert.NoError(t, err)
-	assert.NotNil(t, m.Gauge)
+	require.NoError(t, err)
+	require.NotNil(t, m.Gauge)
 	assert.InDelta(t, 1.23, *m.Gauge.Value, 0.01)
 
 	// Override the value
 	gv.SetWithLabels(4.56, "ALPHA", "beta")
 	// reuse g (same label combination)
 	err = g.Write(&m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.InDelta(t, 4.56, *m.Gauge.Value, 0.01)
 
 	assert.Len(t, m.Label, 2)
@@ -205,16 +205,16 @@ func TestSummaryV_SetWithLabels(t *testing.T) {
 	reg.MustRegister(sv.SummaryVec)
 
 	metricsFamilies, err := reg.Gather()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, metricsFamilies, 1)
 
 	s, err := sv.SummaryVec.GetMetricWithLabelValues("alpha", "beta")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	metricsFamilies, err = reg.Gather()
 
 	s.Observe(5.21)
 	metricsFamilies, err = reg.Gather()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.InDelta(t, 10.22, *metricsFamilies[0].Metric[0].Summary.SampleSum, 0.01)
 	assert.Len(t, metricsFamilies[0].Metric[0].Label, 2)
@@ -255,24 +255,24 @@ func TestGaugeV_AddWithLabels(t *testing.T) {
 	gv.AddWithLabels(1.0, "Alpha", "BETA")
 
 	g, err := gv.Gauge.GetMetricWithLabelValues("alpha", "beta")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var m dto.Metric
 	err = g.Write(&m)
-	assert.NoError(t, err)
-	assert.NotNil(t, m.Gauge)
+	require.NoError(t, err)
+	require.NotNil(t, m.Gauge)
 	assert.InDelta(t, 1.0, *m.Gauge.Value, 0.01)
 
 	// Add again - should increment, not override
 	gv.AddWithLabels(2.0, "ALPHA", "beta")
 	err = g.Write(&m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.InDelta(t, 3.0, *m.Gauge.Value, 0.01) // 1.0 + 2.0 = 3.0
 
 	// Add one more time
 	gv.AddWithLabels(0.5, "alpha", "Beta")
 	err = g.Write(&m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.InDelta(t, 3.5, *m.Gauge.Value, 0.01) // 3.0 + 0.5 = 3.5
 
 	assert.Len(t, m.Label, 2)

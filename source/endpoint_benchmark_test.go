@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -39,7 +40,7 @@ import (
 
 func BenchmarkEndpointTargetsFromServicesMedium(b *testing.B) {
 	svcInformer, err := svcInformerWithServices(36, 1000)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
@@ -51,7 +52,7 @@ func BenchmarkEndpointTargetsFromServicesMedium(b *testing.B) {
 
 func BenchmarkEndpointTargetsFromServicesMediumIterateOverGateways(b *testing.B) {
 	svcInformer, err := svcInformerWithServices(36, 500)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	gateways := fixturesIstioGatewaySvcWithLabels(15, 70)
 
@@ -64,7 +65,7 @@ func BenchmarkEndpointTargetsFromServicesMediumIterateOverGateways(b *testing.B)
 
 func BenchmarkEndpointTargetsFromServicesHigh(b *testing.B) {
 	svcInformer, err := svcInformerWithServices(36, 40000)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
 	for b.Loop() {
@@ -76,7 +77,7 @@ func BenchmarkEndpointTargetsFromServicesHigh(b *testing.B) {
 // This benchmark tests the performance of EndpointTargetsFromServices with a high number of services and gateways.
 func BenchmarkEndpointTargetsFromServicesHighIterateOverGateways(b *testing.B) {
 	svcInformer, err := svcInformerWithServices(36, 40000)
-	assert.NoError(b, err)
+	require.NoError(b, err)
 
 	gateways := fixturesIstioGatewaySvcWithLabels(50, 1000)
 

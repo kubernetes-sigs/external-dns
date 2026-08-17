@@ -228,7 +228,7 @@ func TestRunOnce(t *testing.T) {
 		EventEmitter:       emitter,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(t.Context()))
+	require.NoError(t, ctrl.RunOnce(t.Context()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
@@ -355,7 +355,7 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
-	assert.NoError(t, ctrl.RunOnce(t.Context()))
+	require.NoError(t, ctrl.RunOnce(t.Context()))
 	assert.Equal(t, 1, provider.RecordsCallCount)
 	require.Len(t, provider.ApplyChangesCalls, len(expectedChanges))
 	for i, change := range expectedChanges {
@@ -631,8 +631,8 @@ func TestRun_HardError(t *testing.T) {
 	err = ctrl.Run(t.Context())
 
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "failed to do run once")
-	assert.ErrorContains(t, err, "simulated hard error")
+	require.ErrorContains(t, err, "failed to do run once")
+	require.ErrorContains(t, err, "simulated hard error")
 
 	source.AssertExpectations(t)
 }

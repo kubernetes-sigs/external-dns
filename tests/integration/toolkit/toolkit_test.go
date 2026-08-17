@@ -46,7 +46,7 @@ scenarios:
 
 func TestLoadScenarios_InvalidYAML(t *testing.T) {
 	_, err := LoadScenarios([]byte(":\tinvalid"))
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestLoadScenarios_MissingName(t *testing.T) {
@@ -57,7 +57,7 @@ scenarios:
       sources: ["service"]
 `)
 	_, err := LoadScenarios(yaml)
-	assert.ErrorContains(t, err, "missing required field: name")
+	require.ErrorContains(t, err, "missing required field: name")
 }
 
 func TestLoadScenarios_MissingDescription(t *testing.T) {
@@ -68,7 +68,7 @@ scenarios:
       sources: ["service"]
 `)
 	_, err := LoadScenarios(yaml)
-	assert.ErrorContains(t, err, "missing required field: description")
+	require.ErrorContains(t, err, "missing required field: description")
 }
 
 func TestLoadScenarios_MissingSources(t *testing.T) {
@@ -79,7 +79,7 @@ scenarios:
     config: {}
 `)
 	_, err := LoadScenarios(yaml)
-	assert.ErrorContains(t, err, "missing required field: config.sources")
+	require.ErrorContains(t, err, "missing required field: config.sources")
 }
 
 func rawService() []byte {
@@ -209,14 +209,14 @@ metadata:
 	_, err := ParseResources([]ResourceWithDependencies{
 		{Resource: runtime.RawExtension{Raw: raw}},
 	})
-	assert.ErrorContains(t, err, "unsupported resource type")
+	require.ErrorContains(t, err, "unsupported resource type")
 }
 
 func TestParseResources_InvalidRaw(t *testing.T) {
 	_, err := ParseResources([]ResourceWithDependencies{
 		{Resource: runtime.RawExtension{Raw: []byte("not yaml")}},
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestLoadResources_Service(t *testing.T) {
@@ -320,7 +320,7 @@ func TestLoadResources_ParseError(t *testing.T) {
 			{Resource: runtime.RawExtension{Raw: []byte("not yaml")}},
 		},
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestCreateWrappedSource(t *testing.T) {
@@ -335,7 +335,7 @@ func TestCreateWrappedSource(t *testing.T) {
 		Sources: []string{"service"},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
 }
 
 func TestCreateWrappedSource_CRD(t *testing.T) {
@@ -350,7 +350,7 @@ func TestCreateWrappedSource_CRD(t *testing.T) {
 		Sources: []string{"crd"},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
 }
 
 func TestScenarioToConfig(t *testing.T) {
@@ -362,7 +362,7 @@ func TestScenarioToConfig(t *testing.T) {
 		Provider:          "inmemory",
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, cfg)
+	require.NotNil(t, cfg)
 }
 
 // encodeObject serializes a runtime.Object to JSON for use as RawExtension.Raw.

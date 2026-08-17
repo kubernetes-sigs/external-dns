@@ -433,10 +433,10 @@ func TestChunkBatchChanges(t *testing.T) {
 
 func TestTagsFromResponse(t *testing.T) {
 	t.Run("nil input returns nil", func(t *testing.T) {
-		assert.Nil(t, tagsFromResponse(nil))
+		require.Nil(t, tagsFromResponse(nil))
 	})
 	t.Run("non-string-slice returns nil", func(t *testing.T) {
-		assert.Nil(t, tagsFromResponse(42))
+		require.Nil(t, tagsFromResponse(42))
 	})
 	t.Run("string slice is returned unchanged", func(t *testing.T) {
 		tags := []string{"tag1", "tag2"}
@@ -600,7 +600,7 @@ func TestBuildBatchPutParam(t *testing.T) {
 		r.Content = "0 issue letsencrypt.org"
 		param, ok := buildBatchPutParam("id-caa", r)
 		assert.False(t, ok)
-		assert.Nil(t, param)
+		require.Nil(t, param)
 	})
 }
 

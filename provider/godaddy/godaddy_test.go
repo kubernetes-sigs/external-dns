@@ -117,7 +117,7 @@ func TestGoDaddyZones(t *testing.T) {
 
 	domains, err := provider.zones()
 
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Contains(domains, "example.com")
 	assert.NotContains(domains, "example.net")
 
@@ -126,8 +126,8 @@ func TestGoDaddyZones(t *testing.T) {
 	// Error on getting zones
 	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
 	domains, err = provider.zones()
-	assert.Error(err)
-	assert.Nil(domains)
+	require.Error(t, err)
+	require.Nil(t, domains)
 	client.AssertExpectations(t)
 }
 
@@ -162,7 +162,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 
 	zones, records, err := provider.zonesRecords(t.Context(), true)
 
-	assert.NoError(err)
+	require.NoError(t, err)
 
 	assert.ElementsMatch(zones, []string{
 		zoneNameExampleNet,
@@ -193,9 +193,9 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 	// Error on getting zones list
 	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
 	zones, records, err = provider.zonesRecords(t.Context(), false)
-	assert.Error(err)
-	assert.Nil(zones)
-	assert.Nil(records)
+	require.Error(t, err)
+	require.Nil(t, zones)
+	require.Nil(t, records)
 	client.AssertExpectations(t)
 
 	// Error on getting zone records
@@ -209,9 +209,9 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 
 	zones, records, err = provider.zonesRecords(t.Context(), false)
 
-	assert.Error(err)
-	assert.Nil(zones)
-	assert.Nil(records)
+	require.Error(t, err)
+	require.Nil(t, zones)
+	require.Nil(t, records)
 	client.AssertExpectations(t)
 
 	// Error on getting zone record detail
@@ -224,9 +224,9 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 	client.On("Get", "/v1/domains/example.net/records").Return(nil, ErrAPIDown).Once()
 
 	zones, records, err = provider.zonesRecords(t.Context(), false)
-	assert.Error(err)
-	assert.Nil(zones)
-	assert.Nil(records)
+	require.Error(t, err)
+	require.Nil(t, zones)
+	require.Nil(t, records)
 	client.AssertExpectations(t)
 }
 
@@ -278,7 +278,7 @@ func TestGoDaddyRecords(t *testing.T) {
 	}, nil).Once()
 
 	endpoints, err := provider.Records(t.Context())
-	assert.NoError(err)
+	require.NoError(t, err)
 
 	// Little fix for multi targets endpoint
 	for _, endpoint := range endpoints {
@@ -321,13 +321,12 @@ func TestGoDaddyRecords(t *testing.T) {
 	// Error getting zone
 	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
 	endpoints, err = provider.Records(t.Context())
-	assert.Error(err)
-	assert.Nil(endpoints)
+	require.Error(t, err)
+	require.Nil(t, endpoints)
 	client.AssertExpectations(t)
 }
 
 func TestGoDaddyChange(t *testing.T) {
-	assert := assert.New(t)
 	client := newMockGoDaddyClient(t)
 	provider := &GDProvider{
 		client: client,
@@ -385,7 +384,7 @@ func TestGoDaddyChange(t *testing.T) {
 	// Delete entry
 	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(nil, nil).Once()
 
-	assert.NoError(provider.ApplyChanges(t.Context(), &changes))
+	require.NoError(t, provider.ApplyChanges(t.Context(), &changes))
 
 	client.AssertExpectations(t)
 }
@@ -398,7 +397,6 @@ const (
 )
 
 func TestGoDaddyErrorResponse(t *testing.T) {
-	assert := assert.New(t)
 	client := newMockGoDaddyClient(t)
 	provider := &GDProvider{
 		client: client,
@@ -453,7 +451,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 		}},
 	}, errors.New(operationFailedTestReason)).Once()
 
-	assert.Error(provider.ApplyChanges(t.Context(), &changes))
+	require.Error(t, provider.ApplyChanges(t.Context(), &changes))
 
 	client.AssertExpectations(t)
 }

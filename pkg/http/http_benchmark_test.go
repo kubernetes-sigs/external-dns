@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type roundTripFunc func(req *http.Request) *http.Response
@@ -66,7 +65,9 @@ func BenchmarkRoundTripper(b *testing.B) {
 	for b.Loop() {
 		api := apiUnderTest{client, "http://example.com"}
 		body, err := api.doStuff()
-		require.NoError(b, err)
+		if err != nil {
+			b.Fatal(err)
+		}
 		assert.Equal(b, []byte("OK"), body)
 	}
 }

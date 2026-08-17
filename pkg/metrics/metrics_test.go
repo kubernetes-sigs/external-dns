@@ -22,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
@@ -107,8 +108,8 @@ func TestUnsupportedMetricWarning(t *testing.T) {
 func TestNewMetricsRegister(t *testing.T) {
 	registry := NewMetricsRegister()
 
-	assert.NotNil(t, registry)
-	assert.NotNil(t, registry.Registerer)
+	require.NotNil(t, registry)
+	require.NotNil(t, registry.Registerer)
 	assert.Empty(t, registry.Metrics)
 	assert.Empty(t, registry.mName)
 }

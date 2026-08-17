@@ -87,7 +87,9 @@ func TestRouteGroupClientGetRouteGroupList(t *testing.T) {
 			assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 			w.Header().Set("Content-Type", "application/json")
 			_, err := w.Write([]byte(`{"kind":"RouteGroupList","apiVersion":"zalando.org/v1","items":[{"metadata":{"name":"rg1"}}]}`))
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 		}))
 		defer server.Close()
 
@@ -112,8 +114,8 @@ func TestRouteGroupClientGetRouteGroupList(t *testing.T) {
 		client := &routeGroupClient{client: server.Client()}
 		got, err := client.getRouteGroupList(server.URL)
 
-		assert.Nil(t, got)
-		assert.ErrorContains(t, err, "503 Service Unavailable")
+		require.Nil(t, got)
+		require.ErrorContains(t, err, "503 Service Unavailable")
 	})
 
 	t.Run("invalid JSON response", func(t *testing.T) {
@@ -121,15 +123,17 @@ func TestRouteGroupClientGetRouteGroupList(t *testing.T) {
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, err := w.Write([]byte(`{"items":`))
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 		}))
 		defer server.Close()
 
 		client := &routeGroupClient{client: server.Client()}
 		got, err := client.getRouteGroupList(server.URL)
 
-		assert.Nil(t, got)
-		assert.Error(t, err)
+		require.Nil(t, got)
+		require.Error(t, err)
 	})
 
 	t.Run("request failure", func(t *testing.T) {
@@ -141,8 +145,8 @@ func TestRouteGroupClientGetRouteGroupList(t *testing.T) {
 
 		got, err := client.getRouteGroupList(server.URL)
 
-		assert.Nil(t, got)
-		assert.Error(t, err)
+		require.Nil(t, got)
+		require.Error(t, err)
 	})
 }
 
@@ -155,8 +159,8 @@ func TestRouteGroupClientGetAndDo(t *testing.T) {
 		client := &routeGroupClient{}
 		resp, err := client.get("://invalid")
 
-		assert.Nil(t, resp)
-		assert.Error(t, err)
+		require.Nil(t, resp)
+		require.Error(t, err)
 	})
 
 	t.Run("existing authorization header is preserved", func(t *testing.T) {
@@ -236,7 +240,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 			got, err := NewRouteGroupSource(&config, "test-token", "", tt.apiServer)
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.Nil(t, got)
+				require.Nil(t, got)
 				return
 			}
 			require.NoError(t, err)

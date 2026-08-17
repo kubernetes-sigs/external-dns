@@ -78,7 +78,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 
 	for _, service := range suite.lbServices {
 		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.ingresses = []*networkv1.Ingress{
@@ -98,7 +98,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 
 	for _, ingress := range suite.ingresses {
 		_, err = fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.gwconfig = (fakeGatewayConfig{
@@ -107,7 +107,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		dnsnames:  [][]string{{"*"}},
 	}).Config()
 	_, err = fakeIstioClient.NetworkingV1().Gateways(suite.gwconfig.Namespace).Create(context.Background(), suite.gwconfig, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 
 	suite.vsconfig = (fakeVirtualServiceConfig{
 		name:      "foo-virtualservice",
@@ -116,7 +116,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		dnsnames:  []string{"foo"},
 	}).Config()
 	_, err = fakeIstioClient.NetworkingV1().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), suite.vsconfig, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 
 	suite.source, err = NewIstioVirtualServiceSource(
 		context.TODO(),
@@ -126,12 +126,12 @@ func (suite *VirtualServiceSuite) SetupTest() {
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
-	suite.NoError(err, "should initialize virtualservice source")
+	suite.Require().NoError(err, "should initialize virtualservice source")
 }
 
 func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
 	endpoints, err := suite.source.Endpoints(context.Background())
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 	suite.Len(endpoints, 2, "should return the correct number of endpoints")
 	for _, ep := range endpoints {
 		suite.Equal("virtualservice/istio-other/foo-virtualservice", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
@@ -2091,9 +2091,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 
 			res, err := virtualServiceSource.Endpoints(t.Context())
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			testutils.ValidateEndpoints(t, res, ti.expected)
@@ -2258,7 +2258,7 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.fields.virtualServiceSource.getGateway(tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
 			if tt.expectedErrStr != "" {
-				assert.EqualError(t, err, tt.expectedErrStr, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+				require.EqualError(t, err, tt.expectedErrStr, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
 				return
 			} else {
 				require.NoError(t, err)

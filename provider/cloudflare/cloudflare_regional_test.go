@@ -726,9 +726,9 @@ func Test_desiredDataLocalizationRegionalHostnames(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := desiredRegionalHostnames(tt.changes)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			sort.Slice(got, func(i, j int) bool {
 				return got[i].hostname < got[j].hostname
@@ -840,7 +840,7 @@ func TestRecordsWithListRegionalHostnameFaillure(t *testing.T) {
 		RegionalServicesConfig: RegionalServicesConfig{Enabled: true},
 	}
 	_, err := failingProvider.Records(t.Context())
-	assert.Error(t, err, "listing regional hostnames should fail")
+	require.Error(t, err, "listing regional hostnames should fail")
 }
 
 func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
@@ -1032,7 +1032,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 			}
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
-			assert.Error(t, err, "ApplyChanges should return an error")
+			require.Error(t, err, "ApplyChanges should return an error")
 			if tt.errMsg != "" && err != nil {
 				assert.Contains(t, err.Error(), tt.errMsg, "Expected error message to contain: %s", tt.errMsg)
 			}
@@ -1181,7 +1181,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 			}
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 			err := p.ApplyChanges(t.Context(), tt.args.changes)
-			assert.NoError(t, err, "ApplyChanges should not fail")
+			require.NoError(t, err, "ApplyChanges should not fail")
 			if tt.expectDebug != "" {
 				logtest.TestHelperLogContains(tt.expectDebug, hook, t)
 			}
@@ -1278,7 +1278,7 @@ func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
 			}
 
 			adjustedEndpoints, err := provider.AdjustEndpoints([]*endpoint.Endpoint{testEndpoint})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, adjustedEndpoints, 1)
 
 			regionKey, exists := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareRegionKey)

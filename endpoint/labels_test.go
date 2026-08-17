@@ -77,14 +77,14 @@ func (suite *LabelsSuite) TestSerialize() {
 
 func (suite *LabelsSuite) TestEncryptionNonceReUsage() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 	serialized := foo.Serialize(false, true, suite.aesKey)
 	suite.Equal(serialized, suite.fooAsTextEncrypted, "serialized result should be equal")
 }
 
 func (suite *LabelsSuite) TestEncryptionKeyChanged() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 
 	serialised := foo.Serialize(false, true, []byte("passphrasewhichneedstobe32bytes!"))
 	suite.NotEqual(serialised, suite.fooAsTextEncrypted, "serialized result should be equal")
@@ -92,7 +92,7 @@ func (suite *LabelsSuite) TestEncryptionKeyChanged() {
 
 func (suite *LabelsSuite) TestEncryptionFailed() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 
 	defer func() { log.StandardLogger().ExitFunc = nil }()
 
@@ -110,7 +110,7 @@ func (suite *LabelsSuite) TestEncryptionFailed() {
 
 func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 
 	// remove encryption nonce just for simplicity, so that we could regenerate nonce
 	delete(foo, txtEncryptionNonce)
@@ -138,31 +138,31 @@ func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {
 
 func (suite *LabelsSuite) TestDeserialize() {
 	foo, err := NewLabelsFromStringPlain(suite.fooAsText)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.foo, foo, "should reconstruct original label map")
 
 	foo, err = NewLabelsFromStringPlain(suite.fooAsTextWithQuotes)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.foo, foo, "should reconstruct original label map")
 
 	foo, err = NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
-	suite.NoError(err, "should succeed for valid encrypted label text")
+	suite.Require().NoError(err, "should succeed for valid encrypted label text")
 	for key, val := range suite.foo {
 		suite.Equal(val, foo[key], "should contains all keys from original label map")
 	}
 
 	foo, err = NewLabelsFromString(suite.fooAsTextWithQuotesEncrypted, suite.aesKey)
-	suite.NoError(err, "should succeed for valid encrypted label text")
+	suite.Require().NoError(err, "should succeed for valid encrypted label text")
 	for key, val := range suite.foo {
 		suite.Equal(val, foo[key], "should contains all keys from original label map")
 	}
 
 	bar, err := NewLabelsFromStringPlain(suite.barText)
-	suite.NoError(err, "should succeed for valid label text")
+	suite.Require().NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.barTextAsMap, bar, "should reconstruct original label map")
 
 	bar, err = NewLabelsFromString(suite.barText, suite.aesKey)
-	suite.NoError(err, "should succeed for valid encrypted label text")
+	suite.Require().NoError(err, "should succeed for valid encrypted label text")
 	suite.Equal(suite.barTextAsMap, bar, "should reconstruct original label map")
 
 	noHeritage, err := NewLabelsFromStringPlain(suite.noHeritageText)
