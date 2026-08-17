@@ -95,6 +95,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeNAPTR,
 		},
 		{
+			name:             "prefix with DNAME record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "dname-foo.example.com",
+			wantEndpointName: "foo.example.com",
+			wantRecordType:   endpoint.RecordTypeDNAME,
+		},
+		{
 			name:             "suffix with A record type in affix",
 			mapper:           NewAffixNameMapper("", "-%{record_type}", ""),
 			input:            "foo-a.example.com",
@@ -285,6 +292,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeNAPTR,
 			wantTXTName: "naptr-foo.example.com",
+		},
+		{
+			name:        "prefix with DNAME record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "foo.example.com",
+			recordType:  endpoint.RecordTypeDNAME,
+			wantTXTName: "dname-foo.example.com",
 		},
 		{
 			name:        "prefix with TXT record type in affix",

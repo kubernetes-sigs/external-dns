@@ -168,6 +168,15 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				require.NotEmpty(t, ep.Targets)
 			},
 		},
+		{
+			recordType: endpoint.RecordTypeDNAME,
+			check: func(t *testing.T, ep *endpoint.Endpoint) {
+				t.Helper()
+				require.Len(t, ep.Targets, 1)
+				assert.True(t, strings.HasSuffix(ep.Targets[0], "."+defaultFQDNTemplate),
+					"DNAME target %q should be under %s", ep.Targets[0], defaultFQDNTemplate)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.recordType, func(t *testing.T) {

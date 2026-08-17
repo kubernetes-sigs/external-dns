@@ -386,7 +386,7 @@ func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperationEnum) dns.RecordOperation {
 	targets := make([]string, len(ep.Targets))
 	copy(targets, ep.Targets)
-	if ep.RecordType == endpoint.RecordTypeCNAME {
+	if endpoint.RequiresTrailingDot(ep.RecordType) {
 		targets[0] = provider.EnsureTrailingDot(targets[0])
 	}
 	rdata := strings.Join(targets, " ")

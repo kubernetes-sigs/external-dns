@@ -242,6 +242,9 @@ OuterLoop:
 		case dns.TypeCNAME:
 			rrValues = []string{rr.(*dns.CNAME).Target}
 			rrType = "CNAME"
+		case dns.TypeDNAME:
+			rrValues = []string{rr.(*dns.DNAME).Target}
+			rrType = "DNAME"
 		case dns.TypeA:
 			rrValues = []string{rr.(*dns.A).A.String()}
 			rrType = "A"

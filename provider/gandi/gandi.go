@@ -177,7 +177,7 @@ func (p *GandiProvider) submitChanges(_ context.Context, changes []*GandiChanges
 
 	for _, changes := range zoneChanges {
 		for _, change := range changes {
-			if change.Record.RrsetType == endpoint.RecordTypeCNAME && !strings.HasSuffix(change.Record.RrsetValues[0], ".") {
+			if endpoint.RequiresTrailingDot(change.Record.RrsetType) && !strings.HasSuffix(change.Record.RrsetValues[0], ".") {
 				change.Record.RrsetValues[0] += "."
 			}
 

@@ -542,6 +542,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 		"v3.bar.com 3600 TXT bbbb",
 		"v2.foo.com 3600 CNAME cccc",
 		"v1.foobar.com 3600 TXT dddd",
+		"v5.foo.com 3600 DNAME target.example.com.",
 	})
 	assert.NoError(t, err)
 
@@ -551,10 +552,22 @@ func TestRfc2136GetRecords(t *testing.T) {
 	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
-	assert.Len(t, recs, 6)
+	assert.Len(t, recs, 7)
 	assert.True(t, contains(recs, "v1.foo.com"))
 	assert.True(t, contains(recs, "v2.bar.com"))
 	assert.True(t, contains(recs, "v2.foo.com"))
+
+	// DNAME records are surfaced with their target as-is.
+	var dname *endpoint.Endpoint
+	for _, r := range recs {
+		if r.RecordType == endpoint.RecordTypeDNAME {
+			dname = r
+			break
+		}
+	}
+	require.NotNil(t, dname, "expected a DNAME record to be read back")
+	assert.Equal(t, "v5.foo.com", dname.DNSName)
+	assert.Equal(t, []string{"target.example.com"}, []string(dname.Targets))
 }
 
 // Make sure the test version of SendMessage raises an error
