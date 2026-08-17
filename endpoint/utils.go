@@ -150,12 +150,18 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // When several endpoints merge into one, the first endpoint's scalar metadata (TTL, ProviderSpecific,
 // Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
 // record references every source object that contributed to it. "First" follows the input slice order.
+//
+// The result preserves the order in which each key was first seen in the input. This keeps the output
+// deterministic across calls with the same input — callers such as the conflict resolver in package
+// plan break ties between competing candidates using slice order, so a map-iteration-order-dependent
+// result would make DNS record ownership flap non-deterministically between reconciliations.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
 	}
 
 	endpointMap := make(map[EndpointKey]*Endpoint)
+	order := make([]EndpointKey, 0, len(endpoints))
 	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
 
 	for _, ep := range endpoints {
@@ -187,11 +193,13 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			}
 		} else {
 			endpointMap[key] = ep
+			order = append(order, key)
 		}
 	}
 
 	result := make([]*Endpoint, 0, len(endpointMap))
-	for _, ep := range endpointMap {
+	for _, key := range order {
+		ep := endpointMap[key]
 		slices.Sort(ep.Targets)
 		ep.Targets = slices.Compact(ep.Targets)
 		result = append(result, ep)

@@ -447,6 +447,26 @@ func TestMergeEndpoints(t *testing.T) {
 	}
 }
 
+// TestMergeEndpointsOrderIsDeterministic guards against a regression where MergeEndpoints
+// built its result by ranging over a Go map, whose iteration order is randomized per call.
+// Callers such as plan.PerResource.ResolveCreate break ties between competing candidate
+// endpoints (e.g. two Gateway API routes with different TTLs producing the same target for
+// the same hostname) using slice order, so a randomized result order made DNS record
+// ownership flap non-deterministically between reconciliations.
+func TestMergeEndpointsOrderIsDeterministic(t *testing.T) {
+	input := []*Endpoint{
+		NewEndpointWithTTL("pad.example.com", RecordTypeA, 0, "1.2.3.4"),
+		NewEndpointWithTTL("pad.example.com", RecordTypeA, 300, "1.2.3.4"),
+		NewEndpointWithTTL("other.example.com", RecordTypeA, 60, "5.6.7.8"),
+	}
+
+	want := MergeEndpoints(input)
+	for range 100 {
+		got := MergeEndpoints(input)
+		assert.Equal(t, want, got, "MergeEndpoints result order must be stable across calls with the same input")
+	}
+}
+
 func TestMergeEndpoints_RefObjects(t *testing.T) {
 	tests := []struct {
 		name     string
