@@ -74,7 +74,7 @@ Consequences:
 
 So:
 
-- Do **not** treat the kustomize tree *on the git tag* as the source of truth for that version’s image.
+- Do **not** treat the kustomize tree _on the git tag_ as the source of truth for that version’s image.
 - Prefer the Helm chart, or the post-release version-updater commit on `master`, for install manifests that pin the new tag.
 
 ## How to release a new chart version
