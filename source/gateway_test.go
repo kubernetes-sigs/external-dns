@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestGatewayMatchingHost(t *testing.T) {
@@ -318,6 +320,12 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 			want: []string{"gw/-/8080"},
 		},
 		{
+			desc:     "a status without a port does not match a ref that names one",
+			refs:     []v1.ParentReference{gwParentRef("default", "gw", withPortNumber(8080))},
+			statuses: statusesFor(gwParentRef("default", "gw")),
+			want:     []string{"gw/-/-"},
+		},
+		{
 			desc: "does not depend on the order of the status list",
 			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
 			statuses: statusesFor(
@@ -357,6 +365,46 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			got := gwRouteCurrentParentStatuses(meta, tt.refs, tt.statuses)
 			require.Equal(t, tt.want, render(got))
+		})
+	}
+}
+
+func TestGatewayUniqueTargets(t *testing.T) {
+	tests := []struct {
+		desc string
+		in   endpoint.Targets
+		want endpoint.Targets
+	}{
+		{
+			desc: "no targets",
+			in:   endpoint.Targets{},
+			want: endpoint.Targets{},
+		},
+		{
+			desc: "a single target is returned as is",
+			in:   endpoint.Targets{"1.2.3.4"},
+			want: endpoint.Targets{"1.2.3.4"},
+		},
+		{
+			desc: "distinct targets are sorted",
+			in:   endpoint.Targets{"5.6.7.8", "1.2.3.4"},
+			want: endpoint.Targets{"1.2.3.4", "5.6.7.8"},
+		},
+		{
+			desc: "a target listed by two listeners appears once",
+			in:   endpoint.Targets{"1.2.3.4", "5.6.7.8", "1.2.3.4"},
+			want: endpoint.Targets{"1.2.3.4", "5.6.7.8"},
+		},
+		{
+			desc: "every listener reports the same target",
+			in:   endpoint.Targets{"1.2.3.4", "1.2.3.4", "1.2.3.4"},
+			want: endpoint.Targets{"1.2.3.4"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			require.Equal(t, tt.want, uniqueTargets(tt.in))
 		})
 	}
 }
