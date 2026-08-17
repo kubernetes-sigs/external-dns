@@ -408,6 +408,7 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // - "kong-tcpingress": Kong TCP Ingress resources
 // - "f5-*": F5 resources (virtualserver, transportserver)
 // - "fake": Fake source for testing
+// - "empty": Returns no endpoints, for testing or as a placeholder
 // - "connector": Connector source for external systems
 //
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
@@ -454,6 +455,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildOpenShiftRouteSource(ctx, p, cfg)
 	case types.Fake:
 		return NewFakeSource(cfg)
+	case types.Empty:
+		return NewEmptySource(), nil
 	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
 	case types.CRD:

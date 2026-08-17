@@ -40,6 +40,7 @@ const (
 	TraefikProxy        Type = "traefik-proxy"
 	OpenShiftRoute      Type = "openshift-route"
 	Fake                Type = "fake"
+	Empty               Type = "empty"
 	Connector           Type = "connector"
 	CRD                 Type = "crd"
 	SkipperRouteGroup   Type = "skipper-routegroup"
@@ -55,7 +56,7 @@ var All = []Type{
 	GatewayHttpRoute, GatewayGrpcRoute, GatewayTlsRoute, GatewayTcpRoute, GatewayUdpRoute,
 	IstioGateway, IstioVirtualService,
 	AmbassadorHost, ContourHTTPProxy, GlooProxy, TraefikProxy, OpenShiftRoute,
-	Fake, Connector, CRD, SkipperRouteGroup, KongTCPIngress,
+	Fake, Empty, Connector, CRD, SkipperRouteGroup, KongTCPIngress,
 	F5VirtualServer, F5TransportServer, Unstructured,
 }
 
