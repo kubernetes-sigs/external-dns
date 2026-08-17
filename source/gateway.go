@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -31,12 +32,14 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/ptr"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -787,8 +790,7 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 	return false
 }
 
-// gwRouteParentKey identifies the parent object a reference points at, without the
-// sectionName and port that distinguish several references to that same object.
+// gwRouteParentKey identifies a parent object, without the sectionName and port.
 type gwRouteParentKey struct {
 	group     string
 	kind      string
@@ -805,47 +807,28 @@ func gwRouteParentKeyOf(ref v1.ParentReference, meta *metav1.ObjectMeta) gwRoute
 	}
 }
 
-// gwParentRefSelectsSameListeners reports whether two references to one parent object
-// select the same listeners.
+// gwParentRefSelectsSameListeners reports whether a and b select the same listeners.
 func gwParentRefSelectsSameListeners(a, b v1.ParentReference) bool {
-	if sectionVal(a.SectionName, "") != sectionVal(b.SectionName, "") {
-		return false
-	}
-	if a.Port == nil || b.Port == nil {
-		return a.Port == nil && b.Port == nil
-	}
-	return *a.Port == *b.Port
+	return sectionVal(a.SectionName, "") == sectionVal(b.SectionName, "") && ptr.Equal(a.Port, b.Port)
 }
 
-// gwRouteCurrentParentStatuses drops the status entries a Gateway controller left
-// behind for a listener the Route no longer attaches to.
-//
-// gwRouteHasParentRef deliberately compares only the parent object, ignoring
-// sectionName and port, so that a Route whose status has not caught up with its spec
-// keeps resolving instead of losing its endpoints and having its DNS records deleted.
-// The same tolerance means that once a Route moves between listeners of one Gateway,
-// a leftover status entry for the previous listener stays usable, and the hostnames of
-// that listener keep being published alongside the current ones.
-//
-// For each parent object, entries whose sectionName and port match a current
-// spec.parentRefs entry win. When no entry for a parent matches, every entry for it is
-// kept, so a status that is merely behind still resolves and nothing is deleted.
+// gwRouteCurrentParentStatuses returns the status entries that still match an entry in
+// spec.parentRefs, comparing sectionName and port as well as the parent object. Entries
+// for a parent with no match at all are all returned, so a status that has not caught up
+// with the spec is not mistaken for a removed attachment. See issue #6639.
 func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference, statuses []v1.RouteParentStatus) []v1.RouteParentStatus {
 	keys := make([]gwRouteParentKey, len(statuses))
 	current := make([]bool, len(statuses))
-	matched := make(map[gwRouteParentKey]bool, len(statuses))
+	matched := sets.New[gwRouteParentKey]()
 
 	for i, status := range statuses {
 		keys[i] = gwRouteParentKeyOf(status.ParentRef, meta)
-		for _, ref := range routeParentRefs {
-			if gwRouteParentKeyOf(ref, meta) != keys[i] {
-				continue
-			}
-			if gwParentRefSelectsSameListeners(ref, status.ParentRef) {
-				current[i] = true
-				matched[keys[i]] = true
-				break
-			}
+		current[i] = slices.ContainsFunc(routeParentRefs, func(ref v1.ParentReference) bool {
+			return gwRouteParentKeyOf(ref, meta) == keys[i] &&
+				gwParentRefSelectsSameListeners(ref, status.ParentRef)
+		})
+		if current[i] {
+			matched.Insert(keys[i])
 		}
 	}
 
@@ -855,7 +838,7 @@ func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.
 
 	filtered := make([]v1.RouteParentStatus, 0, len(statuses))
 	for i, status := range statuses {
-		if current[i] || !matched[keys[i]] {
+		if current[i] || !matched.Has(keys[i]) {
 			filtered = append(filtered, status)
 		}
 	}
