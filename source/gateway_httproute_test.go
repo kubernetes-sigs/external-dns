@@ -647,6 +647,92 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// The Route moved to another listener of the same Gateway and the Gateway
+			// controller has not pruned the status entry for the listener it left.
+			title:      "SectionNameChangedWithStaleParentStatus",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+					gwParentRef("default", "test", withSectionName("bar")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// Only the previous listener has a status entry, so the Gateway controller
+			// has not caught up yet. Keep publishing instead of letting the records be
+			// deleted while the Route is between listeners.
+			title:      "SectionNameChangedBeforeParentStatusCaughtUp",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
 			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
 			title:      "PortNumberMatch",
 			config:     &Config{},

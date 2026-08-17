@@ -417,7 +417,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return hostTargets, nil
 	}
 
-	for _, rps := range rt.RouteStatus().Parents {
+	for _, rps := range gwRouteCurrentParentStatuses(rt.Metadata(), routeParentRefs, rt.RouteStatus().Parents) {
 		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
 		if !ok {
 			continue
@@ -778,22 +778,88 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 
 func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
 	// Ensure that the parent reference is in the routeParentRefs list
-	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
+	key := gwRouteParentKeyOf(ref, meta)
 	for _, rpr := range routeParentRefs {
-		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
-		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
-		if rprGroup != group || rprKind != kind {
-			continue
+		if gwRouteParentKeyOf(rpr, meta) == key {
+			return true
 		}
-		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
-		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
-			continue
-		}
-		return true
 	}
 	return false
+}
+
+// gwRouteParentKey identifies the parent object a reference points at, without the
+// sectionName and port that distinguish several references to that same object.
+type gwRouteParentKey struct {
+	group     string
+	kind      string
+	namespace string
+	name      string
+}
+
+func gwRouteParentKeyOf(ref v1.ParentReference, meta *metav1.ObjectMeta) gwRouteParentKey {
+	return gwRouteParentKey{
+		group:     strVal((*string)(ref.Group), gatewayGroup),
+		kind:      strVal((*string)(ref.Kind), gatewayKind),
+		namespace: strVal((*string)(ref.Namespace), meta.Namespace),
+		name:      string(ref.Name),
+	}
+}
+
+// gwParentRefSelectsSameListeners reports whether two references to one parent object
+// select the same listeners.
+func gwParentRefSelectsSameListeners(a, b v1.ParentReference) bool {
+	if sectionVal(a.SectionName, "") != sectionVal(b.SectionName, "") {
+		return false
+	}
+	if a.Port == nil || b.Port == nil {
+		return a.Port == nil && b.Port == nil
+	}
+	return *a.Port == *b.Port
+}
+
+// gwRouteCurrentParentStatuses drops the status entries a Gateway controller left
+// behind for a listener the Route no longer attaches to.
+//
+// gwRouteHasParentRef deliberately compares only the parent object, ignoring
+// sectionName and port, so that a Route whose status has not caught up with its spec
+// keeps resolving instead of losing its endpoints and having its DNS records deleted.
+// The same tolerance means that once a Route moves between listeners of one Gateway,
+// a leftover status entry for the previous listener stays usable, and the hostnames of
+// that listener keep being published alongside the current ones.
+//
+// For each parent object, entries whose sectionName and port match a current
+// spec.parentRefs entry win. When no entry for a parent matches, every entry for it is
+// kept, so a status that is merely behind still resolves and nothing is deleted.
+func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference, statuses []v1.RouteParentStatus) []v1.RouteParentStatus {
+	keys := make([]gwRouteParentKey, len(statuses))
+	current := make([]bool, len(statuses))
+	matched := make(map[gwRouteParentKey]bool, len(statuses))
+
+	for i, status := range statuses {
+		keys[i] = gwRouteParentKeyOf(status.ParentRef, meta)
+		for _, ref := range routeParentRefs {
+			if gwRouteParentKeyOf(ref, meta) != keys[i] {
+				continue
+			}
+			if gwParentRefSelectsSameListeners(ref, status.ParentRef) {
+				current[i] = true
+				matched[keys[i]] = true
+				break
+			}
+		}
+	}
+
+	if len(matched) == 0 {
+		return statuses
+	}
+
+	filtered := make([]v1.RouteParentStatus, 0, len(statuses))
+	for i, status := range statuses {
+		if current[i] || !matched[keys[i]] {
+			filtered = append(filtered, status)
+		}
+	}
+	return filtered
 }
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {

@@ -17,9 +17,13 @@ limitations under the License.
 package source
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -242,6 +246,117 @@ func TestIsDNS1123Domain(t *testing.T) {
 			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
 				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
 			}
+		})
+	}
+}
+
+func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
+	meta := &metav1.ObjectMeta{Namespace: "default"}
+
+	statusesFor := func(refs ...v1.ParentReference) []v1.RouteParentStatus {
+		statuses := make([]v1.RouteParentStatus, 0, len(refs))
+		for _, ref := range refs {
+			statuses = append(statuses, v1.RouteParentStatus{ParentRef: ref})
+		}
+		return statuses
+	}
+
+	// render identifies a status by the parts of its ParentRef that select listeners.
+	render := func(statuses []v1.RouteParentStatus) []string {
+		out := make([]string, 0, len(statuses))
+		for _, status := range statuses {
+			port := "-"
+			if status.ParentRef.Port != nil {
+				port = strconv.Itoa(int(*status.ParentRef.Port))
+			}
+			out = append(out, fmt.Sprintf("%s/%s/%s",
+				status.ParentRef.Name, sectionVal(status.ParentRef.SectionName, "-"), port))
+		}
+		return out
+	}
+
+	tests := []struct {
+		desc     string
+		refs     []v1.ParentReference
+		statuses []v1.RouteParentStatus
+		want     []string
+	}{
+		{
+			desc: "drops the status of a listener the route left",
+			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
+			statuses: statusesFor(
+				gwParentRef("default", "gw", withSectionName("foo")),
+				gwParentRef("default", "gw", withSectionName("bar")),
+			),
+			want: []string{"gw/bar/-"},
+		},
+		{
+			desc:     "keeps a status the controller has not updated yet",
+			refs:     []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
+			statuses: statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
+			want:     []string{"gw/foo/-"},
+		},
+		{
+			desc: "keeps every listener the route currently attaches to",
+			refs: []v1.ParentReference{
+				gwParentRef("default", "gw", withSectionName("foo")),
+				gwParentRef("default", "gw", withSectionName("bar")),
+			},
+			statuses: statusesFor(
+				gwParentRef("default", "gw", withSectionName("foo")),
+				gwParentRef("default", "gw", withSectionName("bar")),
+			),
+			want: []string{"gw/foo/-", "gw/bar/-"},
+		},
+		{
+			desc: "distinguishes references by port",
+			refs: []v1.ParentReference{gwParentRef("default", "gw", withPortNumber(8080))},
+			statuses: statusesFor(
+				gwParentRef("default", "gw", withPortNumber(80)),
+				gwParentRef("default", "gw", withPortNumber(8080)),
+			),
+			want: []string{"gw/-/8080"},
+		},
+		{
+			desc: "does not depend on the order of the status list",
+			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
+			statuses: statusesFor(
+				gwParentRef("default", "gw", withSectionName("bar")),
+				gwParentRef("default", "gw", withSectionName("foo")),
+			),
+			want: []string{"gw/bar/-"},
+		},
+		{
+			desc:     "keeps sectioned statuses when the route names no section",
+			refs:     []v1.ParentReference{gwParentRef("default", "gw")},
+			statuses: statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
+			want:     []string{"gw/foo/-"},
+		},
+		{
+			desc: "treats each parent object independently",
+			refs: []v1.ParentReference{
+				gwParentRef("default", "gw-a", withSectionName("bar")),
+				gwParentRef("default", "gw-b"),
+			},
+			statuses: statusesFor(
+				gwParentRef("default", "gw-a", withSectionName("foo")),
+				gwParentRef("default", "gw-a", withSectionName("bar")),
+				gwParentRef("default", "gw-b", withSectionName("foo")),
+			),
+			want: []string{"gw-a/bar/-", "gw-b/foo/-"},
+		},
+		{
+			desc:     "handles a route with no status",
+			refs:     []v1.ParentReference{gwParentRef("default", "gw")},
+			statuses: nil,
+			want:     []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			got := gwRouteCurrentParentStatuses(meta, tt.refs, tt.statuses)
+			require.Equal(t, tt.want, render(got))
 		})
 	}
 }
