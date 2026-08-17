@@ -18,12 +18,14 @@ package externaldns
 
 import (
 	"regexp"
+	"slices"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/flags"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -242,6 +244,14 @@ var (
 		ExcludeUnschedulable:                          false,
 	}
 )
+
+func TestAllowedSourcesMatchesSourceTypes(t *testing.T) {
+	want := append(slices.Clone(types.All), "empty")
+	slices.Sort(want)
+	got := slices.Clone(allowedSources)
+	slices.Sort(got)
+	assert.Equal(t, want, got, "allowedSources and source/types.All have drifted")
+}
 
 func TestParseFlags(t *testing.T) {
 	for _, ti := range []struct {

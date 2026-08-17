@@ -59,15 +59,3 @@ func TestIsKnown(t *testing.T) {
 		})
 	}
 }
-
-func TestAllContainsEveryConstant(t *testing.T) {
-	expected := []Type{
-		Node, Service, Ingress, Pod,
-		GatewayHttpRoute, GatewayGrpcRoute, GatewayTlsRoute, GatewayTcpRoute, GatewayUdpRoute,
-		IstioGateway, IstioVirtualService,
-		AmbassadorHost, ContourHTTPProxy, GlooProxy, TraefikProxy, OpenShiftRoute,
-		Fake, Connector, CRD, SkipperRouteGroup, KongTCPIngress,
-		F5VirtualServer, F5TransportServer, Unstructured,
-	}
-	assert.ElementsMatch(t, expected, All)
-}
