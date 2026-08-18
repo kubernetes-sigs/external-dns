@@ -429,13 +429,10 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	return hostTargets, nil
 }
 
-// resolveParents adds the targets of every parent the Route is attached to.
-//
-// A Gateway controller can leave the status of a listener the Route has left in place,
-// and its hostnames would keep being published. The listeners the spec still selects are
-// resolved first; only when all of them actually produce a target is the older status
-// safe to ignore. Routes, Gateways and ListenerSets come from separate informer caches,
-// so a newer status can be visible before the listener it names.
+// resolveParents adds the targets of every parent the Route is attached to. The listeners
+// the spec still selects are resolved first, and an older status is ignored only once all
+// of them have produced a target. Their caches are separate, so a status can arrive
+// before the listener it names. See issue #6639.
 func (c *gatewayRouteResolver) resolveParents(rt gatewayRoute, rtHosts []string, routeParentRefs []v1.ParentReference, hostTargets map[string]endpoint.Targets) {
 	meta := rt.Metadata()
 	wanted := gwRouteWantedSelectors(meta, routeParentRefs)
@@ -891,14 +888,9 @@ func gwRouteWantedSelectors(meta *metav1.ObjectMeta, routeParentRefs []v1.Parent
 	return wanted
 }
 
-// gwRouteStatusIsCurrent reports whether the Gateway controller accepted this parent for
-// the Route as it stands now, which is what makes it evidence that an older entry can be
-// ignored. A controller which leaves observedGeneration unset never provides that
-// evidence, so nothing is pruned for it and the source behaves as it did before.
-//
-// This never decides whether a status may produce endpoints. An entry the controller has
-// not caught up with still resolves, which is the deletion #5349 introduced and #5490
-// reverted.
+// gwRouteStatusIsCurrent reports whether the controller accepted this parent for the
+// Route as it stands now, which is what lets an older entry be ignored. It never decides
+// whether a status may produce endpoints; see #5349 and #5490.
 func gwRouteStatusIsCurrent(status v1.RouteParentStatus, generation int64) bool {
 	for _, condition := range status.Conditions {
 		if condition.Type != string(v1.RouteConditionAccepted) {
