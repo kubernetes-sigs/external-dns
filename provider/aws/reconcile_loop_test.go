@@ -222,9 +222,9 @@ func (h *reconcileLoop) targets(dnsName string) []string {
 	return out
 }
 
-// canonicalRecord renders the parts of a record that the desired state decides. TTL is
+// recordState renders the parts of a record that the desired state decides. TTL is
 // left out because the provider fills in its own default for alias records.
-func canonicalRecord(ep *endpoint.Endpoint) string {
+func recordState(ep *endpoint.Endpoint) string {
 	targets := append([]string(nil), ep.Targets...)
 	sort.Strings(targets)
 	alias := ""
@@ -235,8 +235,8 @@ func canonicalRecord(ep *endpoint.Endpoint) string {
 		ep.DNSName, ep.RecordType, ep.SetIdentifier, strings.Join(targets, ","), alias)
 }
 
-// canonicalZone renders every non-TXT record the provider holds.
-func (h *reconcileLoop) canonicalZone() []string {
+// settledState renders every non-TXT record the provider holds.
+func (h *reconcileLoop) settledState() []string {
 	h.t.Helper()
 	records, err := h.prov.Records(h.t.Context())
 	require.NoError(h.t, err)
@@ -246,15 +246,15 @@ func (h *reconcileLoop) canonicalZone() []string {
 		if r.RecordType == endpoint.RecordTypeTXT {
 			continue
 		}
-		out = append(out, canonicalRecord(r))
+		out = append(out, recordState(r))
 	}
 	sort.Strings(out)
 	return out
 }
 
-// canonicalDesired renders what a desired state should leave behind, by running it
+// desiredState renders what a desired state should leave behind, by running it
 // through the same AdjustEndpoints the loop uses.
-func (h *reconcileLoop) canonicalDesired(desired []*endpoint.Endpoint) []string {
+func (h *reconcileLoop) desiredState(desired []*endpoint.Endpoint) []string {
 	h.t.Helper()
 	source := make([]*endpoint.Endpoint, 0, len(desired))
 	for _, ep := range desired {
@@ -265,7 +265,7 @@ func (h *reconcileLoop) canonicalDesired(desired []*endpoint.Endpoint) []string 
 
 	out := make([]string, 0, len(adjusted))
 	for _, r := range adjusted {
-		out = append(out, canonicalRecord(r))
+		out = append(out, recordState(r))
 	}
 	sort.Strings(out)
 	return out
@@ -434,7 +434,7 @@ func TestReconcileLoopRecordTypeTransition(t *testing.T) {
 			desired := []*endpoint.Endpoint{cnameTo("app", tr.to)}
 			h.mustSettle(desired)
 
-			require.Equalf(t, h.canonicalDesired(desired), h.canonicalZone(),
+			require.Equalf(t, h.desiredState(desired), h.settledState(),
 				"sync settled on a different zone than the desired state; zone:\n  %s", h.zone())
 			require.NotContainsf(t, h.targets(host), tr.from,
 				"the previous record type is still present; zone:\n  %s", h.zone())
@@ -586,7 +586,7 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 						if policy != "sync" {
 							continue // upsert-only deliberately keeps records the source dropped
 						}
-						require.Equalf(t, h.canonicalDesired(desired), h.canonicalZone(),
+						require.Equalf(t, h.desiredState(desired), h.settledState(),
 							"sync settled on a different zone than the desired state; desired:\n  %s",
 							describeEndpoints(desired))
 					}
