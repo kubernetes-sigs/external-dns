@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
@@ -807,38 +806,60 @@ func gwRouteParentKeyOf(ref v1.ParentReference, meta *metav1.ObjectMeta) gwRoute
 	}
 }
 
-// gwParentRefSelectsSameListeners reports whether a and b select the same listeners.
-func gwParentRefSelectsSameListeners(a, b v1.ParentReference) bool {
-	return sectionVal(a.SectionName, "") == sectionVal(b.SectionName, "") && ptr.Equal(a.Port, b.Port)
+// gwRouteParentSelector is the part of a reference that picks listeners on a parent.
+type gwRouteParentSelector struct {
+	sectionName v1.SectionName
+	port        v1.PortNumber
+	hasPort     bool
 }
 
-// gwRouteCurrentParentStatuses returns the status entries that still match an entry in
-// spec.parentRefs, comparing sectionName and port as well as the parent object. Entries
-// for a parent with no match at all are all returned, so a status that has not caught up
-// with the spec is not mistaken for a removed attachment. See issue #6639.
+func gwRouteParentSelectorOf(ref v1.ParentReference) gwRouteParentSelector {
+	return gwRouteParentSelector{
+		sectionName: sectionVal(ref.SectionName, ""),
+		port:        ptr.Deref(ref.Port, 0),
+		hasPort:     ref.Port != nil,
+	}
+}
+
+// gwRouteCurrentParentStatuses drops the status entries a Gateway controller left behind
+// for listeners the Route no longer attaches to. A parent is only pruned once every
+// listener its spec still selects has an accepted status, so a Route that is mid-move
+// keeps its last known attachment instead of losing it. See issue #6639.
 func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference, statuses []v1.RouteParentStatus) []v1.RouteParentStatus {
+	wanted := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(routeParentRefs))
+	for _, ref := range routeParentRefs {
+		key := gwRouteParentKeyOf(ref, meta)
+		if wanted[key] == nil {
+			wanted[key] = sets.New[gwRouteParentSelector]()
+		}
+		wanted[key].Insert(gwRouteParentSelectorOf(ref))
+	}
+
 	keys := make([]gwRouteParentKey, len(statuses))
 	current := make([]bool, len(statuses))
-	matched := sets.New[gwRouteParentKey]()
+	ready := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(wanted))
 
 	for i, status := range statuses {
 		keys[i] = gwRouteParentKeyOf(status.ParentRef, meta)
-		current[i] = slices.ContainsFunc(routeParentRefs, func(ref v1.ParentReference) bool {
-			return gwRouteParentKeyOf(ref, meta) == keys[i] &&
-				gwParentRefSelectsSameListeners(ref, status.ParentRef)
-		})
-		if current[i] {
-			matched.Insert(keys[i])
+		selector := gwRouteParentSelectorOf(status.ParentRef)
+		if !wanted[keys[i]].Has(selector) {
+			continue
 		}
-	}
-
-	if len(matched) == 0 {
-		return statuses
+		current[i] = true
+		// An entry the resolver would reject is no proof that the older one is stale.
+		if !gwRouteIsAccepted(status.Conditions) {
+			continue
+		}
+		if ready[keys[i]] == nil {
+			ready[keys[i]] = sets.New[gwRouteParentSelector]()
+		}
+		ready[keys[i]].Insert(selector)
 	}
 
 	filtered := make([]v1.RouteParentStatus, 0, len(statuses))
 	for i, status := range statuses {
-		if current[i] || !matched.Has(keys[i]) {
+		selectors, inSpec := wanted[keys[i]]
+		if current[i] || !inSpec || len(ready[keys[i]]) < len(selectors) {
 			filtered = append(filtered, status)
 		}
 	}

@@ -255,12 +255,21 @@ func TestIsDNS1123Domain(t *testing.T) {
 func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 	meta := &metav1.ObjectMeta{Namespace: "default"}
 
+	statusCondition := func(status metav1.ConditionStatus) []metav1.Condition {
+		return []metav1.Condition{{Type: string(v1.RouteConditionAccepted), Status: status}}
+	}
 	statusesFor := func(refs ...v1.ParentReference) []v1.RouteParentStatus {
 		statuses := make([]v1.RouteParentStatus, 0, len(refs))
 		for _, ref := range refs {
-			statuses = append(statuses, v1.RouteParentStatus{ParentRef: ref})
+			statuses = append(statuses, v1.RouteParentStatus{
+				ParentRef:  ref,
+				Conditions: statusCondition(metav1.ConditionTrue),
+			})
 		}
 		return statuses
+	}
+	rejected := func(ref v1.ParentReference) v1.RouteParentStatus {
+		return v1.RouteParentStatus{ParentRef: ref, Conditions: statusCondition(metav1.ConditionFalse)}
 	}
 
 	// render identifies a status by the parts of its ParentRef that select listeners.
@@ -367,6 +376,44 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 				gwParentRef("default", "shared", withSectionName("foo")),
 			),
 			want: []string{"ListenerSet/shared/bar/-", "Gateway/shared/foo/-"},
+		},
+		{
+			// One reference is moving from "old" to "new" while "stable" stays put.
+			// Dropping "old" here would take the hostname down before "new" arrives.
+			desc: "keeps a stale entry while another current listener has no status yet",
+			refs: []v1.ParentReference{
+				gwParentRef("default", "gw", withSectionName("stable")),
+				gwParentRef("default", "gw", withSectionName("new")),
+			},
+			statuses: statusesFor(
+				gwParentRef("default", "gw", withSectionName("stable")),
+				gwParentRef("default", "gw", withSectionName("old")),
+			),
+			want: []string{"Gateway/gw/stable/-", "Gateway/gw/old/-"},
+		},
+		{
+			desc: "prunes once every current listener has an accepted status",
+			refs: []v1.ParentReference{
+				gwParentRef("default", "gw", withSectionName("stable")),
+				gwParentRef("default", "gw", withSectionName("new")),
+			},
+			statuses: statusesFor(
+				gwParentRef("default", "gw", withSectionName("stable")),
+				gwParentRef("default", "gw", withSectionName("old")),
+				gwParentRef("default", "gw", withSectionName("new")),
+			),
+			want: []string{"Gateway/gw/stable/-", "Gateway/gw/new/-"},
+		},
+		{
+			// The resolver rejects a status that is not accepted, so it cannot stand
+			// as proof that the older entry is safe to drop.
+			desc: "keeps a stale entry while the current listener is not accepted",
+			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
+			statuses: append(
+				statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
+				rejected(gwParentRef("default", "gw", withSectionName("bar"))),
+			),
+			want: []string{"Gateway/gw/foo/-", "Gateway/gw/bar/-"},
 		},
 		{
 			desc:     "handles a route with no status",
