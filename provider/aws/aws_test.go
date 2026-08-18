@@ -61,8 +61,7 @@ var _ Route53API = &Route53APIStub{}
 // mostly taken from: https://github.com/kubernetes/kubernetes/blob/853167624edb6bc0cfdcdfb88e746e178f5db36c/federation/pkg/dnsprovider/providers/aws/route53/stubs/route53api.go
 type Route53APIStub struct {
 	// rejectCNAMEConflicts turns on the Route 53 rule that a CNAME may not share a name
-	// with any other record type. It is opt-in because some fixtures seed states that
-	// predate the check.
+	// with any other type. Opt-in, because some fixtures seed states that predate it.
 	rejectCNAMEConflicts bool
 
 	zones      map[string]*route53types.HostedZone

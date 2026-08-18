@@ -21,25 +21,12 @@ package aws
 //
 //	registry.Records() -> registry.AdjustEndpoints() -> plan.Calculate() -> registry.ApplyChanges()
 //
-// against the real TXT registry and the real AWS provider, backed by Route53APIStub. The
-// source itself, the source wrappers, the controller domain filter, the provider factory
-// middleware and the provider cache are all outside this file.
+// over the real TXT registry and the real AWS provider. Repeating it is the point. A
+// steady desired state has to stop producing changes, the previous target has to be gone
+// once it does, and every record has to keep its ownership. See issues #2313 and #6368.
 //
-// The stub applies a change batch all or nothing and, for these tests, refuses a CNAME
-// that shares a name with another type, which is what keeps the loop from settling on a
-// zone Route 53 would reject. It still accepts a DELETE that does not carry the whole
-// existing record set.
-//
-// Single-loop provider tests cannot observe two properties that only appear over
-// repeated reconciliations, and both are reported symptoms of a load balancer swap:
-// whether a steady desired state settles instead of rewriting records forever, and
-// whether the previous load balancer address is really gone once it does settle.
-//
-// provider/factory wraps every provider in factory.AliasNormalizingMiddleware, which is
-// not applied here. It is a no-op for these cases: it only rewrites alias=A/AAAA, and
-// adjustCNAMERecordAndNewAaaaIfNeeded only produces those from an explicit
-// external-dns.alpha.kubernetes.io/aws-alias annotation. A CNAME published by a source
-// always yields alias=true.
+// The provider factory middleware is not in the path. It only rewrites alias=A/AAAA,
+// which a source never produces.
 
 import (
 	"context"
