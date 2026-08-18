@@ -217,6 +217,27 @@ func (h *reconcileLoop) targets(dnsName string) []string {
 	return out
 }
 
+// unownedRecords returns the record types published for a hostname that the registry no
+// longer attributes to this owner. A record can carry the right target while its
+// ownership TXT is missing, and the loop still reports that everything is up to date.
+func (h *reconcileLoop) unownedRecords(dnsName string) []string {
+	h.t.Helper()
+	records, err := h.reg.Records(h.t.Context())
+	require.NoError(h.t, err)
+
+	var out []string
+	for _, r := range records {
+		if r.DNSName != dnsName || r.RecordType == endpoint.RecordTypeTXT {
+			continue
+		}
+		if r.Labels[endpoint.OwnerLabelKey] != reconcileOwner {
+			out = append(out, r.RecordType)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // findRecord returns the provider's view of one record, or nil when it is absent.
 func (h *reconcileLoop) findRecord(dnsName, recordType string) *endpoint.Endpoint {
 	h.t.Helper()
@@ -300,19 +321,24 @@ func TestReconcileLoopReplacesLoadBalancerTargetOfSameRecordType(t *testing.T) {
 						"previous load balancer %q still resolvable after the loop settled; zone:\n  %s", tr.from, h.zone())
 					require.Containsf(t, h.targets(host), tr.to,
 						"new load balancer %q missing; zone:\n  %s", tr.to, h.zone())
+					require.Emptyf(t, h.unownedRecords(host),
+						"swapping the load balancer lost ownership of %v; zone:\n  %s",
+						h.unownedRecords(host), h.zone())
 				})
 			}
 		}
 	}
 }
 
-// TestReconcileLoopUpsertOnlyKeepsPreviousRecordWhenRecordTypeChanges locks in the
-// consequence of --policy=upsert-only when a hostname moves between an AWS load
-// balancer (an A ALIAS) and a non-AWS target (a CNAME). Deletions are suppressed, so
-// the previous record survives, the loop still reports that everything is up to date,
-// and the hostname is left with two conflicting record types. Under sync the previous
-// record is removed instead.
-func TestReconcileLoopUpsertOnlyKeepsPreviousRecordWhenRecordTypeChanges(t *testing.T) {
+// TestReconcileLoopReplacesRecordTypeUnderSync covers a hostname moving between an AWS
+// load balancer, which becomes an A ALIAS, and a non-AWS target, which stays a CNAME.
+// Once the loop settles the previous record type has to be gone.
+//
+// Only sync is covered. upsert-only drops the delete half of the transition, and Route 53
+// refuses a CNAME that shares a name with any other type, so there is no settled state to
+// assert. Route53APIStub keys record sets by type and does not model that exclusivity, so
+// asserting one here would pin down a state the API rejects.
+func TestReconcileLoopReplacesRecordTypeUnderSync(t *testing.T) {
 	transitions := []struct {
 		name     string
 		from, to string
@@ -321,27 +347,21 @@ func TestReconcileLoopUpsertOnlyKeepsPreviousRecordWhenRecordTypeChanges(t *test
 		{name: "external-cname-to-elb-alias", from: lbExternal, to: lbNew},
 	}
 
-	for _, policy := range []string{"sync", "upsert-only"} {
-		for _, tr := range transitions {
-			t.Run(policy+"/"+tr.name, func(t *testing.T) {
-				t.Parallel()
-				h := newReconcileLoop(t, reconcileConfig("", ""), policy, false)
-				host := "app." + reconcileZone
+	for _, tr := range transitions {
+		t.Run(tr.name, func(t *testing.T) {
+			t.Parallel()
+			h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
+			host := "app." + reconcileZone
 
-				h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.from)})
-				h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.to)})
+			h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.from)})
+			h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.to)})
 
-				require.Containsf(t, h.targets(host), tr.to, "new target %q missing; zone:\n  %s", tr.to, h.zone())
-
-				if policy == "upsert-only" {
-					require.Containsf(t, h.targets(host), tr.from,
-						"upsert-only is expected to keep the previous record; zone:\n  %s", h.zone())
-					return
-				}
-				require.NotContainsf(t, h.targets(host), tr.from,
-					"sync is expected to remove the previous record; zone:\n  %s", h.zone())
-			})
-		}
+			require.Containsf(t, h.targets(host), tr.to, "new target %q missing; zone:\n  %s", tr.to, h.zone())
+			require.NotContainsf(t, h.targets(host), tr.from,
+				"the previous record type is still present; zone:\n  %s", h.zone())
+			require.Emptyf(t, h.unownedRecords(host), "records left without ownership: %v; zone:\n  %s",
+				h.unownedRecords(host), h.zone())
+		})
 	}
 }
 
@@ -396,10 +416,15 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 // types and hostnames that stop being published. Every step must settle; a step that
 // keeps producing changes is the repeated-UPSERT behaviour reported against this issue.
 func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
-	shapes := []func(host string) *endpoint.Endpoint{
+	// Load balancer targets all become A ALIAS records, so swapping between them is
+	// always a same-type replacement.
+	aliasShapes := []func(host string) *endpoint.Endpoint{
 		func(host string) *endpoint.Endpoint { return cnameTo(host, lbOld) },
 		func(host string) *endpoint.Endpoint { return cnameTo(host, lbNew) },
 		func(host string) *endpoint.Endpoint { return cnameTo(host, lbNewOtherReg) },
+	}
+	shapes := append([]func(host string) *endpoint.Endpoint{}, aliasShapes...)
+	shapes = append(shapes,
 		func(host string) *endpoint.Endpoint { return cnameTo(host, lbExternal) },
 		func(host string) *endpoint.Endpoint {
 			return endpoint.NewEndpoint(host+"."+reconcileZone, endpoint.RecordTypeA, "1.2.3.4")
@@ -410,7 +435,7 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 		func(host string) *endpoint.Endpoint {
 			return endpoint.NewEndpoint(host+"."+reconcileZone, endpoint.RecordTypeAAAA, "2001:db8::1")
 		},
-	}
+	)
 	hosts := []string{"app", "api", "web"}
 
 	// Every affix shape is covered by the load balancer swap test above. Randomised
@@ -425,6 +450,13 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 	}
 
 	for _, policy := range []string{"sync", "upsert-only"} {
+		// upsert-only drops the delete half of a record type transition, and Route 53
+		// rejects a CNAME that shares a name with another type. Keep those sequences
+		// inside the alias shapes so every step stays a same-type replacement.
+		pool := shapes
+		if policy != "sync" {
+			pool = aliasShapes
+		}
 		for _, affix := range affixes {
 			for seed := range uint64(8) {
 				t.Run(fmt.Sprintf("%s/%s/seed-%d", affix.name, policy, seed), func(t *testing.T) {
@@ -439,7 +471,7 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 							if rng.IntN(4) == 0 {
 								continue // the source stops publishing this hostname
 							}
-							ep := shapes[rng.IntN(len(shapes))](host)
+							ep := pool[rng.IntN(len(pool))](host)
 							published[ep.DNSName] = true
 							desired = append(desired, ep)
 						}
@@ -452,6 +484,12 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 									"published target %q missing after settling; desired:\n  %s\nzone:\n  %s",
 									target, describeEndpoints(desired), h.zone())
 							}
+						}
+
+						for dnsName := range published {
+							require.Emptyf(t, h.unownedRecords(dnsName),
+								"records published for %q without ownership: %v; zone:\n  %s",
+								dnsName, h.unownedRecords(dnsName), h.zone())
 						}
 
 						if policy != "sync" {
