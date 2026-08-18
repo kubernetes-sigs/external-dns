@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -416,32 +417,13 @@ var ProviderNames = []string{
 	ProviderWebhook,
 }
 
-var allowedSources = []string{
-	"service",
-	"ingress",
-	"node",
-	"pod",
-	"gateway-httproute",
-	"gateway-grpcroute",
-	"gateway-tlsroute",
-	"gateway-tcproute",
-	"gateway-udproute",
-	"istio-gateway",
-	"istio-virtualservice",
-	"contour-httpproxy",
-	"gloo-proxy",
-	"fake",
-	"connector",
-	"crd",
-	"empty",
-	"skipper-routegroup",
-	"openshift-route",
-	"ambassador-host",
-	"kong-tcpingress",
-	"f5-virtualserver",
-	"f5-transportserver",
-	"traefik-proxy",
-	"unstructured",
+// AllowedSources lists every value accepted by --source, alphabetically sorted.
+var AllowedSources = sortedAllowedSources()
+
+func sortedAllowedSources() []string {
+	s := slices.Clone(types.All)
+	slices.Sort(s)
+	return s
 }
 
 // NewConfig returns new Config object
@@ -733,8 +715,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("provider", providerHelp).Required().PlaceHolder("provider").EnumVar(&cfg.Provider, ProviderNames...)
 
 	// Reintroduce source enum/required validation in Kingpin to match previous behavior.
-	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(allowedSources, ", ") + ")"
-	app.Flag("source", sourceHelp).Required().PlaceHolder("source").EnumsVar(&cfg.Sources, allowedSources...)
+	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(AllowedSources, ", ") + ")"
+	app.Flag("source", sourceHelp).Required().PlaceHolder("source").EnumsVar(&cfg.Sources, AllowedSources...)
 
 	return app
 }
