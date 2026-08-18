@@ -248,6 +248,14 @@ func recordState(ep *endpoint.Endpoint) string {
 // settledState renders every non-TXT record the provider holds.
 func (h *reconcileLoop) settledState() []string {
 	h.t.Helper()
+	return h.stateFor(nil)
+}
+
+// stateFor renders the non-TXT records of the given hostnames, or of all of them when
+// names is nil. A policy which keeps what the source dropped can still be held to an
+// exact state for the hostnames it does publish.
+func (h *reconcileLoop) stateFor(names map[string]bool) []string {
+	h.t.Helper()
 	records, err := h.prov.Records(h.t.Context())
 	require.NoError(h.t, err)
 
@@ -256,22 +264,7 @@ func (h *reconcileLoop) settledState() []string {
 		if r.RecordType == endpoint.RecordTypeTXT {
 			continue
 		}
-		out = append(out, recordState(r))
-	}
-	sort.Strings(out)
-	return out
-}
-
-// stateFor renders the non-TXT records of the given hostnames only, so a policy which
-// keeps what the source dropped can still be held to an exact state for what it publishes.
-func (h *reconcileLoop) stateFor(names map[string]bool) []string {
-	h.t.Helper()
-	records, err := h.prov.Records(h.t.Context())
-	require.NoError(h.t, err)
-
-	out := make([]string, 0, len(records))
-	for _, r := range records {
-		if r.RecordType == endpoint.RecordTypeTXT || !names[r.DNSName] {
+		if names != nil && !names[r.DNSName] {
 			continue
 		}
 		out = append(out, recordState(r))
@@ -350,7 +343,7 @@ func route53Change(action route53types.ChangeAction, dnsName string, recordType 
 	}
 }
 
-func (h *reconcileLoop) submit(changes ...route53types.Change) error {
+func (h *reconcileLoop) applyChangeBatch(changes ...route53types.Change) error {
 	h.t.Helper()
 	_, err := h.client.ChangeResourceRecordSets(h.t.Context(), &route53.ChangeResourceRecordSetsInput{
 		HostedZoneId: aws.String(reconcileZoneID),
@@ -805,10 +798,10 @@ func TestRoute53APIStubAppliesABatchAtomically(t *testing.T) {
 	h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
 	app, api := "app."+reconcileZone, "api."+reconcileZone
 
-	require.NoError(t, h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4")))
+	require.NoError(t, h.applyChangeBatch(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4")))
 	before := h.rawRecords()
 
-	err := h.submit(
+	err := h.applyChangeBatch(
 		route53Change(route53types.ChangeActionCreate, api, route53types.RRTypeA, "5.6.7.8"),
 		route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "9.9.9.9"),
 	)
@@ -823,10 +816,10 @@ func TestRoute53APIStubRefusesACNAMEBesideAnotherType(t *testing.T) {
 	h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
 	app := "app." + reconcileZone
 
-	require.NoError(t, h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4")))
+	require.NoError(t, h.applyChangeBatch(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4")))
 	before := h.rawRecords()
 
-	err := h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeCname, "elsewhere.example.net"))
+	err := h.applyChangeBatch(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeCname, "elsewhere.example.net"))
 	require.ErrorContains(t, err, "conflicts with other records")
 	require.Equal(t, before, h.rawRecords(), "the rejected batch left the CNAME behind")
 }
@@ -839,9 +832,9 @@ func TestRoute53APIStubReplacesACNAMEInOneBatch(t *testing.T) {
 	h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
 	app := "app." + reconcileZone
 
-	require.NoError(t, h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeCname, "old.example.net")))
+	require.NoError(t, h.applyChangeBatch(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeCname, "old.example.net")))
 
-	require.NoError(t, h.submit(
+	require.NoError(t, h.applyChangeBatch(
 		route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4"),
 		route53Change(route53types.ChangeActionDelete, app, route53types.RRTypeCname, "old.example.net"),
 	))
