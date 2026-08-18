@@ -16,13 +16,19 @@ limitations under the License.
 
 package aws
 
-// These tests drive the full reconcile loop, exactly as controller.RunOnce does:
+// These tests drive the reconciliation core the controller runs once a source has
+// produced its endpoints:
 //
 //	registry.Records() -> registry.AdjustEndpoints() -> plan.Calculate() -> registry.ApplyChanges()
 //
-// against the real TXT registry and the real AWS provider, backed by Route53APIStub
-// (which models Route53 semantics: CREATE on an existing rrset fails, DELETE of a
-// missing rrset fails, UPSERT replaces).
+// against the real TXT registry and the real AWS provider, backed by Route53APIStub. The
+// source itself, the source wrappers, the controller domain filter, the provider factory
+// middleware and the provider cache are all outside this file.
+//
+// The stub applies a change batch all or nothing and, for these tests, refuses a CNAME
+// that shares a name with another type, which is what keeps the loop from settling on a
+// zone Route 53 would reject. It still accepts a DELETE that does not carry the whole
+// existing record set.
 //
 // Single-loop provider tests cannot observe two properties that only appear over
 // repeated reconciliations, and both are reported symptoms of a load balancer swap:
@@ -40,10 +46,13 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
+	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -51,6 +60,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/mapper"
 	"sigs.k8s.io/external-dns/registry/txt"
 )
 
@@ -252,6 +262,45 @@ func (h *reconcileLoop) settledState() []string {
 	return out
 }
 
+// stateFor renders the non-TXT records of the given hostnames only, so a policy which
+// keeps what the source dropped can still be held to an exact state for what it publishes.
+func (h *reconcileLoop) stateFor(names map[string]bool) []string {
+	h.t.Helper()
+	records, err := h.prov.Records(h.t.Context())
+	require.NoError(h.t, err)
+
+	out := make([]string, 0, len(records))
+	for _, r := range records {
+		if r.RecordType == endpoint.RecordTypeTXT || !names[r.DNSName] {
+			continue
+		}
+		out = append(out, recordState(r))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// ownershipTXTNames returns the TXT records which map back to a hostname. A primary
+// record can be removed while its ownership TXT stays behind.
+func (h *reconcileLoop) ownershipTXTNames(dnsName string) []string {
+	h.t.Helper()
+	names := mapper.NewAffixNameMapper(h.cfg.TXTPrefix, h.cfg.TXTSuffix, "")
+	records, err := h.prov.Records(h.t.Context())
+	require.NoError(h.t, err)
+
+	var out []string
+	for _, r := range records {
+		if r.RecordType != endpoint.RecordTypeTXT {
+			continue
+		}
+		if owned, _ := names.ToEndpointName(r.DNSName); owned == dnsName {
+			out = append(out, r.DNSName)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // desiredState renders what a desired state should leave behind, by running it
 // through the same AdjustEndpoints the loop uses.
 func (h *reconcileLoop) desiredState(desired []*endpoint.Endpoint) []string {
@@ -269,6 +318,45 @@ func (h *reconcileLoop) desiredState(desired []*endpoint.Endpoint) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// rawRecords renders the record sets Route 53 holds, without going through the provider,
+// so a test can tell whether a rejected change batch left anything behind.
+func (h *reconcileLoop) rawRecords() []string {
+	h.t.Helper()
+	var out []string
+	for _, rrs := range listAWSRecords(h.t, h.client, reconcileZoneID) {
+		values := make([]string, 0, len(rrs.ResourceRecords))
+		for _, rr := range rrs.ResourceRecords {
+			values = append(values, aws.ToString(rr.Value))
+		}
+		sort.Strings(values)
+		out = append(out, fmt.Sprintf("%s %s -> %s", aws.ToString(rrs.Name), rrs.Type, strings.Join(values, ",")))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// route53Change builds one change for a plain record.
+func route53Change(action route53types.ChangeAction, dnsName string, recordType route53types.RRType, value string) route53types.Change {
+	return route53types.Change{
+		Action: action,
+		ResourceRecordSet: &route53types.ResourceRecordSet{
+			Name:            aws.String(dnsName),
+			Type:            recordType,
+			TTL:             aws.Int64(300),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(value)}},
+		},
+	}
+}
+
+func (h *reconcileLoop) submit(changes ...route53types.Change) error {
+	h.t.Helper()
+	_, err := h.client.ChangeResourceRecordSets(h.t.Context(), &route53.ChangeResourceRecordSetsInput{
+		HostedZoneId: aws.String(reconcileZoneID),
+		ChangeBatch:  &route53types.ChangeBatch{Changes: changes},
+	})
+	return err
 }
 
 // aliasHostedZone reads the AliasTarget hosted zone of a record straight from Route 53.
@@ -347,8 +435,9 @@ func describeEndpoints(endpoints []*endpoint.Endpoint) string {
 	return strings.Join(lines, "\n  ")
 }
 
-// txtAffixes covers every shape --txt-prefix / --txt-suffix can take, because the
+// txtAffixes covers the supported --txt-prefix and --txt-suffix modes, because the
 // ownership TXT name is what decides whether a record is still recognised as ours.
+// Wildcard replacement and encryption are left to the registry's own tests.
 var txtAffixes = []struct {
 	name           string
 	prefix, suffix string
@@ -461,27 +550,45 @@ func TestReconcileLoopRecordTypeTransition(t *testing.T) {
 // upgrading keeps ownership, settles, and can still swap the load balancer afterwards.
 func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 	for _, policy := range []string{"sync", "upsert-only"} {
-		for _, affix := range []struct{ name, prefix string }{{"no-affix", ""}, {"prefix", "extdns-"}} {
+		for _, affix := range txtAffixes {
 			t.Run(affix.name+"/"+policy, func(t *testing.T) {
 				t.Parallel()
-				h := newReconcileLoop(t, reconcileConfig(affix.prefix, ""), policy, false)
+				h := newReconcileLoop(t, reconcileConfig(affix.prefix, affix.suffix), policy, false)
+				host := "app." + reconcileZone
+				only := map[string]bool{host: true}
+				names := mapper.NewAffixNameMapper(affix.prefix, affix.suffix, "")
 
-				// Rather than hand-encoding the legacy TXT payload, let the registry
-				// write a real "cname-" ownership TXT by publishing a plain CNAME, then
-				// replace the CNAME with the A ALIAS the older provider stored.
+				// Reproduce the zone a release before #6523 would have left. Rather than
+				// hand-encoding the TXT payloads, let the registry write real ones: a
+				// "cname-" TXT for the A half, which is the one #6523 moves to "a-", and
+				// the "aaaa-" TXT the AAAA half has always had. A CNAME cannot share a
+				// name with another type, so the two are published one after the other.
 				h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbExternal)})
-
-				plainCNAME := h.findRecord("app."+reconcileZone, endpoint.RecordTypeCNAME)
+				plainCNAME := h.findRecord(host, endpoint.RecordTypeCNAME)
 				require.NotNil(t, plainCNAME, "setup: expected a plain CNAME")
-				require.NotNil(t, h.findRecord(affix.prefix+"cname-app."+reconcileZone, endpoint.RecordTypeTXT),
-					"setup: expected a legacy cname- ownership TXT")
-
-				aliasA := endpoint.NewEndpoint("app."+reconcileZone, endpoint.RecordTypeA, lbOld).
-					WithProviderSpecific(endpoint.ProviderSpecificAlias, "true").
-					WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false")
+				legacyTXT := names.ToTXTName(host, endpoint.RecordTypeCNAME)
+				require.NotNilf(t, h.findRecord(legacyTXT, endpoint.RecordTypeTXT),
+					"setup: expected the legacy ownership TXT %q; zone:\n  %s", legacyTXT, h.zone())
 				require.NoError(t, h.prov.ApplyChanges(t.Context(), &plan.Changes{
 					Delete: []*endpoint.Endpoint{plainCNAME},
-					Create: []*endpoint.Endpoint{aliasA},
+				}))
+
+				h.mustSettle([]*endpoint.Endpoint{
+					endpoint.NewEndpoint(host, endpoint.RecordTypeAAAA, "2001:db8::1"),
+				})
+				plainAAAA := h.findRecord(host, endpoint.RecordTypeAAAA)
+				require.NotNil(t, plainAAAA, "setup: expected a plain AAAA")
+				require.NotNilf(t, h.findRecord(names.ToTXTName(host, endpoint.RecordTypeAAAA), endpoint.RecordTypeTXT),
+					"setup: expected an aaaa- ownership TXT; zone:\n  %s", h.zone())
+
+				alias := func(recordType string) *endpoint.Endpoint {
+					return endpoint.NewEndpoint(host, recordType, lbOld).
+						WithProviderSpecific(endpoint.ProviderSpecificAlias, "true").
+						WithProviderSpecific(providerSpecificEvaluateTargetHealth, strconv.FormatBool(defaultEvaluateTargetHealth))
+				}
+				require.NoError(t, h.prov.ApplyChanges(t.Context(), &plan.Changes{
+					Delete: []*endpoint.Endpoint{plainAAAA},
+					Create: []*endpoint.Endpoint{alias(endpoint.RecordTypeA), alias(endpoint.RecordTypeAAAA)},
 				}))
 
 				desired := []*endpoint.Endpoint{cnameTo("app", lbOld)}
@@ -491,12 +598,28 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 				require.Emptyf(t, first.Delete, "upgrading deleted live records: %v", first.Delete)
 
 				h.mustSettle(desired)
-				require.Truef(t, h.ownsRecord("app."+reconcileZone, endpoint.RecordTypeA),
-					"ownership of the A ALIAS lost while migrating cname- to a-; zone:\n  %s", h.zone())
+				for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+					require.Truef(t, h.ownsRecord(host, recordType),
+						"%s ownership lost while moving from cname- to a-; zone:\n  %s", recordType, h.zone())
+				}
+				require.Equalf(t, h.desiredState(desired), h.stateFor(only),
+					"the migrated record is not what the desired state asks for; zone:\n  %s", h.zone())
 
-				h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbNew)})
-				require.NotContainsf(t, h.targets("app."+reconcileZone), lbOld,
+				// The load balancer still has to be swappable once ownership has moved.
+				after := []*endpoint.Endpoint{cnameTo("app", lbNew)}
+				h.mustSettle(after)
+
+				require.Containsf(t, h.targets(host), lbNew, "new load balancer missing; zone:\n  %s", h.zone())
+				require.NotContainsf(t, h.targets(host), lbOld,
 					"previous load balancer still resolvable after migration; zone:\n  %s", h.zone())
+				require.Equalf(t, h.desiredState(after), h.stateFor(only),
+					"the swapped record is not what the desired state asks for; zone:\n  %s", h.zone())
+				for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+					require.Equalf(t, canonicalHostedZone(lbNew), h.aliasHostedZone(host, recordType),
+						"%s alias still points at the previous hosted zone; zone:\n  %s", recordType, h.zone())
+					require.Truef(t, h.ownsRecord(host, recordType),
+						"%s ownership lost while swapping the load balancer; zone:\n  %s", recordType, h.zone())
+				}
 			})
 		}
 	}
@@ -529,7 +652,7 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 	)
 	hosts := []string{"app", "api", "web"}
 
-	// Every affix shape is covered by the load balancer swap test above. Randomised
+	// Each affix mode is covered by the load balancer swap test above. Randomised
 	// sequences only need the two the name mapper treats differently: the record type
 	// in a label of its own, and the record type inside the affix.
 	affixes := []struct {
@@ -577,11 +700,18 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 							}
 						}
 
-						for dnsName := range published {
+						// Records the source dropped stay behind under upsert-only, and
+						// they have to keep their ownership just as much as the live ones.
+						for _, host := range hosts {
+							dnsName := host + "." + reconcileZone
 							require.Emptyf(t, h.unownedRecords(dnsName),
-								"records published for %q without ownership: %v; zone:\n  %s",
+								"records for %q without ownership: %v; zone:\n  %s",
 								dnsName, h.unownedRecords(dnsName), h.zone())
 						}
+
+						require.Equalf(t, h.desiredState(desired), h.stateFor(published),
+							"a published hostname settled on a different state than desired; desired:\n  %s\nzone:\n  %s",
+							describeEndpoints(desired), h.zone())
 
 						if policy != "sync" {
 							continue // upsert-only deliberately keeps records the source dropped
@@ -589,9 +719,69 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 						require.Equalf(t, h.desiredState(desired), h.settledState(),
 							"sync settled on a different zone than the desired state; desired:\n  %s",
 							describeEndpoints(desired))
+						for _, host := range hosts {
+							dnsName := host + "." + reconcileZone
+							if published[dnsName] {
+								continue
+							}
+							require.Emptyf(t, h.ownershipTXTNames(dnsName),
+								"sync left ownership TXT records for %q: %v; zone:\n  %s",
+								dnsName, h.ownershipTXTNames(dnsName), h.zone())
+						}
 					}
 				})
 			}
 		}
 	}
+}
+
+// TestRoute53APIStubAppliesABatchAtomically pins down that a rejected change batch leaves
+// the zone exactly as it was. Route 53 validates and applies a batch all or nothing, and
+// the loop tests read the zone after a rejected batch to decide whether records survived.
+func TestRoute53APIStubAppliesABatchAtomically(t *testing.T) {
+	t.Parallel()
+	h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
+	app, api := "app."+reconcileZone, "api."+reconcileZone
+
+	require.NoError(t, h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4")))
+	before := h.rawRecords()
+
+	err := h.submit(
+		route53Change(route53types.ChangeActionCreate, api, route53types.RRTypeA, "5.6.7.8"),
+		route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "9.9.9.9"),
+	)
+	require.Error(t, err, "the second change duplicates an existing record set")
+	require.Equal(t, before, h.rawRecords(), "the rejected batch left the first change behind")
+}
+
+// TestRoute53APIStubRefusesACNAMEBesideAnotherType covers the rule the record type
+// transition test depends on.
+func TestRoute53APIStubRefusesACNAMEBesideAnotherType(t *testing.T) {
+	t.Parallel()
+	h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
+	app := "app." + reconcileZone
+
+	require.NoError(t, h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4")))
+	before := h.rawRecords()
+
+	err := h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeCname, "elsewhere.example.net"))
+	require.ErrorContains(t, err, "conflicts with other records")
+	require.Equal(t, before, h.rawRecords(), "the rejected batch left the CNAME behind")
+}
+
+// TestRoute53APIStubReplacesACNAMEInOneBatch shows the rule is applied to the state the
+// batch ends in. The AWS provider puts creates before deletes, so checking each change on
+// its own would refuse a replacement Route 53 accepts.
+func TestRoute53APIStubReplacesACNAMEInOneBatch(t *testing.T) {
+	t.Parallel()
+	h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
+	app := "app." + reconcileZone
+
+	require.NoError(t, h.submit(route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeCname, "old.example.net")))
+
+	require.NoError(t, h.submit(
+		route53Change(route53types.ChangeActionCreate, app, route53types.RRTypeA, "1.2.3.4"),
+		route53Change(route53types.ChangeActionDelete, app, route53types.RRTypeCname, "old.example.net"),
+	))
+	require.Equal(t, []string{"app." + reconcileZone + ". A -> 1.2.3.4"}, h.rawRecords())
 }
