@@ -1227,6 +1227,25 @@ env:
       key: {{ YOUR_SECRET_KEY }}
 ```
 
+## FIPS endpoints
+
+If you run in an environment that has to talk to the FIPS 140-2 validated AWS API
+endpoints, add `--aws-use-fips-endpoint`. It flips the AWS SDK endpoint resolver to
+the FIPS variant, so calls go to hosts like `route53-fips.amazonaws.com` instead of
+the standard ones. It's off by default, so existing deployments keep using the
+regular endpoints.
+
+```yaml
+args:
+- --aws-use-fips-endpoint
+```
+
+FIPS endpoints aren't GovCloud-only. They're available in several commercial regions
+too. See the [AWS FIPS endpoints list](https://aws.amazon.com/compliance/fips/#FIPS_Endpoints_by_Service)
+for what's offered where. If a service doesn't have a FIPS endpoint in your region,
+the SDK returns an error rather than silently falling back, so check the list before
+enabling it.
+
 ## DynamoDB Registry
 
 The DynamoDB Registry can be used to store dns records metadata. See the [DynamoDB Registry Tutorial](../registry/dynamodb.md) for more information.

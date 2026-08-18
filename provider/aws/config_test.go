@@ -17,10 +17,12 @@ limitations under the License.
 package aws
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,6 +134,39 @@ func Test_newV2Config(t *testing.T) {
 		)
 	})
 
+	t.Run("should enable FIPS endpoint resolution when requested", func(t *testing.T) {
+		// setup
+		testutils.TestHelperEnvSetter(t, map[string]string{
+			"AWS_ACCESS_KEY_ID":     "AKIAIOSFODNN7EXAMPLE",
+			"AWS_SECRET_ACCESS_KEY": "topsecret",
+		})
+
+		// when
+		cfg, err := newV2Config(AWSSessionConfig{UseFIPSEndpoint: true})
+		require.NoError(t, err)
+
+		// then
+		state, found := fipsEndpointState(t, cfg)
+		assert.True(t, found)
+		assert.Equal(t, awsv2.FIPSEndpointStateEnabled, state)
+	})
+
+	t.Run("should leave FIPS endpoint resolution unset by default", func(t *testing.T) {
+		// setup
+		testutils.TestHelperEnvSetter(t, map[string]string{
+			"AWS_ACCESS_KEY_ID":     "AKIAIOSFODNN7EXAMPLE",
+			"AWS_SECRET_ACCESS_KEY": "topsecret",
+		})
+
+		// when
+		cfg, err := newV2Config(AWSSessionConfig{})
+		require.NoError(t, err)
+
+		// then
+		_, found := fipsEndpointState(t, cfg)
+		assert.False(t, found)
+	})
+
 	t.Run("returns error when config cannot be loaded", func(t *testing.T) {
 		// setup
 		testutils.TestHelperEnvSetter(t, map[string]string{
@@ -145,6 +180,25 @@ func Test_newV2Config(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "instantiating AWS config")
 	})
+}
+
+// fipsEndpointState reports the FIPS endpoint resolution state carried by the
+// loaded config, mirroring how the AWS SDK resolves it from the config sources.
+func fipsEndpointState(t *testing.T, cfg awsv2.Config) (awsv2.FIPSEndpointState, bool) {
+	t.Helper()
+	type provider interface {
+		GetUseFIPSEndpoint(ctx context.Context) (awsv2.FIPSEndpointState, bool, error)
+	}
+	for _, source := range cfg.ConfigSources {
+		if p, ok := source.(provider); ok {
+			state, found, err := p.GetUseFIPSEndpoint(context.Background())
+			require.NoError(t, err)
+			if found {
+				return state, true
+			}
+		}
+	}
+	return awsv2.FIPSEndpointStateUnset, false
 }
 
 func prepareCredentialsFile(t *testing.T) (*os.File, error) {

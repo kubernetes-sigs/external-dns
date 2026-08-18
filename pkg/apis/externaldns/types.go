@@ -108,6 +108,7 @@ type Config struct {
 	AWSEvaluateTargetHealth                       bool
 	AWSAPIRetries                                 int
 	AWSPreferCNAME                                bool
+	AWSUseFIPSEndpoint                            bool
 	AWSZoneCacheDuration                          time.Duration
 	AWSSDServiceCleanup                           bool
 	AWSSDCreateTag                                map[string]string
@@ -241,6 +242,7 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:           false,
 	AWSSDCreateTag:           map[string]string{},
 	AWSSDServiceCleanup:      false,
+	AWSUseFIPSEndpoint:       false,
 	AWSZoneCacheDuration:     0 * time.Second,
 	AWSZoneMatchParent:       false,
 	AWSZoneTagFilter:         []string{},
@@ -588,6 +590,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)", defaultConfig.AWSEvaluateTargetHealth, &cfg.AWSEvaluateTargetHealth)
 	b.IntVar("aws-api-retries", "When using the AWS API, set the maximum number of retries before giving up.", defaultConfig.AWSAPIRetries, &cfg.AWSAPIRetries)
 	b.BoolVar("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)", defaultConfig.AWSPreferCNAME, &cfg.AWSPreferCNAME)
+	b.BoolVar("aws-use-fips-endpoint", "When using the AWS provider, resolve the FIPS-compliant AWS API endpoints instead of the standard ones (default: disabled)", defaultConfig.AWSUseFIPSEndpoint, &cfg.AWSUseFIPSEndpoint)
 	b.DurationVar("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).", defaultConfig.AWSZoneCacheDuration, &cfg.AWSZoneCacheDuration)
 	b.BoolVar("aws-zone-match-parent", "Expand limit possible target by sub-domains (default: disabled)", defaultConfig.AWSZoneMatchParent, &cfg.AWSZoneMatchParent)
 	b.BoolVar("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)", defaultConfig.AWSSDServiceCleanup, &cfg.AWSSDServiceCleanup)

@@ -37,6 +37,7 @@ type AWSSessionConfig struct {
 	AssumeRoleExternalID string
 	APIRetries           int
 	Profile              string
+	UseFIPSEndpoint      bool
 }
 
 func CreateDefaultV2Config(cfg *externaldns.Config) awsv2.Config {
@@ -45,6 +46,7 @@ func CreateDefaultV2Config(cfg *externaldns.Config) awsv2.Config {
 			AssumeRole:           cfg.AWSAssumeRole,
 			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
 			APIRetries:           cfg.AWSAPIRetries,
+			UseFIPSEndpoint:      cfg.AWSUseFIPSEndpoint,
 		},
 	)
 	if err != nil {
@@ -66,6 +68,7 @@ func CreateV2Configs(cfg *externaldns.Config) map[string]awsv2.Config {
 					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
 					APIRetries:           cfg.AWSAPIRetries,
 					Profile:              profile,
+					UseFIPSEndpoint:      cfg.AWSUseFIPSEndpoint,
 				},
 			)
 			if err != nil {
@@ -84,6 +87,10 @@ func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {
 		}),
 		config.WithSharedConfigProfile(awsConfig.Profile),
 		config.WithAPIOptions(GetInstrumentationMiddlewares()),
+	}
+
+	if awsConfig.UseFIPSEndpoint {
+		defaultOpts = append(defaultOpts, config.WithUseFIPSEndpoint(awsv2.FIPSEndpointStateEnabled))
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), defaultOpts...)
