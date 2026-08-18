@@ -60,6 +60,11 @@ var _ Route53API = &Route53APIStub{}
 // of all of its methods.
 // mostly taken from: https://github.com/kubernetes/kubernetes/blob/853167624edb6bc0cfdcdfb88e746e178f5db36c/federation/pkg/dnsprovider/providers/aws/route53/stubs/route53api.go
 type Route53APIStub struct {
+	// rejectCNAMEConflicts turns on the Route 53 rule that a CNAME may not share a name
+	// with any other record type. It is opt-in because some fixtures seed states that
+	// predate the check.
+	rejectCNAMEConflicts bool
+
 	zones      map[string]*route53types.HostedZone
 	recordSets map[string]map[string][]route53types.ResourceRecordSet
 	zoneTags   map[string][]route53types.Tag
@@ -201,10 +206,11 @@ func (r *Route53APIStub) ChangeResourceRecordSets(_ context.Context, input *rout
 	}
 
 	output := &route53.ChangeResourceRecordSetsOutput{}
-	recordSets, ok := r.recordSets[*input.HostedZoneId]
-	if !ok {
-		recordSets = make(map[string][]route53types.ResourceRecordSet)
-	}
+
+	// Route 53 validates and applies a change batch as one transaction, so build the
+	// result separately and publish it only once every change has been accepted.
+	recordSets := make(map[string][]route53types.ResourceRecordSet, len(r.recordSets[*input.HostedZoneId]))
+	maps.Copy(recordSets, r.recordSets[*input.HostedZoneId])
 
 	for _, change := range input.ChangeBatch.Changes {
 		if change.ResourceRecordSet.Type == route53types.RRTypeA {
@@ -241,8 +247,36 @@ func (r *Route53APIStub) ChangeResourceRecordSets(_ context.Context, input *rout
 			recordSets[key] = []route53types.ResourceRecordSet{*change.ResourceRecordSet}
 		}
 	}
+
+	if r.rejectCNAMEConflicts {
+		if err := validateNoCNAMEConflict(recordSets, *input.HostedZoneId); err != nil {
+			return nil, err
+		}
+	}
+
 	r.recordSets[*input.HostedZoneId] = recordSets
 	return output, nil // TODO: We should ideally return status etc, but we don't' use that yet.
+}
+
+// validateNoCNAMEConflict rejects a batch whose result would leave a CNAME sharing a name
+// with any other record type, which Route 53 does not allow.
+func validateNoCNAMEConflict(recordSets map[string][]route53types.ResourceRecordSet, zone string) error {
+	byName := make(map[string]map[route53types.RRType]bool, len(recordSets))
+	for _, rrsets := range recordSets {
+		for _, rrs := range rrsets {
+			name := aws.ToString(rrs.Name)
+			if byName[name] == nil {
+				byName[name] = make(map[route53types.RRType]bool, 2)
+			}
+			byName[name][rrs.Type] = true
+		}
+	}
+	for name, types := range byName {
+		if types[route53types.RRTypeCname] && len(types) > 1 {
+			return fmt.Errorf("RRSet of type CNAME with DNS name %s is not permitted as it conflicts with other records with the same DNS name in zone %s", name, zone)
+		}
+	}
+	return nil
 }
 
 func (r *Route53APIStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {

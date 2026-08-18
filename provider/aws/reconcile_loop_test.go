@@ -109,6 +109,8 @@ func newReconcileLoop(t *testing.T, cfg *externaldns.Config, policyName string, 
 	// Every reconciliation submits a change batch; the production pause between
 	// batches would dominate the runtime of these multi-loop tests.
 	prov.batchChangeInterval = 0
+	// A loop must not be able to settle on a zone Route 53 would refuse.
+	client.rejectCNAMEConflicts = true
 
 	reg, err := txt.New(cfg, prov)
 	require.NoError(t, err)
@@ -407,15 +409,13 @@ func TestReconcileLoopReplacesLoadBalancerTargetOfSameRecordType(t *testing.T) {
 	}
 }
 
-// TestReconcileLoopReplacesRecordTypeUnderSync covers a hostname moving between an AWS
-// load balancer, which becomes an A ALIAS, and a non-AWS target, which stays a CNAME.
-// Once the loop settles the previous record type has to be gone.
+// TestReconcileLoopRecordTypeTransition covers a hostname moving between an AWS load
+// balancer, which becomes an A ALIAS, and a non-AWS target, which stays a CNAME.
 //
-// Only sync is covered. upsert-only drops the delete half of the transition, and Route 53
-// refuses a CNAME that shares a name with any other type, so there is no settled state to
-// assert. Route53APIStub keys record sets by type and does not model that exclusivity, so
-// asserting one here would pin down a state the API rejects.
-func TestReconcileLoopReplacesRecordTypeUnderSync(t *testing.T) {
+// Route 53 refuses a CNAME that shares a name with any other type, so the two policies
+// end very differently. sync deletes the old type first and settles. upsert-only drops
+// the delete half, so the create is rejected and the transition never completes.
+func TestReconcileLoopRecordTypeTransition(t *testing.T) {
 	transitions := []struct {
 		name     string
 		from, to string
@@ -425,19 +425,33 @@ func TestReconcileLoopReplacesRecordTypeUnderSync(t *testing.T) {
 	}
 
 	for _, tr := range transitions {
-		t.Run(tr.name, func(t *testing.T) {
+		t.Run("sync/"+tr.name, func(t *testing.T) {
 			t.Parallel()
 			h := newReconcileLoop(t, reconcileConfig("", ""), "sync", false)
 			host := "app." + reconcileZone
 
 			h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.from)})
-			h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.to)})
+			desired := []*endpoint.Endpoint{cnameTo("app", tr.to)}
+			h.mustSettle(desired)
 
-			require.Containsf(t, h.targets(host), tr.to, "new target %q missing; zone:\n  %s", tr.to, h.zone())
+			require.Equalf(t, h.canonicalDesired(desired), h.canonicalZone(),
+				"sync settled on a different zone than the desired state; zone:\n  %s", h.zone())
 			require.NotContainsf(t, h.targets(host), tr.from,
 				"the previous record type is still present; zone:\n  %s", h.zone())
 			require.Emptyf(t, h.unownedRecords(host), "records left without ownership: %v; zone:\n  %s",
 				h.unownedRecords(host), h.zone())
+		})
+
+		t.Run("upsert-only/"+tr.name, func(t *testing.T) {
+			t.Parallel()
+			h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+
+			h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.from)})
+
+			_, err := h.settle([]*endpoint.Endpoint{cnameTo("app", tr.to)})
+			require.Errorf(t, err,
+				"upsert-only cannot complete a record type change, Route 53 rejects the batch; zone:\n  %s",
+				h.zone())
 		})
 	}
 }
