@@ -443,8 +443,8 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 		return nil, false
 	}
 
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
+	group := gwRouteParentGroup(ref)
+	kind := gwRouteParentKind(ref)
 	if group != gatewayGroup || (kind != gatewayKind && kind != listenerSetKind) {
 		log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
@@ -789,6 +789,22 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 	return false
 }
 
+// gwRouteParentGroup and gwRouteParentKind default an omitted field the way Gateway API
+// does. An empty string is not the same as an omitted field: it names the core API group.
+func gwRouteParentGroup(ref v1.ParentReference) string {
+	if ref.Group == nil {
+		return gatewayGroup
+	}
+	return string(*ref.Group)
+}
+
+func gwRouteParentKind(ref v1.ParentReference) string {
+	if ref.Kind == nil {
+		return gatewayKind
+	}
+	return string(*ref.Kind)
+}
+
 // gwRouteParentKey identifies a parent object, without the sectionName and port.
 type gwRouteParentKey struct {
 	group     string
@@ -799,8 +815,8 @@ type gwRouteParentKey struct {
 
 func gwRouteParentKeyOf(ref v1.ParentReference, meta *metav1.ObjectMeta) gwRouteParentKey {
 	return gwRouteParentKey{
-		group:     strVal((*string)(ref.Group), gatewayGroup),
-		kind:      strVal((*string)(ref.Kind), gatewayKind),
+		group:     gwRouteParentGroup(ref),
+		kind:      gwRouteParentKind(ref),
 		namespace: strVal((*string)(ref.Namespace), meta.Namespace),
 		name:      string(ref.Name),
 	}
@@ -835,6 +851,9 @@ func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.
 		wanted[key].Insert(gwRouteParentSelectorOf(ref))
 	}
 
+	// Readiness is tracked per parent object and not per controller. A Route can carry
+	// entries from more than one controller while a migration is under way, and keying on
+	// the controller would leave the entries of the one which went away in place for good.
 	keys := make([]gwRouteParentKey, len(statuses))
 	current := make([]bool, len(statuses))
 	ready := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(wanted))
