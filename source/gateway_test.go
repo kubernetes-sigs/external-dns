@@ -17,8 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -250,200 +248,36 @@ func TestIsDNS1123Domain(t *testing.T) {
 	}
 }
 
-func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
-	meta := &metav1.ObjectMeta{Namespace: "default"}
+func TestGatewayRouteStatusIsCurrent(t *testing.T) {
+	ref := gwParentRef("default", "gw", withSectionName("bar"))
 
-	statusCondition := func(status metav1.ConditionStatus) []metav1.Condition {
-		return []metav1.Condition{{Type: string(v1.RouteConditionAccepted), Status: status}}
-	}
-	statusesFor := func(refs ...v1.ParentReference) []v1.RouteParentStatus {
-		statuses := make([]v1.RouteParentStatus, 0, len(refs))
-		for _, ref := range refs {
-			statuses = append(statuses, v1.RouteParentStatus{
-				ParentRef:  ref,
-				Conditions: statusCondition(metav1.ConditionTrue),
-			})
+	condition := func(status metav1.ConditionStatus, observed int64) v1.RouteParentStatus {
+		return v1.RouteParentStatus{
+			ParentRef: ref,
+			Conditions: []metav1.Condition{{
+				Type:               string(v1.RouteConditionAccepted),
+				Status:             status,
+				ObservedGeneration: observed,
+			}},
 		}
-		return statuses
-	}
-	rejected := func(ref v1.ParentReference) v1.RouteParentStatus {
-		return v1.RouteParentStatus{ParentRef: ref, Conditions: statusCondition(metav1.ConditionFalse)}
-	}
-
-	// render identifies a status by the parts of its ParentRef that select listeners.
-	render := func(statuses []v1.RouteParentStatus) []string {
-		out := make([]string, 0, len(statuses))
-		for _, status := range statuses {
-			port := "-"
-			if status.ParentRef.Port != nil {
-				port = strconv.Itoa(int(*status.ParentRef.Port))
-			}
-			out = append(out, fmt.Sprintf("%s/%s/%s/%s",
-				strVal((*string)(status.ParentRef.Kind), gatewayKind),
-				status.ParentRef.Name, sectionVal(status.ParentRef.SectionName, "-"), port))
-		}
-		return out
 	}
 
 	tests := []struct {
-		desc     string
-		refs     []v1.ParentReference
-		statuses []v1.RouteParentStatus
-		want     []string
+		desc       string
+		status     v1.RouteParentStatus
+		generation int64
+		want       bool
 	}{
-		{
-			desc: "drops the status of a listener the route left",
-			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
-			statuses: statusesFor(
-				gwParentRef("default", "gw", withSectionName("foo")),
-				gwParentRef("default", "gw", withSectionName("bar")),
-			),
-			want: []string{"Gateway/gw/bar/-"},
-		},
-		{
-			desc:     "keeps a status the controller has not updated yet",
-			refs:     []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
-			statuses: statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
-			want:     []string{"Gateway/gw/foo/-"},
-		},
-		{
-			desc: "keeps every listener the route currently attaches to",
-			refs: []v1.ParentReference{
-				gwParentRef("default", "gw", withSectionName("foo")),
-				gwParentRef("default", "gw", withSectionName("bar")),
-			},
-			statuses: statusesFor(
-				gwParentRef("default", "gw", withSectionName("foo")),
-				gwParentRef("default", "gw", withSectionName("bar")),
-			),
-			want: []string{"Gateway/gw/foo/-", "Gateway/gw/bar/-"},
-		},
-		{
-			desc: "distinguishes references by port",
-			refs: []v1.ParentReference{gwParentRef("default", "gw", withPortNumber(8080))},
-			statuses: statusesFor(
-				gwParentRef("default", "gw", withPortNumber(80)),
-				gwParentRef("default", "gw", withPortNumber(8080)),
-			),
-			want: []string{"Gateway/gw/-/8080"},
-		},
-		{
-			desc:     "a status without a port does not match a ref that names one",
-			refs:     []v1.ParentReference{gwParentRef("default", "gw", withPortNumber(8080))},
-			statuses: statusesFor(gwParentRef("default", "gw")),
-			want:     []string{"Gateway/gw/-/-"},
-		},
-		{
-			desc: "does not depend on the order of the status list",
-			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
-			statuses: statusesFor(
-				gwParentRef("default", "gw", withSectionName("bar")),
-				gwParentRef("default", "gw", withSectionName("foo")),
-			),
-			want: []string{"Gateway/gw/bar/-"},
-		},
-		{
-			desc:     "keeps sectioned statuses when the route names no section",
-			refs:     []v1.ParentReference{gwParentRef("default", "gw")},
-			statuses: statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
-			want:     []string{"Gateway/gw/foo/-"},
-		},
-		{
-			desc: "treats each parent object independently",
-			refs: []v1.ParentReference{
-				gwParentRef("default", "gw-a", withSectionName("bar")),
-				gwParentRef("default", "gw-b"),
-			},
-			statuses: statusesFor(
-				gwParentRef("default", "gw-a", withSectionName("foo")),
-				gwParentRef("default", "gw-a", withSectionName("bar")),
-				gwParentRef("default", "gw-b", withSectionName("foo")),
-			),
-			want: []string{"Gateway/gw-a/bar/-", "Gateway/gw-b/foo/-"},
-		},
-		{
-			// A ListenerSet parent goes through the same resolver, and a Gateway of
-			// the same name is a different parent object.
-			desc: "filters ListenerSet parents and keeps them apart from a Gateway",
-			refs: []v1.ParentReference{
-				lsParentRef("default", "shared", withSectionName("bar")),
-			},
-			statuses: statusesFor(
-				lsParentRef("default", "shared", withSectionName("foo")),
-				lsParentRef("default", "shared", withSectionName("bar")),
-				gwParentRef("default", "shared", withSectionName("foo")),
-			),
-			want: []string{"ListenerSet/shared/bar/-", "Gateway/shared/foo/-"},
-		},
-		{
-			// One reference is moving from "old" to "new" while "stable" stays put.
-			// Dropping "old" here would take the hostname down before "new" arrives.
-			desc: "keeps a stale entry while another current listener has no status yet",
-			refs: []v1.ParentReference{
-				gwParentRef("default", "gw", withSectionName("stable")),
-				gwParentRef("default", "gw", withSectionName("new")),
-			},
-			statuses: statusesFor(
-				gwParentRef("default", "gw", withSectionName("stable")),
-				gwParentRef("default", "gw", withSectionName("old")),
-			),
-			want: []string{"Gateway/gw/stable/-", "Gateway/gw/old/-"},
-		},
-		{
-			desc: "prunes once every current listener has an accepted status",
-			refs: []v1.ParentReference{
-				gwParentRef("default", "gw", withSectionName("stable")),
-				gwParentRef("default", "gw", withSectionName("new")),
-			},
-			statuses: statusesFor(
-				gwParentRef("default", "gw", withSectionName("stable")),
-				gwParentRef("default", "gw", withSectionName("old")),
-				gwParentRef("default", "gw", withSectionName("new")),
-			),
-			want: []string{"Gateway/gw/stable/-", "Gateway/gw/new/-"},
-		},
-		{
-			// The resolver rejects a status that is not accepted, so it cannot stand
-			// as proof that the older entry is safe to drop.
-			desc: "keeps a stale entry while the current listener is not accepted",
-			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
-			statuses: append(
-				statusesFor(gwParentRef("default", "gw", withSectionName("foo"))),
-				rejected(gwParentRef("default", "gw", withSectionName("bar"))),
-			),
-			want: []string{"Gateway/gw/foo/-", "Gateway/gw/bar/-"},
-		},
-		{
-			// Entries from a migrating controller still describe the same parent, so a
-			// current entry from either of them completes it.
-			desc: "treats entries from different controllers as one parent",
-			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
-			statuses: []v1.RouteParentStatus{
-				{
-					ParentRef:      gwParentRef("default", "gw", withSectionName("foo")),
-					ControllerName: "example.net/old-controller",
-					Conditions:     statusCondition(metav1.ConditionTrue),
-				},
-				{
-					ParentRef:      gwParentRef("default", "gw", withSectionName("bar")),
-					ControllerName: "example.net/new-controller",
-					Conditions:     statusCondition(metav1.ConditionTrue),
-				},
-			},
-			want: []string{"Gateway/gw/bar/-"},
-		},
-		{
-			desc:     "handles a route with no status",
-			refs:     []v1.ParentReference{gwParentRef("default", "gw")},
-			statuses: nil,
-			want:     []string{},
-		},
+		{"accepted for the generation in hand", condition(metav1.ConditionTrue, 3), 3, true},
+		{"accepted, but for an older generation", condition(metav1.ConditionTrue, 1), 3, false},
+		{"accepted with no generation recorded", condition(metav1.ConditionTrue, 0), 3, true},
+		{"not accepted", condition(metav1.ConditionFalse, 3), 3, false},
+		{"no accepted condition at all", v1.RouteParentStatus{ParentRef: ref}, 3, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			got := gwRouteCurrentParentStatuses(meta, tt.refs, tt.statuses)
-			require.Equal(t, tt.want, render(got))
+			require.Equal(t, tt.want, gwRouteStatusIsCurrent(tt.status, tt.generation))
 		})
 	}
 }

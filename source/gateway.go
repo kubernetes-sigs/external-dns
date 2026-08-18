@@ -419,7 +419,45 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return hostTargets, nil
 	}
 
-	for _, rps := range gwRouteCurrentParentStatuses(rt.Metadata(), routeParentRefs, rt.RouteStatus().Parents) {
+	meta := rt.Metadata()
+	wanted := gwRouteWantedSelectors(meta, routeParentRefs)
+
+	// A Gateway controller can leave the status of a listener the Route has left in
+	// place, and its hostnames would keep being published. Resolve the listeners the
+	// spec still selects first; only when all of them actually produce a target is the
+	// older status safe to ignore. Routes, Gateways and ListenerSets come from separate
+	// informer caches, so a newer status can be visible before the listener it names.
+	usable := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(wanted))
+	var superseded []v1.RouteParentStatus
+
+	for _, rps := range rt.RouteStatus().Parents {
+		key := gwRouteParentKeyOf(rps.ParentRef, meta)
+		selector := gwRouteParentSelectorOf(rps.ParentRef)
+		if !wanted[key].Has(selector) {
+			superseded = append(superseded, rps)
+			continue
+		}
+		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
+		if !ok {
+			continue
+		}
+		if !c.matchRouteToParent(rt, rtHosts, parent, hostTargets) {
+			continue
+		}
+		if !gwRouteStatusIsCurrent(rps, meta.Generation) {
+			continue
+		}
+		if usable[key] == nil {
+			usable[key] = sets.New[gwRouteParentSelector]()
+		}
+		usable[key].Insert(selector)
+	}
+
+	for _, rps := range superseded {
+		key := gwRouteParentKeyOf(rps.ParentRef, meta)
+		if selectors, inSpec := wanted[key]; inSpec && len(usable[key]) >= len(selectors) {
+			continue
+		}
 		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
 		if !ok {
 			continue
@@ -485,7 +523,8 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+// matchRouteToParent reports whether the parent contributed at least one target.
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) bool {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -502,13 +541,14 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 		}
 	}
 	if match {
-		return
+		return true
 	}
 	if parent.section != "" && unattachedReason != "" {
 		log.Debugf("%s %s/%s section %q is not attached for %s %s/%s: %s", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, unattachedReason)
-		return
+		return false
 	}
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
+	return false
 }
 
 func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
@@ -837,11 +877,8 @@ func gwRouteParentSelectorOf(ref v1.ParentReference) gwRouteParentSelector {
 	}
 }
 
-// gwRouteCurrentParentStatuses drops the status entries a Gateway controller left behind
-// for listeners the Route no longer attaches to. A parent is only pruned once every
-// listener its spec still selects has an accepted status, so a Route that is mid-move
-// keeps its last known attachment instead of losing it. See issue #6639.
-func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference, statuses []v1.RouteParentStatus) []v1.RouteParentStatus {
+// gwRouteWantedSelectors groups the listeners the spec selects by parent object.
+func gwRouteWantedSelectors(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference) map[gwRouteParentKey]sets.Set[gwRouteParentSelector] {
 	wanted := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(routeParentRefs))
 	for _, ref := range routeParentRefs {
 		key := gwRouteParentKeyOf(ref, meta)
@@ -850,39 +887,22 @@ func gwRouteCurrentParentStatuses(meta *metav1.ObjectMeta, routeParentRefs []v1.
 		}
 		wanted[key].Insert(gwRouteParentSelectorOf(ref))
 	}
+	return wanted
+}
 
-	// Readiness is tracked per parent object and not per controller. A Route can carry
-	// entries from more than one controller while a migration is under way, and keying on
-	// the controller would leave the entries of the one which went away in place for good.
-	keys := make([]gwRouteParentKey, len(statuses))
-	current := make([]bool, len(statuses))
-	ready := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(wanted))
-
-	for i, status := range statuses {
-		keys[i] = gwRouteParentKeyOf(status.ParentRef, meta)
-		selector := gwRouteParentSelectorOf(status.ParentRef)
-		if !wanted[keys[i]].Has(selector) {
+// gwRouteStatusIsCurrent reports whether a status was accepted for the Route as it stands
+// now, which is what makes it evidence that an older status can be ignored. A controller
+// which leaves observedGeneration unset is taken at its word, since many do. This never
+// decides whether a status may produce endpoints; see #5349 and #5490.
+func gwRouteStatusIsCurrent(status v1.RouteParentStatus, generation int64) bool {
+	for _, condition := range status.Conditions {
+		if condition.Type != string(v1.RouteConditionAccepted) {
 			continue
 		}
-		current[i] = true
-		// An entry the resolver would reject is no proof that the older one is stale.
-		if !gwRouteIsAccepted(status.Conditions) {
-			continue
-		}
-		if ready[keys[i]] == nil {
-			ready[keys[i]] = sets.New[gwRouteParentSelector]()
-		}
-		ready[keys[i]].Insert(selector)
+		return condition.Status == metav1.ConditionTrue &&
+			(condition.ObservedGeneration == 0 || condition.ObservedGeneration == generation)
 	}
-
-	filtered := make([]v1.RouteParentStatus, 0, len(statuses))
-	for i, status := range statuses {
-		selectors, inSpec := wanted[keys[i]]
-		if current[i] || !inSpec || len(ready[keys[i]]) < len(selectors) {
-			filtered = append(filtered, status)
-		}
-	}
-	return filtered
+	return false
 }
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {
