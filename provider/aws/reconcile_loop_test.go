@@ -625,6 +625,52 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 	}
 }
 
+// TestReconcileLoopKeepsOwnershipWhenPreferCNAMEIsDropped covers an operator removing
+// --aws-prefer-cname, which turns a hostname that was a plain CNAME into an A ALIAS
+// without anything in Kubernetes changing. That rewrites the record type, and with it
+// the name of the ownership TXT, which is the transition #6368 was reported over.
+//
+// Only sync is covered. upsert-only keeps the CNAME, so Route 53 refuses the A beside it
+// and the transition never completes, which TestReconcileLoopRecordTypeTransition covers.
+func TestReconcileLoopKeepsOwnershipWhenPreferCNAMEIsDropped(t *testing.T) {
+	for _, affix := range txtAffixes {
+		t.Run(affix.name, func(t *testing.T) {
+			t.Parallel()
+			h := newReconcileLoop(t, reconcileConfig(affix.prefix, affix.suffix), "sync", true)
+			host := "app." + reconcileZone
+			only := map[string]bool{host: true}
+			names := mapper.NewAffixNameMapper(affix.prefix, affix.suffix, "")
+			desired := []*endpoint.Endpoint{cnameTo("app", lbOld)}
+
+			h.mustSettle(desired)
+			require.Truef(t, h.ownsRecord(host, endpoint.RecordTypeCNAME),
+				"the CNAME is not owned before the flag is dropped; zone:\n  %s", h.zone())
+			require.Equalf(t, []string{names.ToTXTName(host, endpoint.RecordTypeCNAME)}, h.ownershipTXTNames(host),
+				"unexpected ownership before the flag is dropped; zone:\n  %s", h.zone())
+
+			h.prov.preferCNAME = false
+
+			h.mustSettle(desired)
+
+			require.Equalf(t, h.desiredState(desired), h.stateFor(only),
+				"the record did not become an alias pair; zone:\n  %s", h.zone())
+			for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+				require.Truef(t, h.ownsRecord(host, recordType),
+					"%s ownership lost when the record type changed; zone:\n  %s", recordType, h.zone())
+			}
+			require.Emptyf(t, h.unownedRecords(host), "records left without ownership: %v; zone:\n  %s",
+				h.unownedRecords(host), h.zone())
+			require.Equalf(t,
+				[]string{
+					names.ToTXTName(host, endpoint.RecordTypeA),
+					names.ToTXTName(host, endpoint.RecordTypeAAAA),
+				},
+				h.ownershipTXTNames(host),
+				"the ownership TXT records did not follow the record type; zone:\n  %s", h.zone())
+		})
+	}
+}
+
 // TestReconcileLoopSettlesForRandomisedDesiredStates walks randomised sequences of
 // desired states over a few hostnames, mixing alias and non-alias targets, record
 // types and hostnames that stop being published. Every step must settle; a step that
