@@ -43,6 +43,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -54,8 +55,9 @@ import (
 )
 
 const (
-	reconcileZone  = "zone-1.ext-dns-test-2.teapot.zalan.do"
-	reconcileOwner = "reconcile-owner"
+	reconcileZone   = "zone-1.ext-dns-test-2.teapot.zalan.do"
+	reconcileZoneID = "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."
+	reconcileOwner  = "reconcile-owner"
 
 	// Two load balancers in one region, plus one in another region so that an
 	// AliasTarget.HostedZoneId change is covered as well.
@@ -80,6 +82,7 @@ const (
 type reconcileLoop struct {
 	t      *testing.T
 	prov   *AWSProvider
+	client *Route53APIStub
 	reg    registry.Registry
 	policy plan.Policy
 	cfg    *externaldns.Config
@@ -98,7 +101,7 @@ func reconcileConfig(prefix, suffix string) *externaldns.Config {
 func newReconcileLoop(t *testing.T, cfg *externaldns.Config, policyName string, preferCNAME bool) *reconcileLoop {
 	t.Helper()
 
-	prov, _ := newAWSProvider(t,
+	prov, client := newAWSProvider(t,
 		endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}),
 		provider.NewZoneIDFilter([]string{}),
 		provider.NewZoneTypeFilter(""),
@@ -113,7 +116,7 @@ func newReconcileLoop(t *testing.T, cfg *externaldns.Config, policyName string, 
 	policy, ok := plan.Policies[policyName]
 	require.Truef(t, ok, "unknown policy %q", policyName)
 
-	return &reconcileLoop{t: t, prov: prov, reg: reg, policy: policy, cfg: cfg}
+	return &reconcileLoop{t: t, prov: prov, client: client, reg: reg, policy: policy, cfg: cfg}
 }
 
 // runOnce replays controller.Controller.RunOnce for one desired state.
@@ -215,6 +218,71 @@ func (h *reconcileLoop) targets(dnsName string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// canonicalRecord renders the parts of a record that the desired state decides. TTL is
+// left out because the provider fills in its own default for alias records.
+func canonicalRecord(ep *endpoint.Endpoint) string {
+	targets := append([]string(nil), ep.Targets...)
+	sort.Strings(targets)
+	alias := ""
+	if a := ep.GetAliasProperty(); a != endpoint.AliasNone && a != endpoint.AliasFalse {
+		alias = " alias=" + string(a)
+	}
+	return fmt.Sprintf("%s %s %q -> %s%s",
+		ep.DNSName, ep.RecordType, ep.SetIdentifier, strings.Join(targets, ","), alias)
+}
+
+// canonicalZone renders every non-TXT record the provider holds.
+func (h *reconcileLoop) canonicalZone() []string {
+	h.t.Helper()
+	records, err := h.prov.Records(h.t.Context())
+	require.NoError(h.t, err)
+
+	out := make([]string, 0, len(records))
+	for _, r := range records {
+		if r.RecordType == endpoint.RecordTypeTXT {
+			continue
+		}
+		out = append(out, canonicalRecord(r))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// canonicalDesired renders what a desired state should leave behind, by running it
+// through the same AdjustEndpoints the loop uses.
+func (h *reconcileLoop) canonicalDesired(desired []*endpoint.Endpoint) []string {
+	h.t.Helper()
+	source := make([]*endpoint.Endpoint, 0, len(desired))
+	for _, ep := range desired {
+		source = append(source, ep.DeepCopy())
+	}
+	adjusted, err := h.reg.AdjustEndpoints(source)
+	require.NoError(h.t, err)
+
+	out := make([]string, 0, len(adjusted))
+	for _, r := range adjusted {
+		out = append(out, canonicalRecord(r))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// aliasHostedZone reads the AliasTarget hosted zone of a record straight from Route 53.
+// Records() does not carry that field, so a stale hosted zone would otherwise go unseen.
+func (h *reconcileLoop) aliasHostedZone(dnsName, recordType string) string {
+	h.t.Helper()
+	for _, rrs := range listAWSRecords(h.t, h.client, reconcileZoneID) {
+		if rrs.Name == nil || strings.TrimSuffix(*rrs.Name, ".") != dnsName {
+			continue
+		}
+		if string(rrs.Type) != recordType || rrs.AliasTarget == nil {
+			continue
+		}
+		return aws.ToString(rrs.AliasTarget.HostedZoneId)
+	}
+	return ""
 }
 
 // unownedRecords returns the record types published for a hostname that the registry no
@@ -324,6 +392,15 @@ func TestReconcileLoopReplacesLoadBalancerTargetOfSameRecordType(t *testing.T) {
 					require.Emptyf(t, h.unownedRecords(host),
 						"swapping the load balancer lost ownership of %v; zone:\n  %s",
 						h.unownedRecords(host), h.zone())
+
+					// An alias record also carries the hosted zone of the target load
+					// balancer, which changes when the load balancer moves region.
+					if hostedZone := canonicalHostedZone(tr.to); hostedZone != "" && !tr.preferCNAME {
+						for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+							require.Equalf(t, hostedZone, h.aliasHostedZone(host, recordType),
+								"%s alias still points at the previous hosted zone; zone:\n  %s", recordType, h.zone())
+						}
+					}
 				})
 			}
 		}
@@ -495,15 +572,9 @@ func TestReconcileLoopSettlesForRandomisedDesiredStates(t *testing.T) {
 						if policy != "sync" {
 							continue // upsert-only deliberately keeps records the source dropped
 						}
-						for _, host := range hosts {
-							dnsName := host + "." + reconcileZone
-							if published[dnsName] {
-								continue
-							}
-							require.Emptyf(t, h.targets(dnsName),
-								"sync left records for %q after the source stopped publishing it; zone:\n  %s",
-								dnsName, h.zone())
-						}
+						require.Equalf(t, h.canonicalDesired(desired), h.canonicalZone(),
+							"sync settled on a different zone than the desired state; desired:\n  %s",
+							describeEndpoints(desired))
 					}
 				})
 			}
