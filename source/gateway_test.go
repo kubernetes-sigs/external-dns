@@ -25,8 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestGatewayMatchingHost(t *testing.T) {
@@ -416,6 +414,25 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 			want: []string{"Gateway/gw/foo/-", "Gateway/gw/bar/-"},
 		},
 		{
+			// Entries from a migrating controller still describe the same parent, so a
+			// current entry from either of them completes it.
+			desc: "treats entries from different controllers as one parent",
+			refs: []v1.ParentReference{gwParentRef("default", "gw", withSectionName("bar"))},
+			statuses: []v1.RouteParentStatus{
+				{
+					ParentRef:      gwParentRef("default", "gw", withSectionName("foo")),
+					ControllerName: "example.net/old-controller",
+					Conditions:     statusCondition(metav1.ConditionTrue),
+				},
+				{
+					ParentRef:      gwParentRef("default", "gw", withSectionName("bar")),
+					ControllerName: "example.net/new-controller",
+					Conditions:     statusCondition(metav1.ConditionTrue),
+				},
+			},
+			want: []string{"Gateway/gw/bar/-"},
+		},
+		{
 			desc:     "handles a route with no status",
 			refs:     []v1.ParentReference{gwParentRef("default", "gw")},
 			statuses: nil,
@@ -431,42 +448,30 @@ func TestGatewayRouteCurrentParentStatuses(t *testing.T) {
 	}
 }
 
-func TestGatewayUniqueTargets(t *testing.T) {
+func TestGatewayRouteHasParentRef(t *testing.T) {
+	meta := &metav1.ObjectMeta{Namespace: "default"}
+	coreGroup := v1.Group("")
+	gatewayAPIGroup := v1.Group(gatewayGroup)
+
+	omitted := v1.ParentReference{Name: "gw"}
+	explicitGateway := v1.ParentReference{Name: "gw", Group: &gatewayAPIGroup}
+	explicitCore := v1.ParentReference{Name: "gw", Group: &coreGroup}
+
 	tests := []struct {
 		desc string
-		in   endpoint.Targets
-		want endpoint.Targets
+		spec v1.ParentReference
+		got  v1.ParentReference
+		want bool
 	}{
-		{
-			desc: "no targets",
-			in:   endpoint.Targets{},
-			want: endpoint.Targets{},
-		},
-		{
-			desc: "a single target is returned as is",
-			in:   endpoint.Targets{"1.2.3.4"},
-			want: endpoint.Targets{"1.2.3.4"},
-		},
-		{
-			desc: "distinct targets are sorted",
-			in:   endpoint.Targets{"5.6.7.8", "1.2.3.4"},
-			want: endpoint.Targets{"1.2.3.4", "5.6.7.8"},
-		},
-		{
-			desc: "a target listed by two listeners appears once",
-			in:   endpoint.Targets{"1.2.3.4", "5.6.7.8", "1.2.3.4"},
-			want: endpoint.Targets{"1.2.3.4", "5.6.7.8"},
-		},
-		{
-			desc: "every listener reports the same target",
-			in:   endpoint.Targets{"1.2.3.4", "1.2.3.4", "1.2.3.4"},
-			want: endpoint.Targets{"1.2.3.4"},
-		},
+		{"an omitted group matches an omitted group", omitted, omitted, true},
+		{"an omitted group matches the spelled out Gateway API group", omitted, explicitGateway, true},
+		{"an omitted group is not the core API group", omitted, explicitCore, false},
+		{"the core API group matches itself", explicitCore, explicitCore, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			require.Equal(t, tt.want, uniqueTargets(tt.in))
+			require.Equal(t, tt.want, gwRouteHasParentRef([]v1.ParentReference{tt.spec}, tt.got, meta))
 		})
 	}
 }
