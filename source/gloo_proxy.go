@@ -82,8 +82,25 @@ type proxySpec struct {
 }
 
 type proxySpecListener struct {
-	HTTPListener   proxySpecHTTPListener `json:"httpListener"`
-	MetadataStatic proxyMetadataStatic   `json:"metadataStatic"`
+	HTTPListener      proxySpecHTTPListener      `json:"httpListener"`
+	AggregateListener proxySpecAggregateListener `json:"aggregateListener"`
+	MetadataStatic    proxyMetadataStatic        `json:"metadataStatic"`
+}
+
+// proxySpecAggregateListener is used instead of HTTPListener when a Gateway
+// has isolateVirtualHostsBySslConfig enabled, which splits virtual hosts
+// into per-SSL-config filter chains that reference shared virtual hosts by name.
+type proxySpecAggregateListener struct {
+	HTTPFilterChains []proxyAggregateListenerHTTPFilterChain `json:"httpFilterChains,omitempty"`
+	HTTPResources    proxyAggregateListenerHTTPResources     `json:"httpResources"`
+}
+
+type proxyAggregateListenerHTTPFilterChain struct {
+	VirtualHostRefs []string `json:"virtualHostRefs,omitempty"`
+}
+
+type proxyAggregateListenerHTTPResources struct {
+	VirtualHosts map[string]proxyVirtualHost `json:"virtualHosts,omitempty"`
 }
 
 type proxyMetadataStatic struct {
@@ -275,7 +292,15 @@ func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targ
 	resource := fmt.Sprintf("proxy/%s/%s", p.Namespace, p.Name)
 
 	for _, listener := range p.Spec.Listeners {
-		for _, virtualHost := range listener.HTTPListener.VirtualHosts {
+		virtualHosts := listener.HTTPListener.VirtualHosts
+		for _, chain := range listener.AggregateListener.HTTPFilterChains {
+			for _, ref := range chain.VirtualHostRefs {
+				if virtualHost, ok := listener.AggregateListener.HTTPResources.VirtualHosts[ref]; ok {
+					virtualHosts = append(virtualHosts, virtualHost)
+				}
+			}
+		}
+		for _, virtualHost := range virtualHosts {
 			ants, err := gs.annotationsFromProxySource(virtualHost)
 			if err != nil {
 				return nil, err
