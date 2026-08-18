@@ -782,6 +782,49 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// The new listener exists and is accepted, but its hostname has nothing in
+			// common with the Route, so it publishes nothing. That is no proof either.
+			title:      "SectionNameChangedWithCurrentListenerMatchingNoHostname",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.org")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+					gwParentRef("default", "test", withSectionName("bar")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
 			// The new listener is named but the Gateway rejected it, so it is no proof
 			// that the old entry can go.
 			title:      "SectionNameChangedWithCurrentListenerRejected",

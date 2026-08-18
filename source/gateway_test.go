@@ -273,6 +273,17 @@ func TestGatewayRouteStatusIsCurrent(t *testing.T) {
 		{"accepted with no generation recorded", condition(metav1.ConditionTrue, 0), 3, true},
 		{"not accepted", condition(metav1.ConditionFalse, 3), 3, false},
 		{"no accepted condition at all", v1.RouteParentStatus{ParentRef: ref}, 3, false},
+		{
+			"looks past the conditions a controller writes alongside Accepted",
+			v1.RouteParentStatus{
+				ParentRef: ref,
+				Conditions: []metav1.Condition{
+					{Type: string(v1.RouteConditionResolvedRefs), Status: metav1.ConditionTrue, ObservedGeneration: 1},
+					{Type: string(v1.RouteConditionAccepted), Status: metav1.ConditionTrue, ObservedGeneration: 3},
+				},
+			},
+			3, true,
+		},
 	}
 
 	for _, tt := range tests {
