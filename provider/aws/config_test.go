@@ -191,7 +191,7 @@ func fipsEndpointState(t *testing.T, cfg awsv2.Config) (awsv2.FIPSEndpointState,
 	}
 	for _, source := range cfg.ConfigSources {
 		if p, ok := source.(provider); ok {
-			state, found, err := p.GetUseFIPSEndpoint(context.Background())
+			state, found, err := p.GetUseFIPSEndpoint(t.Context())
 			require.NoError(t, err)
 			if found {
 				return state, true
