@@ -419,21 +419,34 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return hostTargets, nil
 	}
 
+	c.resolveParents(rt, rtHosts, routeParentRefs, hostTargets)
+
+	// If a Gateway has multiple matching Listeners for the same host, then we'll
+	// add its IPs to the target list multiple times and should dedupe them.
+	for host, targets := range hostTargets {
+		hostTargets[host] = uniqueTargets(targets)
+	}
+	return hostTargets, nil
+}
+
+// resolveParents adds the targets of every parent the Route is attached to.
+//
+// A Gateway controller can leave the status of a listener the Route has left in place,
+// and its hostnames would keep being published. The listeners the spec still selects are
+// resolved first; only when all of them actually produce a target is the older status
+// safe to ignore. Routes, Gateways and ListenerSets come from separate informer caches,
+// so a newer status can be visible before the listener it names.
+func (c *gatewayRouteResolver) resolveParents(rt gatewayRoute, rtHosts []string, routeParentRefs []v1.ParentReference, hostTargets map[string]endpoint.Targets) {
 	meta := rt.Metadata()
 	wanted := gwRouteWantedSelectors(meta, routeParentRefs)
 
-	// A Gateway controller can leave the status of a listener the Route has left in
-	// place, and its hostnames would keep being published. Resolve the listeners the
-	// spec still selects first; only when all of them actually produce a target is the
-	// older status safe to ignore. Routes, Gateways and ListenerSets come from separate
-	// informer caches, so a newer status can be visible before the listener it names.
-	usable := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(wanted))
+	usable := make(map[objectRef]sets.Set[gwRouteParentSelector], len(wanted))
 	var superseded []v1.RouteParentStatus
 
 	for _, rps := range rt.RouteStatus().Parents {
-		key := gwRouteParentKeyOf(rps.ParentRef, meta)
+		parentRef := gwRouteParentObjectRef(rps.ParentRef, meta)
 		selector := gwRouteParentSelectorOf(rps.ParentRef)
-		if !wanted[key].Has(selector) {
+		if !wanted[parentRef].Has(selector) {
 			superseded = append(superseded, rps)
 			continue
 		}
@@ -447,15 +460,15 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		if !gwRouteStatusIsCurrent(rps, meta.Generation) {
 			continue
 		}
-		if usable[key] == nil {
-			usable[key] = sets.New[gwRouteParentSelector]()
+		if usable[parentRef] == nil {
+			usable[parentRef] = sets.New[gwRouteParentSelector]()
 		}
-		usable[key].Insert(selector)
+		usable[parentRef].Insert(selector)
 	}
 
 	for _, rps := range superseded {
-		key := gwRouteParentKeyOf(rps.ParentRef, meta)
-		if selectors, inSpec := wanted[key]; inSpec && len(usable[key]) >= len(selectors) {
+		parentRef := gwRouteParentObjectRef(rps.ParentRef, meta)
+		if selectors, inSpec := wanted[parentRef]; inSpec && len(usable[parentRef]) >= len(selectors) {
 			continue
 		}
 		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
@@ -464,12 +477,6 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		}
 		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
 	}
-	// If a Gateway has multiple matching Listeners for the same host, then we'll
-	// add its IPs to the target list multiple times and should dedupe them.
-	for host, targets := range hostTargets {
-		hostTargets[host] = uniqueTargets(targets)
-	}
-	return hostTargets, nil
 }
 
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
@@ -820,9 +827,9 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 
 func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
 	// Ensure that the parent reference is in the routeParentRefs list
-	key := gwRouteParentKeyOf(ref, meta)
+	key := gwRouteParentObjectRef(ref, meta)
 	for _, rpr := range routeParentRefs {
-		if gwRouteParentKeyOf(rpr, meta) == key {
+		if gwRouteParentObjectRef(rpr, meta) == key {
 			return true
 		}
 	}
@@ -845,21 +852,15 @@ func gwRouteParentKind(ref v1.ParentReference) string {
 	return string(*ref.Kind)
 }
 
-// gwRouteParentKey identifies a parent object, without the sectionName and port.
-type gwRouteParentKey struct {
-	group     string
-	kind      string
-	namespace string
-	name      string
-}
-
-func gwRouteParentKeyOf(ref v1.ParentReference, meta *metav1.ObjectMeta) gwRouteParentKey {
-	return gwRouteParentKey{
-		group:     gwRouteParentGroup(ref),
-		kind:      gwRouteParentKind(ref),
-		namespace: strVal((*string)(ref.Namespace), meta.Namespace),
-		name:      string(ref.Name),
-	}
+// gwRouteParentObjectRef is the parent a reference points at, in the same shape the
+// resolver looks listener objects up by, without the sectionName and port.
+func gwRouteParentObjectRef(ref v1.ParentReference, meta *metav1.ObjectMeta) objectRef {
+	return newObjectRef(
+		gwRouteParentGroup(ref),
+		gwRouteParentKind(ref),
+		strVal((*string)(ref.Namespace), meta.Namespace),
+		string(ref.Name),
+	)
 }
 
 // gwRouteParentSelector is the part of a reference that picks listeners on a parent.
@@ -878,10 +879,10 @@ func gwRouteParentSelectorOf(ref v1.ParentReference) gwRouteParentSelector {
 }
 
 // gwRouteWantedSelectors groups the listeners the spec selects by parent object.
-func gwRouteWantedSelectors(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference) map[gwRouteParentKey]sets.Set[gwRouteParentSelector] {
-	wanted := make(map[gwRouteParentKey]sets.Set[gwRouteParentSelector], len(routeParentRefs))
+func gwRouteWantedSelectors(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference) map[objectRef]sets.Set[gwRouteParentSelector] {
+	wanted := make(map[objectRef]sets.Set[gwRouteParentSelector], len(routeParentRefs))
 	for _, ref := range routeParentRefs {
-		key := gwRouteParentKeyOf(ref, meta)
+		key := gwRouteParentObjectRef(ref, meta)
 		if wanted[key] == nil {
 			wanted[key] = sets.New[gwRouteParentSelector]()
 		}
