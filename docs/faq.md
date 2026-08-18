@@ -172,13 +172,13 @@ remaining source on the next reconcile, with no manual record deletion required.
 Be aware that a source may produce a hostname from more than one place, so
 removing a single field is not always enough. An `ingress`, for example, emits a
 hostname from both `spec.rules[].host` and the
-`external-dns.alpha.kubernetes.io/hostname` annotation, and by default returns
+`external-dns.kubernetes.io/hostname` annotation, and by default returns
 the union of the two. Commenting out the annotation alone does not help if the
 host is still listed under `spec.rules`. To stop an Ingress from claiming
 `test1.example.com`, do one of:
 
 - remove `test1.example.com` from `spec.rules[].host`;
-- set `external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only`
+- set `external-dns.kubernetes.io/ingress-hostname-source: annotation-only`
   so only the annotation is read (then remove the annotation), or
   `defined-hosts-only` so only `spec.rules` is read; or
 - delete the Ingress.
