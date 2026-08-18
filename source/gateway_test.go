@@ -270,7 +270,7 @@ func TestGatewayRouteStatusIsCurrent(t *testing.T) {
 	}{
 		{"accepted for the generation in hand", condition(metav1.ConditionTrue, 3), 3, true},
 		{"accepted, but for an older generation", condition(metav1.ConditionTrue, 1), 3, false},
-		{"accepted with no generation recorded", condition(metav1.ConditionTrue, 0), 3, true},
+		{"accepted, but with no generation recorded", condition(metav1.ConditionTrue, 0), 3, false},
 		{"not accepted", condition(metav1.ConditionFalse, 3), 3, false},
 		{"no accepted condition at all", v1.RouteParentStatus{ParentRef: ref}, 3, false},
 		{

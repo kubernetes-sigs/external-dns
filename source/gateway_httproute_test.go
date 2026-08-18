@@ -682,7 +682,51 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: gatewayStatus("1.2.3.4"),
 			}},
 			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), metav1.ConditionTrue, 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), metav1.ConditionTrue, 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The same move, but the controller does not record observedGeneration, so
+			// it never says which Route it looked at. Nothing is pruned and the source
+			// behaves as it did before this change.
+			title:      "SectionNameChangedWithoutAnObservedGeneration",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
 				Spec: v1.HTTPRouteSpec{
 					Hostnames: hostnames("*.example.internal"),
 					CommonRouteSpec: v1.CommonRouteSpec{
@@ -697,6 +741,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
 				newTestEndpoint("bar.example.internal", "1.2.3.4"),
 			},
 		},

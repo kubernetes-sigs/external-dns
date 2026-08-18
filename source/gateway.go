@@ -890,17 +890,21 @@ func gwRouteWantedSelectors(meta *metav1.ObjectMeta, routeParentRefs []v1.Parent
 	return wanted
 }
 
-// gwRouteStatusIsCurrent reports whether a status was accepted for the Route as it stands
-// now, which is what makes it evidence that an older status can be ignored. A controller
-// which leaves observedGeneration unset is taken at its word, since many do. This never
-// decides whether a status may produce endpoints; see #5349 and #5490.
+// gwRouteStatusIsCurrent reports whether the Gateway controller accepted this parent for
+// the Route as it stands now, which is what makes it evidence that an older entry can be
+// ignored. A controller which leaves observedGeneration unset never provides that
+// evidence, so nothing is pruned for it and the source behaves as it did before.
+//
+// This never decides whether a status may produce endpoints. An entry the controller has
+// not caught up with still resolves, which is the deletion #5349 introduced and #5490
+// reverted.
 func gwRouteStatusIsCurrent(status v1.RouteParentStatus, generation int64) bool {
 	for _, condition := range status.Conditions {
 		if condition.Type != string(v1.RouteConditionAccepted) {
 			continue
 		}
 		return condition.Status == metav1.ConditionTrue &&
-			(condition.ObservedGeneration == 0 || condition.ObservedGeneration == generation)
+			condition.ObservedGeneration == generation
 	}
 	return false
 }
