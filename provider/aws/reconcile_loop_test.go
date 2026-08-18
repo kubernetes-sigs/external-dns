@@ -536,11 +536,19 @@ func TestReconcileLoopRecordTypeTransition(t *testing.T) {
 			h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
 
 			h.mustSettle([]*endpoint.Endpoint{cnameTo("app", tr.from)})
+			host := "app." + reconcileZone
+			before := h.targets(host)
 
 			_, err := h.settle([]*endpoint.Endpoint{cnameTo("app", tr.to)})
-			require.Errorf(t, err,
+			require.ErrorIsf(t, err, provider.SoftError,
 				"upsert-only cannot complete a record type change, Route 53 rejects the batch; zone:\n  %s",
 				h.zone())
+
+			// What matters is that the records people resolve are still the ones they
+			// were. Ownership TXT records go out in their own change batch, so the ones
+			// belonging to the record type which could not be created are left behind.
+			require.Equalf(t, before, h.targets(host),
+				"the rejected transition changed the records being served; zone:\n  %s", h.zone())
 		})
 	}
 }
@@ -596,6 +604,14 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 				first, err := h.runOnce(desired)
 				require.NoError(t, err)
 				require.Emptyf(t, first.Delete, "upgrading deleted live records: %v", first.Delete)
+
+				// The new ownership TXT has to be there after the very first loop. If it
+				// only turned up later, the record would spend a reconciliation unowned.
+				require.NotNilf(t,
+					h.findRecord(names.ToTXTName(host, endpoint.RecordTypeA), endpoint.RecordTypeTXT),
+					"the a- ownership TXT is missing after the first reconcile; zone:\n  %s", h.zone())
+				require.NotNilf(t, h.findRecord(legacyTXT, endpoint.RecordTypeTXT),
+					"the legacy TXT was removed instead of being left for the cleanup script; zone:\n  %s", h.zone())
 
 				h.mustSettle(desired)
 				for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
