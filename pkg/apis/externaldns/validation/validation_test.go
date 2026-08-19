@@ -336,6 +336,88 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 	}
 }
 
+func TestValidateConfigForRfc2136(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     externaldns.Config
+		wantErr string
+	}{
+		{
+			name: "minimal config passes",
+			cfg: externaldns.Config{
+				RFC2136MinTTL:          3600,
+				RFC2136BatchChangeSize: 50,
+			},
+		},
+		{
+			name: "negative min ttl is rejected",
+			cfg: externaldns.Config{
+				RFC2136MinTTL:          -1,
+				RFC2136BatchChangeSize: 50,
+			},
+			wantErr: "TTL specified for rfc2136 is negative",
+		},
+		{
+			name: "insecure combined with gss-tsig is rejected",
+			cfg: externaldns.Config{
+				RFC2136Insecure:        true,
+				RFC2136GSSTSIG:         true,
+				RFC2136MinTTL:          3600,
+				RFC2136BatchChangeSize: 50,
+			},
+			wantErr: "--rfc2136-insecure and --rfc2136-gss-tsig are mutually exclusive arguments",
+		},
+		{
+			name: "insecure-axfr without axfr is rejected",
+			cfg: externaldns.Config{
+				RFC2136InsecureAXFR:    true,
+				RFC2136AXFR:            false,
+				RFC2136MinTTL:          3600,
+				RFC2136BatchChangeSize: 50,
+			},
+			wantErr: "--rfc2136-insecure-axfr requires --rfc2136-axfr",
+		},
+		{
+			name: "insecure-axfr with axfr passes",
+			cfg: externaldns.Config{
+				RFC2136InsecureAXFR:    true,
+				RFC2136AXFR:            true,
+				RFC2136MinTTL:          3600,
+				RFC2136BatchChangeSize: 50,
+			},
+		},
+		{
+			name: "gss-tsig without kerberos credentials is rejected",
+			cfg: externaldns.Config{
+				RFC2136GSSTSIG:         true,
+				RFC2136MinTTL:          3600,
+				RFC2136BatchChangeSize: 50,
+			},
+			wantErr: "--rfc2136-kerberos-realm, --rfc2136-kerberos-username, and --rfc2136-kerberos-password are required when specifying --rfc2136-gss-tsig option",
+		},
+		{
+			name: "batch change size below one is rejected",
+			cfg: externaldns.Config{
+				RFC2136MinTTL:          3600,
+				RFC2136BatchChangeSize: 0,
+			},
+			wantErr: "batch size specified for rfc2136 cannot be less than 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateConfigForRfc2136(&tt.cfg)
+
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestValidateBadAzureConfig(t *testing.T) {
 	cfg := externaldns.NewConfig()
 
