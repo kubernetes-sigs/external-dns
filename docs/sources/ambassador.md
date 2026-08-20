@@ -8,7 +8,7 @@ and creates DNS records for the hostnames they declare.
 ExternalDNS uses the `getambassador.io/v3alpha1` CRD version. This requires
 Emissary-ingress 3.x (the `datawire/ambassador` v2 CRDs are no longer installed by the
 3.10 quickstart). For older deployments still serving only the v2 CRD, stay on
-ExternalDNS v0.22.0 or earlier.
+ExternalDNS v0.21.0 or earlier.
 
 ## How it works
 
