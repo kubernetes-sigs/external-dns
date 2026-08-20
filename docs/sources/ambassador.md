@@ -101,7 +101,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         args:
         - --source=ambassador-host
         - --policy=sync # full synchronization so updates/deletes are applied; set --policy=upsert-only to prevent deletions
