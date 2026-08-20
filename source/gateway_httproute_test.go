@@ -1768,3 +1768,92 @@ func TestGatewayHTTPRouteSource_InformerTransform(t *testing.T) {
 		withRemovedStatusConditions(),
 	)
 }
+
+// Fully namespaced mode (--namespace + --gateway-namespace) must not require cluster-scoped
+// Namespace list/watch, matching Helm RBAC when namespaced=true and gatewayNamespace is set.
+func TestGatewayHTTPRouteSource_FullyNamespacedSkipsNamespaceInformer(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	// KubeClient must not be required when both namespace scopes are set.
+
+	ns := "apps"
+	gwNS := "infra"
+	fromSame := v1.NamespacesFromSame
+
+	gw := &v1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: gwNS},
+		Spec: v1.GatewaySpec{
+			Listeners: []v1.Listener{{
+				Protocol: v1.HTTPProtocolType,
+				Port:     80,
+				AllowedRoutes: &v1.AllowedRoutes{
+					Namespaces: &v1.RouteNamespaces{From: &fromSame},
+				},
+			}},
+		},
+		Status: gatewayStatus("10.0.0.1"),
+	}
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: ns},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{gwParentRef(gwNS, "gw")},
+			},
+		},
+		Status: httpRouteStatus(gwParentRef(gwNS, "gw")),
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		Namespace:        ns,
+		GatewayNamespace: gwNS,
+	})
+	require.NoError(t, err)
+	require.IsType(t, &gatewayRouteSource{}, src)
+	require.Nil(t, src.(*gatewayRouteSource).nsInformer, "fully namespaced mode must not create a Namespace informer")
+	clients.AssertNotCalled(t, "KubeClient")
+
+	// Same-namespace attachment still works without Namespace informer when route and gateway share ns.
+	// Cross-namespace FromSame correctly yields no endpoints.
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	require.Empty(t, endpoints)
+
+	// Same namespace: should generate endpoints without Namespace informer.
+	rtSame := &v1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Name: "rt-same", Namespace: gwNS},
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"same.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{gwParentRef(gwNS, "gw")},
+			},
+		},
+		Status: httpRouteStatus(gwParentRef(gwNS, "gw")),
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rtSame.Namespace).Create(ctx, rtSame, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	srcSame, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		Namespace:        gwNS,
+		GatewayNamespace: gwNS,
+	})
+	require.NoError(t, err)
+	require.Nil(t, srcSame.(*gatewayRouteSource).nsInformer)
+
+	endpoints, err = srcSame.Endpoints(ctx)
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("same.example.com", "10.0.0.1"),
+	})
+}
