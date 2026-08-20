@@ -7,7 +7,7 @@ You might want to ask in our Slack channel [external-dns](https://kubernetes.sla
 
 ## Staging Release cycle
 
-A new staging image is released weekly and can be found on [the official staging registry]([https://console.cloud.google.com/gcr/images/k8s-staging-external-dns/GLOBAL/external-dns?pli=1&inv=1&invt=AboL6Q](https://console.cloud.google.com/artifacts/docker/k8s-staging-external-dns/us/gcr.io/external-dns?project=k8s-staging-external-dns)).
+A new staging image is released weekly and can be found on [the official staging registry](https://console.cloud.google.com/artifacts/docker/k8s-staging-external-dns/us/gcr.io/external-dns?project=k8s-staging-external-dns).
 
 > There is a time lag between merging changes into the master branch and the subsequent creation of the staging image.
 
