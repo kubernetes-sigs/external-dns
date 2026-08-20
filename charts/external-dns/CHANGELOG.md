@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add value `.service.enabled` to enable the creation of the Kubernetes service.
 - Add value `replicaCount` to set the number of `external-dns` replicas (bounded to `0` or `1`, since external-dns does not support leader election). [#6503](https://github.com/kubernetes-sigs/external-dns/pull/6503) _@yugstar_
+- Add value `hostAliases` to inject entries into the `Pod`'s `/etc/hosts`, for reaching a provider or webhook by a hostname that cluster DNS cannot resolve. [#6588](https://github.com/kubernetes-sigs/external-dns/pull/6588) _@jetersen_
 
 ### Changed
 

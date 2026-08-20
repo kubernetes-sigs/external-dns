@@ -137,6 +137,10 @@
         }
       }
     },
+    "hostAliases": {
+      "description": "[Host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to add to the `Pod` definition, injected into the pod's `/etc/hosts`.",
+      "type": "array"
+    },
     "image": {
       "type": "object",
       "properties": {
