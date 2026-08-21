@@ -782,13 +782,9 @@ func (h *hostnamesObject) DeepCopyObject() runtime.Object {
 	return &c
 }
 
-// TestExecFQDNFailsClosedOnUnknownField guards against the unstructured
-// retry (added so JSON-keyed Spec paths work on typed objects too) silently
-// swallowing template typos. text/template's default missingkey mode
-// renders a missing map key as "<no value>" instead of erroring, so without
-// an explicit strict mode the retry could turn a real mistake in
-// --fqdn-template into a wrong-but-valid hostname/target rather than a
-// startup-time-visible error. Reported by mloiseleur on #6611.
+// TestExecFQDNFailsClosedOnUnknownField guards the unstructured retry
+// against text/template's default missingkey mode, which renders a missing
+// map key as "<no value>" instead of erroring.
 func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "ns"},

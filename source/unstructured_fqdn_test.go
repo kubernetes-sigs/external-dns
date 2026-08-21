@@ -1175,11 +1175,8 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 }
 
 // TestUnstructuredWrapper_MapIterationIsNotAliasPolluted guards
-// withTitleCaseAliases against recursing into nested map values: an earlier
-// version aliased every key at every depth, so a template ranging or
-// len()-ing arbitrary nested data (not just the Spec/Status field names the
-// alias exists for) saw twice as many entries as were actually declared.
-// Reported by mloiseleur on #6611.
+// withTitleCaseAliases against recursing into nested maps, which used to
+// double every key one level down and break range/len over nested data.
 func TestUnstructuredWrapper_MapIterationIsNotAliasPolluted(t *testing.T) {
 	obj := &unstructured.Unstructured{
 		Object: map[string]any{
@@ -1228,12 +1225,8 @@ func TestUnstructuredWrapper_MapIterationIsNotAliasPolluted(t *testing.T) {
 	})
 }
 
-// TestTitleCaseKey_KnownInitialisms guards the CRD field names mloiseleur
-// called out on #6611: a naive first-letter-only titlecase turns "url" into
-// "Url" and "dnsNames" into "DnsNames", neither of which matches the Go
-// field names Kubernetes' code generator actually produces (URL, DNSNames),
-// so templates written against real generated types (cert-manager's
-// CertificateSpec.DNSNames, for one) silently failed to match.
+// TestTitleCaseKey_KnownInitialisms covers CRD field names a naive
+// first-letter-only titlecase would miss, e.g. cert-manager's URL/DNSNames.
 func TestTitleCaseKey_KnownInitialisms(t *testing.T) {
 	cases := map[string]string{
 		"url":       "URL",
