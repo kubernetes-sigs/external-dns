@@ -21,19 +21,30 @@ NAME                         DNS NAME             TYPE    SET ID   TARGETS    ST
 sub-example-com-a-1a2b3c4d   sub.example.com      A                1.2.3.4    Programmed
 ```
 
-> The CRD registry is a **trustworthy record of what ExternalDNS applied** — it
-> is not a mirror of the DNS provider. A `DNSRecord` is written and marked
-> `Accepted` before the provider is called, then `Programmed` once the provider
-> accepts the change (or `Failed` if it does not). The `STATUS` column shows this
-> stage. Only `Programmed` records are treated as current state, so a record left
-> un-programmed by a provider failure is re-applied on the next reconcile rather
-> than mistaken for one that already exists. Records changed out-of-band directly
-> in the provider are not reconciled by this registry.
+> The CRD registry is a **record of what ExternalDNS applied**, not a mirror of
+> the DNS provider: records changed out-of-band in the provider are not
+> reconciled.
+> Only records that reached `Programmed` (see [Status](#status)) count
+> as current state, so anything left un-programmed by a provider failure is
+> re-applied on the next reconcile.
 
 ## Limitations
 
 * Only the **in-cluster** Kubernetes API is currently supported (the cluster
   ExternalDNS runs in). Using another kubeconfig is planned for a follow-up.
+
+## Helm chart
+
+The [Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
+installs the `DNSRecord` CRD and grants the required RBAC when `registry` is set
+to `crd`:
+
+```yaml
+registry: crd
+txtOwnerId: my-identifier
+```
+
+The remaining sections cover manual installation.
 
 ## Install the DNSRecord CRD
 
@@ -43,17 +54,10 @@ Apply the `DNSRecord` CustomResourceDefinition before enabling the registry:
 kubectl apply -f config/crd/standard/dnsrecords.externaldns.k8s.io.yaml
 ```
 
-(The same manifest is published with the Helm chart under
-`charts/external-dns/crds/`.)
-
 ## RBAC
 
 ExternalDNS needs to read and write `DNSRecord` objects (including their status)
-in the namespace where they are stored.
-
-When installing with the [Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
-setting `registry: crd` grants this RBAC automatically — skip the manual `Role`
-and `RoleBinding` below. Otherwise, create them yourself:
+in the namespace where they are stored:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -99,13 +103,6 @@ instance with `--txt-owner-id`:
   owner IDs. See [Registries](registry.md).
 * `--namespace=external-dns` — the namespace `DNSRecord` objects are created in.
   When unset, the registry uses the `default` namespace.
-
-With the Helm chart, the equivalent values are:
-
-```yaml
-registry: crd
-txtOwnerId: my-identifier
-```
 
 ## Status
 
