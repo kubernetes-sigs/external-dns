@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"unicode"
 
@@ -234,9 +235,7 @@ func newUnstructuredWrapper(u *unstructured.Unstructured) *unstructuredWrapper {
 // reachable through their literal path (spec.endpoint.hostname) instead.
 func withTitleCaseAliases(m map[string]any) map[string]any {
 	out := make(map[string]any, len(m))
-	for k, v := range m {
-		out[k] = v
-	}
+	maps.Copy(out, m)
 	for k := range m {
 		title := titleCaseKey(k)
 		if title == k {
