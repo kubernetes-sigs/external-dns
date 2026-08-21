@@ -15,31 +15,44 @@ function label_by_scope {
   sed -E -e 's/^- [a-z]+\(([^)]*)\)!?: */- [\1] /' -e 's/^- [a-z]+!?: */- /'
 }
 
-# Same, but "Others" keeps the type: "ci(e2e): use X" -> "[ci] [e2e] use X".
-# Except "chore", which carries no meaning.
-function label_by_type {
-  sed -E \
-    -e 's/^- chore\(([^)]*)\)!?: */- [\1] /' \
-    -e 's/^- chore!?: */- /' \
-    -e 's/^- ([a-z]+)\(([^)]*)\)!?: */- [\1] [\2] /' \
-    -e 's/^- ([a-z]+)!?: */- [\1] /'
-}
-
-# section <title> <formatter> <grep args...>
+# section <title> <grep args...>
 function section {
-  local title="$1" formatter="$2"
-  shift 2
+  local title="$1"
+  shift
   local body
-  body=$(grep -E "$@" "${MERGED_PRS}" | "${formatter}" | sort) || true
+  body=$(grep -E "$@" "${MERGED_PRS}" | label_by_scope | sort) || true
   [ -n "${body}" ] || return 0
   printf '\n%s\n\n%s\n' "${title}" "${body}"
 }
 
+# Everything left, folded per type: the type is the summary, so entries keep only their scope.
+function others {
+  # "chore(deps)" is a dependency bump, not a chore: fold it with the "deps" type.
+  local rest
+  rest=$(grep -vE -e "${BREAKING_RE}" -e "${FEAT_RE}" -e "${FIX_RE}" -e "${DOCS_RE}" "${MERGED_PRS}" \
+    | sed -E 's/^- chore\(deps\)/- deps/') || true
+  [ -n "${rest}" ] || return 0
+
+  printf '\n## :package: Others\n'
+  local type
+  for type in $(printf '%s\n' "${rest}" | sed -nE 's/^- ([a-z]+)[(:].*/\1/p' | sort -u); do
+    printf '\n<details><summary>%s</summary>\n\n%s\n\n</details>\n' \
+      "${type}" "$(printf '%s\n' "${rest}" | grep -E "^- ${type}[(:]" | label_by_scope | sort)"
+  done
+
+  # Titles that are not conventional commits at all, left as they are.
+  local misc
+  misc=$(printf '%s\n' "${rest}" | grep -vE '^- [a-z]+[(:]' | sort) || true
+  if [ -n "${misc}" ]; then
+    printf '\n%s\n' "${misc}"
+  fi
+}
+
 function generate_changelog {
-  section "## :warning: Breaking Changes" label_by_scope "${BREAKING_RE}"
-  section "## :rocket: Features" label_by_scope "${FEAT_RE}"
-  section "## :bug: Bug fixes" label_by_scope "${FIX_RE}"
-  section "## :memo: Documentation" label_by_scope "${DOCS_RE}"
+  section "## :warning: Breaking Changes" "${BREAKING_RE}"
+  section "## :rocket: Features" "${FEAT_RE}"
+  section "## :bug: Bug fixes" "${FIX_RE}"
+  section "## :memo: Documentation" "${DOCS_RE}"
 
   printf '\n## :package: Docker Image\n\n'
   echo '```sh'
@@ -47,7 +60,7 @@ function generate_changelog {
   echo "docker pull registry.k8s.io/external-dns/external-dns:${VERSION}"
   echo '```'
 
-  section "## :package: Others" label_by_type -v -e "${BREAKING_RE}" -e "${FEAT_RE}" -e "${FIX_RE}" -e "${DOCS_RE}"
+  others
 }
 
 LATEST=$(gh release list -L 10 --json name,isLatest,publishedAt --jq '.[] | select(.isLatest) | "\(.name)\t\(.publishedAt)\t\(.publishedAt | fromdateiso8601)"')
