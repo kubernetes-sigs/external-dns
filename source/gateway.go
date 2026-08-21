@@ -565,11 +565,14 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		// This means that the route doesn't specify a hostname and should use any provided by
 		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
 		// break {TCP,UDP}Routes.
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
-		}
 		if !c.src.ignoreHostnameAnnotation {
 			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		// Only fall back to the attached listener hostname when nothing else supplied a name.
+		// Appending "" earlier would publish wildcard listener hostnames (e.g. *.example.com)
+		// even when an annotation already named the record.
+		if len(hostnames) == 0 {
+			hostnames = append(hostnames, "")
 		}
 		return hostnames, nil
 	}
@@ -587,11 +590,11 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
 		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
 			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
-		}
 		if !c.src.ignoreHostnameAnnotation {
 			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
+		}
+		if len(hostnames) == 0 {
+			hostnames = append(hostnames, "")
 		}
 		return hostnames, nil
 	}
