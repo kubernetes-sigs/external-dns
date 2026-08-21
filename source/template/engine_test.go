@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -503,6 +504,74 @@ func TestExecFQDNNilObject(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// A shared --fqdn-template using JSON-style Spec keys must succeed on typed objects too.
+func TestExecFQDNJSONFieldNamesOnTypedObject(t *testing.T) {
+	tmpl := `{{ range .Spec.hostnames }}{{ . }},{{ end }}`
+	engine, err := NewEngine([]string{tmpl}, nil, nil, false)
+	require.NoError(t, err)
+
+	typed := &hostnamesObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+		Spec: hostnamesSpec{
+			Hostnames: []string{"a.example.com", "b.example.com"},
+		},
+	}
+	got, err := engine.ExecFQDN(typed)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a.example.com", "b.example.com"}, got)
+
+	empty := &hostnamesObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+	}
+	got, err = engine.ExecFQDN(empty)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	unstructuredObj := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "gateway.networking.k8s.io/v1",
+			"kind":       "HTTPRoute",
+			"metadata": map[string]any{
+				"name":      "route",
+				"namespace": "default",
+			},
+			"spec": map[string]any{
+				"hostnames": []any{"a.example.com", "b.example.com"},
+			},
+		},
+	}
+	got, err = engine.ExecFQDN(unstructuredObj)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a.example.com", "b.example.com"}, got)
+}
+
+func TestExecFQDNJSONFieldNamesKeepsNameAccess(t *testing.T) {
+	// After a JSON-name retry, promoted Name must still work for templates
+	// that mix metav1 fields with JSON keys under Spec.
+	tmpl := `{{ .Name }}.{{ range .Spec.hostnames }}{{ . }}{{ end }}`
+	engine, err := NewEngine([]string{tmpl}, nil, nil, false)
+	require.NoError(t, err)
+
+	obj := &hostnamesObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+		Spec: hostnamesSpec{
+			Hostnames: []string{"example.com"},
+		},
+	}
+	got, err := engine.ExecFQDN(obj)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"route.example.com"}, got)
+}
+
 func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 	// Test that Kind is populated when initially empty (simulates informer behavior)
 	engine, err := NewEngine([]string{"{{ .Kind }}.{{ .Name }}.example.com"}, nil, nil, false)
@@ -769,4 +838,71 @@ func (t *testObject) DeepCopyObject() runtime.Object {
 		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
+}
+
+type hostnamesSpec struct {
+	Hostnames []string `json:"hostnames"`
+}
+
+// hostnamesObject mimics a typed API object with JSON tag names that differ
+// from Go exported field names (same shape as Gateway API HTTPRouteSpec).
+type hostnamesObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+	Spec hostnamesSpec `json:"spec"`
+}
+
+func (h *hostnamesObject) DeepCopyObject() runtime.Object {
+	c := *h
+	c.ObjectMeta = *h.ObjectMeta.DeepCopy()
+	if h.Spec.Hostnames != nil {
+		c.Spec.Hostnames = append([]string(nil), h.Spec.Hostnames...)
+	}
+	return &c
+}
+
+// TestExecFQDNFailsClosedOnUnknownField guards the unstructured retry
+// against text/template's default missingkey mode, which renders a missing
+// map key as "<no value>" instead of erroring.
+func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "ns"},
+	}
+
+	t.Run("fqdn template", func(t *testing.T) {
+		engine, err := NewEngine([]string{"{{ .Spec.hostname }}.example.com"}, nil, nil, false)
+		require.NoError(t, err)
+
+		got, err := engine.ExecFQDN(svc)
+
+		require.Error(t, err, "unknown field must not render as %q", "<no value>")
+		assert.Contains(t, err.Error(), "can't evaluate field hostname")
+		assert.Empty(t, got)
+	})
+
+	t.Run("target template", func(t *testing.T) {
+		// Same hole on --target-template: the endpoint would otherwise get
+		// "<no value>" as its target, which SuitableType classifies as a CNAME.
+		engine, err := NewEngine([]string{"{{ .Name }}.example.com"}, []string{"{{ .Spec.address }}"}, nil, false)
+		require.NoError(t, err)
+
+		eps, err := engine.ApplyTemplates(nil, svc)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "can't evaluate field address")
+		assert.Empty(t, eps)
+	})
+
+	t.Run("fqdn-target template", func(t *testing.T) {
+		// endpointsFromFQDNTargetTemplate skips pairs with an empty host or
+		// target, but "<no value>" is non-empty, so that guard cannot catch this.
+		engine, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:{{ .Spec.address }}"}, false)
+		require.NoError(t, err)
+
+		eps, err := engine.ApplyFQDNTargetTemplate(nil, svc)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "can't evaluate field address")
+		assert.Empty(t, eps)
+	})
 }
