@@ -183,6 +183,9 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 
 		for _, addr := range addrs {
 			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
+			if ep == nil {
+				continue
+			}
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)
