@@ -172,13 +172,13 @@ remaining source on the next reconcile, with no manual record deletion required.
 Be aware that a source may produce a hostname from more than one place, so
 removing a single field is not always enough. An `ingress`, for example, emits a
 hostname from both `spec.rules[].host` and the
-`external-dns.alpha.kubernetes.io/hostname` annotation, and by default returns
+`external-dns.kubernetes.io/hostname` annotation, and by default returns
 the union of the two. Commenting out the annotation alone does not help if the
 host is still listed under `spec.rules`. To stop an Ingress from claiming
 `test1.example.com`, do one of:
 
 - remove `test1.example.com` from `spec.rules[].host`;
-- set `external-dns.alpha.kubernetes.io/ingress-hostname-source: annotation-only`
+- set `external-dns.kubernetes.io/ingress-hostname-source: annotation-only`
   so only the annotation is read (then remove the annotation), or
   `defined-hosts-only` so only `spec.rules` is read; or
 - delete the Ingress.
@@ -220,7 +220,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.21.0
+  registry.k8s.io/external-dns/external-dns:v0.22.0
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 

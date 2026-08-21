@@ -71,6 +71,36 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
 }
 
+// WithSource returns a copy of the Engine scoped to the given source name, so its
+// templates can use isSource "name" (see source/types.Type).
+func (e Engine) WithSource(name string) (Engine, error) {
+	var err error
+	if e.fqdn, err = bindSource(e.fqdn, name); err != nil {
+		return Engine{}, err
+	}
+	if e.target, err = bindSource(e.target, name); err != nil {
+		return Engine{}, err
+	}
+	if e.fqdnTarget, err = bindSource(e.fqdnTarget, name); err != nil {
+		return Engine{}, err
+	}
+	return e, nil
+}
+
+// bindSource clones tmpl and rebinds isSource to name.
+func bindSource(tmpl *template.Template, name string) (*template.Template, error) {
+	if tmpl == nil {
+		return nil, nil //nolint:nilnil // nil signals "not configured"; matches tmpl's own nil-ness
+	}
+	clone, err := tmpl.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("template: clone for source %q: %w", name, err)
+	}
+	return clone.Funcs(template.FuncMap{
+		"isSource": func(want string) (bool, error) { return isSource(name, want) },
+	}), nil
+}
+
 // IsConfigured reports whether the FQDN template is set and ready to use.
 func (e Engine) IsConfigured() bool {
 	return e.fqdn != nil

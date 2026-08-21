@@ -114,6 +114,9 @@ dnsPolicy:  # @schema type:[string, null]; default: null
 # -- (object) [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used.
 dnsConfig:  # @schema type:[object, null]; default: null
 
+# -- [Host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to add to the `Pod` definition, injected into the pod's `/etc/hosts`.
+hostAliases: []
+
 # -- [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition.
 initContainers: []
 
@@ -235,8 +238,8 @@ sources:
   - service
   - ingress
 
-# -- How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`.
-policy: upsert-only  # @schema enum:[create-only, sync, upsert-only]; type:string; default: "upsert-only"
+# -- (REQUIRED) How DNS records are synchronized between sources and providers; must be set explicitly to one of `create-only`, `sync`, or `upsert-only`.
+policy:  # @schema enum:[create-only, sync, upsert-only]; type:string; required:true
 
 # -- Specify the registry for storing ownership and labels.
 # Valid values are `txt`, `aws-sd`, `crd`, `dynamodb` & `noop`.

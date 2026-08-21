@@ -52,6 +52,8 @@ const (
 	RecordTypeMX = "MX"
 	// RecordTypeNAPTR is a RecordType enum value
 	RecordTypeNAPTR = "NAPTR"
+	// RecordTypeDNAME is a RecordType enum value
+	RecordTypeDNAME = "DNAME"
 
 	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
 	// provider-native alias record (e.g. AWS ALIAS).
@@ -73,6 +75,7 @@ var (
 		RecordTypePTR,
 		RecordTypeMX,
 		RecordTypeNAPTR,
+		RecordTypeDNAME,
 	}
 )
 
@@ -90,6 +93,14 @@ type Targets []string
 // MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
 type MXTarget struct {
 	priority uint16
+	host     string
+}
+
+// SRVTarget represents a single SRV record target, including its priority, weight, port, and host.
+type SRVTarget struct {
+	priority uint16
+	weight   uint16
+	port     uint16
 	host     string
 }
 
@@ -643,14 +654,66 @@ func NewMXRecord(target string) (*MXTarget, error) {
 	}, nil
 }
 
+// NewSRVRecord parses a string representation of an SRV record target (e.g., "10 5 5060 example.com.")
+// and returns an SRVTarget struct. Returns an error if the input is invalid.
+func NewSRVRecord(target string) (*SRVTarget, error) {
+	parts := strings.Fields(strings.TrimSpace(target))
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("invalid SRV record target: %s. SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
+	}
+	if !strings.HasSuffix(parts[3], ".") {
+		return nil, fmt.Errorf("invalid SRV record target: %s. Target host does not end with a dot", target)
+	}
+
+	priority, err := strconv.ParseUint(parts[0], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SRV priority %q: %w", parts[0], err)
+	}
+	weight, err := strconv.ParseUint(parts[1], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SRV weight %q: %w", parts[1], err)
+	}
+	port, err := strconv.ParseUint(parts[2], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("invalid SRV port %q: %w", parts[2], err)
+	}
+
+	return &SRVTarget{
+		priority: uint16(priority),
+		weight:   uint16(weight),
+		port:     uint16(port),
+		host:     parts[3],
+	}, nil
+}
+
 // GetPriority returns the priority of the MX record target.
 func (m *MXTarget) GetPriority() *uint16 {
 	return &m.priority
 }
 
 // GetHost returns the host of the MX record target.
-func (m *MXTarget) GetHost() *string {
-	return &m.host
+func (m *MXTarget) GetHost() string {
+	return m.host
+}
+
+// GetPriority returns the priority of the SRV record target.
+func (s *SRVTarget) GetPriority() uint16 {
+	return s.priority
+}
+
+// GetWeight returns the weight of the SRV record target.
+func (s *SRVTarget) GetWeight() uint16 {
+	return s.weight
+}
+
+// GetPort returns the port of the SRV record target.
+func (s *SRVTarget) GetPort() uint16 {
+	return s.port
+}
+
+// GetHost returns the host of the SRV record target.
+func (s *SRVTarget) GetHost() string {
+	return s.host
 }
 
 // ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
@@ -689,24 +752,10 @@ func (t Targets) ValidateMXRecord() bool {
 // ValidateSRVRecord reports whether all targets are valid SRV record values (priority weight port host).
 func (t Targets) ValidateSRVRecord() bool {
 	for _, target := range t {
-		// SRV records must have a priority, weight, a port value and a target e.g. "10 5 5060 example.com."
-		// as per https://www.rfc-editor.org/rfc/rfc2782.txt the target host has to end with a dot.
-		targetParts := strings.Fields(strings.TrimSpace(target))
-		if len(targetParts) != 4 {
-			log.Debugf("Invalid SRV record target: %s. SRV records must have a priority, weight, a port value and a target host, e.g. '10 5 5060 example.com.'", target)
+		_, err := NewSRVRecord(target)
+		if err != nil {
+			log.Debugf("Invalid SRV record target: %s. %v", target, err)
 			return false
-		}
-		if !strings.HasSuffix(targetParts[3], ".") {
-			log.Debugf("Invalid SRV record target: %s. Target host does not end with a dot.'", target)
-			return false
-		}
-
-		for _, part := range targetParts[:3] {
-			_, err := strconv.ParseUint(part, 10, 16)
-			if err != nil {
-				log.Debugf("Invalid SRV record target: %s. Invalid integer value in target.", target)
-				return false
-			}
 		}
 	}
 	return true

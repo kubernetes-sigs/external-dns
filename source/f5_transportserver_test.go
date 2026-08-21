@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
@@ -44,6 +45,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 	tests := []struct {
 		name             string
 		annotationFilter string
+		labelFilter      labels.Selector
 		transportServer  f5.TransportServer
 		expected         []*endpoint.Endpoint
 	}{
@@ -329,6 +331,55 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			expected: nil,
 		},
 		{
+			name:        "F5 TransportServer with matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5TransportServerNamespace,
+					Labels:    map[string]string{"app": "test"},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: "192.168.1.100"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.com",
+					Targets:    []string{"192.168.1.100"},
+					RecordType: endpoint.RecordTypeA,
+					Labels:     endpoint.Labels{"resource": "f5-transportserver/transportserver/test-vs"},
+				},
+			},
+		},
+		{
+			name:        "F5 TransportServer with non-matching label filter",
+			labelFilter: labels.SelectorFromSet(labels.Set{"app": "test"}),
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-vs",
+					Namespace: defaultF5TransportServerNamespace,
+					Labels:    map[string]string{"app": "other"},
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: "192.168.1.100"},
+			},
+			expected: nil,
+		},
+		{
 			name: "F5 TransportServer does not support provider-specific annotations",
 			transportServer: f5.TransportServer{
 				TypeMeta: metav1.TypeMeta{
@@ -382,10 +433,15 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &transportServer, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
+			labelFilter := tc.labelFilter
+			if labelFilter == nil {
+				labelFilter = labels.Everything()
+			}
 			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
 					Namespace:        defaultF5TransportServerNamespace,
-					AnnotationFilter: tc.annotationFilter,
+					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
+					LabelFilter:      labelFilter,
 				})
 			require.NoError(t, err)
 			assert.NotNil(t, source)
@@ -412,7 +468,7 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{})
+	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5TransportServerSource{}, source)
 
@@ -423,4 +479,134 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
+}
+
+// TestF5TransportServerIndexer verifies that the TransportServer indexer correctly filters resources
+// by annotation filter and label selector at index time, so that only matching resources are
+// returned by Endpoints().
+func TestF5TransportServerIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(name, vsAddress string, ann, lbls map[string]string) *f5.TransportServer {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		return &f5.TransportServer{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: f5TransportServerGVR.GroupVersion().String(),
+				Kind:       "TransportServer",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   defaultF5TransportServerNamespace,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Spec: f5.TransportServerSpec{
+				Host: name + ".example.org",
+			},
+			Status: f5.CustomResourceStatus{
+				VSAddress: vsAddress,
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		servers          []*f5.TransportServer
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all servers",
+			expectedCount: 3,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", nil, nil),
+				makeEntity("ts2", "1.2.3.2", nil, nil),
+				makeEntity("ts3", "1.2.3.3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter includes matching servers",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ts2", "1.2.3.2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ts3", "1.2.3.3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter includes matching servers",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", nil, map[string]string{"env": "prod"}),
+				makeEntity("ts2", "1.2.3.2", nil, map[string]string{"env": "staging"}),
+				makeEntity("ts3", "1.2.3.3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ts2", "1.2.3.2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ts3", "1.2.3.3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches returns empty",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			servers: []*f5.TransportServer{
+				makeEntity("ts1", "1.2.3.1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
+	}
+
+	uc, err := newTSUnstructuredConverter()
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			for _, srv := range tt.servers {
+				data, err := json.Marshal(srv)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespace:        defaultF5TransportServerNamespace,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
 }

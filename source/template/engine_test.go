@@ -128,6 +128,85 @@ func TestEngine_Combining(t *testing.T) {
 	})
 }
 
+func TestEngine_WithSource(t *testing.T) {
+	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
+
+	t.Run("isSource matches the bound name case-insensitively", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "Service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		got, err := scoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"yes.example.com"}, got)
+	})
+
+	t.Run("isSource is false for a non-matching name", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "pod" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		got, err := scoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"no.example.com"}, got)
+	})
+
+	t.Run("isSource is always false when Engine is never scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		got, err := e.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"no.example.com"}, got)
+	})
+
+	t.Run("isSource with an unknown source name errors when scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "servics" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		_, err = scoped.ExecFQDN(obj)
+		require.ErrorContains(t, err, `isSource: unknown source "servics"`)
+	})
+
+	t.Run("isSource with an unknown source name errors when never scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "servics" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		_, err = e.ExecFQDN(obj)
+		require.ErrorContains(t, err, `isSource: unknown source "servics"`)
+	})
+
+	t.Run("scoping one source does not affect another built from the same base Engine", func(t *testing.T) {
+		base, err := NewEngine([]string{`{{ if isSource "service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+
+		serviceScoped, err := base.WithSource("service")
+		require.NoError(t, err)
+		podScoped, err := base.WithSource("pod")
+		require.NoError(t, err)
+
+		gotService, err := serviceScoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"yes.example.com"}, gotService)
+
+		gotPod, err := podScoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"no.example.com"}, gotPod)
+
+		// Re-check service after scoping pod, to guard against in-place mutation of a shared template.
+		gotServiceAgain, err := serviceScoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"yes.example.com"}, gotServiceAgain)
+	})
+
+	t.Run("safe to call on an unconfigured Engine", func(t *testing.T) {
+		e, err := NewEngine(nil, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		assert.False(t, scoped.IsConfigured())
+	})
+}
+
 func TestEngine_execTarget(t *testing.T) {
 	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
 

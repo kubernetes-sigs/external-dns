@@ -21,13 +21,14 @@ The following table documents which sources support which annotations:
 | Pod          |            | Yes      | Yes               | Yes     |         |                     |
 | Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes     | Yes                 |
 | Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Traefik      |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Traefik      |            | Yes[^1]  |                   | Yes[^6] | Yes     | Yes                 |
 
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
 [^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.
 [^3]: Also supported on `Pods` referenced from a headless `Service`'s `Endpoints`.
 [^4]: For Gateway API sources, annotation placement differs by type. See [Gateway API Annotation Placement](#gateway-api-annotation-placement) for details.
 [^5]: The annotation must be on the listener's `VirtualService`.
+[^6]: Traefik CRDs require an explicit `external-dns.kubernetes.io/target` value. They do not expose a load balancer IP or hostname in status, so no endpoint is generated without it and `--default-targets` cannot apply.
 
 ## external-dns.kubernetes.io/access
 
@@ -377,10 +378,10 @@ metadata:
   name: my-app
   namespace: default
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/target: ipv4-only-target.example.com
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/target: ipv4-only-target.example.com
     # Create only an A (IPv4) alias record to avoid creating an AAAA alias record for an IPv4-only target.
-    external-dns.alpha.kubernetes.io/alias: "A"
+    external-dns.kubernetes.io/alias: "A"
 spec:
   type: LoadBalancer
   ports:

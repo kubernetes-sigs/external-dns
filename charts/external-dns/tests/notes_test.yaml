@@ -1,4 +1,6 @@
 suite: NOTES.txt output
+set:
+  policy: upsert-only
 templates:
   - NOTES.txt
 chart:

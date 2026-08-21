@@ -239,6 +239,7 @@ go run main.go \
     --provider=aws \
     --registry=txt \
     --source=fake \
+    --policy=sync \
     --log-level=info
 ```
 

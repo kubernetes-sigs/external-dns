@@ -18,7 +18,6 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -26,7 +25,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -56,16 +54,13 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:category=Load Balancers
 // +externaldns:source:description=Creates DNS entries from F5 TransportServer resources
 // +externaldns:source:resources=TransportServer.cis.f5.com
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
-	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer
 	kubeClient              kubernetes.Interface
-	annotationFilter        string
-	namespace               string
 	templateEngine          template.Engine
 	unstructuredConverter   *unstructuredConverter
 }
@@ -84,6 +79,12 @@ func NewF5TransportServerSource(
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
+	informers.MustAddIndexers(transportServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
+	))
+
 	informers.MustAddEventHandler(transportServerInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
@@ -99,11 +100,8 @@ func NewF5TransportServerSource(
 	}
 
 	return &f5TransportServerSource{
-		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
-		namespace:               cfg.Namespace,
-		annotationFilter:        cfg.AnnotationFilter,
 		templateEngine:          cfg.TemplateEngine,
 		unstructuredConverter:   uc,
 	}, nil
@@ -112,21 +110,12 @@ func NewF5TransportServerSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TransportServers in the source's namespace(s).
 func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	transportServerObjects, err := ts.transportServerInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	transportServerObjects := informers.ListIndexed[*unstructured.Unstructured](ts.transportServerInformer.Informer().GetIndexer())
 
 	var transportServers []*f5.TransportServer
 	for _, tsObj := range transportServerObjects {
-		unstructuredHost, ok := tsObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert")
-		}
-
 		transportServer := &f5.TransportServer{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, transportServer, nil)
-		if err != nil {
+		if err := ts.unstructuredConverter.scheme.Convert(tsObj, transportServer, nil); err != nil {
 			return nil, err
 		}
 		transportServer.TypeMeta = metav1.TypeMeta{
@@ -134,11 +123,6 @@ func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.End
 			APIVersion: f5TransportServerGVR.GroupVersion().String(),
 		}
 		transportServers = append(transportServers, transportServer)
-	}
-
-	transportServers, err = annotations.Filter(transportServers, ts.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
 	}
 
 	endpoints, err := ts.endpointsFromTransportServers(transportServers)

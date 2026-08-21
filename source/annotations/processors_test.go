@@ -26,12 +26,10 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
-// helper implementing metav1.ObjectMetaAccessor for tests
+// helper implementing metav1.Object for tests via embedded ObjectMeta
 type objectUnderTest struct {
-	meta metav1.ObjectMeta
+	metav1.ObjectMeta
 }
-
-func (t *objectUnderTest) GetObjectMeta() metav1.Object { return &t.meta }
 
 func TestParseAnnotationFilter(t *testing.T) {
 	tests := []struct {
@@ -378,7 +376,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "no controller annotation",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:        "my-service",
 					Namespace:   "default",
 					Annotations: map[string]string{},
@@ -390,7 +388,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "non-matching controller annotation",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-service",
 					Namespace: "default",
 					Annotations: map[string]string{
@@ -405,7 +403,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "empty controller value with annotation",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-ingress",
 					Namespace: "kube-system",
 					Annotations: map[string]string{
@@ -420,7 +418,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "nil annotations",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:        "service",
 					Namespace:   "default",
 					Annotations: nil,

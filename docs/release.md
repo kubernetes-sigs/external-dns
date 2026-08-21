@@ -14,7 +14,7 @@ A new staging image is released weekly and can be found at [gcr.io/k8s-staging-e
 Example command to fetch `10` most recent staging images:
 
 ```sh
-export EXT_DNS_VERSION="v0.21.0"
+export EXT_DNS_VERSION="v0.22.0"
 curl -sLk https://gcr.io/v2/k8s-staging-external-dns/external-dns/tags/list | jq | grep "$EXT_DNS_VERSION" | tail -n 10
 ```
 
@@ -49,16 +49,33 @@ You must be an official maintainer of the project to be able to do a release.
 
 ### Steps
 
-- Run `scripts/releaser.sh` to create a new GitHub release. Alternatively you can create a release in the GitHub UI making sure to click on the autogenerate release node feature.
-- The step above will trigger the Kubernetes based CI/CD system [Prow](https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns). Verify that a new image was built and uploaded to `gcr.io/k8s-staging-external-dns/external-dns`.
-- Create a PR in the [k8s.io repo](https://github.com/kubernetes/k8s.io) by taking the current staging image using the sha256 digest. They can be obtained with `scripts/get-sha256.sh`. Once the PR is merged, the image will be live with the corresponding tag specified in the PR.
-  - See https://github.com/kubernetes/k8s.io/pull/8466 for reference
-- Verify that the image is pullable with the given tag
-  - `docker run registry.k8s.io/external-dns/external-dns:v0.x.0 --version`
-- Branch out from the default branch and run `scripts/version-updater.sh` to update the image tag used in the kustomization.yaml and in documentation.
-- Create the PR with this version change.
-- Create an issue to release the corresponding Helm chart via the chart release process (below) assigned to a chart maintainer
-- Once the PR is merged, all is done :-)
+1. Run `scripts/releaser.sh` to create a new GitHub release (and git tag). Alternatively create a release in the GitHub UI and use the autogenerate release notes feature.
+2. The step above triggers the Kubernetes CI/CD system [Prow](https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns). Verify that a new image was built and uploaded to `gcr.io/k8s-staging-external-dns/external-dns`.
+3. Create a PR in the [k8s.io repo](https://github.com/kubernetes/k8s.io) promoting the staging image by **sha256 digest** (from `scripts/get-sha256.sh`). Once that PR merges, the image is available at `registry.k8s.io` under the release tag.
+   - See https://github.com/kubernetes/k8s.io/pull/8466 for reference
+4. Verify that the image is pullable with the given tag:
+   - `docker run registry.k8s.io/external-dns/external-dns:v0.x.0 --version`
+5. **Only after** the image is pullable: branch from the default branch and run `scripts/version-updater.sh` to update the image tag in `kustomize/` manifests and documentation.
+6. Open and merge the version-updater PR.
+7. Open an issue to release the corresponding Helm chart (chart process below), assigned to a chart maintainer.
+8. Once the version-updater PR is merged, the release is complete.
+
+### Git tags vs kustomize manifests (known lag)
+
+Image promotion and in-repo manifest updates **cannot** happen in a single commit on the release tag. CI needs the git tag first to build and promote the image; kustomize/docs must not advertise a tag until that image is live on `registry.k8s.io`.
+
+Consequences:
+
+| Source | Image tag in manifests |
+|--------|------------------------|
+| Git **release tag** (e.g. `v0.18.0`) | Still points at the **previous** release image until a follow-up commit lands |
+| **`master`** after the version-updater PR | Matches the new release image |
+| **Helm chart** `appVersion` after chart release | Matches the new release image |
+
+So:
+
+- Do **not** treat the kustomize tree _on the git tag_ as the source of truth for that version’s image.
+- Prefer the Helm chart, or the post-release version-updater commit on `master`, for install manifests that pin the new tag.
 
 ## How to release a new chart version
 

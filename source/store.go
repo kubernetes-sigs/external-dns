@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -48,7 +49,7 @@ var ErrSourceNotFound = errors.New("source not found")
 //
 // Common Configuration Fields:
 // - Namespace: Target namespace for source operations
-// - AnnotationFilter: Filter sources by annotation patterns
+// - AnnotationFilter: Filter sources by annotation selector
 // - LabelFilter: Filter sources by label selectors
 // - FQDNTemplate: Template for generating fully qualified domain names
 // - CombineFQDNAndAnnotation: Whether to combine FQDN template with annotations
@@ -58,7 +59,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // type conversions and validation.
 type Config struct {
 	Namespace                      string
-	AnnotationFilter               string
+	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	TemplateEngine                 template.Engine
@@ -126,15 +127,16 @@ func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 }
 
 func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
-	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
+	// errors are explicitly ignored because the filters are already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
+	annotationSelector, _ := annotations.ParseFilter(cfg.AnnotationFilter)
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {
 		return nil, err
 	}
 	c := &Config{
 		Namespace:                      cfg.Namespace,
-		AnnotationFilter:               cfg.AnnotationFilter,
+		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
@@ -406,11 +408,18 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // - "kong-tcpingress": Kong TCP Ingress resources
 // - "f5-*": F5 resources (virtualserver, transportserver)
 // - "fake": Fake source for testing
+// - "empty": Returns no endpoints, for testing or as a placeholder
 // - "connector": Connector source for external systems
 //
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
+	// Scope the template engine to this source so templates can use isSource "name".
+	var err error
+	if cfg.TemplateEngine, err = cfg.TemplateEngine.WithSource(source); err != nil {
+		return nil, err
+	}
+
 	switch source {
 	case types.Node:
 		return buildNodeSource(ctx, p, cfg)
@@ -446,6 +455,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildOpenShiftRouteSource(ctx, p, cfg)
 	case types.Fake:
 		return NewFakeSource(cfg)
+	case types.Empty:
+		return NewEmptySource(), nil
 	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
 	case types.CRD:

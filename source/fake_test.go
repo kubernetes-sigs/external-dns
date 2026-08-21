@@ -24,10 +24,38 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
+
+// parseAnnotationFilterOrNil parses an annotation filter string into a labels.Selector for use in tests.
+// Returns nil for empty or invalid input, matching the production behavior in NewSourceConfig
+// where invalid annotation filters are silently treated as no-op selectors.
+func parseAnnotationFilterOrNil(s string) labels.Selector {
+	if s == "" {
+		return nil
+	}
+	sel, err := annotations.ParseFilter(s)
+	if err != nil {
+		return nil
+	}
+	return sel
+}
+
+// parseLabelSelectorOrEverything parses a label selector string for use in tests.
+// Returns labels.Everything() for empty input.
+func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
+	t.Helper()
+	if s == "" {
+		return labels.Everything()
+	}
+	sel, err := labels.Parse(s)
+	require.NoError(t, err)
+	return sel
+}
 
 // Validate that fakeSource implements Source.
 var _ Source = &fakeSource{}
@@ -138,6 +166,15 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				t.Helper()
 				assert.True(t, strings.HasPrefix(ep.DNSName, "_sip._udp."), "NAPTR DNSName %q should start with _sip._udp.", ep.DNSName)
 				require.NotEmpty(t, ep.Targets)
+			},
+		},
+		{
+			recordType: endpoint.RecordTypeDNAME,
+			check: func(t *testing.T, ep *endpoint.Endpoint) {
+				t.Helper()
+				require.Len(t, ep.Targets, 1)
+				assert.True(t, strings.HasSuffix(ep.Targets[0], "."+defaultFQDNTemplate),
+					"DNAME target %q should be under %s", ep.Targets[0], defaultFQDNTemplate)
 			},
 		},
 	}

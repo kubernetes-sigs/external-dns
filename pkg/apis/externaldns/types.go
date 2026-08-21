@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -189,7 +190,8 @@ type Config struct {
 	RFC2136TSIGKeyName                            string
 	RFC2136TSIGSecret                             string `secure:"yes"`
 	RFC2136TSIGSecretAlg                          string
-	RFC2136TAXFR                                  bool
+	RFC2136AXFR                                   bool
+	RFC2136TAXFR                                  bool // deprecated, use RFC2136AXFR
 	RFC2136MinTTL                                 time.Duration
 	RFC2136LoadBalancingStrategy                  string
 	RFC2136BatchChangeSize                        int
@@ -328,7 +330,7 @@ var defaultConfig = &Config{
 	PiholeServer:                 "",
 	PiholeTLSInsecureSkipVerify:  false,
 	PodSourceDomain:              "",
-	Policy:                       "sync",
+	Policy:                       "",
 	Provider:                     "",
 	ProviderCacheTime:            0,
 	CreatePTR:                    false,
@@ -341,6 +343,7 @@ var defaultConfig = &Config{
 	KubeAPIRequestTimeout:        time.Second * 30,
 	KubeAPIQPS:                   int(rest.DefaultQPS),
 	KubeAPIBurst:                 rest.DefaultBurst,
+	RFC2136AXFR:                  false,
 	RFC2136BatchChangeSize:       50,
 	RFC2136GSSTSIG:               false,
 	RFC2136Host:                  []string{""},
@@ -352,7 +355,7 @@ var defaultConfig = &Config{
 	RFC2136MinTTL:                0,
 	RFC2136Port:                  0,
 	RFC2136SkipTLSVerify:         false,
-	RFC2136TAXFR:                 true,
+	RFC2136TAXFR:                 false,
 	RFC2136TSIGKeyName:           "",
 	RFC2136TSIGSecret:            "",
 	RFC2136TSIGSecretAlg:         "",
@@ -414,32 +417,13 @@ var ProviderNames = []string{
 	ProviderWebhook,
 }
 
-var allowedSources = []string{
-	"service",
-	"ingress",
-	"node",
-	"pod",
-	"gateway-httproute",
-	"gateway-grpcroute",
-	"gateway-tlsroute",
-	"gateway-tcproute",
-	"gateway-udproute",
-	"istio-gateway",
-	"istio-virtualservice",
-	"contour-httpproxy",
-	"gloo-proxy",
-	"fake",
-	"connector",
-	"crd",
-	"empty",
-	"skipper-routegroup",
-	"openshift-route",
-	"ambassador-host",
-	"kong-tcpingress",
-	"f5-virtualserver",
-	"f5-transportserver",
-	"traefik-proxy",
-	"unstructured",
+// AllowedSources lists every value accepted by --source, alphabetically sorted.
+var AllowedSources = sortedAllowedSources()
+
+func sortedAllowedSources() []string {
+	s := slices.Clone(types.All)
+	slices.Sort(s)
+	return s
 }
 
 // NewConfig returns new Config object
@@ -490,10 +474,16 @@ func (cfg *Config) ParseFlags(args []string) error {
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
 // If both are explicitly set, --kube-api-request-timeout takes precedence.
+//
+// --rfc2136-tsig-axfr is OR'd into --rfc2136-axfr: either flag alone enables AXFR.
 func (cfg *Config) resolveDeprecatedFlags() {
 	if cfg.RequestTimeout != defaultConfig.RequestTimeout {
 		logrus.Warn("--request-timeout is deprecated, use --kube-api-request-timeout instead")
 		cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
+	}
+	if cfg.RFC2136TAXFR {
+		logrus.Warn("--rfc2136-tsig-axfr is deprecated, use --rfc2136-axfr instead")
+		cfg.RFC2136AXFR = true
 	}
 }
 
@@ -522,7 +512,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
 	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
-	b.StringsVar("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
+	b.StringsVar("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Only applies to the crd source (DNSEndpoint resources with empty targets). Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled)", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
@@ -538,8 +528,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)", false, &cfg.IgnoreIngressTLSSpec)
 	b.BoolVar("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)", false, &cfg.IgnoreNonHostNetworkPods)
 	b.StringsVar("ingress-class", "Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)", nil, &cfg.IngressClassNames)
-	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, service and ambassador-host", defaultConfig.LabelFilter, &cfg.LabelFilter)
-	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
+	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector (default: all resources)", defaultConfig.LabelFilter, &cfg.LabelFilter)
+	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, DNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)
 	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
 	b.StringsVar("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)", nil, &cfg.NAT64Networks)
@@ -646,7 +636,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
 	b.StringVar("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecretAlg, &cfg.RFC2136TSIGSecretAlg)
-	b.BoolVar("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", false, &cfg.RFC2136TAXFR)
+	b.BoolVar("rfc2136-axfr", "When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records (without it ExternalDNS cannot read records and behaves as if --policy=create-only)", defaultConfig.RFC2136AXFR, &cfg.RFC2136AXFR)
+	b.BoolVar("rfc2136-tsig-axfr", "[DEPRECATED: use --rfc2136-axfr] When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records", defaultConfig.RFC2136TAXFR, &cfg.RFC2136TAXFR)
 	b.DurationVar("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this", defaultConfig.RFC2136MinTTL, &cfg.RFC2136MinTTL)
 	b.BoolVar("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)", defaultConfig.RFC2136GSSTSIG, &cfg.RFC2136GSSTSIG)
 	b.StringVar("rfc2136-kerberos-username", "When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)", defaultConfig.RFC2136KerberosUsername, &cfg.RFC2136KerberosUsername)
@@ -663,7 +654,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
 
 	// Flags related to policies
-	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "sync", "upsert-only", "create-only")
+	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (required, no default; options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "", "sync", "upsert-only", "create-only")
 
 	// Flags related to the registry
 	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: aws-sd, crd, dynamodb, noop, txt)", defaultConfig.Registry, &cfg.Registry, RegistryAWSSD, RegistryCRD, RegistryDynamoDB, RegistryNoop, RegistryTXT)
@@ -724,8 +715,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("provider", providerHelp).Required().PlaceHolder("provider").EnumVar(&cfg.Provider, ProviderNames...)
 
 	// Reintroduce source enum/required validation in Kingpin to match previous behavior.
-	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(allowedSources, ", ") + ")"
-	app.Flag("source", sourceHelp).Required().PlaceHolder("source").EnumsVar(&cfg.Sources, allowedSources...)
+	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(AllowedSources, ", ") + ")"
+	app.Flag("source", sourceHelp).Required().PlaceHolder("source").EnumsVar(&cfg.Sources, AllowedSources...)
 
 	return app
 }

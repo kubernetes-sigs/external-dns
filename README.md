@@ -15,7 +15,6 @@ hide:
 [![OpenSSF](https://api.scorecard.dev/projects/github.com/kubernetes-sigs/external-dns/badge)](https://scorecard.dev/viewer/?uri=github.com/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
 [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kubernetes-sigs/external-dns)
 
@@ -117,7 +116,7 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 - Change the desired hostname by modifying the Service's annotation.
 - Recreate the Service and see that the DNS record will be updated to point to the new load balancer IP.
 - Add another Service to create more DNS records.
-- Remove Services to clean up your managed zone.
+- Remove Services to clean up your managed zone (record deletion requires `--policy=sync`; with `--policy=upsert-only` records are never deleted).
 
 </details>
 
@@ -161,6 +160,8 @@ from the usage of any externally developed webhook.
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
+| Namecheap             | https://github.com/evandeaubl/external-dns-namecheap-webhook         |
+| NAVER Cloud Platform  | https://github.com/NaverCloudPlatform/external-dns-navercloud-webhook |
 | Netbird               | https://codeberg.org/ccbash-oss/external-dns-netbird-webhook         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
@@ -173,7 +174,7 @@ from the usage of any externally developed webhook.
 | STACKIT               | https://github.com/stackitcloud/external-dns-stackit-webhook         |
 | Tencent Cloud         | https://github.com/tkestack/external-dns-tencentcloud-webhook        |
 | Unbound               | https://github.com/guillomep/external-dns-unbound-webhook            |
-| Unifi                 | https://github.com/kashalls/external-dns-unifi-webhook               |
+| Unifi                 | https://github.com/home-operations/external-dns-unifi-webhook        |
 | UniFi                 | https://github.com/lexfrei/external-dns-unifios-webhook              |
 | Volcengine Cloud      | https://github.com/volcengine/external-dns-volcengine-webhook        |
 | Vultr                 | https://github.com/vultr/external-dns-vultr-webhook                  |

@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go/v5/addressing"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v7/addressing"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"

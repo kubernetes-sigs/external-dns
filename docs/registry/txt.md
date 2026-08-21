@@ -42,6 +42,15 @@ For the domain `www.ex.com` the expected result is
 | `www-.cname.ex.com.` |  `TXT`  |
 |    `www.ex.com.`     | `CNAME` |
 
+### AWS A ALIAS records
+
+[AWS ALIAS records](../tutorials/aws.md#alias) are stored in Route 53 as
+[`A`/`AAAA` records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html),
+so their ownership TXT uses the matching `a-`/`aaaa-` prefix. For `A` ALIAS records this replaces the
+legacy `cname-` prefix: the old `cname-` record is still recognized (ownership is preserved), the `a-`
+record is created on the next reconciliation, and the obsolete `cname-` is left in place with a warning.
+See [#2903](https://github.com/kubernetes-sigs/external-dns/issues/2903).
+
 ### Manually Cleanup Legacy TXT Records
 
 > While deleting registry TXT records won't cause downtime, a well-thought-out migration and cleanup plan is crucial.
@@ -51,6 +60,9 @@ Occasionally, it may be necessary to remove outdated TXT records from your regis
 An example script for AWS can be found in [scripts/aws-cleanup-legacy-txt-records.py](../../scripts/aws-cleanup-legacy-txt-records.py) with instructions on how to run it.
 The script performs targeted deletion of TXT records that include `ResourceRecords` matching the `heritage=external-dns,external-dns/owner=default` or similar pattern.
 In the event of unintended deletion of all TXT records managed by `external-dns`, `external-dns` will initiate a full DNS record regeneration, along with`TXT` and `non-TXT` records. Just be aware, this operation's duration is directly proportional to the DNS estate size."
+
+To remove the obsolete `cname-` records left by the AWS A ALIAS migration, run the script with
+`--alias-cname-cleanup`, which deletes a `cname-` record only when its `a-` counterpart exists.
 
 ### For version `v0.16.0 & v0.16.1`
 
@@ -240,7 +252,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         imagePullPolicy: Always
         args:
         - "--txt-prefix=%{record_type}-"
@@ -278,7 +290,7 @@ spec:
       containers:
       - name: external-dns
         imagePullPolicy: Always
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         args:
         - "--txt-prefix=%{record_type}-"
         - "--txt-cache-interval=2m"

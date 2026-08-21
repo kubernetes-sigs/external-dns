@@ -68,6 +68,9 @@ type TXTRegistry struct {
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
 	existingTXTs *existingTXTs
+
+	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
+	obsoleteTXTWarned sets.Set[string]
 }
 
 // existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
@@ -162,6 +165,7 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		txtEncryptAESKey:    txtEncryptAESKey,
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
+		obsoleteTXTWarned:   sets.New[string](),
 	}, nil
 }
 
@@ -249,12 +253,22 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
-		if shouldUseCNAMEForTxtRecord(ep) {
-			key.RecordType = endpoint.RecordTypeCNAME
+		labels, labelsExist := labelMap[key]
+
+		// A ALIAS records used the legacy "cname-" prefix. Fall back to it so ownership
+		// survives migration to "a-", and report the stale record once. See issue #2903.
+		if isAliasARecord(ep) {
+			legacyKey := key
+			legacyKey.RecordType = endpoint.RecordTypeCNAME
+			if legacyLabels, ok := labelMap[legacyKey]; ok {
+				if !labelsExist {
+					labels, labelsExist = legacyLabels, true
+				}
+				im.warnObsoleteAliasTXT(dnsName)
+			}
 		}
 
 		// Handle both new and old registry format with the preference for the new one
-		labels, labelsExist := labelMap[key]
 		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
 			key.RecordType = ""
 			labels, labelsExist = labelMap[key]
@@ -292,11 +306,22 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
-// shouldUseCNAMEForTxtRecord checks if the endpoint is an alias A record converted from CNAME.
-// TXT ownership records use CNAME as the record type for such records.
-func shouldUseCNAMEForTxtRecord(ep *endpoint.Endpoint) bool {
+// isAliasARecord reports whether the endpoint is an A ALIAS record (used to recognize the legacy
+// "cname-" ownership TXT during migration to the "a-" prefix).
+func isAliasARecord(ep *endpoint.Endpoint) bool {
 	aliasType := ep.GetAliasProperty()
 	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
+}
+
+// warnObsoleteAliasTXT logs, once per record, that a legacy "cname-" alias TXT can be removed.
+func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
+	legacyName := im.mapper.ToTXTName(dnsName, endpoint.RecordTypeCNAME)
+	if im.obsoleteTXTWarned.Has(legacyName) {
+		return
+	}
+	im.obsoleteTXTWarned.Insert(legacyName)
+	log.Warnf("Obsolete legacy TXT record %q for A ALIAS %q can be removed; now using %q (see scripts/aws-cleanup-legacy-txt-records.py).",
+		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
 }
 
 // generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
@@ -309,12 +334,8 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	// Always create new format record
+	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
 	recordType := r.RecordType
-
-	if shouldUseCNAMEForTxtRecord(r) {
-		recordType = endpoint.RecordTypeCNAME
-	}
 
 	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID

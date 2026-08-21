@@ -32,6 +32,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/external-dns/source/types"
@@ -54,7 +55,7 @@ const (
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
 // +externaldns:source:resources=RouteGroup.zalando.org
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
@@ -63,7 +64,8 @@ type routeGroupSource struct {
 	apiServer                string
 	namespace                string
 	apiEndpoint              string
-	annotationFilter         string
+	annotationFilter         labels.Selector
+	labelSelector            labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 }
@@ -83,12 +85,8 @@ type routeGroupClient struct {
 
 func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeGroupClient {
 	const (
-		tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 		rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	)
-	if tokenPath != "" {
-		tokenPath = tokenFile
-	}
 
 	tr := &http.Transport{
 		DialContext: (&net.Dialer{
@@ -108,7 +106,7 @@ func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeG
 		},
 		quit:      make(chan struct{}),
 		tokenFile: tokenPath,
-		token:     token,
+		token:     strings.TrimSpace(token),
 	}
 
 	go func() {
@@ -156,7 +154,7 @@ func (cli *routeGroupClient) updateToken() {
 	}
 
 	cli.mu.Lock()
-	cli.token = string(token)
+	cli.token = strings.TrimSpace(string(token))
 	cli.mu.Unlock()
 }
 
@@ -207,12 +205,14 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 	if routeGroupVersion == "" {
 		routeGroupVersion = DefaultRoutegroupVersion
 	}
-	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
-
 	u, err := url.Parse(apiServerURL)
 	if err != nil {
 		return nil, err
 	}
+
+	// created after the URL is validated, because it starts a token refresh
+	// goroutine that would otherwise outlive a discarded source.
+	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
 
 	apiServer := u.String()
 	// strip port if well known port, because of TLS certificate match
@@ -232,6 +232,7 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 		namespace:                cfg.Namespace,
 		apiEndpoint:              apiEndpoint,
 		annotationFilter:         cfg.AnnotationFilter,
+		labelSelector:            cfg.LabelFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 	}, nil
@@ -250,10 +251,16 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 
-	filtered, err := annotations.Filter(rgList.Items, sc.annotationFilter)
-	if err != nil {
-		return nil, err
+	// RouteGroups are fetched over the Kubernetes API without server-side label
+	// filtering, so apply the label selector client-side to match other sources.
+	var labelFiltered []*routeGroup
+	for _, rg := range rgList.Items {
+		if sc.labelSelector == nil || sc.labelSelector.Matches(labels.Set(rg.Labels)) {
+			labelFiltered = append(labelFiltered, rg)
+		}
 	}
+
+	filtered := annotations.Filter(labelFiltered, sc.annotationFilter)
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, rg := range filtered {

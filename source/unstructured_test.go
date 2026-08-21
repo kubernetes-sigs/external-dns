@@ -463,7 +463,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				dynamicClient,
 				kubeClient,
 				&Config{
-					AnnotationFilter:      tt.cfg.annotationFilter,
+					AnnotationFilter:      parseAnnotationFilterOrNil(tt.cfg.annotationFilter),
 					LabelFilter:           labelSelector,
 					UnstructuredResources: tt.cfg.resources,
 					TemplateEngine:        templatetest.MustEngine(t, "", "", "", tt.cfg.combine),

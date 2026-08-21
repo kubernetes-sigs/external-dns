@@ -18,6 +18,7 @@ package rfc2136
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -33,7 +34,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -538,6 +542,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 		"v3.bar.com 3600 TXT bbbb",
 		"v2.foo.com 3600 CNAME cccc",
 		"v1.foobar.com 3600 TXT dddd",
+		"v5.foo.com 3600 DNAME target.example.com.",
 	})
 	assert.NoError(t, err)
 
@@ -547,10 +552,22 @@ func TestRfc2136GetRecords(t *testing.T) {
 	recs, err := provider.Records(t.Context())
 	assert.NoError(t, err)
 
-	assert.Len(t, recs, 6)
+	assert.Len(t, recs, 7)
 	assert.True(t, contains(recs, "v1.foo.com"))
 	assert.True(t, contains(recs, "v2.bar.com"))
 	assert.True(t, contains(recs, "v2.foo.com"))
+
+	// DNAME records are surfaced with their target as-is.
+	var dname *endpoint.Endpoint
+	for _, r := range recs {
+		if r.RecordType == endpoint.RecordTypeDNAME {
+			dname = r
+			break
+		}
+	}
+	require.NotNil(t, dname, "expected a DNAME record to be read back")
+	assert.Equal(t, "v5.foo.com", dname.DNSName)
+	assert.Equal(t, []string{"target.example.com"}, []string(dname.Targets))
 }
 
 // Make sure the test version of SendMessage raises an error
@@ -978,6 +995,53 @@ func TestRandomLoadBalancing(t *testing.T) {
 	assert.Greater(t, len(nameserverCounts), 1, "Expected multiple nameservers to be used in random strategy")
 }
 
+// TestGetNextNameserverListAndSendCountersAreIndependent guards against the
+// regression described in https://github.com/kubernetes-sigs/external-dns/issues/6562:
+// AXFR/list and update/send nameserver rotation shared a single counter, so a
+// read advancing it would deterministically skew the following write onto a
+// different nameserver.
+func TestGetNextNameserverListAndSendCountersAreIndependent(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers:           []string{"ns1:53", "ns2:53", "ns3:53"},
+		loadBalancingStrategy: "round-robin",
+	}
+
+	// Advance only the list counter, as repeated AXFR attempts within a
+	// single List() call would.
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpList))
+	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpList))
+
+	// Send rotation must be unaffected by List()'s advancement and still
+	// start from the first nameserver.
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpSend))
+	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpSend))
+
+	// Both counters keep rotating independently from here on.
+	assert.Equal(t, "ns3:53", r.getNextNameserverFor(nameserverOpList))
+	assert.Equal(t, "ns3:53", r.getNextNameserverFor(nameserverOpSend))
+}
+
+// TestGetNextNameserverListAndSendLastErrAreIndependent guards against the
+// same class of regression for the failover state: under the default
+// (failover) strategy, a List()/AXFR failure must not cause the following
+// Send()/update rotation to fail over too, and vice versa.
+func TestGetNextNameserverListAndSendLastErrAreIndependent(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers: []string{"ns1:53", "ns2:53", "ns3:53"},
+	}
+
+	// Simulate a failed AXFR attempt.
+	r.listLastErr = errors.New("boom")
+
+	// Send rotation must be unaffected by List()'s failure and must not
+	// fail over to the next nameserver.
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpSend))
+	assert.Equal(t, "ns1:53", r.getNextNameserverFor(nameserverOpSend))
+
+	// List rotation, however, must fail over since its own last error was set.
+	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpList))
+}
+
 // TestRfc2136ApplyChangesWithMultipleChunks tests Updates with multiple chunks
 func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	stub := newStub()
@@ -1095,4 +1159,61 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	err = providerInstance.ApplyChanges(t.Context(), p)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
+}
+
+func TestRfc2136MissingAXFRWarns(t *testing.T) {
+	const warning = "--rfc2136-axfr is not set"
+
+	tests := []struct {
+		name     string
+		policy   string
+		axfr     bool
+		wantWarn bool
+	}{
+		{
+			name:     "sync without axfr warns",
+			policy:   "sync",
+			axfr:     false,
+			wantWarn: true,
+		},
+		{
+			name:     "sync with axfr is silent",
+			policy:   "sync",
+			axfr:     true,
+			wantWarn: false,
+		},
+		{
+			name:     "upsert-only without axfr warns",
+			policy:   "upsert-only",
+			axfr:     false,
+			wantWarn: true,
+		},
+		{
+			name:     "create-only without axfr is silent",
+			policy:   "create-only",
+			axfr:     false,
+			wantWarn: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			cfg := &externaldns.Config{
+				Policy:          tt.policy,
+				RFC2136Host:     []string{"rfc2136-host"},
+				RFC2136Insecure: true,
+				RFC2136AXFR:     tt.axfr,
+			}
+			_, err := New(t.Context(), cfg, &endpoint.DomainFilter{})
+			require.NoError(t, err)
+
+			if tt.wantWarn {
+				logtest.TestHelperLogContains(warning, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(warning, hook, t)
+			}
+		})
+	}
 }

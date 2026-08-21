@@ -181,13 +181,14 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
         - --provider=aws-sd
         - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)
@@ -251,13 +252,14 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         env:
           - name: AWS_REGION
             value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
         - --provider=aws-sd
         - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)

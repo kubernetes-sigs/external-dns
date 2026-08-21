@@ -58,7 +58,7 @@ func TestIstioGatewaySourceNewSourceWithFqdn(t *testing.T) {
 				istiofake.NewSimpleClientset(),
 				&Config{
 					Namespace:                "",
-					AnnotationFilter:         tt.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
 					IgnoreHostnameAnnotation: false,
 				},
@@ -565,7 +565,7 @@ func TestIstioGatewaySourceFqdnTemplatingExamples(t *testing.T) {
 				istioClient,
 				&Config{
 					Namespace:                "",
-					AnnotationFilter:         "",
+					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),
 					IgnoreHostnameAnnotation: false,
 				},

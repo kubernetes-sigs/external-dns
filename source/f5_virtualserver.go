@@ -18,7 +18,6 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -26,7 +25,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -55,16 +53,13 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 // +externaldns:source:category=Load Balancers
 // +externaldns:source:description=Creates DNS entries from F5 VirtualServer resources
 // +externaldns:source:resources=VirtualServer.cis.f5.com
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5VirtualServerSource struct {
-	dynamicKubeClient     dynamic.Interface
 	virtualServerInformer kubeinformers.GenericInformer
 	kubeClient            kubernetes.Interface
-	annotationFilter      string
-	namespace             string
 	templateEngine        template.Engine
 	unstructuredConverter *unstructuredConverter
 }
@@ -83,6 +78,12 @@ func NewF5VirtualServerSource(
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
+	informers.MustAddIndexers(virtualServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
+	))
+
 	informers.MustAddEventHandler(virtualServerInformer.Informer(), informers.DefaultEventHandler())
 
 	informerFactory.Start(ctx.Done())
@@ -98,11 +99,8 @@ func NewF5VirtualServerSource(
 	}
 
 	return &f5VirtualServerSource{
-		dynamicKubeClient:     dynamicKubeClient,
 		virtualServerInformer: virtualServerInformer,
 		kubeClient:            kubeClient,
-		namespace:             cfg.Namespace,
-		annotationFilter:      cfg.AnnotationFilter,
 		templateEngine:        cfg.TemplateEngine,
 		unstructuredConverter: uc,
 	}, nil
@@ -111,21 +109,12 @@ func NewF5VirtualServerSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualServers in the source's namespace(s).
 func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	virtualServerObjects, err := vs.virtualServerInformer.Lister().ByNamespace(vs.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	virtualServerObjects := informers.ListIndexed[*unstructured.Unstructured](vs.virtualServerInformer.Informer().GetIndexer())
 
 	var virtualServers []*f5.VirtualServer
 	for _, vsObj := range virtualServerObjects {
-		unstructuredHost, ok := vsObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert")
-		}
-
 		virtualServer := &f5.VirtualServer{}
-		err := vs.unstructuredConverter.scheme.Convert(unstructuredHost, virtualServer, nil)
-		if err != nil {
+		if err := vs.unstructuredConverter.scheme.Convert(vsObj, virtualServer, nil); err != nil {
 			return nil, err
 		}
 		virtualServer.TypeMeta = metav1.TypeMeta{
@@ -133,11 +122,6 @@ func (vs *f5VirtualServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpo
 			APIVersion: f5VirtualServerGVR.GroupVersion().String(),
 		}
 		virtualServers = append(virtualServers, virtualServer)
-	}
-
-	virtualServers, err = annotations.Filter(virtualServers, vs.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter VirtualServers: %w", err)
 	}
 
 	endpoints, err := vs.endpointsFromVirtualServers(virtualServers)

@@ -73,19 +73,33 @@ type rfc2136Provider struct {
 	dryRun       bool
 	actions      rfc2136Actions
 
-	// Counter for load balancing, and error handling
-	counter int
-	mu      sync.Mutex // Mutex for thread-safe counter
+	// Counters and last-seen errors for load balancing. List (AXFR) and
+	// Send (update) paths rotate and fail over independently, so each
+	// tracks its own counter and last error instead of sharing state that
+	// would let one operation skew or mask failover for the other.
+	listCounter int
+	sendCounter int
+	listLastErr error
+	sendLastErr error
+	mu          sync.Mutex // Mutex for thread-safe counters and last errors
 
 	// Load balancing strategy "round-robin", "random", or "disabled"
 	loadBalancingStrategy string
 
 	// Random number generator for random load balancing
 	randGen *rand.Rand
-
-	// Last error encountered
-	lastErr error
 }
+
+// nameserverOp identifies which rotation - list (AXFR) or send (update) -
+// is requesting the next nameserver, so getNextNameserverFor can resolve
+// the right counter and last-error state internally instead of the caller
+// having to know which field to pass in.
+type nameserverOp int
+
+const (
+	nameserverOpList nameserverOp = iota
+	nameserverOpSend
+)
 
 // TLSConfig is comprised of the TLS-related fields necessary if we are using DNS over TLS
 type TLSConfig struct {
@@ -119,7 +133,13 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		ClientCertFilePath:    cfg.TLSClientCert,
 		ClientCertKeyFilePath: cfg.TLSClientCertKey,
 	}
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+
+	// Without AXFR records cannot be listed, so the plan never updates or deletes.
+	if !cfg.RFC2136AXFR && cfg.Policy != "create-only" {
+		log.Warnf("--rfc2136-axfr is not set: ExternalDNS cannot list existing records, so --policy=%s will never update or delete them", cfg.Policy)
+	}
+
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
@@ -161,8 +181,10 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		tlsConfig:             tlsConfig,
 		loadBalancingStrategy: loadBalancingStrategy,
 		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-		counter:               0,
-		lastErr:               nil,
+		listCounter:           0,
+		sendCounter:           0,
+		listLastErr:           nil,
+		sendLastErr:           nil,
 	}
 	if actions != nil {
 		r.actions = actions
@@ -220,6 +242,9 @@ OuterLoop:
 		case dns.TypeCNAME:
 			rrValues = []string{rr.(*dns.CNAME).Target}
 			rrType = "CNAME"
+		case dns.TypeDNAME:
+			rrValues = []string{rr.(*dns.DNAME).Target}
+			rrType = "DNAME"
 		case dns.TypeA:
 			rrValues = []string{rr.(*dns.A).A.String()}
 			rrType = "A"
@@ -295,13 +320,13 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 		var lastErr error
 		for i := 0; i < len(r.nameservers); i++ {
-			nameserver := r.getNextNameserver()
+			nameserver := r.getNextNameserverFor(nameserverOpList)
 			log.Debugf("Fetching records from nameserver: %s", nameserver)
 
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
 				lastErr = fmt.Errorf("failed to fetch records via AXFR: %w", err)
-				r.lastErr = lastErr
+				r.listLastErr = lastErr
 				continue
 			}
 
@@ -323,7 +348,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 		}
 
 		if lastErr != nil {
-			r.lastErr = lastErr
+			r.listLastErr = lastErr
 			return nil, provider.NewSoftError(lastErr)
 		}
 	}
@@ -495,7 +520,12 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
-func (r *rfc2136Provider) getNextNameserver() string {
+// getNextNameserverFor picks the next nameserver to use for the given
+// operation according to the configured load balancing strategy. List
+// (AXFR) and Send (update) operations rotate and fail over independently,
+// so the caller states its intent via op rather than reaching into the
+// provider's internal counter/error fields itself.
+func (r *rfc2136Provider) getNextNameserverFor(op nameserverOp) string {
 	if len(r.nameservers) == 1 {
 		return r.nameservers[0]
 	}
@@ -503,9 +533,11 @@ func (r *rfc2136Provider) getNextNameserver() string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if r.lastErr != nil {
-		log.Warnf("Last operation failed for nameserver %s", r.nameservers[r.counter])
-		log.Warnf("Last operation error message: %v", r.lastErr)
+	counter, lastErr := r.rotationStateFor(op)
+
+	if *lastErr != nil {
+		log.Warnf("Last operation failed for nameserver %s", r.nameservers[*counter])
+		log.Warnf("Last operation error message: %v", *lastErr)
 	}
 
 	var nameserver string
@@ -514,25 +546,35 @@ func (r *rfc2136Provider) getNextNameserver() string {
 		for {
 			nameserver = r.nameservers[r.randGen.Intn(len(r.nameservers))]
 			// Ensure that we don't get the same nameserver as the last one
-			if nameserver != r.nameservers[r.counter] {
+			if nameserver != r.nameservers[*counter] {
 				break
 			}
 		}
 	case "round-robin":
-		nameserver = r.nameservers[r.counter]
-		r.counter = (r.counter + 1) % len(r.nameservers)
+		nameserver = r.nameservers[*counter]
+		*counter = (*counter + 1) % len(r.nameservers)
 	default:
-		if r.lastErr != nil {
-			r.counter = (r.counter + 1) % len(r.nameservers)
-			nameserver = r.nameservers[r.counter]
+		if *lastErr != nil {
+			*counter = (*counter + 1) % len(r.nameservers)
+			nameserver = r.nameservers[*counter]
 		} else {
-			nameserver = r.nameservers[r.counter]
+			nameserver = r.nameservers[*counter]
 		}
 	}
 
 	// Last error has been logged, reset it for the next operation
-	r.lastErr = nil
+	*lastErr = nil
 	return nameserver
+}
+
+// rotationStateFor returns the counter and last-error slots that belong to
+// the given operation, keeping the per-operation field bookkeeping in one
+// place instead of spread across List() and SendMessage().
+func (r *rfc2136Provider) rotationStateFor(op nameserverOp) (*int, *error) {
+	if op == nameserverOpList {
+		return &r.listCounter, &r.listLastErr
+	}
+	return &r.sendCounter, &r.sendLastErr
 }
 
 func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
@@ -544,13 +586,13 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 	var lastErr error
 	for i := 0; i < len(r.nameservers); i++ {
-		nameserver := r.getNextNameserver()
+		nameserver := r.getNextNameserverFor(nameserverOpSend)
 		log.Debugf("Sending message to nameserver: %s", nameserver)
 
 		c, err := makeClient(r, nameserver)
 		if err != nil {
 			lastErr = fmt.Errorf("error setting up TLS: %w", err)
-			r.lastErr = lastErr
+			r.sendLastErr = lastErr
 			continue
 		}
 
@@ -559,7 +601,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 				keyName, handle, err := r.KeyData(nameserver)
 				if err != nil {
 					lastErr = err
-					r.lastErr = lastErr
+					r.sendLastErr = lastErr
 					continue
 				}
 				defer handle.Close()
@@ -579,18 +621,18 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			if resp != nil && resp.Rcode != dns.RcodeSuccess {
 				log.Infof("error in dns.Client.Exchange: %s", err)
 				lastErr = err
-				r.lastErr = lastErr
+				r.sendLastErr = lastErr
 				continue
 			}
 			log.Warnf("warn in dns.Client.Exchange: %s", err)
 			lastErr = err
-			r.lastErr = lastErr
+			r.sendLastErr = lastErr
 			continue
 		}
 		if resp != nil && resp.Rcode != dns.RcodeSuccess {
 			log.Infof("Bad dns.Client.Exchange response: %s", resp)
 			lastErr = fmt.Errorf("bad return code: %s", dns.RcodeToString[resp.Rcode])
-			r.lastErr = lastErr
+			r.sendLastErr = lastErr
 			continue
 		}
 
@@ -598,7 +640,7 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 		return nil
 	}
 
-	r.lastErr = lastErr
+	r.sendLastErr = lastErr
 	return provider.NewSoftError(lastErr)
 }
 

@@ -32,8 +32,10 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -207,6 +209,31 @@ func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	if !errors.Is(err, ErrSourceNotFound) {
 		t.Errorf("expected ErrSourceNotFound, got: %v", err)
 	}
+}
+
+func TestBuildWithConfig_ScopesTemplateEngineToSource(t *testing.T) {
+	ctx := t.Context()
+	p := testutils.StubClientGenerator{}
+	engine, err := template.NewEngine([]string{`{{ if isSource "fake" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+	require.NoError(t, err)
+	cfg := &Config{TemplateEngine: engine}
+
+	src, err := BuildWithConfig(ctx, types.Fake, p, cfg)
+	require.NoError(t, err)
+
+	eps, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, eps)
+
+	// NS record's DNSName is the rendered FQDN template output.
+	var found bool
+	for _, ep := range eps {
+		if ep.RecordType == endpoint.RecordTypeNS {
+			assert.Equal(t, "yes.example.com", ep.DNSName)
+			found = true
+		}
+	}
+	assert.True(t, found, "expected an NS endpoint")
 }
 
 func TestConfig_ClientGenerator_Caching(t *testing.T) {
