@@ -21,6 +21,12 @@ API Token will be preferred for authentication if `CF_API_TOKEN` environment var
 Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
 You may provide the Cloudflare API token through a file by setting the
 `CF_API_TOKEN="file:/path/to/token"`.
+Surrounding whitespace is trimmed from the token before use. This is a fallback safeguard only — the token should be supplied already in the correct format.
+When generating a token for a Kubernetes Secret, use `echo -n` (not `echo`) or `printf` so no trailing newline is written, e.g.:
+
+```shell
+printf '%s' "$CF_API_TOKEN" | kubectl create secret generic cloudflare-api-key --from-file=apiKey=/dev/stdin
+```
 
 Note. The `CF_API_KEY` and `CF_API_EMAIL` should not be present, if you are using a `CF_API_TOKEN`.
 
@@ -41,7 +47,8 @@ significantly reducing the total number of requests made.
 
 The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
 In that case, ExternalDNS automatically retries each record change in the chunk individually.
-Record types that are not supported by the batch PUT operation (e.g. SRV, CAA) are always submitted individually rather than through the batch API.
+Record types that are not supported by the batch PUT operation (e.g. CAA) are always submitted individually rather than through the batch API.
+SRV records are submitted with Cloudflare's structured SRV data fields for both batch and individual operations.
 
 | Flag | Default | Description |
 | :--- | :------ | :---------- |
@@ -135,9 +142,10 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.21.0
+          image: registry.k8s.io/external-dns/external-dns:v0.22.0
           args:
             - --source=service # ingress is also possible
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
             - --provider=cloudflare
@@ -216,9 +224,10 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.21.0
+          image: registry.k8s.io/external-dns/external-dns:v0.22.0
           args:
             - --source=service # ingress is also possible
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
             - --provider=cloudflare
@@ -309,6 +318,28 @@ Check your [Cloudflare dashboard](https://www.cloudflare.com/a/dns/example.com) 
 Substitute the zone for the one created above if a different domain was used.
 
 This should show the external IP address of the service as the A record for your domain.
+
+## Managing SRV records
+
+Cloudflare requires SRV records to be sent as structured fields (`priority`, `weight`, `port`, and `target`).
+ExternalDNS accepts SRV targets in the standard form `<priority> <weight> <port> <target>` and converts them for Cloudflare.
+
+For example, the CRD source can manage an SRV record like this:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: caldav
+spec:
+  endpoints:
+    - dnsName: _caldavs._tcp.example.com
+      recordType: SRV
+      targets:
+        - 0 1 443 caldav.example.com.
+```
+
+After synchronization, the Cloudflare SRV record contains priority `0`, weight `1`, port `443`, and target `caldav.example.com`.
 
 ## Cleanup
 

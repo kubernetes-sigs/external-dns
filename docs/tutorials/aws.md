@@ -676,13 +676,13 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.21.0
+          image: registry.k8s.io/external-dns/external-dns:v0.22.0
           args:
             - --source=service
             - --source=ingress
             - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
             - --provider=aws
-            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
             - --registry=txt
             - --txt-owner-id=my-hostedzone-identifier
@@ -774,6 +774,16 @@ Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 
 ### target-hosted-zone
 
 `external-dns.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
+
+### hosted-zone-id
+
+`external-dns.kubernetes.io/aws-hosted-zone-id` pins a record to a specific Route53 hosted zone by ID. Use when overlapping zones share the same name (e.g. public + private `a.my.com`). If the pinned zone is not configured, the record is skipped.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.kubernetes.io/aws-hosted-zone-id: "Z1234567890ABC"
+```
 
 ### aws-zone-match-parent
 
@@ -1246,7 +1256,7 @@ If the cluster was provisioned using `eksctl`, you can delete the cluster with:
 eksctl delete cluster --name $EKS_CLUSTER_NAME --region $EKS_CLUSTER_REGION
 ```
 
-Give ExternalDNS some time to clean up the DNS records for you. Then delete the hosted zone if you created one for the testing purpose.
+Delete the DNS records manually (with `--policy=upsert-only` ExternalDNS does not remove them; use `--policy=sync` to let ExternalDNS delete records). Then delete the hosted zone if you created one for the testing purpose.
 
 ```bash
 aws route53 delete-hosted-zone --id $ZONE_ID # e.g /hostedzone/ZEWFWZ4R16P7IB
@@ -1318,7 +1328,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         command:
         - /bin/sh
         - -c

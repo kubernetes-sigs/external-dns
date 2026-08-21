@@ -60,6 +60,7 @@ const (
 // record types which require to have trailing dot
 var trailingTypes = []string{
 	endpoint.RecordTypeCNAME,
+	endpoint.RecordTypeDNAME,
 	endpoint.RecordTypeMX,
 	endpoint.RecordTypeSRV,
 	endpoint.RecordTypeNS,

@@ -378,10 +378,10 @@ metadata:
   name: my-app
   namespace: default
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/target: ipv4-only-target.example.com
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/target: ipv4-only-target.example.com
     # Create only an A (IPv4) alias record to avoid creating an AAAA alias record for an IPv4-only target.
-    external-dns.alpha.kubernetes.io/alias: "A"
+    external-dns.kubernetes.io/alias: "A"
 spec:
   type: LoadBalancer
   ports:

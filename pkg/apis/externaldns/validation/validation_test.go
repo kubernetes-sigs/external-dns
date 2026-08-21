@@ -53,6 +53,16 @@ func TestValidateFlags(t *testing.T) {
 	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
+	cfg.Policy = ""
+	require.Error(t, ValidateConfig(cfg))
+
+	for _, policy := range []string{"sync", "upsert-only", "create-only"} {
+		cfg = newValidConfig(t)
+		cfg.Policy = policy
+		require.NoError(t, ValidateConfig(cfg))
+	}
+
+	cfg = newValidConfig(t)
 	cfg.IgnoreHostnameAnnotation = true
 	cfg.FQDNTemplate = []string{}
 	require.Error(t, ValidateConfig(cfg))
@@ -131,6 +141,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "test-provider"
+	cfg.Policy = "sync"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
 	cfg.KubeAPIBurst = rest.DefaultBurst
 
@@ -153,6 +164,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.Policy = "sync"
 	cfg.RFC2136MinTTL = -1
 	cfg.RFC2136BatchChangeSize = 50
 
@@ -167,6 +179,7 @@ func TestValidateBadRfc2136Batch(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.Policy = "sync"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 0
 
@@ -181,6 +194,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.Policy = "sync"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 50
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
@@ -197,6 +211,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "test-realm",
@@ -209,6 +224,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "test-realm",
@@ -221,6 +237,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
@@ -234,6 +251,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
@@ -246,6 +264,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
@@ -258,6 +277,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
@@ -271,6 +291,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
@@ -294,6 +315,7 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
+			Policy:                  "sync",
 			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         false,
@@ -320,6 +342,7 @@ func TestValidateBadAzureConfig(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "azure"
+	cfg.Policy = "sync"
 	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	// AzureConfigFile is empty
 
@@ -334,6 +357,7 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "azure"
+	cfg.Policy = "sync"
 	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	cfg.AzureConfigFile = "/path/to/azure.json"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)

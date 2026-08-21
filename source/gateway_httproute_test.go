@@ -1003,6 +1003,37 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// combine so the template runs even though Spec.Hostnames is already set.
+			title: "FQDNTemplate with JSON-style Spec access on typed HTTPRoute",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{range .Spec.hostnames}}{{.}}.json.internal,{{end}}", "", "", true),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "fqdn-json-style"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("fqdn-json-style.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("fqdn-json-style.internal", "1.2.3.4"),
+				newTestEndpoint("fqdn-json-style.internal.json.internal", "1.2.3.4"),
+			},
+		},
+		{
 			title: "CombineFQDN",
 			config: &Config{
 				TemplateEngine: templatetest.MustEngine(t, "combine-{{.Name}}.internal", "", "", true),

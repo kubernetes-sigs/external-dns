@@ -114,6 +114,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
 | gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC (no ClusterRole/ClusterRoleBinding) for Gateway sources. |
 | global.imagePullSecrets | list | `[]` | Global image pull secrets. |
+| hostAliases | list | `[]` | [Host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to add to the `Pod` definition, injected into the pod's `/etc/hosts`. |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `external-dns` container. |
 | image.repository | string | `"registry.k8s.io/external-dns/external-dns"` | Image repository for the `external-dns` container. |
 | image.tag | string | `nil` | Image tag for the `external-dns` container, this will default to `.Chart.AppVersion` if not set. |
@@ -132,7 +133,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | podAnnotations | object | `{}` | Annotations to add to the `Pod`. |
 | podLabels | object | `{}` | Labels to add to the `Pod`. |
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
-| policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, & `upsert-only`. |
+| policy | REQUIRED | `nil` | How DNS records are synchronized between sources and providers; must be set explicitly to one of `create-only`, `sync`, or `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
 | provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
@@ -150,7 +151,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | rbac.additionalPermissions | list | `[]` | Additional rules to add to the `ClusterRole`. |
 | rbac.create | bool | `true` | If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API. |
 | readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
-| registry | string | `"txt"` | Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`. |
+| registry | string | `"txt"` | Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `crd`, `dynamodb` & `noop`. |
 | replicaCount | int | `1` | Number of replicas of the `external-dns` `Deployment`. external-dns does not support leader election, so this must be `0` or `1` to avoid duplicate or conflicting DNS record updates. Set to `0` to scale the `Deployment` down. |
 | resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container. |
 | revisionHistoryLimit | int | `nil` | Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``. |
@@ -207,7 +208,7 @@ extraArgs:
   - --zone-id-filter=/hostedzone/Z00003
 ```
 
-Eample map: (supported values for map are strings, list of strings, and boolean)
+Example map: (supported values for map are strings, list of strings, and boolean)
 
 ```yaml
 extraArgs:

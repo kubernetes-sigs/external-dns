@@ -25,14 +25,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
-	"github.com/cloudflare/cloudflare-go/v5/option"
-	"github.com/cloudflare/cloudflare-go/v5/zones"
+	"github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
+	"github.com/cloudflare/cloudflare-go/v7/option"
+	"github.com/cloudflare/cloudflare-go/v7/zones"
 	"github.com/maxatome/go-testdeep/td"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -141,18 +142,80 @@ func NewMockCloudFlareClientWithRecords(records map[string][]dns.RecordResponse)
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
-	body := params.Body.(dns.RecordNewParamsBody)
+func srvContentFromParam(data dns.SRVRecordDataParam) string {
+	return fmt.Sprintf("%v %v %v %s",
+		data.Priority.Value,
+		data.Weight.Value,
+		data.Port.Value,
+		externalDNSSRVTarget(data.Target.Value),
+	)
+}
 
-	record := dns.RecordResponse{
-		ID:       generateDNSRecordID(body.Type.String(), body.Name.Value, body.Content.Value),
-		Name:     body.Name.Value,
-		TTL:      dns.TTL(body.TTL.Value),
-		Proxied:  body.Proxied.Value,
-		Type:     dns.RecordResponseType(body.Type.String()),
-		Content:  body.Content.Value,
-		Priority: body.Priority.Value,
+func srvDataFromParam(data dns.SRVRecordDataParam) dns.SRVRecordData {
+	return dns.SRVRecordData{
+		Priority: data.Priority.Value,
+		Weight:   data.Weight.Value,
+		Port:     data.Port.Value,
+		Target:   data.Target.Value,
 	}
+}
+
+func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResponse {
+	switch b := body.(type) {
+	case dns.SRVRecordParam:
+		return dns.RecordResponse{
+			ID:      generateDNSRecordID(string(b.Type.Value), b.Name.Value, srvContentFromParam(b.Data.Value)),
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Proxied: b.Proxied.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: srvContentFromParam(b.Data.Value),
+			Data:    srvDataFromParam(b.Data.Value),
+		}
+	case dns.RecordNewParamsBody:
+		return dns.RecordResponse{
+			ID:       generateDNSRecordID(b.Type.String(), b.Name.Value, b.Content.Value),
+			Name:     b.Name.Value,
+			TTL:      dns.TTL(b.TTL.Value),
+			Proxied:  b.Proxied.Value,
+			Type:     dns.RecordResponseType(b.Type.String()),
+			Content:  b.Content.Value,
+			Priority: b.Priority.Value,
+		}
+	default:
+		panic(fmt.Sprintf("recordResponseFromNewBody: unexpected body type %T", body))
+	}
+}
+
+func recordResponseFromUpdateBody(recordID string, body dns.RecordUpdateParamsBodyUnion) dns.RecordResponse {
+	switch b := body.(type) {
+	case dns.SRVRecordParam:
+		return dns.RecordResponse{
+			ID:      recordID,
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Proxied: b.Proxied.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: srvContentFromParam(b.Data.Value),
+			Data:    srvDataFromParam(b.Data.Value),
+		}
+	case dns.RecordUpdateParamsBody:
+		return dns.RecordResponse{
+			ID:       recordID,
+			Name:     b.Name.Value,
+			TTL:      dns.TTL(b.TTL.Value),
+			Proxied:  b.Proxied.Value,
+			Type:     dns.RecordResponseType(b.Type.String()),
+			Content:  b.Content.Value,
+			Priority: b.Priority.Value,
+		}
+	default:
+		panic(fmt.Sprintf("recordResponseFromUpdateBody: unexpected body type %T", body))
+	}
+}
+
+func (m *mockCloudFlareClient) CreateDNSRecord(_ context.Context, params dns.RecordNewParams) (*dns.RecordResponse, error) {
+	record := recordResponseFromNewBody(params.Body)
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
@@ -191,17 +254,7 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, params dns.Re
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(_ context.Context, recordID string, params dns.RecordUpdateParams) (*dns.RecordResponse, error) {
 	zoneID := params.ZoneID.String()
-	body := params.Body.(dns.RecordUpdateParamsBody)
-
-	record := dns.RecordResponse{
-		ID:       recordID,
-		Name:     body.Name.Value,
-		TTL:      dns.TTL(body.TTL.Value),
-		Proxied:  body.Proxied.Value,
-		Type:     dns.RecordResponseType(body.Type.String()),
-		Content:  body.Content.Value,
-		Priority: body.Priority.Value,
-	}
+	record := recordResponseFromUpdateBody(recordID, params.Body)
 
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
@@ -677,11 +730,15 @@ func TestCloudflareSetProxied(t *testing.T) {
 			var content string
 			var priority float64
 
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				targets = endpoint.Targets{"10 mx.example.com"}
 				content = "mx.example.com"
 				priority = 10
-			} else {
+			case "SRV":
+				targets = endpoint.Targets{"0 1 443 target.bar.com."}
+				content = "0 1 443 target.bar.com."
+			default:
 				targets = endpoint.Targets{"127.0.0.1"}
 				content = "127.0.0.1"
 			}
@@ -708,8 +765,16 @@ func TestCloudflareSetProxied(t *testing.T) {
 				TTL:     1,
 				Proxied: testCase.proxiable,
 			}
-			if testCase.recordType == "MX" {
+			switch testCase.recordType {
+			case "MX":
 				recordData.Priority = priority
+			case "SRV":
+				recordData.Data = dns.SRVRecordData{
+					Priority: 0,
+					Weight:   1,
+					Port:     443,
+					Target:   "target.bar.com",
+				}
 			}
 			AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 				{
@@ -984,6 +1049,56 @@ func TestCloudflareProvider(t *testing.T) {
 			}
 		})
 
+	}
+}
+
+func TestResolveAPIToken(t *testing.T) {
+	tokenFile := filepath.Join(t.TempDir(), "cf_api_token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("abc123def\n"), 0o600))
+
+	testCases := []struct {
+		Name       string
+		Token      string
+		Expected   string
+		ShouldFail bool
+	}{
+		{
+			Name:     "plain token",
+			Token:    "abc123def",
+			Expected: "abc123def",
+		},
+		{
+			Name:     "token with trailing newline",
+			Token:    "abc123def\n",
+			Expected: "abc123def",
+		},
+		{
+			Name:     "token with surrounding whitespace",
+			Token:    "  abc123def\r\n",
+			Expected: "abc123def",
+		},
+		{
+			Name:     "token from file is trimmed",
+			Token:    "file:" + tokenFile,
+			Expected: "abc123def",
+		},
+		{
+			Name:       "missing file",
+			Token:      "file:/does/not/exist",
+			ShouldFail: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			resolved, err := resolveAPIToken(tc.Token)
+			if tc.ShouldFail {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.Expected, resolved)
+		})
 	}
 }
 
@@ -1902,6 +2017,18 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("invalid SRV target returns an error", func(t *testing.T) {
+		ep := &endpoint.Endpoint{
+			DNSName:    "_caldavs._tcp.example.com",
+			RecordType: "SRV",
+			Targets:    []string{"caldav.fastmail.com."},
+		}
+
+		_, err := freeProvider.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse SRV record target")
+	})
 }
 
 func TestCloudFlareProvider_submitChangesCNAME(t *testing.T) {
@@ -2393,6 +2520,45 @@ func TestCloudFlareProvider_SupportedAdditionalRecordTypes(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestEndpointTargetFromCloudflareRecordSRV(t *testing.T) {
+	t.Run("normalizes typed SRV data", func(t *testing.T) {
+		record := dns.RecordResponse{
+			Type: dns.RecordResponseTypeSRV,
+			Data: dns.SRVRecordData{
+				Priority: 0,
+				Weight:   1,
+				Port:     443,
+				Target:   "caldav.fastmail.com",
+			},
+		}
+
+		assert.Equal(t, "0 1 443 caldav.fastmail.com.", endpointTargetFromCloudflareRecord(record))
+	})
+
+	t.Run("falls back to content without typed SRV data", func(t *testing.T) {
+		record := dns.RecordResponse{
+			Type:    dns.RecordResponseTypeSRV,
+			Content: "10 20 995 pop.fastmail.com.",
+		}
+
+		assert.Equal(t, "10 20 995 pop.fastmail.com.", endpointTargetFromCloudflareRecord(record))
+	})
+
+	t.Run("keeps service-unavailable root target", func(t *testing.T) {
+		record := dns.RecordResponse{
+			Type: dns.RecordResponseTypeSRV,
+			Data: dns.SRVRecordData{
+				Priority: 0,
+				Weight:   0,
+				Port:     0,
+				Target:   ".",
+			},
+		}
+
+		assert.Equal(t, "0 0 0 .", endpointTargetFromCloudflareRecord(record))
+	})
 }
 
 func TestCloudflareZoneChanges(t *testing.T) {
@@ -2890,7 +3056,8 @@ func TestGetUpdateDNSRecordParam(t *testing.T) {
 		},
 	}
 
-	params := getUpdateDNSRecordParam("zone-123", cfc)
+	params, err := getUpdateDNSRecordParam("zone-123", cfc)
+	require.NoError(t, err)
 	body := params.Body.(dns.RecordUpdateParamsBody)
 
 	assert.Equal(t, "zone-123", params.ZoneID.Value)
@@ -2901,6 +3068,72 @@ func TestGetUpdateDNSRecordParam(t *testing.T) {
 	assert.Equal(t, "1.2.3.4", body.Content.Value)
 	assert.InDelta(t, 10, float64(body.Priority.Value), 0)
 	assert.Equal(t, "test-comment", body.Comment.Value)
+}
+
+func TestGetDNSRecordParamsSRV(t *testing.T) {
+	cfc := cloudFlareChange{
+		ResourceRecord: dns.RecordResponse{
+			ID:      "1234",
+			Name:    "_caldavs._tcp.example.com",
+			Type:    dns.RecordResponseTypeSRV,
+			TTL:     120,
+			Content: "0 1 443 caldav.fastmail.com.",
+			Comment: "test-comment",
+		},
+	}
+
+	t.Run("create uses structured SRV data", func(t *testing.T) {
+		params, err := getCreateDNSRecordParam("zone-123", &cfc)
+		require.NoError(t, err)
+		body, ok := params.Body.(dns.SRVRecordParam)
+		require.True(t, ok)
+
+		assert.Equal(t, "zone-123", params.ZoneID.Value)
+		assert.Equal(t, "_caldavs._tcp.example.com", body.Name.Value)
+		assert.Equal(t, dns.SRVRecordTypeSRV, body.Type.Value)
+		assert.InDelta(t, 0, body.Data.Value.Priority.Value, 0)
+		assert.InDelta(t, 1, body.Data.Value.Weight.Value, 0)
+		assert.InDelta(t, 443, body.Data.Value.Port.Value, 0)
+		assert.Equal(t, "caldav.fastmail.com", body.Data.Value.Target.Value)
+		assert.Equal(t, "test-comment", body.Comment.Value)
+
+		bodyJSON, err := json.Marshal(params.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(bodyJSON), `"data"`)
+		assert.Contains(t, string(bodyJSON), `"target":"caldav.fastmail.com"`)
+		assert.NotContains(t, string(bodyJSON), `"content"`)
+	})
+
+	t.Run("update uses structured SRV data", func(t *testing.T) {
+		params, err := getUpdateDNSRecordParam("zone-123", cfc)
+		require.NoError(t, err)
+		body, ok := params.Body.(dns.SRVRecordParam)
+		require.True(t, ok)
+
+		assert.Equal(t, "zone-123", params.ZoneID.Value)
+		assert.Equal(t, "_caldavs._tcp.example.com", body.Name.Value)
+		assert.Equal(t, dns.SRVRecordTypeSRV, body.Type.Value)
+		assert.InDelta(t, 0, body.Data.Value.Priority.Value, 0)
+		assert.InDelta(t, 1, body.Data.Value.Weight.Value, 0)
+		assert.InDelta(t, 443, body.Data.Value.Port.Value, 0)
+		assert.Equal(t, "caldav.fastmail.com", body.Data.Value.Target.Value)
+		assert.Equal(t, "test-comment", body.Comment.Value)
+
+		bodyJSON, err := json.Marshal(params.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(bodyJSON), `"data"`)
+		assert.Contains(t, string(bodyJSON), `"target":"caldav.fastmail.com"`)
+		assert.NotContains(t, string(bodyJSON), `"content"`)
+	})
+
+	t.Run("malformed SRV create returns an error", func(t *testing.T) {
+		badChange := cfc
+		badChange.ResourceRecord.Content = "caldav.fastmail.com."
+
+		_, err := getCreateDNSRecordParam("zone-123", &badChange)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse SRV record target")
+	})
 }
 
 func TestZoneService(t *testing.T) {
@@ -2925,7 +3158,8 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("CreateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		params := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		params, err := getCreateDNSRecordParam(zoneID, &cloudFlareChange{})
+		require.NoError(t, err)
 		record, err := client.CreateDNSRecord(ctx, params)
 		assert.Empty(t, record)
 		assert.ErrorIs(t, err, context.Canceled)
@@ -2933,8 +3167,9 @@ func TestZoneService(t *testing.T) {
 
 	t.Run("UpdateDNSRecord", func(t *testing.T) {
 		t.Parallel()
-		recordParam := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
-		_, err := client.UpdateDNSRecord(ctx, "1234", recordParam)
+		recordParam, err := getUpdateDNSRecordParam(zoneID, cloudFlareChange{})
+		require.NoError(t, err)
+		_, err = client.UpdateDNSRecord(ctx, "1234", recordParam)
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 

@@ -144,10 +144,11 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -220,10 +221,11 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -296,10 +298,11 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns

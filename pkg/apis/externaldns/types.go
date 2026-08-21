@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
@@ -40,6 +41,10 @@ const (
 	passwordMask  = "******"
 	LogFormatText = "text"
 	LogFormatJSON = "json"
+
+	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
+	// record, so ~60k records). Override with --webhook-provider-max-body-size.
+	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
 )
 
 // Config is a project-wide configuration
@@ -151,6 +156,7 @@ type Config struct {
 	TLSClientCertKey                              string
 	Policy                                        string
 	Registry                                      string
+	CRDRegistryNamespace                          string
 	TXTOwnerID                                    string
 	TXTOwnerOld                                   string
 	TXTPrefix                                     string
@@ -189,7 +195,8 @@ type Config struct {
 	RFC2136TSIGKeyName                            string
 	RFC2136TSIGSecret                             string `secure:"yes"`
 	RFC2136TSIGSecretAlg                          string
-	RFC2136TAXFR                                  bool
+	RFC2136AXFR                                   bool
+	RFC2136TAXFR                                  bool // deprecated, use RFC2136AXFR
 	RFC2136MinTTL                                 time.Duration
 	RFC2136LoadBalancingStrategy                  string
 	RFC2136BatchChangeSize                        int
@@ -211,6 +218,9 @@ type Config struct {
 	WebhookProviderURL                            string
 	WebhookProviderReadTimeout                    time.Duration
 	WebhookProviderWriteTimeout                   time.Duration
+	WebhookProviderReadHeaderTimeout              time.Duration
+	WebhookProviderIdleTimeout                    time.Duration
+	WebhookProviderMaxBodySize                    int64
 	WebhookServer                                 bool
 	TraefikEnableLegacy                           bool
 	TraefikDisableNew                             bool
@@ -259,131 +269,135 @@ var defaultConfig = &Config{
 	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
 
-	CombineFQDNAndAnnotation:     false,
-	Compatibility:                "",
-	ConnectorSourceServer:        "localhost:8080",
-	CoreDNSPrefix:                "/skydns/",
-	CoreDNSStrictlyOwned:         false,
-	CRDSourceAPIVersion:          "externaldns.k8s.io/v1alpha1",
-	CRDSourceKind:                "DNSEndpoint",
-	DefaultTargets:               []string{},
-	DomainFilter:                 []string{},
-	DryRun:                       false,
-	ExcludeDNSRecordTypes:        []string{},
-	DomainExclude:                []string{},
-	ExcludeTargetNets:            []string{},
-	EmitEvents:                   []string{},
-	ExcludeUnschedulable:         true,
-	ExoscaleAPIEnvironment:       "api",
-	ExoscaleAPIKey:               "",
-	ExoscaleAPISecret:            "",
-	ExoscaleAPIZone:              "ch-gva-2",
-	ExoscaleZoneCacheDuration:    0 * time.Second,
-	ExposeInternalIPV6:           false,
-	FQDNTemplate:                 nil,
-	TargetTemplate:               nil,
-	FQDNTargetTemplate:           nil,
-	GatewayLabelFilter:           "",
-	GatewayName:                  "",
-	GatewayNamespace:             "",
-	GlooNamespaces:               []string{"gloo-system"},
-	GoDaddyAPIKey:                "",
-	GoDaddyOTE:                   false,
-	GoDaddySecretKey:             "",
-	GoDaddyTTL:                   600,
-	GoogleBatchChangeInterval:    time.Second,
-	GoogleBatchChangeSize:        1000,
-	GoogleProject:                "",
-	GoogleZoneVisibility:         "",
-	IgnoreHostnameAnnotation:     false,
-	IgnoreIngressRulesSpec:       false,
-	IgnoreIngressTLSSpec:         false,
-	IngressClassNames:            nil,
-	InMemoryZones:                []string{},
-	Interval:                     time.Minute,
-	KubeConfig:                   "",
-	LabelFilter:                  labels.Everything().String(),
-	LogFormat:                    "text",
-	LogLevel:                     logrus.InfoLevel.String(),
-	ManagedDNSRecordTypes:        []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-	MetricsAddress:               ":7979",
-	MinEventSyncInterval:         5 * time.Second,
-	MinTTL:                       0,
-	Namespace:                    "",
-	NAT64Networks:                []string{},
-	NS1Endpoint:                  "",
-	NS1IgnoreSSL:                 false,
-	OCIConfigFile:                "/etc/kubernetes/oci.yaml",
-	OCIZoneCacheDuration:         0 * time.Second,
-	OCIZoneScope:                 "GLOBAL",
-	Once:                         false,
-	OVHApiRateLimit:              20,
-	OVHEnableCNAMERelative:       false,
-	OVHEndpoint:                  "ovh-eu",
-	PDNSAPIKey:                   "",
-	PDNSServer:                   "http://localhost:8081",
-	PDNSServerID:                 "localhost",
-	PDNSSkipTLSVerify:            false,
-	PiholePassword:               "",
-	PiholeServer:                 "",
-	PiholeTLSInsecureSkipVerify:  false,
-	PodSourceDomain:              "",
-	Policy:                       "sync",
-	Provider:                     "",
-	ProviderCacheTime:            0,
-	CreatePTR:                    false,
-	PublishHostIP:                false,
-	PublishInternal:              false,
-	RegexDomainExclude:           regexp.MustCompile(""),
-	RegexDomainFilter:            regexp.MustCompile(""),
-	Registry:                     RegistryTXT,
-	RequestTimeout:               time.Second * 30,
-	KubeAPIRequestTimeout:        time.Second * 30,
-	KubeAPIQPS:                   int(rest.DefaultQPS),
-	KubeAPIBurst:                 rest.DefaultBurst,
-	RFC2136BatchChangeSize:       50,
-	RFC2136GSSTSIG:               false,
-	RFC2136Host:                  []string{""},
-	RFC2136Insecure:              false,
-	RFC2136KerberosPassword:      "",
-	RFC2136KerberosRealm:         "",
-	RFC2136KerberosUsername:      "",
-	RFC2136LoadBalancingStrategy: "disabled",
-	RFC2136MinTTL:                0,
-	RFC2136Port:                  0,
-	RFC2136SkipTLSVerify:         false,
-	RFC2136TAXFR:                 true,
-	RFC2136TSIGKeyName:           "",
-	RFC2136TSIGSecret:            "",
-	RFC2136TSIGSecretAlg:         "",
-	RFC2136UseTLS:                false,
-	RFC2136Zone:                  []string{},
-	ServiceTypeFilter:            []string{},
-	SkipperRouteGroupVersion:     "zalando.org/v1",
-	Sources:                      nil,
-	TargetNetFilter:              []string{},
-	TLSCA:                        "",
-	TLSClientCert:                "",
-	TLSClientCertKey:             "",
-	TraefikEnableLegacy:          false,
-	TraefikDisableNew:            false,
-	TXTCacheInterval:             0,
-	TXTEncryptAESKey:             "",
-	TXTEncryptEnabled:            false,
-	TXTOwnerID:                   "default",
-	TXTOwnerOld:                  "",
-	TXTPrefix:                    "",
-	TXTSuffix:                    "",
-	TXTWildcardReplacement:       "",
-	UpdateEvents:                 false,
-	WebhookProviderReadTimeout:   5 * time.Second,
-	WebhookProviderURL:           "http://localhost:8888",
-	WebhookProviderWriteTimeout:  10 * time.Second,
-	WebhookServer:                false,
-	ZoneIDFilter:                 []string{},
-	ForceDefaultTargets:          false,
-	UnstructuredResources:        []string{},
-	PreferAlias:                  false,
+	CombineFQDNAndAnnotation:         false,
+	Compatibility:                    "",
+	ConnectorSourceServer:            "localhost:8080",
+	CoreDNSPrefix:                    "/skydns/",
+	CoreDNSStrictlyOwned:             false,
+	CRDSourceAPIVersion:              "externaldns.k8s.io/v1alpha1",
+	CRDSourceKind:                    "DNSEndpoint",
+	DefaultTargets:                   []string{},
+	DomainFilter:                     []string{},
+	DryRun:                           false,
+	ExcludeDNSRecordTypes:            []string{},
+	DomainExclude:                    []string{},
+	ExcludeTargetNets:                []string{},
+	EmitEvents:                       []string{},
+	ExcludeUnschedulable:             true,
+	ExoscaleAPIEnvironment:           "api",
+	ExoscaleAPIKey:                   "",
+	ExoscaleAPISecret:                "",
+	ExoscaleAPIZone:                  "ch-gva-2",
+	ExoscaleZoneCacheDuration:        0 * time.Second,
+	ExposeInternalIPV6:               false,
+	FQDNTemplate:                     nil,
+	TargetTemplate:                   nil,
+	FQDNTargetTemplate:               nil,
+	GatewayLabelFilter:               "",
+	GatewayName:                      "",
+	GatewayNamespace:                 "",
+	GlooNamespaces:                   []string{"gloo-system"},
+	GoDaddyAPIKey:                    "",
+	GoDaddyOTE:                       false,
+	GoDaddySecretKey:                 "",
+	GoDaddyTTL:                       600,
+	GoogleBatchChangeInterval:        time.Second,
+	GoogleBatchChangeSize:            1000,
+	GoogleProject:                    "",
+	GoogleZoneVisibility:             "",
+	IgnoreHostnameAnnotation:         false,
+	IgnoreIngressRulesSpec:           false,
+	IgnoreIngressTLSSpec:             false,
+	IngressClassNames:                nil,
+	InMemoryZones:                    []string{},
+	Interval:                         time.Minute,
+	KubeConfig:                       "",
+	LabelFilter:                      labels.Everything().String(),
+	LogFormat:                        "text",
+	LogLevel:                         logrus.InfoLevel.String(),
+	ManagedDNSRecordTypes:            []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+	MetricsAddress:                   ":7979",
+	MinEventSyncInterval:             5 * time.Second,
+	MinTTL:                           0,
+	Namespace:                        "",
+	NAT64Networks:                    []string{},
+	NS1Endpoint:                      "",
+	NS1IgnoreSSL:                     false,
+	OCIConfigFile:                    "/etc/kubernetes/oci.yaml",
+	OCIZoneCacheDuration:             0 * time.Second,
+	OCIZoneScope:                     "GLOBAL",
+	Once:                             false,
+	OVHApiRateLimit:                  20,
+	OVHEnableCNAMERelative:           false,
+	OVHEndpoint:                      "ovh-eu",
+	PDNSAPIKey:                       "",
+	PDNSServer:                       "http://localhost:8081",
+	PDNSServerID:                     "localhost",
+	PDNSSkipTLSVerify:                false,
+	PiholePassword:                   "",
+	PiholeServer:                     "",
+	PiholeTLSInsecureSkipVerify:      false,
+	PodSourceDomain:                  "",
+	Policy:                           "",
+	Provider:                         "",
+	ProviderCacheTime:                0,
+	CreatePTR:                        false,
+	PublishHostIP:                    false,
+	PublishInternal:                  false,
+	RegexDomainExclude:               regexp.MustCompile(""),
+	RegexDomainFilter:                regexp.MustCompile(""),
+	Registry:                         RegistryTXT,
+	RequestTimeout:                   time.Second * 30,
+	KubeAPIRequestTimeout:            time.Second * 30,
+	KubeAPIQPS:                       int(rest.DefaultQPS),
+	KubeAPIBurst:                     rest.DefaultBurst,
+	RFC2136AXFR:                      false,
+	RFC2136BatchChangeSize:           50,
+	RFC2136GSSTSIG:                   false,
+	RFC2136Host:                      []string{""},
+	RFC2136Insecure:                  false,
+	RFC2136KerberosPassword:          "",
+	RFC2136KerberosRealm:             "",
+	RFC2136KerberosUsername:          "",
+	RFC2136LoadBalancingStrategy:     "disabled",
+	RFC2136MinTTL:                    0,
+	RFC2136Port:                      0,
+	RFC2136SkipTLSVerify:             false,
+	RFC2136TAXFR:                     false,
+	RFC2136TSIGKeyName:               "",
+	RFC2136TSIGSecret:                "",
+	RFC2136TSIGSecretAlg:             "",
+	RFC2136UseTLS:                    false,
+	RFC2136Zone:                      []string{},
+	ServiceTypeFilter:                []string{},
+	SkipperRouteGroupVersion:         "zalando.org/v1",
+	Sources:                          nil,
+	TargetNetFilter:                  []string{},
+	TLSCA:                            "",
+	TLSClientCert:                    "",
+	TLSClientCertKey:                 "",
+	TraefikEnableLegacy:              false,
+	TraefikDisableNew:                false,
+	TXTCacheInterval:                 0,
+	TXTEncryptAESKey:                 "",
+	TXTEncryptEnabled:                false,
+	TXTOwnerID:                       "default",
+	TXTOwnerOld:                      "",
+	TXTPrefix:                        "",
+	TXTSuffix:                        "",
+	TXTWildcardReplacement:           "",
+	UpdateEvents:                     false,
+	WebhookProviderReadTimeout:       5 * time.Second,
+	WebhookProviderURL:               "http://localhost:8888",
+	WebhookProviderWriteTimeout:      10 * time.Second,
+	WebhookProviderReadHeaderTimeout: 5 * time.Second,
+	WebhookProviderIdleTimeout:       30 * time.Second,
+	WebhookProviderMaxBodySize:       defaultWebhookProviderMaxBodySize,
+	WebhookServer:                    false,
+	ZoneIDFilter:                     []string{},
+	ForceDefaultTargets:              false,
+	UnstructuredResources:            []string{},
+	PreferAlias:                      false,
 }
 
 var ProviderNames = []string{
@@ -414,32 +428,13 @@ var ProviderNames = []string{
 	ProviderWebhook,
 }
 
-var allowedSources = []string{
-	"service",
-	"ingress",
-	"node",
-	"pod",
-	"gateway-httproute",
-	"gateway-grpcroute",
-	"gateway-tlsroute",
-	"gateway-tcproute",
-	"gateway-udproute",
-	"istio-gateway",
-	"istio-virtualservice",
-	"contour-httpproxy",
-	"gloo-proxy",
-	"fake",
-	"connector",
-	"crd",
-	"empty",
-	"skipper-routegroup",
-	"openshift-route",
-	"ambassador-host",
-	"kong-tcpingress",
-	"f5-virtualserver",
-	"f5-transportserver",
-	"traefik-proxy",
-	"unstructured",
+// AllowedSources lists every value accepted by --source, alphabetically sorted.
+var AllowedSources = sortedAllowedSources()
+
+func sortedAllowedSources() []string {
+	s := slices.Clone(types.All)
+	slices.Sort(s)
+	return s
 }
 
 // NewConfig returns new Config object
@@ -490,10 +485,16 @@ func (cfg *Config) ParseFlags(args []string) error {
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
 // If both are explicitly set, --kube-api-request-timeout takes precedence.
+//
+// --rfc2136-tsig-axfr is OR'd into --rfc2136-axfr: either flag alone enables AXFR.
 func (cfg *Config) resolveDeprecatedFlags() {
 	if cfg.RequestTimeout != defaultConfig.RequestTimeout {
 		logrus.Warn("--request-timeout is deprecated, use --kube-api-request-timeout instead")
 		cfg.KubeAPIRequestTimeout = cfg.RequestTimeout
+	}
+	if cfg.RFC2136TAXFR {
+		logrus.Warn("--rfc2136-tsig-axfr is deprecated, use --rfc2136-axfr instead")
+		cfg.RFC2136AXFR = true
 	}
 }
 
@@ -539,7 +540,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)", false, &cfg.IgnoreNonHostNetworkPods)
 	b.StringsVar("ingress-class", "Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)", nil, &cfg.IngressClassNames)
 	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector (default: all resources)", defaultConfig.LabelFilter, &cfg.LabelFilter)
-	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
+	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, DNAME, NS, SRV, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)
 	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
 	b.StringsVar("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)", nil, &cfg.NAT64Networks)
@@ -646,7 +647,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
 	b.StringVar("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecretAlg, &cfg.RFC2136TSIGSecretAlg)
-	b.BoolVar("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", false, &cfg.RFC2136TAXFR)
+	b.BoolVar("rfc2136-axfr", "When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records (without it ExternalDNS cannot read records and behaves as if --policy=create-only)", defaultConfig.RFC2136AXFR, &cfg.RFC2136AXFR)
+	b.BoolVar("rfc2136-tsig-axfr", "[DEPRECATED: use --rfc2136-axfr] When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records", defaultConfig.RFC2136TAXFR, &cfg.RFC2136TAXFR)
 	b.DurationVar("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this", defaultConfig.RFC2136MinTTL, &cfg.RFC2136MinTTL)
 	b.BoolVar("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)", defaultConfig.RFC2136GSSTSIG, &cfg.RFC2136GSSTSIG)
 	b.StringVar("rfc2136-kerberos-username", "When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)", defaultConfig.RFC2136KerberosUsername, &cfg.RFC2136KerberosUsername)
@@ -663,10 +665,11 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates", defaultConfig.PiholeTLSInsecureSkipVerify, &cfg.PiholeTLSInsecureSkipVerify)
 
 	// Flags related to policies
-	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "sync", "upsert-only", "create-only")
+	b.EnumVar("policy", "Modify how DNS records are synchronized between sources and providers (required, no default; options: sync, upsert-only, create-only)", defaultConfig.Policy, &cfg.Policy, "", "sync", "upsert-only", "create-only")
 
 	// Flags related to the registry
 	b.EnumVar("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: aws-sd, crd, dynamodb, noop, txt)", defaultConfig.Registry, &cfg.Registry, RegistryAWSSD, RegistryCRD, RegistryDynamoDB, RegistryNoop, RegistryTXT)
+	b.StringVar("crd-registry-namespace", "When using the CRD registry, the namespace the DNSRecord objects are stored in (default: the namespace ExternalDNS runs in)", defaultConfig.CRDRegistryNamespace, &cfg.CRDRegistryNamespace)
 	b.StringVar("txt-owner-id", "When using the TXT, DynamoDB or CRD registry, a name that identifies this instance of ExternalDNS (default: default)", defaultConfig.TXTOwnerID, &cfg.TXTOwnerID)
 	b.StringVar("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!", defaultConfig.TXTPrefix, &cfg.TXTPrefix)
 	b.StringVar("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!", defaultConfig.TXTSuffix, &cfg.TXTSuffix)
@@ -695,6 +698,9 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("webhook-provider-url", "The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)", defaultConfig.WebhookProviderURL, &cfg.WebhookProviderURL)
 	b.DurationVar("webhook-provider-read-timeout", "The read timeout for the webhook provider in duration format (default: 5s)", defaultConfig.WebhookProviderReadTimeout, &cfg.WebhookProviderReadTimeout)
 	b.DurationVar("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)", defaultConfig.WebhookProviderWriteTimeout, &cfg.WebhookProviderWriteTimeout)
+	b.DurationVar("webhook-provider-read-header-timeout", "The header read timeout for the webhook server in duration format, bounding slow header sends independently of the read timeout (default: 5s)", defaultConfig.WebhookProviderReadHeaderTimeout, &cfg.WebhookProviderReadHeaderTimeout)
+	b.DurationVar("webhook-provider-idle-timeout", "The idle timeout for the webhook server keep-alive connections in duration format (default: 30s)", defaultConfig.WebhookProviderIdleTimeout, &cfg.WebhookProviderIdleTimeout)
+	b.Int64Var("webhook-provider-max-body-size", "Maximum size in bytes of a webhook request or response body; larger payloads are rejected (default: 33554432, i.e. 32 MiB, 0 disables)", defaultConfig.WebhookProviderMaxBodySize, &cfg.WebhookProviderMaxBodySize)
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
 
 	// FQDN Templating
@@ -724,8 +730,8 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("provider", providerHelp).Required().PlaceHolder("provider").EnumVar(&cfg.Provider, ProviderNames...)
 
 	// Reintroduce source enum/required validation in Kingpin to match previous behavior.
-	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(allowedSources, ", ") + ")"
-	app.Flag("source", sourceHelp).Required().PlaceHolder("source").EnumsVar(&cfg.Sources, allowedSources...)
+	sourceHelp := "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: " + strings.Join(AllowedSources, ", ") + ")"
+	app.Flag("source", sourceHelp).Required().PlaceHolder("source").EnumsVar(&cfg.Sources, AllowedSources...)
 
 	return app
 }

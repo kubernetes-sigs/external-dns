@@ -85,12 +85,8 @@ type routeGroupClient struct {
 
 func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeGroupClient {
 	const (
-		tokenFile  = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 		rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	)
-	if tokenPath != "" {
-		tokenPath = tokenFile
-	}
 
 	tr := &http.Transport{
 		DialContext: (&net.Dialer{
@@ -110,7 +106,7 @@ func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeG
 		},
 		quit:      make(chan struct{}),
 		tokenFile: tokenPath,
-		token:     token,
+		token:     strings.TrimSpace(token),
 	}
 
 	go func() {
@@ -158,7 +154,7 @@ func (cli *routeGroupClient) updateToken() {
 	}
 
 	cli.mu.Lock()
-	cli.token = string(token)
+	cli.token = strings.TrimSpace(string(token))
 	cli.mu.Unlock()
 }
 
@@ -209,12 +205,14 @@ func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (So
 	if routeGroupVersion == "" {
 		routeGroupVersion = DefaultRoutegroupVersion
 	}
-	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
-
 	u, err := url.Parse(apiServerURL)
 	if err != nil {
 		return nil, err
 	}
+
+	// created after the URL is validated, because it starts a token refresh
+	// goroutine that would otherwise outlive a discarded source.
+	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
 
 	apiServer := u.String()
 	// strip port if well known port, because of TLS certificate match

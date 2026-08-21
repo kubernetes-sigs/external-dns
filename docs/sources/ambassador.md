@@ -101,9 +101,10 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         args:
         - --source=ambassador-host
+        - --policy=sync # full synchronization so updates/deletes are applied; set --policy=upsert-only to prevent deletions
         - --provider=inmemory
         - --inmemory-zone=example.com # persist records so updates/deletes are observable
         - --log-level=debug # show the records that would be created
@@ -127,6 +128,7 @@ uses your current kubeconfig context (the kind cluster), so no in-cluster RBAC i
 go run main.go \
     --source=ambassador-host \
     --provider=inmemory \
+    --policy=sync \
     --inmemory-zone=example.com \
     --interval=10s \
     --log-level=debug

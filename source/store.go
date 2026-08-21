@@ -127,9 +127,14 @@ func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 }
 
 func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
-	// errors are explicitly ignored because the filters are already validated in validation.ValidateConfig
-	labelSelector, _ := labels.Parse(cfg.LabelFilter)
-	annotationSelector, _ := annotations.ParseFilter(cfg.AnnotationFilter)
+	labelSelector, err := labels.Parse(cfg.LabelFilter)
+	if err != nil {
+		return nil, fmt.Errorf("label filter: %w", err)
+	}
+	annotationSelector, err := annotations.ParseFilter(cfg.AnnotationFilter)
+	if err != nil {
+		return nil, fmt.Errorf("annotation filter: %w", err)
+	}
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {
 		return nil, err
@@ -408,11 +413,18 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // - "kong-tcpingress": Kong TCP Ingress resources
 // - "f5-*": F5 resources (virtualserver, transportserver)
 // - "fake": Fake source for testing
+// - "empty": Returns no endpoints, for testing or as a placeholder
 // - "connector": Connector source for external systems
 //
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
+	// Scope the template engine to this source so templates can use isSource "name".
+	var err error
+	if cfg.TemplateEngine, err = cfg.TemplateEngine.WithSource(source); err != nil {
+		return nil, err
+	}
+
 	switch source {
 	case types.Node:
 		return buildNodeSource(ctx, p, cfg)
@@ -448,6 +460,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildOpenShiftRouteSource(ctx, p, cfg)
 	case types.Fake:
 		return NewFakeSource(cfg)
+	case types.Empty:
+		return NewEmptySource(), nil
 	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
 	case types.CRD:

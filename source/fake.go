@@ -115,6 +115,8 @@ func (sc *fakeSource) generateEndpointForType(recordType, dnsName string) (*endp
 		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeAAAA, generateTargets(len(sc.dnsNames), sc.generateIPv6Address)...)
 	case endpoint.RecordTypeCNAME:
 		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeCNAME, sc.generateDNSName(4, dnsName))
+	case endpoint.RecordTypeDNAME:
+		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeDNAME, sc.generateDNSName(4, dnsName))
 	case endpoint.RecordTypeTXT:
 		ep = endpoint.NewEndpoint(sc.generateDNSName(4, dnsName), endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=fake"`)
 	case endpoint.RecordTypeSRV:

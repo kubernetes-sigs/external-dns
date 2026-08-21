@@ -18,10 +18,17 @@ package source
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -30,6 +37,285 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	"sigs.k8s.io/external-dns/source/types"
 )
+
+func TestRouteGroupClientUpdateToken(t *testing.T) {
+	t.Parallel()
+
+	t.Run("no token file path leaves token unchanged", func(t *testing.T) {
+		t.Parallel()
+
+		client := &routeGroupClient{token: "initial-token"}
+		client.updateToken()
+
+		assert.Equal(t, "initial-token", client.getToken())
+	})
+
+	t.Run("token is read from file", func(t *testing.T) {
+		t.Parallel()
+
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("updated-token"), 0o600))
+		client := &routeGroupClient{token: "initial-token", tokenFile: tokenFile}
+
+		client.updateToken()
+
+		assert.Equal(t, "updated-token", client.getToken())
+	})
+
+	t.Run("unreadable token file leaves token unchanged", func(t *testing.T) {
+		t.Parallel()
+
+		client := &routeGroupClient{
+			token:     "initial-token",
+			tokenFile: filepath.Join(t.TempDir(), "missing-token"),
+		}
+
+		client.updateToken()
+
+		assert.Equal(t, "initial-token", client.getToken())
+	})
+}
+
+func TestRouteGroupClientGetRouteGroupList(t *testing.T) {
+	t.Parallel()
+
+	t.Run("successful response", func(t *testing.T) {
+		t.Parallel()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+			w.Header().Set("Content-Type", "application/json")
+			_, err := w.Write([]byte(`{"kind":"RouteGroupList","apiVersion":"zalando.org/v1","items":[{"metadata":{"name":"rg1"}}]}`))
+			assert.NoError(t, err)
+		}))
+		defer server.Close()
+
+		client := &routeGroupClient{client: server.Client(), token: "test-token"}
+		got, err := client.getRouteGroupList(server.URL)
+
+		require.NoError(t, err)
+		require.Len(t, got.Items, 1)
+		assert.Equal(t, "RouteGroupList", got.Kind)
+		assert.Equal(t, "zalando.org/v1", got.APIVersion)
+		assert.Equal(t, "rg1", got.Items[0].Name)
+	})
+
+	t.Run("non-success response", func(t *testing.T) {
+		t.Parallel()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		client := &routeGroupClient{client: server.Client()}
+		got, err := client.getRouteGroupList(server.URL)
+
+		assert.Nil(t, got)
+		assert.ErrorContains(t, err, "503 Service Unavailable")
+	})
+
+	t.Run("invalid JSON response", func(t *testing.T) {
+		t.Parallel()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			_, err := w.Write([]byte(`{"items":`))
+			assert.NoError(t, err)
+		}))
+		defer server.Close()
+
+		client := &routeGroupClient{client: server.Client()}
+		got, err := client.getRouteGroupList(server.URL)
+
+		assert.Nil(t, got)
+		assert.Error(t, err)
+	})
+
+	t.Run("request failure", func(t *testing.T) {
+		t.Parallel()
+
+		server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+		client := &routeGroupClient{client: server.Client()}
+		server.Close()
+
+		got, err := client.getRouteGroupList(server.URL)
+
+		assert.Nil(t, got)
+		assert.Error(t, err)
+	})
+}
+
+func TestRouteGroupClientGetAndDo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invalid URL", func(t *testing.T) {
+		t.Parallel()
+
+		client := &routeGroupClient{}
+		resp, err := client.get("://invalid")
+
+		assert.Nil(t, resp)
+		assert.Error(t, err)
+	})
+
+	t.Run("existing authorization header is preserved", func(t *testing.T) {
+		t.Parallel()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "Bearer request-token", r.Header.Get("Authorization"))
+			w.WriteHeader(http.StatusNoContent)
+		}))
+		defer server.Close()
+
+		client := &routeGroupClient{client: server.Client(), token: "client-token"}
+		req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+		require.NoError(t, err)
+		req.Header.Set("Authorization", "Bearer request-token")
+
+		resp, err := client.do(req)
+
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+	})
+}
+
+func TestNewRouteGroupSource(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name              string
+		apiServer         string
+		namespace         string
+		routeGroupVersion string
+		wantServer        string
+		wantAPI           string
+		wantErr           bool
+	}{
+		{
+			name:       "default version across all namespaces",
+			apiServer:  "http://kubernetes.default.svc",
+			wantServer: "http://kubernetes.default.svc",
+			wantAPI:    "http://kubernetes.default.svc/apis/zalando.org/v1/routegroups",
+		},
+		{
+			name:              "custom version in one namespace",
+			apiServer:         "https://kubernetes.default.svc:8443",
+			namespace:         "test-namespace",
+			routeGroupVersion: "zalando.org/v1alpha1",
+			wantServer:        "https://kubernetes.default.svc:8443",
+			wantAPI:           "https://kubernetes.default.svc:8443/apis/zalando.org/v1alpha1/namespaces/test-namespace/routegroups",
+		},
+		{
+			name:       "standard HTTPS port is removed",
+			apiServer:  "https://kubernetes.default.svc:443",
+			wantServer: "https://kubernetes.default.svc",
+			wantAPI:    "https://kubernetes.default.svc/apis/zalando.org/v1/routegroups",
+		},
+		{
+			name:       "standard HTTPS port is removed from IPv6 address",
+			apiServer:  "https://[2001:db8::1]:443",
+			wantServer: "https://[2001:db8::1]",
+			wantAPI:    "https://[2001:db8::1]/apis/zalando.org/v1/routegroups",
+		},
+		{
+			name:      "unparsable API server URL returns an error",
+			apiServer: "://invalid",
+			wantErr:   true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			config := Config{
+				Namespace:                tt.namespace,
+				SkipperRouteGroupVersion: tt.routeGroupVersion,
+				KubeAPIRequestTimeout:    time.Second,
+			}
+			got, err := NewRouteGroupSource(&config, "test-token", "", tt.apiServer)
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+
+			source, ok := got.(*routeGroupSource)
+			require.True(t, ok)
+			client, ok := source.cli.(*routeGroupClient)
+			require.True(t, ok)
+			t.Cleanup(func() { close(client.quit) })
+
+			assert.Equal(t, tt.wantServer, source.apiServer)
+			assert.Equal(t, tt.namespace, source.namespace)
+			assert.Equal(t, tt.wantAPI, source.apiEndpoint)
+			assert.Equal(t, "test-token", client.getToken())
+		})
+	}
+}
+
+func TestRouteGroupDeepCopyObject(t *testing.T) {
+	t.Parallel()
+
+	original := createTestRouteGroup(
+		"namespace1",
+		"rg1",
+		map[string]string{"key": "value"},
+		[]string{"rg1.example.org"},
+		nil,
+	)
+	cloned, ok := original.DeepCopyObject().(*routeGroup)
+	require.True(t, ok)
+
+	assert.Equal(t, original, cloned)
+	assert.NotSame(t, original, cloned)
+
+	// Top-level fields are independent.
+	cloned.Name = "rg2"
+	assert.Equal(t, "rg1", original.Name)
+
+	// Nested slices and maps are not.
+	cloned.Spec.Hosts[0] = "rg2.example.org"
+	cloned.Annotations["key"] = "changed"
+	assert.Equal(t, "rg2.example.org", original.Spec.Hosts[0])
+	assert.Equal(t, "changed", original.Annotations["key"])
+}
+
+func TestRouteGroupClientToken(t *testing.T) {
+	t.Parallel()
+
+	t.Run("trims direct token", func(t *testing.T) {
+		client := newRouteGroupClient(" direct-token\r\n", "", time.Second)
+		t.Cleanup(func() { close(client.quit) })
+
+		assert.Equal(t, "direct-token", client.getToken())
+	})
+
+	t.Run("loads custom token file", func(t *testing.T) {
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("custom-token\n"), 0o600))
+
+		client := newRouteGroupClient("initial-token", tokenFile, time.Second)
+		t.Cleanup(func() { close(client.quit) })
+
+		assert.Equal(t, tokenFile, client.tokenFile)
+		assert.Equal(t, "custom-token", client.getToken())
+	})
+
+	t.Run("reloads custom token file", func(t *testing.T) {
+		tokenFile := filepath.Join(t.TempDir(), "token")
+		require.NoError(t, os.WriteFile(tokenFile, []byte("initial-file-token"), 0o600))
+
+		client := newRouteGroupClient("initial-token", tokenFile, time.Second)
+		t.Cleanup(func() { close(client.quit) })
+
+		require.NoError(t, os.WriteFile(tokenFile, []byte("rotated-file-token\r\n"), 0o600))
+		client.updateToken()
+
+		assert.Equal(t, "rotated-file-token", client.getToken())
+	})
+}
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
@@ -338,6 +624,13 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		wantErr     bool
 	}{
 		{
+			name: "routegroup client error should be returned",
+			source: &routeGroupSource{
+				cli: &fakeRouteGroupClient{returnErr: true},
+			},
+			wantErr: true,
+		},
+		{
 			name: "Empty routegroup should return empty endpoints",
 			source: &routeGroupSource{
 				cli: &fakeRouteGroupClient{
@@ -449,6 +742,26 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
+		},
+		{
+			name:      "fqdn template execution error should be returned",
+			templates: "{{index . 0}}",
+			source: &routeGroupSource{
+				cli: &fakeRouteGroupClient{
+					rg: &routeGroupList{
+						Items: []*routeGroup{
+							createTestRouteGroup(
+								"namespace1",
+								"rg1",
+								nil,
+								nil,
+								[]routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
+							),
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name:      "Single routegroup without combineFQDNAnnotation with fqdn template should return endpoints not from fqdnTemplate",

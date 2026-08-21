@@ -2024,3 +2024,267 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 		})
 	}
 }
+
+// newTraefikScheme builds a runtime.Scheme with all Traefik CRD types registered.
+func newTraefikScheme() *runtime.Scheme {
+	s := runtime.NewScheme()
+	s.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	s.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	s.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	s.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	s.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	s.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	return s
+}
+
+// TestTraefikIndexer verifies that the indexer correctly filters IngressRoute, IngressRouteTCP,
+// and IngressRouteUDP resources (current traefik.io GVRs) by annotation and label at index time.
+func TestTraefikIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(gvr schema.GroupVersionResource, kind, name string, ann, lbls map[string]string) *IngressRoute {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		ann[annotations.TargetKey] = "1.2.3.4"
+		return &IngressRoute{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: gvr.GroupVersion().String(),
+				Kind:       kind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   defaultTraefikNamespace,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Spec: traefikIngressRouteSpec{
+				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*IngressRoute
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all routes",
+			expectedCount: 3,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", nil, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", nil, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter includes matching routes",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter includes matching routes",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", nil, map[string]string{"env": "prod"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", nil, map[string]string{"env": "staging"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches returns empty",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
+	}
+
+	traefikScheme := newTraefikScheme()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
+
+			for _, route := range tt.routes {
+				data, err := json.Marshal(route)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespace:        defaultTraefikNamespace,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+// TestTraefikLegacyIndexer verifies that the indexer correctly filters legacy IngressRoute resources
+// (traefik.containo.us GVRs, enabled via --traefik-enable-legacy) by annotation and label at index time.
+func TestTraefikLegacyIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(name string, ann, lbls map[string]string) *IngressRoute {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		ann[annotations.TargetKey] = "1.2.3.4"
+		return &IngressRoute{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: oldIngressRouteGVR.GroupVersion().String(),
+				Kind:       "IngressRoute",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   defaultTraefikNamespace,
+				Annotations: ann,
+				Labels:      lbls,
+			},
+			Spec: traefikIngressRouteSpec{
+				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*IngressRoute
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all legacy routes",
+			expectedCount: 3,
+			routes: []*IngressRoute{
+				makeEntity("ir1", nil, nil),
+				makeEntity("ir2", nil, nil),
+				makeEntity("ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter on legacy routes",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ir2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ir3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter on legacy routes",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			routes: []*IngressRoute{
+				makeEntity("ir1", nil, map[string]string{"env": "prod"}),
+				makeEntity("ir2", nil, map[string]string{"env": "staging"}),
+				makeEntity("ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ir2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ir3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches on legacy routes",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
+	}
+
+	traefikScheme := newTraefikScheme()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
+
+			for _, route := range tt.routes {
+				data, err := json.Marshal(route)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespace:           defaultTraefikNamespace,
+				AnnotationFilter:    parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:         parseLabelSelectorOrEverything(t, tt.labelFilter),
+				TraefikDisableNew:   true,
+				TraefikEnableLegacy: true,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}

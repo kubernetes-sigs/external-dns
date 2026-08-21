@@ -237,12 +237,13 @@ spec:
       containers:
       - args:
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=external-dns
         - --ingress-class=external-ingress
         - --aws-zone-type=public
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         name: external-dns-public
 ```
 
@@ -275,12 +276,13 @@ spec:
       containers:
       - args:
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus
         - --ingress-class=internal-ingress
         - --aws-zone-type=private
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.22.0
         name: external-dns-private
 ```
 

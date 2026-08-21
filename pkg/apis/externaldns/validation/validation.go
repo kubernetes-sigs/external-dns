@@ -87,6 +87,9 @@ func preValidateConfig(cfg *externaldns.Config) error {
 	if cfg.Provider == "" {
 		return errors.New("no provider specified")
 	}
+	if cfg.Policy == "" {
+		return errors.New("--policy must be set explicitly (one of: sync, upsert-only, create-only)")
+	}
 	return nil
 }
 
