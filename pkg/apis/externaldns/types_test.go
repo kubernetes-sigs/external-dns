@@ -599,6 +599,16 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 
+func TestParseFlagsCRDRegistryNamespace(t *testing.T) {
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service"}))
+	assert.Empty(t, cfg.CRDRegistryNamespace, "unset, so the current namespace is resolved at startup")
+
+	cfg = NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service", "--crd-registry-namespace=external-dns"}))
+	assert.Equal(t, "external-dns", cfg.CRDRegistryNamespace)
+}
+
 func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
 		PDNSAPIKey:        "pdns-api-key",
