@@ -127,9 +127,14 @@ func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 }
 
 func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
-	// errors are explicitly ignored because the filters are already validated in validation.ValidateConfig
-	labelSelector, _ := labels.Parse(cfg.LabelFilter)
-	annotationSelector, _ := annotations.ParseFilter(cfg.AnnotationFilter)
+	labelSelector, err := labels.Parse(cfg.LabelFilter)
+	if err != nil {
+		return nil, fmt.Errorf("label filter: %w", err)
+	}
+	annotationSelector, err := annotations.ParseFilter(cfg.AnnotationFilter)
+	if err != nil {
+		return nil, fmt.Errorf("annotation filter: %w", err)
+	}
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {
 		return nil, err

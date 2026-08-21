@@ -463,6 +463,18 @@ func TestNewSourceConfig(t *testing.T) {
 			wantErr:     true,
 			errContains: `--fqdn-template[1]`,
 		},
+		{
+			name:        "invalid label filter",
+			cfg:         &externaldns.Config{LabelFilter: "#invalid-selector"},
+			wantErr:     true,
+			errContains: `Invalid value: "#invalid-selector"`,
+		},
+		{
+			name:        "invalid annotation filter",
+			cfg:         &externaldns.Config{AnnotationFilter: "kubernetes.io/gateway.name in (a b)"},
+			wantErr:     true,
+			errContains: `couldn't parse the selector string`,
+		},
 	}
 
 	for _, tt := range tests {
