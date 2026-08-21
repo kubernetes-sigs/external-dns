@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -194,6 +195,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{},
 			expectError:        true,
+		},
+		{
+			title:              "node name with a label over 63 characters is skipped instead of panicking",
+			nodeName:           strings.Repeat("a", 64),
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected:           nil,
 		},
 		{
 			title:              "node with target annotation",
