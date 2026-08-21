@@ -1,0 +1,3215 @@
+# AWS zones fixtures with tags
+# number of zones 160+ (root domain + subdomains)
+# root domain ex.com
+# subdomains examples in the form of
+# - x1.ex.com
+# - ........
+# - x7.x6.x5.x4.x3.x2.x1.ex.com
+zones:
+- name: ex.com.
+  id: /hostedzone/Z10242883PKPS38KA4S6C
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: level
+    value: root
+  - key: managed
+    value: terraform
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x7.x6.x5.x4.x3.x2.x1.ex.com.
+  id: /hostedzone/Z1032002B96QH7HFX83T
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: x6.x5.x4.x3.x2.x1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x7.x6.x5.x4.x3.x2.x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u7.u6.u5.u4.u3.u2.u1.ex.com.
+  id: /hostedzone/Z10320232590ZA96YS1UU
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: u6.u5.u4.u3.u2.u1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u7.u6.u5.u4.u3.u2.u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a7.a6.a5.a4.a3.a2.a1.ex.com.
+  id: /hostedzone/Z10315369KW0URNJU6RK
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: a6.a5.a4.a3.a2.a1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a7.a6.a5.a4.a3.a2.a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j7.j6.j5.j4.j3.j2.j1.ex.com.
+  id: /hostedzone/Z10295763LSQ170JCTR78
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: j6.j5.j4.j3.j2.j1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j7.j6.j5.j4.j3.j2.j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c7.c6.c5.c4.c3.c2.c1.ex.com.
+  id: /hostedzone/Z10288493DKATL8232JNZ
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: c6.c5.c4.c3.c2.c1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c7.c6.c5.c4.c3.c2.c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f7.f6.f5.f4.f3.f2.f1.ex.com.
+  id: /hostedzone/Z102884820EE3LQYU9WOM
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: f6.f5.f4.f3.f2.f1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f7.f6.f5.f4.f3.f2.f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w7.w6.w5.w4.w3.w2.w1.ex.com.
+  id: /hostedzone/Z10283413MVB9WV61S7OA
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: w6.w5.w4.w3.w2.w1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w7.w6.w5.w4.w3.w2.w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r1.ex.com.
+  id: /hostedzone/Z1016808BHW7INWWYYIF
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h1.ex.com.
+  id: /hostedzone/Z1016090E4ZMPH0OUE8Z
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t1.ex.com.
+  id: /hostedzone/Z10161971RT6SUM2O9Q5E
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o1.ex.com.
+  id: /hostedzone/Z10159761394AY0UJXGVW
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g1.ex.com.
+  id: /hostedzone/Z10160182ROTV7D06VGRH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l2.l1.ex.com.
+  id: /hostedzone/Z10238911BEICMQG6K7N4
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: l1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l2.l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d1.ex.com.
+  id: /hostedzone/Z10238042ATQ2R880EA30
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g2.g1.ex.com.
+  id: /hostedzone/Z102355127WZ6HZSCS1UQ
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: g1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g2.g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k1.ex.com.
+  id: /hostedzone/Z10228862S8D8AWIBRPX5
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z2.z1.ex.com.
+  id: /hostedzone/Z1022753YQV9L66OQKKG
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: z1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z2.z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n1.ex.com.
+  id: /hostedzone/Z10222872GS2T2IW5YE39
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p3.p2.p1.ex.com.
+  id: /hostedzone/Z10392163D8GY90CD0H8
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: p2.p1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p3.p2.p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z3.z2.z1.ex.com.
+  id: /hostedzone/Z10385543080IK4J0F0TN
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: z2.z1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z3.z2.z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m3.m2.m1.ex.com.
+  id: /hostedzone/Z10382283MVOVGXANQEYL
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: m2.m1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m3.m2.m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r4.r3.r2.r1.ex.com.
+  id: /hostedzone/Z1038243J4I23XS7OSKF
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: r3.r2.r1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r4.r3.r2.r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k3.k2.k1.ex.com.
+  id: /hostedzone/Z103808619D40WT1DR49J
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: k2.k1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k3.k2.k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p4.p3.p2.p1.ex.com.
+  id: /hostedzone/Z1038033327YHLUQQI3X2
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: p3.p2.p1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p4.p3.p2.p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m5.m4.m3.m2.m1.ex.com.
+  id: /hostedzone/Z0533089I4KYU2CI4QI1
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: m4.m3.m2.m1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m5.m4.m3.m2.m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c5.c4.c3.c2.c1.ex.com.
+  id: /hostedzone/Z05330532TU88KT3RR8DV
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: c4.c3.c2.c1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c5.c4.c3.c2.c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r5.r4.r3.r2.r1.ex.com.
+  id: /hostedzone/Z05330482Y4BD73GXQL9R
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: r4.r3.r2.r1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r5.r4.r3.r2.r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g5.g4.g3.g2.g1.ex.com.
+  id: /hostedzone/Z0532558273KTRBR8UW6J
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: g4.g3.g2.g1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g5.g4.g3.g2.g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r6.r5.r4.r3.r2.r1.ex.com.
+  id: /hostedzone/Z054065934ZVPHZZKEPH4
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: r5.r4.r3.r2.r1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r6.r5.r4.r3.r2.r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f5.f4.f3.f2.f1.ex.com.
+  id: /hostedzone/Z053991036YAFX9ZO6WWP
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: f4.f3.f2.f1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f5.f4.f3.f2.f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a5.a4.a3.a2.a1.ex.com.
+  id: /hostedzone/Z05399152X3HLIXV18OFH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: a4.a3.a2.a1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a5.a4.a3.a2.a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g6.g5.g4.g3.g2.g1.ex.com.
+  id: /hostedzone/Z0539521253N0CZENGVYT
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: g5.g4.g3.g2.g1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g6.g5.g4.g3.g2.g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h5.h4.h3.h2.h1.ex.com.
+  id: /hostedzone/Z0539437KPBCRSU5OQS2
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: h4.h3.h2.h1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h5.h4.h3.h2.h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z6.z5.z4.z3.z2.z1.ex.com.
+  id: /hostedzone/Z05393465GOC3P191Z3M
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: z5.z4.z3.z2.z1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z6.z5.z4.z3.z2.z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x6.x5.x4.x3.x2.x1.ex.com.
+  id: /hostedzone/Z05392373JKKXLCN3FNI4
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: x5.x4.x3.x2.x1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x6.x5.x4.x3.x2.x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j5.j4.j3.j2.j1.ex.com.
+  id: /hostedzone/Z0539046IFXW5PM8YN1H
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: j4.j3.j2.j1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j5.j4.j3.j2.j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d6.d5.d4.d3.d2.d1.ex.com.
+  id: /hostedzone/Z053882914TO782DFG8CG
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: d5.d4.d3.d2.d1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d6.d5.d4.d3.d2.d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z5.z4.z3.z2.z1.ex.com.
+  id: /hostedzone/Z0538661Y3HB6MCJOE82
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: z4.z3.z2.z1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z5.z4.z3.z2.z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k5.k4.k3.k2.k1.ex.com.
+  id: /hostedzone/Z05385574XIO6WFJ8LQ1
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: k4.k3.k2.k1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k5.k4.k3.k2.k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i5.i4.i3.i2.i1.ex.com.
+  id: /hostedzone/Z053855215ZX8GW2J5KBG
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: i4.i3.i2.i1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i5.i4.i3.i2.i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o5.o4.o3.o2.o1.ex.com.
+  id: /hostedzone/Z0538559IWTO974D6T3D
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: o4.o3.o2.o1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o5.o4.o3.o2.o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o6.o5.o4.o3.o2.o1.ex.com.
+  id: /hostedzone/Z05384951BX94HIDSNC29
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: o5.o4.o3.o2.o1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o6.o5.o4.o3.o2.o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w6.w5.w4.w3.w2.w1.ex.com.
+  id: /hostedzone/Z053846613UOJETPXKV9G
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: w5.w4.w3.w2.w1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w6.w5.w4.w3.w2.w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b6.b5.b4.b3.b2.b1.ex.com.
+  id: /hostedzone/Z05380942D45I29YOVUJ1
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: b5.b4.b3.b2.b1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b6.b5.b4.b3.b2.b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p6.p5.p4.p3.p2.p1.ex.com.
+  id: /hostedzone/Z05376071AXQ7LGK8Y7FO
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: p5.p4.p3.p2.p1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p6.p5.p4.p3.p2.p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i6.i5.i4.i3.i2.i1.ex.com.
+  id: /hostedzone/Z05375472NGNYPN630LTO
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: i5.i4.i3.i2.i1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i6.i5.i4.i3.i2.i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k6.k5.k4.k3.k2.k1.ex.com.
+  id: /hostedzone/Z05374771LUBA1Z2GUIT6
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: k5.k4.k3.k2.k1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k6.k5.k4.k3.k2.k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h6.h5.h4.h3.h2.h1.ex.com.
+  id: /hostedzone/Z0537068TAWOCOL8HJ61
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: h5.h4.h3.h2.h1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h6.h5.h4.h3.h2.h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s7.s6.s5.s4.s3.s2.s1.ex.com.
+  id: /hostedzone/Z072010925XG7D9WXB3H
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: s6.s5.s4.s3.s2.s1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s7.s6.s5.s4.s3.s2.s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y7.y6.y5.y4.y3.y2.y1.ex.com.
+  id: /hostedzone/Z071952623W901PGCEAA1
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: y6.y5.y4.y3.y2.y1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y7.y6.y5.y4.y3.y2.y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k7.k6.k5.k4.k3.k2.k1.ex.com.
+  id: /hostedzone/Z0719164E82YWUXVQD4F
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: k6.k5.k4.k3.k2.k1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k7.k6.k5.k4.k3.k2.k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c1.ex.com.
+  id: /hostedzone/Z07076132LTJ3XGH5CJWY
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z1.ex.com.
+  id: /hostedzone/Z070741827T4NNW17A6N9
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i2.i1.ex.com.
+  id: /hostedzone/Z0706863ZTD2HUTU10N0
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: i1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i2.i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x2.x1.ex.com.
+  id: /hostedzone/Z0705382P6ROONRM2CKR
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: x1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x2.x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p1.ex.com.
+  id: /hostedzone/Z0705253DHCTMDZ48Q4V
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s1.ex.com.
+  id: /hostedzone/Z070526324O7V32HB2GP4
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n3.n2.n1.ex.com.
+  id: /hostedzone/Z072628929FO3LXWQVOY7
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: n2.n1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n3.n2.n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r3.r2.r1.ex.com.
+  id: /hostedzone/Z07259612MWHI9NFRS53E
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: r2.r1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r3.r2.r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j3.j2.j1.ex.com.
+  id: /hostedzone/Z072595530FWB47CDV2WC
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: j2.j1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j3.j2.j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d3.d2.d1.ex.com.
+  id: /hostedzone/Z0725572346MYVZ3KGNUH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: d2.d1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d3.d2.d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o3.o2.o1.ex.com.
+  id: /hostedzone/Z072558318OW0Y4DNPN66
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: o2.o1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o3.o2.o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x3.x2.x1.ex.com.
+  id: /hostedzone/Z0725404124TWY26MTQXT
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: x2.x1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x3.x2.x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l3.l2.l1.ex.com.
+  id: /hostedzone/Z07255931Q3MVC1T9FIX1
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: l2.l1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l3.l2.l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t4.t3.t2.t1.ex.com.
+  id: /hostedzone/Z0725300TUYR9MM1NP9T
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: t3.t2.t1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t4.t3.t2.t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i4.i3.i2.i1.ex.com.
+  id: /hostedzone/Z07252442H3FRQ6T9REYR
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: i3.i2.i1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i4.i3.i2.i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g3.g2.g1.ex.com.
+  id: /hostedzone/Z072522110PO1T9F6EOIH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: g2.g1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g3.g2.g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y3.y2.y1.ex.com.
+  id: /hostedzone/Z074908589R64YFZTTRF
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: y2.y1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y3.y2.y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w4.w3.w2.w1.ex.com.
+  id: /hostedzone/Z07491213MWEKC6MH5BEX
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: w3.w2.w1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w4.w3.w2.w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e4.e3.e2.e1.ex.com.
+  id: /hostedzone/Z0748318XZ5SAQVUUDHE
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: e3.e2.e1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e4.e3.e2.e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a4.a3.a2.a1.ex.com.
+  id: /hostedzone/Z07482493MHOG25MXMYQW
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: a3.a2.a1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a4.a3.a2.a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g4.g3.g2.g1.ex.com.
+  id: /hostedzone/Z07473562MT9TYWVVE38G
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: g3.g2.g1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g4.g3.g2.g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d4.d3.d2.d1.ex.com.
+  id: /hostedzone/Z0747355363XLS6BWS4JP
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: d3.d2.d1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d4.d3.d2.d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u4.u3.u2.u1.ex.com.
+  id: /hostedzone/Z07473491EXNK832Z1KY2
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: u3.u2.u1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u4.u3.u2.u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e5.e4.e3.e2.e1.ex.com.
+  id: /hostedzone/Z07516762P24S9BSAPW20
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: e4.e3.e2.e1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e5.e4.e3.e2.e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y5.y4.y3.y2.y1.ex.com.
+  id: /hostedzone/Z07510071JNCBZN4PU9PU
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: y4.y3.y2.y1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y5.y4.y3.y2.y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x5.x4.x3.x2.x1.ex.com.
+  id: /hostedzone/Z0750455O2P676BQCQ36
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: x4.x3.x2.x1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x5.x4.x3.x2.x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s5.s4.s3.s2.s1.ex.com.
+  id: /hostedzone/Z07503442IXQWYXD3NA2P
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: s4.s3.s2.s1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s5.s4.s3.s2.s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y6.y5.y4.y3.y2.y1.ex.com.
+  id: /hostedzone/Z07499781IH1IWL681HZA
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: y5.y4.y3.y2.y1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y6.y5.y4.y3.y2.y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s6.s5.s4.s3.s2.s1.ex.com.
+  id: /hostedzone/Z074127711E3PB3VWCVR8
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: s5.s4.s3.s2.s1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s6.s5.s4.s3.s2.s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l6.l5.l4.l3.l2.l1.ex.com.
+  id: /hostedzone/Z07407861HUM7TWLBEVHW
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: l5.l4.l3.l2.l1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l6.l5.l4.l3.l2.l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j6.j5.j4.j3.j2.j1.ex.com.
+  id: /hostedzone/Z07407492KRCV3E1Q3TTH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: j5.j4.j3.j2.j1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j6.j5.j4.j3.j2.j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z7.z6.z5.z4.z3.z2.z1.ex.com.
+  id: /hostedzone/Z05977813GQTSJK0XA6CR
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: z6.z5.z4.z3.z2.z1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z7.z6.z5.z4.z3.z2.z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p7.p6.p5.p4.p3.p2.p1.ex.com.
+  id: /hostedzone/Z05976812XQ4FYDX0EA1M
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: p6.p5.p4.p3.p2.p1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p7.p6.p5.p4.p3.p2.p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r7.r6.r5.r4.r3.r2.r1.ex.com.
+  id: /hostedzone/Z059725536VFD0SUK6COX
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: r6.r5.r4.r3.r2.r1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r7.r6.r5.r4.r3.r2.r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n7.n6.n5.n4.n3.n2.n1.ex.com.
+  id: /hostedzone/Z05968613E7Z7DOMT8XQY
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: n6.n5.n4.n3.n2.n1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n7.n6.n5.n4.n3.n2.n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j1.ex.com.
+  id: /hostedzone/Z061728615D0VKL6DXRPH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y1.ex.com.
+  id: /hostedzone/Z06172299A0X24MKXTOD
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p2.p1.ex.com.
+  id: /hostedzone/Z06167006NZ1D5IRNRYA
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: p1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p2.p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f1.ex.com.
+  id: /hostedzone/Z06160862E2ELNT29RQL3
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l1.ex.com.
+  id: /hostedzone/Z06158931J4KH25JG225F
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a1.ex.com.
+  id: /hostedzone/Z06155043AVN8RVC88TYY
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u1.ex.com.
+  id: /hostedzone/Z061540412CK4L8XI4BB6
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c2.c1.ex.com.
+  id: /hostedzone/Z06150423UYFKAE29W1SW
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: c1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c2.c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m2.m1.ex.com.
+  id: /hostedzone/Z06152622MZNX328M11VY
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: m1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m2.m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o2.o1.ex.com.
+  id: /hostedzone/Z06151611YG2J9D7Y9URS
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: o1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o2.o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w1.ex.com.
+  id: /hostedzone/Z06144631U9WHJGPNE0F6
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b2.b1.ex.com.
+  id: /hostedzone/Z0621921Q39DAS25KW2F
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: b1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b2.b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k2.k1.ex.com.
+  id: /hostedzone/Z06214591V9ROEHRT4AJR
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: k1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k2.k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: r2.r1.ex.com.
+  id: /hostedzone/Z062145823F9HOXQ8AQTT
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: r1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: r2.r1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a2.a1.ex.com.
+  id: /hostedzone/Z062114713UUBAQBGL50S
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: a1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a2.a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u2.u1.ex.com.
+  id: /hostedzone/Z062114626Y9F53JWLIF3
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: u1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u2.u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j2.j1.ex.com.
+  id: /hostedzone/Z06208221KB9XPMJOH1YY
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: j1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j2.j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f2.f1.ex.com.
+  id: /hostedzone/Z0620221RICGJ8UMXA3J
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: f1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f2.f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s3.s2.s1.ex.com.
+  id: /hostedzone/Z0633015M1WISEQYPT1O
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: s2.s1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s3.s2.s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a3.a2.a1.ex.com.
+  id: /hostedzone/Z06329532JLRXZTWQP7A3
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: a2.a1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a3.a2.a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m4.m3.m2.m1.ex.com.
+  id: /hostedzone/Z0632386384GR41PHHKYP
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: m3.m2.m1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m4.m3.m2.m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y4.y3.y2.y1.ex.com.
+  id: /hostedzone/Z06317473A6DQOQB2TRU5
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: y3.y2.y1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y4.y3.y2.y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: k4.k3.k2.k1.ex.com.
+  id: /hostedzone/Z0631662C8V9KGIE114K
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: k3.k2.k1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: k4.k3.k2.k1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l4.l3.l2.l1.ex.com.
+  id: /hostedzone/Z0631619300T0491JETF6
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: l3.l2.l1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l4.l3.l2.l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c4.c3.c2.c1.ex.com.
+  id: /hostedzone/Z06312335K3AAQ106WOS
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: c3.c2.c1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c4.c3.c2.c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d5.d4.d3.d2.d1.ex.com.
+  id: /hostedzone/Z06264302YRR5RW36ZQTN
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: d4.d3.d2.d1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d5.d4.d3.d2.d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n5.n4.n3.n2.n1.ex.com.
+  id: /hostedzone/Z06255473B4E9CCCYXD0C
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: n4.n3.n2.n1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n5.n4.n3.n2.n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t6.t5.t4.t3.t2.t1.ex.com.
+  id: /hostedzone/Z06247991Z9UOIVBEHBIZ
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: t5.t4.t3.t2.t1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t6.t5.t4.t3.t2.t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m6.m5.m4.m3.m2.m1.ex.com.
+  id: /hostedzone/Z06248401WRYVSUJIMXGM
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: m5.m4.m3.m2.m1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m6.m5.m4.m3.m2.m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u5.u4.u3.u2.u1.ex.com.
+  id: /hostedzone/Z06248072H6SA6EBROQVA
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: u4.u3.u2.u1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u5.u4.u3.u2.u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t5.t4.t3.t2.t1.ex.com.
+  id: /hostedzone/Z062430113Y30HAIE6V8
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: t4.t3.t2.t1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t5.t4.t3.t2.t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n6.n5.n4.n3.n2.n1.ex.com.
+  id: /hostedzone/Z06239002LL6XI9BMP5LP
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: n5.n4.n3.n2.n1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n6.n5.n4.n3.n2.n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u6.u5.u4.u3.u2.u1.ex.com.
+  id: /hostedzone/Z062358930OBBSG0DNV0Y
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: u5.u4.u3.u2.u1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u6.u5.u4.u3.u2.u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l5.l4.l3.l2.l1.ex.com.
+  id: /hostedzone/Z06227713K2LX8JW32GM0
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: l4.l3.l2.l1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l5.l4.l3.l2.l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w5.w4.w3.w2.w1.ex.com.
+  id: /hostedzone/Z06227293A8RSW44CUSQI
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: w4.w3.w2.w1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w5.w4.w3.w2.w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e6.e5.e4.e3.e2.e1.ex.com.
+  id: /hostedzone/Z06304583NEE5VFLGKEQU
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: e5.e4.e3.e2.e1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e6.e5.e4.e3.e2.e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b7.b6.b5.b4.b3.b2.b1.ex.com.
+  id: /hostedzone/Z0942661HXLGP9L2YZH3
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: b6.b5.b4.b3.b2.b1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b7.b6.b5.b4.b3.b2.b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t7.t6.t5.t4.t3.t2.t1.ex.com.
+  id: /hostedzone/Z0949431OHPKQPZEXGDX
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: t6.t5.t4.t3.t2.t1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t7.t6.t5.t4.t3.t2.t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d7.d6.d5.d4.d3.d2.d1.ex.com.
+  id: /hostedzone/Z09491241UC9DWHHT0SEN
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: d6.d5.d4.d3.d2.d1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d7.d6.d5.d4.d3.d2.d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h7.h6.h5.h4.h3.h2.h1.ex.com.
+  id: /hostedzone/Z09480891AX3V95RKI43I
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: h6.h5.h4.h3.h2.h1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h7.h6.h5.h4.h3.h2.h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: g7.g6.g5.g4.g3.g2.g1.ex.com.
+  id: /hostedzone/Z094802628HB653GKGL2W
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: g6.g5.g4.g3.g2.g1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: g7.g6.g5.g4.g3.g2.g1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m7.m6.m5.m4.m3.m2.m1.ex.com.
+  id: /hostedzone/Z09480162FW8C3KROXT7G
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: m6.m5.m4.m3.m2.m1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m7.m6.m5.m4.m3.m2.m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: l7.l6.l5.l4.l3.l2.l1.ex.com.
+  id: /hostedzone/Z09480273OHY83D5NHYVH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: l6.l5.l4.l3.l2.l1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: l7.l6.l5.l4.l3.l2.l1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o7.o6.o5.o4.o3.o2.o1.ex.com.
+  id: /hostedzone/Z09480223A3R9GDRXB62G
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: o6.o5.o4.o3.o2.o1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o7.o6.o5.o4.o3.o2.o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i7.i6.i5.i4.i3.i2.i1.ex.com.
+  id: /hostedzone/Z09475203CZDWQ5UOPB5H
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: i6.i5.i4.i3.i2.i1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i7.i6.i5.i4.i3.i2.i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e7.e6.e5.e4.e3.e2.e1.ex.com.
+  id: /hostedzone/Z09465491NJY6YM6BV9CR
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: e6.e5.e4.e3.e2.e1.ex.com
+  - key: level
+    value: "7"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e7.e6.e5.e4.e3.e2.e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w2.w1.ex.com.
+  id: /hostedzone/Z09418121E8V6WT4FASZE
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: w1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w2.w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t2.t1.ex.com.
+  id: /hostedzone/Z0941411140EAM8LI6XSX
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: t1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t2.t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: m1.ex.com.
+  id: /hostedzone/Z0941151MH351YJEC250
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: m1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e2.e1.ex.com.
+  id: /hostedzone/Z09408592RKGIVCOGBFJW
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: e1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e2.e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n2.n1.ex.com.
+  id: /hostedzone/Z09408791OZQTXJTECCDX
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: n1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n2.n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i1.ex.com.
+  id: /hostedzone/Z0940748ZXY7SLGNELA0
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e1.ex.com.
+  id: /hostedzone/Z094076011ZHUH8WUULP
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b1.ex.com.
+  id: /hostedzone/Z09407613O62TF4KJ7UHH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x1.ex.com.
+  id: /hostedzone/Z09407532B9TMSQHCL5QA
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: ex.com
+  - key: level
+    value: "1"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: y2.y1.ex.com.
+  id: /hostedzone/Z0940306YB0C0775W4GP
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: y1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: y2.y1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h2.h1.ex.com.
+  id: /hostedzone/Z09405092OGSZIJY9BEYN
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: h1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h2.h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: d2.d1.ex.com.
+  id: /hostedzone/Z09396301VGLGYVE5RGK5
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: d1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: d2.d1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s2.s1.ex.com.
+  id: /hostedzone/Z09394103L1W2N920D71K
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: s1.ex.com
+  - key: level
+    value: "2"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s2.s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f3.f2.f1.ex.com.
+  id: /hostedzone/Z09514023G8ZGR4DJKR3A
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: f2.f1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f3.f2.f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b3.b2.b1.ex.com.
+  id: /hostedzone/Z09583652IMG5STP7731F
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: b2.b1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b3.b2.b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: w3.w2.w1.ex.com.
+  id: /hostedzone/Z09580483LFSMB2OBV4FM
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: w2.w1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: w3.w2.w1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: x4.x3.x2.x1.ex.com.
+  id: /hostedzone/Z095764620VD6TFV6Q8FH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: x3.x2.x1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: x4.x3.x2.x1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f4.f3.f2.f1.ex.com.
+  id: /hostedzone/Z09564251P7OWGV8YAVPD
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: f3.f2.f1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f4.f3.f2.f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: z4.z3.z2.z1.ex.com.
+  id: /hostedzone/Z095609014Z6XE70HI4T4
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: z3.z2.z1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: z4.z3.z2.z1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h3.h2.h1.ex.com.
+  id: /hostedzone/Z09557511F8219IOYA0PO
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: h2.h1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h3.h2.h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b4.b3.b2.b1.ex.com.
+  id: /hostedzone/Z095570265KY2U6HO9TO
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: b3.b2.b1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b4.b3.b2.b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: s4.s3.s2.s1.ex.com.
+  id: /hostedzone/Z0955182J8RQ0EOVX7X5
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: s3.s2.s1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: s4.s3.s2.s1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: j4.j3.j2.j1.ex.com.
+  id: /hostedzone/Z09551293SYT29TZGCK1Q
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: j3.j2.j1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: j4.j3.j2.j1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: i3.i2.i1.ex.com.
+  id: /hostedzone/Z09549753KGGEAJYSIKQU
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: i2.i1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: i3.i2.i1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: h4.h3.h2.h1.ex.com.
+  id: /hostedzone/Z095473017P9TIG47W418
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: h3.h2.h1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: h4.h3.h2.h1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c3.c2.c1.ex.com.
+  id: /hostedzone/Z09788602NGY8C9CCTV10
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: c2.c1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c3.c2.c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: t3.t2.t1.ex.com.
+  id: /hostedzone/Z09788491STHS3LT21IWW
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: t2.t1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: t3.t2.t1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: e3.e2.e1.ex.com.
+  id: /hostedzone/Z09788593ERXU8DSD4LCO
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: e2.e1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: e3.e2.e1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: u3.u2.u1.ex.com.
+  id: /hostedzone/Z09783123AIJ322RP9AVS
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: u2.u1.ex.com
+  - key: level
+    value: "3"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: u3.u2.u1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: n4.n3.n2.n1.ex.com.
+  id: /hostedzone/Z0978397265BSNRBCT08T
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: n3.n2.n1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: n4.n3.n2.n1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: o4.o3.o2.o1.ex.com.
+  id: /hostedzone/Z09753782VB47JVMP3QQH
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: o3.o2.o1.ex.com
+  - key: level
+    value: "4"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: o4.o3.o2.o1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: b5.b4.b3.b2.b1.ex.com.
+  id: /hostedzone/Z09808623VONT9B5AGIBQ
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: b4.b3.b2.b1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: b5.b4.b3.b2.b1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: c6.c5.c4.c3.c2.c1.ex.com.
+  id: /hostedzone/Z09705082YEX3UKM47BT3
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: c5.c4.c3.c2.c1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: c6.c5.c4.c3.c2.c1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: p5.p4.p3.p2.p1.ex.com.
+  id: /hostedzone/Z09704821Y3VVAC37HSED
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: p4.p3.p2.p1.ex.com
+  - key: level
+    value: "5"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: p5.p4.p3.p2.p1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: a6.a5.a4.a3.a2.a1.ex.com.
+  id: /hostedzone/Z0969737LNGOLZ7RPT2E
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: a5.a4.a3.a2.a1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: a6.a5.a4.a3.a2.a1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com
+- name: f6.f5.f4.f3.f2.f1.ex.com.
+  id: /hostedzone/Z09695981XV9GI7P7WRMX
+  tags:
+  - key: owner
+    value: ext-dns
+  - key: parentdomain
+    value: f5.f4.f3.f2.f1.ex.com
+  - key: level
+    value: "6"
+  - key: managed
+    value: terraform
+  - key: domain
+    value: f6.f5.f4.f3.f2.f1.ex.com
+  - key: vpcid
+    value: vpc-123456
+  - key: env
+    value: sandbox
+  - key: rootdomain
+    value: ex.com

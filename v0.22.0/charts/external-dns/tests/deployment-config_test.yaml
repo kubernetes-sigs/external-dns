@@ -1,0 +1,121 @@
+suite: Deployment configuration
+set:
+  policy: upsert-only
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should provide expected defaults
+    asserts:
+      - isKind:
+            of: Deployment
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: metadata.namespace
+          value: default
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: true
+
+  - it: should provide expected defaults for securityContext
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+          content:
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              privileged: false
+              readOnlyRootFilesystem: true
+              runAsGroup: 65532
+              runAsNonRoot: true
+              runAsUser: 65532
+
+  - it: should provide expected defaults for liveness and readiness
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[?(@.name == "external-dns")]
+          content:
+            readinessProbe:
+              failureThreshold: 6
+              httpGet:
+                path: /healthz
+                port: http
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+            livenessProbe:
+              failureThreshold: 2
+              httpGet:
+                path: /healthz
+                port: http
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+
+  - it: should have service account set
+    release:
+      name: test
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: test-external-dns
+
+  - it: should have not be able to change replicas when specified via values
+    set:
+      deployment:
+        replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should allow scaling to 0 via replicaCount
+    set:
+      replicaCount: 0
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 0
+
+  - it: should reject replicaCount greater than 1
+    set:
+      replicaCount: 2
+    asserts:
+      - failedTemplate:
+          # Rejected by the values schema (maximum: 1) in schema-validated paths,
+          # or by the template guard when schema validation is skipped.
+          errorPattern: "(replicaCount must be 0 or 1|/replicaCount': maximum: got 2, want 1)"
+
+  - it: should not render hostAliases by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.hostAliases
+
+  - it: should render hostAliases when specified via values
+    set:
+      hostAliases:
+        - ip: 192.0.2.10
+          hostnames:
+            - provider.example.com
+            - provider
+    asserts:
+      - equal:
+          path: spec.template.spec.hostAliases
+          value:
+            - ip: 192.0.2.10
+              hostnames:
+                - provider.example.com
+                - provider
