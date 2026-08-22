@@ -325,11 +325,13 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
-				lastErr = fmt.Errorf("failed to fetch records via AXFR: %w", err)
+				lastErr = fmt.Errorf("failed to fetch records via AXFR for zone %q from %s: %w", zone, nameserver, err)
 				r.listLastErr = lastErr
 				continue
 			}
 
+			var attempt []dns.RR
+			var attemptErr error
 			for e := range env {
 				if e.Error != nil {
 					if errors.Is(e.Error, dns.ErrSoa) {
@@ -337,10 +339,26 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 					} else {
 						log.Errorf("AXFR error: %v", e.Error)
 					}
-					continue
+					attemptErr = e.Error
+					// The producer sends a single error envelope and then closes the
+					// channel, so breaking here does not leak it.
+					break
 				}
-				records = append(records, e.RR...)
+				// Only reached when e.Error is nil: error envelopes can still
+				// carry RRs, which must not be accumulated.
+				attempt = append(attempt, e.RR...)
 			}
+			if attemptErr != nil {
+				lastErr = fmt.Errorf("failed to read AXFR response for zone %q from %s: %w", zone, nameserver, attemptErr)
+				r.listLastErr = lastErr
+				continue
+			}
+			// A later attempt succeeded: clear any error from an earlier attempt so
+			// the post-loop guard does not report a failure that was already retried
+			// away. r.listLastErr is intentionally left alone — getNextNameserverFor(nameserverOpList)
+			// reads and resets it under r.mu to drive the "disabled" strategy's counter.
+			lastErr = nil
+			records = append(records, attempt...)
 			// If records were fetched successfully, break out of the loop
 			if len(records) > 0 {
 				break
