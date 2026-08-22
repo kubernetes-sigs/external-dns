@@ -1326,6 +1326,100 @@ func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
 	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
 }
 
+// axfrTsigStripStub drops the TSIG RR like dns.TsigGenerateWithProvider does,
+// and fails the first nameserver to force a second attempt.
+type axfrTsigStripStub struct {
+	rfc2136Stub
+	calls  int
+	signed []bool
+}
+
+func (r *axfrTsigStripStub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
+	r.calls++
+	if m.IsTsig() != nil {
+		r.signed = append(r.signed, true)
+		m.Extra = m.Extra[:len(m.Extra)-1]
+	} else {
+		r.signed = append(r.signed, false)
+	}
+
+	outChan := make(chan *dns.Envelope)
+	if r.calls == 1 {
+		go func() {
+			outChan <- &dns.Envelope{Error: fmt.Errorf("i/o timeout on ns1")}
+			close(outChan)
+		}()
+		return outChan, nil
+	}
+	go func() {
+		outChan <- &dns.Envelope{
+			RR: []dns.RR{
+				&dns.A{
+					Hdr: dns.RR_Header{
+						Name:   "signed.example.com.",
+						Rrtype: dns.TypeA,
+						Class:  dns.ClassINET,
+						Ttl:    300,
+					},
+					A: net.ParseIP("3.4.5.6"),
+				},
+			},
+		}
+		close(outChan)
+	}()
+	return outChan, nil
+}
+
+// Regression: one message shared by all nameservers left every retry unsigned.
+func TestRfc2136AxfrSignsEveryNameserverAttempt(t *testing.T) {
+	stub := &axfrTsigStripStub{
+		rfc2136Stub: rfc2136Stub{
+			output:                make([]*dns.Envelope, 0),
+			updateMsgs:            make([]*dns.Msg, 0),
+			createMsgs:            make([]*dns.Msg, 0),
+			nameservers:           []string{"ns1:53", "ns2:53"},
+			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+			loadBalancingStrategy: "round-robin",
+		},
+	}
+
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	providerInstance, err := newProvider(
+		[]string{"ns1", "ns2"},
+		53,
+		[]string{"example.com"},
+		false,
+		"key",
+		"secret",
+		"hmac-sha512",
+		true,
+		&endpoint.DomainFilter{},
+		false,
+		300*time.Second,
+		false,
+		"",
+		"",
+		"",
+		50,
+		tlsConfig,
+		"round-robin",
+		stub,
+	)
+	require.NoError(t, err)
+
+	endpoints, err := providerInstance.Records(t.Context())
+	require.NoError(t, err)
+	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
+	assert.Equal(t, []bool{true, true}, stub.signed, "Expected every nameserver attempt to carry a TSIG record")
+}
+
 func TestRfc2136MissingAXFRWarns(t *testing.T) {
 	const warning = "--rfc2136-axfr is not set"
 

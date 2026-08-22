@@ -312,16 +312,17 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 	for _, zone := range r.zoneNames {
 		log.Debugf("Fetching records for '%q'", zone)
 
-		m := new(dns.Msg)
-		m.SetAxfr(dns.Fqdn(zone))
-		if !r.insecure && !r.gssTsig {
-			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
-		}
-
 		var lastErr error
 		for i := 0; i < len(r.nameservers); i++ {
 			nameserver := r.getNextNameserverFor(nameserverOpList)
 			log.Debugf("Fetching records from nameserver: %s", nameserver)
+
+			// Signing strips the TSIG RR, so a reused message goes out unsigned.
+			m := new(dns.Msg)
+			m.SetAxfr(dns.Fqdn(zone))
+			if !r.insecure && !r.gssTsig {
+				m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
+			}
 
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
