@@ -570,6 +570,44 @@ func TestRfc2136GetRecords(t *testing.T) {
 	assert.Equal(t, []string{"target.example.com"}, []string(dname.Targets))
 }
 
+// TestRfc2136RecordsNormalizesCNAMETrailingDot covers AXFR wire-form CNAME/NS
+// targets (trailing dots from miekg/dns) so they compare equal to CRD/Ingress
+// desired targets without remove/re-add churn each sync.
+func TestRfc2136RecordsNormalizesCNAMETrailingDot(t *testing.T) {
+	stub := newStub()
+	err := stub.setOutput([]string{
+		"myservice.example.com. 3600 CNAME traefik.example.com.",
+		"example.com. 3600 NS ns1.example.com.",
+		"example.com. 3600 NS ns2.example.com.",
+	})
+	require.NoError(t, err)
+
+	p, err := createRfc2136StubProvider(stub, "example.com")
+	require.NoError(t, err)
+
+	recs, err := p.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, recs, 2)
+
+	byKey := map[string]*endpoint.Endpoint{}
+	for _, ep := range recs {
+		byKey[ep.DNSName+"/"+ep.RecordType] = ep
+	}
+
+	cname := byKey["myservice.example.com/CNAME"]
+	require.NotNil(t, cname)
+	assert.Equal(t, []string{"traefik.example.com"}, []string(cname.Targets))
+
+	ns := byKey["example.com/NS"]
+	require.NotNil(t, ns)
+	assert.True(t, ns.Targets.Same(endpoint.Targets{"ns1.example.com", "ns2.example.com"}),
+		"merged NS targets must be trailing-dot normalized: got %v", ns.Targets)
+
+	// Desired CRD-style target (no trailing dot) must match AXFR current state.
+	desired := endpoint.NewEndpointWithTTL("myservice.example.com", endpoint.RecordTypeCNAME, 3600, "traefik.example.com")
+	assert.True(t, desired.Targets.Same(cname.Targets))
+}
+
 // Make sure the test version of SendMessage raises an error
 // if a zone update ever contains records outside of its zone
 // as the TestRfc2136ApplyChanges tests all assume this
