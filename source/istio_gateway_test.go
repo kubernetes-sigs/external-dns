@@ -47,6 +47,27 @@ import (
 // This is a compile-time validation that gatewaySource is a Source.
 var _ Source = &gatewaySource{}
 
+// TestAnnotationPrefixPropagation verifies that annotations.Ingress reflects
+// changes made by SetAnnotationPrefix at runtime. This is a regression test for a bug
+// where it was a package-level var evaluated at import time — before SetAnnotationPrefix
+// was called — causing annotation lookups to use the wrong prefix and silently produce
+// no endpoints, leading to record deletion under sync policy.
+func TestAnnotationPrefixPropagation(t *testing.T) {
+	t.Cleanup(func() { annotations.SetAnnotationPrefix(annotations.DefaultAnnotationPrefix) })
+
+	assert.Equal(t, annotations.DefaultAnnotationPrefix+"ingress", annotations.Ingress)
+
+	// Simulate --annotation-prefix=custom.io/
+	annotations.SetAnnotationPrefix("custom.io/")
+	assert.Equal(t, "custom.io/ingress", annotations.Ingress,
+		"annotations.Ingress must reflect updated annotation prefix")
+
+	// Simulate changing it again — must not be cached from first call
+	annotations.SetAnnotationPrefix("another.io/")
+	assert.Equal(t, "another.io/ingress", annotations.Ingress,
+		"annotations.Ingress must track subsequent prefix changes")
+}
+
 type GatewaySuite struct {
 	suite.Suite
 	source     Source
@@ -207,7 +228,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -259,7 +280,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -320,7 +341,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 				dnsnames: [][]string{
 					{""},
@@ -381,7 +402,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "istio-other2/ingress1",
+					annotations.Ingress: "istio-other2/ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"}, // Kubernetes requires removal of trailing dot
@@ -635,7 +656,7 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"example.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "testing2/ingress1",
+						annotations.Ingress: "testing2/ingress1",
 					},
 				},
 			},
@@ -1002,8 +1023,8 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "not-real/ingress1",
-						annotations.TargetKey:     "1.2.3.4",
+						annotations.Ingress:   "not-real/ingress1",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames: [][]string{{"example3.org"}},
 				},
@@ -1144,9 +1165,9 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
-						annotations.HostnameKey:   "dns-through-hostname.com",
-						annotations.TargetKey:     "gateway-target.com",
+						annotations.Ingress:     "ingress1",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1319,7 +1340,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "",
+						annotations.Ingress: "",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1453,7 +1474,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress2",
+						annotations.Ingress: "ingress2",
 					},
 					dnsnames: [][]string{{"new.org"}},
 				},
@@ -1777,7 +1798,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				{
 					Hosts: []string{"example.org"},
 					Tls: &istionetworking.ServerTLSSettings{
-						ServerCertificate: IstioGatewayIngressSource,
+						ServerCertificate: annotations.Ingress,
 						Mode:              istionetworking.ServerTLSSettings_SIMPLE,
 					},
 				},
