@@ -15,8 +15,8 @@ Experimental channels as summarized below:
 | GRPCRoute          | v1                                  | v1.1.0                               | v1.1.0                          |
 | ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
 | TLSRoute           | v1                                  | v1.5.0                               | v1.0.0                          |
-| TCPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
-| UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
+| TCPRoute           | v1alpha2,v1                         | TBD                                  | v1.0.0                          |
+| UDPRoute           | v1alpha2,v1                         | TBD                                  | v1.0.0                          |
 
 Gateways and HTTPRoutes were promoted to the Standard channel in Gateway API v1.0.0 and use the
 v1 API.
@@ -38,7 +38,9 @@ ExternalDNS still uses the v1alpha2 API for compatibility with older CRDs but it
 has been deprecated and will be removed from future releases, at which point ExternalDNS will
 need to migrate to v1. (See [#6247](https://github.com/kubernetes-sigs/external-dns/issues/6247))
 
-TCPRoute and UDPRoute remain experimental and are only available as v1alpha2 in the Experimental channel.
+TCPRoute and UDPRoute remain experimental in the Gateway API. ExternalDNS supports
+both the v1alpha2 and v1 API versions to maintain compatibility with clusters using
+either version.
 
 ## Hostnames
 
