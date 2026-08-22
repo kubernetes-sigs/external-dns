@@ -920,6 +920,80 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// Annotation hostnames must be collected before the FQDN template so a
+			// configured template does not run when the annotation already named the record.
+			title: "AnnotationBeforeFQDNTemplate",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "annotated-route",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "service.example.com",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("service.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			// A hostname annotation present with an empty value contributes no hostname, so it
+			// must not suppress the FQDN template fallback either.
+			title: "EmptyHostnameAnnotationFallsBackToFQDNTemplate",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "empty-annotated-route",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("empty-annotated-route.template.internal", "1.2.3.4"),
+			},
+		},
+		{
 			title: "IgnoreHostnameAnnotation",
 			config: &Config{
 				IgnoreHostnameAnnotation: true,
