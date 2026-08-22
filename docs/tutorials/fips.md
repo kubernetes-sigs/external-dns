@@ -62,7 +62,7 @@ The AWS SDK resolves to the FIPS endpoint (e.g. `route53-fips.amazonaws.com`) fo
 conflate this with the `GOFIPS140` build flag above - one picks which AWS hostname to call, the other governs which
 crypto module TLS uses to make that call.
 
-## A Note Before You Deploy
+## Help Improve This Guide
 
 If you're running a FIPS-hardened `external-dns` controller in production - self-built or vendor image - please open
 a PR to update this guide with what you learned. This page reflects a first pass; real deployment experience
