@@ -7,7 +7,8 @@ tags: ["tutorial", "fips", "security", "compliance"]
 ## Overview
 
 ExternalDNS does not ship pre-built FIPS-compliant images, and there's no current plan to add them. The supported
-path today is building your own FIPS-capable binary/image from source, using [Go's native FIPS 140-3
+path today is building your own FIPS-capable binary/image from source (or using an [alternative vendor-hardened
+image](#alternative-vendor-hardened-images)), using [Go's native FIPS 140-3
 support](https://go.dev/doc/security/fips140) (Go 1.24+): setting `GOFIPS140` at build time compiles in Go's
 CMVP-validated cryptographic module and makes `crypto/tls` restrict itself to FIPS-approved algorithms for every TLS
 connection ExternalDNS makes - to the Kubernetes API server, to DNS provider APIs, and to webhook providers. It's
