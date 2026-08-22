@@ -222,7 +222,7 @@ spec:
     - example.net
 ```
 
-> **Note:** `DNAME` is only stored by providers whose DNS backend supports it (e.g. Gandi, NS1, OCI, PowerDNS, Scaleway, and RFC2136 backends such as BIND or Knot).
+> **Note:** `DNAME` is only stored by providers whose DNS backend supports it (e.g. NS1, OCI, PowerDNS, Scaleway, and RFC2136 backends such as BIND or Knot).
 > Providers whose backend has no `DNAME` type (e.g. AWS Route 53, Azure, Google Cloud DNS, Cloudflare) will reject the record on write.
 > Because `DNAME` masks the entire subtree beneath its owner name, do not manage other records below a name that carries a `DNAME`.
 

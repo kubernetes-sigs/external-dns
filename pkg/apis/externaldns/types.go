@@ -412,7 +412,6 @@ var ProviderNames = []string{
 	ProviderCoreDNS,
 	ProviderDNSimple,
 	ProviderExoscale,
-	ProviderGandi,
 	ProviderGoDaddy,
 	ProviderGoogle,
 	ProviderInMemory,

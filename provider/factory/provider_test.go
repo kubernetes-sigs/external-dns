@@ -53,13 +53,6 @@ func TestSelectProvider(t *testing.T) {
 			expectedType: "*rfc2136.rfc2136Provider",
 		},
 		{
-			name: "gandi provider",
-			cfg: &externaldns.Config{
-				Provider: externaldns.ProviderGandi,
-			},
-			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
-		},
-		{
 			name: "inmemory provider",
 			cfg: &externaldns.Config{
 				Provider: externaldns.ProviderInMemory,
