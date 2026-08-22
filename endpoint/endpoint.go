@@ -288,6 +288,19 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
+// OverlongDNSLabel returns the first dot-separated label in dnsName that exceeds the
+// RFC 1035 section 2.3.4 63-character per-label limit, or "" if every label is within
+// bounds. Kubernetes' own object-name validation only checks the 253-character total
+// length, not this per-label limit, so a name can pass that check and still fail here.
+func OverlongDNSLabel(dnsName string) string {
+	for label := range strings.SplitSeq(dnsName, ".") {
+		if len(label) > 63 {
+			return label
+		}
+	}
+	return ""
+}
+
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
@@ -303,11 +316,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		}
 	}
 
-	for label := range strings.SplitSeq(dnsName, ".") {
-		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
-		}
+	if label := OverlongDNSLabel(dnsName); label != "" {
+		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		return nil
 	}
 
 	return &Endpoint{

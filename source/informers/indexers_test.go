@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 )
 
 func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
@@ -143,6 +144,138 @@ func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
 		IndexSelectorWithAnnotationFilter(nil)(options)
 		assert.Nil(t, options.annotationFilter)
 	})
+}
+
+func TestIndexSelectorWithAnnotationValidation(t *testing.T) {
+	t.Run("stores source and mode in options", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationValidation("pod", schema.ModeStrict)(options)
+		assert.Equal(t, "pod", options.source)
+		assert.Equal(t, schema.ModeStrict, options.mode)
+	})
+
+	t.Run("empty source stored as empty", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationValidation("", schema.ModeWarn)(options)
+		assert.Empty(t, options.source)
+	})
+}
+
+// withTestRegistry temporarily replaces schema.Registry with a single fixture entry
+// for the given key, restoring the original Registry when the test completes.
+func withTestRegistry(t *testing.T, key string, cfg schema.Config) {
+	t.Helper()
+	orig := schema.Registry
+	schema.Registry = []schema.AnnotationSpec{{Key: key, Config: cfg}}
+	t.Cleanup(func() { schema.Registry = orig })
+}
+
+func TestIndexerWithOptions_AnnotationValidation(t *testing.T) {
+	const testKey = "external-dns.kubernetes.io/test-annotation"
+
+	strictCfg := schema.Config{
+		Validators:    []schema.Validator{schema.ValidateOneOf("valid-value")},
+		WarnMessage:   "falls back to default",
+		StrictMessage: "excluded entirely",
+	}
+	warnOnlyCfg := schema.Config{
+		Validators:  []schema.Validator{schema.ValidateOneOf("valid-value")},
+		WarnMessage: "falls back to default",
+	}
+
+	makePod := func(annotationsMap map[string]string) *corev1.Pod {
+		p := &corev1.Pod{}
+		p.SetName("test-pod")
+		p.SetNamespace("default")
+		p.SetAnnotations(annotationsMap)
+		return p
+	}
+
+	type testCase struct {
+		name        string
+		cfg         schema.Config
+		source      string
+		mode        schema.Mode
+		annotations map[string]string
+		wantIndexed bool
+	}
+
+	tests := []testCase{
+		{
+			name:        "valid value indexed in warn mode",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeWarn,
+			annotations: map[string]string{testKey: "valid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "valid value indexed in strict mode",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "valid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "invalid value in warn mode stays indexed",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeWarn,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "invalid value in strict mode is excluded",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: false,
+		},
+		{
+			name:        "invalid value in strict mode with no StrictMessage stays indexed",
+			cfg:         warnOnlyCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "annotation absent stays indexed",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: nil,
+			wantIndexed: true,
+		},
+		{
+			name:        "source not configured skips validation entirely",
+			cfg:         strictCfg,
+			source:      "",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withTestRegistry(t, testKey, tt.cfg)
+			var opts []func(*IndexSelectorOptions)
+			if tt.source != "" {
+				opts = append(opts, IndexSelectorWithAnnotationValidation(tt.source, tt.mode))
+			}
+			indexers := IndexerWithOptions[*corev1.Pod](opts...)
+			keys, err := indexers[IndexWithSelectors](makePod(tt.annotations))
+			assert.NoError(t, err)
+			if tt.wantIndexed {
+				assert.Equal(t, []string{"default/test-pod"}, keys)
+			} else {
+				assert.Nil(t, keys)
+			}
+		})
+	}
 }
 
 func TestIndexerWithOptions_LabelKey(t *testing.T) {

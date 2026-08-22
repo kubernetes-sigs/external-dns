@@ -37,6 +37,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -2015,11 +2016,12 @@ func TestIngressSource_AddEventHandler(t *testing.T) {
 
 func TestIngressIndexer(t *testing.T) {
 	tests := []struct {
-		name             string
-		annotationFilter string
-		labelFilter      string
-		ingresses        []*networkv1.Ingress
-		expectedCount    int
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		annotationValidationMode schema.Mode
+		ingresses                []*networkv1.Ingress
+		expectedCount            int
 	}{
 		{
 			name:          "no filters returns all ingresses",
@@ -2093,6 +2095,22 @@ func TestIngressIndexer(t *testing.T) {
 			expectedCount:    3,
 			ingresses:        createTestIngresses(3),
 		},
+		{
+			name:                     "invalid ingress-hostname-source annotation yields zero endpoints even in warn mode",
+			annotationValidationMode: schema.ModeWarn,
+			expectedCount:            4,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				ings[0].Annotations[annotations.IngressHostnameSourceKey] = "bogus"
+			}),
+		},
+		{
+			name:                     "invalid ingress-hostname-source annotation in strict mode excludes ingress",
+			annotationValidationMode: schema.ModeStrict,
+			expectedCount:            4,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				ings[0].Annotations[annotations.IngressHostnameSourceKey] = "bogus"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -2116,9 +2134,10 @@ func TestIngressIndexer(t *testing.T) {
 			}
 
 			src, err := NewIngressSource(t.Context(), client, &Config{
-				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:      labelSel,
-				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:              labelSel,
+				TemplateEngine:           templatetest.MustEngine(t, "", "", "", false),
+				AnnotationValidationMode: tt.annotationValidationMode,
 			})
 			require.NoError(t, err)
 

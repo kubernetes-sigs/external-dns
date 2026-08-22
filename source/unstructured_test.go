@@ -41,6 +41,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	annotationschema "sigs.k8s.io/external-dns/source/annotations/schema"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -479,6 +480,111 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 			for _, ep := range endpoints {
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
+		})
+	}
+}
+
+func makeUnstructuredVM(name string, ann map[string]any) *unstructured.Unstructured {
+	base := map[string]any{
+		annotations.HostnameKey: name + ".example.com",
+		annotations.TargetKey:   "10.0.0.1",
+	}
+	for k, v := range ann {
+		base[k] = v
+	}
+	return &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "kubevirt.io/v1",
+			"kind":       "VirtualMachineInstance",
+			"metadata": map[string]any{
+				"name":        name,
+				"namespace":   "default",
+				"annotations": base,
+			},
+		},
+	}
+}
+
+func TestUnstructuredIndexer(t *testing.T) {
+	tests := []struct {
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		annotationValidationMode annotationschema.Mode
+		objects                  []*unstructured.Unstructured
+		expectedCount            int
+	}{
+		{
+			name:          "no filters returns all objects",
+			expectedCount: 3,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", nil),
+				makeUnstructuredVM("vm-2", nil),
+				makeUnstructuredVM("vm-3", nil),
+			},
+		},
+		{
+			name:          "controller mismatch excludes object",
+			expectedCount: 1,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", nil),
+				makeUnstructuredVM("vm-2", map[string]any{annotations.ControllerKey: "other-controller"}),
+			},
+		},
+		{
+			// record-type's SupportedSources does not include "unstructured"; in warn
+			name:                     "record-type annotation on unsupported source in warn mode does not exclude object",
+			annotationValidationMode: annotationschema.ModeWarn,
+			expectedCount:            2,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", map[string]any{annotations.RecordTypeKey: "A"}),
+				makeUnstructuredVM("vm-2", nil),
+			},
+		},
+		{
+			name:                     "record-type annotation on unsupported source in strict mode excludes object",
+			annotationValidationMode: annotationschema.ModeStrict,
+			expectedCount:            1,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", map[string]any{annotations.RecordTypeKey: "A"}),
+				makeUnstructuredVM("vm-2", nil),
+			},
+		},
+		{
+			name:                     "valid set-identifier annotation on unsupported source in strict mode excludes object",
+			annotationValidationMode: annotationschema.ModeStrict,
+			expectedCount:            1,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", map[string]any{annotations.SetIdentifierKey: "primary"}),
+				makeUnstructuredVM("vm-2", nil),
+			},
+		},
+	}
+
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, tt.objects)
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewUnstructuredFQDNSource(t.Context(), dynamicClient, kubeClient, &Config{
+				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:              labelSel,
+				UnstructuredResources:    resources,
+				TemplateEngine:           templatetest.MustEngine(t, "", "", "", false),
+				AnnotationValidationMode: tt.annotationValidationMode,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
 		})
 	}
 }

@@ -68,6 +68,7 @@ func NewNodeSource(
 	informers.MustAddIndexers(nodeInformer.Informer(), informers.IndexerWithOptions[*v1.Node](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(types.Node, cfg.AnnotationValidationMode),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Node]),
 	))
 

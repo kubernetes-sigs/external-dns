@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/informers/fakes"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
@@ -5846,12 +5847,13 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 // only matching services are returned by Endpoints().
 func TestServiceIndexer(t *testing.T) {
 	tests := []struct {
-		name              string
-		annotationFilter  string
-		labelFilter       string
-		serviceTypeFilter []string
-		services          []*v1.Service
-		expectedCount     int
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		serviceTypeFilter        []string
+		annotationValidationMode schema.Mode
+		services                 []*v1.Service
+		expectedCount            int
 	}{
 		{
 			name:          "no filters returns all services",
@@ -6005,6 +6007,26 @@ func TestServiceIndexer(t *testing.T) {
 				v1.ServiceTypeExternalName: 2,
 			}),
 		},
+		{
+			name:                     "invalid record-type annotation in warn mode does not exclude service",
+			annotationValidationMode: schema.ModeWarn,
+			expectedCount:            5,
+			services: createTestServicesByType("default", map[v1.ServiceType]int{
+				v1.ServiceTypeLoadBalancer: 5,
+			}, func(svcs []*v1.Service) {
+				svcs[0].Annotations[annotations.RecordTypeKey] = "INVALID"
+			}),
+		},
+		{
+			name:                     "invalid record-type annotation in strict mode excludes service",
+			annotationValidationMode: schema.ModeStrict,
+			expectedCount:            4,
+			services: createTestServicesByType("default", map[v1.ServiceType]int{
+				v1.ServiceTypeLoadBalancer: 5,
+			}, func(svcs []*v1.Service) {
+				svcs[0].Annotations[annotations.RecordTypeKey] = "INVALID"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -6030,9 +6052,10 @@ func TestServiceIndexer(t *testing.T) {
 			}
 
 			src, err := NewServiceSource(t.Context(), client, &Config{
-				AnnotationFilter:  parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:       labelSel,
-				ServiceTypeFilter: tt.serviceTypeFilter,
+				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:              labelSel,
+				ServiceTypeFilter:        tt.serviceTypeFilter,
+				AnnotationValidationMode: tt.annotationValidationMode,
 			})
 			require.NoError(t, err)
 

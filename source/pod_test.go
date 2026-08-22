@@ -19,6 +19,7 @@ package source
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -1158,6 +1160,97 @@ func nodesFixturesIPv4() []*corev1.Node {
 				},
 			},
 		},
+	}
+}
+
+// createTestPods returns count HostNetwork pods on "my-node1", each with a unique
+// hostname annotation, for use as informer-level test fixtures.
+func createTestPods(count int, funcs ...func([]*corev1.Pod)) []*corev1.Pod {
+	pods := make([]*corev1.Pod, count)
+	for i := range count {
+		pods[i] = &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("my-pod%d", i),
+				Namespace: "kube-system",
+				Annotations: map[string]string{
+					annotations.HostnameKey: fmt.Sprintf("pod-%d.foo.example.org", i),
+				},
+			},
+			Spec: corev1.PodSpec{
+				HostNetwork: true,
+				NodeName:    "my-node1",
+			},
+			Status: corev1.PodStatus{
+				PodIP: fmt.Sprintf("10.0.2.%d", i+1),
+			},
+		}
+	}
+	for _, fn := range funcs {
+		fn(pods)
+	}
+	return pods
+}
+
+func TestPodIndexer(t *testing.T) {
+	tests := []struct {
+		name          string
+		mode          schema.Mode
+		pods          []*corev1.Pod
+		expectedCount int
+	}{
+		{
+			// Uses an invalid character, not an overlong label: a warn-mode overlong
+			// label reaches pod.go's own unguarded endpoint.NewEndpointWithTTL call,
+			// which still panics on nil today (external-dns#6589, unfixed here).
+			name:          "invalid hostname value in warn mode does not exclude pod",
+			mode:          schema.ModeWarn,
+			expectedCount: 5,
+			pods: createTestPods(5, func(pods []*corev1.Pod) {
+				pods[0].Annotations[annotations.HostnameKey] = "bad_host!.example.org"
+			}),
+		},
+		{
+			name:          "invalid hostname value in strict mode excludes pod",
+			mode:          schema.ModeStrict,
+			expectedCount: 4,
+			pods: createTestPods(5, func(pods []*corev1.Pod) {
+				pods[0].Annotations[annotations.HostnameKey] = strings.Repeat("a", 64) + ".example.org"
+			}),
+		},
+		{
+			name:          "valid set-identifier annotation on unsupported source in strict mode excludes pod",
+			mode:          schema.ModeStrict,
+			expectedCount: 4,
+			pods: createTestPods(5, func(pods []*corev1.Pod) {
+				pods[0].Annotations[annotations.SetIdentifierKey] = "primary"
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kubernetes := fake.NewClientset()
+			ctx := t.Context()
+
+			for _, node := range nodesFixturesIPv4() {
+				_, err := kubernetes.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			for _, pod := range tt.pods {
+				_, err := kubernetes.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			client, err := NewPodSource(ctx, kubernetes, &Config{
+				AnnotationValidationMode: tt.mode,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints(ctx)
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
 	}
 }
 
