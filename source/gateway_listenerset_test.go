@@ -1562,11 +1562,7 @@ func TestGatewayListenerSetSource_InformerTransform(t *testing.T) {
 }
 
 // TestGatewayTCPRouteWithListenerSetParentRef adds TCPRoute+ListenerSet
-// coverage for the shared resolveParentRef/routeIsAllowed path, mirroring
-// the existing HTTPRoute+ListenerSet test. It does not reproduce the
-// failure reported in https://github.com/kubernetes-sigs/external-dns/issues/6557:
-// TCPRoute already resolves correctly here, so this test cannot serve as a
-// regression guard for that issue's actual root cause.
+// coverage for the shared resolveParentRef/routeIsAllowed path.
 func TestGatewayTCPRouteWithListenerSetParentRef(t *testing.T) {
 	t.Parallel()
 
