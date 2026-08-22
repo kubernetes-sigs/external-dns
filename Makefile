@@ -134,7 +134,7 @@ build.image-arm/v7:
 	$(MAKE) ARCH=arm/v7 build.image
 
 .PHONY: build.image-fips
-#? build.image-fips: Build a FIPS 140-3 flagged image variant (tagged <version>-fips), not pushed
+#? build.image-fips: Build a FIPS 140-3 image variant (tagged <version>-fips); see scripts/build-fips-image.sh --help
 build.image-fips: ko
 	scripts/build-fips-image.sh
 
