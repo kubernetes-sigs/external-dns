@@ -45,8 +45,8 @@ func parseAnnotationFilterOrNil(s string) labels.Selector {
 	return sel
 }
 
-// parseLabelSelectorOrEverything parses a label selector string for use in tests.
-// Returns labels.Everything() for empty input.
+// parseLabelSelectorOrEverything parses a label selector string for use in indexer tests.
+// Returns labels.Everything() for empty input (match all), and fails the test on parse errors.
 func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
 	t.Helper()
 	if s == "" {
