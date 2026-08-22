@@ -121,6 +121,17 @@ func withPortNumber(port v1.PortNumber) gwParentRefOption {
 	return func(ref *v1.ParentReference) { ref.Port = &port }
 }
 
+func gwRouteParentStatus(ref v1.ParentReference, status metav1.ConditionStatus, observedGeneration int64) v1.RouteParentStatus {
+	return v1.RouteParentStatus{
+		ParentRef: ref,
+		Conditions: []metav1.Condition{{
+			Type:               string(v1.RouteConditionAccepted),
+			Status:             status,
+			ObservedGeneration: observedGeneration,
+		}},
+	}
+}
+
 func newTestEndpoint(dnsName string, targets ...string) *endpoint.Endpoint {
 	return newTestEndpointWithTTL(dnsName, endpoint.RecordTypeA, 0, targets...)
 }
@@ -646,6 +657,355 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The Route moved to another listener of the same Gateway and the Gateway
+			// controller has not pruned the status entry for the listener it left.
+			title:      "SectionNameChangedWithStaleParentStatus",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), metav1.ConditionTrue, 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), metav1.ConditionTrue, 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The same move, but the controller does not record observedGeneration, so
+			// it never says which Route it looked at. Nothing is pruned and the source
+			// behaves as it did before this change.
+			title:      "SectionNameChangedWithoutAnObservedGeneration",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+					gwParentRef("default", "test", withSectionName("bar")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// Only the previous listener has a status entry, so the Gateway controller
+			// has not caught up yet. Keep publishing instead of letting the records be
+			// deleted while the Route is between listeners.
+			title:      "SectionNameChangedBeforeParentStatusCaughtUp",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The status already names the new listener, but the cached Gateway has not
+			// caught up with it. Dropping the old entry here would take DNS down.
+			title:      "SectionNameChangedWithCurrentListenerMissing",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+					gwParentRef("default", "test", withSectionName("bar")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The new listener exists and is accepted, but its hostname has nothing in
+			// common with the Route, so it publishes nothing. That is no proof either.
+			title:      "SectionNameChangedWithCurrentListenerMatchingNoHostname",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.org")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+					gwParentRef("default", "test", withSectionName("bar")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The new listener is named but the Gateway rejected it, so it is no proof
+			// that the old entry can go.
+			title:      "SectionNameChangedWithCurrentListenerRejected",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), metav1.ConditionTrue, 0),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), metav1.ConditionFalse, 0),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// Two references to one Gateway, and only one of them has moved. The entry
+			// of the reference which is still in flight has to survive.
+			title:      "SectionNameChangedForOneOfTwoParentRefs",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "stable",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("stable.example.internal")),
+						},
+						{
+							Name:     "old",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("old.example.internal")),
+						},
+						{
+							Name:     "new",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("new.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("stable")),
+							gwParentRef("default", "test", withSectionName("new")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("stable")),
+					gwParentRef("default", "test", withSectionName("old")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("stable.example.internal", "1.2.3.4"),
+				newTestEndpoint("old.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The Route went foo, then bar, then back to foo. The foo entry was accepted
+			// for the first generation, so it says nothing about the move back.
+			title:      "SectionNameReturnedToThePreviousListener",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 3),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("foo")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), metav1.ConditionTrue, 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), metav1.ConditionTrue, 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
 			},
 		},
 		{

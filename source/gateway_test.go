@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -242,6 +244,79 @@ func TestIsDNS1123Domain(t *testing.T) {
 			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
 				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
 			}
+		})
+	}
+}
+
+func TestGatewayRouteStatusIsCurrent(t *testing.T) {
+	ref := gwParentRef("default", "gw", withSectionName("bar"))
+
+	condition := func(status metav1.ConditionStatus, observed int64) v1.RouteParentStatus {
+		return v1.RouteParentStatus{
+			ParentRef: ref,
+			Conditions: []metav1.Condition{{
+				Type:               string(v1.RouteConditionAccepted),
+				Status:             status,
+				ObservedGeneration: observed,
+			}},
+		}
+	}
+
+	tests := []struct {
+		desc       string
+		status     v1.RouteParentStatus
+		generation int64
+		want       bool
+	}{
+		{"accepted for the generation in hand", condition(metav1.ConditionTrue, 3), 3, true},
+		{"accepted, but for an older generation", condition(metav1.ConditionTrue, 1), 3, false},
+		{"accepted, but with no generation recorded", condition(metav1.ConditionTrue, 0), 3, false},
+		{"not accepted", condition(metav1.ConditionFalse, 3), 3, false},
+		{"no accepted condition at all", v1.RouteParentStatus{ParentRef: ref}, 3, false},
+		{
+			"looks past the conditions a controller writes alongside Accepted",
+			v1.RouteParentStatus{
+				ParentRef: ref,
+				Conditions: []metav1.Condition{
+					{Type: string(v1.RouteConditionResolvedRefs), Status: metav1.ConditionTrue, ObservedGeneration: 1},
+					{Type: string(v1.RouteConditionAccepted), Status: metav1.ConditionTrue, ObservedGeneration: 3},
+				},
+			},
+			3, true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			require.Equal(t, tt.want, gwRouteStatusIsCurrent(tt.status, tt.generation))
+		})
+	}
+}
+
+func TestGatewayRouteHasParentRef(t *testing.T) {
+	meta := &metav1.ObjectMeta{Namespace: "default"}
+	coreGroup := v1.Group("")
+	gatewayAPIGroup := v1.Group(gatewayGroup)
+
+	omitted := v1.ParentReference{Name: "gw"}
+	explicitGateway := v1.ParentReference{Name: "gw", Group: &gatewayAPIGroup}
+	explicitCore := v1.ParentReference{Name: "gw", Group: &coreGroup}
+
+	tests := []struct {
+		desc string
+		spec v1.ParentReference
+		got  v1.ParentReference
+		want bool
+	}{
+		{"an omitted group matches an omitted group", omitted, omitted, true},
+		{"an omitted group matches the spelled out Gateway API group", omitted, explicitGateway, true},
+		{"an omitted group is not the core API group", omitted, explicitCore, false},
+		{"the core API group matches itself", explicitCore, explicitCore, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			require.Equal(t, tt.want, gwRouteHasParentRef([]v1.ParentReference{tt.spec}, tt.got, meta))
 		})
 	}
 }
