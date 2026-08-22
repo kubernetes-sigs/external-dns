@@ -26,21 +26,8 @@ alone.
 make build.image-fips
 ```
 
-This builds with `--push=false` and no `--local`, matching the existing `build.image` targets in the Makefile - it
-proves the build succeeds without publishing or loading anything locally. Since there's no local artifact yet to
-inspect, verify the FIPS module lands in the binary by building it the same way directly:
-
-```sh
-GOFIPS140=v1.0.0 CGO_ENABLED=0 go build -o build/external-dns .
-go version -m build/external-dns | grep -i -E "fips|GODEBUG"
-
-build	-tags=fips140v1.0
-build	DefaultGODEBUG=fips140=on
-build	GOFIPS140=v1.0.0-c2097c7c
-```
-
-`DefaultGODEBUG=fips140=on` means FIPS mode is the runtime default the moment the binary is built this way - there's
-no need to also set `GODEBUG=fips140=on` on the container. A default (non-FIPS) build shows none of these lines.
+This builds the image, verifies the FIPS module landed in the binary, and loads the result into your local Docker
+daemon for testing.
 
 ## Alternative: Vendor-Hardened Images
 
@@ -67,6 +54,9 @@ env vars (or extra args) on the deployment:
 AWS_USE_FIPS_ENDPOINT=true
 AWS_REGION=us-east-1  # must be a region with a FIPS endpoint for the services you use (Route53, Cloud Map, DynamoDB, etc.)
 ```
+
+Check [AWS Compliance - FIPS](https://aws.amazon.com/compliance/fips) for which services have FIPS endpoints and in
+which regions.
 
 The AWS SDK resolves to the FIPS endpoint (e.g. `route53-fips.amazonaws.com`) for that region on its own. Don't
 conflate this with the `GOFIPS140` build flag above - one picks which AWS hostname to call, the other governs which
