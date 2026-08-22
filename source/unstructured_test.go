@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"testing"
 
@@ -489,9 +490,7 @@ func makeUnstructuredVM(name string, ann map[string]any) *unstructured.Unstructu
 		annotations.HostnameKey: name + ".example.com",
 		annotations.TargetKey:   "10.0.0.1",
 	}
-	for k, v := range ann {
-		base[k] = v
-	}
+	maps.Copy(base, ann)
 	return &unstructured.Unstructured{
 		Object: map[string]any{
 			"apiVersion": "kubevirt.io/v1",

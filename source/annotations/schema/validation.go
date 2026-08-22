@@ -100,10 +100,7 @@ func ValidateOneOf(values ...string) Validator {
 	}
 }
 
-// ValidateOneOfFold returns a Validator that accepts only the given values, compared
-// case-insensitively. Use this for annotations whose extraction code lowercases the
-// value before comparing (e.g. via strings.ToLower), so validation matches what the
-// source actually accepts.
+// ValidateOneOfFold is like ValidateOneOf but compares case-insensitively.
 func ValidateOneOfFold(values ...string) Validator {
 	return func(value string) error {
 		for _, v := range values {

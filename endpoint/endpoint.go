@@ -288,10 +288,8 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
-// OverlongDNSLabel returns the first dot-separated label in dnsName that exceeds the
-// RFC 1035 section 2.3.4 63-character per-label limit, or "" if every label is within
-// bounds. Kubernetes' own object-name validation only checks the 253-character total
-// length, not this per-label limit, so a name can pass that check and still fail here.
+// OverlongDNSLabel returns the first label in dnsName exceeding the RFC 1035 63-character
+// limit, or "" if none do.
 func OverlongDNSLabel(dnsName string) string {
 	for label := range strings.SplitSeq(dnsName, ".") {
 		if len(label) > 63 {
