@@ -326,13 +326,27 @@ See the [Split Horizon DNS guide](advanced/split-horizon.md) for detailed exampl
 If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.
 For example, you may want to write a DNS record in a private zone that resolves to your Nodes' private IPs so that traffic never leaves your private network.
 
-To accomplish this, set this annotation on your service: `external-dns.kubernetes.io/access=private`
+To accomplish this, set this annotation on your `Service` of type `NodePort`: `external-dns.kubernetes.io/access=private`
 Conversely, to force the public IP: `external-dns.kubernetes.io/access=public`
 
 If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
 
+This applies to the [Service source](sources/service.md) only, and only to `Service`s of type `NodePort`.
+Every other source ignores the annotation, and the default described above does not apply to them either.
+
+In particular, the [Ingress source](sources/ingress.md) takes its targets from the `Ingress`'s
+`status.loadBalancer.ingress` entries, which are written by the ingress controller. ExternalDNS does not look at
+`Node` addresses there, so it has no public/private pair to choose between — if the status lists both a public
+and a private address, both are published. To control which addresses end up in DNS for an `Ingress`:
+
+- configure the ingress controller to publish the addresses you want in `status.loadBalancer.ingress`
+  (`ingress-nginx`, for example, has `--report-node-internal-ip-address`);
+- set `external-dns.kubernetes.io/target` on the `Ingress`, which overrides the status entirely; or
+- use `--target-net-filter` / `--exclude-target-net`, described below.
+
 Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
-using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`.
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to every source,
+and an endpoint whose targets are all filtered out is dropped.
 
 ## Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
