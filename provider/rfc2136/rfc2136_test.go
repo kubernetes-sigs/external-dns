@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"regexp"
 	"sort"
@@ -1159,6 +1160,182 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	err = providerInstance.ApplyChanges(t.Context(), p)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
+}
+
+// axfrEnvelopeErrorStub simulates a nameserver that returns valid envelopes
+// followed by an error envelope mid-transfer (e.g. a read timeout).
+type axfrEnvelopeErrorStub struct {
+	rfc2136Stub
+}
+
+func (r *axfrEnvelopeErrorStub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envelope, error) {
+	outChan := make(chan *dns.Envelope)
+	go func() {
+		// Send one valid envelope before the error to confirm partial records
+		// are not returned on a failed transfer.
+		outChan <- &dns.Envelope{
+			RR: []dns.RR{
+				&dns.A{
+					Hdr: dns.RR_Header{
+						Name:   "test.example.com.",
+						Rrtype: dns.TypeA,
+						Class:  dns.ClassINET,
+						Ttl:    300,
+					},
+					A: net.ParseIP("1.2.3.4"),
+				},
+			},
+		}
+		// Then send an error envelope (e.g. i/o timeout mid-stream).
+		outChan <- &dns.Envelope{Error: fmt.Errorf("i/o timeout")}
+		close(outChan)
+	}()
+	return outChan, nil
+}
+
+// TestRfc2136AxfrEnvelopeErrorReturnsSoftError verifies that an error envelope
+// received during an AXFR transfer surfaces as a SoftError rather than being
+// swallowed and returning a (partial, nil) result.
+func TestRfc2136AxfrEnvelopeErrorReturnsSoftError(t *testing.T) {
+	stub := &axfrEnvelopeErrorStub{
+		rfc2136Stub: rfc2136Stub{
+			output:                make([]*dns.Envelope, 0),
+			updateMsgs:            make([]*dns.Msg, 0),
+			createMsgs:            make([]*dns.Msg, 0),
+			nameservers:           []string{"nameserver:53"},
+			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+			loadBalancingStrategy: "round-robin",
+		},
+	}
+
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	providerInstance, err := newProvider(
+		[]string{"nameserver"},
+		53,
+		[]string{"example.com"},
+		false,
+		"key",
+		"secret",
+		"hmac-sha512",
+		true,
+		&endpoint.DomainFilter{},
+		false,
+		300*time.Second,
+		false,
+		"",
+		"",
+		"",
+		50,
+		tlsConfig,
+		"round-robin",
+		stub,
+	)
+	assert.NoError(t, err)
+
+	records, err := providerInstance.Records(t.Context())
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when AXFR envelope carries an error")
+	assert.Empty(t, records, "Expected no records returned when AXFR envelope carries an error")
+}
+
+// axfrFailoverStub simulates two nameservers: the first returns an error
+// envelope (e.g. a read timeout), the second returns a clean transfer with a
+// valid A record. Used to verify that a successful retry is not poisoned by
+// the earlier failure.
+type axfrFailoverStub struct {
+	rfc2136Stub
+	calls int
+}
+
+func (r *axfrFailoverStub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envelope, error) {
+	r.calls++
+	outChan := make(chan *dns.Envelope)
+	if r.calls == 1 {
+		// First nameserver: return an error envelope mid-stream.
+		go func() {
+			outChan <- &dns.Envelope{Error: fmt.Errorf("i/o timeout on ns1")}
+			close(outChan)
+		}()
+		return outChan, nil
+	}
+	// Second nameserver: return a clean transfer with one A record.
+	go func() {
+		outChan <- &dns.Envelope{
+			RR: []dns.RR{
+				&dns.A{
+					Hdr: dns.RR_Header{
+						Name:   "failover.example.com.",
+						Rrtype: dns.TypeA,
+						Class:  dns.ClassINET,
+						Ttl:    300,
+					},
+					A: net.ParseIP("2.3.4.5"),
+				},
+			},
+		}
+		close(outChan)
+	}()
+	return outChan, nil
+}
+
+// TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError verifies that when the
+// first nameserver returns an error envelope and a second nameserver succeeds,
+// List() returns the records from the successful attempt with a nil error.
+// Regression test for REL-01: lastErr was not cleared on a successful retry,
+// causing the post-loop guard to fire even after a good transfer.
+func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
+	stub := &axfrFailoverStub{
+		rfc2136Stub: rfc2136Stub{
+			output:                make([]*dns.Envelope, 0),
+			updateMsgs:            make([]*dns.Msg, 0),
+			createMsgs:            make([]*dns.Msg, 0),
+			nameservers:           []string{"ns1:53", "ns2:53"},
+			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+			loadBalancingStrategy: "round-robin",
+		},
+	}
+
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	providerInstance, err := newProvider(
+		[]string{"ns1", "ns2"},
+		53,
+		[]string{"example.com"},
+		false,
+		"key",
+		"secret",
+		"hmac-sha512",
+		true,
+		&endpoint.DomainFilter{},
+		false,
+		300*time.Second,
+		false,
+		"",
+		"",
+		"",
+		50,
+		tlsConfig,
+		"round-robin",
+		stub,
+	)
+	require.NoError(t, err)
+
+	endpoints, err := providerInstance.Records(t.Context())
+	assert.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
+	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
 }
 
 func TestRfc2136MissingAXFRWarns(t *testing.T) {
