@@ -2,25 +2,23 @@
 tags: ["tutorial", "fips", "security", "compliance"]
 ---
 
-# FIPS 140-3 Builds
+# Compiling ExternalDNS for FIPS
 
 ## Overview
 
-ExternalDNS can be built as a FIPS 140-3 capable image using [Go's native FIPS 140-3 support](https://go.dev/doc/security/fips140)
-(Go 1.24+). Setting `GOFIPS140` at build time compiles in Go's CMVP-validated cryptographic module and makes `crypto/tls`
-restrict itself to FIPS-approved algorithms for every TLS connection ExternalDNS makes - to the Kubernetes API server, to
-DNS provider APIs, and to webhook providers.
+ExternalDNS does not ship pre-built FIPS-compliant images, and there's no current plan to add them. The supported
+path today is building your own FIPS-capable binary/image from source, using [Go's native FIPS 140-3
+support](https://go.dev/doc/security/fips140) (Go 1.24+): setting `GOFIPS140` at build time compiles in Go's
+CMVP-validated cryptographic module and makes `crypto/tls` restrict itself to FIPS-approved algorithms for every TLS
+connection ExternalDNS makes - to the Kubernetes API server, to DNS provider APIs, and to webhook providers. It's
+pure Go - no BoringCrypto, cgo, or OpenSSL FIPS provider, so there's no separate crypto toolchain to maintain
+alongside the regular build.
 
-This gets you a FIPS-*capable* build. It does not, by itself, make a deployment FIPS *accredited* - that's an
-organizational process (ATO, operational environment review, etc.) on top of the build. Treat this page as the
-building block, not the whole compliance story.
-
-FIPS-capable is not FIPS-compliant. Auditors under FedRAMP, DoD, HIPAA, or similar frameworks require proof that FIPS
-enforcement is active at runtime, not just that a FIPS-capable build exists - verify enforcement (see below) rather
-than relying on a `-fips` tag or vendor claims alone.
-
-No BoringCrypto, cgo, or an OpenSSL FIPS provider is involved - the module is pure Go, so there's no separate crypto
-toolchain to maintain alongside the regular build.
+This gets you a FIPS-*capable* build, not a FIPS-*accredited* deployment - accreditation is an organizational
+process (ATO, operational environment review, etc.) layered on top. And capable is not the same as compliant:
+auditors under FedRAMP, DoD, HIPAA, or similar frameworks require proof that FIPS enforcement is active at runtime,
+not just that a FIPS-capable build exists - verify enforcement rather than relying on a `-fips` tag or vendor claims
+alone.
 
 ## Build and Verify the Image
 
