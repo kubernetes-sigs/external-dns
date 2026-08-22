@@ -920,8 +920,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			// Annotation hostnames must be collected before the FQDN template so a
-			// configured template does not run when the annotation already named the record.
+			// The annotation already named the record, so the template must not fire.
 			title: "AnnotationBeforeFQDNTemplate",
 			config: &Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
@@ -957,8 +956,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			// A hostname annotation present with an empty value contributes no hostname, so it
-			// must not suppress the FQDN template fallback either.
+			// An empty annotation names no record, so it must not suppress the template either.
 			title: "EmptyHostnameAnnotationFallsBackToFQDNTemplate",
 			config: &Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),

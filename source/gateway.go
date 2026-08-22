@@ -546,9 +546,8 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-// appendFQDNTemplate appends the FQDN-template-generated hostnames to hostnames when the
-// template engine is configured and either nothing else has supplied a hostname yet or the
-// engine is set to combine with existing hostnames.
+// appendFQDNTemplate appends the template-generated hostnames, unless another source already
+// supplied one and the template is not combining.
 // TODO: The combine-fqdn-annotation flag is similarly vague.
 func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
 	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
@@ -561,10 +560,8 @@ func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gateway
 	return hostnames, nil
 }
 
-// resolveHostnames determines the DNS hostnames for a route: spec hostnames, then annotation
-// hostnames, then the FQDN template result, honoring the gateway-hostname-source annotation
-// override. Annotation hostnames are collected before the template runs, so a configured
-// template does not fire when the annotation already named the record.
+// resolveHostnames returns a route's hostnames in the order documented for the gateway sources:
+// spec, annotation, FQDN template, listener fallback, subject to gateway-hostname-source.
 func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, error) {
 	var hostnames []string
 	for _, name := range rt.Hostnames() {
@@ -590,9 +587,7 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	}
 
 	if !c.src.ignoreHostnameAnnotation {
-		// An empty-string annotation value (key present, no hostname given) must not count as
-		// "a hostname was already supplied": it should still let the FQDN template fall back,
-		// same as when the annotation is absent entirely.
+		// Skip empty values so an empty annotation does not gate the template below.
 		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
 			if hostname != "" {
 				hostnames = append(hostnames, hostname)
@@ -603,9 +598,8 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
-	// This means that the route doesn't specify a hostname (or gave an invalid override) and
-	// should use any provided by attached Gateway Listeners. This is only useful for
-	// {HTTP,TLS}Routes, but it doesn't break {TCP,UDP}Routes.
+	// The route named no hostname of its own, so fall back to the attached listeners' hostnames.
+	// Only useful for {HTTP,TLS}Routes, but it doesn't break {TCP,UDP}Routes.
 	if len(rt.Hostnames()) == 0 {
 		hostnames = append(hostnames, "")
 	}
