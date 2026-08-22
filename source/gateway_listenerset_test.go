@@ -26,10 +26,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func lsParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
@@ -1557,4 +1559,73 @@ func TestGatewayListenerSetSource_InformerTransform(t *testing.T) {
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
+}
+
+// TestGatewayTCPRouteWithListenerSetParentRef adds TCPRoute+ListenerSet
+// coverage for the shared resolveParentRef/routeIsAllowed path.
+func TestGatewayTCPRouteWithListenerSetParentRef(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default"}}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	ips := []string{"10.64.0.1", "10.64.0.2"}
+	gw := &v1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+		Spec: v1.GatewaySpec{
+			AllowedListeners: allowAllListenerSets(),
+			Listeners:        []v1.Listener{{Name: "base", Protocol: v1.TCPProtocolType, Port: 80}},
+		},
+		Status: gatewayStatus(ips...),
+	}
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-listenerset", Namespace: "default"},
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "my-gateway"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Port: 8080, Protocol: v1.TCPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+		Status: listenerSetAcceptedStatus("app"),
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1alpha2.TCPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        "my-route",
+			Namespace:   "default",
+			Annotations: map[string]string{annotations.HostnameKey: "app.example.com"},
+		},
+		Spec: v1alpha2.TCPRouteSpec{
+			CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "my-listenerset")}},
+		},
+		Status: v1alpha2.TCPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "my-listenerset"))},
+	}
+	_, err = gwClient.GatewayV1alpha2().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayTCPRouteSource(ctx, clients, &Config{GatewayListenerSets: true})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("app.example.com", ips...),
+	})
 }
