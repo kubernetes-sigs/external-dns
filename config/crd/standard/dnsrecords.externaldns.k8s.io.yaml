@@ -58,7 +58,10 @@ spec:
                   description: Endpoint is a high-level way of a connection between a service and an IP
                   properties:
                     dnsName:
-                      description: The hostname of the DNS record
+                      description: DNSName is the hostname of the DNS record.
+                      maxLength: 253
+                      minLength: 1
+                      pattern: ^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$
                       type: string
                     labels:
                       additionalProperties:
@@ -71,27 +74,69 @@ spec:
                         description: ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
                         properties:
                           name:
+                            description: |-
+                              Name of the provider-specific property. Accepted names are provider
+                              dependent; see the tutorial for the provider in use.
+                            maxLength: 253
+                            minLength: 1
                             type: string
                           value:
+                            description: Value of the provider-specific property.
+                            maxLength: 4096
                             type: string
+                        required:
+                          - name
                         type: object
+                      maxItems: 100
                       type: array
                     recordTTL:
-                      description: TTL for the record
+                      description: |-
+                        RecordTTL is the TTL of the record in seconds. 0 means "not set" and lets
+                        the provider apply its own default. The upper bound is the RFC 2181 §8 maximum.
                       format: int64
+                      maximum: 2147483647
+                      minimum: 0
                       type: integer
                     recordType:
-                      description: RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
+                      description: RecordType is the DNS record type.
+                      enum:
+                        - A
+                        - AAAA
+                        - CNAME
+                        - TXT
+                        - SRV
+                        - NS
+                        - PTR
+                        - MX
+                        - NAPTR
                       type: string
                     setIdentifier:
-                      description: Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+                      description: |-
+                        SetIdentifier distinguishes multiple records with the same name and type
+                        (e.g. Route53 records with routing policies other than 'simple').
+                      maxLength: 255
                       type: string
                     targets:
-                      description: The targets the DNS record points to
+                      description: |-
+                        Targets are the values the DNS record points to. Leaving it empty is only
+                        meaningful when --default-targets is configured.
                       items:
+                        maxLength: 4096
+                        minLength: 1
                         type: string
+                      maxItems: 1000
                       type: array
+                  required:
+                    - dnsName
+                    - recordType
                   type: object
+                  x-kubernetes-validations:
+                    - message: SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'
+                      rule: self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
+                    - message: NAPTR targets must be absolute and end with a dot
+                      rule: self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))
+                    - message: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'
+                      rule: self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')
               required:
                 - endpoint
               type: object
