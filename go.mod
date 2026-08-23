@@ -23,7 +23,9 @@ require (
 	github.com/bodgit/tsig v1.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/civo/civogo v0.7.2
-	github.com/cloudflare/cloudflare-go/v7 v7.9.0
+	// pinned: v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data
+	// See https://github.com/cloudflare/cloudflare-go/issues/4300
+	github.com/cloudflare/cloudflare-go/v7 v7.7.0
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/emissary-ingress/emissary/v3 v3.10.0

@@ -18,7 +18,6 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -671,6 +670,8 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
 		}
 
+		normalizeMXTargets(e)
+
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
@@ -682,6 +683,21 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
+}
+
+// normalizeMXTargets strips the trailing dot from MX hosts. Cloudflare never returns one, and the
+// CRD source does not reject it, so "10 mail.example.com." would diff on every reconcile.
+func normalizeMXTargets(ep *endpoint.Endpoint) {
+	if ep.RecordType != endpoint.RecordTypeMX {
+		return
+	}
+	for i, target := range ep.Targets {
+		mx, err := endpoint.NewMXRecord(target)
+		if err != nil {
+			continue // newCloudFlareChange reports malformed targets
+		}
+		ep.Targets[i] = fmt.Sprintf("%d %s", *mx.GetPriority(), strings.TrimSuffix(mx.GetHost(), "."))
+	}
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -767,7 +783,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
 			priority = float64(*mxRecord.GetPriority())
-			target = mxRecord.GetHost()
+			// undotted, else getRecordID cannot match the DNSRecordIndex built from the API
+			target = strings.TrimSuffix(mxRecord.GetHost(), ".")
 		}
 	}
 	if ep.RecordType == endpoint.RecordTypeSRV {
@@ -798,35 +815,10 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: endpointTargetFromCloudflareRecord(r)}
 }
 
-// hydrateRecordResponse restores the fields the cloudflare-go union decoder drops.
-//
-// dns.RecordResponseUnion has no discriminator key, so the decoder resolves every payload to
-// dns.RecordResponseARecord, which carries neither Priority nor Data.
-func hydrateRecordResponse(record *dns.RecordResponse) {
-	raw := record.JSON.RawJSON()
-	if raw == "" {
-		return
-	}
-
-	switch record.Type {
-	case dns.RecordResponseTypeMX:
-		var mx dns.MXRecord
-		if err := json.Unmarshal([]byte(raw), &mx); err != nil {
-			log.Warnf("failed to decode MX record %q, its priority will be read as 0: %v", record.Name, err)
-			return
-		}
-		record.Priority = mx.Priority
-	case dns.RecordResponseTypeSRV:
-		var srv dns.SRVRecord
-		if err := json.Unmarshal([]byte(raw), &srv); err != nil {
-			log.Warnf("failed to decode SRV record %q, falling back to its content: %v", record.Name, err)
-			return
-		}
-		record.Data = srv.Data
-	}
-}
-
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
+//
+// MX priority and SRV data need cloudflare-go to resolve dns.RecordResponseUnion by its "type"
+// discriminator. TestSDKDecodesRecordDiscriminator guards it, see the pin in go.mod.
 func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
 	recordsMap := make(DNSRecordsMap)
@@ -836,7 +828,6 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
-		hydrateRecordResponse(&record)
 		recordsMap[newDNSRecordIndex(record)] = record
 	}
 	if iter.Err() != nil {
