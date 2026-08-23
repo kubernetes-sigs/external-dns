@@ -18,6 +18,7 @@ package cloudflare
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -797,6 +798,35 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: endpointTargetFromCloudflareRecord(r)}
 }
 
+// hydrateRecordResponse restores the fields the cloudflare-go union decoder drops.
+//
+// dns.RecordResponseUnion has no discriminator key, so the decoder resolves every payload to
+// dns.RecordResponseARecord, which carries neither Priority nor Data. Both stay zero whatever
+// the record type. Decode them again from the raw payload the SDK keeps.
+func hydrateRecordResponse(record *dns.RecordResponse) {
+	raw := record.JSON.RawJSON()
+	if raw == "" {
+		return
+	}
+
+	switch record.Type {
+	case dns.RecordResponseTypeMX:
+		var mx dns.MXRecord
+		if err := json.Unmarshal([]byte(raw), &mx); err != nil {
+			log.Debugf("failed to decode MX record %q, its priority will be read as 0: %v", record.Name, err)
+			return
+		}
+		record.Priority = mx.Priority
+	case dns.RecordResponseTypeSRV:
+		var srv dns.SRVRecord
+		if err := json.Unmarshal([]byte(raw), &srv); err != nil {
+			log.Debugf("failed to decode SRV record %q, falling back to its content: %v", record.Name, err)
+			return
+		}
+		record.Data = srv.Data
+	}
+}
+
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
 func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
@@ -807,6 +837,7 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
+		hydrateRecordResponse(&record)
 		recordsMap[newDNSRecordIndex(record)] = record
 	}
 	if iter.Err() != nil {
