@@ -312,24 +312,27 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 	for _, zone := range r.zoneNames {
 		log.Debugf("Fetching records for '%q'", zone)
 
-		m := new(dns.Msg)
-		m.SetAxfr(dns.Fqdn(zone))
-		if !r.insecure && !r.gssTsig {
-			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
-		}
-
 		var lastErr error
 		for i := 0; i < len(r.nameservers); i++ {
 			nameserver := r.getNextNameserverFor(nameserverOpList)
 			log.Debugf("Fetching records from nameserver: %s", nameserver)
 
+			// Signing strips the TSIG RR, so a reused message goes out unsigned.
+			m := new(dns.Msg)
+			m.SetAxfr(dns.Fqdn(zone))
+			if !r.insecure && !r.gssTsig {
+				m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
+			}
+
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
-				lastErr = fmt.Errorf("failed to fetch records via AXFR: %w", err)
+				lastErr = fmt.Errorf("failed to fetch records via AXFR for zone %q from %s: %w", zone, nameserver, err)
 				r.listLastErr = lastErr
 				continue
 			}
 
+			var attempt []dns.RR
+			var attemptErr error
 			for e := range env {
 				if e.Error != nil {
 					if errors.Is(e.Error, dns.ErrSoa) {
@@ -337,10 +340,23 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 					} else {
 						log.Errorf("AXFR error: %v", e.Error)
 					}
-					continue
+					attemptErr = e.Error
+					// Producer closes the channel after a single error envelope.
+					break
 				}
-				records = append(records, e.RR...)
+				// Error envelopes can carry RRs; those must not be accumulated.
+				attempt = append(attempt, e.RR...)
 			}
+			if attemptErr != nil {
+				lastErr = fmt.Errorf("failed to read AXFR response for zone %q from %s: %w", zone, nameserver, attemptErr)
+				r.listLastErr = lastErr
+				continue
+			}
+			// Clear an earlier attempt's error so the post-loop guard does not report
+			// a failure that was already retried away. r.listLastErr is left alone:
+			// getNextNameserverFor reads and resets it to drive the "disabled" strategy.
+			lastErr = nil
+			records = append(records, attempt...)
 			// If records were fetched successfully, break out of the loop
 			if len(records) > 0 {
 				break
