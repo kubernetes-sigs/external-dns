@@ -801,8 +801,7 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 // hydrateRecordResponse restores the fields the cloudflare-go union decoder drops.
 //
 // dns.RecordResponseUnion has no discriminator key, so the decoder resolves every payload to
-// dns.RecordResponseARecord, which carries neither Priority nor Data. Both stay zero whatever
-// the record type. Decode them again from the raw payload the SDK keeps.
+// dns.RecordResponseARecord, which carries neither Priority nor Data.
 func hydrateRecordResponse(record *dns.RecordResponse) {
 	raw := record.JSON.RawJSON()
 	if raw == "" {
@@ -813,14 +812,14 @@ func hydrateRecordResponse(record *dns.RecordResponse) {
 	case dns.RecordResponseTypeMX:
 		var mx dns.MXRecord
 		if err := json.Unmarshal([]byte(raw), &mx); err != nil {
-			log.Debugf("failed to decode MX record %q, its priority will be read as 0: %v", record.Name, err)
+			log.Warnf("failed to decode MX record %q, its priority will be read as 0: %v", record.Name, err)
 			return
 		}
 		record.Priority = mx.Priority
 	case dns.RecordResponseTypeSRV:
 		var srv dns.SRVRecord
 		if err := json.Unmarshal([]byte(raw), &srv); err != nil {
-			log.Debugf("failed to decode SRV record %q, falling back to its content: %v", record.Name, err)
+			log.Warnf("failed to decode SRV record %q, falling back to its content: %v", record.Name, err)
 			return
 		}
 		record.Data = srv.Data
