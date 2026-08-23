@@ -27,7 +27,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
@@ -1123,7 +1122,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPProtocolType,
-						Hostname: ptr.To(v1.Hostname("gateway.example.com")),
+						Hostname: new(v1.Hostname("gateway.example.com")),
 					}},
 				},
 				Status: gatewayStatus("1.2.3.4"),
