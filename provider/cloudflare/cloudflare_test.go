@@ -3461,9 +3461,8 @@ func TestZoneServiceZoneIDByName(t *testing.T) {
 	})
 }
 
-// TestSDKDecodesRecordDiscriminator fails a bump to an SDK that decodes MX and SRV as A records.
-// v7.8.0 dropped the dns.RecordResponseUnion discriminator, making the provider read every MX
-// record with priority 0 and rewrite the zone on each reconcile (cloudflare/cloudflare-go#4300).
+// TestSDKDecodesRecordDiscriminator ensure a SDK bump won't mess up MX and SRV as A records.
+// See cloudflare/cloudflare-go#4300
 func TestSDKDecodesRecordDiscriminator(t *testing.T) {
 	const mxRaw = `{"id":"mx-1","name":"bar.com","type":"MX","content":"mx.bar.com","priority":10,"ttl":300}`
 	const srvRaw = `{"id":"srv-1","name":"_sip._tcp.bar.com","type":"SRV","content":"1 10 5060 sip.bar.com","ttl":300,` +
@@ -3532,47 +3531,4 @@ func TestGetDNSRecordsMapDecodesTypedFields(t *testing.T) {
 	assert.Equal(t, []string{"10 mx.bar.com"}, targets[endpoint.RecordTypeMX])
 	assert.Equal(t, []string{"1 10 5060 sip.bar.com."}, targets[endpoint.RecordTypeSRV])
 	assert.Equal(t, []string{"1.2.3.4"}, targets[endpoint.RecordTypeA])
-}
-
-// The CRD source lets dotted MX targets through, Cloudflare never returns one.
-func TestAdjustEndpointsNormalizesMXTargets(t *testing.T) {
-	p := &CloudFlareProvider{}
-	adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
-		{
-			RecordType: endpoint.RecordTypeMX,
-			DNSName:    "bar.com",
-			Targets:    endpoint.Targets{"10 mail.bar.com.", "20 backup.bar.com"},
-		},
-		{
-			// malformed, left untouched
-			RecordType: endpoint.RecordTypeMX,
-			DNSName:    "broken.bar.com",
-			Targets:    endpoint.Targets{"mail.bar.com."},
-		},
-		{
-			RecordType: endpoint.RecordTypeCNAME,
-			DNSName:    "www.bar.com",
-			Targets:    endpoint.Targets{"bar.com."},
-		},
-	})
-	require.NoError(t, err)
-	require.Len(t, adjusted, 3)
-
-	assert.Equal(t, endpoint.Targets{"10 mail.bar.com", "20 backup.bar.com"}, adjusted[0].Targets)
-	assert.Equal(t, endpoint.Targets{"mail.bar.com."}, adjusted[1].Targets)
-	assert.Equal(t, endpoint.Targets{"bar.com."}, adjusted[2].Targets)
-}
-
-// getRecordID matches on content, so a dotted MX host leaves the delete unresolvable.
-func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
-	p := &CloudFlareProvider{}
-	ep := &endpoint.Endpoint{
-		RecordType: endpoint.RecordTypeMX,
-		DNSName:    "bar.com",
-		Targets:    endpoint.Targets{"10 mail.bar.com."},
-	}
-	change, err := p.newCloudFlareChange(cloudFlareCreate, ep, "10 mail.bar.com.", nil)
-	require.NoError(t, err)
-	assert.Equal(t, "mail.bar.com", change.ResourceRecord.Content)
-	assert.InDelta(t, float64(10), change.ResourceRecord.Priority, 0)
 }

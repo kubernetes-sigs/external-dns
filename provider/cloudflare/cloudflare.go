@@ -670,8 +670,6 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
 		}
 
-		normalizeMXTargets(e)
-
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
@@ -683,21 +681,6 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
-}
-
-// normalizeMXTargets strips the trailing dot from MX hosts. Cloudflare never returns one, and the
-// CRD source does not reject it, so "10 mail.example.com." would diff on every reconcile.
-func normalizeMXTargets(ep *endpoint.Endpoint) {
-	if ep.RecordType != endpoint.RecordTypeMX {
-		return
-	}
-	for i, target := range ep.Targets {
-		mx, err := endpoint.NewMXRecord(target)
-		if err != nil {
-			continue // newCloudFlareChange reports malformed targets
-		}
-		ep.Targets[i] = fmt.Sprintf("%d %s", *mx.GetPriority(), strings.TrimSuffix(mx.GetHost(), "."))
-	}
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -783,8 +766,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
 			priority = float64(*mxRecord.GetPriority())
-			// undotted, else getRecordID cannot match the DNSRecordIndex built from the API
-			target = strings.TrimSuffix(mxRecord.GetHost(), ".")
+			target = mxRecord.GetHost()
 		}
 	}
 	if ep.RecordType == endpoint.RecordTypeSRV {
@@ -816,9 +798,6 @@ func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
 }
 
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
-//
-// MX priority and SRV data need cloudflare-go to resolve dns.RecordResponseUnion by its "type"
-// discriminator. TestSDKDecodesRecordDiscriminator guards it, see the pin in go.mod.
 func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string) (DNSRecordsMap, error) {
 	// for faster getRecordID lookup
 	recordsMap := make(DNSRecordsMap)
