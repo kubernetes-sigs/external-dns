@@ -670,6 +670,8 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
 		}
 
+		normalizeMXTargets(e)
+
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
@@ -681,6 +683,22 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
+}
+
+// normalizeMXTargets strips the trailing dot from MX hosts. The CRD source exempts MX from its
+// target format check, so "10 mail.example.com." reaches the provider and would diff forever
+// against the undotted host Cloudflare reports back.
+func normalizeMXTargets(ep *endpoint.Endpoint) {
+	if ep.RecordType != endpoint.RecordTypeMX {
+		return
+	}
+	for i, target := range ep.Targets {
+		mx, err := endpoint.NewMXRecord(target)
+		if err != nil {
+			continue // newCloudFlareChange reports malformed targets
+		}
+		ep.Targets[i] = fmt.Sprintf("%d %s", *mx.GetPriority(), cloudflareHost(mx.GetHost()))
+	}
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -766,7 +784,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
 			priority = float64(*mxRecord.GetPriority())
-			target = mxRecord.GetHost()
+			// undotted, else getRecordID cannot match the DNSRecordIndex built from the API
+			target = cloudflareHost(mxRecord.GetHost())
 		}
 	}
 	if ep.RecordType == endpoint.RecordTypeSRV {

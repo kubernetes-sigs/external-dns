@@ -1807,6 +1807,30 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
 
+func TestNewEndpointWithTTLMXTargets(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		expected string
+	}{
+		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
+		{"already undotted", "10 mail.example.com", "10 mail.example.com"},
+		// RFC 7505: the dot is the host, trimming it leaves a target that no longer parses
+		{"null MX preserved", "0 .", "0 ."},
+		{"extra whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
+		{"malformed left alone", "mail.example.com", "mail.example.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := NewEndpointWithTTL("example.com", RecordTypeMX, TTL(300), tt.target)
+			require.NotNil(t, ep)
+			assert.Equal(t, tt.expected, ep.Targets[0])
+		})
+	}
+
+	assert.True(t, Targets{"0 ."}.ValidateMXRecord(), "null MX must stay a valid MX target")
+}
+
 func TestGetAliasProperty(t *testing.T) {
 	tests := []struct {
 		name     string

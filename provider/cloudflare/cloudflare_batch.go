@@ -182,11 +182,14 @@ func tagsFromResponse(tags any) []dns.RecordTagsParam {
 	return nil
 }
 
-func cloudflareSRVTarget(target string) string {
-	if target == "." {
-		return target
+// cloudflareHost drops the trailing dot Cloudflare never stores. The root "." is left alone:
+// it is a host in its own right, both as an SRV "no service" target (RFC 2782) and as a null
+// MX (RFC 7505).
+func cloudflareHost(host string) string {
+	if host == "." {
+		return host
 	}
-	return strings.TrimSuffix(target, ".")
+	return strings.TrimSuffix(host, ".")
 }
 
 func externalDNSSRVTarget(target string) string {
@@ -201,7 +204,7 @@ func srvRecordDataParam(target *endpoint.SRVTarget) dns.SRVRecordDataParam {
 		Priority: cloudflare.F(float64(target.GetPriority())),
 		Weight:   cloudflare.F(float64(target.GetWeight())),
 		Port:     cloudflare.F(float64(target.GetPort())),
-		Target:   cloudflare.F(cloudflareSRVTarget(target.GetHost())),
+		Target:   cloudflare.F(cloudflareHost(target.GetHost())),
 	}
 }
 
