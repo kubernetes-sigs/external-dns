@@ -3532,3 +3532,64 @@ func TestGetDNSRecordsMapDecodesTypedFields(t *testing.T) {
 	assert.Equal(t, []string{"1 10 5060 sip.bar.com."}, targets[endpoint.RecordTypeSRV])
 	assert.Equal(t, []string{"1.2.3.4"}, targets[endpoint.RecordTypeA])
 }
+
+// The CRD source lets dotted MX targets through, Cloudflare never returns one.
+func TestAdjustEndpointsNormalizesMXTargets(t *testing.T) {
+	p := &CloudFlareProvider{}
+	adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		{
+			RecordType: endpoint.RecordTypeMX,
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"10 mail.bar.com.", "20 backup.bar.com"},
+		},
+		{
+			// null MX (RFC 7505), the dot is the host
+			RecordType: endpoint.RecordTypeMX,
+			DNSName:    "nomail.bar.com",
+			Targets:    endpoint.Targets{"0 ."},
+		},
+		{
+			// malformed, left untouched
+			RecordType: endpoint.RecordTypeMX,
+			DNSName:    "broken.bar.com",
+			Targets:    endpoint.Targets{"mail.bar.com."},
+		},
+		{
+			RecordType: endpoint.RecordTypeCNAME,
+			DNSName:    "www.bar.com",
+			Targets:    endpoint.Targets{"bar.com."},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, adjusted, 4)
+
+	assert.Equal(t, endpoint.Targets{"10 mail.bar.com", "20 backup.bar.com"}, adjusted[0].Targets)
+	assert.Equal(t, endpoint.Targets{"0 ."}, adjusted[1].Targets)
+	assert.Equal(t, endpoint.Targets{"mail.bar.com."}, adjusted[2].Targets)
+	assert.Equal(t, endpoint.Targets{"bar.com."}, adjusted[3].Targets)
+}
+
+// getRecordID matches on content, so a dotted MX host leaves the delete unresolvable.
+func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		expected string
+	}{
+		{"trailing dot trimmed", "10 mail.bar.com.", "mail.bar.com"},
+		{"null MX preserved", "0 .", "."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &CloudFlareProvider{}
+			ep := &endpoint.Endpoint{
+				RecordType: endpoint.RecordTypeMX,
+				DNSName:    "bar.com",
+				Targets:    endpoint.Targets{tt.target},
+			}
+			change, err := p.newCloudFlareChange(cloudFlareCreate, ep, tt.target, nil)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, change.ResourceRecord.Content)
+		})
+	}
+}
