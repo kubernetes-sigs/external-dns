@@ -357,7 +357,7 @@ spec:
     app: nginx
 ```
 
-:information_source: The AWS-SD provider does not currently support dualstack load balancers and will only create A records for these at this time. See the AWS provider and the [AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md) for dualstack load balancer support.
+:information_source: When a CNAME endpoint targets a recognized AWS load balancer (ELB/ALB/NLB), the AWS-SD provider configures both an `A` and an `AAAA` Cloud Map DNS record for its alias, matching the dual-stack behavior of the AWS provider. See the [AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md) for more on dualstack load balancers.
 
 ## Clean up
 
