@@ -3555,21 +3555,28 @@ func TestAdjustEndpointsNormalizesMXTargets(t *testing.T) {
 			Targets:    endpoint.Targets{"mail.bar.com."},
 		},
 		{
+			// canonicalized like the read path renders it
+			RecordType: endpoint.RecordTypeMX,
+			DNSName:    "odd.bar.com",
+			Targets:    endpoint.Targets{"010  mail.bar.com."},
+		},
+		{
 			RecordType: endpoint.RecordTypeCNAME,
 			DNSName:    "www.bar.com",
 			Targets:    endpoint.Targets{"bar.com."},
 		},
 	})
 	require.NoError(t, err)
-	require.Len(t, adjusted, 4)
+	require.Len(t, adjusted, 5)
 
 	assert.Equal(t, endpoint.Targets{"10 mail.bar.com", "20 backup.bar.com"}, adjusted[0].Targets)
 	assert.Equal(t, endpoint.Targets{"0 ."}, adjusted[1].Targets)
 	assert.Equal(t, endpoint.Targets{"mail.bar.com."}, adjusted[2].Targets)
-	assert.Equal(t, endpoint.Targets{"bar.com."}, adjusted[3].Targets)
+	assert.Equal(t, endpoint.Targets{"10 mail.bar.com"}, adjusted[3].Targets)
+	assert.Equal(t, endpoint.Targets{"bar.com."}, adjusted[4].Targets)
 }
 
-// getRecordID matches on content, so a dotted MX host leaves the delete unresolvable.
+// getRecordID matches on content, a dotted MX host leaves the delete unresolvable.
 func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
 	tests := []struct {
 		name     string

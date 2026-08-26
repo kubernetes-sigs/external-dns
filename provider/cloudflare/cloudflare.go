@@ -685,9 +685,8 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 	return adjustedEndpoints, nil
 }
 
-// normalizeMXTargets strips the trailing dot from MX hosts. The CRD source exempts MX from its
-// target format check, so "10 mail.example.com." reaches the provider and would diff forever
-// against the undotted host Cloudflare reports back.
+// normalizeMXTargets renders MX targets the way the read path does, so both sides of the plan
+// match. Spacing and priority included, since the read path builds every target with Sprintf.
 func normalizeMXTargets(ep *endpoint.Endpoint) {
 	if ep.RecordType != endpoint.RecordTypeMX {
 		return

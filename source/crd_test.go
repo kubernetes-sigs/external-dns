@@ -661,6 +661,42 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 	}
 }
 
+// MX targets are normalized rather than rejected, so a dotted host stops diffing against the
+// undotted one providers read back.
+func TestCRDSourceNormalizesMXTargets(t *testing.T) {
+	for _, ti := range []struct {
+		title  string
+		target string
+		want   string
+	}{
+		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
+		{"already undotted", "10 mail.example.com", "10 mail.example.com"},
+		{"null MX preserved", "0 .", "0 ."},
+		{"unparseable left alone", "example.com.", "example.com."},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			obj := &apiv1alpha1.DNSEndpoint{
+				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default", Generation: 1},
+				Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{ti.target},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				}}},
+			}
+
+			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+			require.NoError(t, err)
+
+			got, err := cs.Endpoints(t.Context())
+			require.NoError(t, err)
+			require.Len(t, got, 1)
+			require.Equal(t, endpoint.Targets{ti.want}, got[0].Targets)
+		})
+	}
+}
+
 func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
