@@ -19,7 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.65.9
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.43.7
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.7
-	github.com/aws/smithy-go v1.27.8
+	github.com/aws/smithy-go v1.27.9
 	github.com/bodgit/tsig v1.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/civo/civogo v0.7.2
@@ -60,8 +60,8 @@ require (
 	golang.org/x/time v0.15.0
 	google.golang.org/api v0.293.0
 	gopkg.in/ns1/ns1-go.v2 v2.18.0
-	istio.io/api v1.30.3
-	istio.io/client-go v1.30.3
+	istio.io/api v1.30.4
+	istio.io/client-go v1.30.4
 	k8s.io/api v0.36.4
 	k8s.io/apimachinery v0.36.4
 	k8s.io/client-go v0.36.4
