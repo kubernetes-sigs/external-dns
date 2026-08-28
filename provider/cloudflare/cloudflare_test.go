@@ -3533,47 +3533,28 @@ func TestGetDNSRecordsMapDecodesTypedFields(t *testing.T) {
 	assert.Equal(t, []string{"1.2.3.4"}, targets[endpoint.RecordTypeA])
 }
 
-// The CRD source lets dotted MX targets through, Cloudflare never returns one.
-func TestAdjustEndpointsNormalizesMXTargets(t *testing.T) {
-	p := &CloudFlareProvider{}
-	adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
-		{
-			RecordType: endpoint.RecordTypeMX,
-			DNSName:    "bar.com",
-			Targets:    endpoint.Targets{"10 mail.bar.com.", "20 backup.bar.com"},
-		},
-		{
-			// null MX (RFC 7505), the dot is the host
-			RecordType: endpoint.RecordTypeMX,
-			DNSName:    "nomail.bar.com",
-			Targets:    endpoint.Targets{"0 ."},
-		},
-		{
-			// malformed, left untouched
-			RecordType: endpoint.RecordTypeMX,
-			DNSName:    "broken.bar.com",
-			Targets:    endpoint.Targets{"mail.bar.com."},
-		},
-		{
-			// canonicalized like the read path renders it
-			RecordType: endpoint.RecordTypeMX,
-			DNSName:    "odd.bar.com",
-			Targets:    endpoint.Targets{"010  mail.bar.com."},
-		},
-		{
-			RecordType: endpoint.RecordTypeCNAME,
-			DNSName:    "www.bar.com",
-			Targets:    endpoint.Targets{"bar.com."},
+// Read path must render what NormalizeMXTarget produces, else the plan diffs forever.
+func TestGroupByNameAndTypeNullMX(t *testing.T) {
+	t.Parallel()
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": {
+			{
+				ID:       "mx-null",
+				Name:     "nomail.bar.com",
+				Type:     endpoint.RecordTypeMX,
+				TTL:      3600,
+				Content:  ".",
+				Priority: 0,
+			},
 		},
 	})
+	p := &CloudFlareProvider{Client: client}
+	records, err := p.getDNSRecordsMap(t.Context(), "001")
 	require.NoError(t, err)
-	require.Len(t, adjusted, 5)
 
-	assert.Equal(t, endpoint.Targets{"10 mail.bar.com", "20 backup.bar.com"}, adjusted[0].Targets)
-	assert.Equal(t, endpoint.Targets{"0 ."}, adjusted[1].Targets)
-	assert.Equal(t, endpoint.Targets{"mail.bar.com."}, adjusted[2].Targets)
-	assert.Equal(t, endpoint.Targets{"10 mail.bar.com"}, adjusted[3].Targets)
-	assert.Equal(t, endpoint.Targets{"bar.com."}, adjusted[4].Targets)
+	endpoints := p.groupByNameAndTypeWithCustomHostnames(records, customHostnamesMap{})
+	require.Len(t, endpoints, 1)
+	assert.Equal(t, endpoint.Targets{"0 ."}, endpoints[0].Targets)
 }
 
 // getRecordID matches on content, a dotted MX host leaves the delete unresolvable.
@@ -3585,6 +3566,7 @@ func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
 	}{
 		{"trailing dot trimmed", "10 mail.bar.com.", "mail.bar.com"},
 		{"null MX preserved", "0 .", "."},
+		{"non-canonical target still parsed", "010  mail.bar.com.", "mail.bar.com"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
