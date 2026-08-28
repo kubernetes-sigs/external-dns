@@ -451,6 +451,9 @@ func (e *Endpoint) GetBoolProviderSpecificProperty(key string) (bool, bool) {
 }
 
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
+//
+// CRD schema caps the name at 253 characters and the value at 4096.
+// Exceeding either makes the write fail and aborts ApplyChanges before the provider is called.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 	if len(e.ProviderSpecific) == 0 {
 		e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{
