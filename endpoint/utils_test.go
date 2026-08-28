@@ -406,6 +406,37 @@ func TestMergeEndpoints(t *testing.T) {
 				NewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
 			},
 		},
+		{
+			name: "DNAME endpoints not merged",
+			input: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				NewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
+			},
+			expected: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				NewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
+			},
+		},
+		{
+			name: "DNAME with no targets is skipped",
+			input: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeDNAME),
+				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+			},
+			expected: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			name: "identical DNAME endpoints deduplicated",
+			input: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+			},
+			expected: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+			},
+		},
 	}
 
 	for _, tt := range tests {

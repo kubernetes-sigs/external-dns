@@ -113,7 +113,15 @@ func execute(ctx context.Context) {
 	}
 
 	if cfg.WebhookServer {
-		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		webhookapi.StartHTTPApi(webhookapi.ServerOptions{
+			Provider:          prvdr,
+			ProviderPort:      "127.0.0.1:8888",
+			ReadTimeout:       cfg.WebhookProviderReadTimeout,
+			WriteTimeout:      cfg.WebhookProviderWriteTimeout,
+			ReadHeaderTimeout: cfg.WebhookProviderReadHeaderTimeout,
+			IdleTimeout:       cfg.WebhookProviderIdleTimeout,
+			MaxBodySize:       cfg.WebhookProviderMaxBodySize,
+		})
 		os.Exit(0)
 	}
 

@@ -19,6 +19,9 @@ updates:
       # miss tag on v1.19.0 in 2019
       # See https://pkg.go.dev/github.com/exoscale/egoscale?tab=versions
       - dependency-name: "github.com/exoscale/egoscale"
+      # v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data
+      # See https://github.com/cloudflare/cloudflare-go/issues/4300
+      - dependency-name: "github.com/cloudflare/cloudflare-go/v7"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

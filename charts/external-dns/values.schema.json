@@ -137,6 +137,10 @@
         }
       }
     },
+    "hostAliases": {
+      "description": "[Host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to add to the `Pod` definition, injected into the pod's `/etc/hosts`.",
+      "type": "array"
+    },
     "image": {
       "type": "object",
       "properties": {
@@ -600,12 +604,13 @@
       }
     },
     "registry": {
-      "description": "Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `dynamodb` \u0026 `noop`.",
+      "description": "Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `crd`, `dynamodb` \u0026 `noop`.",
       "default": "txt",
       "type": "string",
       "enum": [
         "txt",
         "aws-sd",
+        "crd",
         "dynamodb",
         "noop"
       ]

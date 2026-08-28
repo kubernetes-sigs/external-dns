@@ -173,9 +173,9 @@ gitdb==4.0.12 \
     --hash=sha256:5ef71f855d191a3326fcfbc0d5da835f26b13fbcba60c32c21091c349ffdb571 \
     --hash=sha256:67073e15955400952c6565cc3e707c554a4eea2e428946f7a4c162fab9bd9bcf
     # via gitpython
-gitpython==3.1.57 \
-    --hash=sha256:4ccf7d73c10f5c9e76043fbb2675ac5a1b3ff5b41e648f56bcbed5f63792ecaf \
-    --hash=sha256:c493ec57c0ef6b19743798b6a5af859c71814b524e7e6f97baa2f8e658961488
+gitpython==3.1.60 \
+    --hash=sha256:39548bffb8fa0f3a548133348868bb4838e79d73283052207dc97781a569b6b4 \
+    --hash=sha256:e936431879fa85581b4311fa63492ea52251909e2d655b6529c704c904ddcc24
     # via mkdocs-git-revision-date-localized-plugin
 hjson==3.1.0 \
     --hash=sha256:55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75 \
@@ -328,9 +328,9 @@ mkdocs-get-deps==0.2.2 \
     --hash=sha256:8ee8d5f316cdbbb2834bc1df6e69c08fe769a83e040060de26d3c19fad3599a1 \
     --hash=sha256:e7878cbeac04860b8b5e0ca31d3abad3df9411a75a32cde82f8e44b6c16ff650
     # via mkdocs
-mkdocs-git-revision-date-localized-plugin==1.5.3 \
-    --hash=sha256:873444b54cab4d47c69bd6e85da05ef5fbe81fee27e64508114c46a0e4f81e37 \
-    --hash=sha256:cd96e432de6a7e59b31c7041574b22f84179c8636835419ff458877ecfaaaf05
+mkdocs-git-revision-date-localized-plugin==1.5.4 \
+    --hash=sha256:07a785522008e881ff4c307e3259ad3ce00931b2d2147a22cdfbb532ff25e4ab \
+    --hash=sha256:b5e6b4b9e7d169750b6eb078fd91151bc855e65c019a065accce537ec6e69e05
     # via -r requirements.in
 mkdocs-literate-nav==0.6.3 \
     --hash=sha256:2c421561280fa9184f88cbf399bebbd4cc17ee507e978a31ce11fd6f3aabf233 \
@@ -386,9 +386,9 @@ pygments==2.20.0 \
     --hash=sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f \
     --hash=sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176
     # via mkdocs-material
-pymdown-extensions==11.0 \
-    --hash=sha256:8269cef0247f9e2d0a62fcea10860aba05c1cbab5470fd4b63230b96434dc589 \
-    --hash=sha256:fbc4acb641814fa9d17521bbd21a5240ef739a662f11c06330c4b78c93e954d6
+pymdown-extensions==11.0.1 \
+    --hash=sha256:db3943a62bab7e03af1364f0c4083e64b91fb097675a4b6cceccfbe9a77e5eb2 \
+    --hash=sha256:dd2905ae6fc5b75582fafb139a1266ffc754705efa902aa50067fa7ff4f94ec0
     # via mkdocs-material
 pyparsing==3.3.2 \
     --hash=sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d \

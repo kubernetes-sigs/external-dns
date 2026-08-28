@@ -54,7 +54,6 @@ TTL must be a positive value.
 | `CoreDNS`      |    No     |
 | `DNSSimple`    |    Yes    |
 | `Exoscale`     |    Yes    |
-| `Gandi`        |    Yes    |
 | `GoDaddy`      |    Yes    |
 | `Google GCP`   |    Yes    |
 | `InMemory`     |    No     |

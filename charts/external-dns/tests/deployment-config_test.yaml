@@ -98,3 +98,24 @@ tests:
           # Rejected by the values schema (maximum: 1) in schema-validated paths,
           # or by the template guard when schema validation is skipped.
           errorPattern: "(replicaCount must be 0 or 1|/replicaCount': maximum: got 2, want 1)"
+
+  - it: should not render hostAliases by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.hostAliases
+
+  - it: should render hostAliases when specified via values
+    set:
+      hostAliases:
+        - ip: 192.0.2.10
+          hostnames:
+            - provider.example.com
+            - provider
+    asserts:
+      - equal:
+          path: spec.template.spec.hostAliases
+          value:
+            - ip: 192.0.2.10
+              hostnames:
+                - provider.example.com
+                - provider

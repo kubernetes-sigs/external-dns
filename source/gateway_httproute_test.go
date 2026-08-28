@@ -18,10 +18,12 @@ package source
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -920,6 +922,78 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// The annotation already named the record, so the template must not fire.
+			title: "AnnotationBeforeFQDNTemplate",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "annotated-route",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "service.example.com",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("service.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			// An empty annotation names no record, so it must not suppress the template either.
+			title: "EmptyHostnameAnnotationFallsBackToFQDNTemplate",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "empty-annotated-route",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "",
+					},
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("empty-annotated-route.template.internal", "1.2.3.4"),
+			},
+		},
+		{
 			title: "IgnoreHostnameAnnotation",
 			config: &Config{
 				IgnoreHostnameAnnotation: true,
@@ -998,6 +1072,37 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				newTestEndpoint("fqdn-without-hostnames.one.internal", "1.2.3.4"),
 				newTestEndpoint("fqdn-without-hostnames.two.internal", "1.2.3.4"),
 				newTestEndpoint("fqdn-with-hostnames.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// combine so the template runs even though Spec.Hostnames is already set.
+			title: "FQDNTemplate with JSON-style Spec access on typed HTTPRoute",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{range .Spec.hostnames}}{{.}}.json.internal,{{end}}", "", "", true),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "fqdn-json-style"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("fqdn-json-style.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("fqdn-json-style.internal", "1.2.3.4"),
+				newTestEndpoint("fqdn-json-style.internal.json.internal", "1.2.3.4"),
 			},
 		},
 		{
@@ -1767,4 +1872,141 @@ func TestGatewayHTTPRouteSource_InformerTransform(t *testing.T) {
 		withRemovedManagedFields(),
 		withRemovedStatusConditions(),
 	)
+}
+
+func TestGatewayHTTPRouteIndexer(t *testing.T) {
+	t.Parallel()
+
+	fromAll := v1.NamespacesFromAll
+
+	makeRoute := func(namespace, name string, ann, lbls map[string]string) *v1.HTTPRoute {
+		allAnn := map[string]string{annotations.HostnameKey: name + ".example.com"}
+		maps.Copy(allAnn, ann)
+		return &v1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   namespace,
+				Name:        name,
+				Annotations: allAnn,
+				Labels:      lbls,
+			},
+			Spec: v1.HTTPRouteSpec{
+				CommonRouteSpec: v1.CommonRouteSpec{
+					ParentRefs: []v1.ParentReference{gwParentRef("default", "gw")},
+				},
+			},
+			Status: httpRouteStatus(gwParentRef("default", "gw")),
+		}
+	}
+
+	for _, tc := range []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*v1.HTTPRoute
+		wantCount        int
+	}{
+		{
+			name: "no filters — all namespaces included",
+			routes: []*v1.HTTPRoute{
+				makeRoute("default", "r1", nil, nil),
+				makeRoute("staging", "r2", nil, nil),
+				makeRoute("production", "r3", nil, nil),
+			},
+			wantCount: 3,
+		},
+		{
+			name:             "annotation filter matches",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*v1.HTTPRoute{
+				makeRoute("default", "r1", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
+				makeRoute("default", "r2", nil, nil),
+			},
+			wantCount: 1,
+		},
+		{
+			name:        "label filter matches",
+			labelFilter: "tier=external",
+			routes: []*v1.HTTPRoute{
+				makeRoute("default", "r1", nil, map[string]string{"tier": "external"}),
+				makeRoute("default", "r2", nil, map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			labelFilter:      "tier=external",
+			routes: []*v1.HTTPRoute{
+				makeRoute("default", "r1",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "external"}),
+				makeRoute("default", "r2",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "no-match annotation filter",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*v1.HTTPRoute{
+				makeRoute("default", "r1", nil, nil),
+				makeRoute("default", "r2", nil, nil),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "controller mismatch is excluded",
+			routes: []*v1.HTTPRoute{
+				makeRoute("default", "r1",
+					map[string]string{annotations.ControllerKey: "other-controller"},
+					nil),
+			},
+			wantCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			gwClient := gatewayfake.NewSimpleClientset()
+			kubeClient := kubefake.NewClientset()
+
+			gw := &v1.Gateway{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "gw"},
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						AllowedRoutes: &v1.AllowedRoutes{
+							Namespaces: &v1.RouteNamespaces{From: &fromAll},
+						},
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}
+			_, err := gwClient.GatewayV1().Gateways("default").Create(ctx, gw, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			for _, rt := range tc.routes {
+				_, err := gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			clients := new(testutils.MockClientGenerator)
+			clients.On("GatewayClient").Return(gwClient, nil)
+			clients.On("KubeClient").Return(kubeClient, nil)
+
+			src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(ctx)
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tc.wantCount)
+		})
+	}
 }

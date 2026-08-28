@@ -3460,3 +3460,75 @@ func TestZoneServiceZoneIDByName(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to list zones from CloudFlare API")
 	})
 }
+
+// TestSDKDecodesRecordDiscriminator ensure a SDK bump won't mess up MX and SRV as A records.
+// See cloudflare/cloudflare-go#4300
+func TestSDKDecodesRecordDiscriminator(t *testing.T) {
+	const mxRaw = `{"id":"mx-1","name":"bar.com","type":"MX","content":"mx.bar.com","priority":10,"ttl":300}`
+	const srvRaw = `{"id":"srv-1","name":"_sip._tcp.bar.com","type":"SRV","content":"1 10 5060 sip.bar.com","ttl":300,` +
+		`"data":{"priority":1,"weight":10,"port":5060,"target":"sip.bar.com"}}`
+
+	// asserted on values, not union variant types: the affected releases renamed those, and a
+	// compile error would not say why the bump is unsafe
+	var mx dns.RecordResponse
+	require.NoError(t, json.Unmarshal([]byte(mxRaw), &mx))
+	assert.InDelta(t, float64(10), mx.Priority, 0,
+		"cloudflare-go dropped the MX priority, see cloudflare/cloudflare-go#4300 before bumping")
+
+	var srv dns.RecordResponse
+	require.NoError(t, json.Unmarshal([]byte(srvRaw), &srv))
+	require.IsType(t, dns.SRVRecordData{}, srv.Data,
+		"cloudflare-go dropped the SRV data, see cloudflare/cloudflare-go#4300 before bumping")
+	assert.Equal(t, "sip.bar.com", srv.Data.(dns.SRVRecordData).Target)
+}
+
+// Records must come from an HTTP payload: dns.RecordResponse values built in Go skip the union
+// decoder that carries the MX priority and the SRV components.
+func TestGetDNSRecordsMapDecodesTypedFields(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		records := []map[string]any{
+			{"id": "mx-1", "name": "bar.com", "type": "MX", "content": "mx.bar.com", "priority": 10, "ttl": 300},
+			{"id": "srv-1", "name": "_sip._tcp.bar.com", "type": "SRV", "content": "1 10 5060 sip.bar.com", "ttl": 300,
+				"data": map[string]any{"priority": 1, "weight": 10, "port": 5060, "target": "sip.bar.com"}},
+			{"id": "a-1", "name": "bar.com", "type": "A", "content": "1.2.3.4", "ttl": 300, "proxied": true},
+		}
+		// the pager keeps asking until a page comes back empty
+		if page := req.URL.Query().Get("page"); page != "" && page != "1" {
+			records = []map[string]any{}
+		}
+		if err := json.NewEncoder(w).Encode(map[string]any{
+			"result": records,
+			"result_info": map[string]any{
+				"count":       len(records),
+				"total_count": len(records),
+				"page":        1,
+				"per_page":    100,
+			},
+			"success":  true,
+			"errors":   []any{},
+			"messages": []any{},
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}))
+	defer ts.Close()
+
+	p := &CloudFlareProvider{Client: zoneService{service: cloudflare.NewClient(
+		option.WithBaseURL(ts.URL+"/"),
+		option.WithAPIToken("test-token"),
+		option.WithMaxRetries(0),
+	)}}
+
+	records, err := p.getDNSRecordsMap(t.Context(), "001")
+	require.NoError(t, err)
+
+	targets := map[string][]string{}
+	for _, ep := range p.groupByNameAndTypeWithCustomHostnames(records, nil) {
+		targets[ep.RecordType] = []string(ep.Targets)
+	}
+
+	assert.Equal(t, []string{"10 mx.bar.com"}, targets[endpoint.RecordTypeMX])
+	assert.Equal(t, []string{"1 10 5060 sip.bar.com."}, targets[endpoint.RecordTypeSRV])
+	assert.Equal(t, []string{"1.2.3.4"}, targets[endpoint.RecordTypeA])
+}

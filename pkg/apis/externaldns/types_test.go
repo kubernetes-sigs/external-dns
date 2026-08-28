@@ -128,6 +128,9 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		WebhookProviderReadHeaderTimeout:              5 * time.Second,
+		WebhookProviderIdleTimeout:                    30 * time.Second,
+		WebhookProviderMaxBodySize:                    32 << 20,
 		ExcludeUnschedulable:                          true,
 	}
 
@@ -239,6 +242,9 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		WebhookProviderReadHeaderTimeout:              5 * time.Second,
+		WebhookProviderIdleTimeout:                    30 * time.Second,
+		WebhookProviderMaxBodySize:                    32 << 20,
 		ExcludeUnschedulable:                          false,
 	}
 )
@@ -593,6 +599,16 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
 }
 
+func TestParseFlagsCRDRegistryNamespace(t *testing.T) {
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service"}))
+	assert.Empty(t, cfg.CRDRegistryNamespace, "unset, so the current namespace is resolved at startup")
+
+	cfg = NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service", "--crd-registry-namespace=external-dns"}))
+	assert.Equal(t, "external-dns", cfg.CRDRegistryNamespace)
+}
+
 func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
 		PDNSAPIKey:        "pdns-api-key",
@@ -866,11 +882,17 @@ func TestParseFlagsWebhookProvider(t *testing.T) {
 		"--webhook-provider-url=http://127.0.0.1:9999",
 		"--webhook-provider-read-timeout=7s",
 		"--webhook-provider-write-timeout=8s",
+		"--webhook-provider-read-header-timeout=3s",
+		"--webhook-provider-idle-timeout=15s",
+		"--webhook-provider-max-body-size=1048576",
 		"--webhook-server",
 	)
 	assert.Equal(t, "http://127.0.0.1:9999", cfg.WebhookProviderURL)
 	assert.Equal(t, 7*time.Second, cfg.WebhookProviderReadTimeout)
 	assert.Equal(t, 8*time.Second, cfg.WebhookProviderWriteTimeout)
+	assert.Equal(t, 3*time.Second, cfg.WebhookProviderReadHeaderTimeout)
+	assert.Equal(t, 15*time.Second, cfg.WebhookProviderIdleTimeout)
+	assert.Equal(t, int64(1<<20), cfg.WebhookProviderMaxBodySize)
 	assert.True(t, cfg.WebhookServer)
 }
 

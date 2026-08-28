@@ -35,7 +35,6 @@ const (
 	ProviderSkyDNS       = "skydns"
 	ProviderDNSimple     = "dnsimple"
 	ProviderExoscale     = "exoscale"
-	ProviderGandi        = "gandi"
 	ProviderGoDaddy      = "godaddy"
 	ProviderGoogle       = "google"
 	ProviderInMemory     = "inmemory"

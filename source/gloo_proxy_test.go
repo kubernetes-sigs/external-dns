@@ -429,6 +429,42 @@ var (
 			},
 		},
 	}
+	// Proxy using aggregateListener, produced by Gloo when a Gateway has
+	// isolateVirtualHostsBySslConfig: true.
+	aggregateListenerProxy = proxy{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: proxyGVR.GroupVersion().String(),
+			Kind:       "Proxy",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "aggregate-listener",
+			Namespace: defaultGlooNamespace,
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/target": "203.3.45.9",
+			},
+		},
+		Spec: proxySpec{
+			Listeners: []proxySpecListener{
+				{
+					AggregateListener: proxySpecAggregateListener{
+						HTTPFilterChains: []proxyAggregateListenerHTTPFilterChain{
+							{
+								VirtualHostRefs: []string{"gloo-system.example-vs"},
+							},
+						},
+						HTTPResources: proxyAggregateListenerHTTPResources{
+							VirtualHosts: map[string]proxyVirtualHost{
+								"gloo-system.example-vs": {
+									Domains: []string{"l.test"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	gatewayIngressAnnotatedProxyIngress = networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name,
@@ -461,6 +497,7 @@ func TestGlooSource(t *testing.T) {
 	gatewayIngressAnnotatedProxyGatewayUnstructured := unstructured.Unstructured{}
 	proxyMetadataStaticUnstructured := unstructured.Unstructured{}
 	targetAnnotatedProxyUnstructured := unstructured.Unstructured{}
+	aggregateListenerProxyUnstructured := unstructured.Unstructured{}
 
 	internalProxySourceUnstructured := unstructured.Unstructured{}
 	externalProxySourceUnstructured := unstructured.Unstructured{}
@@ -485,6 +522,9 @@ func TestGlooSource(t *testing.T) {
 	targetAnnotatedProxyAsJSON, err := json.Marshal(targetAnnotatedProxy)
 	assert.NoError(t, err)
 
+	aggregateListenerProxyAsJSON, err := json.Marshal(aggregateListenerProxy)
+	assert.NoError(t, err)
+
 	internalProxySvcAsJSON, err := json.Marshal(internalProxySource)
 	assert.NoError(t, err)
 
@@ -503,6 +543,7 @@ func TestGlooSource(t *testing.T) {
 	assert.NoError(t, gatewayIngressAnnotatedProxyGatewayUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyGatewayAsJSON))
 	assert.NoError(t, proxyMetadataStaticUnstructured.UnmarshalJSON(proxyMetadataStaticAsJSON))
 	assert.NoError(t, targetAnnotatedProxyUnstructured.UnmarshalJSON(targetAnnotatedProxyAsJSON))
+	assert.NoError(t, aggregateListenerProxyUnstructured.UnmarshalJSON(aggregateListenerProxyAsJSON))
 
 	assert.NoError(t, internalProxySourceUnstructured.UnmarshalJSON(internalProxySvcAsJSON))
 	assert.NoError(t, externalProxySourceUnstructured.UnmarshalJSON(externalProxySvcAsJSON))
@@ -532,6 +573,8 @@ func TestGlooSource(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &gatewayIngressAnnotatedProxyUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &aggregateListenerProxyUnstructured, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
 	// Create proxy source
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(internalProxySource.Namespace).Create(t.Context(), &internalProxySourceUnstructured, metav1.CreateOptions{})
@@ -555,7 +598,7 @@ func TestGlooSource(t *testing.T) {
 
 	endpoints, err := source.Endpoints(t.Context())
 	assert.NoError(t, err)
-	assert.Len(t, endpoints, 11)
+	assert.Len(t, endpoints, 12)
 
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
 		(&endpoint.Endpoint{
@@ -668,6 +711,14 @@ func TestGlooSource(t *testing.T) {
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{}},
+		{
+			DNSName:          "l.test",
+			Targets:          []string{"203.3.45.9"},
+			RecordType:       endpoint.RecordTypeA,
+			RecordTTL:        0,
+			Labels:           endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
 	})
 }
 

@@ -45,8 +45,8 @@ func parseAnnotationFilterOrNil(s string) labels.Selector {
 	return sel
 }
 
-// parseLabelSelectorOrEverything parses a label selector string for use in tests.
-// Returns labels.Everything() for empty input.
+// parseLabelSelectorOrEverything parses a label selector string for use in indexer tests.
+// Returns labels.Everything() for empty input (match all), and fails the test on parse errors.
 func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
 	t.Helper()
 	if s == "" {
@@ -166,6 +166,15 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				t.Helper()
 				assert.True(t, strings.HasPrefix(ep.DNSName, "_sip._udp."), "NAPTR DNSName %q should start with _sip._udp.", ep.DNSName)
 				require.NotEmpty(t, ep.Targets)
+			},
+		},
+		{
+			recordType: endpoint.RecordTypeDNAME,
+			check: func(t *testing.T, ep *endpoint.Endpoint) {
+				t.Helper()
+				require.Len(t, ep.Targets, 1)
+				assert.True(t, strings.HasSuffix(ep.Targets[0], "."+defaultFQDNTemplate),
+					"DNAME target %q should be under %s", ep.Targets[0], defaultFQDNTemplate)
 			},
 		},
 	}

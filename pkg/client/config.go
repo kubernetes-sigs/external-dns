@@ -25,6 +25,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -73,6 +74,21 @@ func NewKubeClient(config *rest.Config) (kubernetes.Interface, error) {
 	}
 	log.Infof("Created Kubernetes client %s", config.Host)
 	return client, nil
+}
+
+// CurrentNamespace returns the namespace ExternalDNS runs in: POD_NAMESPACE, then the
+// service account token of the pod, then the kubeconfig context, then `default`.
+func CurrentNamespace(kubeConfig string) string {
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if kubeConfig != "" {
+		rules.ExplicitPath = kubeConfig
+	}
+	namespace, _, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{}).Namespace()
+	if err != nil || namespace == "" {
+		log.Debugf("unable to detect the current namespace, using `default`: %v", err)
+		return metav1.NamespaceDefault
+	}
+	return namespace
 }
 
 // buildRestConfig returns the REST client configuration for Kubernetes API access.

@@ -19,6 +19,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"time"
@@ -40,6 +41,23 @@ const (
 
 type WebhookServer struct {
 	Provider provider.Provider
+	// MaxBodySize caps decoded request body bytes; <= 0 disables the limit.
+	MaxBodySize int64
+}
+
+// ServerOptions configures the webhook HTTP server started by StartHTTPApi.
+type ServerOptions struct {
+	Provider provider.Provider
+	// StartedChan, if non-nil, is signaled once the server is listening.
+	StartedChan chan struct{}
+	// ProviderPort is the listen address, e.g. "127.0.0.1:8888".
+	ProviderPort      string
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	ReadHeaderTimeout time.Duration
+	IdleTimeout       time.Duration
+	// MaxBodySize caps request body bytes; <= 0 disables the limit.
+	MaxBodySize int64
 }
 
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
@@ -59,9 +77,10 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		return
 	case http.MethodPost:
 		var changes plan.Changes
+		p.limitRequestBody(w, req)
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 			log.Errorf("Failed to decode changes: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(requestBodyStatus(err))
 			return
 		}
 		err := p.Provider.ApplyChanges(context.Background(), &changes)
@@ -86,9 +105,10 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 
 	var pve []*endpoint.Endpoint
+	p.limitRequestBody(w, req)
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
 		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(requestBodyStatus(err))
 		return
 	}
 	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
@@ -96,12 +116,30 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	if err != nil {
 		log.Errorf("Failed to call adjust endpoints: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
 		log.Errorf("Failed to encode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+// limitRequestBody caps the request body with MaxBytesReader so oversized
+// bodies fail with 413; a non-positive cap leaves the body unchanged.
+func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Request) {
+	if p.MaxBodySize > 0 {
+		req.Body = http.MaxBytesReader(w, req.Body, p.MaxBodySize)
+	}
+}
+
+// requestBodyStatus maps a request-body decode failure to the right client
+// error: 413 when the MaxBytesReader cap was hit, 400 for malformed JSON.
+func requestBodyStatus(err error) int {
+	if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+		return http.StatusRequestEntityTooLarge
+	}
+	return http.StatusBadRequest
 }
 
 func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
@@ -120,9 +158,10 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request)
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
-func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, providerPort string) {
+func StartHTTPApi(opts ServerOptions) {
 	p := WebhookServer{
-		Provider: provider,
+		Provider:    opts.Provider,
+		MaxBodySize: opts.MaxBodySize,
 	}
 
 	m := http.NewServeMux()
@@ -131,19 +170,23 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 	m.HandleFunc(UrlAdjustEndpoints, p.AdjustEndpointsHandler)
 
 	s := &http.Server{
-		Addr:         providerPort,
+		Addr:         opts.ProviderPort,
 		Handler:      m,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
+		ReadTimeout:  opts.ReadTimeout,
+		WriteTimeout: opts.WriteTimeout,
+		// Separate knobs from ReadTimeout, which an operator may raise for slow
+		// or large request bodies without loosening these bounds.
+		ReadHeaderTimeout: opts.ReadHeaderTimeout,
+		IdleTimeout:       opts.IdleTimeout,
 	}
 
-	l, err := net.Listen("tcp", providerPort)
+	l, err := net.Listen("tcp", opts.ProviderPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if startedChan != nil {
-		startedChan <- struct{}{}
+	if opts.StartedChan != nil {
+		opts.StartedChan <- struct{}{}
 	}
 
 	if err := s.Serve(l); err != nil {
