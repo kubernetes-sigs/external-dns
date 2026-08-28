@@ -3557,28 +3557,30 @@ func TestGroupByNameAndTypeNullMX(t *testing.T) {
 	assert.Equal(t, endpoint.Targets{"0 ."}, endpoints[0].Targets)
 }
 
-// getRecordID matches on content, a dotted MX host leaves the delete unresolvable.
+// getRecordID matches on content, so the host must reach the change undotted. Endpoints are built
+// through NewEndpointWithTTL, the way every source and the read path do, since newCloudFlareChange
+// relies on NormalizeMXTarget having run.
 func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   string
-		expected string
+		content  string
+		priority float64
 	}{
-		{"trailing dot trimmed", "10 mail.bar.com.", "mail.bar.com"},
-		{"null MX preserved", "0 .", "."},
-		{"non-canonical target still parsed", "010  mail.bar.com.", "mail.bar.com"},
+		{"trailing dot trimmed", "10 mail.bar.com.", "mail.bar.com", 10},
+		{"null MX preserved", "0 .", ".", 0},
+		{"non-canonical target normalized", "010  mail.bar.com.", "mail.bar.com", 10},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &CloudFlareProvider{}
-			ep := &endpoint.Endpoint{
-				RecordType: endpoint.RecordTypeMX,
-				DNSName:    "bar.com",
-				Targets:    endpoint.Targets{tt.target},
-			}
-			change, err := p.newCloudFlareChange(cloudFlareCreate, ep, tt.target, nil)
+			ep := endpoint.NewEndpointWithTTL("bar.com", endpoint.RecordTypeMX, endpoint.TTL(300), tt.target)
+			require.NotNil(t, ep)
+
+			change, err := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expected, change.ResourceRecord.Content)
+			assert.Equal(t, tt.content, change.ResourceRecord.Content)
+			assert.InDelta(t, tt.priority, change.ResourceRecord.Priority, 0)
 		})
 	}
 }

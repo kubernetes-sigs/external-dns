@@ -766,8 +766,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
 			priority = float64(*mxRecord.GetPriority())
-			// undotted, else getRecordID cannot match the DNSRecordIndex
-			target = cloudflareHost(mxRecord.GetHost())
+			target = mxRecord.GetHost()
 		}
 	}
 	if ep.RecordType == endpoint.RecordTypeSRV {
