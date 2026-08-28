@@ -40,15 +40,15 @@ func TestEmit_RecordReady(t *testing.T) {
 			name: "create, update and delete endpoints",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
-					endpoint.NewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").WithRefObject(refObj),
 				},
 				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").WithRefObject(refObj),
-					endpoint.NewEndpoint("four.example.com", endpoint.RecordTypeA, "10.10.10.3").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("four.example.com", endpoint.RecordTypeA, "10.10.10.3").WithRefObject(refObj),
 				},
 				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
 				},
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
@@ -70,7 +70,7 @@ func TestEmit_RecordReady(t *testing.T) {
 				Create:    []*endpoint.Endpoint{},
 				UpdateNew: []*endpoint.Endpoint{},
 				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
 				},
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
@@ -118,13 +118,13 @@ func TestEmit_RecordError(t *testing.T) {
 			name: "create, update and delete endpoints",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
 				},
 				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").WithRefObject(refObj),
 				},
 				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").WithRefObject(refObj),
 				},
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
@@ -140,7 +140,7 @@ func TestEmit_RecordError(t *testing.T) {
 				Create:    []*endpoint.Endpoint{},
 				UpdateNew: []*endpoint.Endpoint{},
 				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
+					endpoint.MustNewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
 				},
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {

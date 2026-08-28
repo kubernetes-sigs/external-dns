@@ -160,101 +160,101 @@ var (
 	}
 
 	endpointsDisabledRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
 	}
 
 	endpointsSimpleRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	endpointsLongRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	endpointsNonexistantZone = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 	endpointsMultipleRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
 	}
 
 	endpointsMXRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com"),
 	}
 
 	endpointsMXRecordInvalidFormatTooManyArgs = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com abc"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com abc"),
 	}
 
 	endpointsMultipleMXRecordsWithSingleInvalid = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "abc example.com"),
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "20 backup.example.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "abc example.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "20 backup.example.com"),
 	}
 
 	endpointsMultipleInvalidMXRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "example.com"),
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "backup.example.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "example.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "backup.example.com"),
 	}
 
 	endpointsMixedRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
-		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
-		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
-		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
-		endpoint.NewEndpointWithTTL("4.3.2.1.in-addr.arpa", endpoint.RecordTypePTR, endpoint.TTL(300), "host.example.com"),
+		endpoint.MustNewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
+		endpoint.MustNewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
+		endpoint.MustNewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
+		endpoint.MustNewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
+		endpoint.MustNewEndpointWithTTL("4.3.2.1.in-addr.arpa", endpoint.RecordTypePTR, endpoint.TTL(300), "host.example.com"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("mock.test", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
-		endpoint.NewEndpointWithTTL("mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("mock.test", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.MustNewEndpointWithTTL("mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	endpointsMultipleZones2 = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("abcd.mock.test", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
-		endpoint.NewEndpointWithTTL("abcd.mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("abcd.mock.test", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.MustNewEndpointWithTTL("abcd.mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	endpointsMultipleZonesWithNoExist = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
-		endpoint.NewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.MustNewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 	endpointsMultipleZonesWithLongRecordNotInDomainFilter = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
-		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.MustNewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 	endpointsMultipleZonesWithSimilarRecordNotInDomainFilter = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
-		endpoint.NewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.MustNewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 	endpointsApexRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.MustNewEndpointWithTTL("cname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
 	}
 
 	// Endpoint with alias annotation
-	endpointWithAliasAnnotation = endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithAliasProperty(endpoint.AliasTrue)
+	endpointWithAliasAnnotation = endpoint.MustNewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com").WithAliasProperty(endpoint.AliasTrue)
 
 	// Endpoints for preferAlias test
 	endpointsPreferAlias = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com"),
+		endpoint.MustNewEndpointWithTTL("sub.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "target.example.com"),
 	}
 
 	ZoneEmptyToPreferAliasPatch = pgo.Zone{
@@ -801,25 +801,25 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSHasAliasAnnotation() {
 	p := &PDNSProvider{}
 
 	// Test endpoint without alias annotation
-	epWithoutAlias := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithoutAlias := endpoint.MustNewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	suite.False(p.hasAliasAnnotation(epWithoutAlias))
 
 	// Test endpoint with alias=false
-	epWithAliasFalse := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithAliasFalse := endpoint.MustNewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithAliasFalse.ProviderSpecific = endpoint.ProviderSpecific{
 		{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 	}
 	suite.False(p.hasAliasAnnotation(epWithAliasFalse))
 
 	// Test endpoint with alias=true
-	epWithAliasTrue := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithAliasTrue := endpoint.MustNewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithAliasTrue.ProviderSpecific = endpoint.ProviderSpecific{
 		{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 	}
 	suite.True(p.hasAliasAnnotation(epWithAliasTrue))
 
 	// Test endpoint with other provider specific but no alias
-	epWithOtherPS := endpoint.NewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
+	epWithOtherPS := endpoint.MustNewEndpoint("test.example.com", endpoint.RecordTypeCNAME, "target.example.com")
 	epWithOtherPS.ProviderSpecific = endpoint.ProviderSpecific{
 		{Name: "other", Value: "value"},
 	}
@@ -1108,7 +1108,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 			description: "Valid MX endpoint is not removed",
 			endpoints:   endpointsMXRecord,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com"),
+				endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 example.com"),
 			},
 		},
 		{
@@ -1120,7 +1120,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 			description: "Invalid MX endpoint is removed among valid endpoints",
 			endpoints:   endpointsMultipleMXRecordsWithSingleInvalid,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "20 backup.example.com"),
+				endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "20 backup.example.com"),
 			},
 		},
 		{

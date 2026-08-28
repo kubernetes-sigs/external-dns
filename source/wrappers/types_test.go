@@ -96,7 +96,7 @@ func TestWrapSources_NAT64Error(t *testing.T) {
 
 func TestWrapSources_PTRNotAddedWhenDisabled(t *testing.T) {
 	eps := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	cfg := NewConfig() // createPTR defaults to false
 	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
@@ -111,7 +111,7 @@ func TestWrapSources_PTRNotAddedWhenDisabled(t *testing.T) {
 
 func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
 	eps := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	cfg := NewConfig(WithPTRSupported(true), WithCreatePTR(true))
 	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
@@ -128,7 +128,7 @@ func TestWrapSources_PTRAddedWhenEnabled(t *testing.T) {
 
 func TestWrapSources_PTRSupportedButDefaultOff(t *testing.T) {
 	eps := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	cfg := NewConfig(WithPTRSupported(true)) // createPTR defaults to false
 	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)

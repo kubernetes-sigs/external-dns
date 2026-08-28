@@ -141,7 +141,12 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 					name = zone.Name
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value))
+				ep, err := endpoint.NewEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value)
+				if err != nil {
+					log.Errorf("Failed to create endpoint for record %s.%s: %v", r.Name, zone.Name, err)
+					continue
+				}
+				endpoints = append(endpoints, ep)
 			}
 		}
 	}

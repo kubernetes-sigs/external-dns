@@ -885,15 +885,16 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 				targets[i] = endpointTargetFromCloudflareRecord(record)
 			}
 		}
-		e := endpoint.NewEndpointWithTTL(
+		e, err := endpoint.NewEndpointWithTTL(
 			records[0].Name,
 			string(records[0].Type),
 			endpoint.TTL(records[0].TTL),
 			targets...)
-		proxied := records[0].Proxied
-		if e == nil {
+		if err != nil {
+			log.Errorf("Failed to create endpoint for record %q: %s", records[0].Name, err)
 			continue
 		}
+		proxied := records[0].Proxied
 		e = e.WithProviderSpecific(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
 		// noop (customHostnames is empty) if custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {

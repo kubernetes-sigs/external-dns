@@ -102,7 +102,7 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			fqdnTemplate:   "{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-proxy.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("my-proxy.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			svc:                makeEmptySvc("my-proxy"),
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-proxy.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-proxy.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -201,7 +201,7 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("proxy.my-proxy.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("proxy.my-proxy.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -210,7 +210,7 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			svc:                makeEmptySvc("my-proxy"),
 			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-proxy.gloo.solo.io.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-proxy.gloo.solo.io.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{

@@ -510,12 +510,16 @@ func ovhGroupByNameAndType(records []ovhRecord) []*endpoint.Endpoint {
 		for _, record := range records {
 			targets = append(targets, record.Target)
 		}
-		ep := endpoint.NewEndpointWithTTL(
+		ep, err := endpoint.NewEndpointWithTTL(
 			strings.TrimPrefix(records[0].SubDomain+"."+records[0].Zone, "."),
 			records[0].FieldType,
 			endpoint.TTL(records[0].TTL),
 			targets...,
 		)
+		if err != nil {
+			log.Errorf("Failed to create endpoint for record %q: %v", records[0].SubDomain+"."+records[0].Zone, err)
+			continue
+		}
 		endpoints = append(endpoints, ep)
 	}
 

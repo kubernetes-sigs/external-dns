@@ -168,7 +168,11 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) ([]*endpoint.Endp
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
 
-				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				ep, err := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				if err != nil {
+					log.Warnf("Failed to create endpoint for '%s' with type '%s': %v", name, recordType, err)
+					continue
+				}
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",
 					ep.RecordType,

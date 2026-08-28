@@ -246,10 +246,10 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
 	_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("migrate.test-zone.example.org", endpoint.RecordTypeA, "3.3.3.3").WithSetIdentifier("set-3"),
-			endpoint.NewEndpoint("txt.migrate.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-3"),
-			endpoint.NewEndpoint("txt.orphaned.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-3"),
-			endpoint.NewEndpoint("txt.baz.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-2"),
+			endpoint.MustNewEndpoint("migrate.test-zone.example.org", endpoint.RecordTypeA, "3.3.3.3").WithSetIdentifier("set-3"),
+			endpoint.MustNewEndpoint("txt.migrate.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-3"),
+			endpoint.MustNewEndpoint("txt.orphaned.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-3"),
+			endpoint.MustNewEndpoint("txt.baz.test-zone.example.org", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\"").WithSetIdentifier("set-2"),
 		},
 	})
 
@@ -1164,10 +1164,10 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	_ = p.CreateZone(testZone)
 	_ = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("foo.test-zone.example.org", endpoint.RecordTypeCNAME, "foo.loadbalancer.com"),
-			endpoint.NewEndpoint("bar.test-zone.example.org", endpoint.RecordTypeCNAME, "my-domain.com"),
-			endpoint.NewEndpoint("baz.test-zone.example.org", endpoint.RecordTypeA, "1.1.1.1").WithSetIdentifier("set-1"),
-			endpoint.NewEndpoint("baz.test-zone.example.org", endpoint.RecordTypeA, "2.2.2.2").WithSetIdentifier("set-2"),
+			endpoint.MustNewEndpoint("foo.test-zone.example.org", endpoint.RecordTypeCNAME, "foo.loadbalancer.com"),
+			endpoint.MustNewEndpoint("bar.test-zone.example.org", endpoint.RecordTypeCNAME, "my-domain.com"),
+			endpoint.MustNewEndpoint("baz.test-zone.example.org", endpoint.RecordTypeA, "1.1.1.1").WithSetIdentifier("set-1"),
+			endpoint.MustNewEndpoint("baz.test-zone.example.org", endpoint.RecordTypeA, "2.2.2.2").WithSetIdentifier("set-2"),
 		},
 	})
 	return stub, &wrappedProvider{

@@ -2286,7 +2286,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				"version": "v1",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
+				endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
 			},
 		},
 		{
@@ -2301,7 +2301,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				"tier":    "backend",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
+				endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
 			},
 		},
 		{
@@ -2313,7 +2313,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				"app":     "demo",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
+				endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "virtualservice/default/fake-vservice"),
 			},
 		},
 	}

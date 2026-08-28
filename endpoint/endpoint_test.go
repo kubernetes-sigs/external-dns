@@ -31,7 +31,8 @@ import (
 )
 
 func TestNewEndpoint(t *testing.T) {
-	e := NewEndpoint("example.org", "CNAME", "foo.com")
+	e, err := NewEndpoint("example.org", "CNAME", "foo.com")
+	require.NoError(t, err)
 	if e.DNSName != "example.org" || e.Targets[0] != "foo.com" || e.RecordType != "CNAME" {
 		t.Error("endpoint is not initialized correctly")
 	}
@@ -39,7 +40,8 @@ func TestNewEndpoint(t *testing.T) {
 		t.Error("Labels is not initialized")
 	}
 
-	w := NewEndpoint("example.org.", "", "load-balancer.com.")
+	w, err := NewEndpoint("example.org.", "", "load-balancer.com.")
+	require.NoError(t, err)
 	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
@@ -195,7 +197,8 @@ func TestEndpoint_WithLabel(t *testing.T) {
 	})
 
 	t.Run("existing Labels map is updated", func(t *testing.T) {
-		ep := NewEndpoint("example.com", RecordTypeA, "1.2.3.4") // Labels already initialised
+		ep, err := NewEndpoint("example.com", RecordTypeA, "1.2.3.4") // Labels already initialised
+		require.NoError(t, err)
 		ep.WithLabel("key", "value")
 		assert.Equal(t, "value", ep.Labels["key"])
 	})
@@ -1784,10 +1787,11 @@ func TestEndpoint_WithMinTTL(t *testing.T) {
 // TestNewEndpointWithTTLPreservesDotsInTXTRecords tests that trailing dots are preserved in TXT records
 func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	// TXT records should preserve trailing dots (and any arbitrary text)
-	txtEndpoint := NewEndpointWithTTL("example.com", RecordTypeTXT, TTL(300),
+	txtEndpoint, err := NewEndpointWithTTL("example.com", RecordTypeTXT, TTL(300),
 		"v=1;some_signature=aBx3d5..",
 		"text.with.dots...",
 		"simple-text")
+	require.NoError(t, err)
 
 	require.NotNil(t, txtEndpoint, "TXT endpoint should be created")
 	require.Len(t, txtEndpoint.Targets, 3, "should have 3 targets")
@@ -1798,11 +1802,13 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	assert.Equal(t, "simple-text", txtEndpoint.Targets[2])
 
 	// Domain name record types should still have trailing dots trimmed
-	aEndpoint := NewEndpointWithTTL("example.com", RecordTypeA, TTL(300), "1.2.3.4.")
+	aEndpoint, err := NewEndpointWithTTL("example.com", RecordTypeA, TTL(300), "1.2.3.4.")
+	require.NoError(t, err)
 	require.NotNil(t, aEndpoint, "A endpoint should be created")
 	assert.Equal(t, "1.2.3.4", aEndpoint.Targets[0], "A record should have trailing dot trimmed")
 
-	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
+	cnameEndpoint, err := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
+	require.NoError(t, err)
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
 }
@@ -1908,7 +1914,9 @@ func TestWithAliasProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := NewEndpoint("example.com", "A", "1.2.3.4").WithAliasProperty(tt.input)
+			e, err := NewEndpoint("example.com", "A", "1.2.3.4")
+			require.NoError(t, err)
+			e = e.WithAliasProperty(tt.input)
 			assert.Equal(t, tt.expected, e.GetAliasProperty())
 		})
 	}
@@ -2135,13 +2143,15 @@ func TestGetNakedDomain(t *testing.T) {
 }
 
 func TestRequestedRecordType(t *testing.T) {
-	ep := NewEndpoint("example.com", RecordTypeA, "1.2.3.4").
-		WithProviderSpecific(ProviderSpecificRecordType, "ptr")
+	ep, err := NewEndpoint("example.com", RecordTypeA, "1.2.3.4")
+	require.NoError(t, err)
+	ep.WithProviderSpecific(ProviderSpecificRecordType, "ptr")
 	val, ok := ep.RequestedRecordType()
 	assert.True(t, ok)
 	assert.Equal(t, "ptr", val)
 
-	ep2 := NewEndpoint("example.com", RecordTypeA, "1.2.3.4")
+	ep2, err := NewEndpoint("example.com", RecordTypeA, "1.2.3.4")
+	require.NoError(t, err)
 	_, ok = ep2.RequestedRecordType()
 	assert.False(t, ok)
 }

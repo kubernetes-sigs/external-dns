@@ -182,8 +182,9 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		log.Debugf("adding endpoint with %d targets", len(addrs))
 
 		for _, addr := range addrs {
-			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
-			if ep == nil {
+			ep, err := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
+			if err != nil {
+				log.Warnf("Skipping invalid node address %q for node %s: %v", addr, node.Name, err)
 				continue
 			}
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))

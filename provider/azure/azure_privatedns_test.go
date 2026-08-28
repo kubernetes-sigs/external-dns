@@ -93,14 +93,15 @@ func (client *mockPrivateRecordSetsClient) NewListPager(_ string, _ string, _ *p
 }
 
 func (client *mockPrivateRecordSetsClient) Delete(_ context.Context, _ string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, _ *privatedns.RecordSetsClientDeleteOptions) (privatedns.RecordSetsClientDeleteResponse, error) {
-	client.deletedEndpoints = append(
-		client.deletedEndpoints,
-		endpoint.NewEndpoint(
-			formatAzureDNSName(relativeRecordSetName, privateZoneName),
-			string(recordType),
-			"",
-		),
+	ep, err := endpoint.NewEndpoint(
+		formatAzureDNSName(relativeRecordSetName, privateZoneName),
+		string(recordType),
+		"",
 	)
+	if err != nil {
+		return privatedns.RecordSetsClientDeleteResponse{}, err
+	}
+	client.deletedEndpoints = append(client.deletedEndpoints, ep)
 	return privatedns.RecordSetsClientDeleteResponse{}, nil
 }
 
@@ -109,15 +110,16 @@ func (client *mockPrivateRecordSetsClient) CreateOrUpdate(_ context.Context, _ s
 	if parameters.Properties.TTL != nil {
 		ttl = endpoint.TTL(*parameters.Properties.TTL)
 	}
-	client.updatedEndpoints = append(
-		client.updatedEndpoints,
-		endpoint.NewEndpointWithTTL(
-			formatAzureDNSName(relativeRecordSetName, privateZoneName),
-			string(recordType),
-			ttl,
-			extractAzurePrivateDNSTargets(&parameters)...,
-		),
+	ep, err := endpoint.NewEndpointWithTTL(
+		formatAzureDNSName(relativeRecordSetName, privateZoneName),
+		string(recordType),
+		ttl,
+		extractAzurePrivateDNSTargets(&parameters)...,
 	)
+	if err != nil {
+		return privatedns.RecordSetsClientCreateOrUpdateResponse{}, err
+	}
+	client.updatedEndpoints = append(client.updatedEndpoints, ep)
 	return privatedns.RecordSetsClientCreateOrUpdateResponse{}, nil
 }
 
@@ -268,14 +270,14 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
-		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.MustNewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com"),
 	}
 
 	validateAzureEndpoints(t, actual, expected)
@@ -304,14 +306,14 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::123:123:123:122", "2001::234:234:234:233"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123", "2001::234:234:234:234"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
-		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::123:123:123:122", "2001::234:234:234:233"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123", "2001::234:234:234:234"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.MustNewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 	}
 
 	validateAzureEndpoints(t, actual, expected)
@@ -323,29 +325,29 @@ func TestAzurePrivateDNSApplyChanges(t *testing.T) {
 	testAzurePrivateDNSApplyChangesInternal(t, false, &recordsClient)
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, ""),
-		endpoint.NewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, ""),
-		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
+		endpoint.MustNewEndpoint("deleted.example.com", endpoint.RecordTypeA, ""),
+		endpoint.MustNewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, ""),
+		endpoint.MustNewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
 	})
 
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
-		endpoint.NewEndpointWithTTL("bar.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "other.com"),
-		endpoint.NewEndpointWithTTL("bar.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
-		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "5.6.7.8"),
-		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::5:6:7:8"),
-		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
-		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
-		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
-		endpoint.NewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
-		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
-		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4"),
+		endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.MustNewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
+		endpoint.MustNewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
+		endpoint.MustNewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.MustNewEndpointWithTTL("bar.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "other.com"),
+		endpoint.MustNewEndpointWithTTL("bar.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.MustNewEndpointWithTTL("other.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "5.6.7.8"),
+		endpoint.MustNewEndpointWithTTL("other.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::5:6:7:8"),
+		endpoint.MustNewEndpointWithTTL("other.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.MustNewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.MustNewEndpointWithTTL("new.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.MustNewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.MustNewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
+		endpoint.MustNewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 	})
 }
 
@@ -378,45 +380,45 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 	)
 
 	createRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:4"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:5", "2001::1:2:3:4"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("other.com", endpoint.RecordTypeA, "5.6.7.8"),
-		endpoint.NewEndpoint("other.com", endpoint.RecordTypeAAAA, "2001::5:6:7:8"),
-		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
-		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeAAAA, "2001::4:4:4:4"),
-		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
-		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:4"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
+		endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:5", "2001::1:2:3:4"),
+		endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.MustNewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("other.com", endpoint.RecordTypeA, "5.6.7.8"),
+		endpoint.MustNewEndpoint("other.com", endpoint.RecordTypeAAAA, "2001::5:6:7:8"),
+		endpoint.MustNewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
+		endpoint.MustNewEndpoint("nope.com", endpoint.RecordTypeAAAA, "2001::4:4:4:4"),
+		endpoint.MustNewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
+		endpoint.MustNewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "121.212.121.212"),
-		endpoint.NewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("old.nope.com", endpoint.RecordTypeA, "121.212.121.212"),
-		endpoint.NewEndpoint("oldmail.example.com", endpoint.RecordTypeMX, "20 foo.other.com"),
+		endpoint.MustNewEndpoint("old.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.MustNewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.MustNewEndpoint("old.nope.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.MustNewEndpoint("oldmail.example.com", endpoint.RecordTypeMX, "20 foo.other.com"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
-		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
-		endpoint.NewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
-		endpoint.NewEndpoint("new.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
-		endpoint.NewEndpoint("new.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
-		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
+		endpoint.MustNewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.MustNewEndpointWithTTL("new.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.MustNewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.MustNewEndpoint("new.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.MustNewEndpoint("new.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
+		endpoint.MustNewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, "111.222.111.222"),
-		endpoint.NewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
-		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("deleted.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
-		endpoint.NewEndpoint("deleted.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
+		endpoint.MustNewEndpoint("deleted.example.com", endpoint.RecordTypeA, "111.222.111.222"),
+		endpoint.MustNewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
+		endpoint.MustNewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.MustNewEndpoint("deleted.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.MustNewEndpoint("deleted.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
 	}
 
 	changes := &plan.Changes{
@@ -455,10 +457,10 @@ func TestAzurePrivateDNSNameFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("test.nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
-		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
-		endpoint.NewEndpointWithTTL("mail.nginx.example.com", endpoint.RecordTypeMX, recordTTL, "20 example.com"),
+		endpoint.MustNewEndpointWithTTL("test.nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.MustNewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.MustNewEndpointWithTTL("mail.nginx.example.com", endpoint.RecordTypeMX, recordTTL, "20 example.com"),
 	}
 
 	validateAzureEndpoints(t, actual, expected)
@@ -470,18 +472,18 @@ func TestAzurePrivateDNSApplyChangesZoneName(t *testing.T) {
 	testAzurePrivateDNSApplyChangesInternalZoneName(t, false, &recordsClient)
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, ""),
-		endpoint.NewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, ""),
-		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
+		endpoint.MustNewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, ""),
+		endpoint.MustNewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, ""),
+		endpoint.MustNewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
 	})
 
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
-		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
-		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
-		endpoint.NewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.MustNewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
+		endpoint.MustNewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
+		endpoint.MustNewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.MustNewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.MustNewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.MustNewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
 	})
 }
 
@@ -503,38 +505,38 @@ func testAzurePrivateDNSApplyChangesInternalZoneName(t *testing.T, dryRun bool, 
 	)
 
 	createRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:4"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:5", "2001::1:2:3:4"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("other.com", endpoint.RecordTypeA, "5.6.7.8"),
-		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
-		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:4"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
+		endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:5", "2001::1:2:3:4"),
+		endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.MustNewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("other.com", endpoint.RecordTypeA, "5.6.7.8"),
+		endpoint.MustNewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.MustNewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
+		endpoint.MustNewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeA, "121.212.121.212"),
-		endpoint.NewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.MustNewEndpoint("old.foo.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.MustNewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.MustNewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "121.212.121.212"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
-		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
-		endpoint.NewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
-		endpoint.NewEndpoint("new.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
-		endpoint.NewEndpoint("new.nope.example.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
+		endpoint.MustNewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.MustNewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.MustNewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.MustNewEndpoint("new.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.MustNewEndpoint("new.nope.example.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, "111.222.111.222"),
-		endpoint.NewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
-		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
-		endpoint.NewEndpoint("deleted.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.MustNewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, "111.222.111.222"),
+		endpoint.MustNewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
+		endpoint.MustNewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.MustNewEndpoint("deleted.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
 	}
 
 	changes := &plan.Changes{

@@ -178,13 +178,17 @@ func (p *NS1Provider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 
 		for _, record := range zoneData.Records {
 			if provider.SupportedRecordType(record.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
+				ep, err := endpoint.NewEndpointWithTTL(
 					record.Domain,
 					record.Type,
 					endpoint.TTL(record.TTL),
 					record.ShortAns...,
-				),
 				)
+				if err != nil {
+					log.Errorf("Failed to create endpoint for record %q: %v", record.Domain, err)
+					continue
+				}
+				endpoints = append(endpoints, ep)
 			}
 		}
 	}

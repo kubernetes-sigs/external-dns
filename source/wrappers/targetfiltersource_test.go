@@ -92,28 +92,28 @@ func TestTargetFilterSourceEndpoints(t *testing.T) {
 			title:   "filter exclusion all",
 			filters: NewMockTargetNetFilter([]string{}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.5"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.6"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.3.4.5"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.4.4.5")},
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.5"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.6"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.3.4.5"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.4.4.5")},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title:   "filter exclude internal net",
 			filters: NewMockTargetNetFilter([]string{"8.8.8.8"}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
-			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
+			expected: []*endpoint.Endpoint{endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
 		},
 		{
 			title:   "filter only internal",
 			filters: NewMockTargetNetFilter([]string{"10.0.0.1"}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
-			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1")},
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
+			expected: []*endpoint.Endpoint{endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1")},
 		},
 	}
 	for _, tt := range tests {
@@ -152,63 +152,63 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 			title:   "should skip filtering if no filters are set",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.5"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.6"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.5"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.6"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.5"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.6"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.5"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "1.2.3.6"),
 			},
 		},
 		{
 			title:   "should include all targets when filters are not correctly set",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"8.8.8.8"}, []string{}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8")},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "8.8.8.8"),
 			},
 		},
 		{
 			title:   "should include internal when include filter is set",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8"}, []string{}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "49.13.41.161")},
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "49.13.41.161")},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.1"),
 			},
 		},
 		{
 			title:   "exclude internal keep public ips",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{"10.0.0.0/8"}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.1.101"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "49.13.41.161")},
-			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "49.13.41.161")},
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.1.101"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "49.13.41.161")},
+			expected: []*endpoint.Endpoint{endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "49.13.41.161")},
 		},
 		{
 			title:   "should not exclude ipv6 when excluding ipv4",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{"10.0.0.0/8"}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1"),
 			},
-			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1")},
+			expected: []*endpoint.Endpoint{endpoint.MustNewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1")},
 		},
 		{
 			title:   "should not include ipv6 when including ipv4",
 			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8"}, []string{}),
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43"),
-				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43"),
+				endpoint.MustNewEndpoint("foo", endpoint.RecordTypeAAAA, "2a01:asdf:asdf:asdf::1"),
 			},
-			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43")},
+			expected: []*endpoint.Endpoint{endpoint.MustNewEndpoint("foo", endpoint.RecordTypeA, "10.0.178.43")},
 		},
 	}
 	for _, tt := range tests {

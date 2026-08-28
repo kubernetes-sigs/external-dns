@@ -213,7 +213,7 @@ func TestCivoProcessCreateActionsLogs(t *testing.T) {
 
 		updateByZone := map[string][]*endpoint.Endpoint{
 			"example.com": {
-				endpoint.NewEndpoint("abc.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("abc.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		}
 		var civoChanges CivoChanges
@@ -275,8 +275,8 @@ func TestCivoProcessCreateActions(t *testing.T) {
 
 	createsByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
-			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
+			endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			endpoint.MustNewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
 		},
 	}
 
@@ -345,8 +345,8 @@ func TestCivoProcessCreateActionsWithError(t *testing.T) {
 
 	createsByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
-			endpoint.NewEndpoint("foo.example.com", "AAAA", "1.2.3.4"),
-			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
+			endpoint.MustNewEndpoint("foo.example.com", "AAAA", "1.2.3.4"),
+			endpoint.MustNewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
 		},
 	}
 
@@ -382,8 +382,8 @@ func TestCivoProcessUpdateActionsWithError(t *testing.T) {
 
 	updatesByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
-			endpoint.NewEndpoint("foo.example.com", "AAAA", "1.2.3.4"),
-			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
+			endpoint.MustNewEndpoint("foo.example.com", "AAAA", "1.2.3.4"),
+			endpoint.MustNewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
 		},
 	}
 
@@ -435,8 +435,8 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 
 	updatesByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
-			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeA, "10.20.30.40"),
-			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "bar.example.com"),
+			endpoint.MustNewEndpoint("txt.example.com", endpoint.RecordTypeA, "10.20.30.40"),
+			endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "bar.example.com"),
 		},
 	}
 
@@ -564,8 +564,8 @@ func TestCivoProcessDeleteAction(t *testing.T) {
 
 	deleteByDomain := map[string][]*endpoint.Endpoint{
 		"example.com": {
-			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "5.6.7.8"),
+			endpoint.MustNewEndpoint("txt.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeA, "5.6.7.8"),
 		},
 	}
 
@@ -687,7 +687,7 @@ func TestCivoApplyChangesError(t *testing.T) {
 			Name: "invalid record type from processCreateActions",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("bad.example.com", "AAAA", "1.2.3.4"),
+					endpoint.MustNewEndpoint("bad.example.com", "AAAA", "1.2.3.4"),
 				},
 			},
 		},
@@ -695,10 +695,10 @@ func TestCivoApplyChangesError(t *testing.T) {
 			Name: "invalid record type from processUpdateActions",
 			changes: &plan.Changes{
 				UpdateOld: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("bad.example.com", "AAAA", "1.2.3.4"),
+					endpoint.MustNewEndpoint("bad.example.com", "AAAA", "1.2.3.4"),
 				},
 				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("bad.example.com", "AAAA", "5.6.7.8"),
+					endpoint.MustNewEndpoint("bad.example.com", "AAAA", "5.6.7.8"),
 				},
 			},
 		},

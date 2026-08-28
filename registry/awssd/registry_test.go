@@ -111,18 +111,18 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("new-record-1.test-zone.example.org", endpoint.RecordTypeCNAME, "new-loadbalancer-1.lb.com"),
+			endpoint.MustNewEndpoint("new-record-1.test-zone.example.org", endpoint.RecordTypeCNAME, "new-loadbalancer-1.lb.com"),
 		},
 		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("foobar.test-zone.example.org", endpoint.RecordTypeA, "1.2.3.4").
+			endpoint.MustNewEndpoint("foobar.test-zone.example.org", endpoint.RecordTypeA, "1.2.3.4").
 				WithLabel(endpoint.OwnerLabelKey, "owner"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("tar.test-zone.example.org", endpoint.RecordTypeCNAME, "new-tar.loadbalancer.com").
+			endpoint.MustNewEndpoint("tar.test-zone.example.org", endpoint.RecordTypeCNAME, "new-tar.loadbalancer.com").
 				WithLabel(endpoint.OwnerLabelKey, "owner"),
 		},
 		UpdateOld: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("tar.test-zone.example.org", endpoint.RecordTypeCNAME, "tar.loadbalancer.com").
+			endpoint.MustNewEndpoint("tar.test-zone.example.org", endpoint.RecordTypeCNAME, "tar.loadbalancer.com").
 				WithLabel(endpoint.OwnerLabelKey, "owner"),
 		},
 	}
@@ -163,7 +163,7 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 }
 
 func newEndpointWithOwnerAndDescription(dnsName, target, recordType, ownerID string, description string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, target)
+	e := endpoint.MustNewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	e.Labels[endpoint.AWSSDDescriptionLabel] = description
 	return e

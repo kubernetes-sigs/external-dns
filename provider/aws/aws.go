@@ -543,11 +543,15 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						targets[idx] = *rr.Value
 					}
 
-					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
-					if r.Type == endpoint.RecordTypeCNAME {
-						ep = ep.WithAliasProperty(endpoint.AliasFalse)
+					ep, err := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
+					if err != nil {
+						log.Errorf("Failed to create endpoint for record %s in zone %s using aws profile %q: %s", *r.Name, *z.zone.Id, z.profile, err)
+					} else {
+						if r.Type == endpoint.RecordTypeCNAME {
+							ep = ep.WithAliasProperty(endpoint.AliasFalse)
+						}
+						newEndpoints = append(newEndpoints, ep)
 					}
-					newEndpoints = append(newEndpoints, ep)
 				}
 
 				if r.AliasTarget != nil {
@@ -556,11 +560,14 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 						ttl = defaultTTL
 					}
 					aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
-					ep := endpoint.
-						NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
-						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
-						WithAliasProperty(endpoint.AliasTrue)
-					newEndpoints = append(newEndpoints, ep)
+					ep, err := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget)
+					if err != nil {
+						log.Errorf("Failed to create endpoint for alias record %s in zone %s using aws profile %q: %s", *r.Name, *z.zone.Id, z.profile, err)
+					} else {
+						ep.WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
+							WithAliasProperty(endpoint.AliasTrue)
+						newEndpoints = append(newEndpoints, ep)
+					}
 				}
 
 				for _, ep := range newEndpoints {

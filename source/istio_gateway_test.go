@@ -1529,7 +1529,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				"version": "v1",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+				endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
 			},
 		},
 		{
@@ -1544,7 +1544,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				"tier":    "backend",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+				endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
 			},
 		},
 		{
@@ -1556,7 +1556,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				"app":     "demo",
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
+				endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "10.10.10.255").WithLabel("resource", "gateway/default/fake-gateway"),
 			},
 		},
 	}
@@ -1898,7 +1898,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	require.NoError(t, err)
 
 	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "gateway/argocd/argocd"),
+		endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "gateway/argocd/argocd"),
 	})
 }
 

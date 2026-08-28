@@ -85,8 +85,9 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 		if len(byType[rt]) == 0 {
 			continue
 		}
-		ep := NewEndpointWithTTL(hostname, rt, ttl, byType[rt]...)
-		if ep == nil {
+		ep, err := NewEndpointWithTTL(hostname, rt, ttl, byType[rt]...)
+		if err != nil {
+			log.Errorf("Failed to create endpoint for %s with targets %v: %v", hostname, byType[rt], err)
 			continue
 		}
 		ep.ProviderSpecific = providerSpecific
@@ -137,7 +138,12 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 	endpoints := make([]*Endpoint, 0, len(sortedHosts)*len(sortedTypes))
 	for _, hostname := range sortedHosts {
 		for _, recordType := range sortedTypes {
-			endpoints = append(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
+			ep, err := NewEndpoint(hostname, recordType, sortedTargets[recordType]...)
+			if err != nil {
+				log.Errorf("Failed to create endpoint for %s with targets %v: %v", hostname, sortedTargets[recordType], err)
+				continue
+			}
+			endpoints = append(endpoints, ep)
 		}
 	}
 	return endpoints

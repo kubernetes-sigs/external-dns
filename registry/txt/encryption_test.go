@@ -291,7 +291,7 @@ func hasPrefixFromSlice(str string, prefixes []string) bool {
 }
 
 func newEndpointWithOwnerAndOwnedRecordWithKeyIDLabel(dnsName, target, recordType, ownerID string, resource string, keyId string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, target)
+	e := endpoint.MustNewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	e.Labels[endpoint.ResourceLabelKey] = resource
 	e.Labels["key-id"] = keyId

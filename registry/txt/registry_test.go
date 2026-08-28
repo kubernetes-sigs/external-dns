@@ -131,7 +131,10 @@ type nilLabelsProvider struct {
 }
 
 func (p *nilLabelsProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
-	ep := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	ep, err := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new endpoint: %w", err)
+	}
 	ep.Labels = nil
 	return []*endpoint.Endpoint{ep}, nil
 }
@@ -166,7 +169,7 @@ func TestTXTRegistry_AdjustEndpoints(t *testing.T) {
 	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 	eps := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	got, err := r.AdjustEndpoints(eps)
 	require.NoError(t, err)
@@ -1163,8 +1166,8 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("noheritage.test-zone.example.org", "random", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("oldformat-otherowner.test-zone.example.org", "bar.loadbalancer.com", endpoint.RecordTypeA, ""),
 			newEndpointWithOwner("oldformat-otherowner.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=otherowner\"", endpoint.RecordTypeTXT, ""),
-			endpoint.NewEndpoint("unmanaged1.test-zone.example.org", endpoint.RecordTypeA, "unmanaged1.loadbalancer.com"),
-			endpoint.NewEndpoint("unmanaged2.test-zone.example.org", endpoint.RecordTypeCNAME, "unmanaged2.loadbalancer.com"),
+			endpoint.MustNewEndpoint("unmanaged1.test-zone.example.org", endpoint.RecordTypeA, "unmanaged1.loadbalancer.com"),
+			endpoint.MustNewEndpoint("unmanaged2.test-zone.example.org", endpoint.RecordTypeCNAME, "unmanaged2.loadbalancer.com"),
 			newEndpointWithOwner("this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
@@ -1272,8 +1275,8 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			newEndpointWithOwner("noheritage.test-zone.example.org", "random", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("oldformat-otherowner.test-zone.example.org", "bar.loadbalancer.com", endpoint.RecordTypeA, ""),
 			newEndpointWithOwner("txt.oldformat-otherowner.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=otherowner\"", endpoint.RecordTypeTXT, ""),
-			endpoint.NewEndpoint("unmanaged1.test-zone.example.org", endpoint.RecordTypeA, "unmanaged1.loadbalancer.com"),
-			endpoint.NewEndpoint("unmanaged2.test-zone.example.org", endpoint.RecordTypeCNAME, "unmanaged2.loadbalancer.com"),
+			endpoint.MustNewEndpoint("unmanaged1.test-zone.example.org", endpoint.RecordTypeA, "unmanaged1.loadbalancer.com"),
+			endpoint.MustNewEndpoint("unmanaged2.test-zone.example.org", endpoint.RecordTypeCNAME, "unmanaged2.loadbalancer.com"),
 		},
 	})
 	require.NoError(t, err)

@@ -284,12 +284,12 @@ type Endpoint struct {
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
-func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
+func NewEndpoint(dnsName, recordType string, targets ...string) (*Endpoint, error) {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
-func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
+func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) (*Endpoint, error) {
 	cleanTargets := make([]string, len(targets))
 	for idx, target := range targets {
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
@@ -305,8 +305,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 
 	for label := range strings.SplitSeq(dnsName, ".") {
 		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
+			return nil, fmt.Errorf("label %s in %s is longer than 63 characters", label, dnsName)
 		}
 	}
 
@@ -316,7 +315,21 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		RecordType: recordType,
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,
+	}, nil
+}
+
+// MustNewEndpoint builds an endpoint and panic if creation fails.
+func MustNewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
+	return MustNewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
+}
+
+// MustNewEndpointWithTTL builds an endpoint with a TTL and panic if creation fails.
+func MustNewEndpointWithTTL(dnsName string, recordType string, ttl TTL, targets ...string) *Endpoint {
+	e, err := NewEndpointWithTTL(dnsName, recordType, ttl, targets...)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create endpoint for %s with type %s: %v", dnsName, recordType, err))
 	}
+	return e
 }
 
 // WithSetIdentifier applies the given set identifier to the endpoint.
@@ -528,7 +541,7 @@ func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, err
 		return nil, fmt.Errorf("failed to compute reverse address for %s: %w", target, err)
 	}
 	ptrName := strings.TrimSuffix(revAddr, ".")
-	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
+	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...)
 }
 
 // String returns a human-readable representation of the endpoint in zone-file style.

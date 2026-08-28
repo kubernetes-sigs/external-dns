@@ -417,9 +417,9 @@ func getSubname(domain string, ep *endpoint.Endpoint) string {
 
 func createDefaultEndpoints(domain string) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
-		endpoint.NewEndpointWithTTL("abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
-		endpoint.NewEndpointWithTTL("a-abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.MustNewEndpointWithTTL("abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.MustNewEndpointWithTTL("a-abc."+domain, "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.MustNewEndpointWithTTL("abc."+domain, "A", 300, "1.2.3.4"),
 	}
 
 	return endpoints
@@ -444,15 +444,15 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	provider := newTestAlibabaCloudProvider(false)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
-			endpoint.NewEndpointWithTTL("ttl.container-service.top", "A", defaultTTL, "4.3.2.1"),
+			endpoint.MustNewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
+			endpoint.MustNewEndpointWithTTL("ttl.container-service.top", "A", defaultTTL, "4.3.2.1"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
-			endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+			endpoint.MustNewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+			endpoint.MustNewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+			endpoint.MustNewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 	}
 
@@ -464,8 +464,8 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	require.NoError(t, err, "Failed to get records: %v", err)
 
 	changedEndpoints := append([]*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
-		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.MustNewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+		endpoint.MustNewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 	}, changes.Create...)
 
 	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
@@ -477,15 +477,15 @@ func TestAlibabaCloudProvider_ApplyChanges_UndefinedZoneDomain(t *testing.T) {
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
 			// no found this zone by API: DescribeDomains
-			endpoint.NewEndpointWithTTL("www.example.com", "A", 300, "9.9.9.9"),
+			endpoint.MustNewEndpointWithTTL("www.example.com", "A", 300, "9.9.9.9"),
 			// can create this domain record
-			endpoint.NewEndpointWithTTL("ttl.container-service.top", "A", defaultTTL, "4.3.2.1"),
+			endpoint.MustNewEndpointWithTTL("ttl.container-service.top", "A", defaultTTL, "4.3.2.1"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+			endpoint.MustNewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
 		},
 		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+			endpoint.MustNewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 	}
 
@@ -497,8 +497,8 @@ func TestAlibabaCloudProvider_ApplyChanges_UndefinedZoneDomain(t *testing.T) {
 	require.NoError(t, err, "Failed to get records: %v", err)
 
 	changedEndpoints := append([]*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
-		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.MustNewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+		endpoint.MustNewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 	}, changes.Create[1]) // Only one new one was created
 
 	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
@@ -524,14 +524,14 @@ func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
 	provider := newTestAlibabaCloudProvider(true)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
+			endpoint.MustNewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
-			endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+			endpoint.MustNewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+			endpoint.MustNewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+			endpoint.MustNewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 		},
 	}
 
@@ -543,8 +543,8 @@ func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
 	require.NoError(t, err, "Failed to get records: %v", err)
 
 	changedEndpoints := append([]*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
-		endpoint.NewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.MustNewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4", "5.6.7.8"),
+		endpoint.MustNewEndpointWithTTL("a-abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\""),
 	}, changes.Create...)
 
 	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))

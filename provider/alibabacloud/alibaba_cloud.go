@@ -340,7 +340,11 @@ func (p *AlibabaCloudProvider) recordsForDNS() ([]*endpoint.Endpoint, error) {
 		for _, record := range recordList {
 			targets = append(targets, record.Value)
 		}
-		ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+		ep, err := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+		if err != nil {
+			log.Errorf("Failed to create endpoint for %s: %v", name, err)
+			continue
+		}
 		endpoints = append(endpoints, ep)
 	}
 	return endpoints, nil
@@ -836,7 +840,11 @@ func (p *AlibabaCloudProvider) privateZoneRecords() ([]*endpoint.Endpoint, error
 			for _, record := range recordList {
 				targets = append(targets, record.Value)
 			}
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			ep, err := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			if err != nil {
+				log.Errorf("Failed to create endpoint for %s: %v", name, err)
+				continue
+			}
 			endpoints = append(endpoints, ep)
 		}
 	}

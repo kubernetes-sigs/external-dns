@@ -94,37 +94,37 @@ func TestPTRSource(t *testing.T) {
 			name:           "TTL preserved",
 			defaultEnabled: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("web.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("web.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("web.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 300, "web.example.com"),
+				endpoint.MustNewEndpointWithTTL("web.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 300, "web.example.com"),
 			},
 		},
 		{
 			name:           "conflicting TTLs use minimum",
 			defaultEnabled: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 60, "a.example.com", "b.example.com"),
+				endpoint.MustNewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 60, "a.example.com", "b.example.com"),
 			},
 		},
 		{
 			name:           "conflicting TTLs use minimum reversed order",
 			defaultEnabled: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
-				endpoint.NewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 60, "a.example.com", "b.example.com"),
+				endpoint.MustNewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 60, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("b.example.com", endpoint.RecordTypeA, 300, "10.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("1.0.0.10.in-addr.arpa", endpoint.RecordTypePTR, 60, "a.example.com", "b.example.com"),
 			},
 		},
 	}
@@ -151,7 +151,7 @@ func TestPTRSource(t *testing.T) {
 func TestPTRSource_AnnotationOverride(t *testing.T) {
 	t.Run("annotation opts in when flag is off", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
-			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
+			endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
 				WithProviderSpecific(endpoint.ProviderSpecificRecordType, "ptr"),
 		}
 		mockSource := testutils.NewMockSource(eps...)
@@ -167,7 +167,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 
 	t.Run("annotation opts out when flag is on", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
-			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
+			endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").
 				WithProviderSpecific(endpoint.ProviderSpecificRecordType, ""),
 		}
 		mockSource := testutils.NewMockSource(eps...)
@@ -182,7 +182,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 
 	t.Run("no annotation uses flag default true", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
-			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+			endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, true)
@@ -193,7 +193,7 @@ func TestPTRSource_AnnotationOverride(t *testing.T) {
 
 	t.Run("no annotation uses flag default false", func(t *testing.T) {
 		eps := []*endpoint.Endpoint{
-			endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+			endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
 		}
 		mockSource := testutils.NewMockSource(eps...)
 		src := NewPTRSource(mockSource, false)

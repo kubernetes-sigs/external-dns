@@ -501,7 +501,11 @@ func (m *mockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 	endpoints := changes.Create
 	m.records = make([]*endpoint.Endpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
-		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...).WithSetIdentifier(ep.SetIdentifier)
+		newEp, err := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...)
+		if err != nil {
+			return fmt.Errorf("failed to create new endpoint: %w", err)
+		}
+		newEp.WithSetIdentifier(ep.SetIdentifier)
 		newEp.Labels = endpoint.NewLabels()
 		maps.Copy(newEp.Labels, ep.Labels)
 		newEp.ProviderSpecific = append(endpoint.ProviderSpecific(nil), ep.ProviderSpecific...)

@@ -61,7 +61,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com"},
 			targets:   []string{"192.168.1.1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
 			},
 		},
 		{
@@ -69,7 +69,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com"},
 			targets:   []string{"2001:db8::1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
 			},
 		},
 		{
@@ -77,7 +77,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com"},
 			targets:   []string{"lb.example.com"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com", "example.com"},
 			targets:   []string{"192.168.1.1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
 			},
 		},
 		{
@@ -93,7 +93,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com"},
 			targets:   []string{"192.168.1.1", "192.168.1.1", "192.168.1.2"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1", "192.168.1.2"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1", "192.168.1.2"),
 			},
 		},
 		{
@@ -101,7 +101,7 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com."},
 			targets:   []string{"192.168.1.1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
 			},
 		},
 		{
@@ -109,8 +109,8 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com", "example.com"},
 			targets:   []string{"192.168.1.1", "192.168.1.1", "2001:db8::1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
 			},
 		},
 		{
@@ -118,8 +118,8 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com", "www.example.com"},
 			targets:   []string{"192.168.1.1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
-				endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("www.example.com", endpoint.RecordTypeA, "192.168.1.1"),
 			},
 		},
 		{
@@ -127,9 +127,9 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com"},
 			targets:   []string{"192.168.1.1", "2001:db8::1", "lb.example.com"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -137,9 +137,9 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"example.com"},
 			targets:   []string{"192.168.1.1", "192.168.1.2", "2001:db8::1", "2001:db8::2", "a.example.com", "b.example.com"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1", "192.168.1.2"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1", "2001:db8::2"),
-				endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.example.com", "b.example.com"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "192.168.1.1", "192.168.1.2"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001:db8::1", "2001:db8::2"),
+				endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeCNAME, "a.example.com", "b.example.com"),
 			},
 		},
 		{
@@ -147,8 +147,8 @@ func TestEndpointsForHostsAndTargets(t *testing.T) {
 			hostnames: []string{"z.example.com", "a.example.com"},
 			targets:   []string{"192.168.1.1"},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "192.168.1.1"),
-				endpoint.NewEndpoint("z.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("a.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+				endpoint.MustNewEndpoint("z.example.com", endpoint.RecordTypeA, "192.168.1.1"),
 			},
 		},
 	}

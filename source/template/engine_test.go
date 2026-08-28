@@ -648,10 +648,10 @@ func TestCombineWithEndpoints(t *testing.T) {
 	require.NoError(t, err)
 
 	annotationEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.MustNewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 	}
 	templatedEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("template.example.com", endpoint.RecordTypeA, "5.6.7.8"),
+		endpoint.MustNewEndpoint("template.example.com", endpoint.RecordTypeA, "5.6.7.8"),
 	}
 
 	successTemplateFunc := func() ([]*endpoint.Endpoint, error) {

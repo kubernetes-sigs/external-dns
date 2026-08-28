@@ -91,7 +91,7 @@ func TestAliasNormalizingMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ep := endpoint.NewEndpoint("example.com", tt.recordType, "target.example.com")
+			ep := endpoint.MustNewEndpoint("example.com", tt.recordType, "target.example.com")
 			if tt.aliasIn != endpoint.AliasNone {
 				ep = ep.WithProviderSpecific(endpoint.ProviderSpecificAlias, string(tt.aliasIn))
 			}
