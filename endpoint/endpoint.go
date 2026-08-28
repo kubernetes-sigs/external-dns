@@ -283,22 +283,22 @@ type ObjectRef = events.ObjectReference
 
 // This schema also validates the DNSRecord objects the crd registry writes, where
 // external-dns is the author: a rejected write is not user feedback, it aborts
-// ApplyChanges before the provider is called. So a rule may only reject what
-// external-dns cannot legitimately build. That rules out counting targets — a
-// Service whose load balancer publishes several hostnames yields a multi-target
-// CNAME — and constraining A/AAAA targets, which are hostnames on providers with
-// native alias records.
+// ApplyChanges before the provider is called.
+//
+// So a rule may only reject what external-dns cannot legitimately build. That rules
+// out counting targets — a Service whose load balancer publishes several hostnames
+// yields a multi-target CNAME — and constraining A/AAAA targets, which are hostnames
+// on providers with native alias records.
 //
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
 // The SRV and MX field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord, which the sources run when they read the object. The SRV rule
-// below only checks that the host is absolute, for the same reason.
+// ValidateMXRecord, which the sources run when they read the object.
 //
 // DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
 // pattern accepts the trailing dot of an absolute name; its rule enforces the real
-// limit. The bound has to stay: every rule reading dnsName is priced from it, and an
-// unbounded string prices the PTR rule at the maximum request size.
+// limit. The bound cannot be dropped: an unbounded string prices the PTR rule below
+// at the maximum request size.
 
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true

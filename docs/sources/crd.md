@@ -155,13 +155,9 @@ across several `DNSEndpoint` objects, keeping each record in one object: targets
 be split, and two objects declaring the same `dnsName` and `recordType` conflict —
 external-dns publishes one and drops the other instead of merging their targets.
 
-The schema does not count or constrain targets beyond that, because it also validates
-the `DNSRecord` objects the [CRD registry](../registry/crd.md) writes, where external-dns
-is the author: a rejected write there aborts the sync rather than teaching anyone
-anything. A rule may only reject what external-dns cannot legitimately build, which rules
-out capping `CNAME` targets — a load balancer publishing several hostnames yields a
-multi-target `CNAME` — and constraining `A`/`AAAA` targets, which are hostnames on
-providers with native alias records.
+This schema also validates the `DNSRecord` objects the [CRD registry](../registry/crd.md)
+writes, where a rejected write aborts the sync instead of teaching anyone anything. So a
+rule should not reject what external-dns can legitimately build.
 
 The rest is checked when external-dns reads the object, before anything is planned. A
 rejected endpoint is dropped from the plan and reported in the external-dns log:
