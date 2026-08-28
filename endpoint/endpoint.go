@@ -289,7 +289,13 @@ type ObjectRef = events.ObjectReference
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
 // The SRV and MX field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord, which the sources run when they read the object.
+// ValidateMXRecord, which the sources run when they read the object. The SRV rule
+// below only checks that the host is absolute, for the same reason.
+//
+// DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
+// pattern accepts the trailing dot of an absolute name; its rule enforces the real
+// limit. The bound has to stay: every rule reading dnsName is priced from it, and an
+// unbounded string prices the PTR rule at the maximum request size.
 
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
@@ -297,10 +303,12 @@ type ObjectRef = events.ObjectReference
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="NAPTR targets must be absolute and end with a dot"
 // +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'"
 type Endpoint struct {
-	// DNSName is the hostname of the DNS record.
+	// DNSName is the hostname of the DNS record. It is at most 253 characters, or 254
+	// written as an absolute name with a trailing dot.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:MaxLength=254
+	// +kubebuilder:validation:XValidation:rule="self.size() <= (self.endsWith('.') ? 254 : 253)",message="dnsName must be at most 253 characters, or 254 including the trailing dot"
 	// +kubebuilder:validation:Pattern=`^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$`
 	DNSName string `json:"dnsName,omitempty"`
 	// Targets are the values the DNS record points to. Leaving it empty is only

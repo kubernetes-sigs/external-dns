@@ -47,11 +47,16 @@ spec:
                     description: Endpoint is a high-level way of a connection between a service and an IP
                     properties:
                       dnsName:
-                        description: DNSName is the hostname of the DNS record.
-                        maxLength: 253
+                        description: |-
+                          DNSName is the hostname of the DNS record. It is at most 253 characters, or 254
+                          written as an absolute name with a trailing dot.
+                        maxLength: 254
                         minLength: 1
                         pattern: ^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$
                         type: string
+                        x-kubernetes-validations:
+                          - message: dnsName must be at most 253 characters, or 254 including the trailing dot
+                            rule: 'self.size() <= (self.endsWith(''.'') ? 254 : 253)'
                       labels:
                         additionalProperties:
                           type: string
