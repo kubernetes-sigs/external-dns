@@ -1814,13 +1814,13 @@ func TestNewEndpointWithTTLMXTargets(t *testing.T) {
 		expected string
 	}{
 		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
-		{"already undotted", "10 mail.example.com", "10 mail.example.com"},
+		{"already canonical", "10 mail.example.com", "10 mail.example.com"},
 		// RFC 7505: the dot is the host
 		{"null MX preserved", "0 .", "0 ."},
 		{"malformed left alone", "mail.example.com.", "mail.example.com."},
-		// only the dot is touched, else these diff against sources that pass them through
-		{"whitespace kept", "10   mail.example.com.", "10   mail.example.com"},
-		{"leading zero kept", "010 mail.example.com", "010 mail.example.com"},
+		{"whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
+		{"leading zero dropped", "010 mail.example.com", "10 mail.example.com"},
+		{"surrounding space trimmed", "  10 mail.example.com  ", "10 mail.example.com"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

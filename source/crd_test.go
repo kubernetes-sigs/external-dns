@@ -661,8 +661,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 	}
 }
 
-// MX targets are normalized rather than rejected, so a dotted host stops diffing against the
-// undotted one providers read back.
+// MX targets are normalized rather than rejected, else they diff against the provider's rendering.
 func TestCRDSourceNormalizesMXTargets(t *testing.T) {
 	for _, ti := range []struct {
 		title  string
@@ -670,7 +669,9 @@ func TestCRDSourceNormalizesMXTargets(t *testing.T) {
 		want   string
 	}{
 		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
-		{"already undotted", "10 mail.example.com", "10 mail.example.com"},
+		{"already canonical", "10 mail.example.com", "10 mail.example.com"},
+		{"whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
+		{"leading zero dropped", "010 mail.example.com", "10 mail.example.com"},
 		{"null MX preserved", "0 .", "0 ."},
 		{"unparseable left alone", "example.com.", "example.com."},
 	} {

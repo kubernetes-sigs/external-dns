@@ -288,14 +288,18 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
-// TrimMXTarget drops the trailing dot from an MX target. Unparseable ones and the null MX
-// "0 ." (RFC 7505, the dot is the host) are returned as-is, as is spacing and priority.
-func TrimMXTarget(target string) string {
+// NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
+// Unparseable targets pass through; the null MX "0 ." (RFC 7505) keeps its dot, which is the host.
+func NormalizeMXTarget(target string) string {
 	mx, err := NewMXRecord(target)
-	if err != nil || mx.GetHost() == "." {
+	if err != nil {
 		return target
 	}
-	return strings.TrimSuffix(target, ".")
+	host := mx.GetHost()
+	if host != "." {
+		host = strings.TrimSuffix(host, ".")
+	}
+	return fmt.Sprintf("%d %s", *mx.GetPriority(), host)
 }
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
@@ -309,7 +313,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV:
 			cleanTargets[idx] = target
 		case RecordTypeMX:
-			cleanTargets[idx] = TrimMXTarget(target)
+			cleanTargets[idx] = NormalizeMXTarget(target)
 		default:
 			cleanTargets[idx] = strings.TrimSuffix(target, ".")
 		}

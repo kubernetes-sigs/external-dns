@@ -670,8 +670,6 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
 		}
 
-		normalizeMXTargets(e)
-
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
@@ -683,20 +681,6 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
-}
-
-// normalizeMXTargets renders MX targets the way the read path does, so both sides of the plan match.
-func normalizeMXTargets(ep *endpoint.Endpoint) {
-	if ep.RecordType != endpoint.RecordTypeMX {
-		return
-	}
-	for i, target := range ep.Targets {
-		mx, err := endpoint.NewMXRecord(target)
-		if err != nil {
-			continue // newCloudFlareChange reports malformed targets
-		}
-		ep.Targets[i] = fmt.Sprintf("%d %s", *mx.GetPriority(), cloudflareHost(mx.GetHost()))
-	}
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -782,7 +766,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
 			priority = float64(*mxRecord.GetPriority())
-			// undotted, else getRecordID cannot match the DNSRecordIndex built from the API
+			// undotted, else getRecordID cannot match the DNSRecordIndex
 			target = cloudflareHost(mxRecord.GetHost())
 		}
 	}

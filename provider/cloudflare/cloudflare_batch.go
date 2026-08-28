@@ -182,7 +182,7 @@ func tagsFromResponse(tags any) []dns.RecordTagsParam {
 	return nil
 }
 
-// cloudflareHost drops the trailing dot Cloudflare never stores. The root "." is itself a host:
+// cloudflareHost drops the trailing dot Cloudflare never stores. Root "." is itself a host:
 // SRV "no service" (RFC 2782), null MX (RFC 7505).
 func cloudflareHost(host string) string {
 	if host == "." {
