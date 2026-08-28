@@ -122,8 +122,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				case endpoint.RecordTypeTXT:
 					continue // no format constraint on targets
 				case endpoint.RecordTypeMX:
-					// normalized, not rejected: every other source gets this from
-					// NewEndpointWithTTL, so a dotted host would diff on every reconcile
+					// normalized, to avoid reconcile diff on dotted host
 					ep.Targets[i] = endpoint.TrimMXTarget(target)
 					continue
 				case endpoint.RecordTypeSRV:

@@ -685,8 +685,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 	return adjustedEndpoints, nil
 }
 
-// normalizeMXTargets renders MX targets the way the read path does, so both sides of the plan
-// match. Spacing and priority included, since the read path builds every target with Sprintf.
+// normalizeMXTargets renders MX targets the way the read path does, so both sides of the plan match.
 func normalizeMXTargets(ep *endpoint.Endpoint) {
 	if ep.RecordType != endpoint.RecordTypeMX {
 		return
