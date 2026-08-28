@@ -32,9 +32,6 @@ daemon for testing.
 
 ## Alternative: Vendor-Hardened Images
 
-Rolling your own with `build.image-fips` proves the mechanism works, but the ongoing burden - tracking
-module/certificate staleness, rebuild cadence, and producing audit-ready evidence - stays with your team.
-
 Vendors like [Chainguard](https://images.chainguard.dev/directory/image/external-dns-fips/overview) ship a pre-built
 `external-dns-fips` image and carry that burden as part of a support relationship: daily rebuilds, SLSA Level 3
 provenance, and Sigstore-signed attestations. Their kernel-independence is achieved differently from what's described
@@ -42,9 +39,6 @@ above, though - Chainguard relocates the SP 800-90B entropy source into userspac
 [Jitter Entropy Library](https://www.chainguard.dev/unchained/kernel-independent-fips-images), rather than Go's native
 FIPS 140-3 module. Both approaches avoid depending on a FIPS-enabled kernel, just via different mechanisms - see also
 Chainguard's [overview of when/where/why FIPS-validated images are needed](https://www.chainguard.dev/unchained/fips-validated-container-images-when-where-why).
-
-If an auditor wants outside evidence of a continuously maintained compliance boundary, a vendor image is usually the
-better fit than self-building.
 
 ## Using It with AWS
 
