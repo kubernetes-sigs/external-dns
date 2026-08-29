@@ -111,17 +111,20 @@ configuration synthesized from the CRD spec.
                          │ ExternalDNS deployment                         │
                          │                                                │
   DNSProvider ───────────►  watch ──► pipeline manager                    │
-  ClusterDNSProvider ────►          │   ├─ pipeline A (route53, zoneA)     │
-                         │          │   ├─ pipeline B (cloudflare, zoneB)  │
-  shared informers ──────►  Source ─┤   └─ pipeline C (rfc2136, internal)  │
-  (svc/ingress/routes)   │  store   │        each: own provider+registry   │
-                         │          │        own txt-owner-id, own loop    │
+  ClusterDNSProvider ────►          │        │                            │
+                         │          │        ▼                            │
+                         │          │   routing pass ──┬─ pipeline A      │
+  shared informers ──────►  Source ─┘   (snapshot)     ├─ pipeline B      │
+  (svc/ingress/routes)   │  store                      └─ pipeline C      │
+                         │                                                │
+                         │   each pipeline: own provider+registry,        │
+                         │   own txt-owner-id, own loop                   │
                          └──────────────────────────────────────────────┘
 ```
 
 The Source store (Kubernetes informers for Services / Ingresses / Gateway routes / CRDs) is **shared**:
-informers are created once, and each pipeline filters the shared endpoint set down to the records it
-owns (see [Routing](#routing-endpoints-to-a-provider)).
+informers are created once, the manager queries the store on each refresh, and the
+[routing pass](#routing-endpoints-to-a-provider) slices that single endpoint set into per-pipeline subsets.
 
 ### User Stories
 
@@ -244,7 +247,8 @@ A **pipeline manager** watches both CRD kinds:
   [`providerfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go#L110)
   and
   [`registryfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go#L159),
-  and construct a `Controller` bound to the shared source. Start its reconcile loop.
+  and construct a `Controller` bound to this pipeline's routed `Source` view (see
+  [Routing](#routing-endpoints-to-a-provider)). Start its reconcile loop.
 - **Update** (`spec` changed, `observedGeneration < generation`) — rebuild the pipeline; swap atomically.
 - **Delete** — stop the loop, drain in-flight work. **Records are not deleted** on CRD removal; ownership
   cleanup remains an explicit operator action (consistent with how stopping a deployment behaves today).
@@ -263,6 +267,10 @@ builds a **routing table** (`endpoint → []pipeline`) over the full pre-merge e
 as an immutable snapshot. Pipelines keep their independent loops and read their own subset from the current
 snapshot when their `RunOnce` fires — the snapshot is rebuilt on source and CRD events, not per pipeline
 tick, so pipelines on different schedules route consistently.
+
+The snapshot is a pipeline's **only** path to source endpoints: each pipeline is built with a thin `Source`
+view backed by its own subset, rather than a handle on the shared store, so `Controller.RunOnce` keeps
+calling `Source.Endpoints()` unchanged.
 
 The table is built with a **two-tier rule** (explicit reference wins, domain match is the fallback):
 
@@ -385,8 +393,8 @@ phase 6 performs the breaking flag removal at the major-version boundary:
 2. **Per-pipeline credential/config boundary** — add a per-pipeline credential source at the provider
    factory boundary; synthesize the source from `spec`. *Acceptance*: two same-type pipelines with
    distinct credentials run concurrently; no global-env mutation. Unit-tested without K8s.
-3. **Pipeline manager** — watch CRDs, build/teardown pipelines via existing factories, shared source store,
-   and the shared routing pass (routing-table snapshot rebuilt on source/CRD events). Domain-match routing
+3. **Pipeline manager** — watch CRDs, build/teardown pipelines via existing factories, manager-owned source
+   store, and the shared routing pass (snapshot rebuilt on source/CRD events). Domain-match routing
    only. *Acceptance*: a record matched by two providers' `domainFilter`s is published by neither and
    raises a `Warning` + metric; pipelines on different tick schedules read the same snapshot.
 4. **Explicit reference annotations + split-horizon** — pre-merge two-tier routing, list references.
