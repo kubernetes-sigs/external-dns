@@ -16,7 +16,7 @@
 # build-fips-image.sh
 #
 # Builds a FIPS 140-3 flagged variant of the external-dns image, using Go's
-# native FIPS 140-3 module (see https://go.dev/doc/security/fips140). 
+# native FIPS 140-3 module (see https://go.dev/doc/security/fips140).
 #
 # Usage:
 #   ./scripts/build-fips-image.sh [-h|--help]
