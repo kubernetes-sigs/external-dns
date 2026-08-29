@@ -148,6 +148,63 @@ Concrete instances of the risk described above, to help diagnose issues if you h
   correctly under 1.27+, but deleting or updating them regenerates a byte-different ciphertext, which
   some providers may reject as a value mismatch. The record self-heals once external-dns recreates it.
 
+### AES Key Rotation
+
+Rotating the encryption key is a manual, stop-the-world operation — external-dns only holds one key
+at a time and cannot decrypt records under an old key while encrypting new ones mid-flight.
+
+1. **Stop external-dns** (scale the deployment to 0 or pause it) before starting the migration below,
+   so nothing else is writing to the zone concurrently.
+2. For every existing encrypted TXT record in the zone — there's no ready-made tool for this, write a
+   small CLI using your DNS provider's SDK to list them:
+   - Decrypt with the old key: `endpoint.NewLabelsFromString(value, oldKey)`.
+   - Remove the internal nonce label so a fresh one gets generated on re-encrypt.
+   - Re-encrypt with the new key: `labels.Serialize(true, true, newKey)`.
+   - Write the new value back to the provider via its API.
+3. Once all records are migrated, update `--txt-encrypt-aes-key` (or the backing secret) to the new
+   key.
+4. Run external-dns once with `--dry-run` (pointed at the new key) and check the logs before applying
+   for real:
+   - Confirm no unexpected creates/updates/deletes (DNS record drift).
+   - Confirm no decryption errors are logged.
+5. Restart external-dns without `--dry-run`. On the next reconcile it will decrypt every record
+   successfully under the new key.
+
+> **Note:** There is no built-in `external-dns` command or generic CLI provided by this repository
+> for this — you'll need to build one against your provider's SDK. If you build something generic
+> enough to be reusable across providers, or learn something worth sharing along the way, please
+> consider contributing it back or updating this guide.
+
+### Best Practices
+
+- **Run two (or more) external-dns instances instead of encrypting everything.** One instance
+  without `--txt-encrypt-enabled` for records that don't carry sensitive metadata; a second instance
+  with `--txt-encrypt-enabled` + `--txt-encrypt-aes-key`, scoped to only the resources that actually
+  need it.
+- **Don't encrypt by default.** Encryption isn't free — it adds CPU overhead per reconcile and
+  carries the risks noted in [Known Breaking Changes](#known-breaking-changes) above. Private/
+  internal-only records whose metadata (ingress name, namespace, resource path) isn't sensitive
+  generally don't need it.
+- **Scope the encrypting instance with `--label-filter`** so only resources explicitly opted in get
+  encrypted, rather than blanket-encrypting a whole cluster. Pick one label convention and apply it
+  consistently:
+
+  | Label key                   | Label value    | `--label-filter`                                    |
+  | ---------------------------- | -------------- | ---------------------------------------------------- |
+  | `external-dns/txt-encrypt`   | `true`         | `--label-filter=external-dns/txt-encrypt=true`        |
+  | `external-dns.io/sensitive`  | `true`         | `--label-filter=external-dns.io/sensitive=true`       |
+  | `security-tier`              | `confidential` | `--label-filter=security-tier=confidential`           |
+
+  Point the non-encrypting instance at the inverse selector (e.g.
+  `--label-filter='external-dns/txt-encrypt notin (true)'`) so the two instances don't both pick up
+  the same resource.
+- **Have a disaster-recovery plan for TXT records, regardless of encryption.** TXT records are the
+  only record of external-dns's ownership metadata — losing or corrupting them (accidental deletion,
+  botched migration, provider outage) can cause external-dns to lose track of what it owns, leading
+  to orphaned records or unintended recreation/deletion. Back up zone contents (including TXT
+  records) and document a recovery procedure before you need it; this applies equally whether
+  encryption is enabled or not.
+
 ### Generating the TXT Encryption Key
 
 Python
@@ -227,63 +284,6 @@ func main() {
 	}
 }
 ```
-
-### AES Key Rotation
-
-Rotating the encryption key is a manual, stop-the-world operation — external-dns only holds one key
-at a time and cannot decrypt records under an old key while encrypting new ones mid-flight.
-
-1. **Stop external-dns** (scale the deployment to 0 or pause it) before starting the migration below,
-   so nothing else is writing to the zone concurrently.
-2. For every existing encrypted TXT record in the zone — there's no ready-made tool for this, write a
-   small CLI using your DNS provider's SDK to list them:
-   - Decrypt with the old key: `endpoint.NewLabelsFromString(value, oldKey)`.
-   - Remove the internal nonce label so a fresh one gets generated on re-encrypt.
-   - Re-encrypt with the new key: `labels.Serialize(true, true, newKey)`.
-   - Write the new value back to the provider via its API.
-3. Once all records are migrated, update `--txt-encrypt-aes-key` (or the backing secret) to the new
-   key.
-4. Run external-dns once with `--dry-run` (pointed at the new key) and check the logs before applying
-   for real:
-   - Confirm no unexpected creates/updates/deletes (DNS record drift).
-   - Confirm no decryption errors are logged.
-5. Restart external-dns without `--dry-run`. On the next reconcile it will decrypt every record
-   successfully under the new key.
-
-> **Note:** There is no built-in `external-dns` command or generic CLI provided by this repository
-> for this — you'll need to build one against your provider's SDK. If you build something generic
-> enough to be reusable across providers, or learn something worth sharing along the way, please
-> consider contributing it back or updating this guide.
-
-### Best Practices
-
-- **Run two (or more) external-dns instances instead of encrypting everything.** One instance
-  without `--txt-encrypt-enabled` for records that don't carry sensitive metadata; a second instance
-  with `--txt-encrypt-enabled` + `--txt-encrypt-aes-key`, scoped to only the resources that actually
-  need it.
-- **Don't encrypt by default.** Encryption isn't free — it adds CPU overhead per reconcile and
-  carries the risks noted in [Known Breaking Changes](#known-breaking-changes) above. Private/
-  internal-only records whose metadata (ingress name, namespace, resource path) isn't sensitive
-  generally don't need it.
-- **Scope the encrypting instance with `--label-filter`** so only resources explicitly opted in get
-  encrypted, rather than blanket-encrypting a whole cluster. Pick one label convention and apply it
-  consistently:
-
-  | Label key                   | Label value    | `--label-filter`                                    |
-  | ---------------------------- | -------------- | ---------------------------------------------------- |
-  | `external-dns/txt-encrypt`   | `true`         | `--label-filter=external-dns/txt-encrypt=true`        |
-  | `external-dns.io/sensitive`  | `true`         | `--label-filter=external-dns.io/sensitive=true`       |
-  | `security-tier`              | `confidential` | `--label-filter=security-tier=confidential`           |
-
-  Point the non-encrypting instance at the inverse selector (e.g.
-  `--label-filter='external-dns/txt-encrypt notin (true)'`) so the two instances don't both pick up
-  the same resource.
-- **Have a disaster-recovery plan for TXT records, regardless of encryption.** TXT records are the
-  only record of external-dns's ownership metadata — losing or corrupting them (accidental deletion,
-  botched migration, provider outage) can cause external-dns to lose track of what it owns, leading
-  to orphaned records or unintended recreation/deletion. Back up zone contents (including TXT
-  records) and document a recovery procedure before you need it; this applies equally whether
-  encryption is enabled or not.
 
 ## Caching
 
