@@ -131,6 +131,23 @@ key must be specified in URL-safe base64 form (recommended) or be a plain text, 
 
 Note that the key used for encryption should be a secure key and properly managed to ensure the security of your TXT records.
 
+> **Note:** Encryption is provided on a best-effort basis and enabling it carries some inherent risk.
+> Encrypted TXT record values depend on implementation details of the Go standard library and its
+> dependencies, which are not guaranteed to stay stable across releases. Future changes to
+> external-dns's Go toolchain or dependencies could affect encrypted records in ways not
+> foreseeable today, potentially including failures to read, update, or delete existing records.
+> Enable encryption with this risk in mind.
+
+### Known Breaking Changes
+
+Concrete instances of the risk described above, to help diagnose issues if you hit one:
+
+- **Go 1.27 (`compress/flate` encoder rewrite):** external-dns binaries built with Go 1.27+ compress
+  encrypted TXT record payloads differently than binaries built with Go 1.26 and earlier ([Go 1.27
+  release notes](https://go.dev/doc/go1.27#compressflatepkgcompressflate)). Records encrypted by a pre-1.27 build still decrypt
+  correctly under 1.27+, but deleting or updating them regenerates a byte-different ciphertext, which
+  some providers may reject as a value mismatch. The record self-heals once external-dns recreates it.
+
 ### Generating the TXT Encryption Key
 
 Python
@@ -210,6 +227,30 @@ func main() {
 	}
 }
 ```
+
+### Best Practices
+
+- **Run two (or more) external-dns instances instead of encrypting everything.** One instance
+  without `--txt-encrypt-enabled` for records that don't carry sensitive metadata; a second instance
+  with `--txt-encrypt-enabled` + `--txt-encrypt-aes-key`, scoped to only the resources that actually
+  need it.
+- **Don't encrypt by default.** Encryption isn't free — it adds CPU overhead per reconcile and
+  carries the risks noted in [Known Breaking Changes](#known-breaking-changes) above. Private/
+  internal-only records whose metadata (ingress name, namespace, resource path) isn't sensitive
+  generally don't need it.
+- **Scope the encrypting instance with `--label-filter`** so only resources explicitly opted in get
+  encrypted, rather than blanket-encrypting a whole cluster. Pick one label convention and apply it
+  consistently:
+
+  | Label key                   | Label value    | `--label-filter`                                    |
+  | ---------------------------- | -------------- | ---------------------------------------------------- |
+  | `external-dns/txt-encrypt`   | `true`         | `--label-filter=external-dns/txt-encrypt=true`        |
+  | `external-dns.io/sensitive`  | `true`         | `--label-filter=external-dns.io/sensitive=true`       |
+  | `security-tier`              | `confidential` | `--label-filter=security-tier=confidential`           |
+
+  Point the non-encrypting instance at the inverse selector (e.g.
+  `--label-filter='external-dns/txt-encrypt notin (true)'`) so the two instances don't both pick up
+  the same resource.
 
 ## Caching
 
