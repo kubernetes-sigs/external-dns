@@ -279,10 +279,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
-			// Force the planner to see this as a change even when no other field differs:
-			// the owner label is rewritten in-memory right here, so by the time the plan
-			// diffs current against desired they already carry the same owner and the
-			// migration would otherwise be silently skipped.
+			// Owner already rewritten above, so current == desired unless we force it.
 			ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 		}
 

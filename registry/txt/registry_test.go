@@ -2264,10 +2264,8 @@ func TestTXTRegistryAliasARecordForceUpdateOnMigration(t *testing.T) {
 	}
 }
 
-// TestTXTRegistryOwnerIDMigrationForceUpdate covers the --migrate-from-txt-owner path: a record still
-// owned by the old owner ID must be armed with force-update so the planner treats the owner change as
-// a real diff even when every other field (target, TTL, provider-specific) is identical. Without this,
-// plan.Changes.HasChanges() sees an unchanged record and the migration is silently skipped.
+// TestTXTRegistryOwnerIDMigrationForceUpdate verifies that a record still owned by the old owner ID
+// gets force-updated during --migrate-from-txt-owner, even when nothing else about it changed.
 func TestTXTRegistryOwnerIDMigrationForceUpdate(t *testing.T) {
 	const dnsName = "same.test-zone.example.org"
 	const oldOwner = "\"heritage=external-dns,external-dns/owner=cluster-1\""
