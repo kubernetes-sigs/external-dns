@@ -19,7 +19,9 @@ package akamai
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -37,8 +39,19 @@ type edgednsStubData struct {
 	output  []any
 }
 
+// edgednsStub records how many calls each Edge DNS operation received. The provider is
+// dominated by these round trips, so the call count is what the performance tests assert.
 type edgednsStub struct {
 	stubData map[string]edgednsStubData
+
+	// Records lists the zones concurrently, so the counters below are written from
+	// several goroutines at once.
+	mu                sync.Mutex
+	listZonesCalls    int
+	getRecordSetCalls int
+	createCalls       int
+	updateCalls       int
+	deleteCalls       int
 }
 
 func newStub() *edgednsStub {
@@ -48,6 +61,10 @@ func newStub() *edgednsStub {
 }
 
 func createAkamaiStubProvider(stub *edgednsStub, domfilter *endpoint.DomainFilter, idfilter provider.ZoneIDFilter) (*AkamaiProvider, error) {
+	return createAkamaiStubProviderWithCache(stub, domfilter, idfilter, 0)
+}
+
+func createAkamaiStubProviderWithCache(stub *edgednsStub, domfilter *endpoint.DomainFilter, idfilter provider.ZoneIDFilter, cacheDuration time.Duration) (*AkamaiProvider, error) {
 	akamaiConfig := AkamaiConfig{
 		DomainFilter:          domfilter,
 		ZoneIDFilter:          idfilter,
@@ -55,6 +72,7 @@ func createAkamaiStubProvider(stub *edgednsStub, domfilter *endpoint.DomainFilte
 		ClientToken:           "test_token",
 		ClientSecret:          "test_client_secret",
 		AccessToken:           "test_access_token",
+		ZoneCacheDuration:     cacheDuration,
 	}
 
 	prov, err := newProvider(akamaiConfig, stub)
@@ -79,6 +97,9 @@ func (r *edgednsStub) setOutput(objtype string, output []any) {
 
 func (r *edgednsStub) ListZones(_ context.Context, _ dns.ListZonesRequest) (*dns.ZoneListResponse, error) {
 	log.Debugf("Entering ListZones")
+	r.mu.Lock()
+	r.listZonesCalls++
+	r.mu.Unlock()
 	// Ignore Metadata
 	resp := &dns.ZoneListResponse{}
 	zones := make([]dns.ZoneResponse, 0)
@@ -94,6 +115,9 @@ func (r *edgednsStub) ListZones(_ context.Context, _ dns.ListZonesRequest) (*dns
 
 func (r *edgednsStub) GetRecordSets(_ context.Context, _ dns.GetRecordSetsRequest) (*dns.GetRecordSetsResponse, error) {
 	log.Debugf("Entering GetRecordSets")
+	r.mu.Lock()
+	r.getRecordSetCalls++
+	r.mu.Unlock()
 	// Ignore Metadata
 	resp := &dns.GetRecordSetsResponse{}
 	sets := make([]dns.RecordSet, 0)
@@ -107,18 +131,23 @@ func (r *edgednsStub) GetRecordSets(_ context.Context, _ dns.GetRecordSetsReques
 }
 
 func (r *edgednsStub) CreateRecordSets(_ context.Context, _ dns.CreateRecordSetsRequest) error {
+	r.mu.Lock()
+	r.createCalls++
+	r.mu.Unlock()
 	return nil
 }
 
-func (r *edgednsStub) GetRecord(_ context.Context, _ dns.GetRecordRequest) (*dns.GetRecordResponse, error) {
-	return &dns.GetRecordResponse{}, nil
-}
-
 func (r *edgednsStub) UpdateRecord(_ context.Context, _ dns.UpdateRecordRequest) error {
+	r.mu.Lock()
+	r.updateCalls++
+	r.mu.Unlock()
 	return nil
 }
 
 func (r *edgednsStub) DeleteRecord(_ context.Context, _ dns.DeleteRecordRequest) error {
+	r.mu.Lock()
+	r.deleteCalls++
+	r.mu.Unlock()
 	return nil
 }
 
@@ -233,6 +262,26 @@ func TestAkamaiRecordsFilters(t *testing.T) {
 	}
 }
 
+// TestRecordsListsEachZoneOnce guards the concurrent zone listing: one listing per zone,
+// no more, and the endpoints stay ordered by zone regardless of completion order.
+func TestRecordsListsEachZoneOnce(t *testing.T) {
+	stub := newStub()
+	c, err := createAkamaiStubProvider(stub, &endpoint.DomainFilter{}, provider.ZoneIDFilter{})
+	require.NoError(t, err)
+
+	stub.setOutput("zone", []any{"a.testzone.com", "b.testzone.com", "c.testzone.com", "d.testzone.com", "e.testzone.com"})
+	stub.setOutput("recordset", []any{dns.RecordSet{
+		Name:  "www.example.com",
+		Type:  endpoint.RecordTypeA,
+		Rdata: []string{"10.0.0.2"},
+	}})
+
+	_, err = c.Records(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 1, stub.listZonesCalls)
+	assert.Equal(t, 5, stub.getRecordSetCalls)
+}
+
 // TestCreateRecords tests create function
 func TestCreateRecords(t *testing.T) {
 	stub := newStub()
@@ -283,6 +332,9 @@ func TestDeleteRecords(t *testing.T) {
 
 	err = c.deleteRecordsets(t.Context(), zoneNameIDMapper, endpoints)
 	assert.NoError(t, err)
+	// One DELETE per endpoint and nothing else: the record is not read back first.
+	assert.Equal(t, 2, stub.deleteCalls)
+	assert.Equal(t, 0, stub.getRecordSetCalls)
 }
 
 func TestDeleteRecordsDomainFilter(t *testing.T) {
@@ -318,6 +370,9 @@ func TestUpdateRecords(t *testing.T) {
 
 	err = c.updateNewRecordsets(t.Context(), zoneNameIDMapper, endpoints)
 	require.NoError(t, err)
+	// One PUT per endpoint and nothing else: the record is not read back first.
+	assert.Equal(t, 2, stub.updateCalls)
+	assert.Equal(t, 0, stub.getRecordSetCalls)
 }
 
 func TestUpdateRecordsDomainFilter(t *testing.T) {
@@ -361,4 +416,49 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
 	apply := c.ApplyChanges(t.Context(), changes)
 	assert.NoError(t, apply)
+}
+
+// TestApplyChangesEmptyIssuesNoCall pins the steady-state path: with nothing to apply the
+// provider must not reach Edge DNS at all, not even to list zones.
+func TestApplyChangesEmptyIssuesNoCall(t *testing.T) {
+	stub := newStub()
+	c, err := createAkamaiStubProvider(stub, endpoint.NewDomainFilter([]string{"example.com"}), provider.ZoneIDFilter{})
+	require.NoError(t, err)
+	stub.setOutput("zone", []any{"example.com"})
+
+	require.NoError(t, c.ApplyChanges(t.Context(), &plan.Changes{}))
+	assert.Equal(t, 0, stub.listZonesCalls)
+	assert.Equal(t, 0, stub.createCalls)
+	assert.Equal(t, 0, stub.updateCalls)
+	assert.Equal(t, 0, stub.deleteCalls)
+}
+
+// TestZoneCacheAvoidsRefetch pins the zone cache: Records followed by ApplyChanges lists
+// the zones once, not twice. With the cache disabled the second listing comes back.
+func TestZoneCacheAvoidsRefetch(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		cacheDuration time.Duration
+		wantListZones int
+	}{
+		{name: "cache enabled", cacheDuration: time.Hour, wantListZones: 1},
+		{name: "cache disabled", cacheDuration: 0, wantListZones: 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stub := newStub()
+			c, err := createAkamaiStubProviderWithCache(stub, endpoint.NewDomainFilter([]string{"example.com"}), provider.ZoneIDFilter{}, tc.cacheDuration)
+			require.NoError(t, err)
+			stub.setOutput("zone", []any{"example.com"})
+			stub.setOutput("recordset", []any{})
+
+			_, err = c.Records(t.Context())
+			require.NoError(t, err)
+			changes := &plan.Changes{Create: []*endpoint.Endpoint{
+				{DNSName: "www.example.com", RecordType: "A", Targets: endpoint.Targets{"10.0.0.1"}, RecordTTL: 300},
+			}}
+			require.NoError(t, c.ApplyChanges(t.Context(), changes))
+
+			assert.Equal(t, tc.wantListZones, stub.listZonesCalls)
+		})
+	}
 }

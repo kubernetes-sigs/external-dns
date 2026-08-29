@@ -144,6 +144,7 @@ type Config struct {
 	AkamaiAccessToken                             string
 	AkamaiEdgercPath                              string
 	AkamaiEdgercSection                           string
+	AkamaiZoneCacheDuration                       time.Duration
 	OCIConfigFile                                 string
 	OCICompartmentOCID                            string
 	OCIAuthInstancePrincipal                      bool
@@ -245,6 +246,7 @@ var defaultConfig = &Config{
 	AkamaiEdgercPath:            "",
 	AkamaiEdgercSection:         "",
 	AkamaiServiceConsumerDomain: "",
+	AkamaiZoneCacheDuration:     0 * time.Second,
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:            "",
 	AnnotationPrefix:            annotations.DefaultAnnotationPrefix,
@@ -623,6 +625,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiAccessToken, &cfg.AkamaiAccessToken)
 	b.StringVar("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)", defaultConfig.AkamaiEdgercPath, &cfg.AkamaiEdgercPath)
 	b.StringVar("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)", defaultConfig.AkamaiEdgercSection, &cfg.AkamaiEdgercSection)
+	b.DurationVar("akamai-zones-cache-duration", "When using the Akamai provider, set the zones list cache TTL (0s to disable).", defaultConfig.AkamaiZoneCacheDuration, &cfg.AkamaiZoneCacheDuration)
 	b.StringVar("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci", defaultConfig.OCIConfigFile, &cfg.OCIConfigFile)
 	b.StringVar("oci-compartment-ocid", "When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.", defaultConfig.OCICompartmentOCID, &cfg.OCICompartmentOCID)
 	b.EnumVar("oci-zone-scope", "When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.", defaultConfig.OCIZoneScope, &cfg.OCIZoneScope, "", "GLOBAL", "PRIVATE")

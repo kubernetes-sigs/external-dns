@@ -24,17 +24,20 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/dns"
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/edgegrid"
 	"github.com/akamai/AkamaiOPEN-edgegrid-golang/v13/pkg/session"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
 const (
@@ -42,6 +45,9 @@ const (
 	defaultTTL = 600
 	maxUint    = ^uint(0)
 	maxInt     = int(maxUint >> 1)
+	// zoneListConcurrency bounds the parallel recordset listings issued by Records.
+	// Edge DNS enforces per-account API quotas, so this stays low on purpose.
+	zoneListConcurrency = 4
 )
 
 // AkamaiDNSService is a proxy interface of the Akamai edgegrid dns package that can be stubbed for testing.
@@ -50,7 +56,6 @@ type AkamaiDNSService interface {
 	ListZones(ctx context.Context, params dns.ListZonesRequest) (*dns.ZoneListResponse, error)
 	GetRecordSets(ctx context.Context, params dns.GetRecordSetsRequest) (*dns.GetRecordSetsResponse, error)
 	CreateRecordSets(ctx context.Context, params dns.CreateRecordSetsRequest) error
-	GetRecord(ctx context.Context, params dns.GetRecordRequest) (*dns.GetRecordResponse, error)
 	UpdateRecord(ctx context.Context, params dns.UpdateRecordRequest) error
 	DeleteRecord(ctx context.Context, params dns.DeleteRecordRequest) error
 }
@@ -66,6 +71,7 @@ type AkamaiConfig struct {
 	EdgercSection         string
 	MaxBody               int
 	AccountKey            string
+	ZoneCacheDuration     time.Duration
 	DryRun                bool
 }
 
@@ -79,6 +85,8 @@ type AkamaiProvider struct {
 	dryRun       bool
 	// Defines client. Allows for mocking.
 	client AkamaiDNSService
+	// Caches the filtered zone list between Records and ApplyChanges.
+	zonesCache *blueprint.ZoneCache[[]akamaiZone]
 }
 
 type akamaiZones struct {
@@ -102,6 +110,7 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 			AccessToken:           cfg.AkamaiAccessToken,
 			EdgercPath:            cfg.AkamaiEdgercPath,
 			EdgercSection:         cfg.AkamaiEdgercSection,
+			ZoneCacheDuration:     cfg.AkamaiZoneCacheDuration,
 			DryRun:                cfg.DryRun,
 		}, nil)
 }
@@ -117,6 +126,7 @@ func newProvider(akamaiConfig AkamaiConfig, akaService AkamaiDNSService) (provid
 		domainFilter: akamaiConfig.DomainFilter,
 		zoneIDFilter: akamaiConfig.ZoneIDFilter,
 		dryRun:       akamaiConfig.DryRun,
+		zonesCache:   blueprint.NewZoneCache[[]akamaiZone](akamaiConfig.ZoneCacheDuration),
 	}
 
 	if akaService != nil {
@@ -194,6 +204,12 @@ func buildEdgegridConfig(akamaiConfig AkamaiConfig) (*edgegrid.Config, error) {
 
 // Fetch zones using Edgegrid DNS v2 API
 func (p AkamaiProvider) fetchZones(ctx context.Context) (akamaiZones, error) {
+	if !p.zonesCache.Expired() {
+		cached := p.zonesCache.Get()
+		log.Debugf("Fetched '%d' zones from cache", len(cached))
+		return akamaiZones{Zones: cached}, nil
+	}
+
 	filteredZones := akamaiZones{Zones: make([]akamaiZone, 0)}
 	req := dns.ListZonesRequest{Types: "primary", ShowAll: true}
 	// filter based on contractIds
@@ -218,47 +234,46 @@ func (p AkamaiProvider) fetchZones(ctx context.Context) (akamaiZones, error) {
 	} else {
 		log.Debugf("Fetched '%d' zones from Akamai", lenFilteredZones)
 	}
+	p.zonesCache.Reset(filteredZones.Zones)
 
 	return filteredZones, nil
 }
 
 // Records returns the list of records in a given zone.
 func (p AkamaiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-	zones, err := p.fetchZones(ctx) // returns a filtered set of zones
+	zones, err := p.fetchZones(ctx)
 	if err != nil {
 		log.Warnf("Failed to identify target zones! Error: %s", err.Error())
-		return endpoints, err
+		return nil, err
 	}
-	for _, zone := range zones.Zones {
-		recordsets, err := p.client.GetRecordSets(ctx, dns.GetRecordSetsRequest{
-			Zone:      zone.Zone,
-			QueryArgs: &dns.RecordSetQueryArgs{ShowAll: true},
-		})
-		if err != nil {
-			log.Errorf("Recordsets retrieval for zone: '%s' failed! %s", zone.Zone, err.Error())
-			continue
-		}
-		if len(recordsets.RecordSets) == 0 {
-			log.Warnf("Zone %s contains no recordsets", zone.Zone)
-		}
 
-		for _, recordset := range recordsets.RecordSets {
-			if !provider.SupportedRecordType(recordset.Type) {
-				log.Debugf("Skipping endpoint DNSName: '%s' RecordType: '%s'. Record type not supported.", recordset.Name, recordset.Type)
-				continue
+	// One listing per zone, run concurrently but capped: the round trips dominate, the
+	// local decoding does not. Results are indexed by zone so the output stays ordered.
+	perZone := make([][]*endpoint.Endpoint, len(zones.Zones))
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(zoneListConcurrency)
+	for i, zone := range zones.Zones {
+		group.Go(func() error {
+			eps, err := p.zoneEndpoints(groupCtx, zone.Zone)
+			if err != nil {
+				// A zone that cannot be listed is skipped, as it was before: one unreadable
+				// zone must not fail the whole sync.
+				log.Errorf("Recordsets retrieval for zone: '%s' failed! %s", zone.Zone, err.Error())
+				return nil
 			}
-			if !p.domainFilter.Match(recordset.Name) {
-				log.Debugf("Skipping endpoint. Record name %s doesn't match containing zone %s.", recordset.Name, zone)
-				continue
-			}
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
-				recordset.Type,
-				endpoint.TTL(recordset.TTL),
-				trimTxtRdata(recordset.Rdata, recordset.Type)...))
-			log.Debugf("Fetched endpoint DNSName: '%s' RecordType: '%s' Rdata: '%s')", recordset.Name, recordset.Type, recordset.Rdata)
-		}
+			perZone[i] = eps
+			return nil
+		})
 	}
+	if err := group.Wait(); err != nil {
+		return nil, err
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for _, eps := range perZone {
+		endpoints = append(endpoints, eps...)
+	}
+
 	lenEndpoints := len(endpoints)
 	if lenEndpoints == 0 {
 		log.Warnf("No endpoints could be fetched")
@@ -270,8 +285,49 @@ func (p AkamaiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 	return endpoints, nil
 }
 
+// zoneEndpoints lists a single zone and converts its supported recordsets to endpoints.
+func (p AkamaiProvider) zoneEndpoints(ctx context.Context, zone string) ([]*endpoint.Endpoint, error) {
+	recordsets, err := p.client.GetRecordSets(ctx, dns.GetRecordSetsRequest{
+		Zone:      zone,
+		QueryArgs: &dns.RecordSetQueryArgs{ShowAll: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(recordsets.RecordSets) == 0 {
+		log.Warnf("Zone %s contains no recordsets", zone)
+		return nil, nil
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for _, recordset := range recordsets.RecordSets {
+		if !provider.SupportedRecordType(recordset.Type) {
+			log.Debugf("Skipping endpoint DNSName: '%s' RecordType: '%s'. Record type not supported.", recordset.Name, recordset.Type)
+			continue
+		}
+		if !p.domainFilter.Match(recordset.Name) {
+			log.Debugf("Skipping endpoint. Record name %s doesn't match containing zone %s.", recordset.Name, zone)
+			continue
+		}
+		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
+			recordset.Type,
+			endpoint.TTL(recordset.TTL),
+			trimTxtRdata(recordset.Rdata, recordset.Type)...))
+		log.Debugf("Fetched endpoint DNSName: '%s' RecordType: '%s' Rdata: '%s')", recordset.Name, recordset.Type, recordset.Rdata)
+	}
+
+	return endpoints, nil
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	// Nothing to do means nothing to fetch: in steady state this is the common path and
+	// it must not cost a full zone listing.
+	if !changes.HasChanges() {
+		log.Debug("No changes to apply")
+		return nil
+	}
+
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones(ctx)
 	if err != nil {
@@ -437,21 +493,19 @@ func (p AkamaiProvider) deleteRecordsets(ctx context.Context, zoneNameIDMapper p
 			continue
 		}
 
-		recName := strings.TrimSuffix(endpoint.DNSName, ".")
-		_, err := p.client.GetRecord(ctx, dns.GetRecordRequest{Zone: zoneName, Name: recName, RecordType: endpoint.RecordType})
-		if err != nil {
-			if !isNotFound(err) {
-				return fmt.Errorf("endpoint deletion. record validation failed. error: %w", err)
-			}
-			log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", recName, endpoint.RecordType)
-			continue
-		}
-		if err := p.client.DeleteRecord(ctx, dns.DeleteRecordRequest{
+		// DELETE is already addressed by name and type, so the record does not have to be
+		// read back first. A missing record is the outcome we wanted anyway.
+		err := p.client.DeleteRecord(ctx, dns.DeleteRecordRequest{
 			Zone:       zoneName,
-			Name:       recName,
+			Name:       strings.TrimSuffix(endpoint.DNSName, "."),
 			RecordType: endpoint.RecordType,
 			RecLock:    []bool{true},
-		}); err != nil {
+		})
+		if err != nil {
+			if isNotFound(err) {
+				log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", endpoint.DNSName, endpoint.RecordType)
+				continue
+			}
 			log.Errorf("edge dns recordset deletion failed. error: %s", err.Error())
 			return err
 		}
@@ -474,23 +528,20 @@ func (p AkamaiProvider) updateNewRecordsets(ctx context.Context, zoneNameIDMappe
 			continue
 		}
 
-		recName := strings.TrimSuffix(endpoint.DNSName, ".")
-		rec, err := p.client.GetRecord(ctx, dns.GetRecordRequest{Zone: zoneName, Name: recName, RecordType: endpoint.RecordType})
-		if err != nil {
-			log.Errorf("Endpoint update. Record validation failed. Error: %s", err.Error())
-			return err
-		}
+		// PUT replaces the recordset addressed by name and type, and the desired TTL and
+		// rdata both come from the endpoint, so reading the record back first buys nothing.
 		ttl := ttlAsInt(endpoint.RecordTTL)
-		if err := p.client.UpdateRecord(ctx, dns.UpdateRecordRequest{
+		err := p.client.UpdateRecord(ctx, dns.UpdateRecordRequest{
 			Record: &dns.RecordBody{
-				Name:       rec.Name,
-				RecordType: rec.RecordType,
+				Name:       strings.TrimSuffix(endpoint.DNSName, "."),
+				RecordType: endpoint.RecordType,
 				TTL:        &ttl,
 				Target:     cleanTargets(endpoint.RecordType, endpoint.Targets...),
 			},
 			Zone:    zoneName,
 			RecLock: []bool{true},
-		}); err != nil {
+		})
+		if err != nil {
 			log.Errorf("Akamai Edge DNS recordset update failed. Error: %s", err.Error())
 			return err
 		}

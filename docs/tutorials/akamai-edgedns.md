@@ -29,6 +29,18 @@ In addition to specifying auth credentials individually, an Akamai Edgegrid .edg
 | akamai-edgerc-path    | EXTERNAL_DNS_AKAMAI_EDGERC_PATH    | Accessible path to Edgegrid credentials file, e.g /home/test/.edgerc |
 | akamai-edgerc-section | EXTERNAL_DNS_AKAMAI_EDGERC_SECTION | Section in Edgegrid credentials file containing credentials          |
 
+### Tuning
+
+| External-DNS Cmd Line        | Environment/ConfigMap                     | Description                                                   |
+|------------------------------|-------------------------------------------|---------------------------------------------------------------|
+| akamai-zones-cache-duration  | EXTERNAL_DNS_AKAMAI_ZONES_CACHE_DURATION  | Zones list cache TTL, `0s` (the default) disables the cache   |
+
+Each sync lists the zones once to resolve records to their containing zone. Setting
+`--akamai-zones-cache-duration` keeps that list for the given TTL, so a sync that has changes
+to apply reuses the listing made when reading the records. Set it below the rate at which zones
+are added or removed in your account: a zone created after the last refresh is invisible to
+ExternalDNS until the cache expires.
+
 [Akamai API Authentication](https://developer.akamai.com/getting-started/edgegrid) provides an overview and further information about authorization credentials for API base applications and tools.
 
 ## Deploy External-DNS
