@@ -18,7 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Fallback for environments without mise, such as the cloudbuild golang image.
 if ! command -v ko &> /dev/null; then
-  cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
-  go install github.com/google/ko@v0.17.1
+  REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  version=$(awk -F' *= *' '$1 == "ko" { gsub(/"/, "", $2); print $2; exit }' "${REPO_ROOT}/mise.toml")
+  go install "github.com/google/ko@v${version}"
 fi

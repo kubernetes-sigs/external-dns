@@ -1,0 +1,13 @@
+# Developer and CI tool versions. Install with `mise install`,
+# compare against your PATH with `make check-tools`.
+# Checksums for every tool and platform live in mise.lock.
+[tools]
+golang = "1.27.0"
+golangci-lint = "2.13.2"
+helm = "3.21.4"
+helm-ct = "3.14.0"
+helm-docs = "1.14.2"
+ko = "0.17.1"
+kube-controller-tools = "0.21.0"
+yamlfmt = "0.21.0"
+yq = "4.53.6"

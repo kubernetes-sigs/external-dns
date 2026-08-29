@@ -16,6 +16,9 @@
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
+# Use the Go pinned in mise.toml, never a toolchain go.mod would download.
+export GOTOOLCHAIN := local
+
 cover:
 	@go test -cover -coverprofile=cover.out -v ./...
 
@@ -23,20 +26,14 @@ cover:
 cover-html: cover
 	@go tool cover -html=cover.out
 
-#? go-tools: list installed go tools
-go-tools:
-	@echo ">> go tools installed in go.mod"
-	@go tool  -n
-	@echo ">> go tools installed in go.tool.mod"
-	@go tool -modfile=go.tool.mod
-
-#? golangci-lint-install: Install golangci-lint tool
-golangci-lint-install:
-	@scripts/install-tools.sh --golangci
+#? check-tools: Compare the tools on PATH against the versions pinned in mise.toml
+.PHONY: check-tools
+check-tools:
+	@scripts/check-tools.sh
 
 #? go-lint: Run the golangci-lint tool
 .PHONY: go-lint
-go-lint: golangci-lint-install
+go-lint:
 	golangci-lint config verify
 	gofmt -l -s -w .
 	golangci-lint run --timeout=30m --fix ./...
@@ -55,7 +52,7 @@ licensecheck:
 
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint validate-json-yaml
+lint: check-tools licensecheck go-lint validate-json-yaml
 
 #? validate-json-yaml: Validate JSON and YAML files
 .PHONY: validate-json-yaml
@@ -64,13 +61,14 @@ validate-json-yaml:
 
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
-crd:
+crd: check-tools
 	@./scripts/generate-crd.sh
 
-# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
-#? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
-update-tools-deps:
-	@go get -modfile=go.tool.mod tool
+#? update-tools: Bump every tool in mise.toml to its latest version
+.PHONY: update-tools
+update-tools:
+	@mise upgrade --bump
+	@$(MAKE) check-tools
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
@@ -171,6 +169,7 @@ release.staging: test
 release.prod: test
 	$(MAKE) build.push/multiarch
 
+# cloudbuild.yaml runs make inside golang:*-bookworm, which has no mise.
 .PHONY: ko
 ko:
 	scripts/install-ko.sh

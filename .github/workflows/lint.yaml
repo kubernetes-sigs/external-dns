@@ -24,10 +24,13 @@ jobs:
         files: '.'
         config_file: ".markdownlint.json"
 
-    - name: Set up Go
-      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+    - name: Set up dev environment
+      uses: ./.github/actions/dev-env
       with:
-        go-version-file: go.mod
+        cache-scope: lint
+
+    - name: Check tools match mise.toml
+      run: ./scripts/check-tools.sh --strict
 
     - name: Go formatting
       run: |
@@ -39,20 +42,8 @@ jobs:
           exit 1
         fi
 
-    - name: Read golangci-lint version
-      id: lint-version
-      run: |
-        version=$(sed -n 's/^GOLANG_CI_LINTER_VERSION=//p' scripts/install-tools.sh)
-        echo "version=${version}" >> $GITHUB_OUTPUT
-        echo "golangci-lint version: ${version}"
-
-    # https://github.com/golangci/golangci-lint-action?tab=readme-ov-file#verify
     - name: Verify linter configuration and Lint go code
-      uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-      with:
-        verify: true
-        args: --timeout=30m
-        version: ${{ steps.lint-version.outputs.version }}
+      run: make lint
 
     - name: Run file hygiene checks
       run: ./scripts/file-hygiene.sh
@@ -66,5 +57,11 @@ jobs:
     - name: Check out code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-    - name: Check Go version consistency across cloudbuild.yaml, go.mod and go.tool.mod
+    # For yq, pinned rather than whatever the runner image ships.
+    - name: Set up dev environment
+      uses: ./.github/actions/dev-env
+      with:
+        cache-scope: go-version
+
+    - name: Check Go version consistency across cloudbuild.yaml, go.mod and mise.toml
       run: ./scripts/go-version-consistency.sh

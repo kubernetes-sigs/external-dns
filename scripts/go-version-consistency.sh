@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compares Go major.minor version in cloudbuild.yaml against go.mod and go.tool.mod
+# Compares Go major.minor version in cloudbuild.yaml against go.mod and mise.toml
 
 set -euo pipefail
 
@@ -22,11 +22,11 @@ fi
 
 cloudbuild_ver=$(extract_major_minor "${image_name##*:}")
 gomod_ver=$(extract_major_minor "$(awk '/^go [0-9]/{print $2; exit}' "$REPO_ROOT/go.mod")")
-gotoolmod_ver=$(extract_major_minor "$(awk '/^go [0-9]/{print $2; exit}' "$REPO_ROOT/go.tool.mod")")
+misetoml_ver=$(extract_major_minor "$(awk -F' *= *' '$1 == "golang" { gsub(/"/, "", $2); print $2; exit }' "$REPO_ROOT/mise.toml")")
 
 echo "cloudbuild.yaml : $cloudbuild_ver"
 echo "go.mod          : $gomod_ver"
-echo "go.tool.mod     : $gotoolmod_ver"
+echo "mise.toml       : $misetoml_ver"
 
 ok=true
 
@@ -35,13 +35,13 @@ if [[ "$cloudbuild_ver" != "$gomod_ver" ]]; then
     ok=false
 fi
 
-if [[ "$cloudbuild_ver" != "$gotoolmod_ver" ]]; then
-    echo "Go version in cloudbuild.yaml ($cloudbuild_ver) doesn't match go.tool.mod ($gotoolmod_ver)"
+if [[ "$cloudbuild_ver" != "$misetoml_ver" ]]; then
+    echo "Go version in cloudbuild.yaml ($cloudbuild_ver) doesn't match mise.toml ($misetoml_ver)"
     ok=false
 fi
 
-if [[ "$gomod_ver" != "$gotoolmod_ver" ]]; then
-    echo "Go version in go.mod ($gomod_ver) doesn't match go.tool.mod ($gotoolmod_ver)"
+if [[ "$gomod_ver" != "$misetoml_ver" ]]; then
+    echo "Go version in go.mod ($gomod_ver) doesn't match mise.toml ($misetoml_ver)"
     ok=false
 fi
 
