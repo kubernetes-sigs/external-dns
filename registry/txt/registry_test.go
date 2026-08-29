@@ -1612,7 +1612,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
-			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", "foobar.test-zone.example.org"),
+			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY09KelukKxEr3oi5ozZF2sV5bnKva2/Dayyf\"", "foobar.test-zone.example.org"),
 		},
 	})
 	require.NoError(t, err)
@@ -1627,7 +1627,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	expected := &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
-			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", "foobar.test-zone.example.org"),
+			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY09KelukKxEr3oi5ozZF2sV5bnKva2/Dayyf\"", "foobar.test-zone.example.org"),
 		},
 	}
 
