@@ -73,11 +73,11 @@ type TXTRegistry struct {
 	obsoleteTXTWarned sets.Set[string]
 }
 
-// existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
+// existingTXTs maps pre‑existing TXT records to the value they hold at the provider.
 // It relies on the fact that Records() is always called **before** ApplyChanges()
 // within a single reconciliation cycle.
 type existingTXTs struct {
-	entries sets.Set[recordKey]
+	entries map[recordKey]string
 }
 
 type recordKey struct {
@@ -87,32 +87,41 @@ type recordKey struct {
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{
-		entries: sets.New[recordKey](),
+		entries: map[recordKey]string{},
 	}
 }
 
 func (im *existingTXTs) add(r *endpoint.Endpoint) {
-	key := recordKey{
-		dnsName:       r.DNSName,
-		setIdentifier: r.SetIdentifier,
+	var value string
+	if len(r.Targets) > 0 {
+		value = r.Targets[0]
 	}
-	im.entries.Insert(key)
+	im.entries[keyFor(r)] = value
 }
 
 // isAbsent returns true when there is no entry for the given name in the store.
 // This is intended for the "if absent -> create" pattern.
 func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
-	key := recordKey{
-		dnsName:       ep.DNSName,
-		setIdentifier: ep.SetIdentifier,
-	}
-	return !im.entries.Has(key)
+	_, ok := im.entries[keyFor(ep)]
+	return !ok
+}
+
+func (im *existingTXTs) storedValue(ep *endpoint.Endpoint) (string, bool) {
+	value, ok := im.entries[keyFor(ep)]
+	return value, ok && value != ""
 }
 
 func (im *existingTXTs) reset() {
 	// Reset the existing TXT records for the next reconciliation loop.
 	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
-	im.entries = sets.New[recordKey]()
+	im.entries = map[recordKey]string{}
+}
+
+func keyFor(ep *endpoint.Endpoint) recordKey {
+	return recordKey{
+		dnsName:       ep.DNSName,
+		setIdentifier: ep.SetIdentifier,
+	}
 }
 
 // New creates a TXTRegistry from the given configuration.
@@ -183,18 +192,19 @@ func (im *TXTRegistry) OwnerID() string {
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
 func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	// If we have the zones cached AND we have refreshed the cache since the
+	// last given interval, then just use the cached results. existingTXTs is left
+	// untouched so that it keeps describing the records behind that cache.
+	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
+		log.Debug("Using cached records.")
+		return im.recordsCache, nil
+	}
+
 	// existingTXTs must always hold the latest TXT records, so it needs to be reset every time.
 	// Previously, it was reset with a defer after ApplyChanges, but ApplyChanges is not called
 	// when plan.HasChanges() is false (i.e., when there are no changes to apply).
 	// In that case, stale TXT record information could remain, so we reset it here instead.
 	im.existingTXTs.reset()
-
-	// If we have the zones cached AND we have refreshed the cache since the
-	// last given interval, then just use the cached results.
-	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
-		log.Debug("Using cached records.")
-		return im.recordsCache, nil
-	}
 
 	records, err := im.provider.Records(ctx)
 	if err != nil {
@@ -353,8 +363,24 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	return endpoints
 }
 
-// ApplyChanges updates dns provider with the changes
-// for each created/deleted record it will also take into account TXT records for creation/deletion
+// generateTXTRecordForRemoval builds the TXT records to delete alongside an endpoint, preferring
+// the value read from the provider over a regenerated one, as deletes match by value.
+// With gzip output, a regenerated one can differ between two Go standard library implementations.
+func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	txts := im.generateTXTRecord(r)
+	for _, txt := range txts {
+		stored, ok := im.existingTXTs.storedValue(txt)
+		if !ok {
+			// Records() saw no TXT under this name; keep the generated value.
+			continue
+		}
+		// Match the quoting Serialize() applies, so only the payload differs.
+		txt.Targets = endpoint.Targets{"\"" + strings.Trim(stored, "\"") + "\""}
+	}
+	return txts
+}
+
+// ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
@@ -377,10 +403,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
-		// when we delete TXT records for which value has changed (due to new label) this would still work because
-		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
+		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecordForRemoval(r)...)
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -389,9 +413,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
-		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
