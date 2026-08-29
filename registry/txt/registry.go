@@ -373,8 +373,7 @@ func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endp
 			// Records() saw no TXT under this name; keep the generated value.
 			continue
 		}
-		// Match the quoting Serialize() applies, so only the payload differs.
-		txt.Targets = endpoint.Targets{"\"" + strings.Trim(stored, "\"") + "\""}
+		txt.Targets = endpoint.Targets{stored}
 	}
 	return txts
 }
