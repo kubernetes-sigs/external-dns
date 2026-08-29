@@ -23,13 +23,7 @@ import (
 	"strings"
 )
 
-// TLSATarget represents a single TLSA (DANE) record target in RFC 6698
-// presentation format: "<usage> <selector> <matchingType> <certificate>".
-//
-// Providers whose APIs model TLSA as discrete fields rather than a single
-// content string use this to decompose a target, and to re-render one
-// canonically so that a record read back from the provider compares equal to
-// the record that was written.
+// TLSATarget is a parsed TLSA target: "<usage> <selector> <matchingType> <certificate>".
 type TLSATarget struct {
 	usage        uint8
 	selector     uint8
@@ -37,12 +31,7 @@ type TLSATarget struct {
 	certificate  string
 }
 
-// NewTLSARecord parses a TLSA target in presentation format.
-//
-// The certificate association data is normalised to lowercase hex without
-// separators, per RFC 6698 section 2.2. Providers differ in how they render it,
-// so normalising on both read and write keeps record identity stable and
-// prevents a spurious update on every reconciliation.
+// NewTLSARecord parses a TLSA target, normalising the certificate to lowercase hex.
 func NewTLSARecord(target string) (*TLSATarget, error) {
 	fields := strings.Fields(target)
 	if len(fields) < 4 {
@@ -62,10 +51,7 @@ func NewTLSARecord(target string) (*TLSATarget, error) {
 		return nil, err
 	}
 
-	// RFC 6698 section 2.2 allows whitespace within the certificate association
-	// data, and the examples in section 2.3 are printed that way. Cloudflare
-	// renders it in groups too, so join the remaining fields to make a split
-	// digest parse identically to an unbroken one.
+	// RFC 6698 2.2 allows whitespace in the certificate data.
 	certificate := strings.ToLower(strings.ReplaceAll(strings.Join(fields[3:], ""), ":", ""))
 	if certificate == "" {
 		return nil, fmt.Errorf("invalid TLSA target %q: certificate association data is empty", target)

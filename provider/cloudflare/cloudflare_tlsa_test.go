@@ -43,9 +43,7 @@ func tlsaRecordResponse() dns.RecordResponse {
 	}
 }
 
-// The Cloudflare API rejects TLSA records supplied as a content string with
-// "usage is a required data field" (and the same for selector, matching_type and
-// certificate). Every write path must therefore send structured data.
+// The API rejects TLSA sent as content, so writes must send structured data.
 func assertTLSADataOnly(t *testing.T, body any) {
 	t.Helper()
 
@@ -163,9 +161,7 @@ func TestMalformedTLSATargetIsRejected(t *testing.T) {
 	assert.False(t, ok, "a malformed target must not produce a batch put")
 }
 
-// Reads must be normalised, otherwise a record written by external-dns would not
-// compare equal to the same record read back and every sync would issue an
-// update. Cloudflare is free to render the digest however it likes.
+// Without normalisation a record never compares equal to itself and every sync updates.
 func TestEndpointTargetFromCloudflareRecordNormalisesTLSA(t *testing.T) {
 	t.Parallel()
 

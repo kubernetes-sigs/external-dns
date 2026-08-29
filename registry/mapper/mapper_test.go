@@ -705,15 +705,7 @@ func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 	}
 }
 
-// TestOwnershipRoundTripWithPlainPrefix covers the configuration most deployments
-// use: a plain --txt-prefix with no %{record_type} template. In that mode the
-// record type is encoded in the first label and recovered by
-// extractRecordTypeDefaultPosition, which matches against supportedRecords.
-//
-// Membership in that list is the whole invariant. A type missing from it still
-// gets an ownership TXT written, but the name no longer maps back to the endpoint
-// it belongs to, so the registry never recognises the record as owned and neither
-// updates nor deletes it, leaving the TXT orphaned in the zone.
+// A type missing from supportedRecords leaves its ownership TXT orphaned.
 func TestOwnershipRoundTripWithPlainPrefix(t *testing.T) {
 	mapper := NewAffixNameMapper("owned-by-", "", "")
 

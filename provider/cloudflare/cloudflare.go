@@ -719,11 +719,7 @@ func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
 			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
 		}
 	case dns.RecordResponseTypeTLSA:
-		// Cloudflare renders the certificate association data in its own style
-		// (uppercase, whitespace-separated). Normalising it back to the canonical
-		// form keeps a record read from the API comparable to the record that was
-		// written, without which every reconciliation would see a difference and
-		// issue a redundant update.
+		// Cloudflare returns the digest uppercase; normalise so it compares equal.
 		if tlsa, err := endpoint.NewTLSARecord(record.Content); err == nil {
 			return tlsa.String()
 		}

@@ -250,9 +250,7 @@ func tlsaRecordDataParam(target *endpoint.TLSATarget) dns.TLSARecordDataParam {
 	}
 }
 
-// buildTLSARecordParam builds the TLSA record parameters shared by the create,
-// update and batch paths. The API rejects TLSA supplied as a content string with
-// "usage is a required data field", so these records must be built from Data.
+// buildTLSARecordParam builds TLSA parameters; the API rejects TLSA sent as content.
 func buildTLSARecordParam(r dns.RecordResponse) (dns.TLSARecordParam, error) {
 	target, err := endpoint.NewTLSARecord(r.Content)
 	if err != nil {
