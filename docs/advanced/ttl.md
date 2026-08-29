@@ -45,6 +45,7 @@ TTL must be a positive value.
 
 | Provider       | Supported |
 |:---------------|:---------:|
+| `Akamai`       |    Yes    |
 | `AlibabaCloud` |    Yes    |
 | `AWS`          |    Yes    |
 | `AWSSD`        |    Yes    |

@@ -4,6 +4,7 @@ Provider supported configurations
 
 | Provider Name | Zone Cache | Dry Run | Default TTL (seconds) |
 |:--------------|:-----------|:--------|:----------------------|
+| Akamai        | n/a        | yes     | 600                   |
 | AlibabaCloud  | n/a        | yes     | 600                   |
 | AWS           | yes        | yes     | 300                   |
 | AWSSD         | n/a        | yes     | 300                   |

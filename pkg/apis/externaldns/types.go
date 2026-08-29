@@ -138,6 +138,12 @@ type Config struct {
 	CloudflareRegionKey                           string
 	CoreDNSPrefix                                 string
 	CoreDNSStrictlyOwned                          bool
+	AkamaiServiceConsumerDomain                   string
+	AkamaiClientToken                             string
+	AkamaiClientSecret                            string
+	AkamaiAccessToken                             string
+	AkamaiEdgercPath                              string
+	AkamaiEdgercSection                           string
 	OCIConfigFile                                 string
 	OCICompartmentOCID                            string
 	OCIAuthInstancePrincipal                      bool
@@ -233,34 +239,40 @@ type Config struct {
 }
 
 var defaultConfig = &Config{
-	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
-	AnnotationFilter:         "",
-	AnnotationPrefix:         annotations.DefaultAnnotationPrefix,
-	APIServerURL:             "",
-	AWSAPIRetries:            3,
-	AWSAssumeRole:            "",
-	AWSAssumeRoleExternalID:  "",
-	AWSBatchChangeInterval:   time.Second,
-	AWSBatchChangeSize:       1000,
-	AWSBatchChangeSizeBytes:  32000,
-	AWSBatchChangeSizeValues: 1000,
-	AWSDynamoDBRegion:        "",
-	AWSDynamoDBTable:         "external-dns",
-	AWSEvaluateTargetHealth:  true,
-	AWSPreferCNAME:           false,
-	AWSSDCreateTag:           map[string]string{},
-	AWSSDServiceCleanup:      false,
-	AWSZoneCacheDuration:     0 * time.Second,
-	AWSZoneMatchParent:       false,
-	AWSZoneTagFilter:         []string{},
-	AWSZoneType:              "",
-	AzureConfigFile:          "/etc/kubernetes/azure.json",
-	AzureResourceGroup:       "",
-	AzureSubscriptionID:      "",
-	AzureZonesCacheDuration:  0 * time.Second,
-	AzureMaxRetriesCount:     3,
-	BatchChangeSize:          200,
-	BatchChangeInterval:      time.Second,
+	AkamaiAccessToken:           "",
+	AkamaiClientSecret:          "",
+	AkamaiClientToken:           "",
+	AkamaiEdgercPath:            "",
+	AkamaiEdgercSection:         "",
+	AkamaiServiceConsumerDomain: "",
+	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
+	AnnotationFilter:            "",
+	AnnotationPrefix:            annotations.DefaultAnnotationPrefix,
+	APIServerURL:                "",
+	AWSAPIRetries:               3,
+	AWSAssumeRole:               "",
+	AWSAssumeRoleExternalID:     "",
+	AWSBatchChangeInterval:      time.Second,
+	AWSBatchChangeSize:          1000,
+	AWSBatchChangeSizeBytes:     32000,
+	AWSBatchChangeSizeValues:    1000,
+	AWSDynamoDBRegion:           "",
+	AWSDynamoDBTable:            "external-dns",
+	AWSEvaluateTargetHealth:     true,
+	AWSPreferCNAME:              false,
+	AWSSDCreateTag:              map[string]string{},
+	AWSSDServiceCleanup:         false,
+	AWSZoneCacheDuration:        0 * time.Second,
+	AWSZoneMatchParent:          false,
+	AWSZoneTagFilter:            []string{},
+	AWSZoneType:                 "",
+	AzureConfigFile:             "/etc/kubernetes/azure.json",
+	AzureResourceGroup:          "",
+	AzureSubscriptionID:         "",
+	AzureZonesCacheDuration:     0 * time.Second,
+	AzureMaxRetriesCount:        3,
+	BatchChangeSize:             200,
+	BatchChangeInterval:         time.Second,
 	CloudflareCustomHostnamesCertificateAuthority: "none",
 	CloudflareCustomHostnames:                     false,
 	CloudflareCustomHostnamesMinTLSVersion:        "1.0",
@@ -401,6 +413,7 @@ var defaultConfig = &Config{
 }
 
 var ProviderNames = []string{
+	ProviderAkamai,
 	ProviderAlibabaCloud,
 	ProviderAWS,
 	ProviderAWSSD,
@@ -604,6 +617,12 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
 	b.BoolVar("coredns-strictly-owned", "When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false)", defaultConfig.CoreDNSStrictlyOwned, &cfg.CoreDNSStrictlyOwned)
+	b.StringVar("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiServiceConsumerDomain, &cfg.AkamaiServiceConsumerDomain)
+	b.StringVar("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientToken, &cfg.AkamaiClientToken)
+	b.StringVar("akamai-client-secret", "When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiClientSecret, &cfg.AkamaiClientSecret)
+	b.StringVar("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)", defaultConfig.AkamaiAccessToken, &cfg.AkamaiAccessToken)
+	b.StringVar("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)", defaultConfig.AkamaiEdgercPath, &cfg.AkamaiEdgercPath)
+	b.StringVar("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)", defaultConfig.AkamaiEdgercSection, &cfg.AkamaiEdgercSection)
 	b.StringVar("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci", defaultConfig.OCIConfigFile, &cfg.OCIConfigFile)
 	b.StringVar("oci-compartment-ocid", "When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.", defaultConfig.OCICompartmentOCID, &cfg.OCICompartmentOCID)
 	b.EnumVar("oci-zone-scope", "When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.", defaultConfig.OCIZoneScope, &cfg.OCIZoneScope, "", "GLOBAL", "PRIVATE")

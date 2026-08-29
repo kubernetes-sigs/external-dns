@@ -386,3 +386,94 @@ func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
 	err := ValidateConfig(cfg)
 	assert.NoError(t, err)
 }
+
+func TestValidateBadAkamaiConfig(t *testing.T) {
+	invalidAkamaiConfigs := []*externaldns.Config{
+		{
+			LogFormat:          "json",
+			Sources:            []string{"test-source"},
+			Provider:           "akamai",
+			AnnotationPrefix:   "external-dns.kubernetes.io/",
+			Policy:             "sync",
+			AkamaiClientToken:  "test-token",
+			AkamaiClientSecret: "test-secret",
+			AkamaiAccessToken:  "test-access-token",
+			AkamaiEdgercPath:   "/path/to/edgerc",
+			// Missing AkamaiServiceConsumerDomain
+		},
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
+			Policy:                      "sync",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientSecret:          "test-secret",
+			AkamaiAccessToken:           "test-access-token",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			// Missing AkamaiClientToken
+		},
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
+			Policy:                      "sync",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientToken:           "test-token",
+			AkamaiAccessToken:           "test-access-token",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			// Missing AkamaiClientSecret
+		},
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
+			Policy:                      "sync",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientToken:           "test-token",
+			AkamaiClientSecret:          "test-secret",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			// Missing AkamaiAccessToken
+		},
+	}
+
+	for _, cfg := range invalidAkamaiConfigs {
+		err := ValidateConfig(cfg)
+		assert.Error(t, err)
+	}
+}
+
+func TestValidateGoodAkamaiConfig(t *testing.T) {
+	validAkamaiConfigs := []*externaldns.Config{
+		{
+			LogFormat:                   "json",
+			Sources:                     []string{"test-source"},
+			Provider:                    "akamai",
+			AnnotationPrefix:            "external-dns.kubernetes.io/",
+			Policy:                      "sync",
+			AkamaiServiceConsumerDomain: "test-domain",
+			AkamaiClientToken:           "test-token",
+			AkamaiClientSecret:          "test-secret",
+			AkamaiAccessToken:           "test-access-token",
+			AkamaiEdgercPath:            "/path/to/edgerc",
+			KubeAPIQPS:                  int(rest.DefaultQPS),
+			KubeAPIBurst:                rest.DefaultBurst,
+		},
+		{
+			LogFormat:        "json",
+			Sources:          []string{"test-source"},
+			Provider:         "akamai",
+			AnnotationPrefix: "external-dns.kubernetes.io/",
+			Policy:           "sync",
+			KubeAPIQPS:       int(rest.DefaultQPS),
+			KubeAPIBurst:     rest.DefaultBurst,
+		},
+	}
+
+	for _, cfg := range validAkamaiConfigs {
+		err := ValidateConfig(cfg)
+		assert.NoError(t, err)
+	}
+}

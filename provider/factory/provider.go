@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
@@ -75,6 +76,7 @@ func Select(
 // providers looks up the constructor for the named provider.
 func providers(selector string) (ProviderConstructor, bool) {
 	m := map[string]ProviderConstructor{
+		externaldns.ProviderAkamai:       akamai.New,
 		externaldns.ProviderAlibabaCloud: alibabacloud.New,
 		externaldns.ProviderAWS:          aws.New,
 		externaldns.ProviderAWSSD:        awssd.New,

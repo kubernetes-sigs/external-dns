@@ -23,6 +23,7 @@ const (
 	RegistryAWSSD    = "aws-sd"
 	RegistryCRD      = "crd"
 
+	ProviderAkamai       = "akamai"
 	ProviderAlibabaCloud = "alibabacloud"
 	ProviderAWS          = "aws"
 	ProviderAWSSD        = "aws-sd"

@@ -95,6 +95,8 @@ func preValidateConfig(cfg *externaldns.Config) error {
 
 func validateConfigForProvider(cfg *externaldns.Config) error {
 	switch cfg.Provider {
+	case externaldns.ProviderAkamai:
+		return validateConfigForAkamai(cfg)
 	case externaldns.ProviderAzure:
 		return validateConfigForAzure(cfg)
 	case externaldns.ProviderRFC2136:
@@ -102,6 +104,22 @@ func validateConfigForProvider(cfg *externaldns.Config) error {
 	default:
 		return nil
 	}
+}
+
+func validateConfigForAkamai(cfg *externaldns.Config) error {
+	if cfg.AkamaiServiceConsumerDomain == "" && cfg.AkamaiEdgercPath != "" {
+		return errors.New("no Akamai ServiceConsumerDomain specified")
+	}
+	if cfg.AkamaiClientToken == "" && cfg.AkamaiEdgercPath != "" {
+		return errors.New("no Akamai client token specified")
+	}
+	if cfg.AkamaiClientSecret == "" && cfg.AkamaiEdgercPath != "" {
+		return errors.New("no Akamai client secret specified")
+	}
+	if cfg.AkamaiAccessToken == "" && cfg.AkamaiEdgercPath != "" {
+		return errors.New("no Akamai access token specified")
+	}
+	return nil
 }
 
 func validateConfigForAzure(cfg *externaldns.Config) error {
