@@ -206,6 +206,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantEndpointName: "",
 			wantRecordType:   "",
 		},
+		{
+			name:             "suffix dotted hostname with zone round-trips",
+			mapper:           NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"}),
+			input:            "a-name-192.168.0.1-txtsuffix.example.com",
+			wantEndpointName: "name-192.168.0.1.example.com",
+			wantRecordType:   endpoint.RecordTypeA,
+		},
 	}
 
 	for _, tt := range tests {
@@ -412,6 +419,34 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			recordType:  endpoint.RecordTypeTXT,
 			wantTXTName: "txt-foo.example.com",
 		},
+		{
+			name:        "suffix dotted hostname without zones keeps first-dot split",
+			mapper:      NewAffixNameMapper("", "-txtsuffix", ""),
+			dns:         "name-192.168.0.1.example.com",
+			recordType:  endpoint.RecordTypeA,
+			wantTXTName: "a-name-192-txtsuffix.168.0.1.example.com",
+		},
+		{
+			name:        "suffix dotted hostname with zone preserves host labels",
+			mapper:      NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"}),
+			dns:         "name-192.168.0.1.example.com",
+			recordType:  endpoint.RecordTypeA,
+			wantTXTName: "a-name-192.168.0.1-txtsuffix.example.com",
+		},
+		{
+			name:        "prefix dotted hostname with zone preserves host labels",
+			mapper:      NewAffixNameMapperWithZones("txt-", "", "", []string{"example.com"}),
+			dns:         "name-192.168.0.1.example.com",
+			recordType:  endpoint.RecordTypeA,
+			wantTXTName: "txt-a-name-192.168.0.1.example.com",
+		},
+		{
+			name:        "longest zone wins",
+			mapper:      NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com", "168.0.1.example.com"}),
+			dns:         "name-192.168.0.1.example.com",
+			recordType:  endpoint.RecordTypeA,
+			wantTXTName: "a-name-192-txtsuffix.168.0.1.example.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -430,6 +465,16 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 	for _, recordType := range supportedRecords {
 		assert.True(t, testedRecords.Has(recordType), "Record type %s is in supportedRecords but not tested in TestAffixNameMapper_ToTXTName", recordType)
 	}
+}
+
+func TestAffixNameMapper_DottedHostnameRoundTrip(t *testing.T) {
+	m := NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"})
+	dns := "name-192.168.0.1.example.com"
+	txt := m.ToTXTName(dns, endpoint.RecordTypeA)
+	got, rType := m.ToEndpointName(txt)
+	assert.Equal(t, "a-name-192.168.0.1-txtsuffix.example.com", txt)
+	assert.Equal(t, dns, got)
+	assert.Equal(t, endpoint.RecordTypeA, rType)
 }
 
 func TestAffixNameMapper_RecordTypeInAffix(t *testing.T) {
