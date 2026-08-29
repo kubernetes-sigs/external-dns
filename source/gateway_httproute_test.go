@@ -121,6 +121,10 @@ func withPortNumber(port v1.PortNumber) gwParentRefOption {
 	return func(ref *v1.ParentReference) { ref.Port = &port }
 }
 
+func withGroup(group v1.Group) gwParentRefOption {
+	return func(ref *v1.ParentReference) { ref.Group = &group }
+}
+
 func newTestEndpoint(dnsName string, targets ...string) *endpoint.Endpoint {
 	return newTestEndpointWithTTL(dnsName, endpoint.RecordTypeA, 0, targets...)
 }
@@ -142,6 +146,16 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		Namespaces: &v1.RouteNamespaces{
 			From: &fromAll,
 		},
+	}
+	coreGroup := v1.Group("")
+	allowCoreGroupHTTPRoute := &v1.AllowedRoutes{
+		Namespaces: &v1.RouteNamespaces{From: &fromAll},
+		// The core API group holds no HTTPRoute, so this listener accepts none.
+		Kinds: []v1.RouteGroupKind{{Group: &coreGroup, Kind: "HTTPRoute"}},
+	}
+	allowOmittedGroupHTTPRoute := &v1.AllowedRoutes{
+		Namespaces: &v1.RouteNamespaces{From: &fromAll},
+		Kinds:      []v1.RouteGroupKind{{Kind: "HTTPRoute"}},
 	}
 	objectMeta := func(namespace, name string) metav1.ObjectMeta {
 		return metav1.ObjectMeta{
@@ -1639,6 +1653,105 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{},
 			logExpectations: []string{
 				"Parent reference gateway-namespace/other-gateway not found in routeParentRefs for HTTPRoute route-namespace/test",
+			},
+		},
+		{
+			title: "ExplicitCoreGroupParentIsNotAGateway",
+			config: &Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("route-namespace", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-namespace", "test", withGroup(v1.Group(""))),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					// The spec selects the core API group, which holds no Gateway.
+					gwParentRef("gateway-namespace", "test", withGroup(v1.Group(""))),
+					// A stale entry on the Gateway API group, from before the group was set.
+					gwParentRef("gateway-namespace", "test"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+		},
+		{
+			title: "ExplicitCoreGroupAllowedRouteKindTakesNoRoute",
+			config: &Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowCoreGroupHTTPRoute,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("route-namespace", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{gwParentRef("gateway-namespace", "test")},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+		},
+		{
+			title: "OmittedGroupAllowedRouteKindTakesTheGatewayAPIRoute",
+			config: &Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowOmittedGroupHTTPRoute,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("route-namespace", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{gwParentRef("gateway-namespace", "test")},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
 			},
 		},
 		{

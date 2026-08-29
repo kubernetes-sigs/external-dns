@@ -102,6 +102,36 @@ Iterates over all listeners for the parent's `parentRef.sectionName`:
 
 - Ignores listeners which specify an `allowedRoutes` which does not allow the route.
 
+### API group defaulting
+
+`parentRef.group`, and the `group` of each entry in a listener's `allowedRoutes.kinds`, are optional
+and default to `gateway.networking.k8s.io` when they are omitted. An explicit empty string is not
+the same thing: it names the core API group, which holds no Gateway and no \*Route kind.
+
+| written as                         | resolves to                 |
+| ---------------------------------- | --------------------------- |
+| `group` omitted                    | `gateway.networking.k8s.io` |
+| `group: gateway.networking.k8s.io` | `gateway.networking.k8s.io` |
+| `group: ""`                        | the core API group          |
+
+Earlier versions read an explicit `group: ""` as `gateway.networking.k8s.io`. A `parentRef` written
+that way resolved to the same-named Gateway, and a listener whose `allowedRoutes.kinds` was written
+that way accepted Gateway API \*Routes. Both now follow the API, so records that existed only
+because of the old reading are no longer generated.
+
+With `--policy=sync` and a TXT registry, those records and the ownership TXT records that go with
+them are deleted on the next reconcile. Before upgrading, look for `parentRefs` and
+`allowedRoutes.kinds` entries with an explicit empty group, and either set the group to
+`gateway.networking.k8s.io` or drop the field wherever a Gateway API object was meant.
+
+Do not change `group: ""` everywhere. It is the correct way to name an object in the core API
+group, such as the Service in the `backendRef` of the example below. Only references that were
+meant to name a Gateway or a \*Route kind are affected.
+
+`--policy=upsert-only` suppresses the deletion during a rollout, but it does not clean the stale
+records up afterwards and it still allows existing record sets to be updated, so it is a way to
+stage the change rather than a guarantee that nothing moves.
+
 ## Targets
 
 The targets of the DNS entries created from a \*Route are sourced from the following places:
