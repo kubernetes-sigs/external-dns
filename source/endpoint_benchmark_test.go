@@ -140,10 +140,8 @@ func fixturesSvcWithLabels(toLookup, underTest int) []*corev1.Service {
 
 	var createService = func(name string, namespace string, selector map[string]string) *corev1.Service {
 		return &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
+			Name:      name,
+			Namespace: namespace,
 			Spec: corev1.ServiceSpec{
 				Selector:    selector,
 				ExternalIPs: randomIPs(),
@@ -192,10 +190,8 @@ func fixturesIstioGatewaySvcWithLabels(toLookup, underTest int) []*istiov1a.Gate
 
 	var createGateway = func(name string, namespace string, selector map[string]string) *istiov1a.Gateway {
 		return &istiov1a.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
+			Name:      name,
+			Namespace: namespace,
 			Spec: v1alpha3.Gateway{
 				Selector: selector,
 				Servers: []*v1alpha3.Server{

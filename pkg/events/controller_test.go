@@ -115,15 +115,11 @@ func TestController_Run_EmitEvents(t *testing.T) {
 	ctrl.Run(t.Context())
 
 	event := NewEvent(NewObjectReference(&v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-object",
-			Namespace: v1.NamespaceDefault,
-			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       "fake-object",
+		Namespace:  v1.NamespaceDefault,
+		UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 	}, "fake-source"), "record created", ActionCreate, RecordReady)
 
 	ctrl.Add(event)
@@ -140,15 +136,11 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	event := NewEvent(NewObjectReference(&v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-object",
-			Namespace: v1.NamespaceDefault,
-			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       "fake-object",
+		Namespace:  v1.NamespaceDefault,
+		UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 	}, "fake-source"), "record created", ActionCreate, RecordReady)
 
 	ctrl.Add(event)
@@ -163,13 +155,13 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 
 func TestController_Add(t *testing.T) {
 	svcRef := NewObjectReference(&v1.Service{
-		TypeMeta:   metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{Name: "my-svc", Namespace: "default", UID: "uid-svc"},
+		Kind: "Service", APIVersion: "v1",
+		Name: "my-svc", Namespace: "default", UID: "uid-svc",
 	}, "service")
 
 	crdRef := NewObjectReference(&v1.ConfigMap{
-		TypeMeta:   metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-		ObjectMeta: metav1.ObjectMeta{Name: "my-crd", Namespace: "default", UID: "uid-crd"},
+		Kind: "ConfigMap", APIVersion: "v1",
+		Name: "my-crd", Namespace: "default", UID: "uid-crd",
 	}, "crd")
 
 	ep := func(refs ...*ObjectReference) EndpointInfo {
@@ -209,7 +201,7 @@ func TestController_ProcessNextWorkItem(t *testing.T) {
 		ctrl, err := NewEventController(kubeClient.EventsV1(), &Config{dryRun: true})
 		require.NoError(t, err)
 		ctrl.queue.Add(&eventsv1.Event{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
+			Name: "test-event", Namespace: "default",
 		})
 		ctrl.processNextWorkItem(t.Context())
 		assert.Equal(t, []string{metav1.DryRunAll}, capturedDryRun)
@@ -225,7 +217,7 @@ func TestController_ProcessNextWorkItem(t *testing.T) {
 		require.NoError(t, err)
 
 		ctrl.queue.Add(&eventsv1.Event{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
+			Name: "test-event", Namespace: "default",
 		})
 		// First maxTriesPerEvent calls requeue; the final call exhausts retries and drops.
 		for range maxRetriesPerEvent + 1 {
@@ -242,8 +234,8 @@ func TestController_Emit_SkipsUnconfiguredReason(t *testing.T) {
 	require.NoError(t, err)
 
 	ctrl.emit(&eventsv1.Event{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
-		Reason:     string(RecordDeleted), // not in emitEvents
+		Name: "test-event", Namespace: "default",
+		Reason: string(RecordDeleted), // not in emitEvents
 	})
 
 	assert.Equal(t, 0, ctrl.queue.Len())
@@ -272,15 +264,11 @@ func TestController_ProcessNextWorkItem_RequestOnError(t *testing.T) {
 	ctrl.Run(t.Context())
 
 	event := NewEvent(NewObjectReference(&v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-object",
-			Namespace: v1.NamespaceDefault,
-			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       "fake-object",
+		Namespace:  v1.NamespaceDefault,
+		UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 	}, "fake-source"), "record created", ActionCreate, RecordReady)
 
 	ctrl.Add(event)

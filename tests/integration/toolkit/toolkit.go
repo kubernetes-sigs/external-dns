@@ -121,11 +121,9 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 		podIP := fmt.Sprintf("10.0.0.%d", i+1)
 
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: svc.Namespace,
-				Labels:    svc.Spec.Selector,
-			},
+			Name:      podName,
+			Namespace: svc.Namespace,
+			Labels:    svc.Spec.Selector,
 			Spec: corev1.PodSpec{
 				Hostname: podName,
 			},
@@ -152,11 +150,9 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 	endpointSliceLabels[discoveryv1.LabelServiceName] = svc.Name
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-slice", svc.Name),
-			Namespace: svc.Namespace,
-			Labels:    endpointSliceLabels,
-		},
+		Name:        fmt.Sprintf("%s-slice", svc.Name),
+		Namespace:   svc.Namespace,
+		Labels:      endpointSliceLabels,
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints:   endpoints,
 	}

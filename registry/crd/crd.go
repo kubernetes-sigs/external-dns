@@ -326,12 +326,10 @@ func recordObjectName(record *endpoint.Endpoint) string {
 // Programmed). The returned object always reflects the desired endpoint.
 func (cr *CRDRegistry) ensureDNSRecord(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecord, error) {
 	dnsrecord := &apiv1alpha1.DNSRecord{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      recordObjectName(record),
-			Namespace: cr.namespace,
-			Labels: map[string]string{
-				apiv1alpha1.RecordOwnerLabel: cr.OwnerID(),
-			},
+		Name:      recordObjectName(record),
+		Namespace: cr.namespace,
+		Labels: map[string]string{
+			apiv1alpha1.RecordOwnerLabel: cr.OwnerID(),
 		},
 		Spec: apiv1alpha1.DNSRecordSpec{
 			Endpoint: *record,

@@ -92,7 +92,6 @@ func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeG
 		DialContext: (&net.Dialer{
 			Timeout:   timeout,
 			KeepAlive: 30 * time.Second,
-			DualStack: true,
 		}).DialContext,
 		TLSHandshakeTimeout:   3 * time.Second,
 		ResponseHeaderTimeout: timeout,

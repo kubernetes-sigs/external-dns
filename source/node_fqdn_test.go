@@ -39,7 +39,7 @@ func TestNodeFQDNTemplate(t *testing.T) {
 
 	makeNode := func() *v1.Node {
 		return &v1.Node{
-			ObjectMeta: metav1.ObjectMeta{Name: nodeName},
+			Name: nodeName,
 			Status: v1.NodeStatus{
 				Addresses: []v1.NodeAddress{
 					{Type: v1.NodeExternalIP, Address: nodeExtIP},
@@ -121,7 +121,7 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.domainA.com,{{.Name}}.domainB.com",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "ip-10-1-176-5.internal"},
+					Name: "ip-10-1-176-5.internal",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{Type: v1.NodeInternalIP, Address: "10.1.176.1"},
@@ -142,7 +142,7 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.domainA.com,{{ .Name }}.{{ .Namespace }}.example.tld",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name"},
+					Name: "node-name",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{Type: v1.NodeInternalIP, Address: "10.1.176.1"},
@@ -160,7 +160,7 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{ range .Status.Addresses }}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}ip-{{ .Address | replace \".\" \"-\" }}{{ break }}{{ end }}{{ end }}.example.com",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "ip-10-1-176-1"},
+					Name: "ip-10-1-176-1",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{Type: v1.NodeExternalIP, Address: "243.186.136.160"},
@@ -179,7 +179,7 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{ $name := .Name }}{{ range .Status.Addresses }}{{if (isIPv4 .Address)}}{{ $name }}.ipv4{{ break }}{{ end }}{{ end }}.example.com",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-ip"},
+					Name: "node-name-ip",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{Type: v1.NodeExternalIP, Address: "243.186.136.160"},
@@ -198,11 +198,9 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.example.com",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "ip-10-1-176-1",
-						Annotations: map[string]string{
-							"external-dns.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com",
-						},
+					Name: "ip-10-1-176-1",
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com",
 					},
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
@@ -222,11 +220,9 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.example.com",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "node-name",
-						Annotations: map[string]string{
-							"external-dns.kubernetes.io/target": "203.2.45.22",
-						},
+					Name: "node-name",
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "203.2.45.22",
 					},
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
@@ -245,10 +241,8 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{ .Name }}.{{ .Annotations.workload }}.domain.tld",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:        "node-name",
-						Annotations: map[string]string{"workload": "cluster-resources"},
-					},
+					Name:        "node-name",
+					Annotations: map[string]string{"workload": "cluster-resources"},
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{Type: v1.NodeExternalIP, Address: "243.186.136.160"},
@@ -265,10 +259,8 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: `{{ .Name }}.{{ index .ObjectMeta.Labels "topology.kubernetes.io/region" }}.domain.tld`,
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:   "node-name",
-						Labels: map[string]string{"topology.kubernetes.io/region": "eu-west-1"},
-					},
+					Name:   "node-name",
+					Labels: map[string]string{"topology.kubernetes.io/region": "eu-west-1"},
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{Type: v1.NodeExternalIP, Address: "243.186.136.160"},
@@ -285,13 +277,13 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: "{{ .Name }}.domain.tld,all.example.com",
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-1"},
+					Name: "node-name-1",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "243.186.136.160"}},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-2"},
+					Name: "node-name-2",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "243.186.136.178"}},
 					},
@@ -309,13 +301,13 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			combine:      true,
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-1"},
+					Name: "node-name-1",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "243.186.136.160"}},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-2"},
+					Name: "node-name-2",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "243.186.136.178"}},
 					},
@@ -334,14 +326,14 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			fqdnTemplate: `{{ if eq .Kind "Node" }}{{.Name}}.{{.Status.NodeInfo.Architecture}}.node.tld{{ end }}`,
 			nodes: []*v1.Node{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-1"},
+					Name: "node-name-1",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "10.0.0.1"}},
 						NodeInfo:  v1.NodeSystemInfo{Architecture: "arm64"},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "node-name-2"},
+					Name: "node-name-2",
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "10.0.0.2"}},
 						NodeInfo:  v1.NodeSystemInfo{Architecture: "x86_64"},
