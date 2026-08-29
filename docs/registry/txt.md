@@ -138,6 +138,16 @@ Note that the key used for encryption should be a secure key and properly manage
 > foreseeable today, potentially including failures to read, update, or delete existing records.
 > Enable encryption with this risk in mind.
 
+### Known Breaking Changes
+
+Concrete instances of the risk described above, to help diagnose issues if you hit one:
+
+- **Go 1.27 (`compress/flate` encoder rewrite):** external-dns binaries built with Go 1.27+ compress
+  encrypted TXT record payloads differently than binaries built with Go 1.26 and earlier ([Go 1.27
+  release notes](https://go.dev/doc/go1.27)). Records encrypted by a pre-1.27 build still decrypt
+  correctly under 1.27+, but deleting or updating them regenerates a byte-different ciphertext, which
+  some providers may reject as a value mismatch. The record self-heals once external-dns recreates it.
+
 ### Generating the TXT Encryption Key
 
 Python
