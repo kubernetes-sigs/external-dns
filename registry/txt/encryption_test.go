@@ -281,7 +281,7 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 	assert.LessOrEqual(t, len(encryptionNonce), 5)
 }
 
-// TestRecordsWithMismatchedEncryptionKeyLosesOwnership: see docs/registry/txt.md#aes-key-rotation.
+// TestRecordsWithMismatchedEncryptionKeyLosesOwnership:
 //  1. registryA (keyA) creates a CNAME record; its TXT ownership marker is encrypted with keyA.
 //  2. The zone's raw DNS content (name/type/target only, no in-process Labels) is replayed into a
 //     second provider, to simulate a real DNS provider, which never persists Endpoint.Labels.
