@@ -251,6 +251,12 @@ func main() {
   Point the non-encrypting instance at the inverse selector (e.g.
   `--label-filter='external-dns/txt-encrypt notin (true)'`) so the two instances don't both pick up
   the same resource.
+- **Have a disaster-recovery plan for TXT records, regardless of encryption.** TXT records are the
+  only record of external-dns's ownership metadata — losing or corrupting them (accidental deletion,
+  botched migration, provider outage) can cause external-dns to lose track of what it owns, leading
+  to orphaned records or unintended recreation/deletion. Back up zone contents (including TXT
+  records) and document a recovery procedure before you need it; this applies equally whether
+  encryption is enabled or not.
 
 ## Caching
 
