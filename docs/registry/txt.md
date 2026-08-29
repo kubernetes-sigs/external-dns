@@ -228,6 +228,33 @@ func main() {
 }
 ```
 
+### AES Key Rotation
+
+Rotating the encryption key is a manual, stop-the-world operation — external-dns only holds one key
+at a time and cannot decrypt records under an old key while encrypting new ones mid-flight.
+
+1. **Stop external-dns** (scale the deployment to 0 or pause it) before starting the migration below,
+   so nothing else is writing to the zone concurrently.
+2. For every existing encrypted TXT record in the zone — there's no ready-made tool for this, write a
+   small CLI using your DNS provider's SDK to list them:
+   - Decrypt with the old key: `endpoint.NewLabelsFromString(value, oldKey)`.
+   - Remove the internal nonce label so a fresh one gets generated on re-encrypt.
+   - Re-encrypt with the new key: `labels.Serialize(true, true, newKey)`.
+   - Write the new value back to the provider via its API.
+3. Once all records are migrated, update `--txt-encrypt-aes-key` (or the backing secret) to the new
+   key.
+4. Run external-dns once with `--dry-run` (pointed at the new key) and check the logs before applying
+   for real:
+   - Confirm no unexpected creates/updates/deletes (DNS record drift).
+   - Confirm no decryption errors are logged.
+5. Restart external-dns without `--dry-run`. On the next reconcile it will decrypt every record
+   successfully under the new key.
+
+> **Note:** There is no built-in `external-dns` command or generic CLI provided by this repository
+> for this — you'll need to build one against your provider's SDK. If you build something generic
+> enough to be reusable across providers, or learn something worth sharing along the way, please
+> consider contributing it back or updating this guide.
+
 ### Best Practices
 
 - **Run two (or more) external-dns instances instead of encrypting everything.** One instance
