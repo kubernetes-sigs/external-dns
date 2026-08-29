@@ -200,10 +200,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		return im.recordsCache, nil
 	}
 
-	// existingTXTs must always hold the latest TXT records, so it needs to be reset every time.
-	// Previously, it was reset with a defer after ApplyChanges, but ApplyChanges is not called
-	// when plan.HasChanges() is false (i.e., when there are no changes to apply).
-	// In that case, stale TXT record information could remain, so we reset it here instead.
+	// existingTXTs is only ever added to, so it has to be dropped before the read below repopulates it.
+	// A key surviving from an earlier cycle would claim its TXT still
+	// exists, and isAbsent would then skip re-creating it.
 	im.existingTXTs.reset()
 
 	records, err := im.provider.Records(ctx)
