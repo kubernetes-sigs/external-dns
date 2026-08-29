@@ -125,6 +125,34 @@ func withGroup(group v1.Group) gwParentRefOption {
 	return func(ref *v1.ParentReference) { ref.Group = &group }
 }
 
+func gwRouteParentStatus(ref v1.ParentReference, observedGeneration int64) v1.RouteParentStatus {
+	return v1.RouteParentStatus{
+		ParentRef: ref,
+		Conditions: []metav1.Condition{
+			// Put another condition first, so Accepted must be looked up by type.
+			{Type: string(v1.RouteConditionResolvedRefs), Status: metav1.ConditionTrue},
+			{Type: string(v1.RouteConditionAccepted), Status: metav1.ConditionTrue, ObservedGeneration: observedGeneration},
+		},
+	}
+}
+
+func withControllerName(rps v1.RouteParentStatus, name v1.GatewayController) v1.RouteParentStatus {
+	rps.ControllerName = name
+	return rps
+}
+
+func httpListeners(names ...v1.SectionName) []v1.Listener {
+	listeners := make([]v1.Listener, 0, len(names))
+	for _, name := range names {
+		listeners = append(listeners, v1.Listener{
+			Name:     name,
+			Protocol: v1.HTTPProtocolType,
+			Hostname: new(v1.Hostname(string(name) + ".example.internal")),
+		})
+	}
+	return listeners
+}
+
 func newTestEndpoint(dnsName string, targets ...string) *endpoint.Endpoint {
 	return newTestEndpointWithTTL(dnsName, endpoint.RecordTypeA, 0, targets...)
 }
@@ -647,6 +675,278 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// The Route moved from foo to bar and the controller kept the foo entry.
+			title:      "SectionNameChangedWithStaleParentStatus",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec:       v1.GatewaySpec{Listeners: httpListeners("foo", "bar")},
+				Status:     gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+			logExpectations: []string{
+				`Gateway default/test section "foo" port 0 is superseded for HTTPRoute default/test`,
+			},
+		},
+		{
+			// An unrelated edit bumps the generation, so foo is published again until the controller catches up.
+			title:      "SupersededStatusReturnsWhileAnUnrelatedUpdateIsPending",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec:       v1.GatewaySpec{Listeners: httpListeners("foo", "bar")},
+				Status:     gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 3),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// Two controllers confirm one selector each, and together they retire the old entry.
+			title:      "SelectorsConfirmedByDifferentControllersRetireSupersededStatus",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec:       v1.GatewaySpec{Listeners: httpListeners("stable", "extra", "old")},
+				Status:     gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("stable")),
+							gwParentRef("default", "test", withSectionName("extra")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					withControllerName(gwRouteParentStatus(gwParentRef("default", "test", withSectionName("stable")), 2), "a.example.com/gateway-controller"),
+					withControllerName(gwRouteParentStatus(gwParentRef("default", "test", withSectionName("extra")), 2), "b.example.com/gateway-controller"),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("old")), 1),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("stable.example.internal", "1.2.3.4"),
+				newTestEndpoint("extra.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// Without observedGeneration nothing is confirmed, so nothing is dropped.
+			title:      "SectionNameChangedWithoutAnObservedGeneration",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec:       v1.GatewaySpec{Listeners: httpListeners("foo", "bar")},
+				Status:     gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "test", withSectionName("foo")),
+					gwParentRef("default", "test", withSectionName("bar")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The cached Gateway has no bar listener yet, so foo is kept.
+			title:      "SectionNameChangedWithCurrentListenerMissing",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec:       v1.GatewaySpec{Listeners: httpListeners("foo")},
+				Status:     gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// bar is accepted but matches no Route hostname, so only stable is confirmed and foo is kept.
+			title:      "SectionNameChangedWithCurrentListenerMatchingNoHostname",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "stable",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("stable.example.internal")),
+						},
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.org")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("stable")),
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("stable")), 2),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("foo")), 1),
+					gwRouteParentStatus(gwParentRef("default", "test", withSectionName("bar")), 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("stable.example.internal", "1.2.3.4"),
+				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// Each Gateway is judged on its own status, and only gateway-a has caught up.
+			title:      "SectionNameChangedOnTwoGatewaysWithOneStatusBehind",
+			config:     &Config{},
+			namespaces: namespaces("default", "gateway-a", "gateway-b"),
+			gateways: []*v1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-a", "gw"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{
+							{
+								Name:          "foo",
+								Protocol:      v1.HTTPProtocolType,
+								Hostname:      new(v1.Hostname("foo-a.example.internal")),
+								AllowedRoutes: allowAllNamespaces,
+							},
+							{
+								Name:          "bar",
+								Protocol:      v1.HTTPProtocolType,
+								Hostname:      new(v1.Hostname("bar-a.example.internal")),
+								AllowedRoutes: allowAllNamespaces,
+							},
+						},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+				{
+					ObjectMeta: objectMeta("gateway-b", "gw"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{
+							{
+								Name:          "foo",
+								Protocol:      v1.HTTPProtocolType,
+								Hostname:      new(v1.Hostname("foo-b.example.internal")),
+								AllowedRoutes: allowAllNamespaces,
+							},
+							{
+								Name:          "bar",
+								Protocol:      v1.HTTPProtocolType,
+								Hostname:      new(v1.Hostname("bar-b.example.internal")),
+								AllowedRoutes: allowAllNamespaces,
+							},
+						},
+					},
+					Status: gatewayStatus("2.3.4.5"),
+				},
+			},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("gateway-a", "gw", withSectionName("bar")),
+							gwParentRef("gateway-b", "gw", withSectionName("bar")),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("gateway-a", "gw", withSectionName("foo")), 1),
+					gwRouteParentStatus(gwParentRef("gateway-a", "gw", withSectionName("bar")), 2),
+					gwRouteParentStatus(gwParentRef("gateway-b", "gw", withSectionName("foo")), 1),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("bar-a.example.internal", "1.2.3.4"),
+				newTestEndpoint("foo-b.example.internal", "2.3.4.5"),
+			},
+		},
+		{
 			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
 			title:      "PortNumberMatch",
 			config:     &Config{},
@@ -693,6 +993,50 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			}},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("foo.example.internal", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The Route moved from port 80 to 8080; the stale 80 entry goes even at the current generation.
+			title:      "PortChangedWithStaleParentStatus",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("foo.example.internal")),
+							Port:     80,
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+							Port:     8080,
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: omWithGeneration(objectMeta("default", "test"), 2),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withPortNumber(8080)),
+						},
+					},
+				},
+				Status: v1.HTTPRouteStatus{RouteStatus: v1.RouteStatus{Parents: []v1.RouteParentStatus{
+					gwRouteParentStatus(gwParentRef("default", "test", withPortNumber(80)), 2),
+					gwRouteParentStatus(gwParentRef("default", "test", withPortNumber(8080)), 2),
+				}}},
+			}},
+			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("bar.example.internal", "1.2.3.4"),
 			},
 		},

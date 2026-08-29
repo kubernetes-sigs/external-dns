@@ -37,6 +37,7 @@ import (
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -418,19 +419,63 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return hostTargets, nil
 	}
 
-	for _, rps := range rt.RouteStatus().Parents {
-		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
-		if !ok {
-			continue
-		}
-		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
-	}
+	c.resolveParents(rt, rtHosts, routeParentRefs, hostTargets)
+
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
 	for host, targets := range hostTargets {
 		hostTargets[host] = uniqueTargets(targets)
 	}
 	return hostTargets, nil
+}
+
+// resolveParents skips an entry the spec has left once each selector the spec lists for that
+// parent has a matching entry accepted at the current generation; until then its records stay.
+func (c *gatewayRouteResolver) resolveParents(rt gatewayRoute, rtHosts []string, routeParentRefs []v1.ParentReference, hostTargets map[string]endpoint.Targets) {
+	meta := rt.Metadata()
+	wanted := gwRouteWantedSelectors(routeParentRefs, meta)
+
+	usable := make(map[objectRef]sets.Set[gwRouteParentSelector], len(wanted))
+	var superseded []v1.RouteParentStatus
+
+	for _, rps := range rt.RouteStatus().Parents {
+		parentRef := gwRouteParentObjectRef(rps.ParentRef, meta)
+		selector := gwRouteParentSelectorOf(rps.ParentRef)
+		if !wanted[parentRef].Has(selector) {
+			superseded = append(superseded, rps)
+			continue
+		}
+		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
+		if !ok {
+			continue
+		}
+		matched := c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+		// Only superseded entries wait for the generation: gating these records on it would
+		// delete them whenever the controller lags.
+		if !matched || gwRouteAcceptedGeneration(rps.Conditions) != meta.Generation {
+			continue
+		}
+		if usable[parentRef] == nil {
+			usable[parentRef] = sets.New[gwRouteParentSelector]()
+		}
+		usable[parentRef].Insert(selector)
+	}
+
+	// Count confirmations per parent, not per controllerName, or an entry left by a retired
+	// controller would never be dropped.
+	for _, rps := range superseded {
+		parentRef := gwRouteParentObjectRef(rps.ParentRef, meta)
+		if selectors, inSpec := wanted[parentRef]; inSpec && len(usable[parentRef]) == len(selectors) {
+			selector := gwRouteParentSelectorOf(rps.ParentRef)
+			log.Debugf("%s %s/%s section %q port %d is superseded for %s %s/%s", parentRef.Kind, parentRef.Namespace, parentRef.Name, selector.sectionName, selector.port, c.src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
+		if !ok {
+			continue
+		}
+		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+	}
 }
 
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
@@ -482,7 +527,7 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) bool {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -499,13 +544,14 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 		}
 	}
 	if match {
-		return
+		return true
 	}
 	if parent.section != "" && unattachedReason != "" {
 		log.Debugf("%s %s/%s section %q is not attached for %s %s/%s: %s", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, unattachedReason)
-		return
+		return false
 	}
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
+	return false
 }
 
 func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
@@ -817,6 +863,47 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 		return true
 	}
 	return false
+}
+
+// gwRouteParentObjectRef identifies the parent object of ref, without sectionName and port.
+func gwRouteParentObjectRef(ref v1.ParentReference, meta *metav1.ObjectMeta) objectRef {
+	group, kind, namespace := normParentRef(ref, meta.Namespace)
+	return newObjectRef(group, kind, namespace, string(ref.Name))
+}
+
+// gwRouteParentSelector is the part of a ParentReference that selects listeners.
+type gwRouteParentSelector struct {
+	sectionName v1.SectionName
+	port        v1.PortNumber // 0 when unset; the API requires 1 to 65535.
+}
+
+func gwRouteParentSelectorOf(ref v1.ParentReference) gwRouteParentSelector {
+	selector := gwRouteParentSelector{sectionName: sectionVal(ref.SectionName, "")}
+	if ref.Port != nil {
+		selector.port = *ref.Port
+	}
+	return selector
+}
+
+func gwRouteWantedSelectors(routeParentRefs []v1.ParentReference, meta *metav1.ObjectMeta) map[objectRef]sets.Set[gwRouteParentSelector] {
+	wanted := make(map[objectRef]sets.Set[gwRouteParentSelector], len(routeParentRefs))
+	for _, ref := range routeParentRefs {
+		key := gwRouteParentObjectRef(ref, meta)
+		if wanted[key] == nil {
+			wanted[key] = sets.New[gwRouteParentSelector]()
+		}
+		wanted[key].Insert(gwRouteParentSelectorOf(ref))
+	}
+	return wanted
+}
+
+func gwRouteAcceptedGeneration(conds []metav1.Condition) int64 {
+	for _, c := range conds {
+		if c.Type == string(v1.RouteConditionAccepted) {
+			return c.ObservedGeneration
+		}
+	}
+	return 0
 }
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {
