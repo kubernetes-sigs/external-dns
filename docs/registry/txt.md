@@ -131,7 +131,12 @@ key must be specified in URL-safe base64 form (recommended) or be a plain text, 
 
 Note that the key used for encryption should be a secure key and properly managed to ensure the security of your TXT records.
 
-> **Note:** Encryption is provided on a best-effort basis and enabling it carries some inherent risk. Encrypted TXT record values depend on implementation details of the Go standard library and its dependencies, which are not guaranteed to stay stable across releases. Future changes to external-dns's Go toolchain or dependencies could affect encrypted records in ways not foreseeable today, potentially including failures to read, update, or delete existing records. Enable encryption with this risk in mind.
+> **Note:** Encryption is provided on a best-effort basis and enabling it carries some inherent risk.
+> Encrypted TXT record values depend on implementation details of the Go standard library and its
+> dependencies, which are not guaranteed to stay stable across releases. Future changes to
+> external-dns's Go toolchain or dependencies could affect encrypted records in ways not
+> foreseeable today, potentially including failures to read, update, or delete existing records.
+> Enable encryption with this risk in mind.
 
 ### Generating the TXT Encryption Key
 
