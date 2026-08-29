@@ -153,6 +153,22 @@ Concrete instances of the risk described above, to help diagnose issues if you h
 Rotating the encryption key is a manual, stop-the-world operation — external-dns only holds one key
 at a time and cannot decrypt records under an old key while encrypting new ones mid-flight.
 
+Current behavior when a TXT ownership record can't be decrypted:
+
+1. External-dns can no longer decrypt that TXT ownership record — the ciphertext just looks like
+   garbage under the key it has.
+2. It doesn't error out or crash. It quietly treats the record as unowned (no owner label).
+3. Because it no longer recognizes the record as its own, it refuses to update or delete it going
+   forward.
+4. The record already exists, so external-dns:
+   - won't try to re-create it or take ownership of it
+   - won't apply any future change to its desired value either, since it doesn't own it
+   - lets it silently drift, unmanaged
+5. Anything created afterward works fine, since it's encrypted fresh under whatever key is currently
+   configured.
+
+This is why key rotation specifically needs the migration below rather than just swapping the flag.
+
 1. **Stop external-dns** (scale the deployment to 0 or pause it) before starting the migration below,
    so nothing else is writing to the zone concurrently.
 2. For every existing encrypted TXT record in the zone — there's no ready-made tool for this, write a
@@ -175,7 +191,7 @@ at a time and cannot decrypt records under an old key while encrypting new ones 
 > enough to be reusable across providers, or learn something worth sharing along the way, please
 > consider contributing it back or updating this guide.
 
-### Best Practices
+### Recommended Practices
 
 - **Run two (or more) external-dns instances instead of encrypting everything.** One instance
   without `--txt-encrypt-enabled` for records that don't carry sensitive metadata; a second instance
