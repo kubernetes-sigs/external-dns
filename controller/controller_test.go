@@ -36,6 +36,8 @@ import (
 	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/registry/noop"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -257,13 +259,21 @@ func TestRun(t *testing.T) {
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+
+	// Reset the shared gauge so the wait below observes a real 0->1 transition
+	// from this run rather than leftover state from an earlier test.
+	verifiedRecords.Gauge.Reset()
+
 	ctx, cancel := context.WithCancel(t.Context())
 	stopped := make(chan struct{})
 	go func() {
 		ctrl.Run(ctx)
 		close(stopped)
 	}()
-	time.Sleep(1500 * time.Millisecond)
+
+	require.Eventually(t, func() bool {
+		return testutil.ToFloat64(verifiedRecords.Gauge.With(prometheus.Labels{"record_type": "a"})) >= 1
+	}, 15*time.Second, 10*time.Millisecond)
 	cancel() // start shutdown
 	<-stopped
 
