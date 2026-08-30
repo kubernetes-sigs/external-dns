@@ -144,6 +144,7 @@ from the usage of any externally developed webhook.
 | --------------------- | -------------------------------------------------------------------- |
 | Abion                 | https://github.com/abiondevelopment/external-dns-webhook-abion       |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
+| Akamai Edge DNS       | https://github.com/PixiBixi/external-dns-akamai-webhook              |
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
