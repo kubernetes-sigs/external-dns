@@ -19,6 +19,7 @@ package source
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -103,6 +104,34 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "10.0.1.2",
+					},
+				},
+			},
+		},
+		{
+			"pod with a hostname label over 63 characters is skipped instead of panicking",
+			"",
+			"",
+			true,
+			"",
+			nil,
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							annotations.InternalHostnameKey: strings.Repeat("a", 64) + ".example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
 					},
 				},
 			},
