@@ -41,6 +41,11 @@ If the value is `private`, use the Nodes' addresses of type `InternalIP`.
 If the annotation is not present and there is at least one address of type `ExternalIP`,
 behave as if the value were `public`, otherwise behave as if the value were `private`.
 
+This annotation is read only by the Service source. Every other source ignores it, including the
+Ingress source — see
+[the FAQ](../faq.md#how-do-i-specify-that-i-want-the-dns-record-to-point-to-either-the-nodes-public-or-private-ip-when-it-has-both)
+for the alternatives available there.
+
 ## external-dns.kubernetes.io/controller
 
 If this annotation exists and has a value other than `dns-controller` then the source ignores the resource.
