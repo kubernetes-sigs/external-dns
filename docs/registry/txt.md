@@ -131,32 +131,22 @@ key must be specified in URL-safe base64 form (recommended) or be a plain text, 
 
 Note that the key used for encryption should be a secure key and properly managed to ensure the security of your TXT records.
 
-> **Note:** Encryption is provided on a best-effort basis and enabling it carries some inherent risk.
-> Encrypted TXT record values depend on implementation details of the Go standard library and its
-> dependencies, which are not guaranteed to stay stable across releases. Future changes to
-> external-dns's Go toolchain or dependencies could affect encrypted records in ways not
-> foreseeable today, potentially including failures to read, update, or delete existing records.
-> Enable encryption with this risk in mind.
-
-### Known Breaking Changes
-
-Concrete instances of the risk described above, to help diagnose issues if you hit one:
-
-- **Go 1.27 (`compress/flate` encoder rewrite):** external-dns binaries built with Go 1.27+ compress
-  encrypted TXT record payloads differently than binaries built with Go 1.26 and earlier ([Go 1.27
-  release notes](https://go.dev/doc/go1.27#compressflatepkgcompressflate)). Records encrypted by a pre-1.27 build still decrypt
-  correctly under 1.27+, but deleting or updating them regenerates a byte-different ciphertext, which
-  some providers may reject as a value mismatch. The record self-heals once external-dns recreates it.
+> **Note:** Encryption is best-effort. The stored value is produced by the Go standard library
+> (AES-GCM over a gzip-compressed payload), and its exact bytes are not guaranteed to stay stable
+> across Go toolchain or dependency upgrades. A future change could affect the ability to update or
+> delete existing encrypted records on providers that match by value. Decryption of already-written
+> records is not expected to be affected. Enable encryption with this in mind.
 
 ### AES Key Rotation
 
 Rotating the encryption key is a manual, stop-the-world operation — external-dns only holds one key
 at a time and cannot decrypt records under an old key while encrypting new ones mid-flight.
 
-Current behavior when a TXT ownership record can't be decrypted:
+Current behavior when a TXT ownership record cannot be decrypted (for example after the AES key has
+changed):
 
-1. External-dns can no longer decrypt that TXT ownership record — the ciphertext just looks like
-   garbage under the key it has.
+1. AES-GCM authentication fails under the current key, so label parsing returns an error and
+   external-dns cannot recover the owner metadata.
 2. It doesn't error out or crash. It quietly treats the record as unowned (no owner label).
 3. Because it no longer recognizes the record as its own, it refuses to update or delete it going
    forward.
@@ -169,13 +159,17 @@ Current behavior when a TXT ownership record can't be decrypted:
 
 This is why key rotation specifically needs the migration below rather than just swapping the flag.
 
+#### Migration procedure
+
 1. **Stop external-dns** (scale the deployment to 0 or pause it) before starting the migration below,
    so nothing else is writing to the zone concurrently.
 2. For every existing encrypted TXT record in the zone — there's no ready-made tool for this, write a
    small CLI using your DNS provider's SDK to list them:
    - Decrypt with the old key: `endpoint.NewLabelsFromString(value, oldKey)`.
-   - Remove the internal nonce label so a fresh one gets generated on re-encrypt.
-   - Re-encrypt with the new key: `labels.Serialize(true, true, newKey)`.
+   - Delete the `txt-encryption-nonce` entry from the returned map so a fresh nonce is generated on
+     re-encrypt.
+   - Re-encrypt with the new key: `labels.Serialize(true, true, newKey)` (`withQuotes=true`,
+     `txtEncryptEnabled=true`).
    - Write the new value back to the provider via its API.
 3. Once all records are migrated, update `--txt-encrypt-aes-key` (or the backing secret) to the new
    key.
@@ -198,9 +192,8 @@ This is why key rotation specifically needs the migration below rather than just
   with `--txt-encrypt-enabled` + `--txt-encrypt-aes-key`, scoped to only the resources that actually
   need it.
 - **Don't encrypt by default.** Encryption isn't free — it adds CPU overhead per reconcile and
-  carries the risks noted in [Known Breaking Changes](#known-breaking-changes) above. Private/
-  internal-only records whose metadata (ingress name, namespace, resource path) isn't sensitive
-  generally don't need it.
+  carries the risk noted above. Private / internal-only records whose metadata (ingress name,
+  namespace, resource path) isn't sensitive generally don't need it.
 - **Scope the encrypting instance with `--label-filter`** so only resources explicitly opted in get
   encrypted, rather than blanket-encrypting a whole cluster. Pick one label convention and apply it
   consistently:
@@ -213,7 +206,8 @@ This is why key rotation specifically needs the migration below rather than just
 
   Point the non-encrypting instance at the inverse selector (e.g.
   `--label-filter='external-dns/txt-encrypt notin (true)'`) so the two instances don't both pick up
-  the same resource.
+  the same resource. Keep the label convention stable: a resource that moves between the two filters
+  forces an ownership handoff and a rewrite of its TXT record (encrypted to plain, or the reverse).
 - **Have a disaster-recovery plan for TXT records, regardless of encryption.** TXT records are the
   only record of external-dns's ownership metadata — losing or corrupting them (accidental deletion,
   botched migration, provider outage) can cause external-dns to lose track of what it owns, leading
