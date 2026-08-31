@@ -28,20 +28,7 @@ import (
 // Given "10.20.30.0/24" returns "30.20.10.in-addr.arpa"
 // Given "10.20.30.0/25" returns "0/25.30.20.10.in-addr.arpa" (RFC2317)
 func CidrToInAddr(cidr string) (string, error) {
-	// If the user sent an IP instead of a CIDR (i.e. no "/"), turn it
-	// into a CIDR by adding /32 or /128 as appropriate.
-	ip := net.ParseIP(cidr)
-	if ip != nil {
-		if ip.To4() != nil {
-			cidr = ip.String() + "/32"
-			// Older code used `cidr + "/32"` but that didn't work with
-			// "IPv4 mapped IPv6 address". ip.String() returns the IPv4
-			// address for all IPv4 addresses no matter how they are
-			// expressed internally.
-		} else {
-			cidr += "/128"
-		}
-	}
+	cidr = normalizeCIDR(cidr)
 
 	a, c, err := net.ParseCIDR(cidr)
 	if err != nil {
@@ -57,38 +44,64 @@ func CidrToInAddr(cidr string) (string, error) {
 	}
 
 	bits, total := c.Mask.Size()
-	var toTrim int
 	if bits == 0 {
 		return "", fmt.Errorf("cannot use /0 in reverse CIDR")
 	}
 
 	// Handle IPv4 "Classless in-addr.arpa delegation" RFC2317:
-	if total == 32 && bits >= 25 && bits < 32 {
-		// first address / netmask . Class-b-arpa.
-		fparts := strings.Split(c.IP.String(), ".")
-		first := fparts[3]
-		bparts := strings.SplitN(base, ".", 2)
-		return fmt.Sprintf("%s/%d.%s", first, bits, bparts[1]), nil
+	if name, ok := classlessIPv4Name(c, base, total, bits); ok {
+		return name, nil
 	}
 
-	// Handle IPv4 Class-full and IPv6:
-	switch total {
-	case 32:
-		if bits%8 != 0 {
-			return "", fmt.Errorf("IPv4 mask must be multiple of 8 bits")
-		}
-		toTrim = (total - bits) / 8
-	case 128:
-		if bits%4 != 0 {
-			return "", fmt.Errorf("IPv6 mask must be multiple of 4 bits")
-		}
-		toTrim = (total - bits) / 4
-	default:
-		return "", fmt.Errorf("invalid address (not IPv4 or IPv6): %v", cidr)
+	toTrim, err := reverseNameTrimCount(total, bits, cidr)
+	if err != nil {
+		return "", err
 	}
 
 	parts := strings.SplitN(base, ".", toTrim+1)
 	return parts[len(parts)-1], nil
+}
+
+// normalizeCIDR turns a bare IP address into a host-sized CIDR. Using
+// ip.String() for IPv4 also normalizes IPv4-mapped IPv6 addresses.
+func normalizeCIDR(cidr string) string {
+	ip := net.ParseIP(cidr)
+	if ip == nil {
+		return cidr
+	}
+	if ip.To4() != nil {
+		return ip.String() + "/32"
+	}
+	return cidr + "/128"
+}
+
+func classlessIPv4Name(network *net.IPNet, base string, total, bits int) (string, bool) {
+	if total != 32 || bits < 25 || bits >= 32 {
+		return "", false
+	}
+
+	// first address / netmask . Class-b-arpa.
+	fparts := strings.Split(network.IP.String(), ".")
+	first := fparts[3]
+	bparts := strings.SplitN(base, ".", 2)
+	return fmt.Sprintf("%s/%d.%s", first, bits, bparts[1]), true
+}
+
+func reverseNameTrimCount(total, bits int, cidr string) (int, error) {
+	switch total {
+	case 32:
+		if bits%8 != 0 {
+			return 0, fmt.Errorf("IPv4 mask must be multiple of 8 bits")
+		}
+		return (total - bits) / 8, nil
+	case 128:
+		if bits%4 != 0 {
+			return 0, fmt.Errorf("IPv6 mask must be multiple of 4 bits")
+		}
+		return (total - bits) / 4, nil
+	default:
+		return 0, fmt.Errorf("invalid address (not IPv4 or IPv6): %v", cidr)
+	}
 }
 
 // copied from go source.
