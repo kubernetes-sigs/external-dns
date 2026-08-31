@@ -124,6 +124,40 @@ func TestSameSuccess(t *testing.T) {
 	}
 }
 
+// Same must keep comparing after an equivalent pair. A shortened and an expanded
+// form of the same IPv6 are not string-equal, so they reach the IP fallback, and
+// that fallback used to return outright, hiding every later target.
+func TestSameComparesAllTargetsAfterAnEquivalentPair(t *testing.T) {
+	tests := []struct {
+		name string
+		a    Targets
+		b    Targets
+	}{
+		{
+			name: "equivalent IPv6 first, differing IPv6 after",
+			a:    Targets{"::1", "::2"},
+			b:    Targets{"0:0:0:0:0:0:0:1", "::3"},
+		},
+		{
+			name: "equivalent IPv6 first, differing hostname after",
+			a:    Targets{"::1", "foo.example.com"},
+			b:    Targets{"::0001", "bar.example.com"},
+		},
+		{
+			name: "equivalent IPv6 first, difference on the third target",
+			a:    Targets{"::1", "::2", "::3"},
+			b:    Targets{"::0001", "::2", "::4"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.False(t, tt.a.Same(tt.b), "%v should not be Same as %v", tt.a, tt.b)
+			assert.False(t, tt.b.Same(tt.a), "%v should not be Same as %v", tt.b, tt.a)
+		})
+	}
+}
+
 func TestSameFailures(t *testing.T) {
 	tests := []struct {
 		a Targets

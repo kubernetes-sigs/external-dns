@@ -149,28 +149,31 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(o)
 
 	for i, e := range t {
-		if !strings.EqualFold(e, o[i]) {
-			// IPv6 can be shortened, so it should be parsed for equality checking
-			ipA, err := netip.ParseAddr(e)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
+		if strings.EqualFold(e, o[i]) {
+			continue
+		}
 
-			ipB, err := netip.ParseAddr(o[i])
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
+		// IPv6 can be shortened, so it should be parsed for equality checking
+		ipA, errA := netip.ParseAddr(e)
+		if errA != nil {
+			log.WithFields(log.Fields{
+				"targets":           t,
+				"comparisonTargets": o,
+			}).Debugf("Couldn't parse %s as an IP address: %v", e, errA)
+		}
 
-			// IPv6 Address Shortener == IPv6 Address Expander
-			if ipA.IsValid() && ipB.IsValid() {
-				return ipA.String() == ipB.String()
-			}
+		ipB, errB := netip.ParseAddr(o[i])
+		if errB != nil {
+			log.WithFields(log.Fields{
+				"targets":           t,
+				"comparisonTargets": o,
+			}).Debugf("Couldn't parse %s as an IP address: %v", o[i], errB)
+		}
+
+		// IPv6 Address Shortener == IPv6 Address Expander. Keep checking the
+		// remaining targets: returning here let the first pair decide for the
+		// whole list, so later differences were never seen.
+		if errA != nil || errB != nil || ipA != ipB {
 			return false
 		}
 	}
