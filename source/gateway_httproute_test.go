@@ -157,6 +157,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		return v
 	}
 	hostnames := func(names ...v1.Hostname) []v1.Hostname { return names }
+	hostnamePtr := func(h v1.Hostname) *v1.Hostname { return &h }
 
 	tests := []struct {
 		title           string
@@ -1686,7 +1687,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					ObjectMeta: objectMeta("gateway-namespace", "test"),
 					Spec: v1.GatewaySpec{
 						Listeners: []v1.Listener{{
-							Hostname:      new(v1.Hostname("mywebsite.example.com")),
+							Hostname:      hostnamePtr(v1.Hostname("mywebsite.example.com")),
 							Protocol:      v1.HTTPProtocolType,
 							AllowedRoutes: allowAllNamespaces,
 						}},
