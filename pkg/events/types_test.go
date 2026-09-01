@@ -37,10 +37,8 @@ import (
 func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
 	// Verify that NewObjectReference does NOT mutate the original object
 	pod := &apiv1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-pod",
-			Namespace: "default",
-		},
+		Name:      "test-pod",
+		Namespace: "default",
 	}
 	podCopy := pod.DeepCopy()
 
@@ -111,14 +109,10 @@ func TestEvent_NewEvents(t *testing.T) {
 		{
 			name: "event without uuid",
 			event: NewEvent(NewObjectReference(&apiv1.Pod{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Pod",
-					APIVersion: "apiv1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-pod",
-					Namespace: apiv1.NamespaceDefault,
-				},
+				Kind:       "Pod",
+				APIVersion: "apiv1",
+				Name:       "fake-pod",
+				Namespace:  apiv1.NamespaceDefault,
 			}, "fake"), "", ActionCreate, RecordReady),
 			asserts: func(evs []*eventsv1.Event) {
 				require.Len(t, evs, 1)
@@ -134,15 +128,11 @@ func TestEvent_NewEvents(t *testing.T) {
 		{
 			name: "event with uuid",
 			event: NewEvent(NewObjectReference(&apiv1.Pod{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Pod",
-					APIVersion: "apiv1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-pod",
-					Namespace: apiv1.NamespaceDefault,
-					UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-				},
+				Kind:       "Pod",
+				APIVersion: "apiv1",
+				Name:       "fake-pod",
+				Namespace:  apiv1.NamespaceDefault,
+				UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 			}, "fake"), "", ActionCreate, RecordReady),
 			asserts: func(evs []*eventsv1.Event) {
 				require.Len(t, evs, 1)
@@ -441,15 +431,11 @@ func TestNewObjectReference(t *testing.T) {
 		{
 			name: "Pod with TypeMeta already set",
 			obj: &apiv1.Pod{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Pod",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-pod",
-					Namespace: "default",
-					UID:       "pod-uid-123",
-				},
+				Kind:       "Pod",
+				APIVersion: "v1",
+				Name:       "my-pod",
+				Namespace:  "default",
+				UID:        "pod-uid-123",
 			},
 			source: "pod",
 			expected: &ObjectReference{
@@ -464,11 +450,9 @@ func TestNewObjectReference(t *testing.T) {
 		{
 			name: "Pod without TypeMeta (simulating informer behavior)",
 			obj: &apiv1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "informer-pod",
-					Namespace: "kube-system",
-					UID:       "informer-uid-456",
-				},
+				Name:      "informer-pod",
+				Namespace: "kube-system",
+				UID:       "informer-uid-456",
 			},
 			source: "pod",
 			expected: &ObjectReference{
@@ -483,11 +467,9 @@ func TestNewObjectReference(t *testing.T) {
 		{
 			name: "Service without TypeMeta",
 			obj: &apiv1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-service",
-					Namespace: "prod",
-					UID:       "svc-uid-789",
-				},
+				Name:      "my-service",
+				Namespace: "prod",
+				UID:       "svc-uid-789",
 			},
 			source: "service",
 			expected: &ObjectReference{
@@ -502,10 +484,8 @@ func TestNewObjectReference(t *testing.T) {
 		{
 			name: "Node (cluster-scoped, no namespace)",
 			obj: &apiv1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "worker-node-1",
-					UID:  "node-uid-abc",
-				},
+				Name: "worker-node-1",
+				UID:  "node-uid-abc",
 			},
 			source: "node",
 			expected: &ObjectReference{
@@ -520,11 +500,9 @@ func TestNewObjectReference(t *testing.T) {
 		{
 			name: "Endpoints without TypeMeta",
 			obj: &apiv1.Endpoints{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-endpoints",
-					Namespace: "default",
-					UID:       "ep-uid-def",
-				},
+				Name:      "my-endpoints",
+				Namespace: "default",
+				UID:       "ep-uid-def",
 			},
 			source: "endpoints",
 			expected: &ObjectReference{
@@ -613,11 +591,9 @@ func TestWithDryRun(t *testing.T) {
 func TestNewObjectReference_ReflectionFallback(t *testing.T) {
 	// Test that when object type is not in scheme, reflection is used to get Kind
 	obj := &customObject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "custom-resource",
-			Namespace: "custom-ns",
-			UID:       "custom-uid-123",
-		},
+		Name:      "custom-resource",
+		Namespace: "custom-ns",
+		UID:       "custom-uid-123",
 	}
 
 	ref := NewObjectReference(obj, "custom")

@@ -29,7 +29,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -319,11 +318,9 @@ func TestRouteGroupClientToken(t *testing.T) {
 
 func createTestRouteGroup(ns, name string, annotations map[string]string, hosts []string, destinations []routeGroupLoadBalancer) *routeGroup {
 	return &routeGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   ns,
-			Name:        name,
-			Annotations: annotations,
-		},
+		Namespace:   ns,
+		Name:        name,
+		Annotations: annotations,
 		Spec: routeGroupSpec{
 			Hosts: hosts,
 		},
@@ -647,11 +644,9 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 					rg: &routeGroupList{
 						Items: []*routeGroup{
 							{
-								ObjectMeta: metav1.ObjectMeta{
-									Namespace: "namespace1",
-									Name:      "rg1",
-									UID:       "skipper-rg-uid-1234",
-								},
+								Namespace: "namespace1",
+								Name:      "rg1",
+								UID:       "skipper-rg-uid-1234",
 								Spec: routeGroupSpec{
 									Hosts: []string{"rg1.k8s.example"},
 								},
@@ -1088,12 +1083,10 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 					rg: &routeGroupList{
 						Items: []*routeGroup{
 							{
-								ObjectMeta: metav1.ObjectMeta{
-									Namespace: "namespace1",
-									Name:      "rg-match",
-									Labels:    map[string]string{"app": "test"},
-								},
-								Spec: routeGroupSpec{Hosts: []string{"match.example.org"}},
+								Namespace: "namespace1",
+								Name:      "rg-match",
+								Labels:    map[string]string{"app": "test"},
+								Spec:      routeGroupSpec{Hosts: []string{"match.example.org"}},
 								Status: routeGroupStatus{
 									LoadBalancer: routeGroupLoadBalancerStatus{
 										RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
@@ -1101,12 +1094,10 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 								},
 							},
 							{
-								ObjectMeta: metav1.ObjectMeta{
-									Namespace: "namespace1",
-									Name:      "rg-no-match",
-									Labels:    map[string]string{"app": "other"},
-								},
-								Spec: routeGroupSpec{Hosts: []string{"no-match.example.org"}},
+								Namespace: "namespace1",
+								Name:      "rg-no-match",
+								Labels:    map[string]string{"app": "other"},
+								Spec:      routeGroupSpec{Hosts: []string{"no-match.example.org"}},
 								Status: routeGroupStatus{
 									LoadBalancer: routeGroupLoadBalancerStatus{
 										RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
@@ -1133,12 +1124,10 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 					rg: &routeGroupList{
 						Items: []*routeGroup{
 							{
-								ObjectMeta: metav1.ObjectMeta{
-									Namespace: "namespace1",
-									Name:      "rg-no-match",
-									Labels:    map[string]string{"app": "other"},
-								},
-								Spec: routeGroupSpec{Hosts: []string{"no-match.example.org"}},
+								Namespace: "namespace1",
+								Name:      "rg-no-match",
+								Labels:    map[string]string{"app": "other"},
+								Spec:      routeGroupSpec{Hosts: []string{"no-match.example.org"}},
 								Status: routeGroupStatus{
 									LoadBalancer: routeGroupLoadBalancerStatus{
 										RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},

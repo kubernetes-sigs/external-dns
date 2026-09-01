@@ -239,8 +239,7 @@ type cloudFlareChange struct {
 func convertCloudflareError(err error) error {
 	// Handle CloudFlare v5 SDK errors according to the documentation:
 	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
-	var apierr *cloudflare.Error
-	if errors.As(err, &apierr) {
+	if apierr, ok := errors.AsType[*cloudflare.Error](err); ok {
 		// Rate limit errors (429) and server errors (5xx) should be treated as soft errors
 		// so that external-dns will retry them later
 		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {

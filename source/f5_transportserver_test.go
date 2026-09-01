@@ -495,16 +495,12 @@ func TestF5TransportServerIndexer(t *testing.T) {
 			lbls = map[string]string{}
 		}
 		return &f5.TransportServer{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: f5TransportServerGVR.GroupVersion().String(),
-				Kind:       "TransportServer",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Namespace:   defaultF5TransportServerNamespace,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			APIVersion:  f5TransportServerGVR.GroupVersion().String(),
+			Kind:        "TransportServer",
+			Name:        name,
+			Namespace:   defaultF5TransportServerNamespace,
+			Annotations: ann,
+			Labels:      lbls,
 			Spec: f5.TransportServerSpec{
 				Host: name + ".example.org",
 			},

@@ -50,19 +50,15 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	clients.On("KubeClient").Return(kubeClient, nil)
 
 	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "default",
-		},
+		Name: "default",
 	}
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create Namespace")
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
 	gw := &v1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "internal",
-			Namespace: "default",
-		},
+		Name:      "internal",
+		Namespace: "default",
 		Spec: v1.GatewaySpec{
 			Listeners: []v1.Listener{{
 				Protocol: v1.HTTPSProtocolType,
@@ -74,12 +70,10 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create Gateway")
 
 	rt := &v1.GRPCRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api",
-			Namespace: "default",
-			Annotations: map[string]string{
-				annotations.HostnameKey: "api-annotation.foobar.internal",
-			},
+		Name:      "api",
+		Namespace: "default",
+		Annotations: map[string]string{
+			annotations.HostnameKey: "api-annotation.foobar.internal",
 		},
 		Spec: v1.GRPCRouteSpec{
 			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
@@ -148,12 +142,10 @@ func TestGatewayGRPCRouteIndexer(t *testing.T) {
 		allAnn := map[string]string{annotations.HostnameKey: name + ".example.com"}
 		maps.Copy(allAnn, ann)
 		return &v1.GRPCRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:   namespace,
-				Name:        name,
-				Annotations: allAnn,
-				Labels:      lbls,
-			},
+			Namespace:   namespace,
+			Name:        name,
+			Annotations: allAnn,
+			Labels:      lbls,
 			Spec: v1.GRPCRouteSpec{
 				CommonRouteSpec: v1.CommonRouteSpec{
 					ParentRefs: []v1.ParentReference{gwParentRef("default", "gw")},
@@ -242,7 +234,7 @@ func TestGatewayGRPCRouteIndexer(t *testing.T) {
 			kubeClient := kubefake.NewClientset()
 
 			gw := &v1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "gw"},
+				Namespace: "default", Name: "gw",
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPSProtocolType,
