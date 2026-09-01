@@ -322,7 +322,7 @@ type Endpoint struct {
 	Targets Targets `json:"targets,omitempty"`
 	// RecordType is the DNS record type.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=A;AAAA;CNAME;TXT;SRV;NS;PTR;MX;NAPTR;DNAME
+	// +kubebuilder:validation:Enum=A;AAAA;CNAME;DNAME;MX;NAPTR;NS;PTR;SRV;TXT
 	RecordType string `json:"recordType,omitempty"`
 	// SetIdentifier distinguishes multiple records with the same name and type
 	// (e.g. Route53 records with routing policies other than 'simple').

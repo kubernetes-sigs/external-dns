@@ -108,13 +108,13 @@ spec:
                         - A
                         - AAAA
                         - CNAME
-                        - TXT
-                        - SRV
-                        - NS
-                        - PTR
+                        - DNAME
                         - MX
                         - NAPTR
-                        - DNAME
+                        - NS
+                        - PTR
+                        - SRV
+                        - TXT
                       type: string
                     setIdentifier:
                       description: |-
