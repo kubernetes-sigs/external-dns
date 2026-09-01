@@ -723,7 +723,7 @@ func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
 		if tlsa, err := endpoint.NewTLSARecord(record.Content); err == nil {
 			return tlsa.String()
 		}
-		log.Debugf("could not parse TLSA content %q for %s, using it verbatim", record.Content, record.Name)
+		log.Warnf("could not parse TLSA content %q for %s, using it verbatim", record.Content, record.Name)
 	}
 
 	return record.Content
