@@ -386,7 +386,7 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 
 		ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "uid-1", "service")
 		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
-			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
+			endpoint.MustNewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
 		})
 		require.NoError(t, err)
 		require.Len(t, adjusted, 1)
@@ -405,7 +405,7 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 		ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
 		ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
 		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
-			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").
+			endpoint.MustNewEndpoint("test.example.com", "A", "1.2.3.4").
 				WithRefObject(ref1).
 				WithRefObject(ref2),
 		})

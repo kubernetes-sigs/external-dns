@@ -69,14 +69,14 @@ func TestPodFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template generates A record when no annotation-derived endpoints",
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(podName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint(podName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
 			title:              "fqdn-target-template generates CNAME for hostname target",
 			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(podName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint(podName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -106,7 +106,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template can reference .Kind",
 			fqdnTargetTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("pod."+podName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("pod."+podName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -124,7 +124,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template can reference .APIVersion",
 			fqdnTargetTemplate: "{{.Name}}.{{.APIVersion}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(podName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint(podName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		// ── fqdn-template cases ───────────────────────────────────────────────

@@ -55,7 +55,7 @@ func TestNoopRegistry_GetDomainFilter(t *testing.T) {
 
 func TestNoopRegistry_AdjustEndpoints(t *testing.T) {
 	r := newRegistry(inmemory.NewInMemoryProvider())
-	eps := []*endpoint.Endpoint{endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4")}
+	eps := []*endpoint.Endpoint{endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4")}
 	got, err := r.AdjustEndpoints(eps)
 	require.NoError(t, err)
 	assert.Equal(t, eps, got)

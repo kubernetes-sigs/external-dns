@@ -1052,7 +1052,7 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	_ = provider.DeregisterInstance(t.Context(), services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
+	_ = provider.DeregisterInstance(t.Context(), services["private"]["srv1"], endpoint.MustNewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
 
 	assert.Empty(t, instances["srv1"])
 }

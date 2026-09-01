@@ -109,7 +109,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vm.example.com", endpoint.RecordTypeAAAA, "::1234:5678").
+				endpoint.MustNewEndpoint("my-vm.example.com", endpoint.RecordTypeAAAA, "::1234:5678").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 			},
 		},
@@ -144,7 +144,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("my-node-1.nodes.example.com", endpoint.RecordTypeA, 300, "203.0.113.10").
+				endpoint.MustNewEndpointWithTTL("my-node-1.nodes.example.com", endpoint.RecordTypeA, 300, "203.0.113.10").
 					WithLabel(endpoint.ResourceLabelKey, "node/cattle-system/my-node-1"),
 			},
 		},
@@ -171,7 +171,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vm.redis.tld", endpoint.RecordTypeA, "1.1.1.0").
+				endpoint.MustNewEndpoint("my-vm.redis.tld", endpoint.RecordTypeA, "1.1.1.0").
 					WithLabel(endpoint.ResourceLabelKey, "replicationgroup/default/cache"),
 			},
 		},
@@ -242,7 +242,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("prod-vm.example.com", endpoint.RecordTypeA, "10.0.0.1").
+				endpoint.MustNewEndpoint("prod-vm.example.com", endpoint.RecordTypeA, "10.0.0.1").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/prod-vm"),
 			},
 		},
@@ -312,7 +312,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("platform-vm.example.com", endpoint.RecordTypeA, "10.0.0.1").
+				endpoint.MustNewEndpoint("platform-vm.example.com", endpoint.RecordTypeA, "10.0.0.1").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/platform-vm"),
 			},
 		},
@@ -405,7 +405,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("prod-platform-vm.example.com", endpoint.RecordTypeA, "10.0.0.1").
+				endpoint.MustNewEndpoint("prod-platform-vm.example.com", endpoint.RecordTypeA, "10.0.0.1").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/prod-platform-vm"),
 			},
 		},
@@ -443,7 +443,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("control-plane.example.com", endpoint.RecordTypeA, "10.0.0.1").
+				endpoint.MustNewEndpoint("control-plane.example.com", endpoint.RecordTypeA, "10.0.0.1").
 					WithLabel(endpoint.ResourceLabelKey, "machine/default/control-plane"),
 			},
 		},

@@ -238,8 +238,8 @@ func TestCoreDNSRoundTrip(t *testing.T) {
 	}
 
 	desired := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("a.example.org", endpoint.RecordTypeA, "172.18.0.2"),
-		endpoint.NewEndpoint("aa.example.org", endpoint.RecordTypeAAAA, "2001:db8::1"),
+		endpoint.MustNewEndpoint("a.example.org", endpoint.RecordTypeA, "172.18.0.2"),
+		endpoint.MustNewEndpoint("aa.example.org", endpoint.RecordTypeAAAA, "2001:db8::1"),
 	}
 
 	// Write the records (controller's ApplyChanges with the source's desired state).
@@ -423,9 +423,9 @@ func TestDeleteTXTDoesNotOverDeleteARecord(t *testing.T) {
 	// Create A + TXT for domain1, and A for domain2
 	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "owner-marker"),
-			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "6.6.6.6"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeTXT, "owner-marker"),
+			endpoint.MustNewEndpoint("domain2.local", endpoint.RecordTypeA, "6.6.6.6"),
 		},
 	})
 	require.NoError(t, err)
@@ -442,7 +442,7 @@ func TestDeleteTXTDoesNotOverDeleteARecord(t *testing.T) {
 	// Delete ONLY the TXT for domain1 (not the A record)
 	err = coredns.ApplyChanges(t.Context(), &plan.Changes{
 		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "owner-marker"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeTXT, "owner-marker"),
 		},
 	})
 	require.NoError(t, err)
@@ -475,9 +475,9 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 
 	changes1 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string1"),
-			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string1"),
+			endpoint.MustNewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
 	err := coredns.ApplyChanges(t.Context(), changes1)
@@ -491,10 +491,10 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 
 	changes2 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
+			endpoint.MustNewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
+			endpoint.MustNewEndpoint("domain1.local", "A", "6.6.6.6"),
 		},
 	}
 	records, _ := coredns.Records(t.Context())
@@ -515,9 +515,9 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 
 	changes3 := &plan.Changes{
 		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string"),
-			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string"),
+			endpoint.MustNewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
 		},
 	}
 
@@ -532,9 +532,9 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	// Test for multiple A records for the same FQDN
 	changes4 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "7.7.7.7"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "7.7.7.7"),
 		},
 	}
 	err = coredns.ApplyChanges(t.Context(), changes4)
@@ -557,9 +557,9 @@ func TestCoreDNSApplyChanges_DomainDoNotMatch(t *testing.T) {
 
 	changes1 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
-			endpoint.NewEndpoint("example.local", endpoint.RecordTypeTXT, "string1"),
-			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.MustNewEndpoint("example.local", endpoint.RecordTypeTXT, "string1"),
+			endpoint.MustNewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
 	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
@@ -1435,9 +1435,9 @@ func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
 
 	changes1 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5").WithProviderSpecific(providerSpecificGroup, "test1"),
-			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "5.5.5.6").WithProviderSpecific(providerSpecificGroup, "test1"),
-			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7").WithProviderSpecific(providerSpecificGroup, "test2"),
+			endpoint.MustNewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.MustNewEndpoint("domain2.local", endpoint.RecordTypeA, "5.5.5.6").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.MustNewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7").WithProviderSpecific(providerSpecificGroup, "test2"),
 		},
 	}
 	coredns.ApplyChanges(t.Context(), changes1)
@@ -1615,8 +1615,8 @@ func TestPTRRecords(t *testing.T) {
 		// Create PTR records
 		changes := &plan.Changes{
 			Create: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-worker"),
-				endpoint.NewEndpoint("3.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-control-plane"),
+				endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-worker"),
+				endpoint.MustNewEndpoint("3.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-control-plane"),
 			},
 		}
 		err := coredns.ApplyChanges(t.Context(), changes)
@@ -1632,7 +1632,7 @@ func TestPTRRecords(t *testing.T) {
 		// Delete PTR records
 		deleteChanges := &plan.Changes{
 			Delete: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-worker"),
+				endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "coredns-etcd-worker"),
 			},
 		}
 		err = applyServiceChanges(coredns, deleteChanges)
@@ -1658,7 +1658,7 @@ func TestPTRRecords(t *testing.T) {
 		// Step 1: Create a PTR record pointing to "old-host"
 		createChanges := &plan.Changes{
 			Create: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "old-host"),
+				endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "old-host"),
 			},
 		}
 		require.NoError(t, coredns.ApplyChanges(t.Context(), createChanges))
@@ -1671,7 +1671,7 @@ func TestPTRRecords(t *testing.T) {
 		require.NoError(t, err)
 		oldEP := records[0]
 
-		newEP := endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "new-host")
+		newEP := endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "new-host")
 		require.NoError(t, coredns.ApplyChanges(t.Context(), &plan.Changes{
 			UpdateNew: []*endpoint.Endpoint{newEP},
 			UpdateOld: []*endpoint.Endpoint{oldEP},
@@ -1690,8 +1690,8 @@ func TestPTRRecords(t *testing.T) {
 		// a byte-prefix of .20)
 		require.NoError(t, coredns.ApplyChanges(t.Context(), &plan.Changes{
 			Create: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2"),
-				endpoint.NewEndpoint("20.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-20"),
+				endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2"),
+				endpoint.MustNewEndpoint("20.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-20"),
 			},
 		}))
 
@@ -1703,7 +1703,7 @@ func TestPTRRecords(t *testing.T) {
 		// Delete ONLY .2
 		require.NoError(t, coredns.ApplyChanges(t.Context(), &plan.Changes{
 			Delete: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2"),
+				endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2"),
 			},
 		}))
 
@@ -1733,7 +1733,7 @@ func TestPTRRecords(t *testing.T) {
 		require.Equal(t, "host-1", oldEP.Targets[0])
 
 		// Update: change target from host-1 to host-2
-		newEP := endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2")
+		newEP := endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2")
 		updateChanges := &plan.Changes{
 			UpdateNew: []*endpoint.Endpoint{newEP},
 			UpdateOld: []*endpoint.Endpoint{oldEP},
@@ -1761,7 +1761,7 @@ func TestPTRRecords(t *testing.T) {
 		require.NoError(t, err)
 		oldEP := records[0]
 
-		newEP := endpoint.NewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2")
+		newEP := endpoint.MustNewEndpoint("2.0.26.172.in-addr.arpa", endpoint.RecordTypePTR, "host-2")
 		updateChanges := &plan.Changes{
 			UpdateNew: []*endpoint.Endpoint{newEP},
 			UpdateOld: []*endpoint.Endpoint{oldEP},

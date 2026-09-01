@@ -62,7 +62,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			fqdnTemplate:   "{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("my-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			},
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-app.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-app.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -178,7 +178,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("ingressroute.my-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("ingressroute.my-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -198,7 +198,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			},
 			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 	}
@@ -271,7 +271,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			fqdnTemplate:   "{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-tcp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("my-tcp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -291,7 +291,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			},
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-tcp-app.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-tcp-app.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -353,7 +353,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("ingressroutetcp.my-tcp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("ingressroutetcp.my-tcp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -373,7 +373,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			},
 			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-tcp-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-tcp-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 	}
@@ -446,7 +446,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			fqdnTemplate:   "{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-udp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("my-udp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -466,7 +466,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			},
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-udp-app.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-udp-app.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -524,7 +524,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("ingressrouteudp.my-udp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("ingressrouteudp.my-udp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -544,7 +544,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			},
 			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-udp-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-udp-app.traefik.io.v1alpha1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 	}

@@ -169,7 +169,11 @@ func (p *AzureProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 				if recordSet.Properties.TTL != nil {
 					ttl = endpoint.TTL(*recordSet.Properties.TTL)
 				}
-				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				ep, err := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				if err != nil {
+					log.Errorf("Failed to create endpoint for '%s' with type '%s': %v", name, recordType, err)
+					continue
+				}
 				extractMetadataFromRecordSet(ep, recordSet)
 				log.Debugf(
 					"Found %s record for '%s' with target '%s'.",

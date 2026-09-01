@@ -594,7 +594,7 @@ func TestRunOnce_EmitChangeEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			source := new(testutils.MockSource)
 			source.On("Endpoints").Return([]*endpoint.Endpoint{
-				endpoint.NewEndpoint("dot.com", endpoint.RecordTypeA, "1.2.3.4").
+				endpoint.MustNewEndpoint("dot.com", endpoint.RecordTypeA, "1.2.3.4").
 					WithRefObject(&events.ObjectReference{}),
 			}, nil)
 

@@ -579,8 +579,8 @@ func TestInMemoryWithLogging(t *testing.T) {
 	p := NewInMemoryProvider(InMemoryWithLogging())
 	require.NoError(t, p.CreateZone("example.com"))
 
-	ep := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
-	epNew := endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "5.6.7.8")
+	ep := endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4")
+	epNew := endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeA, "5.6.7.8")
 
 	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: []*endpoint.Endpoint{ep},
@@ -616,7 +616,7 @@ func TestInMemoryInitZones(t *testing.T) {
 
 func TestApplyChanges_UnknownZoneSkipped(t *testing.T) {
 	p := NewInMemoryProvider(InMemoryInitZones([]string{"example.com"}))
-	outside := endpoint.NewEndpoint("foo.other.org", endpoint.RecordTypeA, "1.2.3.4")
+	outside := endpoint.MustNewEndpoint("foo.other.org", endpoint.RecordTypeA, "1.2.3.4")
 
 	err := p.ApplyChanges(t.Context(), &plan.Changes{
 		UpdateNew: []*endpoint.Endpoint{outside},
@@ -652,7 +652,7 @@ func makeZone(s ...string) map[endpoint.EndpointKey]*endpoint.Endpoint {
 
 	output := map[endpoint.EndpointKey]*endpoint.Endpoint{}
 	for i := 0; i < len(s); i += 3 {
-		ep := endpoint.NewEndpoint(s[i], s[i+2], s[i+1])
+		ep := endpoint.MustNewEndpoint(s[i], s[i+2], s[i+1])
 		output[ep.Key()] = ep
 	}
 

@@ -204,7 +204,7 @@ func GenerateTestEndpointsWithDistribution(
 // The record type is inferred from target: A for IPv4, AAAA for IPv6, CNAME otherwise.
 // Kind and APIVersion are resolved from the client-go scheme, so TypeMeta need not be set on obj.
 func NewEndpointWithRef(dns, target string, obj ctrlclient.Object, source string) *endpoint.Endpoint {
-	return endpoint.NewEndpoint(dns, endpoint.SuitableType(target), target).
+	return endpoint.MustNewEndpoint(dns, endpoint.SuitableType(target), target).
 		WithRefObject(events.NewObjectReference(obj, source))
 }
 

@@ -201,7 +201,13 @@ func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.End
 				pair, kind, obj.GetNamespace(), obj.GetName())
 			continue
 		}
-		eps = append(eps, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+		ep, err := endpoint.NewEndpoint(host, endpoint.SuitableType(target), target)
+		if err != nil {
+			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: %v",
+				pair, kind, obj.GetNamespace(), obj.GetName(), err)
+			continue
+		}
+		eps = append(eps, ep)
 	}
 	return endpoint.MergeEndpoints(eps), nil
 }

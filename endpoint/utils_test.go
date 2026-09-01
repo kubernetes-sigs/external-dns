@@ -97,7 +97,7 @@ func TestHasEmptyEndpoints(t *testing.T) {
 		{
 			name: "single endpoint returns false",
 			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
+				MustNewEndpoint("example.org", "A", "1.2.3.4"),
 			},
 			rType:    "Service",
 			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
@@ -106,8 +106,8 @@ func TestHasEmptyEndpoints(t *testing.T) {
 		{
 			name: "multiple endpoints returns false",
 			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-				NewEndpoint("test.example.org", "CNAME", "example.org"),
+				MustNewEndpoint("example.org", "A", "1.2.3.4"),
+				MustNewEndpoint("test.example.org", "CNAME", "example.org"),
 			},
 			rType:    "Ingress",
 			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
@@ -231,8 +231,8 @@ func TestEndpointsForHostname(t *testing.T) {
 func TestAttachRefObject(t *testing.T) {
 	ref := events.NewObjectReferenceFromParts("Service", "", "default", "svc", "", "")
 	eps := []*Endpoint{
-		NewEndpoint("a.example.com", RecordTypeA, "1.2.3.4"),
-		NewEndpoint("b.example.com", RecordTypeA, "5.6.7.8"),
+		MustNewEndpoint("a.example.com", RecordTypeA, "1.2.3.4"),
+		MustNewEndpoint("b.example.com", RecordTypeA, "5.6.7.8"),
 	}
 
 	AttachRefObject(eps, ref)
@@ -327,114 +327,114 @@ func TestMergeEndpoints(t *testing.T) {
 		{
 			name: "duplicate targets deduplicated",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4", "1.2.3.4", "5.6.7.8"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4", "1.2.3.4", "5.6.7.8"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8"),
 			},
 		},
 		{
 			name: "duplicate targets across merged endpoints deduplicated",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8"),
 			},
 		},
 		{
 			name: "CNAME endpoints not merged",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-				NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-				NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
 			},
 		},
 		{
 			name: "CNAME with no targets is skipped",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeCNAME),
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+				MustNewEndpoint("example.com", RecordTypeCNAME),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
 			name: "identical CNAME endpoints deduplicated",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-				NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+				MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
 			},
 		},
 		{
 			name: "same key with different TTL not merged",
 			input: []*Endpoint{
-				NewEndpointWithTTL("example.com", RecordTypeA, 300, "1.2.3.4"),
-				NewEndpointWithTTL("example.com", RecordTypeA, 600, "5.6.7.8"),
+				MustNewEndpointWithTTL("example.com", RecordTypeA, 300, "1.2.3.4"),
+				MustNewEndpointWithTTL("example.com", RecordTypeA, 600, "5.6.7.8"),
 			},
 			expected: []*Endpoint{
-				NewEndpointWithTTL("example.com", RecordTypeA, 300, "1.2.3.4"),
-				NewEndpointWithTTL("example.com", RecordTypeA, 600, "5.6.7.8"),
+				MustNewEndpointWithTTL("example.com", RecordTypeA, 300, "1.2.3.4"),
+				MustNewEndpointWithTTL("example.com", RecordTypeA, 600, "5.6.7.8"),
 			},
 		},
 		{
 			name: "same DNSName and RecordType with different SetIdentifier not merged",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
-				NewEndpoint("example.com", RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
-				NewEndpoint("example.com", RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "5.6.7.8").WithSetIdentifier("eu-west-1"),
 			},
 		},
 		{
 			name: "same DNSName, RecordType and SetIdentifier targets are merged",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
-				NewEndpoint("example.com", RecordTypeA, "5.6.7.8").WithSetIdentifier("us-east-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithSetIdentifier("us-east-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "5.6.7.8").WithSetIdentifier("us-east-1"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4", "5.6.7.8").WithSetIdentifier("us-east-1"),
 			},
 		},
 		{
 			name: "DNAME endpoints not merged",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
-				NewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
-				NewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
 			},
 		},
 		{
 			name: "DNAME with no targets is skipped",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeDNAME),
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+				MustNewEndpoint("example.com", RecordTypeDNAME),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
+				MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
 			name: "identical DNAME endpoints deduplicated",
 			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
-				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
 			},
 			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
+				MustNewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
 			},
 		},
 	}
@@ -464,7 +464,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			name: "single endpoint",
 			input: func() []*Endpoint {
 				return []*Endpoint{
-					NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithRefObject(
+					MustNewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							Name: "foo", Namespace: "default", UID: "123",
 						}, "service")),
@@ -483,11 +483,11 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			name: "two endpoints merged — both distinct refObjects collected",
 			input: func() []*Endpoint {
 				return []*Endpoint{
-					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
+					MustNewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							Name: "foo", Namespace: "default", UID: "123",
 						}, "service")),
-					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(
+					MustNewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							Name: "bar", Namespace: "ns", UID: "345",
 						}, "service")),
@@ -508,8 +508,8 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 					Name: "foo", Namespace: "default", UID: "123",
 				}, "service")
 				return []*Endpoint{
-					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(ref),
-					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(ref),
+					MustNewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(ref),
+					MustNewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(ref),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
@@ -523,11 +523,11 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			name: "two endpoints not merged and two refObject preserved",
 			input: func() []*Endpoint {
 				return []*Endpoint{
-					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
+					MustNewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							Name: "foo", Namespace: "default", UID: "123",
 						}, "service")),
-					NewEndpoint("b.example.com", RecordTypeA, "1.1.1.2").WithRefObject(
+					MustNewEndpoint("b.example.com", RecordTypeA, "1.1.1.2").WithRefObject(
 						events.NewObjectReference(&v1.Service{
 							Name: "bar", Namespace: "ns", UID: "345",
 						}, "service")),
@@ -560,8 +560,8 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-			NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
+			MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+			MustNewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
 		})
 
 		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
@@ -573,8 +573,8 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+			MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
+			MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
 		})
 
 		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
@@ -584,8 +584,8 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com").WithSetIdentifier("weight-1"),
-			NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com").WithSetIdentifier("weight-2"),
+			MustNewEndpoint("example.com", RecordTypeCNAME, "a.elb.com").WithSetIdentifier("weight-1"),
+			MustNewEndpoint("example.com", RecordTypeCNAME, "b.elb.com").WithSetIdentifier("weight-2"),
 		})
 
 		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
@@ -595,7 +595,7 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME),
+			MustNewEndpoint("example.com", RecordTypeCNAME),
 		})
 
 		logtest.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)

@@ -178,7 +178,11 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				existingEndpoint.Targets = append(existingEndpoint.Targets, record.Data)
 				log.Infof("Appending target %s to record %s, using TTL and priority of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
 			} else {
-				ep := endpoint.NewEndpointWithTTL(fullRecordName, record.Type.String(), endpoint.TTL(record.TTL), record.Data)
+				ep, err := endpoint.NewEndpointWithTTL(fullRecordName, record.Type.String(), endpoint.TTL(record.TTL), record.Data)
+				if err != nil {
+					log.Errorf("Failed to create endpoint for record %q: %v", fullRecordName, err)
+					continue
+				}
 				ep = ep.WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", record.Priority))
 				endpoints[record.Type.String()+"/"+fullRecordName] = ep
 			}

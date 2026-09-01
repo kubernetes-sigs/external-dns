@@ -327,7 +327,11 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				fqdn = record.Name + "." + zoneName
 			}
 
-			e := endpoint.NewEndpointWithTTL(fqdn, string(record.Type), endpoint.TTL(record.Ttl), record.Content)
+			e, err := endpoint.NewEndpointWithTTL(fqdn, string(record.Type), endpoint.TTL(record.Ttl), record.Content)
+			if err != nil {
+				log.Errorf("Failed to create endpoint for record %q: %v", record.Name, err)
+				continue
+			}
 			endpoints = append(endpoints, e)
 		}
 	}

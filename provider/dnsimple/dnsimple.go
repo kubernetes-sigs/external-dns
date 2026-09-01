@@ -221,7 +221,12 @@ func (p *dnsimpleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				if record.Name == "" {
 					dnsName = record.ZoneID
 				}
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(dnsName, record.Type, endpoint.TTL(record.TTL), record.Content))
+				ep, err := endpoint.NewEndpointWithTTL(dnsName, record.Type, endpoint.TTL(record.TTL), record.Content)
+				if err != nil {
+					log.Errorf("Failed to create endpoint for record %q: %v", record.Name, err)
+					continue
+				}
+				endpoints = append(endpoints, ep)
 			}
 			page++
 			if page > records.Pagination.TotalPages {

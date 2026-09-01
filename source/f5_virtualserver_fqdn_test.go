@@ -68,7 +68,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			fqdnTemplate:   "{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			},
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vs.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-vs.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -309,7 +309,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			fqdnTemplate:   "{{.Kind | toLower}}.{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("virtualserver.my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				endpoint.MustNewEndpoint("virtualserver.my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{
@@ -328,7 +328,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			},
 			fqdnTargetTemplate: `{{.Name}}.{{replace "/" "." .APIVersion}}.example.com:1.2.3.4`,
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vs.cis.f5.com.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("my-vs.cis.f5.com.v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 	}

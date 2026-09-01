@@ -1651,11 +1651,11 @@ func TestIngressWithConfiguration(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-1922533626.us-west-2.elb.amazonaws.com").
+				endpoint.MustNewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-1922533626.us-west-2.elb.amazonaws.com").
 					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak"),
-				endpoint.NewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
+				endpoint.MustNewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
 					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak-another"),
-				endpoint.NewEndpoint("anotherkeycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
+				endpoint.MustNewEndpoint("anotherkeycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
 					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak-another"),
 			},
 		},

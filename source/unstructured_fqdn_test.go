@@ -73,9 +73,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("entry1.internal.tld", endpoint.RecordTypeA, "10.10.10.10").
+				endpoint.MustNewEndpoint("entry1.internal.tld", endpoint.RecordTypeA, "10.10.10.10").
 					WithLabel(endpoint.ResourceLabelKey, "configmap/default/multi-dns"),
-				endpoint.NewEndpoint("entry2.example.tld", endpoint.RecordTypeA, "10.10.10.10").
+				endpoint.MustNewEndpoint("entry2.example.tld", endpoint.RecordTypeA, "10.10.10.10").
 					WithLabel(endpoint.ResourceLabelKey, "configmap/default/multi-dns"),
 			},
 		},
@@ -107,7 +107,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vm.main.vmi.com", endpoint.RecordTypeA, "10.244.1.50").
+				endpoint.MustNewEndpoint("my-vm.main.vmi.com", endpoint.RecordTypeA, "10.244.1.50").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 			},
 		},
@@ -138,7 +138,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("prod-postgres.db.example.com", endpoint.RecordTypeCNAME, "prod-postgres.abc123.us-east-1.rds.").
+				endpoint.MustNewEndpoint("prod-postgres.db.example.com", endpoint.RecordTypeCNAME, "prod-postgres.abc123.us-east-1.rds.").
 					WithLabel(endpoint.ResourceLabelKey, "rdsinstance/default/prod-postgres"),
 			},
 		},
@@ -182,9 +182,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("vm-one.vmi.example.com", endpoint.RecordTypeA, "10.244.1.10").
+				endpoint.MustNewEndpoint("vm-one.vmi.example.com", endpoint.RecordTypeA, "10.244.1.10").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/vm-one"),
-				endpoint.NewEndpoint("vm-two.vmi.example.com", endpoint.RecordTypeA, "10.244.1.20").
+				endpoint.MustNewEndpoint("vm-two.vmi.example.com", endpoint.RecordTypeA, "10.244.1.20").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/vm-two"),
 			},
 		},
@@ -213,9 +213,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("reviews.internal.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+				endpoint.MustNewEndpoint("reviews.internal.com", endpoint.RecordTypeCNAME, "promo.svc.local").
 					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
-				endpoint.NewEndpoint("reviews.mesh.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+				endpoint.MustNewEndpoint("reviews.mesh.com", endpoint.RecordTypeCNAME, "promo.svc.local").
 					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
 			},
 		},
@@ -245,7 +245,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("guestbook-prod.apps.com", endpoint.RecordTypeCNAME, "lb.example.com").
+				endpoint.MustNewEndpoint("guestbook-prod.apps.com", endpoint.RecordTypeCNAME, "lb.example.com").
 					WithLabel(endpoint.ResourceLabelKey, "application/default/guestbook"),
 			},
 		},
@@ -278,7 +278,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("guestbook-prod.apps.com", endpoint.RecordTypeCNAME, 300, "lb.example.com").
+				endpoint.MustNewEndpointWithTTL("guestbook-prod.apps.com", endpoint.RecordTypeCNAME, 300, "lb.example.com").
 					WithLabel(endpoint.ResourceLabelKey, "application/ns/guestbook"),
 			},
 		},
@@ -330,9 +330,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-db.databases.com", endpoint.RecordTypeCNAME, "my-db.abc123.us-west-2.rds").
+				endpoint.MustNewEndpoint("my-db.databases.com", endpoint.RecordTypeCNAME, "my-db.abc123.us-west-2.rds").
 					WithLabel(endpoint.ResourceLabelKey, "rdsinstance/databases/my-db"),
-				endpoint.NewEndpoint("my-vm.vms.com", endpoint.RecordTypeA, "10.244.1.100").
+				endpoint.MustNewEndpoint("my-vm.vms.com", endpoint.RecordTypeA, "10.244.1.100").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/vms/my-vm"),
 			},
 		},
@@ -375,9 +375,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("api-tgb.TargetGroupBinding.example.com", endpoint.RecordTypeCNAME, "lb.api.example.com").
+				endpoint.MustNewEndpoint("api-tgb.TargetGroupBinding.example.com", endpoint.RecordTypeCNAME, "lb.api.example.com").
 					WithLabel(endpoint.ResourceLabelKey, "targetgroupbinding/default/api-tgb"),
-				endpoint.NewEndpoint("web-server.VirtualMachineInstance.example.com", endpoint.RecordTypeA, "192.168.1.10").
+				endpoint.MustNewEndpoint("web-server.VirtualMachineInstance.example.com", endpoint.RecordTypeA, "192.168.1.10").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/web-server"),
 			},
 		},
@@ -413,9 +413,9 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vm.annotation.example.com", endpoint.RecordTypeA, "192.168.1.100").
+				endpoint.MustNewEndpoint("my-vm.annotation.example.com", endpoint.RecordTypeA, "192.168.1.100").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
-				endpoint.NewEndpoint("my-vm.template.example.com", endpoint.RecordTypeA, "10.244.1.50").
+				endpoint.MustNewEndpoint("my-vm.template.example.com", endpoint.RecordTypeA, "10.244.1.50").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 			},
 		},
@@ -502,11 +502,11 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("httpbin.route.com", endpoint.RecordTypeCNAME, "apisix-gateway.ingress-apisix.svc.cluster.local").
+				endpoint.MustNewEndpoint("httpbin.route.com", endpoint.RecordTypeCNAME, "apisix-gateway.ingress-apisix.svc.cluster.local").
 					WithLabel(endpoint.ResourceLabelKey, "apisixroute/ingress-apisix/httpbin"),
-				endpoint.NewEndpoint("my-tgb.tgb.com", endpoint.RecordTypeCNAME, "my-alb.us-east-1.elb.amazonaws.com").
+				endpoint.MustNewEndpoint("my-tgb.tgb.com", endpoint.RecordTypeCNAME, "my-alb.us-east-1.elb.amazonaws.com").
 					WithLabel(endpoint.ResourceLabelKey, "targetgroupbinding/apps/my-tgb"),
-				endpoint.NewEndpoint("my-vm.vm.com", endpoint.RecordTypeA, "10.0.0.1").
+				endpoint.MustNewEndpoint("my-vm.vm.com", endpoint.RecordTypeA, "10.0.0.1").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/vms/my-vm"),
 			},
 		},
@@ -598,7 +598,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("application-user-data-cm.s3.example.com", endpoint.RecordTypeCNAME, "doc-example-bucket.s3.amazonaws.com").
+				endpoint.MustNewEndpoint("application-user-data-cm.s3.example.com", endpoint.RecordTypeCNAME, "doc-example-bucket.s3.amazonaws.com").
 					WithLabel(endpoint.ResourceLabelKey, "configmap/default/application-user-data-cm"),
 			},
 		},
@@ -662,11 +662,11 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("app-abc12.pod.com", endpoint.RecordTypeA, "10.244.1.2").
+				endpoint.MustNewEndpoint("app-abc12.pod.com", endpoint.RecordTypeA, "10.244.1.2").
 					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
-				endpoint.NewEndpoint("app-abc12.pod.com", endpoint.RecordTypeAAAA, "2001:db8::1").
+				endpoint.MustNewEndpoint("app-abc12.pod.com", endpoint.RecordTypeAAAA, "2001:db8::1").
 					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
-				endpoint.NewEndpoint("app-def34.pod.com", endpoint.RecordTypeA, "10.244.2.3", "10.244.2.4").
+				endpoint.MustNewEndpoint("app-def34.pod.com", endpoint.RecordTypeA, "10.244.2.3", "10.244.2.4").
 					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
 			},
 		},
@@ -731,7 +731,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-headless.example.com", endpoint.RecordTypeA, "10.244.1.2", "10.244.2.3", "10.244.2.4").
+				endpoint.MustNewEndpoint("my-headless.example.com", endpoint.RecordTypeA, "10.244.1.2", "10.244.2.3", "10.244.2.4").
 					WithLabel(endpoint.ResourceLabelKey, "endpointslice/default/test-headless-abc12"),
 			},
 		},
@@ -811,12 +811,12 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				// from fqdnTargetTemplate: per-interface 1:1 host:IP pairs
-				endpoint.NewEndpoint("my-vm-eth0.ifaces.example.com", endpoint.RecordTypeA, "10.244.1.50").
+				endpoint.MustNewEndpoint("my-vm-eth0.ifaces.example.com", endpoint.RecordTypeA, "10.244.1.50").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
-				endpoint.NewEndpoint("my-vm-eth1.ifaces.example.com", endpoint.RecordTypeA, "192.168.1.50").
+				endpoint.MustNewEndpoint("my-vm-eth1.ifaces.example.com", endpoint.RecordTypeA, "192.168.1.50").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 				// from fqdnTemplate + targetTemplate: service-level record for the primary interface
-				endpoint.NewEndpoint("my-vm.vmi.example.com", endpoint.RecordTypeA, "10.244.1.50").
+				endpoint.MustNewEndpoint("my-vm.vmi.example.com", endpoint.RecordTypeA, "10.244.1.50").
 					WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/default/my-vm"),
 			},
 		},
@@ -904,7 +904,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("reviews.bookinfo.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+				endpoint.MustNewEndpoint("reviews.bookinfo.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
 					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
 			},
 		},
@@ -933,7 +933,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("real.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+				endpoint.MustNewEndpoint("real.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
 					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
 			},
 		},
@@ -963,7 +963,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("reviews.nested.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+				endpoint.MustNewEndpoint("reviews.nested.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
 					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
 			},
 		},

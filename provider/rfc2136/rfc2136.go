@@ -271,12 +271,16 @@ OuterLoop:
 			}
 		}
 
-		ep := endpoint.NewEndpointWithTTL(
+		ep, err := endpoint.NewEndpointWithTTL(
 			rrFqdn,
 			rrType,
 			rrTTL,
 			rrValues...,
 		)
+		if err != nil {
+			log.Errorf("Failed to create endpoint for record %q: %v", rrFqdn, err)
+			continue
+		}
 
 		eps = append(eps, ep)
 	}

@@ -161,7 +161,11 @@ func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoi
 			}
 		}
 
-		ep := endpoint.NewEndpointWithTTL(dnsName, rtype, ttl, target)
+		ep, err := endpoint.NewEndpointWithTTL(dnsName, rtype, ttl, target)
+		if err != nil {
+			log.Errorf("Failed to create endpoint for record %q: %v", dnsName, err)
+			continue
+		}
 
 		if oldEp, ok := endpoints[dnsName]; ok {
 			ep.Targets = append(oldEp.Targets, target) // nolint: gocritic // appendAssign

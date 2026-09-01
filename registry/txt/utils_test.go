@@ -35,14 +35,14 @@ func newTXTEndpointWithOwnedRecord(dnsName, target, ownedRecord string) *endpoin
 }
 
 func newMultiTargetEndpointWithOwnerAndLabels(dnsName string, targets endpoint.Targets, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, targets...)
+	e := endpoint.MustNewEndpoint(dnsName, recordType, targets...)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	maps.Copy(e.Labels, labels)
 	return e
 }
 
 func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, recordType, target)
+	e := endpoint.MustNewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	maps.Copy(e.Labels, labels)
 	return e
@@ -59,7 +59,7 @@ func findEndpoint(eps []*endpoint.Endpoint, dnsName, recordType string) *endpoin
 }
 
 func newCNAMEEndpointWithOwnerResource(dnsName, target, ownerID, resource string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, endpoint.RecordTypeCNAME, target)
+	e := endpoint.MustNewEndpoint(dnsName, endpoint.RecordTypeCNAME, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	e.Labels[endpoint.ResourceLabelKey] = resource
 	return e

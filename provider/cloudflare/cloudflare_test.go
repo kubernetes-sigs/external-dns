@@ -2198,7 +2198,7 @@ func TestCloudflareLongRecordsErrorLog(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail - too long record, %s", err)
 	}
-	logtest.TestHelperLogContains("s longer than 63 characters. Cannot create endpoint", hook, t)
+	logtest.TestHelperLogContains("is longer than 63 characters", hook, t)
 }
 
 // check if the error is expected

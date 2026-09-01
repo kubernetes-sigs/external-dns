@@ -627,7 +627,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
 						Name: "my-service", Namespace: "default", UID: "123",
 					}, types.Service),
-					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+					endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
 				}
 			},
 			expected: func(t *testing.T, ep []*endpoint.Endpoint) {
@@ -643,7 +643,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			name: "duplicate endpoints with first having nil RefObject - second RefObject merged in",
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
-					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+					endpoint.MustNewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
 						Name: "my-service", Namespace: "default", UID: "345",
 					}, types.Service),
@@ -679,11 +679,11 @@ func TestDedupSource_DeduplicatedEndpointsMetric(t *testing.T) {
 	deduplicatedEndpoints.Reset()
 
 	eps := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
-		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"), // duplicate
-		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
-		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // duplicate
-		endpoint.NewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // another duplicate
+		endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+		endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"), // duplicate
+		endpoint.MustNewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"),
+		endpoint.MustNewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // duplicate
+		endpoint.MustNewEndpoint("api.example.com", endpoint.RecordTypeAAAA, "2001:db8::1"), // another duplicate
 	}
 
 	mockSource := testutils.NewMockSource(eps...)
@@ -707,7 +707,7 @@ func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
 
 	eps := []*endpoint.Endpoint{
 		// valid A record
-		endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
+		endpoint.MustNewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.1.1"),
 		// invalid SRV record (missing port and target host)
 		{DNSName: "_svc._tcp.example.org", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"10 mail.example.org"}},
 	}

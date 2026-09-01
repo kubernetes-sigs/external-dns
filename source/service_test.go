@@ -3409,7 +3409,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	require.NoError(t, err)
 
 	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "service/default/istio-ingressgateway"),
+		endpoint.MustNewEndpoint("example.org", endpoint.RecordTypeA, "34.66.66.77").WithLabel(endpoint.ResourceLabelKey, "service/default/istio-ingressgateway"),
 	})
 }
 

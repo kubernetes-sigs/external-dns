@@ -140,28 +140,28 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			title: "process endpoints with TTL set",
 			ttl:   "6s",
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo-1", "A", "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
-				endpoint.NewEndpointWithTTL("foo-3", "A", 0, "1.2.3.6"),
+				endpoint.MustNewEndpoint("foo-1", "A", "1.2.3.4"),
+				endpoint.MustNewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
+				endpoint.MustNewEndpointWithTTL("foo-3", "A", 0, "1.2.3.6"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("foo-1", "A", 6, "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
-				endpoint.NewEndpointWithTTL("foo-3", "A", 6, "1.2.3.6"),
+				endpoint.MustNewEndpointWithTTL("foo-1", "A", 6, "1.2.3.4"),
+				endpoint.MustNewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
+				endpoint.MustNewEndpointWithTTL("foo-3", "A", 6, "1.2.3.6"),
 			},
 		},
 		{
 			title: "skip endpoints processing with TTL set to 0",
 			ttl:   "0s",
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo-1", "A", "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
-				endpoint.NewEndpointWithTTL("foo-3", "A", 0, "1.2.3.6"),
+				endpoint.MustNewEndpoint("foo-1", "A", "1.2.3.4"),
+				endpoint.MustNewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
+				endpoint.MustNewEndpointWithTTL("foo-3", "A", 0, "1.2.3.6"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo-1", "A", "1.2.3.4"),
-				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
-				endpoint.NewEndpointWithTTL("foo-3", "A", 0, "1.2.3.6"),
+				endpoint.MustNewEndpoint("foo-1", "A", "1.2.3.4"),
+				endpoint.MustNewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
+				endpoint.MustNewEndpointWithTTL("foo-3", "A", 0, "1.2.3.6"),
 			},
 		},
 		{
@@ -169,11 +169,11 @@ func TestPostProcessorEndpointsWithTTL(t *testing.T) {
 			ttl:   "0s",
 			endpoints: []*endpoint.Endpoint{
 				nil,
-				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
+				endpoint.MustNewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
 			},
 			expected: []*endpoint.Endpoint{
 				nil,
-				endpoint.NewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
+				endpoint.MustNewEndpointWithTTL("foo-2", "A", 60, "1.2.3.5"),
 			},
 		},
 		{
@@ -460,56 +460,56 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 			title:       "CNAME records get alias annotation when preferAlias is enabled",
 			preferAlias: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
-				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+				endpoint.MustNewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
-				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+				endpoint.MustNewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
 			title:       "CNAME records remain unchanged when preferAlias is disabled",
 			preferAlias: false,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
 			},
 		},
 		{
 			title:       "only CNAME records are affected, A records are unchanged",
 			preferAlias: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+				endpoint.MustNewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
+				endpoint.MustNewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
-				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+				endpoint.MustNewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.MustNewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
+				endpoint.MustNewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 			},
 		},
 		{
 			title:       "existing alias=false is not overridden by preferAlias",
 			preferAlias: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
 			},
 		},
 		{
 			title:       "existing alias=true is preserved when preferAlias is enabled",
 			preferAlias: true,
 			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+				endpoint.MustNewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 			},
 		},
 	}

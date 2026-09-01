@@ -301,12 +301,16 @@ func (p *GDProvider) groupByNameAndType(zoneRecords []gdRecords) []*endpoint.End
 				recordName = strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, zoneName), ".")
 			}
 
-			ep := endpoint.NewEndpointWithTTL(
+			ep, err := endpoint.NewEndpointWithTTL(
 				recordName,
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...,
 			)
+			if err != nil {
+				log.Errorf("Failed to create endpoint for record %q: %v", recordName, err)
+				continue
+			}
 
 			endpoints = append(endpoints, ep)
 		}

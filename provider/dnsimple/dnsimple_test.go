@@ -213,12 +213,12 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				), nil)
 			},
 			want: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
-				endpoint.NewEndpointWithTTL("aaaa.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
-				endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, 7200, "target"),
-				endpoint.NewEndpointWithTTL("txt.example.com", endpoint.RecordTypeTXT, 3600, "hello"),
-				endpoint.NewEndpointWithTTL("srv.example.com", endpoint.RecordTypeSRV, 3600, "1 10 5060 sip.example.com"),
-				endpoint.NewEndpointWithTTL("ns.example.com", endpoint.RecordTypeNS, 3600, "ns1.example.com"),
+				endpoint.MustNewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("aaaa.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
+				endpoint.MustNewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, 7200, "target"),
+				endpoint.MustNewEndpointWithTTL("txt.example.com", endpoint.RecordTypeTXT, 3600, "hello"),
+				endpoint.MustNewEndpointWithTTL("srv.example.com", endpoint.RecordTypeSRV, 3600, "1 10 5060 sip.example.com"),
+				endpoint.MustNewEndpointWithTTL("ns.example.com", endpoint.RecordTypeNS, 3600, "ns1.example.com"),
 			},
 		},
 		{
@@ -231,8 +231,8 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				), nil)
 			},
 			want: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
-				endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
+				endpoint.MustNewEndpointWithTTL("www.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("www.example.com", endpoint.RecordTypeAAAA, 3600, "fd00::1"),
 			},
 		},
 		{
@@ -244,7 +244,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				), nil)
 			},
 			want: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
 			},
 		},
 		{
@@ -257,7 +257,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 				), nil)
 			},
 			want: []*endpoint.Endpoint{
-				endpoint.NewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
+				endpoint.MustNewEndpointWithTTL("a.example.com", endpoint.RecordTypeA, 3600, "127.0.0.1"),
 			},
 		},
 		{
