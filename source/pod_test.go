@@ -115,12 +115,10 @@ func TestPodSource(t *testing.T) {
 			nodesFixturesIPv4(),
 			[]*corev1.Pod{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-pod1",
-						Namespace: "kube-system",
-						Annotations: map[string]string{
-							annotations.InternalHostnameKey: strings.Repeat("a", 64) + ".example.org",
-						},
+					Name:      "my-pod1",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						annotations.InternalHostnameKey: strings.Repeat("a", 64) + ".example.org",
 					},
 					Spec: corev1.PodSpec{
 						HostNetwork: true,
