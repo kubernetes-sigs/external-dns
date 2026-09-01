@@ -1697,11 +1697,9 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 			routes: []*v1.HTTPRoute{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:        "route-test",
-						Namespace:   "test",
-						Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", annotations.HostnameKey: "mywebsite.gtw.prod.example.com"},
-					},
+					Name:        "route-test",
+					Namespace:   "test",
+					Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", annotations.HostnameKey: "mywebsite.gtw.prod.example.com"},
 					Spec: v1.HTTPRouteSpec{
 						Hostnames: hostnames("mywebsite.example.com"),
 						CommonRouteSpec: v1.CommonRouteSpec{
