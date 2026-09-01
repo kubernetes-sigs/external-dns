@@ -44,20 +44,26 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
+const (
+	traefikAPIGroup       = "traefik.io"
+	traefikLegacyAPIGroup = "traefik.containo.us"
+	traefikAPIVersion     = "v1alpha1"
+)
+
 var (
 	ingressRouteGVR = schema.GroupVersionResource{
-		Group:    "traefik.io",
-		Version:  "v1alpha1",
+		Group:    traefikAPIGroup,
+		Version:  traefikAPIVersion,
 		Resource: "ingressroutes",
 	}
 	ingressRouteTCPGVR = schema.GroupVersionResource{
-		Group:    "traefik.io",
-		Version:  "v1alpha1",
+		Group:    traefikAPIGroup,
+		Version:  traefikAPIVersion,
 		Resource: "ingressroutetcps",
 	}
 	ingressRouteUDPGVR = schema.GroupVersionResource{
-		Group:    "traefik.io",
-		Version:  "v1alpha1",
+		Group:    traefikAPIGroup,
+		Version:  traefikAPIVersion,
 		Resource: "ingressrouteudps",
 	}
 	// TODO: traefik.containo.us CRDs were removed in Traefik v3 (released 2024).
@@ -65,18 +71,18 @@ var (
 	// Remove these GVRs and the --traefik-enable-legacy flag after 2026-02-01.
 	// See https://doc.traefik.io/traefik/deprecation/releases/
 	oldIngressRouteGVR = schema.GroupVersionResource{
-		Group:    "traefik.containo.us",
-		Version:  "v1alpha1",
+		Group:    traefikLegacyAPIGroup,
+		Version:  traefikAPIVersion,
 		Resource: "ingressroutes",
 	}
 	oldIngressRouteTCPGVR = schema.GroupVersionResource{
-		Group:    "traefik.containo.us",
-		Version:  "v1alpha1",
+		Group:    traefikLegacyAPIGroup,
+		Version:  traefikAPIVersion,
 		Resource: "ingressroutetcps",
 	}
 	oldIngressRouteUDPGVR = schema.GroupVersionResource{
-		Group:    "traefik.containo.us",
-		Version:  "v1alpha1",
+		Group:    traefikLegacyAPIGroup,
+		Version:  traefikAPIVersion,
 		Resource: "ingressrouteudps",
 	}
 )

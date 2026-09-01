@@ -64,6 +64,11 @@ const (
 	ProviderSpecificRecordType = "record-type"
 )
 
+const (
+	logFieldTargets           = "targets"
+	logFieldComparisonTargets = "comparisonTargets"
+)
+
 var (
 	KnownRecordTypes = []string{
 		RecordTypeA,
@@ -148,23 +153,21 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(t)
 	sort.Stable(o)
 
+	logFields := log.Fields{
+		logFieldTargets:           t,
+		logFieldComparisonTargets: o,
+	}
 	for i, e := range t {
 		if !strings.EqualFold(e, o[i]) {
 			// IPv6 can be shortened, so it should be parsed for equality checking
 			ipA, err := netip.ParseAddr(e)
 			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			ipB, err := netip.ParseAddr(o[i])
 			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			// IPv6 Address Shortener == IPv6 Address Expander
@@ -193,6 +196,10 @@ func (t Targets) IsLess(o Targets) bool {
 	sort.Sort(t)
 	sort.Sort(o)
 
+	logFields := log.Fields{
+		logFieldTargets:           t,
+		logFieldComparisonTargets: o,
+	}
 	for i, e := range t {
 		if e != o[i] {
 			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
@@ -202,18 +209,12 @@ func (t Targets) IsLess(o Targets) bool {
 				// Ignoring parsing errors is fine due to the empty netip.Addr{} type being an invalid IP,
 				// which is checked by IsValid() below. However, still log them in case a provider is experiencing
 				// non-obvious issues with the records being created.
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			ipB, err := netip.ParseAddr(o[i])
 			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			// If both targets are valid IP addresses, use the built-in Less() function to do the comparison.
