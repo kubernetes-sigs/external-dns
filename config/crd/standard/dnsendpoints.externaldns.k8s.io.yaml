@@ -103,6 +103,7 @@ spec:
                           - PTR
                           - MX
                           - NAPTR
+                          - DNAME
                         type: string
                       setIdentifier:
                         description: |-

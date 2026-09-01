@@ -65,6 +65,8 @@ const (
 )
 
 var (
+	// Adding a type here also requires it in the Enum marker on Endpoint.RecordType,
+	// then `make crd`. A type missing from that enum is rejected at admission.
 	KnownRecordTypes = []string{
 		RecordTypeA,
 		RecordTypeAAAA,
@@ -320,7 +322,7 @@ type Endpoint struct {
 	Targets Targets `json:"targets,omitempty"`
 	// RecordType is the DNS record type.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=A;AAAA;CNAME;TXT;SRV;NS;PTR;MX;NAPTR
+	// +kubebuilder:validation:Enum=A;AAAA;CNAME;TXT;SRV;NS;PTR;MX;NAPTR;DNAME
 	RecordType string `json:"recordType,omitempty"`
 	// SetIdentifier distinguishes multiple records with the same name and type
 	// (e.g. Route53 records with routing policies other than 'simple').
