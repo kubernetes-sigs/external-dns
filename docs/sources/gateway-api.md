@@ -186,13 +186,20 @@ spec:
 
 In this example, External DNS will create DNS records only for `company.private.example.com` based on the annotation, ignoring the `hostnames` field in the `HTTPRoute` spec. This prevents conflicts with existing CNAME records while enabling public resolution for specific endpoints.
 
-When using `annotation-only`, the annotation hostname does **not** need to match the listener hostname. ExternalDNS creates DNS records for the annotation hostname using the parent Gateway's IP address, even when the annotation hostname differs from the listener hostname. This enables migration patterns where the DNS hostname and the routing hostname are different, for example:
+When using `annotation-only`, the annotation hostname does **not** need to match the listener hostname.
+ExternalDNS creates DNS records for the annotation hostname using the parent Gateway's IP address,
+even when the annotation hostname differs from the listener hostname.
+This enables migration patterns where the DNS hostname and the routing hostname are different,
+for example:
 
 - A listener routes traffic on `mywebsite.example.com`
 - ExternalDNS creates a DNS record for `mywebsite.gtw.prod.example.com` (from the annotation, in a zone managed by RFC2136)
 - An external CNAME (`mywebsite.example.com → mywebsite.gtw.prod.example.com`) is managed by a different DNS provider
 
-The other supported value for this annotation is `defined-hosts-only`, which restricts hostname resolution to only those explicitly defined in the route spec (and optionally the FQDN template). This ignores annotation hostnames entirely, useful when you want to prevent annotation-based hostnames from creating DNS records.
+The other supported value for this annotation is `defined-hosts-only`, which restricts hostname resolution
+to only those explicitly defined in the route spec (and optionally the FQDN template).
+This ignores annotation hostnames entirely, useful when you want to prevent annotation-based
+hostnames from creating DNS records.
 
 For a complete list of supported annotations, see the
 [annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
