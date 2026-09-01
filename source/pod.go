@@ -190,6 +190,9 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
 	if domainAnnotation, ok := pod.Annotations[annotations.InternalHostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
+		if len(targets) == 0 && !podIPReady(pod) {
+			return
+		}
 		for _, domain := range domainList {
 			if len(targets) == 0 {
 				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
@@ -215,8 +218,10 @@ func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.Endp
 	if ps.compatibility == "kops-dns-controller" {
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-			for _, domain := range domainList {
-				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+			if podIPReady(pod) {
+				for _, domain := range domainList {
+					addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+				}
 			}
 		}
 
@@ -231,10 +236,26 @@ func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.Endpoi
 	if ps.podSourceDomain != "" {
 		domain := pod.Name + "." + ps.podSourceDomain
 		if len(targets) == 0 {
+			if !podIPReady(pod) {
+				return
+			}
 			addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+		} else {
+			addTargetsToEndpointMap(endpointMap, pod, targets, domain)
 		}
-		addTargetsToEndpointMap(endpointMap, pod, targets, domain)
 	}
+}
+
+func podIPReady(pod *v1.Pod) bool {
+	if pod.Status.PodIP == "" || !podActive(pod) {
+		log.Debugf("skipping PodIP record for pod %q: IP=%q phase=%q terminating=%t", pod.Name, pod.Status.PodIP, pod.Status.Phase, pod.DeletionTimestamp != nil)
+		return false
+	}
+	return true
+}
+
+func podActive(pod *v1.Pod) bool {
+	return pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil
 }
 
 func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domainList []string) {
@@ -261,6 +282,10 @@ func (ps *podSource) hostsFromTemplate(pod *v1.Pod) (map[endpoint.EndpointKey][]
 	}
 
 	result := make(map[endpoint.EndpointKey][]string)
+	if len(hosts) > 0 && !podActive(pod) {
+		log.Debugf("skipping PodIP template records for pod %q: phase=%q terminating=%t", pod.Name, pod.Status.Phase, pod.DeletionTimestamp != nil)
+		return result, nil
+	}
 	for _, target := range hosts {
 		for _, address := range pod.Status.PodIPs {
 			if address.IP == "" {
