@@ -19,6 +19,7 @@ package rfc2317
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -109,8 +110,7 @@ func reverseaddr(addr string) (string, error) {
 	// Must be IPv6
 	buf := make([]byte, 0, len(ip)*4+len("ip6.arpa."))
 	// Add it, in reverse, to the buffer
-	for i := len(ip) - 1; i >= 0; i-- {
-		v := ip[i]
+	for _, v := range slices.Backward(ip) {
 		buf = append(buf, hexDigit[v&0xF],
 			'.',
 			hexDigit[v>>4],

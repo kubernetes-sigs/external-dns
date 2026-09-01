@@ -357,8 +357,8 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 
 	for zoneID, ops := range opsByZone {
 		if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
-			ZoneNameOrId:            &zoneID,
-			PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
+			ZoneNameOrId: &zoneID,
+			Items:        ops,
 		}); err != nil {
 			return provider.NewSoftError(err)
 		}

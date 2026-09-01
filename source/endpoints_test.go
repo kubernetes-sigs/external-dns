@@ -45,10 +45,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "matching service with external IPs",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "svc1",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "nginx"},
 						ExternalIPs: []string{"192.0.2.1", "158.123.32.23"},
@@ -63,10 +61,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "matching service with duplicate external IPs",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "svc1",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "nginx"},
 						ExternalIPs: []string{"192.0.2.1", "192.0.2.1", "158.123.32.23"},
@@ -81,10 +77,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "no matching service as service without selector",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "svc1",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						ExternalIPs: []string{"192.0.2.1"},
 					},
@@ -98,10 +92,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "matching service with load balancer IP",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc2",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "svc2",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{"app": "nginx"},
 					},
@@ -122,10 +114,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "matching service with load balancer hostname",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc3",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "svc3",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{"app": "nginx"},
 					},
@@ -146,10 +136,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "no matching services",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc4",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "svc4",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{"app": "apache"},
 					},
@@ -163,10 +151,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "multiple selectors",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "fake",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "fake",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "apache", "version": "v1"},
 						ExternalIPs: []string{"158.123.32.23"},
@@ -181,10 +167,8 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "complex selectors",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "fake",
-						Namespace: corev1.NamespaceDefault,
-					},
+					Name:      "fake",
+					Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector: map[string]string{
 							"app":     "demo",
@@ -216,7 +200,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "gateway selector is superset of service selector — no match",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "igw", Namespace: corev1.NamespaceDefault},
+					Name: "igw", Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"istio": "ingressgateway"},
 						ExternalIPs: []string{"10.0.0.1"},
@@ -233,7 +217,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "gateway selector is subset of service selector",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "igw", Namespace: corev1.NamespaceDefault},
+					Name: "igw", Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"istio": "ingressgateway", "release": "istio"},
 						ExternalIPs: []string{"10.0.0.1"},
@@ -251,14 +235,14 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "index returns multiple candidates, post-filter eliminates false positives",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "igw-a", Namespace: corev1.NamespaceDefault},
+					Name: "igw-a", Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"istio": "ingressgateway", "app": "foo"},
 						ExternalIPs: []string{"10.0.0.1"},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "igw-b", Namespace: corev1.NamespaceDefault},
+					Name: "igw-b", Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"istio": "ingressgateway", "app": "bar"},
 						ExternalIPs: []string{"10.0.0.2"},
@@ -275,14 +259,14 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			name: "empty selector returns all services",
 			services: []*corev1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "svc-a", Namespace: corev1.NamespaceDefault},
+					Name: "svc-a", Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "foo"},
 						ExternalIPs: []string{"10.0.0.1"},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "svc-b", Namespace: corev1.NamespaceDefault},
+					Name: "svc-b", Namespace: corev1.NamespaceDefault,
 					Spec: corev1.ServiceSpec{
 						Selector:    map[string]string{"app": "bar"},
 						ExternalIPs: []string{"10.0.0.2"},

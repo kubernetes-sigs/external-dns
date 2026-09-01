@@ -794,25 +794,19 @@ func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
 			},
 			want: []regionalHostnameChange{
 				{
-					action: cloudFlareCreate,
-					regionalHostname: regionalHostname{
-						hostname:  "create.example.com",
-						regionKey: "eu",
-					},
+					action:    cloudFlareCreate,
+					hostname:  "create.example.com",
+					regionKey: "eu",
 				},
 				{
-					action: cloudFlareUpdate,
-					regionalHostname: regionalHostname{
-						hostname:  "update.example.com",
-						regionKey: "eu",
-					},
+					action:    cloudFlareUpdate,
+					hostname:  "update.example.com",
+					regionKey: "eu",
 				},
 				{
-					action: cloudFlareDelete,
-					regionalHostname: regionalHostname{
-						hostname:  "delete.example.com",
-						regionKey: "",
-					},
+					action:    cloudFlareDelete,
+					hostname:  "delete.example.com",
+					regionKey: "",
 				},
 			},
 		},

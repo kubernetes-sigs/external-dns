@@ -382,11 +382,9 @@ func testNodeSourceEndpoints(t *testing.T) {
 			kubeClient := fake.NewClientset()
 
 			node := &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        tc.nodeName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
+				Name:        tc.nodeName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
 				Spec: v1.NodeSpec{
 					Unschedulable: tc.unschedulable,
 				},
@@ -496,11 +494,9 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		kubeClient := fake.NewClientset()
 
 		node := &v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        tc.nodeName,
-				Labels:      tc.labels,
-				Annotations: tc.annotations,
-			},
+			Name:        tc.nodeName,
+			Labels:      tc.labels,
+			Annotations: tc.annotations,
 			Spec: v1.NodeSpec{
 				Unschedulable: tc.unschedulable,
 			},
@@ -545,20 +541,18 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 
 func TestTransformerInNodeSource(t *testing.T) {
 	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "fake-node",
-			Labels: map[string]string{
-				"label1": "value1",
-				"label2": "value2",
-			},
-			Annotations: map[string]string{
-				"user-annotation":              "value",
-				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
-			},
-			UID: "someuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name: "fake-node",
+		Labels: map[string]string{
+			"label1": "value1",
+			"label2": "value2",
+		},
+		Annotations: map[string]string{
+			"user-annotation":              "value",
+			v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+		},
+		UID: "someuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Status: v1.NodeStatus{
 			Addresses: []v1.NodeAddress{
@@ -629,24 +623,20 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 	elements := []runtime.Object{
 		&v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "foo",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "foo.example.com",
-					annotations.TargetKey:   "1.2.3",
-				},
-				UID: "uid-1",
+			Name: "foo",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.com",
+				annotations.TargetKey:   "1.2.3",
 			},
+			UID: "uid-1",
 		},
 		&v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "bar",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "bar.example.com",
-					annotations.TargetKey:   "3.4.5",
-				},
-				UID: "uid-2",
+			Name: "bar",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "bar.example.com",
+				annotations.TargetKey:   "3.4.5",
 			},
+			UID: "uid-2",
 		},
 	}
 
@@ -710,23 +700,21 @@ func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
 	idx := len(b.nodes) + 1
 	nodeName := fmt.Sprintf("ip-10-1-176-%d.internal", idx)
 	b.nodes = append(b.nodes, v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: nodeName,
-			Labels: func() map[string]string {
-				base := map[string]string{
-					"test-label":                    "test-value",
-					"name":                          nodeName,
-					"topology.kubernetes.io/region": "eu-west-1",
-					"node.kubernetes.io/lifecycle":  "spot",
-				}
-				maps.Copy(base, labels)
-				return base
-			}(),
-			Annotations: map[string]string{
-				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
-				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
-				"external-dns.kubernetes.io/hostname":                    fmt.Sprintf("node-%d.example.com", idx),
-			},
+		Name: nodeName,
+		Labels: func() map[string]string {
+			base := map[string]string{
+				"test-label":                    "test-value",
+				"name":                          nodeName,
+				"topology.kubernetes.io/region": "eu-west-1",
+				"node.kubernetes.io/lifecycle":  "spot",
+			}
+			maps.Copy(base, labels)
+			return base
+		}(),
+		Annotations: map[string]string{
+			"volumes.kubernetes.io/controller-managed-attach-detach": "true",
+			"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
+			"external-dns.kubernetes.io/hostname":                    fmt.Sprintf("node-%d.example.com", idx),
 		},
 		Spec: v1.NodeSpec{
 			Unschedulable: false,
@@ -854,11 +842,9 @@ func createTestNodes(count int, funcs ...func([]*v1.Node)) []*v1.Node {
 	nodes := make([]*v1.Node, count)
 	for i := range count {
 		nodes[i] = &v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        fmt.Sprintf("node-%d", i),
-				Labels:      map[string]string{},
-				Annotations: map[string]string{},
-			},
+			Name:        fmt.Sprintf("node-%d", i),
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
 		}
 	}
 	for _, fn := range funcs {

@@ -122,7 +122,7 @@ func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 
 		line = strings.ReplaceAll(line, "\t", " ")
 		log.Info(line)
-		record := strings.Split(line, " ")[0]
+		record, _, _ := strings.Cut(line, " ")
 		if !strings.HasSuffix(record, zone) {
 			err := fmt.Errorf("Message contains updates outside of it's zone.  zone=%v record=%v", zone, record)
 			log.Error(err)
@@ -1101,14 +1101,12 @@ func (r *failingRfc2136Stub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Env
 func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	// Create a stub that will fail all operations
 	failingStub := &failingRfc2136Stub{
-		rfc2136Stub: rfc2136Stub{
-			output:                make([]*dns.Envelope, 0),
-			updateMsgs:            make([]*dns.Msg, 0),
-			createMsgs:            make([]*dns.Msg, 0),
-			nameservers:           []string{"unreachable-nameserver:53"},
-			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-			loadBalancingStrategy: "round-robin",
-		},
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           []string{"unreachable-nameserver:53"},
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: "round-robin",
 	}
 
 	tlsConfig := TLSConfig{
@@ -1193,14 +1191,12 @@ func (r *axfrEnvelopeErrorStub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.
 // An AXFR error envelope must surface as a SoftError, not a (partial, nil) result.
 func TestRfc2136AxfrEnvelopeErrorReturnsSoftError(t *testing.T) {
 	stub := &axfrEnvelopeErrorStub{
-		rfc2136Stub: rfc2136Stub{
-			output:                make([]*dns.Envelope, 0),
-			updateMsgs:            make([]*dns.Msg, 0),
-			createMsgs:            make([]*dns.Msg, 0),
-			nameservers:           []string{"nameserver:53"},
-			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-			loadBalancingStrategy: "round-robin",
-		},
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           []string{"nameserver:53"},
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: "round-robin",
 	}
 
 	tlsConfig := TLSConfig{
@@ -1280,14 +1276,12 @@ func (r *axfrFailoverStub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envel
 // guard fired even after a later nameserver returned a clean transfer.
 func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
 	stub := &axfrFailoverStub{
-		rfc2136Stub: rfc2136Stub{
-			output:                make([]*dns.Envelope, 0),
-			updateMsgs:            make([]*dns.Msg, 0),
-			createMsgs:            make([]*dns.Msg, 0),
-			nameservers:           []string{"ns1:53", "ns2:53"},
-			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-			loadBalancingStrategy: "round-robin",
-		},
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           []string{"ns1:53", "ns2:53"},
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: "round-robin",
 	}
 
 	tlsConfig := TLSConfig{
@@ -1373,14 +1367,12 @@ func (r *axfrTsigStripStub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Enve
 // Regression: one message shared by all nameservers left every retry unsigned.
 func TestRfc2136AxfrSignsEveryNameserverAttempt(t *testing.T) {
 	stub := &axfrTsigStripStub{
-		rfc2136Stub: rfc2136Stub{
-			output:                make([]*dns.Envelope, 0),
-			updateMsgs:            make([]*dns.Msg, 0),
-			createMsgs:            make([]*dns.Msg, 0),
-			nameservers:           []string{"ns1:53", "ns2:53"},
-			randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
-			loadBalancingStrategy: "round-robin",
-		},
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           []string{"ns1:53", "ns2:53"},
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: "round-robin",
 	}
 
 	tlsConfig := TLSConfig{

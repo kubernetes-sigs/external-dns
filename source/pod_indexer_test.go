@@ -47,27 +47,25 @@ func fixtureCreatePodsWithNodes(input []podSpec) []*corev1.Pod {
 
 	var createPod = func(index int, spec podSpec) *corev1.Pod {
 		return &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("pod-%d-%s", index, uuid.NewString()),
-				Namespace: spec.namespace,
-				Labels: func() map[string]string {
-					if spec.totalTarget > index {
-						return spec.labels
-					}
-					return map[string]string{
-						"app":   fmt.Sprintf("my-app-%d", rand.IntN(10)),
-						"index": strconv.Itoa(index),
-					}
-				}(),
-				Annotations: func() map[string]string {
-					if spec.totalTarget > index {
-						return spec.annotations
-					}
-					return map[string]string{
-						"key1": fmt.Sprintf("value-%d", rand.IntN(10)),
-					}
-				}(),
-			},
+			Name:      fmt.Sprintf("pod-%d-%s", index, uuid.NewString()),
+			Namespace: spec.namespace,
+			Labels: func() map[string]string {
+				if spec.totalTarget > index {
+					return spec.labels
+				}
+				return map[string]string{
+					"app":   fmt.Sprintf("my-app-%d", rand.IntN(10)),
+					"index": strconv.Itoa(index),
+				}
+			}(),
+			Annotations: func() map[string]string {
+				if spec.totalTarget > index {
+					return spec.annotations
+				}
+				return map[string]string{
+					"key1": fmt.Sprintf("value-%d", rand.IntN(10)),
+				}
+			}(),
 			Spec: corev1.PodSpec{},
 			Status: corev1.PodStatus{
 				Phase: corev1.PodRunning,
@@ -139,9 +137,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 		if !nodes.Has(pod.Spec.NodeName) {
 			nodes.Insert(pod.Spec.NodeName)
 			node := &corev1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: pod.Spec.NodeName,
-				},
+				Name: pod.Spec.NodeName,
 			}
 			if _, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{}); err != nil {
 				assert.NoError(t, err)

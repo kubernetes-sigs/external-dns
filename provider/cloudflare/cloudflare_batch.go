@@ -253,82 +253,70 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 	switch r.Type {
 	case dns.RecordResponseTypeA:
 		return dns.BatchPutARecordParam{
-			ID: cloudflare.F(id),
-			ARecordParam: dns.ARecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.ARecordTypeA),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.ARecordTypeA),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeAAAA:
 		return dns.BatchPutAAAARecordParam{
-			ID: cloudflare.F(id),
-			AAAARecordParam: dns.AAAARecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeCNAME:
 		return dns.BatchPutCNAMERecordParam{
-			ID: cloudflare.F(id),
-			CNAMERecordParam: dns.CNAMERecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeTXT:
 		return dns.BatchPutTXTRecordParam{
-			ID: cloudflare.F(id),
-			TXTRecordParam: dns.TXTRecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.TXTRecordTypeTXT),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.TXTRecordTypeTXT),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeMX:
 		return dns.BatchPutMXRecordParam{
-			ID: cloudflare.F(id),
-			MXRecordParam: dns.MXRecordParam{
-				Name:     cloudflare.F(r.Name),
-				TTL:      cloudflare.F(r.TTL),
-				Type:     cloudflare.F(dns.MXRecordTypeMX),
-				Content:  cloudflare.F(r.Content),
-				Proxied:  cloudflare.F(r.Proxied),
-				Comment:  cloudflare.F(comment),
-				Tags:     cloudflare.F(tags),
-				Priority: cloudflare.F(r.Priority),
-			},
+			ID:       cloudflare.F(id),
+			Name:     cloudflare.F(r.Name),
+			TTL:      cloudflare.F(r.TTL),
+			Type:     cloudflare.F(dns.MXRecordTypeMX),
+			Content:  cloudflare.F(r.Content),
+			Proxied:  cloudflare.F(r.Proxied),
+			Comment:  cloudflare.F(comment),
+			Tags:     cloudflare.F(tags),
+			Priority: cloudflare.F(r.Priority),
 		}, true
 	case dns.RecordResponseTypeNS:
 		return dns.BatchPutNSRecordParam{
-			ID: cloudflare.F(id),
-			NSRecordParam: dns.NSRecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.NSRecordTypeNS),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.NSRecordTypeNS),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeSRV:
 		param, err := buildSRVRecordParam(r)
