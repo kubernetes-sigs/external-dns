@@ -17,13 +17,20 @@ limitations under the License.
 package alibabacloud
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
 
+	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/google/uuid"
@@ -33,6 +40,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type MockAlibabaCloudDNSAPI struct {
@@ -171,9 +179,12 @@ func (m *MockAlibabaCloudDNSAPI) newRecord(ep *endpoint.Endpoint, target, domain
 }
 
 type MockAlibabaCloudPrivateZoneAPI struct {
-	counter int64
-	zones   []*pvtz.Zone
-	records map[string][]*pvtz.Record
+	counter                int64
+	zones                  []*pvtz.Zone
+	records                map[string][]*pvtz.Record
+	describeZoneRecordsErr error
+	describeZonesErr       error
+	describeZoneInfoErr    error
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) AddZoneRecord(request *pvtz.AddZoneRecordRequest) (*pvtz.AddZoneRecordResponse, error) {
@@ -260,6 +271,9 @@ func (m *MockAlibabaCloudPrivateZoneAPI) UpdateZoneRecord(request *pvtz.UpdateZo
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneRecords(request *pvtz.DescribeZoneRecordsRequest) (*pvtz.DescribeZoneRecordsResponse, error) {
+	if m.describeZoneRecordsErr != nil {
+		return pvtz.CreateDescribeZoneRecordsResponse(), m.describeZoneRecordsErr
+	}
 	if request == nil || request.ZoneId == "" {
 		return pvtz.CreateDescribeZoneRecordsResponse(), fmt.Errorf("Invalid request")
 	}
@@ -276,6 +290,9 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneRecords(request *pvtz.Descr
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZones(_ *pvtz.DescribeZonesRequest) (*pvtz.DescribeZonesResponse, error) {
+	if m.describeZonesErr != nil {
+		return pvtz.CreateDescribeZonesResponse(), m.describeZonesErr
+	}
 	var result pvtz.ZonesInDescribeZones
 	for _, zone := range m.zones {
 		result.Zone = append(result.Zone, pvtz.Zone{
@@ -289,6 +306,9 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZones(_ *pvtz.DescribeZonesRequ
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneInfo(request *pvtz.DescribeZoneInfoRequest) (*pvtz.DescribeZoneInfoResponse, error) {
+	if m.describeZoneInfoErr != nil {
+		return pvtz.CreateDescribeZoneInfoResponse(), m.describeZoneInfoErr
+	}
 	if request == nil || request.ZoneId == "" {
 		return pvtz.CreateDescribeZoneInfoResponse(), fmt.Errorf("Invalid request")
 	}
@@ -518,6 +538,118 @@ func TestAlibabaCloudProvider_PrivateZone_Records(t *testing.T) {
 	require.NoError(t, err, "Failed to get records: %v", err)
 	require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
 	assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
+}
+
+func TestAlibabaCloudProvider_PrivateZoneReadErrors(t *testing.T) {
+	permanentErr := errors.New("invalid request")
+	tests := []struct {
+		name      string
+		err       error
+		soft      bool
+		configure func(*MockAlibabaCloudPrivateZoneAPI, error)
+	}{
+		{
+			name: "transient describe zones",
+			err:  sdkerrors.NewServerError(http.StatusTooManyRequests, `{}`, ""),
+			soft: true,
+			configure: func(client *MockAlibabaCloudPrivateZoneAPI, err error) {
+				client.describeZonesErr = err
+			},
+		},
+		{
+			name: "transient describe zone info",
+			err:  io.EOF,
+			soft: true,
+			configure: func(client *MockAlibabaCloudPrivateZoneAPI, err error) {
+				client.describeZoneInfoErr = err
+			},
+		},
+		{
+			name: "transient describe zone records",
+			err:  context.DeadlineExceeded,
+			soft: true,
+			configure: func(client *MockAlibabaCloudPrivateZoneAPI, err error) {
+				client.describeZoneRecordsErr = err
+			},
+		},
+		{
+			name: "permanent describe zones",
+			err:  permanentErr,
+			configure: func(client *MockAlibabaCloudPrivateZoneAPI, err error) {
+				client.describeZonesErr = err
+			},
+		},
+		{
+			name: "permanent describe zone records",
+			err:  permanentErr,
+			configure: func(client *MockAlibabaCloudPrivateZoneAPI, err error) {
+				client.describeZoneRecordsErr = err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newTestAlibabaCloudProvider(true)
+			tt.configure(p.pvtzClient.(*MockAlibabaCloudPrivateZoneAPI), tt.err)
+
+			endpoints, err := p.Records(t.Context())
+
+			require.Error(t, err)
+			assert.ErrorIs(t, err, tt.err)
+			if tt.soft {
+				assert.ErrorIs(t, err, provider.SoftError)
+			} else {
+				assert.NotErrorIs(t, err, provider.SoftError)
+			}
+			assert.Nil(t, endpoints)
+		})
+	}
+}
+
+func TestAlibabaCloudProvider_PrivateZoneSkipsPermanentDescribeZoneInfoError(t *testing.T) {
+	p := newTestAlibabaCloudProvider(true)
+	p.pvtzClient.(*MockAlibabaCloudPrivateZoneAPI).describeZoneInfoErr = errors.New("invalid request")
+
+	endpoints, err := p.Records(t.Context())
+
+	require.NoError(t, err)
+	assert.Empty(t, endpoints)
+}
+
+func TestConvertAlibabaCloudError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		soft bool
+	}{
+		{name: "HTTP 408", err: sdkerrors.NewServerError(http.StatusRequestTimeout, `{}`, ""), soft: true},
+		{name: "HTTP 429", err: sdkerrors.NewServerError(http.StatusTooManyRequests, `{}`, ""), soft: true},
+		{name: "HTTP 5xx", err: sdkerrors.NewServerError(http.StatusServiceUnavailable, `{}`, ""), soft: true},
+		{name: "SDK timeout", err: sdkerrors.NewClientError(sdkerrors.TimeoutErrorCode, "timed out", nil), soft: true},
+		{name: "EOF", err: io.EOF, soft: true},
+		{name: "unexpected EOF", err: io.ErrUnexpectedEOF, soft: true},
+		{name: "context deadline", err: context.DeadlineExceeded, soft: true},
+		{name: "network timeout", err: &net.DNSError{IsTimeout: true}, soft: true},
+		{name: "connection reset", err: syscall.ECONNRESET, soft: true},
+		{name: "connection refused", err: syscall.ECONNREFUSED, soft: true},
+		{name: "broken pipe", err: syscall.EPIPE, soft: true},
+		{name: "HTTP 403", err: sdkerrors.NewServerError(http.StatusForbidden, `{}`, "")},
+		{name: "context canceled", err: context.Canceled},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := convertAlibabaCloudError(tt.err)
+
+			assert.ErrorIs(t, err, tt.err)
+			if tt.soft {
+				assert.ErrorIs(t, err, provider.SoftError)
+			} else {
+				assert.NotErrorIs(t, err, provider.SoftError)
+			}
+		})
+	}
 }
 
 func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
