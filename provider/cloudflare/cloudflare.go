@@ -67,6 +67,15 @@ const (
 	paidZoneMaxCommentLength = 500
 )
 
+const (
+	logFieldRecord  = "record"
+	logFieldType    = "type"
+	logFieldTTL     = "ttl"
+	logFieldContent = "content"
+	logFieldAction  = "action"
+	logFieldZone    = "zone"
+)
+
 var changeActionNames = map[changeAction]string{
 	cloudFlareCreate: "CREATE",
 	cloudFlareDelete: "DELETE",
@@ -92,6 +101,7 @@ var recordTypeProxyNotSupported = sets.New(
 	"SPF",
 	"TXT",
 	"SRV",
+	"TLSA",
 )
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -239,8 +249,7 @@ type cloudFlareChange struct {
 func convertCloudflareError(err error) error {
 	// Handle CloudFlare v5 SDK errors according to the documentation:
 	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
-	var apierr *cloudflare.Error
-	if errors.As(err, &apierr) {
+	if apierr, ok := errors.AsType[*cloudflare.Error](err); ok {
 		// Rate limit errors (429) and server errors (5xx) should be treated as soft errors
 		// so that external-dns will retry them later
 		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {
@@ -545,11 +554,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
-				"record": change.ResourceRecord.Name,
-				"type":   change.ResourceRecord.Type,
-				"ttl":    change.ResourceRecord.TTL,
-				"action": change.Action.String(),
-				"zone":   zoneID,
+				logFieldRecord: change.ResourceRecord.Name,
+				logFieldType:   change.ResourceRecord.Type,
+				logFieldTTL:    change.ResourceRecord.TTL,
+				logFieldAction: change.Action.String(),
+				logFieldZone:   zoneID,
 			}
 			log.WithFields(logFields).Info("Changing record.")
 		}
@@ -713,12 +722,17 @@ func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record dns.Recor
 }
 
 func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
-	if record.Type != dns.RecordResponseTypeSRV {
-		return record.Content
-	}
-
-	if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
-		return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+	switch record.Type {
+	case dns.RecordResponseTypeSRV:
+		if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
+			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+		}
+	case dns.RecordResponseTypeTLSA:
+		// Cloudflare returns the digest uppercase; normalise so it compares equal.
+		if tlsa, err := endpoint.NewTLSARecord(record.Content); err == nil {
+			return tlsa.String()
+		}
+		log.Warnf("could not parse TLSA content %q for %s, using it verbatim", record.Content, record.Name)
 	}
 
 	return record.Content
@@ -920,7 +934,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case endpoint.RecordTypeMX:
+	case endpoint.RecordTypeMX, endpoint.RecordTypeTLSA:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)

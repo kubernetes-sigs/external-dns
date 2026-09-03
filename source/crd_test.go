@@ -106,7 +106,7 @@ func TestBuildCacheOptions(t *testing.T) {
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 
-		obj := &apiv1alpha1.DNSEndpoint{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"env": "prod"}}}
+		obj := &apiv1alpha1.DNSEndpoint{Annotations: map[string]string{"env": "prod"}}
 		got, err := byObj.Transform(obj)
 		require.NoError(t, err)
 		require.NotNil(t, got)
@@ -117,7 +117,7 @@ func TestBuildCacheOptions(t *testing.T) {
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 
-		obj := &apiv1alpha1.DNSEndpoint{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"env": "staging"}}}
+		obj := &apiv1alpha1.DNSEndpoint{Annotations: map[string]string{"env": "staging"}}
 		got, err := byObj.Transform(obj)
 		require.NoError(t, err)
 		require.Nil(t, got)
@@ -542,13 +542,11 @@ func testCRDSourceEndpoints(t *testing.T) {
 			t.Parallel()
 
 			obj := &apiv1alpha1.DNSEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "test",
-					Namespace:   ti.objectNamespace,
-					Annotations: ti.annotations,
-					Labels:      ti.labels,
-					Generation:  1,
-				},
+				Name:        "test",
+				Namespace:   ti.objectNamespace,
+				Annotations: ti.annotations,
+				Labels:      ti.labels,
+				Generation:  1,
 				Spec: apiv1alpha1.DNSEndpointSpec{
 					Endpoints: ti.endpoints,
 				},
@@ -637,12 +635,10 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 			obj := &apiv1alpha1.DNSEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "test",
-					Namespace:  "foo",
-					Generation: 1,
-				},
-				Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: ti.endpoints},
+				Name:       "test",
+				Namespace:  "foo",
+				Generation: 1,
+				Spec:       apiv1alpha1.DNSEndpointSpec{Endpoints: ti.endpoints},
 			}
 
 			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
@@ -665,11 +661,9 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 	obj := &apiv1alpha1.DNSEndpoint{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "test",
-			Namespace:  "default",
-			Generation: 2,
-		},
+		Name:       "test",
+		Namespace:  "default",
+		Generation: 2,
 		Status: apiv1alpha1.DNSEndpointStatus{
 			ObservedGeneration: 1, // differs from Generation → update will be attempted
 		},
@@ -852,11 +846,9 @@ func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[stri
 	for rt, count := range typeCounts {
 		for range count {
 			result = append(result, apiv1alpha1.DNSEndpoint{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("dnsendpoint-%s-%d", rt, idx),
-					Namespace: namespace,
-					UID:       k8stypes.UID(fmt.Sprintf("uid-%d", idx)),
-				},
+				Name:      fmt.Sprintf("dnsendpoint-%s-%d", rt, idx),
+				Namespace: namespace,
+				UID:       k8stypes.UID(fmt.Sprintf("uid-%d", idx)),
 				Spec: apiv1alpha1.DNSEndpointSpec{
 					Endpoints: []*endpoint.Endpoint{
 						{
@@ -948,8 +940,8 @@ func TestNewCRDSource(t *testing.T) {
 			name: "cache construction fails: bad TLS cert",
 			makeRestCfg: func(_ *testing.T) *rest.Config {
 				return &rest.Config{
-					Host:            "https://127.0.0.1:1",
-					TLSClientConfig: rest.TLSClientConfig{CAData: []byte("not-a-pem-cert")},
+					Host:   "https://127.0.0.1:1",
+					CAData: []byte("not-a-pem-cert"),
 				}
 			},
 			wantErrContains: "unable to load root certificates",

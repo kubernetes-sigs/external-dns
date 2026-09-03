@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -57,14 +57,10 @@ var (
 
 	// fakePod is a placeholder Pod used when rendering the FQDN template.
 	fakePod = v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      types.Fake,
-			Namespace: v1.NamespaceDefault,
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       types.Fake,
+		Namespace:  v1.NamespaceDefault,
 	}
 )
 
@@ -137,6 +133,11 @@ func (sc *fakeSource) generateEndpointForType(recordType, dnsName string) (*endp
 	case endpoint.RecordTypeNAPTR:
 		// NAPTR target format: "order preference flags service regexp replacement"
 		ep = endpoint.NewEndpoint(fmt.Sprintf("_sip._udp.%s", dnsName), endpoint.RecordTypeNAPTR, fmt.Sprintf(`100 10 "u" "E2U+sip" "!^.*$!sip:info@%s!" .`, dnsName))
+	case endpoint.RecordTypeTLSA:
+		// TLSA target format: "usage selector matchingType certificate" (RFC 6698).
+		// DANE-EE / SPKI / SHA-256, so the digest is 64 hex characters.
+		ep = endpoint.NewEndpoint(fmt.Sprintf("_443._tcp.%s", dnsName), endpoint.RecordTypeTLSA,
+			"3 1 1 "+strings.Repeat("ab", 32))
 	default:
 		return nil, fmt.Errorf("unsupported record type: %s", recordType)
 	}

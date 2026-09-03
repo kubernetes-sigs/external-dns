@@ -324,12 +324,10 @@ func TestChunkBatchChanges(t *testing.T) {
 	}
 	mkPut := func(id, name, content string) dns.BatchPutUnionParam {
 		return dns.BatchPutARecordParam{
-			ID: cloudflare.F(id),
-			ARecordParam: dns.ARecordParam{
-				Name:    cloudflare.F(name),
-				Type:    cloudflare.F(dns.ARecordTypeA),
-				Content: cloudflare.F(content),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(name),
+			Type:    cloudflare.F(dns.ARecordTypeA),
+			Content: cloudflare.F(content),
 		}
 	}
 	mkChange := func(action changeAction, name, content string) *cloudFlareChange {

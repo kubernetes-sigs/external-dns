@@ -45,9 +45,7 @@ func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
 		},
 		Fetcher: func(context.Context, *dns.ZonesClientListByResourceGroupResponse) (dns.ZonesClientListByResourceGroupResponse, error) {
 			return dns.ZonesClientListByResourceGroupResponse{
-				ZoneListResult: dns.ZoneListResult{
-					Value: zones,
-				},
+				Value: zones,
 			}, nil
 		},
 	}
@@ -75,9 +73,7 @@ func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {
 		},
 		Fetcher: func(context.Context, *dns.RecordSetsClientListAllByDNSZoneResponse) (dns.RecordSetsClientListAllByDNSZoneResponse, error) {
 			return dns.RecordSetsClientListAllByDNSZoneResponse{
-				RecordSetListResult: dns.RecordSetListResult{
-					Value: recordSets,
-				},
+				Value: recordSets,
 			}, nil
 		},
 	}

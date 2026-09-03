@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -478,7 +477,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+						Name: "foo", Namespace: "default", UID: "123",
 					}, types.Service),
 				}
 			},
@@ -496,10 +495,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "first-svc", Namespace: "default", UID: "uid-first"},
+						Name: "first-svc", Namespace: "default", UID: "uid-first",
 					}, types.Service),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "second-svc", Namespace: "other", UID: "uid-second"},
+						Name: "second-svc", Namespace: "other", UID: "uid-second",
 					}, types.Service),
 				}
 			},
@@ -518,10 +517,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "svc-uid"},
+						Name: "my-service", Namespace: "default", UID: "svc-uid",
 					}, types.Service),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "ing-uid"},
+						Name: "my-ingress", Namespace: "default", UID: "ing-uid",
 					}, types.Ingress),
 				}
 			},
@@ -540,10 +539,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "ing-uid"},
+						Name: "my-ingress", Namespace: "default", UID: "ing-uid",
 					}, types.Ingress),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "svc-uid"},
+						Name: "my-service", Namespace: "default", UID: "svc-uid",
 					}, types.Service),
 				}
 			},
@@ -562,10 +561,10 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("a.example.com", "1.1.1.1", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "123"},
+						Name: "my-service", Namespace: "default", UID: "123",
 					}, types.Service),
 					testutils.NewEndpointWithRef("b.example.com", "2.2.2.2", &networkingv1.Ingress{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "234"},
+						Name: "my-ingress", Namespace: "default", UID: "234",
 					}, types.Ingress),
 				}
 			},
@@ -601,13 +600,13 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "123"},
+						Name: "my-service", Namespace: "default", UID: "123",
 					}, types.Service),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &networkingv1.Ingress{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-ingress", Namespace: "default", UID: "345"},
+						Name: "my-ingress", Namespace: "default", UID: "345",
 					}, types.Ingress),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Pod{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-pod", Namespace: "default", UID: "456"},
+						Name: "my-pod", Namespace: "default", UID: "456",
 					}, types.Pod),
 				}
 			},
@@ -626,7 +625,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 			input: func() []*endpoint.Endpoint {
 				return []*endpoint.Endpoint{
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "123"},
+						Name: "my-service", Namespace: "default", UID: "123",
 					}, types.Service),
 					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
 				}
@@ -646,7 +645,7 @@ func TestDedupSource_RefObjects(t *testing.T) {
 				return []*endpoint.Endpoint{
 					endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
 					testutils.NewEndpointWithRef("example.com", "1.2.3.4", &v1.Service{
-						ObjectMeta: metav1.ObjectMeta{Name: "my-service", Namespace: "default", UID: "345"},
+						Name: "my-service", Namespace: "default", UID: "345",
 					}, types.Service),
 				}
 			},

@@ -290,11 +290,11 @@ func (p *CloudFlareProvider) processCustomHostnameChanges(
 	failed := false
 	for _, change := range changes {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 		if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 			failed = true

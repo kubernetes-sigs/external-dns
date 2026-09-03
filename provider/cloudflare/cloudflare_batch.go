@@ -74,10 +74,20 @@ func (z zoneService) BatchDNSRecords(ctx context.Context, params dns.RecordBatch
 
 // getUpdateDNSRecordParam returns the RecordUpdateParams for an individual update.
 func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpdateParams, error) {
-	if cfc.ResourceRecord.Type == dns.RecordResponseTypeSRV {
+	switch cfc.ResourceRecord.Type {
+	case dns.RecordResponseTypeSRV:
 		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
 			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
+		}
+		return dns.RecordUpdateParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeTLSA:
+		body, err := buildTLSARecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse TLSA record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
 		return dns.RecordUpdateParams{
 			ZoneID: cloudflare.F(zoneID),
@@ -102,10 +112,20 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpd
 
 // getCreateDNSRecordParam returns the RecordNewParams for an individual create.
 func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) (dns.RecordNewParams, error) {
-	if cfc.ResourceRecord.Type == dns.RecordResponseTypeSRV {
+	switch cfc.ResourceRecord.Type {
+	case dns.RecordResponseTypeSRV:
 		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
 			return dns.RecordNewParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
+		}
+		return dns.RecordNewParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeTLSA:
+		body, err := buildTLSARecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordNewParams{}, fmt.Errorf("failed to parse TLSA record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
 		return dns.RecordNewParams{
 			ZoneID: cloudflare.F(zoneID),
@@ -221,12 +241,45 @@ func buildSRVRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
 	}, nil
 }
 
+func tlsaRecordDataParam(target *endpoint.TLSATarget) dns.TLSARecordDataParam {
+	return dns.TLSARecordDataParam{
+		Usage:        cloudflare.F(float64(target.GetUsage())),
+		Selector:     cloudflare.F(float64(target.GetSelector())),
+		MatchingType: cloudflare.F(float64(target.GetMatchingType())),
+		Certificate:  cloudflare.F(target.GetCertificate()),
+	}
+}
+
+// buildTLSARecordParam builds TLSA parameters; the API rejects TLSA sent as content.
+func buildTLSARecordParam(r dns.RecordResponse) (dns.TLSARecordParam, error) {
+	target, err := endpoint.NewTLSARecord(r.Content)
+	if err != nil {
+		return dns.TLSARecordParam{}, err
+	}
+	return dns.TLSARecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.TLSARecordTypeTLSA),
+		Data:    cloudflare.F(tlsaRecordDataParam(target)),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+	}, nil
+}
+
 // buildBatchPostParam constructs a typed batch-post parameter for creating a DNS record.
 func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, bool) {
-	if r.Type == dns.RecordResponseTypeSRV {
+	switch r.Type {
+	case dns.RecordResponseTypeSRV:
 		param, err := buildSRVRecordParam(r)
 		if err != nil {
 			log.Errorf("failed to parse SRV record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return param, true
+	case dns.RecordResponseTypeTLSA:
+		param, err := buildTLSARecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse TLSA record target %q for %s: %v", r.Content, r.Name, err)
 			return nil, false
 		}
 		return param, true
@@ -253,82 +306,70 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 	switch r.Type {
 	case dns.RecordResponseTypeA:
 		return dns.BatchPutARecordParam{
-			ID: cloudflare.F(id),
-			ARecordParam: dns.ARecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.ARecordTypeA),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.ARecordTypeA),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeAAAA:
 		return dns.BatchPutAAAARecordParam{
-			ID: cloudflare.F(id),
-			AAAARecordParam: dns.AAAARecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeCNAME:
 		return dns.BatchPutCNAMERecordParam{
-			ID: cloudflare.F(id),
-			CNAMERecordParam: dns.CNAMERecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeTXT:
 		return dns.BatchPutTXTRecordParam{
-			ID: cloudflare.F(id),
-			TXTRecordParam: dns.TXTRecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.TXTRecordTypeTXT),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.TXTRecordTypeTXT),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeMX:
 		return dns.BatchPutMXRecordParam{
-			ID: cloudflare.F(id),
-			MXRecordParam: dns.MXRecordParam{
-				Name:     cloudflare.F(r.Name),
-				TTL:      cloudflare.F(r.TTL),
-				Type:     cloudflare.F(dns.MXRecordTypeMX),
-				Content:  cloudflare.F(r.Content),
-				Proxied:  cloudflare.F(r.Proxied),
-				Comment:  cloudflare.F(comment),
-				Tags:     cloudflare.F(tags),
-				Priority: cloudflare.F(r.Priority),
-			},
+			ID:       cloudflare.F(id),
+			Name:     cloudflare.F(r.Name),
+			TTL:      cloudflare.F(r.TTL),
+			Type:     cloudflare.F(dns.MXRecordTypeMX),
+			Content:  cloudflare.F(r.Content),
+			Proxied:  cloudflare.F(r.Proxied),
+			Comment:  cloudflare.F(comment),
+			Tags:     cloudflare.F(tags),
+			Priority: cloudflare.F(r.Priority),
 		}, true
 	case dns.RecordResponseTypeNS:
 		return dns.BatchPutNSRecordParam{
-			ID: cloudflare.F(id),
-			NSRecordParam: dns.NSRecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.NSRecordTypeNS),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.NSRecordTypeNS),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeSRV:
 		param, err := buildSRVRecordParam(r)
@@ -339,6 +380,16 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 		return dns.BatchPutSRVRecordParam{
 			ID:             cloudflare.F(id),
 			SRVRecordParam: param,
+		}, true
+	case dns.RecordResponseTypeTLSA:
+		param, err := buildTLSARecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse TLSA record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return dns.BatchPutTLSARecordParam{
+			ID:              cloudflare.F(id),
+			TLSARecordParam: param,
 		}, true
 	default:
 		// Record types that use structured Data fields (CAA, etc.) are not
@@ -359,11 +410,11 @@ func (p *CloudFlareProvider) buildBatchCollections(
 
 	for _, change := range changes {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 
 		switch change.Action {
@@ -439,11 +490,11 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 	}
 	for _, change := range bc.fallbackUpdates {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 		recordID := p.getRecordID(records, change.ResourceRecord)
 		recordParam, err := getUpdateDNSRecordParam(zoneID, *change)
@@ -490,11 +541,11 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 	for _, group := range groups {
 		for _, change := range group.changes {
 			logFields := log.Fields{
-				"record":  change.ResourceRecord.Name,
-				"type":    change.ResourceRecord.Type,
-				"content": change.ResourceRecord.Content,
-				"action":  change.Action.String(),
-				"zone":    zoneID,
+				logFieldRecord:  change.ResourceRecord.Name,
+				logFieldType:    change.ResourceRecord.Type,
+				logFieldContent: change.ResourceRecord.Content,
+				logFieldAction:  change.Action.String(),
+				logFieldZone:    zoneID,
 			}
 
 			var err error

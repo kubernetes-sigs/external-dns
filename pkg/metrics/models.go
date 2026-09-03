@@ -27,6 +27,11 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
+const (
+	metricTypeGauge   = "gauge"
+	metricTypeCounter = "counter"
+)
+
 type MetricRegistry struct {
 	Registerer prometheus.Registerer
 	Metrics    []*Metric
@@ -108,16 +113,14 @@ func (g GaugeVecMetric) Reset() {
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	opts.Namespace = Namespace
 	return GaugeMetric{
-		Metric: Metric{
-			Type:      "gauge",
-			Name:      opts.Name,
-			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
-			Namespace: opts.Namespace,
-			Subsystem: opts.Subsystem,
-			Help:      opts.Help,
-			Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
-		},
-		Gauge: prometheus.NewGauge(opts),
+		Type:      metricTypeGauge,
+		Name:      opts.Name,
+		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+		Namespace: opts.Namespace,
+		Subsystem: opts.Subsystem,
+		Help:      opts.Help,
+		Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
+		Gauge:     prometheus.NewGauge(opts),
 	}
 }
 
@@ -126,47 +129,41 @@ func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVecMetric {
 	opts.Namespace = Namespace
 	return GaugeVecMetric{
-		Metric: Metric{
-			Type:      "gauge",
-			Name:      opts.Name,
-			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
-			Namespace: opts.Namespace,
-			Subsystem: opts.Subsystem,
-			Help:      opts.Help,
-			Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
-		},
-		Gauge: *prometheus.NewGaugeVec(opts, labelNames),
+		Type:      metricTypeGauge,
+		Name:      opts.Name,
+		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+		Namespace: opts.Namespace,
+		Subsystem: opts.Subsystem,
+		Help:      opts.Help,
+		Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
+		Gauge:     *prometheus.NewGaugeVec(opts, labelNames),
 	}
 }
 
 func NewCounterWithOpts(opts prometheus.CounterOpts) CounterMetric {
 	opts.Namespace = Namespace
 	return CounterMetric{
-		Metric: Metric{
-			Type:      "counter",
-			Name:      opts.Name,
-			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
-			Namespace: opts.Namespace,
-			Subsystem: opts.Subsystem,
-			Help:      opts.Help,
-			Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
-		},
-		Counter: prometheus.NewCounter(opts),
+		Type:      metricTypeCounter,
+		Name:      opts.Name,
+		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+		Namespace: opts.Namespace,
+		Subsystem: opts.Subsystem,
+		Help:      opts.Help,
+		Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
+		Counter:   prometheus.NewCounter(opts),
 	}
 }
 
 func NewCounterVecWithOpts(opts prometheus.CounterOpts, labelNames []string) CounterVecMetric {
 	opts.Namespace = Namespace
 	return CounterVecMetric{
-		Metric: Metric{
-			Type:      "counter",
-			Name:      opts.Name,
-			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
-			Namespace: opts.Namespace,
-			Subsystem: opts.Subsystem,
-			Help:      opts.Help,
-			Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
-		},
+		Type:       metricTypeCounter,
+		Name:       opts.Name,
+		FQDN:       fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+		Namespace:  opts.Namespace,
+		Subsystem:  opts.Subsystem,
+		Help:       opts.Help,
+		Labels:     append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
 		CounterVec: prometheus.NewCounterVec(opts, labelNames),
 	}
 }
@@ -182,20 +179,18 @@ func (g GaugeFuncMetric) Get() *Metric {
 
 func NewGaugeFuncMetric(opts prometheus.GaugeOpts) GaugeFuncMetric {
 	return GaugeFuncMetric{
-		Metric: Metric{
-			Type: "gauge",
-			Name: opts.Name,
-			FQDN: func() string {
-				if opts.Subsystem != "" {
-					return fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name)
-				}
-				return opts.Name
-			}(),
-			Namespace: opts.Namespace,
-			Subsystem: opts.Subsystem,
-			Help:      opts.Help,
-			Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
-		},
+		Type: metricTypeGauge,
+		Name: opts.Name,
+		FQDN: func() string {
+			if opts.Subsystem != "" {
+				return fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name)
+			}
+			return opts.Name
+		}(),
+		Namespace: opts.Namespace,
+		Subsystem: opts.Subsystem,
+		Help:      opts.Help,
+		Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
 		GaugeFunc: prometheus.NewGaugeFunc(opts, func() float64 { return 1 }),
 	}
 }
@@ -216,15 +211,13 @@ func (s SummaryVecMetric) SetWithLabels(value float64, labels prometheus.Labels)
 func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) SummaryVecMetric {
 	opts.Namespace = Namespace
 	return SummaryVecMetric{
-		Metric: Metric{
-			Type:      "summaryVec",
-			Name:      opts.Name,
-			FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
-			Namespace: opts.Namespace,
-			Subsystem: opts.Subsystem,
-			Help:      opts.Help,
-			Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labels...),
-		},
+		Type:       "summaryVec",
+		Name:       opts.Name,
+		FQDN:       fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+		Namespace:  opts.Namespace,
+		Subsystem:  opts.Subsystem,
+		Help:       opts.Help,
+		Labels:     append(slices.Sorted(maps.Keys(opts.ConstLabels)), labels...),
 		SummaryVec: *prometheus.NewSummaryVec(opts, labels),
 	}
 }

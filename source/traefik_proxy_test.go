@@ -2051,16 +2051,12 @@ func TestTraefikIndexer(t *testing.T) {
 		}
 		ann[annotations.TargetKey] = "1.2.3.4"
 		return &IngressRoute{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: gvr.GroupVersion().String(),
-				Kind:       kind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Namespace:   defaultTraefikNamespace,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			APIVersion:  gvr.GroupVersion().String(),
+			Kind:        kind,
+			Name:        name,
+			Namespace:   defaultTraefikNamespace,
+			Annotations: ann,
+			Labels:      lbls,
 			Spec: traefikIngressRouteSpec{
 				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
 			},
@@ -2176,16 +2172,12 @@ func TestTraefikLegacyIndexer(t *testing.T) {
 		}
 		ann[annotations.TargetKey] = "1.2.3.4"
 		return &IngressRoute{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: oldIngressRouteGVR.GroupVersion().String(),
-				Kind:       "IngressRoute",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Namespace:   defaultTraefikNamespace,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			APIVersion:  oldIngressRouteGVR.GroupVersion().String(),
+			Kind:        "IngressRoute",
+			Name:        name,
+			Namespace:   defaultTraefikNamespace,
+			Annotations: ann,
+			Labels:      lbls,
 			Spec: traefikIngressRouteSpec{
 				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
 			},

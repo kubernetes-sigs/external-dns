@@ -122,10 +122,10 @@ func (p *CloudFlareProvider) submitRegionalHostnameChanges(ctx context.Context, 
 // submitRegionalHostnameChange applies a single regional hostname change, returns false if it fails
 func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, zoneID string, rhChange regionalHostnameChange) bool {
 	changeLog := log.WithFields(log.Fields{
-		"hostname":   rhChange.hostname,
-		"region_key": rhChange.regionKey,
-		"action":     rhChange.action.String(),
-		"zone":       zoneID,
+		"hostname":     rhChange.hostname,
+		"region_key":   rhChange.regionKey,
+		logFieldAction: rhChange.action.String(),
+		logFieldZone:   zoneID,
 	})
 	if p.DryRun {
 		changeLog.Debug("Dry run: skipping regional hostname change", rhChange.action)

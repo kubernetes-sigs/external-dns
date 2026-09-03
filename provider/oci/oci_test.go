@@ -671,15 +671,13 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	// Remove the A record.
 	_, err = client.PatchZoneRecords(t.Context(), dns.PatchZoneRecordsRequest{
 		ZoneNameOrId: new("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
-		PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{
-			Items: []dns.RecordOperation{{
-				Domain:    new("foo.foo.com"),
-				Rdata:     new("127.0.0.1"),
-				Rtype:     new("A"),
-				Ttl:       new(300),
-				Operation: dns.RecordOperationOperationRemove,
-			}},
-		},
+		Items: []dns.RecordOperation{{
+			Domain:    new("foo.foo.com"),
+			Rdata:     new("127.0.0.1"),
+			Rtype:     new("A"),
+			Ttl:       new(300),
+			Operation: dns.RecordOperationOperationRemove,
+		}},
 	})
 	require.NoError(t, err)
 
@@ -694,15 +692,13 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	// Add the A record back.
 	_, err = client.PatchZoneRecords(t.Context(), dns.PatchZoneRecordsRequest{
 		ZoneNameOrId: new("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
-		PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{
-			Items: []dns.RecordOperation{{
-				Domain:    new("foo.foo.com"),
-				Rdata:     new("127.0.0.1"),
-				Rtype:     new("A"),
-				Ttl:       new(300),
-				Operation: dns.RecordOperationOperationAdd,
-			}},
-		},
+		Items: []dns.RecordOperation{{
+			Domain:    new("foo.foo.com"),
+			Rdata:     new("127.0.0.1"),
+			Rtype:     new("A"),
+			Ttl:       new(300),
+			Operation: dns.RecordOperationOperationAdd,
+		}},
 	})
 	require.NoError(t, err)
 

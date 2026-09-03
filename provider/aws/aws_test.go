@@ -1486,35 +1486,27 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 func TestAWSChangesByZones(t *testing.T) {
 	changes := Route53Changes{
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("qux.foo.example.org"), TTL: aws.Int64(1),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("qux.foo.example.org"), TTL: aws.Int64(1),
 			},
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
 			},
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionDelete,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("wambo.foo.example.org"), TTL: aws.Int64(10),
-				},
+			Action: route53types.ChangeActionDelete,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("wambo.foo.example.org"), TTL: aws.Int64(10),
 			},
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionDelete,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
-				},
+			Action: route53types.ChangeActionDelete,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
 			},
 		},
 	}
@@ -1556,57 +1548,45 @@ func TestAWSChangesByZones(t *testing.T) {
 
 	validateAWSChangeRecords(t, changesByZone["foo-example-org"], Route53Changes{
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("qux.foo.example.org"), TTL: aws.Int64(1),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("qux.foo.example.org"), TTL: aws.Int64(1),
 			},
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionDelete,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("wambo.foo.example.org"), TTL: aws.Int64(10),
-				},
+			Action: route53types.ChangeActionDelete,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("wambo.foo.example.org"), TTL: aws.Int64(10),
 			},
 		},
 	})
 
 	validateAWSChangeRecords(t, changesByZone["bar-example-org"], Route53Changes{
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
 			},
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionDelete,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
-				},
+			Action: route53types.ChangeActionDelete,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
 			},
 		},
 	})
 
 	validateAWSChangeRecords(t, changesByZone["bar-example-org-private"], Route53Changes{
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
 			},
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionDelete,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
-				},
+			Action: route53types.ChangeActionDelete,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
 			},
 		},
 	})
@@ -1634,29 +1614,23 @@ func TestAWSChangesByZonesHostedZoneIDPin(t *testing.T) {
 
 	changes := Route53Changes{
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("foo.a.my.com"), TTL: aws.Int64(1),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("foo.a.my.com"), TTL: aws.Int64(1),
 			},
 			hostedZoneID: "prv-a-my-com",
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("bar.a.my.com"), TTL: aws.Int64(1),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("bar.a.my.com"), TTL: aws.Int64(1),
 			},
 			hostedZoneID: "pub-a-my-com",
 		},
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("baz.a.my.com"), TTL: aws.Int64(1),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("baz.a.my.com"), TTL: aws.Int64(1),
 			},
 		},
 	}
@@ -1686,11 +1660,9 @@ func TestAWSChangesByZonesHostedZoneIDUnknown(t *testing.T) {
 	}
 	changes := Route53Changes{
 		{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String("foo.a.my.com"), TTL: aws.Int64(1),
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String("foo.a.my.com"), TTL: aws.Int64(1),
 			},
 			hostedZoneID: "does-not-exist",
 		},
@@ -1806,21 +1778,17 @@ func TestAWSBatchChangeSet(t *testing.T) {
 
 	for i := 1; i <= defaultBatchChangeSize; i += 2 {
 		cs = append(cs, &Route53Change{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String(fmt.Sprintf("host-%d", i)),
-					Type: route53types.RRTypeA,
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String(fmt.Sprintf("host-%d", i)),
+				Type: route53types.RRTypeA,
 			},
 		})
 		cs = append(cs, &Route53Change{
-			Change: route53types.Change{
-				Action: route53types.ChangeActionCreate,
-				ResourceRecordSet: &route53types.ResourceRecordSet{
-					Name: aws.String(fmt.Sprintf("host-%d", i)),
-					Type: route53types.RRTypeTxt,
-				},
+			Action: route53types.ChangeActionCreate,
+			ResourceRecordSet: &route53types.ResourceRecordSet{
+				Name: aws.String(fmt.Sprintf("host-%d", i)),
+				Type: route53types.RRTypeTxt,
 			},
 		})
 	}
@@ -1843,21 +1811,17 @@ func TestAWSBatchChangeSetExceeding(t *testing.T) {
 	for i := 1; i <= testCount; i += 2 {
 		cs = append(cs,
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeA,
-					},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeA,
 				},
 			},
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeTxt,
-					},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeTxt,
 				},
 			},
 		)
@@ -1881,21 +1845,17 @@ func TestAWSBatchChangeSetExceedingNameChange(t *testing.T) {
 	for i := 1; i <= testCount; i += 2 {
 		cs = append(cs,
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeA,
-					},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeA,
 				},
 			},
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeTxt,
-					},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeTxt,
 				},
 			},
 		)
@@ -1926,15 +1886,13 @@ func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeA,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("1.2.3.4"),
-							},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeA,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("1.2.3.4"),
 						},
 					},
 				},
@@ -1942,15 +1900,13 @@ func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
 				sizeValues: 1,
 			},
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeTxt,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("txt-record"),
-							},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeTxt,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("txt-record"),
 						},
 					},
 				},
@@ -1985,15 +1941,13 @@ func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionUpsert,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeA,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("1.2.3.4"),
-							},
+				Action: route53types.ChangeActionUpsert,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeA,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("1.2.3.4"),
 						},
 					},
 				},
@@ -2001,15 +1955,13 @@ func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
 				sizeValues: 1,
 			},
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionUpsert,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeTxt,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("txt-record"),
-							},
+				Action: route53types.ChangeActionUpsert,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeTxt,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("txt-record"),
 						},
 					},
 				},
@@ -2044,15 +1996,13 @@ func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeA,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("1.2.3.4"),
-							},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeA,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("1.2.3.4"),
 						},
 					},
 				},
@@ -2060,15 +2010,13 @@ func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
 				sizeValues: 1,
 			},
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionCreate,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeTxt,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("txt-record"),
-							},
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeTxt,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("txt-record"),
 						},
 					},
 				},
@@ -2103,15 +2051,13 @@ func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionUpsert,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeA,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("1.2.3.4"),
-							},
+				Action: route53types.ChangeActionUpsert,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeA,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("1.2.3.4"),
 						},
 					},
 				},
@@ -2119,15 +2065,13 @@ func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
 				sizeValues: 1,
 			},
 			&Route53Change{
-				Change: route53types.Change{
-					Action: route53types.ChangeActionUpsert,
-					ResourceRecordSet: &route53types.ResourceRecordSet{
-						Name: aws.String(fmt.Sprintf("host-%d", i)),
-						Type: route53types.RRTypeTxt,
-						ResourceRecords: []route53types.ResourceRecord{
-							{
-								Value: aws.String("txt-record"),
-							},
+				Action: route53types.ChangeActionUpsert,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String(fmt.Sprintf("host-%d", i)),
+					Type: route53types.RRTypeTxt,
+					ResourceRecords: []route53types.ResourceRecord{
+						{
+							Value: aws.String("txt-record"),
 						},
 					},
 				},
@@ -2427,10 +2371,8 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []route53types.R
 	var changes Route53Changes
 	for _, record := range records {
 		changes = append(changes, &Route53Change{
-			Change: route53types.Change{
-				Action:            route53types.ChangeActionCreate,
-				ResourceRecordSet: &record,
-			},
+			Action:            route53types.ChangeActionCreate,
+			ResourceRecordSet: &record,
 		})
 	}
 
