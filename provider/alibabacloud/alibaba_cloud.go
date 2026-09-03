@@ -576,6 +576,11 @@ func (p *AlibabaCloudProvider) deleteRecord(recordID string) error {
 }
 
 func (p *AlibabaCloudProvider) updateRecord(record alidns.Record, endpoint *endpoint.Endpoint) error {
+	if p.dryRun {
+		log.Infof("Dry run: Update record id '%s' in Alibaba Cloud DNS", record.RecordId)
+		return nil
+	}
+
 	request := alidns.CreateUpdateDomainRecordRequest()
 	request.RecordId = record.RecordId
 	request.RR = record.RR
@@ -891,6 +896,7 @@ func (p *AlibabaCloudProvider) createPrivateZoneRecords(zones map[string]*alibab
 func (p *AlibabaCloudProvider) deletePrivateZoneRecord(recordID int64) error {
 	if p.dryRun {
 		log.Infof("Dry run: Delete record id '%d' in Alibaba Cloud Private Zone", recordID)
+		return nil
 	}
 
 	request := pvtz.CreateDeleteZoneRecordRequest()
@@ -954,6 +960,11 @@ func (p *AlibabaCloudProvider) applyChangesForPrivateZone(changes *plan.Changes)
 }
 
 func (p *AlibabaCloudProvider) updatePrivateZoneRecord(record pvtz.Record, endpoint *endpoint.Endpoint) error {
+	if p.dryRun {
+		log.Infof("Dry run: Update record id '%d' in Alibaba Cloud Private Zone", record.RecordId)
+		return nil
+	}
+
 	request := pvtz.CreateUpdateZoneRecordRequest()
 	request.RecordId = requests.NewInteger64(record.RecordId)
 	request.Rr = record.Rr

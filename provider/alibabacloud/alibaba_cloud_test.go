@@ -36,12 +36,16 @@ import (
 )
 
 type MockAlibabaCloudDNSAPI struct {
-	counter int64
-	domains []*alidns.Domain
-	records map[string][]*alidns.Record
+	counter                 int64
+	addDomainRecordCalls    int
+	deleteDomainRecordCalls int
+	updateDomainRecordCalls int
+	domains                 []*alidns.Domain
+	records                 map[string][]*alidns.Record
 }
 
 func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (*alidns.AddDomainRecordResponse, error) {
+	m.addDomainRecordCalls++
 	if _, exist := m.records[request.DomainName]; !exist {
 		return alidns.CreateAddDomainRecordResponse(), fmt.Errorf("Domain not found")
 	}
@@ -72,6 +76,7 @@ func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecord
 }
 
 func (m *MockAlibabaCloudDNSAPI) DeleteDomainRecord(request *alidns.DeleteDomainRecordRequest) (*alidns.DeleteDomainRecordResponse, error) {
+	m.deleteDomainRecordCalls++
 	if request == nil || request.RecordId == "" {
 		return alidns.CreateDeleteDomainRecordResponse(), fmt.Errorf("Invalid request")
 	}
@@ -87,6 +92,7 @@ func (m *MockAlibabaCloudDNSAPI) DeleteDomainRecord(request *alidns.DeleteDomain
 }
 
 func (m *MockAlibabaCloudDNSAPI) UpdateDomainRecord(request *alidns.UpdateDomainRecordRequest) (*alidns.UpdateDomainRecordResponse, error) {
+	m.updateDomainRecordCalls++
 	if request == nil || request.RecordId == "" {
 		return alidns.CreateUpdateDomainRecordResponse(), fmt.Errorf("Invalid request")
 	}
@@ -171,12 +177,16 @@ func (m *MockAlibabaCloudDNSAPI) newRecord(ep *endpoint.Endpoint, target, domain
 }
 
 type MockAlibabaCloudPrivateZoneAPI struct {
-	counter int64
-	zones   []*pvtz.Zone
-	records map[string][]*pvtz.Record
+	counter               int64
+	addZoneRecordCalls    int
+	deleteZoneRecordCalls int
+	updateZoneRecordCalls int
+	zones                 []*pvtz.Zone
+	records               map[string][]*pvtz.Record
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) AddZoneRecord(request *pvtz.AddZoneRecordRequest) (*pvtz.AddZoneRecordResponse, error) {
+	m.addZoneRecordCalls++
 	if _, exist := m.records[request.ZoneId]; !exist {
 		return pvtz.CreateAddZoneRecordResponse(), fmt.Errorf("Zone not found")
 	}
@@ -207,6 +217,7 @@ func (m *MockAlibabaCloudPrivateZoneAPI) AddZoneRecord(request *pvtz.AddZoneReco
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) DeleteZoneRecord(request *pvtz.DeleteZoneRecordRequest) (*pvtz.DeleteZoneRecordResponse, error) {
+	m.deleteZoneRecordCalls++
 	if request == nil || request.RecordId == "" {
 		return pvtz.CreateDeleteZoneRecordResponse(), fmt.Errorf("Invalid request")
 	}
@@ -223,6 +234,7 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DeleteZoneRecord(request *pvtz.DeleteZo
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) UpdateZoneRecord(request *pvtz.UpdateZoneRecordRequest) (*pvtz.UpdateZoneRecordResponse, error) {
+	m.updateZoneRecordCalls++
 	if request == nil || request.RecordId == "" {
 		return pvtz.CreateUpdateZoneRecordResponse(), fmt.Errorf("Invalid request")
 	}
@@ -442,6 +454,7 @@ func TestAlibabaCloudProvider_Records(t *testing.T) {
 
 func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	provider := newTestAlibabaCloudProvider(false)
+	client := provider.dnsClient.(*MockAlibabaCloudDNSAPI)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
@@ -459,6 +472,9 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	ctx := t.Context()
 	err := provider.ApplyChanges(ctx, &changes)
 	require.NoError(t, err, "Failed to apply changes: %v", err)
+	assert.NotZero(t, client.addDomainRecordCalls)
+	assert.NotZero(t, client.updateDomainRecordCalls)
+	assert.NotZero(t, client.deleteDomainRecordCalls)
 
 	endpoints, err := provider.Records(ctx)
 	require.NoError(t, err, "Failed to get records: %v", err)
@@ -474,6 +490,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 
 func TestAlibabaCloudProvider_ApplyChanges_UndefinedZoneDomain(t *testing.T) {
 	provider := newTestAlibabaCloudProvider(false)
+	client := provider.dnsClient.(*MockAlibabaCloudDNSAPI)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
 			// no found this zone by API: DescribeDomains
@@ -492,6 +509,9 @@ func TestAlibabaCloudProvider_ApplyChanges_UndefinedZoneDomain(t *testing.T) {
 	ctx := t.Context()
 	err := provider.ApplyChanges(ctx, &changes)
 	require.NoError(t, err, "Failed to apply changes: %v", err)
+	assert.NotZero(t, client.addDomainRecordCalls)
+	assert.NotZero(t, client.updateDomainRecordCalls)
+	assert.NotZero(t, client.deleteDomainRecordCalls)
 
 	endpoints, err := provider.Records(ctx)
 	require.NoError(t, err, "Failed to get records: %v", err)
@@ -522,6 +542,7 @@ func TestAlibabaCloudProvider_PrivateZone_Records(t *testing.T) {
 
 func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
 	provider := newTestAlibabaCloudProvider(true)
+	client := provider.pvtzClient.(*MockAlibabaCloudPrivateZoneAPI)
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpointWithTTL("xyz.container-service.top", "A", 300, "4.3.2.1"),
@@ -538,6 +559,9 @@ func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
 	ctx := t.Context()
 	err := provider.ApplyChanges(ctx, &changes)
 	require.NoError(t, err, "Failed to apply changes: %v", err)
+	assert.NotZero(t, client.addZoneRecordCalls)
+	assert.NotZero(t, client.updateZoneRecordCalls)
+	assert.NotZero(t, client.deleteZoneRecordCalls)
 
 	endpoints, err := provider.Records(ctx)
 	require.NoError(t, err, "Failed to get records: %v", err)
@@ -549,6 +573,38 @@ func TestAlibabaCloudProvider_PrivateZone_ApplyChanges(t *testing.T) {
 
 	require.Len(t, endpoints, len(changedEndpoints), "Incorrect number of records: %d", len(endpoints))
 	assert.True(t, testutils.SameEndpoints(changedEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", changedEndpoints, endpoints)
+}
+
+func TestAlibabaCloudProvider_DNSDryRun(t *testing.T) {
+	provider := newTestAlibabaCloudProvider(false)
+	provider.dryRun = true
+	client := provider.dnsClient.(*MockAlibabaCloudDNSAPI)
+	changes := plan.Changes{
+		Create:    []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("new.container-service.top", "A", 300, "4.3.2.1")},
+		UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4")},
+		Delete:    []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\"")},
+	}
+
+	require.NoError(t, provider.ApplyChanges(t.Context(), &changes))
+	assert.Zero(t, client.addDomainRecordCalls)
+	assert.Zero(t, client.updateDomainRecordCalls)
+	assert.Zero(t, client.deleteDomainRecordCalls)
+}
+
+func TestAlibabaCloudProvider_PrivateZone_DryRun(t *testing.T) {
+	provider := newTestAlibabaCloudProvider(true)
+	provider.dryRun = true
+	client := provider.pvtzClient.(*MockAlibabaCloudPrivateZoneAPI)
+	changes := plan.Changes{
+		Create:    []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("new.container-service.top", "A", 300, "4.3.2.1")},
+		UpdateNew: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("abc.container-service.top", "A", 500, "1.2.3.4")},
+		Delete:    []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("abc.container-service.top", "TXT", 300, "\"heritage=external-dns,external-dns/owner=default\"")},
+	}
+
+	require.NoError(t, provider.ApplyChanges(t.Context(), &changes))
+	assert.Zero(t, client.addZoneRecordCalls)
+	assert.Zero(t, client.updateZoneRecordCalls)
+	assert.Zero(t, client.deleteZoneRecordCalls)
 }
 
 func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
