@@ -40,6 +40,7 @@ var (
 		endpoint.RecordTypeNAPTR,
 		endpoint.RecordTypeTXT,
 		endpoint.RecordTypeDNAME,
+		endpoint.RecordTypeTLSA,
 	}
 )
 
