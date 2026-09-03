@@ -32,6 +32,9 @@ jobs:
     - name: Check tools match mise.toml
       run: ./scripts/check-tools.sh --strict
 
+    - name: Check Go version consistency across cloudbuild.yaml, go.mod and mise.toml
+      run: ./scripts/go-version-consistency.sh
+
     - name: Go formatting
       run: |
         if [ -z "$(gofmt -l .)" ]; then
@@ -42,26 +45,8 @@ jobs:
           exit 1
         fi
 
-    - name: Verify linter configuration and Lint go code
+    - name: Run all the linters
       run: make lint
 
     - name: Run file hygiene checks
       run: ./scripts/file-hygiene.sh
-
-  check-go-version:
-    name: Go version consistency
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-    - name: Check out code
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-    # For yq, pinned rather than whatever the runner image ships.
-    - name: Set up dev environment
-      uses: ./.github/actions/dev-env
-      with:
-        cache-scope: go-version
-
-    - name: Check Go version consistency across cloudbuild.yaml, go.mod and mise.toml
-      run: ./scripts/go-version-consistency.sh

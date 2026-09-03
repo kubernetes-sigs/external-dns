@@ -84,13 +84,12 @@ while read -r tool want <&3; do
 done 3< <(awk -F' *= *' '/^[a-z]/ { gsub(/"/, "", $2); print $1, $2 }' "${PINS}")
 
 if [[ "${drift}" -eq 0 && "${missing}" -eq 0 ]]; then
-    echo "  ✅ all tools match mise.toml"
+    echo "  ✅ all required tools"
     exit 0
 fi
 
 echo ""
 echo "Install the pinned versions with 'mise install' (https://mise.jdx.dev)"
-echo "or 'asdf install' (https://asdf-vm.com)."
 
 [[ "${STRICT}" -eq 1 ]] && exit 1
 exit 0

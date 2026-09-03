@@ -1,6 +1,5 @@
 # Developer and CI tool versions. Install with `mise install`,
 # compare against your PATH with `make check-tools`.
-# Checksums for every tool and platform live in mise.lock.
 [tools]
 golang = "1.27.0"
 golangci-lint = "2.13.2"
