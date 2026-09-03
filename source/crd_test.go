@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -765,6 +766,57 @@ func validateCRDResource(t *testing.T, fakeClient client.Client, namespace, name
 	require.NoError(t, err)
 	require.Equal(t, updated.Generation, updated.Status.ObservedGeneration,
 		"ObservedGeneration should be updated to match Generation after Endpoints() is called")
+}
+
+// TestCRDSourceNormalizesCNAMETrailingDot ensures DNSEndpoint CNAME targets are
+// normalized the same way as Ingress/Service (via NewEndpointWithTTL), so a
+// trailing-dot FQDN in the CRD matches AXFR wire form without sync churn.
+func TestCRDSourceNormalizesCNAMETrailingDot(t *testing.T) {
+	obj := &apiv1alpha1.DNSEndpoint{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myservice",
+			Namespace: "default",
+		},
+		Spec: apiv1alpha1.DNSEndpointSpec{
+			Endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "myservice.example.com",
+					Targets:    endpoint.Targets{"traefik.example.com."},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  3600,
+				},
+				{
+					DNSName:    "other.example.com",
+					Targets:    endpoint.Targets{"backend.example.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  300,
+				},
+			},
+		},
+	}
+
+	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	require.NoError(t, err)
+
+	got, err := cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+
+	byName := map[string]*endpoint.Endpoint{}
+	for _, ep := range got {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "myservice.example.com")
+	assert.Equal(t, []string{"traefik.example.com"}, []string(byName["myservice.example.com"].Targets),
+		"trailing dot must be stripped so CRD desired state matches provider Records()")
+	assert.Equal(t, endpoint.RecordTypeCNAME, byName["myservice.example.com"].RecordType)
+	assert.Equal(t, endpoint.TTL(3600), byName["myservice.example.com"].RecordTTL)
+	require.Contains(t, byName["myservice.example.com"].Labels, endpoint.ResourceLabelKey)
+
+	require.Contains(t, byName, "other.example.com")
+	assert.Equal(t, []string{"backend.example.com"}, []string(byName["other.example.com"].Targets))
 }
 
 func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {

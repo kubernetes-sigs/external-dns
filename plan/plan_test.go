@@ -1063,6 +1063,41 @@ func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }
 
+// TestPlanNoChurnCNAMETrailingDot ensures desired CNAME targets without a
+// trailing dot match current AXFR-style targets with a trailing dot, so the
+// plan does not delete/recreate every sync (kubernetes-sigs/external-dns#6199).
+func TestPlanNoChurnCNAMETrailingDot(t *testing.T) {
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "myservice.example.com",
+			RecordType: endpoint.RecordTypeCNAME,
+			Targets:    endpoint.Targets{"traefik.example.com."},
+			RecordTTL:  3600,
+			Labels:     endpoint.Labels{endpoint.OwnerLabelKey: "default"},
+		},
+	}
+	desired := []*endpoint.Endpoint{
+		{
+			DNSName:    "myservice.example.com",
+			RecordType: endpoint.RecordTypeCNAME,
+			Targets:    endpoint.Targets{"traefik.example.com"},
+			RecordTTL:  3600,
+			Labels:     endpoint.Labels{endpoint.OwnerLabelKey: "default"},
+		},
+	}
+
+	p := &Plan{
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}
+	changes := p.Calculate().Changes
+	assert.Empty(t, changes.Create)
+	assert.Empty(t, changes.UpdateNew)
+	assert.Empty(t, changes.UpdateOld)
+	assert.Empty(t, changes.Delete)
+}
+
 // validateEntries validates that the list of entries matches expected.
 func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(entries, expected) {
