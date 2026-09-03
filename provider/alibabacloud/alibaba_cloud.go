@@ -18,14 +18,20 @@ package alibabacloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"os"
 	"slices"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
+	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
@@ -68,6 +74,44 @@ type AlibabaCloudPrivateZoneAPI interface {
 	DescribeZoneRecords(request *pvtz.DescribeZoneRecordsRequest) (*pvtz.DescribeZoneRecordsResponse, error)
 	DescribeZones(request *pvtz.DescribeZonesRequest) (*pvtz.DescribeZonesResponse, error)
 	DescribeZoneInfo(request *pvtz.DescribeZoneInfoRequest) (*pvtz.DescribeZoneInfoResponse, error)
+}
+
+func convertAlibabaCloudError(err error) error {
+	if err == nil || !isTransientAlibabaCloudError(err) {
+		return err
+	}
+	return provider.NewSoftError(err)
+}
+
+func isTransientAlibabaCloudError(err error) bool {
+	var sdkErr sdkerrors.Error
+	if errors.As(err, &sdkErr) {
+		status := sdkErr.HttpStatus()
+		if status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || (status >= http.StatusInternalServerError && status < 600) {
+			return true
+		}
+		if sdkErr.ErrorCode() == sdkerrors.TimeoutErrorCode {
+			return true
+		}
+		if originErr := sdkErr.OriginError(); originErr != nil && isTransientNetworkError(originErr) {
+			return true
+		}
+	}
+	return isTransientNetworkError(err)
+}
+
+func isTransientNetworkError(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, syscall.ECONNRESET) ||
+		errors.Is(err, syscall.ECONNREFUSED) ||
+		errors.Is(err, syscall.EPIPE) {
+		return true
+	}
+
+	var netErr net.Error
+	return errors.As(err, &netErr) && netErr.Timeout()
 }
 
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
@@ -679,15 +723,19 @@ func (p *AlibabaCloudProvider) splitDNSName(dnsName string, hostedZoneDomains []
 	return rr, domain
 }
 
-func (p *AlibabaCloudProvider) matchVPC(zoneID string) bool {
+func (p *AlibabaCloudProvider) matchVPC(zoneID string) (bool, error) {
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = zoneID
 	request.Domain = pVTZDoamin
 	request.Scheme = defaultAlibabaCloudRequestScheme
 	response, err := p.getPvtzClient().DescribeZoneInfo(request)
 	if err != nil {
+		wrappedErr := fmt.Errorf("describing private zone info %q: %w", zoneID, err)
+		if isTransientAlibabaCloudError(wrappedErr) {
+			return false, provider.NewSoftError(wrappedErr)
+		}
 		log.Errorf("Failed to describe zone info %s in Alibaba Cloud DNS: %v", zoneID, err)
-		return false
+		return false, nil
 	}
 	foundVPC := false
 	for _, vpc := range response.BindVpcs.Vpc {
@@ -696,7 +744,7 @@ func (p *AlibabaCloudProvider) matchVPC(zoneID string) bool {
 			break
 		}
 	}
-	return foundVPC
+	return foundVPC, nil
 }
 
 func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
@@ -711,7 +759,7 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 		response, err := p.getPvtzClient().DescribeZones(request)
 		if err != nil {
 			log.Errorf("Failed to describe zones in Alibaba Cloud DNS: %v", err)
-			return nil, err
+			return nil, convertAlibabaCloudError(fmt.Errorf("describing private zones: %w", err))
 		}
 		for _, zone := range response.Zones.Zone {
 			log.Infof("PrivateZones zone: %++v", zone)
@@ -722,7 +770,11 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 			if !p.domainFilter.Match(zone.ZoneName) {
 				continue
 			}
-			if !p.matchVPC(zone.ZoneId) {
+			matchesVPC, err := p.matchVPC(zone.ZoneId)
+			if err != nil {
+				return nil, err
+			}
+			if !matchesVPC {
 				continue
 			}
 			zones = append(zones, zone)
@@ -766,7 +818,7 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 			response, err := p.getPvtzClient().DescribeZoneRecords(request)
 			if err != nil {
 				log.Errorf("Failed to describe zone record '%s' in Alibaba Cloud DNS: %v", zone.ZoneId, err)
-				return nil, err
+				return nil, convertAlibabaCloudError(fmt.Errorf("describing records for private zone %q: %w", zone.ZoneId, err))
 			}
 
 			for _, record := range response.Records.Record {
