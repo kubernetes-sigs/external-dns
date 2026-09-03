@@ -29,14 +29,21 @@ cover-html: cover
 #? check-tools: Compare the tools on PATH against the versions pinned in mise.toml
 .PHONY: check-tools
 check-tools:
-	@scripts/check-tools.sh
+	@scripts/check-tools.sh --strict
 
-#? go-lint: Run the golangci-lint tool
+#? go-lint: Run the golangci-lint tool, rewriting files in place
 .PHONY: go-lint
 go-lint:
 	golangci-lint config verify
 	gofmt -l -s -w .
 	golangci-lint run --timeout=30m --fix ./...
+
+#? go-lint-check: Run the golangci-lint tool read-only, for CI
+.PHONY: go-lint-check
+go-lint-check:
+	golangci-lint config verify
+	@test -z "$$(gofmt -l -s .)" || { echo ">> gofmt -s needed, run 'make go-lint':"; gofmt -d -l -s .; exit 1; }
+	golangci-lint run --timeout=30m ./...
 
 #? licensecheck: Run the to check for license headers
 .PHONY: licensecheck
@@ -50,9 +57,13 @@ licensecheck:
 			exit 1; \
 		fi
 
-#? lint: Run all the linters
+#? lint: Run all the linters, rewriting files in place
 .PHONY: lint
-lint: check-tools licensecheck go-lint validate-json-yaml
+lint: licensecheck go-lint validate-json-yaml
+
+#? lint-check: Run all the linters read-only, for CI
+.PHONY: lint-check
+lint-check: licensecheck go-lint-check validate-json-yaml
 
 #? validate-json-yaml: Validate JSON and YAML files
 .PHONY: validate-json-yaml
@@ -61,7 +72,8 @@ validate-json-yaml:
 
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
-crd: check-tools
+crd:
+	@scripts/check-tools.sh --strict golang kube-controller-tools yq yamlfmt
 	@./scripts/generate-crd.sh
 
 #? update-tools: Bump every tool in mise.toml to its latest version
@@ -103,9 +115,10 @@ IMG_PLATFORM  ?= linux/amd64,linux/arm64,linux/arm/v7
 IMG_PUSH      ?= true
 IMG_SBOM      ?= none
 
-build: check-tools build/$(BINARY)
+build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
+	@scripts/check-tools.sh --strict golang
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.push/multiarch: ko

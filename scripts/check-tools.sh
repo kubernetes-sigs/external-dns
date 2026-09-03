@@ -16,29 +16,34 @@
 
 # Compares the tools on PATH against mise.toml. Installs nothing.
 # Warns by default, exits non-zero only with --strict.
+# Tool names narrow the check to those tools.
 #
 # Execute
 #   scripts/check-tools.sh
 #   scripts/check-tools.sh --strict
+#   scripts/check-tools.sh --strict golang yq
 
 set -uo pipefail
 
 STRICT=0
-[[ "${1:-}" == "--strict" ]] && STRICT=1
+WANTED=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --strict) STRICT=1 ;;
+        -*)       echo "ERROR: unknown option '$1', expected --strict" >&2; exit 2 ;;
+        *)        WANTED+=("$1") ;;
+    esac
+    shift
+done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PINS="${REPO_ROOT}/mise.toml"
-
-if [[ ! -f "${PINS}" ]]; then
-    echo "ERROR: ${PINS} not found" >&2
-    exit 1
-fi
 
 binary_for() {
     case "$1" in
         golang)                echo "go" ;;
         helm-ct)               echo "ct" ;;
         kube-controller-tools) echo "controller-gen" ;;
+        pipx:*)                echo "${1#pipx:}" ;;
         *)                     echo "$1" ;;
     esac
 }
@@ -63,12 +68,24 @@ installed_version() {
     grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< "${out}" | head -1
 }
 
+wanted() {
+    [[ "${#WANTED[@]}" -eq 0 ]] && return 0
+    local name
+    for name in "${WANTED[@]}"; do
+        [[ "${name}" == "$1" || "${name}" == "$2" ]] && return 0
+    done
+    return 1
+}
+
 drift=0
 missing=0
+seen=()
 
 # fd 3: the version commands inherit stdin and would consume the list.
 while read -r tool want <&3; do
     binary="$(binary_for "${tool}")"
+    wanted "${tool}" "${binary}" || continue
+    seen+=("${tool}" "${binary}")
 
     if ! command -v "${binary}" &> /dev/null; then
         echo "  ✗ ${binary} not found on PATH (want ${want})"
@@ -81,7 +98,19 @@ while read -r tool want <&3; do
         echo "  ✗ ${binary} is ${got:-unknown}, mise.toml wants ${want}"
         drift=1
     fi
-done 3< <(awk -F' *= *' '/^[a-z]/ { gsub(/"/, "", $2); print $1, $2 }' "${PINS}")
+done 3< <("${REPO_ROOT}/scripts/mise-pins.sh")
+
+# A typo would otherwise check nothing and pass.
+for name in ${WANTED[@]+"${WANTED[@]}"}; do
+    match=0
+    for entry in ${seen[@]+"${seen[@]}"}; do
+        [[ "${entry}" == "${name}" ]] && match=1 && break
+    done
+    if [[ "${match}" -eq 0 ]]; then
+        echo "ERROR: '${name}' is not pinned in mise.toml" >&2
+        exit 2
+    fi
+done
 
 if [[ "${drift}" -eq 0 && "${missing}" -eq 0 ]]; then
     echo "  ✅ all required tools"

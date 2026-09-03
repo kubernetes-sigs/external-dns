@@ -287,6 +287,10 @@ checksum = "sha256:a49ec014273de590ea1d898179fe5c07876b4bdb84f6b9b3474fab6dc43c5
 url = "https://github.com/kubernetes-sigs/controller-tools/releases/download/v0.21.0/controller-gen-windows-amd64.exe"
 url_api = "https://api.github.com/repos/kubernetes-sigs/controller-tools/releases/assets/413514953"
 
+[[tools."pipx:yamale"]]
+version = "6.0.0"
+backend = "pipx:yamale"
+
 [[tools.yamlfmt]]
 version = "0.21.0"
 backend = "aqua:google/yamlfmt"
@@ -325,6 +329,10 @@ url_api = "https://api.github.com/repos/google/yamlfmt/releases/assets/336650207
 checksum = "sha256:07f80ce5d741eb4b0a9380ac78a19c7cb5bd44e2a9a47a5a04839e3ba54dd463"
 url = "https://github.com/google/yamlfmt/releases/download/v0.21.0/yamlfmt_0.21.0_Windows_x86_64.tar.gz"
 url_api = "https://api.github.com/repos/google/yamlfmt/releases/assets/336650206"
+
+[[tools.yamllint]]
+version = "1.33.0"
+backend = "pipx:yamllint"
 
 [[tools.yq]]
 version = "4.53.6"

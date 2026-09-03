@@ -30,23 +30,16 @@ jobs:
         cache-scope: lint
 
     - name: Check tools match mise.toml
-      run: ./scripts/check-tools.sh --strict
+      run: make check-tools
 
     - name: Check Go version consistency across cloudbuild.yaml, go.mod and mise.toml
       run: ./scripts/go-version-consistency.sh
 
-    - name: Go formatting
-      run: |
-        if [ -z "$(gofmt -l .)" ]; then
-          echo -e "All '*.go' files are properly formatted."
-        else
-          echo -e "Please run 'make go-lint' to fix. Some files need formatting:"
-          gofmt -d -l .
-          exit 1
-        fi
-
     - name: Run all the linters
-      run: make lint
+      run: make lint-check
 
     - name: Run file hygiene checks
       run: ./scripts/file-hygiene.sh
+
+    - name: Fail if any step modified tracked files
+      run: git diff --exit-code

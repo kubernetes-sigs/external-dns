@@ -10,3 +10,11 @@ ko = "0.17.1"
 kube-controller-tools = "0.21.0"
 yamlfmt = "0.21.0"
 yq = "4.53.6"
+# ct lint shells out to both.
+yamllint = "1.33.0"
+"pipx:yamale" = "6.0.0"
+
+[settings]
+# Enforce for supply chain security
+lockfile = true
+locked = true

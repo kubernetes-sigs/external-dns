@@ -21,6 +21,6 @@ set -o pipefail
 # Fallback for environments without mise, such as the cloudbuild golang image.
 if ! command -v ko &> /dev/null; then
   REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-  version=$(awk -F' *= *' '$1 == "ko" { gsub(/"/, "", $2); print $2; exit }' "${REPO_ROOT}/mise.toml")
+  version=$("${REPO_ROOT}/scripts/mise-pins.sh" | awk '$1 == "ko" { print $2; exit }')
   go install "github.com/google/ko@v${version}"
 fi

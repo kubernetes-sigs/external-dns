@@ -76,6 +76,11 @@ lint_chart() {
   helm lint . --debug --strict \
   --values values.yaml \
   --values ci/ci-values.yaml
+  # ct ships its schemas next to the binary, outside the paths it searches.
+  if [[ -z "${CT_CONFIG_DIR:-}" ]] && command -v mise &> /dev/null; then
+    CT_CONFIG_DIR="$(mise where helm-ct)/etc"
+    export CT_CONFIG_DIR
+  fi
   # lint with chart testing tool
   ct lint --target-branch=master --check-version-increment=false
 }
