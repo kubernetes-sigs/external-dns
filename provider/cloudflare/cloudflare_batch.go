@@ -410,11 +410,11 @@ func (p *CloudFlareProvider) buildBatchCollections(
 
 	for _, change := range changes {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 
 		switch change.Action {
@@ -490,11 +490,11 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 	}
 	for _, change := range bc.fallbackUpdates {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 		recordID := p.getRecordID(records, change.ResourceRecord)
 		recordParam, err := getUpdateDNSRecordParam(zoneID, *change)
@@ -541,11 +541,11 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 	for _, group := range groups {
 		for _, change := range group.changes {
 			logFields := log.Fields{
-				"record":  change.ResourceRecord.Name,
-				"type":    change.ResourceRecord.Type,
-				"content": change.ResourceRecord.Content,
-				"action":  change.Action.String(),
-				"zone":    zoneID,
+				logFieldRecord:  change.ResourceRecord.Name,
+				logFieldType:    change.ResourceRecord.Type,
+				logFieldContent: change.ResourceRecord.Content,
+				logFieldAction:  change.Action.String(),
+				logFieldZone:    zoneID,
 			}
 
 			var err error

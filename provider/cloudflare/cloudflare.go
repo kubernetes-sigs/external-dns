@@ -67,6 +67,15 @@ const (
 	paidZoneMaxCommentLength = 500
 )
 
+const (
+	logFieldRecord  = "record"
+	logFieldType    = "type"
+	logFieldTTL     = "ttl"
+	logFieldContent = "content"
+	logFieldAction  = "action"
+	logFieldZone    = "zone"
+)
+
 var changeActionNames = map[changeAction]string{
 	cloudFlareCreate: "CREATE",
 	cloudFlareDelete: "DELETE",
@@ -545,11 +554,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
-				"record": change.ResourceRecord.Name,
-				"type":   change.ResourceRecord.Type,
-				"ttl":    change.ResourceRecord.TTL,
-				"action": change.Action.String(),
-				"zone":   zoneID,
+				logFieldRecord: change.ResourceRecord.Name,
+				logFieldType:   change.ResourceRecord.Type,
+				logFieldTTL:    change.ResourceRecord.TTL,
+				logFieldAction: change.Action.String(),
+				logFieldZone:   zoneID,
 			}
 			log.WithFields(logFields).Info("Changing record.")
 		}

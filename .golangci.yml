@@ -51,8 +51,6 @@ linters:
     cyclop: # Lower cyclomatic complexity threshold after the max complexity is lowered
       max-complexity: 32 # See https://github.com/kubernetes-sigs/external-dns/issues/5419
     goconst:
-      # TODO: raised by the go1.27 migration (golangci-lint bump surfaced pre-existing dupes); lower back to 3 once extracted to constants.
-      min-occurrences: 13
       # Ignore well-known DNS record types, boolean strings, and common values
       ignore-string-values:
         - "^(A|AAAA|ALIAS|CNAME|MX|NS|PTR|SRV|TXT)$"  # DNS record types

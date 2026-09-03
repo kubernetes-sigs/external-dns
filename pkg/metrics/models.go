@@ -27,6 +27,11 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
+const (
+	metricTypeGauge   = "gauge"
+	metricTypeCounter = "counter"
+)
+
 type MetricRegistry struct {
 	Registerer prometheus.Registerer
 	Metrics    []*Metric
@@ -108,7 +113,7 @@ func (g GaugeVecMetric) Reset() {
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	opts.Namespace = Namespace
 	return GaugeMetric{
-		Type:      "gauge",
+		Type:      metricTypeGauge,
 		Name:      opts.Name,
 		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
 		Namespace: opts.Namespace,
@@ -124,7 +129,7 @@ func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVecMetric {
 	opts.Namespace = Namespace
 	return GaugeVecMetric{
-		Type:      "gauge",
+		Type:      metricTypeGauge,
 		Name:      opts.Name,
 		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
 		Namespace: opts.Namespace,
@@ -138,7 +143,7 @@ func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVe
 func NewCounterWithOpts(opts prometheus.CounterOpts) CounterMetric {
 	opts.Namespace = Namespace
 	return CounterMetric{
-		Type:      "counter",
+		Type:      metricTypeCounter,
 		Name:      opts.Name,
 		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
 		Namespace: opts.Namespace,
@@ -152,7 +157,7 @@ func NewCounterWithOpts(opts prometheus.CounterOpts) CounterMetric {
 func NewCounterVecWithOpts(opts prometheus.CounterOpts, labelNames []string) CounterVecMetric {
 	opts.Namespace = Namespace
 	return CounterVecMetric{
-		Type:       "counter",
+		Type:       metricTypeCounter,
 		Name:       opts.Name,
 		FQDN:       fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
 		Namespace:  opts.Namespace,
@@ -174,7 +179,7 @@ func (g GaugeFuncMetric) Get() *Metric {
 
 func NewGaugeFuncMetric(opts prometheus.GaugeOpts) GaugeFuncMetric {
 	return GaugeFuncMetric{
-		Type: "gauge",
+		Type: metricTypeGauge,
 		Name: opts.Name,
 		FQDN: func() string {
 			if opts.Subsystem != "" {
