@@ -1683,6 +1683,18 @@ func TestEndpoint_WithRefObject(t *testing.T) {
 	}
 }
 
+func TestEndpoint_WithTargetsFromAnnotation(t *testing.T) {
+	ep := &Endpoint{}
+	assert.False(t, ep.TargetsFromAnnotation(), "should default to false")
+
+	result := ep.WithTargetsFromAnnotation(true)
+	assert.True(t, ep.TargetsFromAnnotation())
+	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+
+	ep.WithTargetsFromAnnotation(false)
+	assert.False(t, ep.TargetsFromAnnotation())
+}
+
 func TestTargets_UniqueOrdered(t *testing.T) {
 	tests := []struct {
 		name     string

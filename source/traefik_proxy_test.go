@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -469,6 +470,71 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
+}
+
+// TestTraefikProxyIngressRouteEndpoints_TemplateEndpointsNotAnnotationOnly
+// covers an IngressRoute that carries an explicit target annotation
+// (annotation-sourced) together with a --combine-fqdn-annotation style
+// template engine that appends a second, template-derived endpoint for the
+// same object. The annotation-derived endpoint must stay marked
+// annotation-only; the template-derived one must not, since its target came
+// from the template engine rather than the per-resource target annotation.
+func TestTraefikProxyIngressRouteEndpoints_TemplateEndpointsNotAnnotationOnly(t *testing.T) {
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	scheme := runtime.NewScheme()
+	scheme.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	scheme.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	scheme.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
+
+	ingressRoute := IngressRoute{
+		APIVersion: ingressRouteGVR.GroupVersion().String(),
+		Kind:       "IngressRoute",
+		Name:       "ingressroute-annotation-plus-template",
+		Namespace:  defaultTraefikNamespace,
+		Annotations: map[string]string{
+			annotations.HostnameKey:       "d.example.com",
+			annotations.TargetKey:         "target.domain.tld",
+			"kubernetes.io/ingress.class": "traefik",
+		},
+	}
+
+	ir := unstructured.Unstructured{}
+	ingressRouteAsJSON, err := json.Marshal(ingressRoute)
+	require.NoError(t, err)
+	require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+
+	_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+		&Config{
+			Namespace:        defaultTraefikNamespace,
+			AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
+			LabelFilter:      labels.Everything(),
+			TemplateEngine:   templatetest.MustEngine(t, "{{.Name}}-templated.example.org", "5.5.5.5", "", true),
+		})
+	require.NoError(t, err)
+
+	count := &unstructured.UnstructuredList{}
+	for len(count.Items) < 1 {
+		count, _ = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
+	}
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	byName := make(map[string]*endpoint.Endpoint, len(endpoints))
+	for _, ep := range endpoints {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "d.example.com")
+	assert.True(t, byName["d.example.com"].TargetsFromAnnotation())
+
+	require.Contains(t, byName, "ingressroute-annotation-plus-template-templated.example.org")
+	assert.False(t, byName["ingressroute-annotation-plus-template-templated.example.org"].TargetsFromAnnotation(),
+		"the template-derived endpoint's target did not come from the target annotation and must remain eligible for --force-default-targets")
 }
 
 func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {

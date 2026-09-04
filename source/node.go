@@ -168,8 +168,8 @@ func (ns *nodeSource) endpointsFromNodeTemplate(node *v1.Node) ([]*endpoint.Endp
 func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]*endpoint.Endpoint, error) {
 	ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
 
-	addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
-	if len(addrs) == 0 {
+	addrs, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(node.Annotations)
+	if !targetsFromAnnotation {
 		var err error
 		addrs, err = ns.nodeAddresses(node)
 		if err != nil {
@@ -187,6 +187,7 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 				continue
 			}
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
+			ep.WithTargetsFromAnnotation(targetsFromAnnotation)
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)
 		}

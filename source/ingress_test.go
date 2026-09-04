@@ -1926,6 +1926,35 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
 }
 
+func TestEndpointsFromIngress_TargetsFromAnnotation(t *testing.T) {
+	t.Run("target annotation marks endpoints as annotation-sourced", func(t *testing.T) {
+		ing := fakeIngress{
+			dnsnames: []string{"foo.bar"},
+			ips:      []string{"8.8.8.8"}, // natural status target; the annotation must win
+			annotations: map[string]string{
+				annotations.TargetKey: "target.example.org",
+			},
+		}.Ingress()
+
+		endpoints := endpointsFromIngress(ing, false, false, false)
+		require.Len(t, endpoints, 1)
+		assert.Equal(t, endpoint.Targets{"target.example.org"}, endpoints[0].Targets)
+		assert.True(t, endpoints[0].TargetsFromAnnotation(), "target annotation should mark the endpoint")
+	})
+
+	t.Run("natural status target is not marked as annotation-sourced", func(t *testing.T) {
+		ing := fakeIngress{
+			dnsnames: []string{"foo.bar"},
+			ips:      []string{"8.8.8.8"},
+		}.Ingress()
+
+		endpoints := endpointsFromIngress(ing, false, false, false)
+		require.Len(t, endpoints, 1)
+		assert.Equal(t, endpoint.Targets{"8.8.8.8"}, endpoints[0].Targets)
+		assert.False(t, endpoints[0].TargetsFromAnnotation(), "natural ingress status target should not be marked as annotation-sourced")
+	})
+}
+
 func TestNewIngressSource_Errors(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {

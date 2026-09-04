@@ -161,8 +161,8 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		targets := annotations.TargetsFromTargetAnnotation(host.Annotations)
-		if len(targets) == 0 {
+		targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(host.Annotations)
+		if !targetsFromAnnotation {
 			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 			if err != nil {
 				log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
@@ -170,7 +170,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			}
 		}
 
-		hostEndpoints := sc.endpointsFromHost(host, targets)
+		hostEndpoints := markTargetsFromAnnotation(sc.endpointsFromHost(host, targets), targetsFromAnnotation)
 		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}

@@ -147,11 +147,13 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 
 func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoint {
 	endpointMap := make(map[endpoint.EndpointKey][]string)
-	ps.addPodEndpointsToEndpointMap(endpointMap, pod)
+	annotationKeys := make(map[endpoint.EndpointKey]bool)
+	ps.addPodEndpointsToEndpointMap(endpointMap, annotationKeys, pod)
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
 		if ep := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...); ep != nil {
+			ep.WithTargetsFromAnnotation(annotationKeys[key])
 			endpoints = append(endpoints, ep)
 		}
 	}
@@ -173,7 +175,7 @@ func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint
 	return endpoints, nil
 }
 
-func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod) {
+func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod) {
 	if ps.ignoreNonHostNetworkPods && !pod.Spec.HostNetwork {
 		log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
 		return
@@ -181,63 +183,68 @@ func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.Endpo
 
 	targets := annotations.TargetsFromTargetAnnotation(pod.Annotations)
 
-	ps.addInternalHostnameAnnotationEndpoints(endpointMap, pod, targets)
-	ps.addHostnameAnnotationEndpoints(endpointMap, pod, targets)
-	ps.addKopsDNSControllerEndpoints(endpointMap, pod)
-	ps.addPodSourceDomainEndpoints(endpointMap, pod, targets)
+	ps.addInternalHostnameAnnotationEndpoints(endpointMap, annotationKeys, pod, targets)
+	ps.addHostnameAnnotationEndpoints(endpointMap, annotationKeys, pod, targets)
+	ps.addKopsDNSControllerEndpoints(endpointMap, annotationKeys, pod)
+	ps.addPodSourceDomainEndpoints(endpointMap, annotationKeys, pod, targets)
 }
 
-func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
+func (ps *podSource) addInternalHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod, targets []string) {
 	if domainAnnotation, ok := pod.Annotations[annotations.InternalHostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		for _, domain := range domainList {
 			if len(targets) == 0 {
-				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+				addToEndpointMap(endpointMap, annotationKeys, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP, false)
 			} else {
-				addTargetsToEndpointMap(endpointMap, pod, targets, domain)
+				addTargetsToEndpointMap(endpointMap, annotationKeys, pod, targets, domain)
 			}
 		}
 	}
 }
 
-func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
+func (ps *podSource) addHostnameAnnotationEndpoints(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod, targets []string) {
 	if domainAnnotation, ok := pod.Annotations[annotations.HostnameKey]; ok {
 		domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 		if len(targets) == 0 {
-			ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
+			ps.addPodNodeEndpointsToEndpointMap(endpointMap, annotationKeys, pod, domainList)
 		} else {
-			addTargetsToEndpointMap(endpointMap, pod, targets, domainList...)
+			addTargetsToEndpointMap(endpointMap, annotationKeys, pod, targets, domainList...)
 		}
 	}
 }
 
-func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod) {
+// addKopsDNSControllerEndpoints always contributes naturally-resolved targets
+// (pod/node addresses), never from the target annotation. Its contributions
+// still flow through annotationKeys so a domain it shares with an
+// annotation-sourced contribution from another function above is correctly
+// AND-merged rather than left wrongly marked annotation-only.
+func (ps *podSource) addKopsDNSControllerEndpoints(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod) {
 	if ps.compatibility == "kops-dns-controller" {
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
-				addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+				addToEndpointMap(endpointMap, annotationKeys, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP, false)
 			}
 		}
 
 		if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
 			domainList := annotations.SplitHostnameAnnotation(domainAnnotation)
-			ps.addPodNodeEndpointsToEndpointMap(endpointMap, pod, domainList)
+			ps.addPodNodeEndpointsToEndpointMap(endpointMap, annotationKeys, pod, domainList)
 		}
 	}
 }
 
-func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string) {
+func (ps *podSource) addPodSourceDomainEndpoints(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod, targets []string) {
 	if ps.podSourceDomain != "" {
 		domain := pod.Name + "." + ps.podSourceDomain
 		if len(targets) == 0 {
-			addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP)
+			addToEndpointMap(endpointMap, annotationKeys, pod, domain, endpoint.SuitableType(pod.Status.PodIP), pod.Status.PodIP, false)
 		}
-		addTargetsToEndpointMap(endpointMap, pod, targets, domain)
+		addTargetsToEndpointMap(endpointMap, annotationKeys, pod, targets, domain)
 	}
 }
 
-func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domainList []string) {
+func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod, domainList []string) {
 	node, err := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 	if err != nil {
 		log.Debugf("Get node[%s] of pod[%s] error: %v; ignoring", pod.Spec.NodeName, pod.GetName(), err)
@@ -248,7 +255,7 @@ func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.E
 			recordType := endpoint.SuitableType(address.Address)
 			// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 			if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
-				addToEndpointMap(endpointMap, pod, domain, recordType, address.Address)
+				addToEndpointMap(endpointMap, annotationKeys, pod, domain, recordType, address.Address, false)
 			}
 		}
 	}
@@ -279,15 +286,21 @@ func (ps *podSource) hostsFromTemplate(pod *v1.Pod) (map[endpoint.EndpointKey][]
 	return result, nil
 }
 
-func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string, domainList ...string) {
+func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod, targets []string, domainList ...string) {
 	for _, domain := range domainList {
 		for _, target := range targets {
-			addToEndpointMap(endpointMap, pod, domain, endpoint.SuitableType(target), target)
+			addToEndpointMap(endpointMap, annotationKeys, pod, domain, endpoint.SuitableType(target), target, true)
 		}
 	}
 }
 
-func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, domain string, recordType string, address string) {
+// addToEndpointMap records address under the given domain/recordType key and
+// folds fromAnnotation into annotationKeys for that key. A key is annotation-
+// only when every contribution recorded against it was itself annotation-
+// sourced: AND-merge rather than overwrite, so whichever contribution (across
+// the several callers that can share a domain) runs first or last can't mask
+// a differently-sourced contribution to the same key.
+func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, annotationKeys map[endpoint.EndpointKey]bool, pod *v1.Pod, domain string, recordType string, address string, fromAnnotation bool) {
 	key := endpoint.EndpointKey{
 		DNSName:    domain,
 		RecordType: recordType,
@@ -297,4 +310,9 @@ func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod
 		endpointMap[key] = []string{}
 	}
 	endpointMap[key] = append(endpointMap[key], address)
+	if v, ok := annotationKeys[key]; ok {
+		annotationKeys[key] = v && fromAnnotation
+	} else {
+		annotationKeys[key] = fromAnnotation
+	}
 }

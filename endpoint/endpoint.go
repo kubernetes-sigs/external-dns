@@ -285,6 +285,12 @@ type Endpoint struct {
 	// An endpoint merged from multiple sources will have more than one entry.
 	// +optional
 	refObjects []*ObjectRef `json:"-"`
+	// targetsFromAnnotation records whether Targets was set from an explicit
+	// per-resource target annotation (e.g.
+	// external-dns.kubernetes.io/target) rather than from the source's
+	// natural target resolution. Not persisted: it is an in-process signal
+	// consumed only by the multi-source merge layer.
+	targetsFromAnnotation bool `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -493,6 +499,20 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 // RefObjects returns all Kubernetes object references associated with this endpoint.
 func (e *Endpoint) RefObjects() []*events.ObjectReference {
 	return e.refObjects
+}
+
+// WithTargetsFromAnnotation marks whether Targets originated from an explicit
+// per-resource target annotation (e.g. external-dns.kubernetes.io/target)
+// rather than the source's natural target resolution.
+func (e *Endpoint) WithTargetsFromAnnotation(v bool) *Endpoint {
+	e.targetsFromAnnotation = v
+	return e
+}
+
+// TargetsFromAnnotation reports whether Targets originated from an explicit
+// per-resource target annotation.
+func (e *Endpoint) TargetsFromAnnotation() bool {
+	return e.targetsFromAnnotation
 }
 
 // Key returns the EndpointKey of the Endpoint.

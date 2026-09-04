@@ -53,8 +53,12 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		for _, ep := range endpoints {
 			hasSourceTargets := len(ep.Targets) > 0
+			// An explicit per-resource target annotation is a more specific
+			// override than the global --force-default-targets flag, so it
+			// keeps priority even when the flag is set.
+			forceApplies := ms.forceDefaultTargets && !ep.TargetsFromAnnotation()
 
-			if ms.forceDefaultTargets || !hasSourceTargets {
+			if forceApplies || !hasSourceTargets {
 				eps := endpoint.EndpointsForHostname(ep.DNSName, ms.defaultTargets, ep.RecordTTL, ep.ProviderSpecific, ep.SetIdentifier, "")
 				for _, e := range eps {
 					e.Labels = ep.Labels
@@ -63,7 +67,11 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 				continue
 			}
 
-			log.Warnf("Source provided targets for %q (%s), ignoring default targets [%s] due to new behavior. Use --force-default-targets to revert to old behavior.", ep.DNSName, ep.RecordType, strings.Join(ms.defaultTargets, ", "))
+			if ep.TargetsFromAnnotation() {
+				log.Debugf("Source provided targets for %q (%s) via an explicit target annotation, keeping them over default targets [%s].", ep.DNSName, ep.RecordType, strings.Join(ms.defaultTargets, ", "))
+			} else {
+				log.Warnf("Source provided targets for %q (%s), ignoring default targets [%s] due to new behavior. Use --force-default-targets to revert to old behavior.", ep.DNSName, ep.RecordType, strings.Join(ms.defaultTargets, ", "))
+			}
 			result = append(result, ep)
 		}
 	}

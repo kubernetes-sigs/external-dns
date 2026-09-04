@@ -22,11 +22,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	networkv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/source"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestMultiSource(t *testing.T) {
@@ -234,6 +238,84 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 		src.AssertExpectations(t)
 	})
 
+	t.Run("Explicit target annotation survives the flag being set", func(t *testing.T) {
+		defaultTargets := []string{"127.0.0.1"}
+		labels := endpoint.Labels{"foo": "bar"}
+
+		// "foo" got its target from the explicit per-resource target
+		// annotation; "bar" got its target from natural source
+		// resolution (e.g. Ingress/Service status).
+		sourceEndpoints := []*endpoint.Endpoint{
+			(&endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"9.9.9.9"}, Labels: labels}).WithTargetsFromAnnotation(true),
+			{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
+		}
+
+		// "foo" keeps its annotation-provided target despite the flag;
+		// "bar" is overridden like the non-annotation case above.
+		expectedEndpoints := []*endpoint.Endpoint{
+			{DNSName: "foo", Targets: endpoint.Targets{"9.9.9.9"}, Labels: labels},
+			{DNSName: "bar", Targets: defaultTargets, RecordType: "A", Labels: labels},
+		}
+
+		src := new(testutils.MockSource)
+		src.On("Endpoints").Return(sourceEndpoints, nil)
+
+		// Test with forceDefaultTargets=true (legacy behavior)
+		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
+
+		endpoints, err := source.Endpoints(t.Context())
+		require.NoError(t, err)
+
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
+		require.Len(t, endpoints, 2)
+		for _, ep := range endpoints {
+			if ep.DNSName == "foo" {
+				assert.True(t, ep.TargetsFromAnnotation(), "foo should still be marked as annotation-sourced")
+			}
+		}
+
+		src.AssertExpectations(t)
+	})
+
+	t.Run("Explicit target annotation survives the flag being set for a CNAME target", func(t *testing.T) {
+		defaultTargets := []string{"127.0.0.1"}
+		labels := endpoint.Labels{"foo": "bar"}
+
+		// "foo" got its CNAME target from the explicit per-resource target
+		// annotation; "bar" got its target from natural source resolution.
+		sourceEndpoints := []*endpoint.Endpoint{
+			(&endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"lb.example.org"}, RecordType: "CNAME", Labels: labels}).WithTargetsFromAnnotation(true),
+			{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
+		}
+
+		// "foo" keeps its annotation-provided CNAME target despite the
+		// flag; "bar" is overridden like the non-annotation case above.
+		expectedEndpoints := []*endpoint.Endpoint{
+			{DNSName: "foo", Targets: endpoint.Targets{"lb.example.org"}, RecordType: "CNAME", Labels: labels},
+			{DNSName: "bar", Targets: defaultTargets, RecordType: "A", Labels: labels},
+		}
+
+		src := new(testutils.MockSource)
+		src.On("Endpoints").Return(sourceEndpoints, nil)
+
+		// Test with forceDefaultTargets=true (legacy behavior)
+		source := NewMultiSource([]source.Source{src}, defaultTargets, true)
+
+		endpoints, err := source.Endpoints(t.Context())
+		require.NoError(t, err)
+
+		testutils.ValidateEndpoints(t, endpoints, expectedEndpoints)
+		require.Len(t, endpoints, 2)
+		for _, ep := range endpoints {
+			if ep.DNSName == "foo" {
+				assert.True(t, ep.TargetsFromAnnotation(), "foo should still be marked as annotation-sourced")
+				assert.Equal(t, "CNAME", ep.RecordType, "foo should keep its CNAME record type")
+			}
+		}
+
+		src.AssertExpectations(t)
+	})
+
 	t.Run("Defaults applied when source targets are empty and flag is set", func(t *testing.T) {
 		defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
 		defaultTargetsAAAA := []string{"2001:db8::1"}
@@ -308,4 +390,41 @@ func TestMultiSource_AddEventHandler(t *testing.T) {
 			assert.Equal(t, tt.times, count)
 		})
 	}
+}
+
+// TestMultiSource_IngressTargetAnnotationSurvivesForceDefaultTargets is the
+// end-to-end case: an Ingress with a natural status target, --default-targets
+// set, and --force-default-targets enabled must still resolve to the
+// explicit per-resource target annotation, not the status IP and not the
+// forced default. This wires a real ingress source through MultiSource,
+// the same merge layer the controller uses, rather than asserting on either
+// layer in isolation.
+func TestMultiSource_IngressTargetAnnotationSurvivesForceDefaultTargets(t *testing.T) {
+	ing := &networkv1.Ingress{
+		Name:      "foo",
+		Namespace: "default",
+		Annotations: map[string]string{
+			annotations.TargetKey: "3.3.3.3",
+		},
+		Spec: networkv1.IngressSpec{
+			Rules: []networkv1.IngressRule{{Host: "foo.bar"}},
+		},
+		Status: networkv1.IngressStatus{
+			LoadBalancer: networkv1.IngressLoadBalancerStatus{
+				// Natural status target; must lose to the annotation.
+				Ingress: []networkv1.IngressLoadBalancerIngress{{IP: "1.1.1.1"}},
+			},
+		},
+	}
+
+	fakeClient := fake.NewClientset(ing)
+	ingressSource, err := source.NewIngressSource(t.Context(), fakeClient, &source.Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+
+	multi := NewMultiSource([]source.Source{ingressSource}, []string{"2.2.2.2"}, true)
+
+	endpoints, err := multi.Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, endpoints, 1)
+	assert.Equal(t, endpoint.Targets{"3.3.3.3"}, endpoints[0].Targets)
 }

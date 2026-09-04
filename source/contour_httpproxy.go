@@ -150,8 +150,8 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
-	if len(targets) == 0 {
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(httpProxy.Annotations)
+	if !targetsFromAnnotation {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
@@ -168,7 +168,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation), nil
 }
 
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object
@@ -177,9 +177,9 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(httpProxy.Annotations)
 
-	if len(targets) == 0 {
+	if !targetsFromAnnotation {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
@@ -208,7 +208,7 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 		}
 	}
 
-	return endpoints
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation)
 }
 
 func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
