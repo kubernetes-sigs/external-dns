@@ -30,6 +30,16 @@ The following table documents which sources support which annotations:
 [^5]: The annotation must be on the listener's `VirtualService`.
 [^6]: Traefik CRDs require an explicit `external-dns.kubernetes.io/target` value. They do not expose a load balancer IP or hostname in status, so no endpoint is generated without it and `--default-targets` cannot apply.
 
+## Annotation prefix
+
+All annotations below use the prefix configured with `--annotation-prefix`, which defaults to `external-dns.kubernetes.io/`.
+
+Releases before v0.22.0 used `external-dns.alpha.kubernetes.io/`. To migrate resources gradually, start ExternalDNS with
+`--enable-legacy-annotation-prefix`: annotations carrying the legacy prefix are then read as if they used the configured prefix.
+When a resource carries the same annotation under both prefixes, the configured prefix wins and a warning naming the resource
+and both values is logged. This flag is a migration aid and will be removed in a future release; drop it once no resource uses
+the legacy prefix any more.
+
 ## external-dns.kubernetes.io/access
 
 Specifies which set of node IP addresses to use for a `Service` of type `NodePort`.

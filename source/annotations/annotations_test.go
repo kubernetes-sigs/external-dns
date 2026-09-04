@@ -19,7 +19,10 @@ package annotations
 import (
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestSetAnnotationPrefix(t *testing.T) {
@@ -83,4 +86,96 @@ func TestSetAnnotationPrefixMultipleTimes(t *testing.T) {
 	SetAnnotationPrefix(DefaultAnnotationPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix, AnnotationKeyPrefix)
 	assert.Equal(t, DefaultAnnotationPrefix+"hostname", HostnameKey)
+}
+
+func TestSetLegacyAnnotationPrefix(t *testing.T) {
+	t.Cleanup(func() { SetLegacyAnnotationPrefix("") })
+
+	anns := map[string]string{LegacyAnnotationPrefix + "hostname": "example.org"}
+
+	t.Run("disabled by default", func(t *testing.T) {
+		assert.False(t, ResolveLegacyAnnotations("Service", "default", "svc", anns))
+		assert.Equal(t, map[string]string{LegacyAnnotationPrefix + "hostname": "example.org"}, anns)
+	})
+
+	t.Run("a legacy prefix equal to the configured prefix disables resolution", func(t *testing.T) {
+		SetLegacyAnnotationPrefix(AnnotationKeyPrefix)
+		assert.False(t, ResolveLegacyAnnotations("Service", "default", "svc", anns))
+		assert.Equal(t, map[string]string{LegacyAnnotationPrefix + "hostname": "example.org"}, anns)
+	})
+}
+
+func TestResolveLegacyAnnotations(t *testing.T) {
+	SetLegacyAnnotationPrefix(LegacyAnnotationPrefix)
+	t.Cleanup(func() { SetLegacyAnnotationPrefix("") })
+
+	for _, tc := range []struct {
+		name        string
+		annotations map[string]string
+		expected    map[string]string
+		resolved    bool
+		warning     string
+	}{
+		{
+			name: "nil annotations",
+		},
+		{
+			name:        "no legacy annotations",
+			annotations: map[string]string{HostnameKey: "example.org", "description": "kept"},
+			expected:    map[string]string{HostnameKey: "example.org", "description": "kept"},
+		},
+		{
+			name:        "legacy annotation is rewritten to the configured prefix",
+			annotations: map[string]string{LegacyAnnotationPrefix + "hostname": "example.org"},
+			expected:    map[string]string{HostnameKey: "example.org"},
+			resolved:    true,
+		},
+		{
+			name: "every legacy annotation is rewritten, other annotations are untouched",
+			annotations: map[string]string{
+				LegacyAnnotationPrefix + "hostname": "example.org",
+				LegacyAnnotationPrefix + "ttl":      "60",
+				TargetKey:                           "1.2.3.4",
+				"description":                       "kept",
+			},
+			expected: map[string]string{
+				HostnameKey:   "example.org",
+				TtlKey:        "60",
+				TargetKey:     "1.2.3.4",
+				"description": "kept",
+			},
+			resolved: true,
+		},
+		{
+			name: "same value under both prefixes is not a conflict",
+			annotations: map[string]string{
+				LegacyAnnotationPrefix + "hostname": "example.org",
+				HostnameKey:                         "example.org",
+			},
+			expected: map[string]string{HostnameKey: "example.org"},
+			resolved: true,
+		},
+		{
+			name: "the configured prefix wins on conflict and the conflict is logged",
+			annotations: map[string]string{
+				LegacyAnnotationPrefix + "hostname": "legacy.example.org",
+				HostnameKey:                         "example.org",
+			},
+			expected: map[string]string{HostnameKey: "example.org"},
+			resolved: true,
+			warning:  `Ingress default/web: ignoring annotation external-dns.alpha.kubernetes.io/hostname="legacy.example.org" because external-dns.kubernetes.io/hostname="example.org" is set`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			assert.Equal(t, tc.resolved, ResolveLegacyAnnotations("Ingress", "default", "web", tc.annotations))
+			assert.Equal(t, tc.expected, tc.annotations)
+			if tc.warning != "" {
+				logtest.TestHelperLogContains(tc.warning, hook, t)
+			} else {
+				assert.Empty(t, hook.AllEntries())
+			}
+		})
+	}
 }

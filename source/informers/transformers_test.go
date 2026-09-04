@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestTransformRemoveManagedFields(t *testing.T) {
@@ -421,5 +423,89 @@ func TestPopulateGVK(t *testing.T) {
 		populateGVK(gw)
 		assert.Equal(t, "Gateway", gw.Kind)
 		assert.Empty(t, gw.APIVersion) // Group/Version unknown without the Istio scheme
+	})
+}
+
+func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
+	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
+
+	legacyTTL := annotations.LegacyAnnotationPrefix + "ttl"
+
+	t.Run("rewrites legacy annotations on typed objects", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.NotContains(t, result.Annotations, legacyTTL)
+		assert.Equal(t, "60", result.Annotations[annotations.TtlKey])
+		assert.Equal(t, "some annotation", result.Annotations["description"])
+	})
+
+	t.Run("keeps the configured prefix value on conflict", func(t *testing.T) {
+		svc := fakeService()
+		configured := svc.Annotations[annotations.HostnameKey]
+		svc.Annotations[annotations.LegacyAnnotationPrefix+"hostname"] = "legacy.example.org"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.NotContains(t, result.Annotations, annotations.LegacyAnnotationPrefix+"hostname")
+		assert.Equal(t, configured, result.Annotations[annotations.HostnameKey])
+	})
+
+	t.Run("rewrites legacy annotations on unstructured objects", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+		content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(svc)
+		require.NoError(t, err)
+
+		got, err := TransformerWithOptions[*unstructured.Unstructured]()(&unstructured.Unstructured{Object: content})
+		require.NoError(t, err)
+		result := got.(*unstructured.Unstructured)
+
+		assert.NotContains(t, result.GetAnnotations(), legacyTTL)
+		assert.Equal(t, "60", result.GetAnnotations()[annotations.TtlKey])
+	})
+
+	t.Run("resolution happens before the annotation prefix filter", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service](TransformKeepAnnotationPrefix(annotations.AnnotationKeyPrefix))(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.Equal(t, "60", result.Annotations[annotations.TtlKey])
+		assert.NotContains(t, result.Annotations, "description")
+	})
+
+	t.Run("resolution happens before the required annotation selector", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+		selector, err := labels.Parse(annotations.TtlKey + "=60")
+		require.NoError(t, err)
+
+		got, err := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(selector))(svc)
+		require.NoError(t, err)
+		require.NotNil(t, got)
+	})
+
+	t.Run("leaves annotations untouched when disabled", func(t *testing.T) {
+		annotations.SetLegacyAnnotationPrefix("")
+		t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix) })
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.Equal(t, "60", result.Annotations[legacyTTL])
+		assert.NotContains(t, result.Annotations, annotations.TtlKey)
 	})
 }
