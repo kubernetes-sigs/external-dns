@@ -37,6 +37,35 @@ Two environment variables are needed to run ExternalDNS with Scaleway DNS:
 - `SCW_ACCESS_KEY` which is the Access Key.
 - `SCW_SECRET_KEY` which is the Secret Key.
 
+## ALIAS records
+
+Scaleway DNS does not allow `CNAME` records at the apex (root) of a zone.
+When a `CNAME` endpoint targets the apex of a zone (for example an ingress hostname equal to the zone name), ExternalDNS automatically creates an
+[`ALIAS` record](https://www.scaleway.com/en/docs/domains-and-dns/reference-content/understanding-dns-records/)
+instead, which Scaleway resolves like a `CNAME` while remaining valid at the zone apex.
+
+You can also opt in to `ALIAS` records for `CNAME` endpoints anywhere in the zone by setting the `external-dns.kubernetes.io/alias: "true"` annotation on the source resource:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    external-dns.kubernetes.io/hostname: my-app.example.com
+    external-dns.kubernetes.io/alias: "true"
+```
+
+To convert all `CNAME` records to `ALIAS` globally, use the `--prefer-alias` flag instead.
+
+> [!IMPORTANT]
+> When managing records at the zone apex (such as the automatic apex `ALIAS`) with the
+> TXT registry, configure a `--txt-prefix` that contains the record type substitution
+> and ends in a period, e.g. `--txt-prefix=extdns-%{record_type}.`. With the default
+> TXT naming, the ownership record for an apex endpoint falls outside the zone and is
+> silently skipped, leaving the apex record unowned — it will then never be updated or
+> deleted. See the [TXT registry documentation](../registry/txt.md) for details.
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.

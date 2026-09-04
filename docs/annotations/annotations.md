@@ -405,6 +405,8 @@ record types (e.g. MX, SRV, TXT) that have this annotation set will be rejected.
   This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses
   on the authoritative server side. Alternatively, use the `--prefer-alias` flag to convert all
   CNAME records to ALIAS globally.
+- **Scaleway**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
+  Alternatively, use the `--prefer-alias` flag to convert all CNAME records to ALIAS globally.
 
 ### external-dns.kubernetes.io/set-identifier
 
