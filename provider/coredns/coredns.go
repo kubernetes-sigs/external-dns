@@ -461,9 +461,17 @@ func (p coreDNSProvider) createServicesForEndpoint(ctx context.Context, dnsName 
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGroup); ok {
 			group = prop
 		}
+		// CoreDNS's etcd plugin cannot resolve CNAME records when the
+		// same JSON object also carries a "text" field (see #4953).
+		// For CNAME, leave Text empty here so that updateTXTRecords
+		// stores the TXT record in a separate etcd key.
+		serviceText := ep.Labels[originalTextLabel]
+		if ep.RecordType == endpoint.RecordTypeCNAME {
+			serviceText = ""
+		}
 		service := Service{
 			Host:        target,
-			Text:        ep.Labels[originalTextLabel],
+			Text:        serviceText,
 			Key:         p.etcdKeyFor(prefix + "." + dnsName),
 			TargetStrip: strings.Count(prefix, ".") + 1,
 			TTL:         uint32(ep.RecordTTL),
@@ -502,6 +510,12 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 	for _, ep := range group {
 		if ep.RecordType != endpoint.RecordTypeTXT {
 			continue
+		}
+		// Skip services that belong to a CNAME record — CoreDNS's etcd
+		// plugin cannot resolve CNAME when the JSON carries a text field
+		// (see #4953). The TXT must live in its own etcd key.
+		for index < len(services) && services[index].Host != "" && guessRecordType(services[index].Host) == endpoint.RecordTypeCNAME {
+			index++
 		}
 		if index >= len(services) {
 			var key string
