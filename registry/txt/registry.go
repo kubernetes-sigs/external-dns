@@ -165,7 +165,7 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 	return &TXTRegistry{
 		provider:            provider,
 		ownerID:             ownerID,
-		mapper:              mapper.NewAffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement),
+		mapper:              mapper.NewAffixNameMapperWithZones(txtPrefix, txtSuffix, txtWildcardReplacement, mapper.ZonesFromDomainFilter(provider.GetDomainFilter())),
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,

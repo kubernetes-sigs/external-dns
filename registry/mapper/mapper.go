@@ -17,6 +17,7 @@ limitations under the License.
 package mapper
 
 import (
+	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -56,15 +57,68 @@ type AffixNameMapper struct {
 	prefix              string
 	suffix              string
 	wildcardReplacement string
+	// zones, longest first, split hostname from domain for names that
+	// contain dots in the host label group (e.g. name-192.168.0.1.example.com).
+	zones []string
 }
 
 // NewAffixNameMapper returns a new AffixNameMapper.
 func NewAffixNameMapper(prefix, suffix, wildcardReplacement string) AffixNameMapper {
+	return NewAffixNameMapperWithZones(prefix, suffix, wildcardReplacement, nil)
+}
+
+// NewAffixNameMapperWithZones returns a mapper that splits TXT names at a
+// known zone boundary instead of the first dot. An empty zone list keeps the
+// legacy first-dot split so existing records stay unchanged.
+func NewAffixNameMapperWithZones(prefix, suffix, wildcardReplacement string, zones []string) AffixNameMapper {
+	normalized := make([]string, 0, len(zones))
+	for _, zone := range zones {
+		z := strings.ToLower(strings.Trim(zone, "."))
+		if z != "" {
+			normalized = append(normalized, z)
+		}
+	}
+	sort.Slice(normalized, func(i, j int) bool {
+		return len(normalized[i]) > len(normalized[j])
+	})
 	return AffixNameMapper{
 		prefix:              strings.ToLower(prefix),
 		suffix:              strings.ToLower(suffix),
 		wildcardReplacement: strings.ToLower(wildcardReplacement),
+		zones:               normalized,
 	}
+}
+
+// ZonesFromDomainFilter returns include filters for zone-aware TXT mapping.
+func ZonesFromDomainFilter(df endpoint.DomainFilterInterface) []string {
+	d, ok := df.(*endpoint.DomainFilter)
+	if !ok || d == nil {
+		return nil
+	}
+	return d.Filters
+}
+
+func (a AffixNameMapper) findZone(dns string) string {
+	dns = strings.ToLower(strings.TrimSuffix(dns, "."))
+	for _, zone := range a.zones {
+		if strings.HasSuffix(dns, "."+zone) {
+			return zone
+		}
+	}
+	return ""
+}
+
+func (a AffixNameMapper) splitName(dns string) (hostname, domain string) {
+	dns = strings.TrimSuffix(dns, ".")
+	if zone := a.findZone(dns); zone != "" {
+		return strings.TrimSuffix(dns, "."+zone), zone
+	}
+	parts := strings.SplitN(dns, ".", 2)
+	hostname = parts[0]
+	if len(parts) > 1 {
+		domain = parts[1]
+	}
+	return hostname, domain
 }
 
 func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
@@ -77,6 +131,14 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 
 	// drop suffix
 	if a.isSuffix() {
+		if zone := a.findZone(lowerDNSName); zone != "" {
+			hostPart := strings.TrimSuffix(lowerDNSName, "."+zone)
+			r, rType := a.dropAffixExtractType(hostPart)
+			if r == "" && rType == "" {
+				return "", ""
+			}
+			return r + "." + zone, rType
+		}
 		dc := strings.Count(a.suffix, ".")
 		parts := strings.SplitN(lowerDNSName, ".", 2+dc)
 		if len(parts) <= dc {
@@ -93,7 +155,7 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 }
 
 func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
-	parts := strings.SplitN(dns, ".", 2)
+	hostname, domain := a.splitName(dns)
 	recordType = strings.ToLower(recordType)
 	recordT := recordType + "-"
 
@@ -101,19 +163,19 @@ func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 	suffix := a.normalizeAffixTemplate(a.suffix, recordType)
 
 	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if a.wildcardReplacement != "" && parts[0] == "*" {
-		parts[0] = a.wildcardReplacement
+	if a.wildcardReplacement != "" && hostname == "*" {
+		hostname = a.wildcardReplacement
 	}
 
 	if !a.recordTypeInAffix() {
-		parts[0] = recordT + parts[0]
+		hostname = recordT + hostname
 	}
 
-	if len(parts) < 2 {
-		return prefix + parts[0] + suffix
+	if domain == "" {
+		return prefix + hostname + suffix
 	}
 
-	return prefix + parts[0] + suffix + "." + parts[1]
+	return prefix + hostname + suffix + "." + domain
 }
 
 func (a AffixNameMapper) recordTypeInAffix() bool {
