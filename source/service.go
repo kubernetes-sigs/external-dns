@@ -45,6 +45,13 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+const (
+	// NLBDualstackAnnotationKey is used by the AWS Load Balancer Controller
+	// to configure the IP address type of an NLB.
+	NLBDualstackAnnotationKey   = "service.beta.kubernetes.io/aws-load-balancer-ip-address-type"
+	NLBDualstackAnnotationValue = "dualstack"
+)
+
 var (
 	knownServiceTypes = sets.New(
 		v1.ServiceTypeClusterIP,    // Default service type exposes the service on a cluster-internal IP.
@@ -227,6 +234,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		endpoint.AttachRefObject(svcEndpoints, events.NewObjectReference(svc, types.Service))
+		setDualstackServiceLabel(svc, svcEndpoints)
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
@@ -275,6 +283,19 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+func setDualstackServiceLabel(svc *v1.Service, endpoints []*endpoint.Endpoint) {
+	if svc.Spec.Type != v1.ServiceTypeLoadBalancer {
+		return
+	}
+	if svc.Annotations[NLBDualstackAnnotationKey] != NLBDualstackAnnotationValue {
+		return
+	}
+
+	for _, ep := range endpoints {
+		ep.WithLabel(endpoint.DualstackLabelKey, "true")
+	}
 }
 
 // extractHeadlessEndpoints extracts endpoints from a headless service using the "Endpoints" Kubernetes API resource

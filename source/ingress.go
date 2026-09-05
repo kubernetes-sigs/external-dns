@@ -45,6 +45,11 @@ const (
 	IngressHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
 
 	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
+
+	// ALBDualstackAnnotationKey is used by the AWS Load Balancer Controller
+	// to configure the IP address type of an ALB.
+	ALBDualstackAnnotationKey   = "alb.ingress.kubernetes.io/ip-address-type"
+	ALBDualstackAnnotationValue = "dualstack"
 )
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
@@ -150,6 +155,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		endpoint.AttachRefObject(ingEndpoints, events.NewObjectReference(ing, types.Ingress))
+		setDualstackIngressLabel(ing, ingEndpoints)
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
@@ -224,6 +230,16 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 	}
 
 	return filteredList, nil
+}
+
+func setDualstackIngressLabel(ing *networkv1.Ingress, endpoints []*endpoint.Endpoint) {
+	if ing.Annotations[ALBDualstackAnnotationKey] != ALBDualstackAnnotationValue {
+		return
+	}
+
+	for _, ep := range endpoints {
+		ep.WithLabel(endpoint.DualstackLabelKey, "true")
+	}
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
