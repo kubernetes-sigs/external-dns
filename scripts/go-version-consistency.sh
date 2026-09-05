@@ -22,7 +22,7 @@ fi
 
 cloudbuild_ver=$(extract_major_minor "${image_name##*:}")
 gomod_ver=$(extract_major_minor "$(awk '/^go [0-9]/{print $2; exit}' "$REPO_ROOT/go.mod")")
-misetoml_ver=$(extract_major_minor "$(awk -F' *= *' '$1 == "golang" { gsub(/"/, "", $2); print $2; exit }' "$REPO_ROOT/mise.toml")")
+misetoml_ver=$(extract_major_minor "$("$REPO_ROOT/scripts/mise-pins.sh" | awk '$1 == "golang" { print $2; exit }')")
 
 echo "cloudbuild.yaml : $cloudbuild_ver"
 echo "go.mod          : $gomod_ver"

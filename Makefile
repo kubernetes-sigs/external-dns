@@ -16,9 +16,6 @@
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
-# Use the Go pinned in mise.toml, never a toolchain go.mod would download.
-export GOTOOLCHAIN := local
-
 cover:
 	@go test -cover -coverprofile=cover.out -v ./...
 
