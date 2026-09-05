@@ -368,19 +368,19 @@ func TestValidateConfigForRfc2136(t *testing.T) {
 			wantErr: "--rfc2136-insecure and --rfc2136-gss-tsig are mutually exclusive arguments",
 		},
 		{
-			name: "insecure-axfr without axfr is rejected",
+			name: "axfr-insecure without axfr is rejected",
 			cfg: externaldns.Config{
-				RFC2136InsecureAXFR:    true,
+				RFC2136AXFRInsecure:    true,
 				RFC2136AXFR:            false,
 				RFC2136MinTTL:          3600,
 				RFC2136BatchChangeSize: 50,
 			},
-			wantErr: "--rfc2136-insecure-axfr requires --rfc2136-axfr",
+			wantErr: "--rfc2136-axfr-insecure requires --rfc2136-axfr",
 		},
 		{
-			name: "insecure-axfr with axfr passes",
+			name: "axfr-insecure with axfr passes",
 			cfg: externaldns.Config{
-				RFC2136InsecureAXFR:    true,
+				RFC2136AXFRInsecure:    true,
 				RFC2136AXFR:            true,
 				RFC2136MinTTL:          3600,
 				RFC2136BatchChangeSize: 50,

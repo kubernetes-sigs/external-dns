@@ -188,7 +188,7 @@ type Config struct {
 	RFC2136Port                                   int
 	RFC2136Zone                                   []string
 	RFC2136Insecure                               bool
-	RFC2136InsecureAXFR                           bool
+	RFC2136AXFRInsecure                           bool
 	RFC2136GSSTSIG                                bool
 	RFC2136KerberosRealm                          string
 	RFC2136KerberosUsername                       string
@@ -357,7 +357,7 @@ var defaultConfig = &Config{
 	RFC2136GSSTSIG:                   false,
 	RFC2136Host:                      []string{""},
 	RFC2136Insecure:                  false,
-	RFC2136InsecureAXFR:              false,
+	RFC2136AXFRInsecure:              false,
 	RFC2136KerberosPassword:          "",
 	RFC2136KerberosRealm:             "",
 	RFC2136KerberosUsername:          "",
@@ -645,11 +645,11 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.IntVar("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server", defaultConfig.RFC2136Port, &cfg.RFC2136Port)
 	b.StringsVar("rfc2136-zone", "When using the RFC2136 provider, specify zone entry of the DNS server to use (can be specified multiple times)", nil, &cfg.RFC2136Zone)
 	b.BoolVar("rfc2136-insecure", "When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires --rfc2136-tsig-keyname and rfc2136-tsig-secret)", defaultConfig.RFC2136Insecure, &cfg.RFC2136Insecure)
-	b.BoolVar("rfc2136-insecure-axfr", "When using the RFC2136 provider, do not attach TSIG to AXFR/zone-transfer requests. Requires --rfc2136-axfr. UPDATE requests are still signed unless --rfc2136-insecure is set. Useful for split-role deployments where zone transfers are served unsigned from a separate endpoint while updates remain TSIG-gated.", defaultConfig.RFC2136InsecureAXFR, &cfg.RFC2136InsecureAXFR)
 	b.StringVar("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGKeyName, &cfg.RFC2136TSIGKeyName)
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
 	b.StringVar("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecretAlg, &cfg.RFC2136TSIGSecretAlg)
 	b.BoolVar("rfc2136-axfr", "When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records (without it ExternalDNS cannot read records and behaves as if --policy=create-only)", defaultConfig.RFC2136AXFR, &cfg.RFC2136AXFR)
+	b.BoolVar("rfc2136-axfr-insecure", "When using the RFC2136 provider, do not attach TSIG to AXFR/zone-transfer requests. Requires --rfc2136-axfr. UPDATE requests are still signed unless --rfc2136-insecure is set. Useful for split-role deployments where zone transfers are served unsigned from a separate endpoint while updates remain TSIG-gated.", defaultConfig.RFC2136AXFRInsecure, &cfg.RFC2136AXFRInsecure)
 	b.BoolVar("rfc2136-tsig-axfr", "[DEPRECATED: use --rfc2136-axfr] When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records", defaultConfig.RFC2136TAXFR, &cfg.RFC2136TAXFR)
 	b.DurationVar("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this", defaultConfig.RFC2136MinTTL, &cfg.RFC2136MinTTL)
 	b.BoolVar("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)", defaultConfig.RFC2136GSSTSIG, &cfg.RFC2136GSSTSIG)

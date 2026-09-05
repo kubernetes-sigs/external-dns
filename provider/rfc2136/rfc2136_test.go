@@ -1486,19 +1486,19 @@ func TestRfc2136MissingAXFRWarns(t *testing.T) {
 	}
 }
 
-func TestRFC2136ListInsecureAXFR(t *testing.T) {
+func TestRFC2136ListAXFRInsecure(t *testing.T) {
 	tests := []struct {
 		name       string
 		providerFn func(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error)
 		want       bool
 	}{
 		{
-			name:       "insecure-axfr sends the AXFR request unsigned",
+			name:       "axfr-insecure sends the AXFR request unsigned",
 			providerFn: createRfc2136StubProviderWithoutSignedAXFR,
 			want:       false,
 		},
 		{
-			name:       "without insecure-axfr the AXFR request carries TSIG",
+			name:       "without axfr-insecure the AXFR request carries TSIG",
 			providerFn: createRfc2136StubProvider,
 			want:       true,
 		},
@@ -1527,63 +1527,63 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 		name         string
 		insecure     bool
 		gssTsig      bool
-		insecureAXFR bool
+		axfrInsecure bool
 		want         bool
 	}{
 		{
 			name:         "no flags set signs the transfer",
 			insecure:     false,
 			gssTsig:      false,
-			insecureAXFR: false,
+			axfrInsecure: false,
 			want:         true,
 		},
 		{
-			name:         "insecureAXFR alone leaves the transfer unsigned",
+			name:         "axfrInsecure alone leaves the transfer unsigned",
 			insecure:     false,
 			gssTsig:      false,
-			insecureAXFR: true,
+			axfrInsecure: true,
 			want:         false,
 		},
 		{
 			name:         "gssTsig alone leaves the transfer unsigned",
 			insecure:     false,
 			gssTsig:      true,
-			insecureAXFR: false,
+			axfrInsecure: false,
 			want:         false,
 		},
 		{
-			name:         "gssTsig with insecureAXFR leaves the transfer unsigned",
+			name:         "gssTsig with axfrInsecure leaves the transfer unsigned",
 			insecure:     false,
 			gssTsig:      true,
-			insecureAXFR: true,
+			axfrInsecure: true,
 			want:         false,
 		},
 		{
 			name:         "insecure alone leaves the transfer unsigned",
 			insecure:     true,
 			gssTsig:      false,
-			insecureAXFR: false,
+			axfrInsecure: false,
 			want:         false,
 		},
 		{
-			name:         "insecure with insecureAXFR leaves the transfer unsigned",
+			name:         "insecure with axfrInsecure leaves the transfer unsigned",
 			insecure:     true,
 			gssTsig:      false,
-			insecureAXFR: true,
+			axfrInsecure: true,
 			want:         false,
 		},
 		{
 			name:         "insecure with gssTsig leaves the transfer unsigned",
 			insecure:     true,
 			gssTsig:      true,
-			insecureAXFR: false,
+			axfrInsecure: false,
 			want:         false,
 		},
 		{
 			name:         "all three set leaves the transfer unsigned",
 			insecure:     true,
 			gssTsig:      true,
-			insecureAXFR: true,
+			axfrInsecure: true,
 			want:         false,
 		},
 	}
@@ -1593,7 +1593,7 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 			r := &rfc2136Provider{
 				insecure:     tt.insecure,
 				gssTsig:      tt.gssTsig,
-				insecureAXFR: tt.insecureAXFR,
+				axfrInsecure: tt.axfrInsecure,
 			}
 			assert.Equal(t, tt.want, r.shouldSignAXFR())
 		})

@@ -118,8 +118,8 @@ func validateConfigForRfc2136(cfg *externaldns.Config) error {
 	if cfg.RFC2136Insecure && cfg.RFC2136GSSTSIG {
 		return errors.New("--rfc2136-insecure and --rfc2136-gss-tsig are mutually exclusive arguments")
 	}
-	if cfg.RFC2136InsecureAXFR && !cfg.RFC2136AXFR {
-		return errors.New("--rfc2136-insecure-axfr requires --rfc2136-axfr")
+	if cfg.RFC2136AXFRInsecure && !cfg.RFC2136AXFR {
+		return errors.New("--rfc2136-axfr-insecure requires --rfc2136-axfr")
 	}
 	if cfg.RFC2136GSSTSIG {
 		if cfg.RFC2136KerberosPassword == "" || cfg.RFC2136KerberosUsername == "" || cfg.RFC2136KerberosRealm == "" {

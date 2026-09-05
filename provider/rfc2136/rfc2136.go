@@ -57,7 +57,7 @@ type rfc2136Provider struct {
 	tsigSecret      string
 	tsigSecretAlg   string
 	insecure        bool
-	insecureAXFR    bool
+	axfrInsecure    bool
 	axfr            bool
 	minTTL          time.Duration
 	batchChangeSize int
@@ -140,11 +140,11 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		log.Warnf("--rfc2136-axfr is not set: ExternalDNS cannot list existing records, so --policy=%s will never update or delete them", cfg.Policy)
 	}
 
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136InsecureAXFR, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136AXFRInsecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
-func newProvider(hosts []string, port int, zoneNames []string, insecure bool, insecureAXFR bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, axfrInsecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -170,7 +170,7 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, in
 		nameservers:           nameservers,
 		zoneNames:             zoneNames,
 		insecure:              insecure,
-		insecureAXFR:          insecureAXFR,
+		axfrInsecure:          axfrInsecure,
 		gssTsig:               gssTsig,
 		krb5Username:          krb5Username,
 		krb5Password:          krb5Password,
@@ -200,8 +200,8 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, in
 		r.tsigSecretAlg = secretAlgChecked
 	}
 
-	if insecureAXFR && axfr {
-		log.Warn("--rfc2136-insecure-axfr is set: zone transfers are unauthenticated")
+	if axfrInsecure && axfr {
+		log.Warn("--rfc2136-axfr-insecure is set: zone transfers are unauthenticated")
 	}
 
 	log.Infof("Configured RFC2136 with zones '%v' and nameservers '%v'", r.zoneNames, hosts)
@@ -292,7 +292,7 @@ OuterLoop:
 
 // shouldSignAXFR reports whether TSIG should be attached to zone transfers.
 func (r *rfc2136Provider) shouldSignAXFR() bool {
-	return !r.insecure && !r.gssTsig && !r.insecureAXFR
+	return !r.insecure && !r.gssTsig && !r.axfrInsecure
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
