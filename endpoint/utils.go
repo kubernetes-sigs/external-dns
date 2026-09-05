@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"cmp"
 	"maps"
 	"net/netip"
 	"slices"
@@ -150,6 +151,11 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // When several endpoints merge into one, the first endpoint's scalar metadata (TTL, ProviderSpecific,
 // Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
 // record references every source object that contributed to it. "First" follows the input slice order.
+//
+// The result is sorted by key (DNSName, RecordType, SetIdentifier, RecordTTL, Target), so it is
+// deterministic regardless of the input's order — callers such as the conflict resolver in package
+// plan break ties between competing candidates using slice order, so an order that merely mirrored
+// the (possibly map-derived, and therefore already random) input order would not be a real fix.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
@@ -190,12 +196,33 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 		}
 	}
 
+	keys := slices.SortedFunc(maps.Keys(endpointMap), compareEndpointKeys)
+
 	result := make([]*Endpoint, 0, len(endpointMap))
-	for _, ep := range endpointMap {
+	for _, key := range keys {
+		ep := endpointMap[key]
 		slices.Sort(ep.Targets)
 		ep.Targets = slices.Compact(ep.Targets)
 		result = append(result, ep)
 	}
 
 	return result
+}
+
+// compareEndpointKeys orders EndpointKeys canonically (independent of any input/map order),
+// so callers that break ties using slice order get a stable, reproducible result.
+func compareEndpointKeys(a, b EndpointKey) int {
+	if c := cmp.Compare(a.DNSName, b.DNSName); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.RecordType, b.RecordType); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.SetIdentifier, b.SetIdentifier); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(a.RecordTTL, b.RecordTTL); c != 0 {
+		return c
+	}
+	return cmp.Compare(a.Target, b.Target)
 }
