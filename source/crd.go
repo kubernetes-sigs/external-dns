@@ -111,7 +111,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
 			}
 			illegalTarget := false
-			for _, target := range ep.Targets {
+			for key, target := range ep.Targets {
 				// CNAME/DNAME targets are domain names where a trailing dot is
 				// valid (RFC 1035 §5.1 absolute FQDN), so accept both dotted and
 				// bare forms.
@@ -119,8 +119,12 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					continue
 				}
 				switch ep.RecordType {
-				case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
+				case endpoint.RecordTypeTXT:
 					continue // no format constraint on targets
+				case endpoint.RecordTypeMX:
+					// normalized, else it diffs against the provider's rendering
+					ep.Targets[key] = endpoint.NormalizeMXTarget(target)
+					continue
 				case endpoint.RecordTypeSRV:
 					// SRV targets are "<prio> <weight> <port> <host>"; RFC 2782
 					// requires the host to be an absolute FQDN and

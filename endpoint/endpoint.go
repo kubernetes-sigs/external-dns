@@ -292,6 +292,20 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
+// NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
+// Unparseable targets pass through; the null MX "0 ." (RFC 7505) keeps its dot, which is the host.
+func NormalizeMXTarget(target string) string {
+	mx, err := NewMXRecord(target)
+	if err != nil {
+		return target
+	}
+	host := mx.GetHost()
+	if host != "." {
+		host = strings.TrimSuffix(host, ".")
+	}
+	return fmt.Sprintf("%d %s", *mx.GetPriority(), host)
+}
+
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
@@ -302,6 +316,8 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		switch recordType {
 		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV:
 			cleanTargets[idx] = target
+		case RecordTypeMX:
+			cleanTargets[idx] = NormalizeMXTarget(target)
 		default:
 			cleanTargets[idx] = strings.TrimSuffix(target, ".")
 		}
