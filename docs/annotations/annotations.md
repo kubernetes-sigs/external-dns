@@ -313,6 +313,13 @@ Targets that parse as IPv4 addresses are published as A records and
 targets that parse as IPv6 addresses are published as AAAA records. All other targets
 are published as CNAME records.
 
+This annotation takes priority over `--force-default-targets`: an explicit per-resource
+target always wins over the forced default, per the standard
+[configuration precedence](../advanced/configuration-precedence.md). This does not apply
+to the `crd` source, where `--force-default-targets` always overrides
+`DNSEndpoint.spec.endpoints[].targets` by design; see the
+[CRD source tutorial](../tutorials/crd.md).
+
 ## external-dns.kubernetes.io/ttl
 
 Specifies the TTL (time to live) for the resource's DNS records.

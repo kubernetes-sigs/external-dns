@@ -150,7 +150,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 
 			ttl := annotations.TTLFromAnnotations(virtualServer.Annotations, resource)
 
-			targets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
+			targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(virtualServer.Annotations)
 			if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
 				targets = append(targets, virtualServer.Spec.VirtualServerAddress)
 			}
@@ -158,10 +158,10 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 				targets = append(targets, virtualServer.Status.VSAddress)
 			}
 
-			vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
+			vsEndpoints = append(vsEndpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource), targetsFromAnnotation)...)
 			for _, alias := range virtualServer.Spec.HostAliases {
 				if alias != "" {
-					vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(alias, targets, ttl, nil, "", resource)...)
+					vsEndpoints = append(vsEndpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(alias, targets, ttl, nil, "", resource), targetsFromAnnotation)...)
 				}
 			}
 		}

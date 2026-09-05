@@ -142,7 +142,10 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
-		annotationEdps := endpoint.EndpointsForHostsAndTargets(hosts, addrs)
+		// This source only ever resolves targets from the annotation: there is
+		// no natural fallback, so any resulting endpoint should survive
+		// --force-default-targets the same way an Ingress override would.
+		annotationEdps := markTargetsFromAnnotation(endpoint.EndpointsForHostsAndTargets(hosts, addrs), len(addrs) > 0)
 
 		edps, err := us.templateEngine.ApplyTemplates(annotationEdps, el)
 		if err != nil {

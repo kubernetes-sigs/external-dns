@@ -126,8 +126,8 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		targets := annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)
-		if len(targets) == 0 {
+		targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(tcpIngress.Annotations)
+		if !targetsFromAnnotation {
 			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
 				if lb.IP != "" {
 					targets = append(targets, lb.IP)
@@ -140,7 +140,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 
 		fullname := fmt.Sprintf("%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-		ingressEndpoints := sc.endpointsFromTCPIngress(tcpIngress, targets)
+		ingressEndpoints := markTargetsFromAnnotation(sc.endpointsFromTCPIngress(tcpIngress, targets), targetsFromAnnotation)
 		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}

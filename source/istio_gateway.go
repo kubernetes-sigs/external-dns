@@ -215,26 +215,30 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 	return targets, nil
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
+// targetsFromGateway resolves the Gateway's targets. The second return value
+// reports whether they came from the Gateway's own explicit target
+// annotation rather than the Ingress/Service selector fallbacks.
+func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, bool, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
-		return targets, nil
+		return targets, true, nil
 	}
 
 	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
 	if ok && ingressStr != "" {
-		return sc.targetsFromIngress(ingressStr, gateway)
+		targets, err := sc.targetsFromIngress(ingressStr, gateway)
+		return targets, false, err
 	}
 
-	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	targets, err := EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	return targets, false, err
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
 func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
-	var err error
 
-	targets, err := sc.targetsFromGateway(gateway)
+	targets, targetsFromAnnotation, err := sc.targetsFromGateway(gateway)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +255,7 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *netwo
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
-	return endpoints, nil
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation), nil
 }
 
 func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1.Gateway) []string {

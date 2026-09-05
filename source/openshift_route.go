@@ -147,8 +147,8 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	ttl := annotations.TTLFromAnnotations(ocpRoute.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
-	if len(targets) == 0 {
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(ocpRoute.Annotations)
+	if !targetsFromAnnotation {
 		targetsFromRoute, _ := ors.getTargetsFromRouteStatus(ocpRoute.Status)
 		targets = targetsFromRoute
 	}
@@ -159,7 +159,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation), nil
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object
@@ -170,10 +170,10 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 
 	ttl := annotations.TTLFromAnnotations(ocpRoute.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(ocpRoute.Annotations)
 	targetsFromRoute, host := ors.getTargetsFromRouteStatus(ocpRoute.Status)
 
-	if len(targets) == 0 {
+	if !targetsFromAnnotation {
 		targets = targetsFromRoute
 	}
 
@@ -190,7 +190,7 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
-	return endpoints
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation)
 }
 
 // getTargetsFromRouteStatus returns the router's canonical hostname and host
