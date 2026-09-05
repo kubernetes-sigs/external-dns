@@ -4,25 +4,25 @@ go 1.27.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.3.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.20.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
-	github.com/aws/aws-sdk-go-v2 v1.43.7
-	github.com/aws/aws-sdk-go-v2/config v1.32.38
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.37
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.62
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.63.4
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.65.9
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.43.7
-	github.com/aws/aws-sdk-go-v2/service/sts v1.45.7
-	github.com/aws/smithy-go v1.27.9
+	github.com/aws/aws-sdk-go-v2 v1.45.1
+	github.com/aws/aws-sdk-go-v2/config v1.33.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.2
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.21.2
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.66.0
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.68.0
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.47.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.48.0
+	github.com/aws/smithy-go v1.28.1
 	github.com/bodgit/tsig v1.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/civo/civogo v0.7.2
+	github.com/civo/civogo v0.7.3
 	// pinned: v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data
 	// See https://github.com/cloudflare/cloudflare-go/issues/4300
 	github.com/cloudflare/cloudflare-go/v7 v7.7.0
@@ -40,15 +40,15 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/openshift/api v0.0.0-20260819011109-af5c920502e2
 	github.com/openshift/client-go v0.0.0-20260810202730-ddca5e0b7146
-	github.com/oracle/oci-go-sdk/v65 v65.123.2
+	github.com/oracle/oci-go-sdk/v65 v65.124.0
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/projectcontour/contour v1.33.6
 	github.com/prometheus/client_golang v1.24.1
-	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.70.1
+	github.com/prometheus/client_model v0.6.3
+	github.com/prometheus/common v0.71.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 	go.etcd.io/etcd/api/v3 v3.7.1
 	go.etcd.io/etcd/client/v3 v3.7.1
@@ -58,13 +58,13 @@ require (
 	golang.org/x/sync v0.22.0
 	golang.org/x/text v0.41.0
 	golang.org/x/time v0.15.0
-	google.golang.org/api v0.293.0
+	google.golang.org/api v0.296.0
 	gopkg.in/ns1/ns1-go.v2 v2.18.0
-	istio.io/api v1.30.4
-	istio.io/client-go v1.30.4
-	k8s.io/api v0.36.4
-	k8s.io/apimachinery v0.36.4
-	k8s.io/client-go v0.36.4
+	istio.io/api v1.31.0
+	istio.io/client-go v1.31.0
+	k8s.io/api v0.37.0
+	k8s.io/apimachinery v0.37.0
+	k8s.io/client-go v0.37.0
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	sigs.k8s.io/controller-runtime v0.24.1
@@ -73,23 +73,23 @@ require (
 )
 
 require (
-	cloud.google.com/go/auth v0.23.1 // indirect
+	cloud.google.com/go/auth v0.23.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.38 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.38 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.38 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.39 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.36.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.17 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.38 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.5.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.33.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.7 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.19.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.39.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.8.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.36.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.41.0 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bodgit/gssapi v0.0.4 // indirect
@@ -131,7 +131,7 @@ require (
 	github.com/google/pprof v0.0.0-20250501235452-c0086092b71a // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.21 // indirect
-	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.24.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -190,8 +190,8 @@ require (
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/tools v0.49.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260818201246-1b0934165a6f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260818201246-1b0934165a6f // indirect
-	google.golang.org/grpc v1.83.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688 // indirect
+	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
