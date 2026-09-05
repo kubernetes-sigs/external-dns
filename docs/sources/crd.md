@@ -132,6 +132,46 @@ INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
 INFO[0000] CREATE: foo.bar.com 0 IN TXT "heritage=external-dns,external-dns/owner=default"
 ```
 
+### Validation
+
+A `DNSEndpoint` is checked in two places. The CRD schema rejects structural mistakes
+at `kubectl apply` time:
+
+* `dnsName` and `recordType` are required. `dnsName` must be a DNS name (a leading
+  `*.` wildcard and `_`-prefixed labels such as `_acme-challenge` are allowed), at most
+  253 characters, or 254 written as an absolute name with a trailing dot.
+* `recordType` must be one of `A`, `AAAA`, `CNAME`, `TXT`, `SRV`, `NS`, `PTR`, `MX`, `NAPTR`.
+* `recordTTL` must be between `0` and `2147483647` (RFC 2181 §8). `0` means "unset" —
+  the provider applies its own default.
+* Each target is between 1 and 4096 characters, and an endpoint carries at most 1000
+  targets. A `DNSEndpoint` carries at most 1000 endpoints and an endpoint at most 100
+  `providerSpecific` entries.
+* `SRV` and `NAPTR` targets must be absolute (end with a dot).
+* `PTR` records must use a `dnsName` under `.in-addr.arpa` or `.ip6.arpa`, written
+  without a trailing dot (`1.0.0.10.in-addr.arpa`).
+
+An object over any of these limits is rejected whole. Past 1000 endpoints, split them
+across several `DNSEndpoint` objects, keeping each record in one object: targets cannot
+be split, and two objects declaring the same `dnsName` and `recordType` conflict —
+external-dns publishes one and drops the other instead of merging their targets.
+
+This schema also validates the `DNSRecord` objects the [CRD registry](../registry/crd.md)
+writes, where a rejected write aborts the sync instead of teaching anyone anything. So a
+rule should not reject what external-dns can legitimately build.
+
+The rest is checked when external-dns reads the object, before anything is planned. A
+rejected endpoint is dropped from the plan and reported in the external-dns log:
+
+* `A`/`AAAA` targets must be addresses of the matching family, unless the endpoint sets
+  the `alias` provider-specific property.
+* `MX` targets must be `<preference> <host>`, e.g. `10 mail.example.com`.
+* `SRV` targets must be the full `<priority> <weight> <port> <host>` (RFC 2782).
+* `PTR` records need at least one non-empty target.
+* Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
+  where both forms are valid (RFC 1035 §5.1).
+
+Leave `targets` empty only when `--default-targets` is configured.
+
 ### Using CRD source to manage DNS records in different DNS providers
 
 [CRD source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/sources/crd.md) provides a generic mechanism and declarative way to manage DNS records in different DNS providers using external-dns.
