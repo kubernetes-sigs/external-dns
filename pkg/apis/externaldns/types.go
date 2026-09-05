@@ -62,6 +62,7 @@ type Config struct {
 	Namespace                                     string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
+	EnableLegacyAnnotationPrefix                  bool
 	LabelFilter                                   string
 	IngressClassNames                             []string
 	FQDNTemplate                                  []string
@@ -518,6 +519,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
+	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the pre-v0.22.0 prefix external-dns.alpha.kubernetes.io/ while migrating them to --annotation-prefix, which takes precedence when both are present (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)

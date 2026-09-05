@@ -15,11 +15,18 @@ package annotations
 
 import (
 	"math"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
 	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
+
+	// LegacyAnnotationPrefix is the annotation prefix used by releases before v0.22.0.
+	// It is only honored when enabled with SetLegacyAnnotationPrefix, see ResolveLegacyAnnotations.
+	LegacyAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 
 	ttlMinimum = 1
 	ttlMaximum = math.MaxInt32
@@ -29,6 +36,9 @@ var (
 	// AnnotationKeyPrefix is set on all annotations consumed by external-dns (outside of user templates)
 	// to provide easy filtering. Can be customized via SetAnnotationPrefix.
 	AnnotationKeyPrefix = DefaultAnnotationPrefix
+
+	// legacyAnnotationPrefix is an additional prefix accepted by ResolveLegacyAnnotations. Empty means disabled.
+	legacyAnnotationPrefix string
 
 	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
@@ -109,4 +119,42 @@ func SetAnnotationPrefix(prefix string) {
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+}
+
+// SetLegacyAnnotationPrefix makes ResolveLegacyAnnotations accept annotations carrying prefix in addition
+// to AnnotationKeyPrefix. An empty prefix, or one equal to AnnotationKeyPrefix, disables the resolution.
+// Like SetAnnotationPrefix, this must be called before any sources are initialized.
+func SetLegacyAnnotationPrefix(prefix string) {
+	if prefix == AnnotationKeyPrefix {
+		prefix = ""
+	}
+	legacyAnnotationPrefix = prefix
+}
+
+// ResolveLegacyAnnotations rewrites, in place, every annotation carrying the legacy prefix to its
+// AnnotationKeyPrefix equivalent so that sources only ever see the configured prefix. When both forms
+// of a key are present the value under AnnotationKeyPrefix wins and the conflict is logged; kind,
+// namespace and name identify the object in that log line. It returns true when anns was modified
+// and is a no-op unless a legacy prefix was enabled with SetLegacyAnnotationPrefix.
+func ResolveLegacyAnnotations(kind, namespace, name string, anns map[string]string) bool {
+	if legacyAnnotationPrefix == "" {
+		return false
+	}
+	var legacyKeys []string
+	for key := range anns {
+		if strings.HasPrefix(key, legacyAnnotationPrefix) {
+			legacyKeys = append(legacyKeys, key)
+		}
+	}
+	for _, key := range legacyKeys {
+		value := anns[key]
+		delete(anns, key)
+		resolved := AnnotationKeyPrefix + strings.TrimPrefix(key, legacyAnnotationPrefix)
+		if existing, ok := anns[resolved]; !ok {
+			anns[resolved] = value
+		} else if existing != value {
+			log.Warnf("%s %s/%s: ignoring annotation %s=%q because %s=%q is set", kind, namespace, name, key, value, resolved, existing)
+		}
+	}
+	return len(legacyKeys) > 0
 }

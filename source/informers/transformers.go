@@ -28,6 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // Object is a composite interface that combines runtime.Object and metav1.Object.
@@ -101,6 +103,10 @@ func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions
 // informers strip TypeMeta when returning objects because the client already knows the
 // type — populating it here makes cached objects self-describing for templates and logging.
 //
+// When a legacy annotation prefix is enabled (see annotations.SetLegacyAnnotationPrefix), the
+// transformer rewrites legacy-prefixed annotations to the configured prefix before anything else
+// looks at them, so annotation filters, indexers and sources all observe a single prefix.
+//
 // The transform is naturally idempotent: nil-ing an already-nil field and filtering an
 // already-filtered map are both no-ops, so calling it multiple times on the same object
 // is safe.
@@ -121,12 +127,15 @@ func TransformerWithOptions[T Object](optFns ...func(*TransformOptions)) cache.T
 		if !ok {
 			return nil, nil
 		}
+		populateGVK(entity)
+		if anns := entity.GetAnnotations(); annotations.ResolveLegacyAnnotations(entity.GetObjectKind().GroupVersionKind().Kind, entity.GetNamespace(), entity.GetName(), anns) {
+			entity.SetAnnotations(anns)
+		}
 		if sel := options.requireAnnotationSelector; sel != nil && !sel.Empty() {
 			if !sel.Matches(labels.Set(entity.GetAnnotations())) {
 				return nil, nil
 			}
 		}
-		populateGVK(entity)
 		if options.removeManagedFields {
 			entity.SetManagedFields(nil)
 		}
