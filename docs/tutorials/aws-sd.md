@@ -357,7 +357,54 @@ spec:
     app: nginx
 ```
 
-:information_source: The AWS-SD provider does not currently support dualstack load balancers and will only create A records for these at this time. See the AWS provider and the [AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md) for dualstack load balancer support.
+### Dual-stack load balancer aliases
+
+For an AWS Load Balancer Controller Ingress, configure ExternalDNS to use the
+AWS-SD provider and registry:
+
+```text
+--source=ingress
+--ingress-class=alb
+--provider=aws-sd
+--registry=aws-sd
+--txt-owner-id=my-identifier
+--domain-filter=external-dns-test.my-org.com
+--policy=sync
+```
+
+Then create an Ingress that requests a dual-stack ALB:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echoserver
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/ip-address-type: dualstack
+spec:
+  ingressClassName: alb
+  rules:
+    - host: echoserver.external-dns-test.my-org.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: echoserver
+                port:
+                  number: 80
+```
+
+After the AWS Load Balancer Controller sets the Ingress status to the ALB
+hostname, ExternalDNS creates a Cloud Map service containing both `A` and `AAAA`
+DNS records. The load balancer hostname is registered using the
+`AWS_ALIAS_DNS_NAME` instance attribute.
+
+See the
+[AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md)
+for more information about dual-stack load balancers.
 
 ## Clean up
 

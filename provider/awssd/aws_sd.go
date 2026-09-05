@@ -322,8 +322,8 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				}
 				// update a local list of services
 				services[*srv.Name] = srv
-			} else if ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL) {
-				// update service when TTL differ
+			} else if p.serviceNeedsUpdate(srv, ch) {
+				// update service when TTL or the desired DNS record type set differ
 				err = p.UpdateService(ctx, srv, ch)
 				if err != nil {
 					return err
@@ -439,7 +439,6 @@ func (p *AWSSDProvider) ListServicesByNamespaceID(ctx context.Context, namespace
 func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, srvName *string, ep *endpoint.Endpoint) (*sdtypes.Service, error) {
 	log.Infof("Creating a new service \"%s\" in \"%s\" namespace", *srvName, *namespaceID)
 
-	srvType := p.serviceTypeFromEndpoint(ep)
 	routingPolicy := p.routingPolicyFromEndpoint(ep)
 
 	ttl := int64(defaultTTL)
@@ -457,10 +456,7 @@ func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, 
 		Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 		DnsConfig: &sdtypes.DnsConfig{
 			RoutingPolicy: routingPolicy,
-			DnsRecords: []sdtypes.DnsRecord{{
-				Type: srvType,
-				TTL:  aws.Int64(ttl),
-			}},
+			DnsRecords:    dnsRecordsFromTypes(p.serviceTypesFromEndpoint(ep), ttl),
 		},
 		NamespaceId: namespaceID,
 		Tags:        p.tags,
@@ -476,8 +472,6 @@ func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, 
 func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Service, ep *endpoint.Endpoint) error {
 	log.Infof("Updating service \"%s\"", *service.Name)
 
-	srvType := p.serviceTypeFromEndpoint(ep)
-
 	ttl := int64(defaultTTL)
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)
@@ -492,10 +486,7 @@ func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Serv
 		Service: &sdtypes.ServiceChange{
 			Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 			DnsConfig: &sdtypes.DnsConfigChange{
-				DnsRecords: []sdtypes.DnsRecord{{
-					Type: srvType,
-					TTL:  aws.Int64(ttl),
-				}},
+				DnsRecords: dnsRecordsFromTypes(p.serviceTypesFromEndpoint(ep), ttl),
 			},
 		},
 	})
@@ -640,22 +631,82 @@ func (p *AWSSDProvider) routingPolicyFromEndpoint(ep *endpoint.Endpoint) sdtypes
 	return sdtypes.RoutingPolicyWeighted
 }
 
-// determine the service type (A, AAAA, CNAME) from a given endpoint
-func (p *AWSSDProvider) serviceTypeFromEndpoint(ep *endpoint.Endpoint) sdtypes.RecordType {
+// determine the service record type(s) (A, AAAA, CNAME) from a given endpoint.
+// A CNAME endpoint whose target is a recognized AWS load balancer (ELB/ALB/NLB)
+// is registered using the AWS_ALIAS_DNS_NAME instance attribute; Cloud Map
+// supports configuring both an A and an AAAA alias record from that single
+// registration, so both are requested here to mirror the dual-stack behavior
+// the AWS (Route 53) provider already applies to every recognized load
+// balancer alias target.
+func (p *AWSSDProvider) serviceTypesFromEndpoint(ep *endpoint.Endpoint) []sdtypes.RecordType {
 	switch ep.RecordType {
 	case endpoint.RecordTypeCNAME:
 		// FIXME service type is derived from the first target only. Theoretically this may be problem.
 		// But I don't see a scenario where one endpoint contains targets of different types.
 		if p.isAWSLoadBalancer(ep.Targets[0]) {
-			// ALIAS target uses DNS record of type A
-			return sdtypes.RecordTypeA
+			// ALIAS target supports both A and AAAA Cloud Map DNS records
+			return []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa}
 		}
-		return sdtypes.RecordTypeCname
+		return []sdtypes.RecordType{sdtypes.RecordTypeCname}
 	case endpoint.RecordTypeAAAA:
-		return sdtypes.RecordTypeAaaa
+		return []sdtypes.RecordType{sdtypes.RecordTypeAaaa}
 	default:
-		return sdtypes.RecordTypeA
+		return []sdtypes.RecordType{sdtypes.RecordTypeA}
 	}
+}
+
+// dnsRecordsFromTypes builds the Cloud Map DnsRecord list for the given record
+// types, all sharing the same TTL. Used by both CreateService and UpdateService
+// so the two never diverge on the desired DNS record set.
+func dnsRecordsFromTypes(types []sdtypes.RecordType, ttl int64) []sdtypes.DnsRecord {
+	records := make([]sdtypes.DnsRecord, 0, len(types))
+	for _, t := range types {
+		records = append(records, sdtypes.DnsRecord{Type: t, TTL: aws.Int64(ttl)})
+	}
+	return records
+}
+
+// serviceNeedsUpdate reports whether an existing Cloud Map service must be
+// updated to converge on the endpoint's desired TTL and DNS record type set.
+// It safely handles a service with a nil/empty DnsConfig or DnsRecords and
+// compares record types independent of the order AWS returns them in.
+func (p *AWSSDProvider) serviceNeedsUpdate(srv *sdtypes.Service, ep *endpoint.Endpoint) bool {
+	existing := existingDNSRecords(srv)
+
+	if ep.RecordTTL.IsConfigured() {
+		if len(existing) == 0 || existing[0].TTL == nil || *existing[0].TTL != int64(ep.RecordTTL) {
+			return true
+		}
+	}
+
+	return !sameRecordTypes(existing, p.serviceTypesFromEndpoint(ep))
+}
+
+// existingDNSRecords safely extracts the DnsRecords of a service, returning
+// nil rather than panicking when DnsConfig is unset.
+func existingDNSRecords(srv *sdtypes.Service) []sdtypes.DnsRecord {
+	if srv == nil || srv.DnsConfig == nil {
+		return nil
+	}
+	return srv.DnsConfig.DnsRecords
+}
+
+// sameRecordTypes reports whether the existing DNS record types match the
+// desired set, independent of ordering.
+func sameRecordTypes(existing []sdtypes.DnsRecord, desired []sdtypes.RecordType) bool {
+	if len(existing) != len(desired) {
+		return false
+	}
+	existingSet := make(map[sdtypes.RecordType]bool, len(existing))
+	for _, r := range existing {
+		existingSet[r.Type] = true
+	}
+	for _, t := range desired {
+		if !existingSet[t] {
+			return false
+		}
+	}
+	return true
 }
 
 // determine if a given hostname belongs to an AWS load balancer

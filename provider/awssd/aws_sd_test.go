@@ -522,7 +522,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 		NamespaceId: aws.String("private"),
 	}
 
-	// ALIAS type
+	// ALIAS type (dual-stack: both A and AAAA)
 	_, err = provider.CreateService(t.Context(), aws.String("private"), aws.String("ALIAS-srv"), &endpoint.Endpoint{
 		Labels: map[string]string{
 			endpoint.AWSSDDescriptionLabel: "ALIAS-srv",
@@ -537,10 +537,34 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 		Description: aws.String("ALIAS-srv"),
 		DnsConfig: &sdtypes.DnsConfig{
 			RoutingPolicy: sdtypes.RoutingPolicyWeighted,
-			DnsRecords: []sdtypes.DnsRecord{{
-				Type: sdtypes.RecordTypeA,
-				TTL:  aws.Int64(100),
-			}},
+			DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(100)},
+				{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(100)},
+			},
+		},
+		NamespaceId: aws.String("private"),
+	}
+
+	// ALIAS type with "dualstack." prefixed hostname must be recognized identically -
+	// detection does not depend on the "dualstack." substring.
+	_, err = provider.CreateService(t.Context(), aws.String("private"), aws.String("ALIAS-dualstack-prefix-srv"), &endpoint.Endpoint{
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: "ALIAS-dualstack-prefix-srv",
+		},
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets:    endpoint.Targets{"dualstack.load-balancer.us-east-1.elb.amazonaws.com"},
+	})
+	assert.NoError(t, err)
+	expectedServices["ALIAS-dualstack-prefix-srv"] = &sdtypes.Service{
+		Name:        aws.String("ALIAS-dualstack-prefix-srv"),
+		Description: aws.String("ALIAS-dualstack-prefix-srv"),
+		DnsConfig: &sdtypes.DnsConfig{
+			RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+			DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(100)},
+				{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(100)},
+			},
 		},
 		NamespaceId: aws.String("private"),
 	}
@@ -698,6 +722,309 @@ func TestAWSSDProvider_UpdateService_DryRun(t *testing.T) {
 	// records should not be updated
 	assert.NotEqual(t, 100, api.services["private"]["srv1"].DnsConfig.DnsRecords[0].TTL)
 	assert.NotEqual(t, endpoint.RecordTypeAAAA, api.services["private"]["srv1"].DnsConfig.DnsRecords[0].Type)
+}
+
+func TestAWSSDProvider_ServiceTypesFromEndpoint(t *testing.T) {
+	provider := newTestAWSSDProvider(&AWSSDClientStub{}, endpoint.NewDomainFilter([]string{}), "", "")
+
+	for _, tc := range []struct {
+		name     string
+		ep       *endpoint.Endpoint
+		expected []sdtypes.RecordType
+	}{
+		{
+			name:     "A endpoint",
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			expected: []sdtypes.RecordType{sdtypes.RecordTypeA},
+		},
+		{
+			name:     "AAAA endpoint",
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"::1234:5678:"}},
+			expected: []sdtypes.RecordType{sdtypes.RecordTypeAaaa},
+		},
+		{
+			name:     "ordinary non-AWS CNAME",
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"cname.target.com"}},
+			expected: []sdtypes.RecordType{sdtypes.RecordTypeCname},
+		},
+		{
+			name:     "recognized AWS ELB alias",
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}},
+			expected: []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa},
+		},
+		{
+			name:     "recognized AWS ELB alias with dualstack. prefix behaves identically",
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"dualstack.load-balancer.us-east-1.elb.amazonaws.com"}},
+			expected: []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa},
+		},
+		{
+			name:     "recognized AWS NLB alias",
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"load-balancer.elb.us-west-2.amazonaws.com"}},
+			expected: []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, provider.serviceTypesFromEndpoint(tc.ep))
+		})
+	}
+}
+
+func TestAWSSDProvider_UpdateService_Alias(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	services := map[string]map[string]*sdtypes.Service{
+		"private": {
+			"srv1": {
+				Id:          aws.String("srv1"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
+				DnsConfig: &sdtypes.DnsConfig{
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{{
+						Type: sdtypes.RecordTypeCname,
+						TTL:  aws.Int64(60),
+					}},
+				},
+			},
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   services,
+	}
+
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
+
+	// updating with an AWS LB alias endpoint must build the same [A, AAAA] set that CreateService would
+	err := provider.UpdateService(t.Context(), services["private"]["srv1"], &endpoint.Endpoint{
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"},
+	})
+
+	require.NoError(t, err)
+	gotRecords := api.services["private"]["srv1"].DnsConfig.DnsRecords
+	require.Len(t, gotRecords, 2)
+	assert.Equal(t, sdtypes.RecordTypeA, gotRecords[0].Type)
+	assert.Equal(t, int64(100), *gotRecords[0].TTL)
+	assert.Equal(t, sdtypes.RecordTypeAaaa, gotRecords[1].Type)
+	assert.Equal(t, int64(100), *gotRecords[1].TTL)
+}
+
+func TestAWSSDProvider_ServiceNeedsUpdate(t *testing.T) {
+	provider := newTestAWSSDProvider(&AWSSDClientStub{}, endpoint.NewDomainFilter([]string{}), "", "")
+
+	aliasEndpoint := &endpoint.Endpoint{
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"},
+	}
+	cnameEndpoint := &endpoint.Endpoint{
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets:    endpoint.Targets{"cname.target.com"},
+	}
+
+	for _, tc := range []struct {
+		name     string
+		srv      *sdtypes.Service
+		ep       *endpoint.Endpoint
+		expected bool
+	}{
+		{
+			name: "existing A-only AWS alias converges to [A, AAAA]",
+			srv: &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(100)},
+			}}},
+			ep:       aliasEndpoint,
+			expected: true,
+		},
+		{
+			name: "existing [A, AAAA] alias with matching TTL needs no update",
+			srv: &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(100)},
+				{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(100)},
+			}}},
+			ep:       aliasEndpoint,
+			expected: false,
+		},
+		{
+			name: "existing [AAAA, A] order-swapped alias with matching TTL needs no update",
+			srv: &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(100)},
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(100)},
+			}}},
+			ep:       aliasEndpoint,
+			expected: false,
+		},
+		{
+			name: "existing [A, AAAA] alias transitions to ordinary CNAME",
+			srv: &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(100)},
+				{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(100)},
+			}}},
+			ep:       cnameEndpoint,
+			expected: true,
+		},
+		{
+			name: "existing ordinary CNAME transitions to AWS alias",
+			srv: &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeCname, TTL: aws.Int64(100)},
+			}}},
+			ep:       aliasEndpoint,
+			expected: true,
+		},
+		{
+			name: "TTL mismatch alone still triggers update, exactly as before",
+			srv: &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{
+				{Type: sdtypes.RecordTypeA, TTL: aws.Int64(60)},
+				{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(60)},
+			}}},
+			ep:       aliasEndpoint,
+			expected: true,
+		},
+		{
+			name:     "unconfigured TTL and matching types needs no update",
+			srv:      &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{DnsRecords: []sdtypes.DnsRecord{{Type: sdtypes.RecordTypeCname, TTL: aws.Int64(999)}}}},
+			ep:       &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"cname.target.com"}},
+			expected: false,
+		},
+		{
+			name:     "nil DnsConfig is handled safely and triggers update",
+			srv:      &sdtypes.Service{},
+			ep:       aliasEndpoint,
+			expected: true,
+		},
+		{
+			name:     "empty DnsRecords is handled safely and triggers update",
+			srv:      &sdtypes.Service{DnsConfig: &sdtypes.DnsConfig{}},
+			ep:       aliasEndpoint,
+			expected: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, provider.serviceNeedsUpdate(tc.srv, tc.ep))
+		})
+	}
+}
+
+// TestAWSSDProvider_ApplyChanges_ExistingAliasConvergesToDualStack proves that once an
+// endpoint otherwise reaches submitCreates (here: a Create change for a service that
+// already exists in Cloud Map), an existing A-only alias service configuration is
+// converged to [A, AAAA]. It does NOT prove - and this patch does not implement -
+// automatic migration of a completely unchanged, already-reconciled alias service:
+// Records() still reconstructs such a service as a single CNAME endpoint, so if
+// nothing about the endpoint changes, the plan stays empty and ApplyChanges returns
+// early without ever reaching this code path.
+func TestAWSSDProvider_ApplyChanges_ExistingAliasConvergesToDualStack(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	services := map[string]map[string]*sdtypes.Service{
+		"private": {
+			"service1": {
+				Id:          aws.String("service1"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
+				Description: aws.String("owner-id"),
+				DnsConfig: &sdtypes.DnsConfig{
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{{
+						Type: sdtypes.RecordTypeA,
+						TTL:  aws.Int64(100),
+					}},
+				},
+			},
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   services,
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
+
+	aliasEndpoint := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"},
+	}
+
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{aliasEndpoint}})
+	require.NoError(t, err)
+
+	gotRecords := api.services["private"]["service1"].DnsConfig.DnsRecords
+	require.Len(t, gotRecords, 2)
+	assert.Equal(t, sdtypes.RecordTypeA, gotRecords[0].Type)
+	assert.Equal(t, sdtypes.RecordTypeAaaa, gotRecords[1].Type)
+
+	// applying the exact same (now already-converged) change again must not need
+	// a further update - the service configuration is stable at [A, AAAA].
+	err = provider.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{aliasEndpoint}})
+	require.NoError(t, err)
+	assert.Equal(t, gotRecords, api.services["private"]["service1"].DnsConfig.DnsRecords)
+}
+
+func TestAWSSDProvider_RegisterInstance_AliasSendsOnlyAliasAttribute(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	services := map[string]map[string]*sdtypes.Service{
+		"private": {
+			"alias-srv": {
+				Id:          aws.String("alias-srv"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
+				DnsConfig: &sdtypes.DnsConfig{
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{
+						{Type: sdtypes.RecordTypeA, TTL: aws.Int64(60)},
+						{Type: sdtypes.RecordTypeAaaa, TTL: aws.Int64(60)},
+					},
+				},
+			},
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   services,
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
+
+	err := provider.RegisterInstance(t.Context(), services["private"]["alias-srv"], &endpoint.Endpoint{
+		RecordType: endpoint.RecordTypeCNAME,
+		DNSName:    "service1.private.com.",
+		RecordTTL:  300,
+		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"},
+	})
+	require.NoError(t, err)
+
+	inst := api.instances["alias-srv"]["load-balancer.us-east-1.elb.amazonaws.com"]
+	require.NotNil(t, inst)
+	assert.Equal(t, map[string]string{sdInstanceAttrAlias: "load-balancer.us-east-1.elb.amazonaws.com"}, inst.Attributes)
 }
 
 func TestAWSSDProvider_DeleteService(t *testing.T) {
