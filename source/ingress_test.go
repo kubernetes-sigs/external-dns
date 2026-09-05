@@ -2145,9 +2145,7 @@ func TestSetDualstackIngressLabel(t *testing.T) {
 			}
 
 			ing := &networkv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: annotations,
-				},
+				Annotations: annotations,
 			}
 
 			ep := endpoint.NewEndpoint(

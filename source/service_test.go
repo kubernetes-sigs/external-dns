@@ -5959,9 +5959,7 @@ func TestSetDualstackServiceLabel(t *testing.T) {
 			}
 
 			svc := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: annotations,
-				},
+				Annotations: annotations,
 				Spec: v1.ServiceSpec{
 					Type: tc.serviceType,
 				},
