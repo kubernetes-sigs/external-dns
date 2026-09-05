@@ -55,6 +55,8 @@ const (
 	retryLimit = 3
 	// time in milliseconds
 	retryAfterTime = 250 * time.Millisecond
+	// defaultRequestTimeout is the default HTTP request timeout for PowerDNS API calls
+	defaultRequestTimeout = 30 * time.Second
 )
 
 // record types which require to have trailing dot
@@ -115,6 +117,7 @@ func (tlsConfig *TLSConfig) newHTTPClient() (*http.Client, error) {
 	}
 
 	return &http.Client{
+		Timeout:   defaultRequestTimeout,
 		Transport: transporter,
 	}, nil
 }
@@ -137,29 +140,35 @@ func (rt *pathPrefixRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 // PDNSAPIProvider : Interface used and extended by the PDNSAPIClient struct as
 // well as mock APIClients used in testing
 type PDNSAPIProvider interface {
-	ListZones() ([]pgo.Zone, error)
-	ListZone(zoneID string) (*pgo.Zone, error)
-	PatchZone(zoneID string, zoneStruct *pgo.Zone) error
+	ListZones(ctx context.Context) ([]pgo.Zone, error)
+	ListZone(ctx context.Context, zoneID string) (*pgo.Zone, error)
+	PatchZone(ctx context.Context, zoneID string, zoneStruct *pgo.Zone) error
 }
 
 // PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
 type PDNSAPIClient struct {
 	dryRun  bool
-	authCtx context.Context
 	client  *pgo.Client
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones
-func (c *PDNSAPIClient) ListZones() ([]pgo.Zone, error) {
+func (c *PDNSAPIClient) ListZones(ctx context.Context) ([]pgo.Zone, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	var zones []pgo.Zone
 	var err error
 	for i := range retryLimit {
-		zones, err = c.client.Zones.List(c.authCtx)
+		zones, err = c.client.Zones.List(ctx)
 		if err != nil {
 			log.Debugf("Unable to fetch zones %v", err)
 			log.Debugf("Retrying ListZones() ... %d", i)
-			time.Sleep(retryAfterTime * (1 << uint(i)))
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(retryAfterTime * (1 << uint(i))):
+			}
 			continue
 		}
 		return zones, err
@@ -188,13 +197,20 @@ func partitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pg
 
 // ListZone : Method returns the details of a specific zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#get--servers-server_id-zones-zone_id
-func (c *PDNSAPIClient) ListZone(zoneID string) (*pgo.Zone, error) {
+func (c *PDNSAPIClient) ListZone(ctx context.Context, zoneID string) (*pgo.Zone, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	for i := range retryLimit {
-		zone, err := c.client.Zones.Get(c.authCtx, zoneID)
+		zone, err := c.client.Zones.Get(ctx, zoneID)
 		if err != nil {
 			log.Debugf("Unable to fetch zone %v", err)
 			log.Debugf("Retrying ListZone() ... %d", i)
-			time.Sleep(retryAfterTime * (1 << uint(i)))
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(retryAfterTime * (1 << uint(i))):
+			}
 			continue
 		}
 		return zone, err
@@ -205,15 +221,22 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (*pgo.Zone, error) {
 
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#patch--servers-server_id-zones-zone_id
-func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct *pgo.Zone) error {
+func (c *PDNSAPIClient) PatchZone(ctx context.Context, zoneID string, zoneStruct *pgo.Zone) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	rrSets := &pgo.RRsets{Sets: zoneStruct.RRsets}
 	var err error
 	for i := range retryLimit {
-		err = c.client.Records.Patch(c.authCtx, zoneID, rrSets)
+		err = c.client.Records.Patch(ctx, zoneID, rrSets)
 		if err != nil {
 			log.Debugf("Unable to patch zone %v", err)
 			log.Debugf("Retrying PatchZone() ... %d", i)
-			time.Sleep(retryAfterTime * (1 << uint(i)))
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(retryAfterTime * (1 << uint(i))):
+			}
 			continue
 		}
 		return err
@@ -250,7 +273,7 @@ func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.Do
 }
 
 // newProvider initializes a new PowerDNS based Provider.
-func newProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) {
+func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 	// Do some input validation
 
 	if config.APIKey == "" {
@@ -283,7 +306,6 @@ func newProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) 
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
 			dryRun:  config.DryRun,
-			authCtx: ctx,
 			client:  pgo.New(config.Server, config.ServerID, pgo.WithAPIKey(config.APIKey), pgo.WithHTTPClient(httpClient)),
 		},
 		domainFilter: config.DomainFilter,
@@ -294,8 +316,8 @@ func newProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) 
 // filteredZones fetches all zones from the PowerDNS API and partitions them
 // using the provider's domain filter. It returns the matching zones, the
 // non-matching (residual) zones, and any error from the API call.
-func (p *PDNSProvider) filteredZones() ([]pgo.Zone, []pgo.Zone, error) {
-	zones, err := p.client.ListZones()
+func (p *PDNSProvider) filteredZones(ctx context.Context) ([]pgo.Zone, []pgo.Zone, error) {
+	zones, err := p.client.ListZones(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -309,7 +331,7 @@ func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	// double-filtering would produce an empty filter when no zones match,
 	// silently failing open instead of letting the controller see the
 	// mismatch and produce a safe empty plan.
-	zones, err := p.client.ListZones()
+	zones, err := p.client.ListZones(context.Background())
 	if err != nil {
 		log.Errorf("Unable to fetch zones from PowerDNS API: %v", err)
 		return &endpoint.DomainFilter{}
@@ -350,7 +372,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RRset) []*endpoint.Endpoin
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
-func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changetype pdnsChangeType) ([]pgo.Zone, error) {
+func (p *PDNSProvider) ConvertEndpointsToZones(ctx context.Context, eps []*endpoint.Endpoint, changetype pdnsChangeType) ([]pgo.Zone, error) {
 	var zoneList = make([]pgo.Zone, 0)
 	endpoints := make([]*endpoint.Endpoint, len(eps))
 	copy(endpoints, eps)
@@ -365,7 +387,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			return endpoints[i].DNSName < endpoints[j].DNSName
 		})
 
-	filteredZones, residualZones, err := p.filteredZones()
+	filteredZones, residualZones, err := p.filteredZones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -471,8 +493,8 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 }
 
 // mutateRecords takes a list of endpoints and creates, replaces or deletes them based on the changetype
-func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype pdnsChangeType) error {
-	zonelist, err := p.ConvertEndpointsToZones(endpoints, changetype)
+func (p *PDNSProvider) mutateRecords(ctx context.Context, endpoints []*endpoint.Endpoint, changetype pdnsChangeType) error {
+	zonelist, err := p.ConvertEndpointsToZones(ctx, endpoints, changetype)
 	if err != nil {
 		return err
 	}
@@ -483,7 +505,7 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 		} else {
 			log.Debugf("Struct for PatchZone:\n%s", string(jso))
 		}
-		if err := p.client.PatchZone(pgo.StringValue(zone.ID), &zone); err != nil {
+		if err := p.client.PatchZone(ctx, pgo.StringValue(zone.ID), &zone); err != nil {
 			return err
 		}
 	}
@@ -491,8 +513,8 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 }
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
-func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
-	filteredZones, _, err := p.filteredZones()
+func (p *PDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	filteredZones, _, err := p.filteredZones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +522,7 @@ func (p *PDNSProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 	var endpoints []*endpoint.Endpoint
 
 	for _, zone := range filteredZones {
-		z, err := p.client.ListZone(pgo.StringValue(zone.ID))
+		z, err := p.client.ListZone(ctx, pgo.StringValue(zone.ID))
 		if err != nil {
 			return nil, provider.NewSoftErrorf("unable to fetch records: %v", err)
 		}
@@ -529,7 +551,7 @@ func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
-func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	startTime := time.Now()
 
 	// Create
@@ -542,7 +564,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 	// prevent unnecessary logging
 	if len(changes.Create) > 0 {
 		// "Replacing" non-existent records creates them
-		err := p.mutateRecords(changes.Create, PdnsReplace)
+		err := p.mutateRecords(ctx, changes.Create, PdnsReplace)
 		if err != nil {
 			return err
 		}
@@ -561,7 +583,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 		log.Infof("UPDATE-NEW: %+v", change)
 	}
 	if len(changes.UpdateNew) > 0 {
-		err := p.mutateRecords(changes.UpdateNew, PdnsReplace)
+		err := p.mutateRecords(ctx, changes.UpdateNew, PdnsReplace)
 		if err != nil {
 			return err
 		}
@@ -572,7 +594,7 @@ func (p *PDNSProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 		log.Infof("DELETE: %+v", change)
 	}
 	if len(changes.Delete) > 0 {
-		err := p.mutateRecords(changes.Delete, PdnsDelete)
+		err := p.mutateRecords(ctx, changes.Delete, PdnsDelete)
 		if err != nil {
 			return err
 		}
