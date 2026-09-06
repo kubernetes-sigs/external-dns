@@ -1185,6 +1185,92 @@ func Test_parseNamespace(t *testing.T) {
 	}
 }
 
+func TestAWSSDProvider_AdjustEndpoints(t *testing.T) {
+	newEndpoint := func(recordType string, targets endpoint.Targets, alias endpoint.AliasType, extraProviderSpecific endpoint.ProviderSpecific) *endpoint.Endpoint {
+		ep := &endpoint.Endpoint{
+			DNSName:    "service1.private.com",
+			RecordType: recordType,
+			Targets:    targets,
+		}
+		ep.ProviderSpecific = append(ep.ProviderSpecific, extraProviderSpecific...)
+		if alias != endpoint.AliasNone {
+			ep.WithAliasProperty(alias)
+		}
+		return ep
+	}
+
+	for _, tc := range []struct {
+		name              string
+		endpoint          *endpoint.Endpoint
+		wantDualstack     bool
+		wantAliasRemoved  bool
+		wantOtherProperty bool
+	}{
+		{
+			name:             "AWS load balancer CNAME with alias=true gets dualstack label and loses alias property",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, endpoint.AliasTrue, nil),
+			wantDualstack:    true,
+			wantAliasRemoved: true,
+		},
+		{
+			name:             "AWS load balancer CNAME without alias annotation stays single-stack",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, endpoint.AliasNone, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+		{
+			name:             "non-AWS CNAME with alias=true does not get dualstack label but alias is still consumed",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"cname.target.com"}, endpoint.AliasTrue, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+		{
+			name:              "unrelated provider-specific properties survive alias removal",
+			endpoint:          newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, endpoint.AliasTrue, endpoint.ProviderSpecific{{Name: "other-property", Value: "keep-me"}}),
+			wantDualstack:     true,
+			wantAliasRemoved:  true,
+			wantOtherProperty: true,
+		},
+		{
+			name:             "A record is untouched",
+			endpoint:         newEndpoint(endpoint.RecordTypeA, endpoint.Targets{"1.2.3.4"}, endpoint.AliasTrue, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+		{
+			name:             "CNAME with no targets is not treated as a load balancer",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{}, endpoint.AliasTrue, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := newTestAWSSDProvider(
+				&AWSSDClientStub{},
+				endpoint.NewDomainFilter([]string{}),
+				"",
+				"",
+			)
+
+			adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{tc.endpoint})
+			require.NoError(t, err)
+			require.Len(t, adjusted, 1)
+
+			ep := adjusted[0]
+			assert.Equal(t, tc.wantDualstack, ep.Labels[endpoint.DualstackLabelKey] == "true")
+
+			_, aliasStillPresent := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+			assert.Equal(t, !tc.wantAliasRemoved, aliasStillPresent)
+
+			if tc.wantOtherProperty {
+				value, ok := ep.GetProviderSpecificProperty("other-property")
+				assert.True(t, ok)
+				assert.Equal(t, "keep-me", value)
+			}
+		})
+	}
+}
+
 func TestAWSSDProvider_CreateService_LoadBalancerAliasRecordTypes(t *testing.T) {
 	namespaces := map[string]*sdtypes.Namespace{
 		"private": {
@@ -1196,24 +1282,22 @@ func TestAWSSDProvider_CreateService_LoadBalancerAliasRecordTypes(t *testing.T) 
 
 	for _, tc := range []struct {
 		name         string
-		labels       map[string]string
+		description  string
+		withAlias    bool
 		expectedType []sdtypes.RecordType
 	}{
 		{
-			name: "IPv4 load balancer alias remains A only",
-			labels: map[string]string{
-				endpoint.AWSSDDescriptionLabel: "ipv4-alias",
-			},
+			name:        "IPv4 load balancer alias remains A only",
+			description: "ipv4-alias",
+			withAlias:   false,
 			expectedType: []sdtypes.RecordType{
 				sdtypes.RecordTypeA,
 			},
 		},
 		{
-			name: "explicit dualstack load balancer alias creates A and AAAA",
-			labels: map[string]string{
-				endpoint.AWSSDDescriptionLabel: "dualstack-alias",
-				endpoint.DualstackLabelKey:     "true",
-			},
+			name:        "explicit dualstack load balancer alias creates A and AAAA",
+			description: "dualstack-alias",
+			withAlias:   true,
 			expectedType: []sdtypes.RecordType{
 				sdtypes.RecordTypeA,
 				sdtypes.RecordTypeAaaa,
@@ -1233,18 +1317,32 @@ func TestAWSSDProvider_CreateService_LoadBalancerAliasRecordTypes(t *testing.T) 
 				"",
 			)
 
+			// Desired endpoint carries the generic external-dns.kubernetes.io/alias
+			// intent as ProviderSpecific, exactly as the ingress/service sources
+			// produce it via annotations.ProviderSpecificAnnotations.
+			desired := &endpoint.Endpoint{
+				Labels: map[string]string{
+					endpoint.AWSSDDescriptionLabel: tc.description,
+				},
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  100,
+				Targets: endpoint.Targets{
+					"load-balancer.us-east-1.elb.amazonaws.com",
+				},
+			}
+			if tc.withAlias {
+				desired.WithAliasProperty(endpoint.AliasTrue)
+			}
+
+			adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{desired})
+			require.NoError(t, err)
+			require.Len(t, adjusted, 1)
+
 			service, err := provider.CreateService(
 				t.Context(),
 				aws.String("private"),
 				aws.String("alias-srv"),
-				&endpoint.Endpoint{
-					Labels:     tc.labels,
-					RecordType: endpoint.RecordTypeCNAME,
-					RecordTTL:  100,
-					Targets: endpoint.Targets{
-						"load-balancer.us-east-1.elb.amazonaws.com",
-					},
-				},
+				adjusted[0],
 			)
 			require.NoError(t, err)
 			require.NotNil(t, service)
@@ -1390,6 +1488,9 @@ func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t 
 		"",
 	)
 
+	// Desired endpoint starts with the generic alias annotation intent, exactly
+	// as it arrives from the source, and must pass through AdjustEndpoints
+	// before reaching the planner/ApplyChanges.
 	ep := &endpoint.Endpoint{
 		DNSName:    "service1.private.com",
 		RecordType: endpoint.RecordTypeCNAME,
@@ -1397,12 +1498,15 @@ func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t 
 		Targets: endpoint.Targets{
 			"load-balancer.us-east-1.elb.amazonaws.com",
 		},
-		Labels: map[string]string{
-			endpoint.DualstackLabelKey: "true",
-		},
 	}
+	ep.WithAliasProperty(endpoint.AliasTrue)
 
-	err := provider.ApplyChanges(
+	adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{ep})
+	require.NoError(t, err)
+	require.Len(t, adjusted, 1)
+	ep = adjusted[0]
+
+	err = provider.ApplyChanges(
 		t.Context(),
 		&plan.Changes{
 			Create: []*endpoint.Endpoint{ep},
@@ -1597,4 +1701,59 @@ func TestAWSSDProvider_ApplyChanges_UpdatesTTLWhenSecondRecordIsStale(t *testing
 	assert.Equal(t, int64(100), *records[0].TTL)
 	assert.Equal(t, sdtypes.RecordTypeAaaa, records[1].Type)
 	assert.Equal(t, int64(100), *records[1].TTL)
+}
+
+// TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop proves that once a desired
+// endpoint has passed through AdjustEndpoints, comparing it against the
+// equivalent endpoint that Records() would read back (no alias
+// ProviderSpecific property, since Records() never reconstructs one) produces
+// no plan changes. This guards against the alias intent, or the transient
+// DualstackLabelKey it becomes, causing a spurious update on every
+// reconciliation.
+func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
+	provider := newTestAWSSDProvider(
+		&AWSSDClientStub{},
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	desired := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets: endpoint.Targets{
+			"load-balancer.us-east-1.elb.amazonaws.com",
+		},
+	}
+	desired.WithAliasProperty(endpoint.AliasTrue)
+
+	adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{desired})
+	require.NoError(t, err)
+	require.Len(t, adjusted, 1)
+
+	// Equivalent read-back endpoint as Records() would produce: same name,
+	// type, target, and TTL, but no alias ProviderSpecific property.
+	current := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets: endpoint.Targets{
+			"load-balancer.us-east-1.elb.amazonaws.com",
+		},
+	}
+
+	p := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        adjusted,
+		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"private.com"})},
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	assert.Empty(t, changes.Create)
+	assert.Empty(t, changes.UpdateOld)
+	assert.Empty(t, changes.UpdateNew)
+	assert.Empty(t, changes.Delete)
 }

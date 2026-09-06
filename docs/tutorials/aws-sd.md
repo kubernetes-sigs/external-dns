@@ -359,8 +359,23 @@ spec:
 
 ### Dual-stack load balancer aliases
 
-For an AWS Load Balancer Controller Ingress, configure ExternalDNS to use the
-AWS-SD provider and registry:
+When a Kubernetes `Ingress` or `Service` resolves to a recognized AWS
+ELB/NLB hostname, AWS-SD registers it in Cloud Map as an alias using the
+`AWS_ALIAS_DNS_NAME` instance attribute. By default this creates an
+`A`-only Cloud Map service. To also create an `AAAA` record for the same
+alias, set the standard ExternalDNS alias annotation on the resource:
+
+```text
+external-dns.kubernetes.io/alias: "true"
+```
+
+The underlying load balancer must actually be provisioned as dual-stack
+(serving both IPv4 and IPv6) for the resulting `AAAA` alias to resolve
+correctly — see below for how that interacts with the provisioning
+mechanism you use.
+
+Configure ExternalDNS to use the AWS-SD provider and registry as usual, for
+example for an Ingress:
 
 ```text
 --source=ingress
@@ -372,7 +387,7 @@ AWS-SD provider and registry:
 --policy=sync
 ```
 
-Then create an Ingress that requests a dual-stack ALB:
+Then request a dual-stack Cloud Map service on the Ingress:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -382,6 +397,7 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/ip-address-type: dualstack
+    external-dns.kubernetes.io/alias: "true"
 spec:
   ingressClassName: alb
   rules:
@@ -397,36 +413,45 @@ spec:
                   number: 80
 ```
 
-After the AWS Load Balancer Controller sets the Ingress status to the ALB
-hostname, ExternalDNS uses the `ip-address-type` annotation to determine the
-Cloud Map alias record types. An explicitly dual-stack ALB creates a new Cloud
-Map service with both `A` and `AAAA` records. IPv4 load balancers remain
-`A`-only. The load balancer hostname is registered using the
-`AWS_ALIAS_DNS_NAME` instance attribute.
+These two annotations are read by two different components:
 
-This behavior applies to `ip-address-type: dualstack`. The
-`dualstack-without-public-ipv4` ALB mode exposes only IPv6 addresses to clients
-and is not handled by this `A` plus `AAAA` path.
+* `alb.ingress.kubernetes.io/ip-address-type: dualstack` is interpreted by
+  the **AWS Load Balancer Controller**. It is what actually provisions the
+  ALB with an IPv6 address. ExternalDNS never reads this annotation.
+* `external-dns.kubernetes.io/alias: "true"` is read by **ExternalDNS's
+  AWS-SD provider**. It is the only signal AWS-SD uses to decide whether to
+  request an `AAAA` record alongside the `A` record in Cloud Map.
 
-For a `Service` backed by an AWS Network Load Balancer (NLB), use
-`service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack`
-to request the same dual-stack behavior.
+If you provision the load balancer with Terraform, Crossplane, AWS
+Controllers for Kubernetes (ACK), or another mechanism instead of the AWS
+Load Balancer Controller, that tool's own provider-specific provisioning
+annotation is unnecessary here — AWS-SD does not read it. All that matters
+is that the underlying load balancer actually is dual-stack, and that the
+`Ingress` or `Service` ExternalDNS watches carries
+`external-dns.kubernetes.io/alias: "true"`.
 
-Cloud Map DNS record types cannot be changed on an existing service. ExternalDNS
-therefore preserves the existing record-type set when updating a service.
-When changing an existing load balancer between IPv4-only and dual-stack,
-deregister all instances from the Cloud Map service, delete the service, and
-allow ExternalDNS to recreate it on the next reconciliation.
+The same `external-dns.kubernetes.io/alias: "true"` annotation works
+identically on a `Service` of `type: LoadBalancer` backed by an AWS Network
+Load Balancer (NLB).
+
+Summary of behavior for a recognized AWS load-balancer hostname:
+
+* No `alias` annotation: AWS-SD creates an `A`-only Cloud Map service.
+* `alias: "true"`: AWS-SD creates a Cloud Map service with both `A` and
+  `AAAA` records.
+
+Cloud Map DNS record types cannot be changed on an existing service, so
+ExternalDNS always preserves the existing record-type set when updating one
+(only the TTL can change in place). To change an existing load balancer's
+Cloud Map service between IPv4-only and dual-stack, deregister all instances
+from the Cloud Map service, delete the service, and allow ExternalDNS to
+recreate it on the next reconciliation with the new record-type set.
 
 AWS Cloud Map supports `A` and `AAAA` together for one service. Alias
 registrations using `AWS_ALIAS_DNS_NAME` require `WEIGHTED` routing. See the
 [AWS Cloud Map DNS configuration documentation](https://docs.aws.amazon.com/cloud-map/latest/dg/services-route53.html)
 and the
 [`RegisterInstance` API documentation](https://docs.aws.amazon.com/cloud-map/latest/api/API_RegisterInstance.html).
-
-See the
-[AWS Load Balancer Controller Tutorial](./aws-load-balancer-controller.md)
-for more information about dual-stack load balancers.
 
 ## Clean up
 
