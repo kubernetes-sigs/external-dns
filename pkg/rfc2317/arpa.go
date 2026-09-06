@@ -19,9 +19,9 @@ package rfc2317
 import (
 	"fmt"
 	"net"
-	"slices"
-	"strconv"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 // CidrToInAddr converts a CIDR block into its reverse lookup (in-addr) name.
@@ -35,11 +35,6 @@ func CidrToInAddr(cidr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	base, err := reverseaddr(a.String())
-	if err != nil {
-		return "", err
-	}
-	base = strings.TrimRight(base, ".")
 	if !a.Equal(c.IP) {
 		return "", fmt.Errorf("CIDR %v has 1 bits beyond the mask", cidr)
 	}
@@ -48,9 +43,14 @@ func CidrToInAddr(cidr string) (string, error) {
 	if bits == 0 {
 		return "", fmt.Errorf("cannot use /0 in reverse CIDR")
 	}
+	base, err := dns.ReverseAddr(a.String())
+	if err != nil {
+		return "", err
+	}
+	base = strings.TrimRight(base, ".")
 
 	// Handle IPv4 "Classless in-addr.arpa delegation" RFC2317:
-	if name, ok := classlessIPv4Name(c, base, total, bits); ok {
+	if name, ok := classlessIPv4Name(base, total, bits); ok {
 		return name, nil
 	}
 
@@ -76,16 +76,13 @@ func normalizeCIDR(cidr string) string {
 	return cidr + "/128"
 }
 
-func classlessIPv4Name(network *net.IPNet, base string, total, bits int) (string, bool) {
+func classlessIPv4Name(base string, total, bits int) (string, bool) {
 	if total != 32 || bits < 25 || bits >= 32 {
 		return "", false
 	}
 
-	// first address / netmask . Class-b-arpa.
-	fparts := strings.Split(network.IP.String(), ".")
-	first := fparts[3]
-	bparts := strings.SplitN(base, ".", 2)
-	return fmt.Sprintf("%s/%d.%s", first, bits, bparts[1]), true
+	parts := strings.SplitN(base, ".", 2)
+	return fmt.Sprintf("%s/%d.%s", parts[0], bits, parts[1]), true
 }
 
 func reverseNameTrimCount(total, bits int, cidr string) (int, error) {
@@ -103,39 +100,4 @@ func reverseNameTrimCount(total, bits int, cidr string) (int, error) {
 	default:
 		return 0, fmt.Errorf("invalid address (not IPv4 or IPv6): %v", cidr)
 	}
-}
-
-// copied from go source.
-// https://github.com/golang/go/blob/38b2c06e144c6ea7087c575c76c66e41265ae0b7/src/net/dnsclient.go#L26C1-L51C1
-// The go source does not export this function so we copy it here.
-
-// reverseaddr returns the in-addr.arpa. or ip6.arpa. hostname of the IP
-// address addr suitable for rDNS (PTR) record lookup or an error if it fails
-// to parse the IP address.
-func reverseaddr(addr string) (string, error) {
-	ip := net.ParseIP(addr)
-	if ip == nil {
-		return "", &net.DNSError{Err: "unrecognized address", Name: addr}
-	}
-	if ip.To4() != nil {
-		return Uitoa(uint(ip[15])) + "." + Uitoa(uint(ip[14])) + "." + Uitoa(uint(ip[13])) + "." + Uitoa(uint(ip[12])) + ".in-addr.arpa.", nil
-	}
-	// Must be IPv6
-	buf := make([]byte, 0, len(ip)*4+len("ip6.arpa."))
-	// Add it, in reverse, to the buffer
-	for _, v := range slices.Backward(ip) {
-		buf = append(buf, hexDigit[v&0xF],
-			'.',
-			hexDigit[v>>4],
-			'.')
-	}
-	// Append "ip6.arpa." and return (buf already has the final .)
-	buf = append(buf, "ip6.arpa."...)
-	return string(buf), nil
-}
-
-const hexDigit = "0123456789abcdef"
-
-func Uitoa(val uint) string {
-	return strconv.FormatInt(int64(val), 10)
 }
