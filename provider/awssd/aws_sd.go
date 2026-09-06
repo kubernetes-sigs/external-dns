@@ -233,6 +233,29 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sdtypes.NamespaceSummary, srv *s
 	return newEndpoint
 }
 
+// AdjustEndpoints consumes the generic external-dns.kubernetes.io/alias
+// intent (exposed as endpoint.ProviderSpecificAlias) before the planner runs.
+// For a CNAME endpoint that targets a recognized AWS load balancer with
+// alias=true, that intent is translated into the transient DualstackLabelKey
+// that CreateService uses to select an A+AAAA Cloud Map service.
+//
+// The alias property itself is always removed here, regardless of whether it
+// triggered dual-stack intent: Records() never reconstructs it for
+// AWS_ALIAS_DNS_NAME instances, so leaving it on desired endpoints would make
+// plan.providerSpecificChanged report a spurious diff on every reconciliation.
+func (p *AWSSDProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if ep.RecordType == endpoint.RecordTypeCNAME &&
+			len(ep.Targets) > 0 &&
+			p.isAWSLoadBalancer(ep.Targets[0]) &&
+			ep.GetAliasProperty() == endpoint.AliasTrue {
+			ep.WithLabel(endpoint.DualstackLabelKey, "true")
+		}
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+	}
+	return endpoints, nil
+}
+
 // ApplyChanges applies Kubernetes changes in endpoints to AWS API
 func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	// return early if there is nothing to change
@@ -669,7 +692,9 @@ func (p *AWSSDProvider) serviceTypeFromEndpoint(ep *endpoint.Endpoint) sdtypes.R
 
 // serviceTypesFromEndpoint returns the DNS record types to use when
 // creating a Cloud Map service. AWS load-balancer aliases remain A-only
-// unless the Kubernetes source explicitly marked the endpoint dual-stack.
+// unless AdjustEndpoints marked the endpoint dual-stack (DualstackLabelKey),
+// which it does only for the external-dns.kubernetes.io/alias: "true"
+// annotation on a recognized AWS load-balancer CNAME.
 func (p *AWSSDProvider) serviceTypesFromEndpoint(ep *endpoint.Endpoint) []sdtypes.RecordType {
 	primary := p.serviceTypeFromEndpoint(ep)
 
