@@ -18,37 +18,28 @@ package source
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"net"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-	"sync"
-	"time"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
+	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
+	rginformers "github.com/szuecs/routegroup-client/client/informers/externalversions"
+	rginformersv1 "github.com/szuecs/routegroup-client/client/informers/externalversions/zalando.org/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 const (
-	defaultIdleConnTimeout = 30 * time.Second
 	// DefaultRoutegroupVersion is the default version for route groups.
-	DefaultRoutegroupVersion     = "zalando.org/v1"
-	routeGroupListResource       = "/apis/%s/routegroups"
-	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
+	//
+	// Deprecated: the informer-based implementation is hardwired to zalando.org/v1.
+	DefaultRoutegroupVersion = "zalando.org/v1"
 )
 
 // +externaldns:source:name=skipper-routegroup
@@ -59,216 +50,74 @@ const (
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
+// +externaldns:source:events=true
 type routeGroupSource struct {
-	cli                      routeGroupListClient
-	apiServer                string
-	namespace                string
-	apiEndpoint              string
 	annotationFilter         labels.Selector
 	labelSelector            labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-}
-
-// for testing
-type routeGroupListClient interface {
-	getRouteGroupList(string) (*routeGroupList, error)
-}
-
-type routeGroupClient struct {
-	mu        sync.Mutex
-	quit      chan struct{}
-	client    *http.Client
-	token     string
-	tokenFile string
-}
-
-func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeGroupClient {
-	const (
-		rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-	)
-
-	tr := &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   timeout,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		TLSHandshakeTimeout:   3 * time.Second,
-		ResponseHeaderTimeout: timeout,
-		IdleConnTimeout:       defaultIdleConnTimeout,
-		MaxIdleConns:          5,
-		MaxIdleConnsPerHost:   5,
-	}
-	cli := &routeGroupClient{
-		client: &http.Client{
-			Transport: tr,
-		},
-		quit:      make(chan struct{}),
-		tokenFile: tokenPath,
-		token:     strings.TrimSpace(token),
-	}
-
-	go func() {
-		for {
-			select {
-			case <-time.After(tr.IdleConnTimeout):
-				tr.CloseIdleConnections()
-				cli.updateToken()
-			case <-cli.quit:
-				return
-			}
-		}
-	}()
-
-	// in cluster config, errors are treated as not running in cluster
-	cli.updateToken()
-
-	// cluster internal use custom CA to reach TLS endpoint
-	rootCA, err := os.ReadFile(rootCAFile)
-	if err != nil {
-		return cli
-	}
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(rootCA) {
-		return cli
-	}
-
-	tr.TLSClientConfig = &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		RootCAs:    certPool,
-	}
-
-	return cli
-}
-
-func (cli *routeGroupClient) updateToken() {
-	if cli.tokenFile == "" {
-		return
-	}
-
-	token, err := os.ReadFile(cli.tokenFile)
-	if err != nil {
-		log.Errorf("Failed to read token from file (%s): %v", cli.tokenFile, err)
-		return
-	}
-
-	cli.mu.Lock()
-	cli.token = strings.TrimSpace(string(token))
-	cli.mu.Unlock()
-}
-
-func (cli *routeGroupClient) getToken() string {
-	cli.mu.Lock()
-	defer cli.mu.Unlock()
-	return cli.token
-}
-
-func (cli *routeGroupClient) getRouteGroupList(url string) (*routeGroupList, error) {
-	resp, err := cli.get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get routegroup list from %s, got: %s", url, resp.Status)
-	}
-
-	var rgs routeGroupList
-	err = json.NewDecoder(resp.Body).Decode(&rgs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &rgs, nil
-}
-
-func (cli *routeGroupClient) get(url string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	return cli.do(req)
-}
-
-func (cli *routeGroupClient) do(req *http.Request) (*http.Response, error) {
-	if tok := cli.getToken(); tok != "" && req.Header.Get("Authorization") == "" {
-		req.Header.Set("Authorization", "Bearer "+tok)
-	}
-	return cli.client.Do(req)
+	rgInformer               rginformersv1.RouteGroupInformer
 }
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
-func NewRouteGroupSource(cfg *Config, token, tokenPath, apiServerURL string) (Source, error) {
-	routeGroupVersion := cfg.SkipperRouteGroupVersion
-	if routeGroupVersion == "" {
-		routeGroupVersion = DefaultRoutegroupVersion
+func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
+	if cfg.SkipperRouteGroupVersion != "" && cfg.SkipperRouteGroupVersion != DefaultRoutegroupVersion {
+		log.Warnf("skipper-routegroup-version %q is not supported; only %q is used", cfg.SkipperRouteGroupVersion, DefaultRoutegroupVersion)
 	}
-	u, err := url.Parse(apiServerURL)
-	if err != nil {
+
+	informerFactory := rginformers.NewSharedInformerFactoryWithOptions(
+		client, 0,
+		rginformers.WithNamespace(cfg.Namespace),
+	)
+	rgInformer := informerFactory.Zalando().V1().RouteGroups()
+
+	informers.MustAddIndexers(rgInformer.Informer(), informers.IndexerWithOptions[*rgv1.RouteGroup](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*rgv1.RouteGroup]),
+	))
+
+	informers.MustSetTransform(rgInformer.Informer(), informers.TransformerWithOptions[*rgv1.RouteGroup](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
+	// Add default resource event handlers to properly initialize informer.
+	informers.MustAddEventHandler(rgInformer.Informer(), informers.DefaultEventHandler())
+
+	informerFactory.Start(ctx.Done())
+
+	// wait for the local cache to be populated.
+	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
 		return nil, err
 	}
 
-	// created after the URL is validated, because it starts a token refresh
-	// goroutine that would otherwise outlive a discarded source.
-	cli := newRouteGroupClient(token, tokenPath, cfg.KubeAPIRequestTimeout)
-
-	apiServer := u.String()
-	// strip port if well known port, because of TLS certificate match
-	if u.Scheme == "https" && u.Port() == "443" {
-		// correctly handle IPv6 addresses by keeping surrounding `[]`.
-		apiServer = "https://" + strings.TrimSuffix(u.Host, ":443")
-	}
-
-	apiEndpoint := apiServer + fmt.Sprintf(routeGroupListResource, routeGroupVersion)
-	if cfg.Namespace != "" {
-		apiEndpoint = apiServer + fmt.Sprintf(routeGroupNamespacedResource, routeGroupVersion, cfg.Namespace)
-	}
-
 	return &routeGroupSource{
-		cli:                      cli,
-		apiServer:                apiServer,
-		namespace:                cfg.Namespace,
-		apiEndpoint:              apiEndpoint,
 		annotationFilter:         cfg.AnnotationFilter,
 		labelSelector:            cfg.LabelFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		rgInformer:               rgInformer,
 	}, nil
 }
 
-// AddEventHandler for routegroup is currently a no op, because we do not implement caching, yet.
-func (sc *routeGroupSource) AddEventHandler(_ context.Context, _ func()) {}
+// AddEventHandler adds an event handler that can be triggered on RouteGroup changes.
+func (sc *routeGroupSource) AddEventHandler(_ context.Context, handler func()) {
+	log.Debug("Adding event handler for routegroup")
+	informers.MustAddEventHandler(sc.rgInformer.Informer(), eventHandlerFunc(handler))
+}
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all routeGroup resources on all namespaces.
 // Logic is ported from ingress without fqdnTemplate
 func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	rgList, err := sc.cli.getRouteGroupList(sc.apiEndpoint)
-	if err != nil {
-		log.Errorf("Failed to get RouteGroup list: %v", err)
-		return nil, err
-	}
+	routeGroups := informers.ListIndexed[*rgv1.RouteGroup](sc.rgInformer.Informer().GetIndexer())
 
-	// RouteGroups are fetched over the Kubernetes API without server-side label
-	// filtering, so apply the label selector client-side to match other sources.
-	var labelFiltered []*routeGroup
-	for _, rg := range rgList.Items {
-		if sc.labelSelector == nil || sc.labelSelector.Matches(labels.Set(rg.Labels)) {
-			labelFiltered = append(labelFiltered, rg)
-		}
-	}
-
-	filtered := annotations.Filter(labelFiltered, sc.annotationFilter)
-
-	endpoints := []*endpoint.Endpoint{}
-	for _, rg := range filtered {
-		if annotations.IsControllerMismatch(rg, types.SkipperRouteGroup) {
-			continue
-		}
-
+	var endpoints []*endpoint.Endpoint
+	for _, rg := range routeGroups {
 		eps := sc.endpointsFromRouteGroup(rg)
 
+		var err error
 		eps, err = sc.templateEngine.CombineWithEndpoints(
 			eps,
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(rg) },
@@ -283,14 +132,14 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 
 		endpoint.AttachRefObject(eps, events.NewObjectReference(rg, types.SkipperRouteGroup))
 
-		log.Debugf("Endpoints generated from ingress: %s/%s: %v", rg.Namespace, rg.Name, eps)
+		log.Debugf("Endpoints generated from routegroup: %s/%s: %v", rg.Namespace, rg.Name, eps)
 		endpoints = append(endpoints, eps...)
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.Endpoint, error) {
+func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup) ([]*endpoint.Endpoint, error) {
 	hostnames, err := sc.templateEngine.ExecFQDN(rg)
 	if err != nil {
 		return nil, err
@@ -315,7 +164,8 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	}
 	return endpoints, nil
 }
-func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.Endpoint {
+
+func (sc *routeGroupSource) endpointsFromRouteGroup(rg *rgv1.RouteGroup) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
 	resource := fmt.Sprintf("routegroup/%s/%s", rg.Namespace, rg.Name)
@@ -353,7 +203,7 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 	return endpoints
 }
 
-func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {
+func targetsFromRouteGroupStatus(status rgv1.RouteGroupStatus) endpoint.Targets {
 	var targets endpoint.Targets
 
 	for _, lb := range status.LoadBalancer.RouteGroup {
@@ -366,52 +216,4 @@ func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {
 	}
 
 	return targets
-}
-
-type routeGroupList struct {
-	Kind       string                 `json:"kind"`
-	APIVersion string                 `json:"apiVersion"`
-	Metadata   routeGroupListMetadata `json:"metadata"`
-	Items      []*routeGroup          `json:"items"`
-}
-
-type routeGroupListMetadata struct {
-	SelfLink        string `json:"selfLink"`
-	ResourceVersion string `json:"resourceVersion"`
-}
-
-type routeGroup struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
-	Spec              routeGroupSpec   `json:"spec"`
-	Status            routeGroupStatus `json:"status"`
-}
-
-// Metadata returns the ObjectMeta for backward-compatible template access.
-//
-// Deprecated: use top-level fields directly (e.g. {{.Name}} instead of {{.Metadata.Name}}).
-func (rg *routeGroup) Metadata() *metav1.ObjectMeta {
-	return &rg.ObjectMeta
-}
-
-func (rg *routeGroup) DeepCopyObject() runtime.Object {
-	out := *rg
-	return &out
-}
-
-type routeGroupSpec struct {
-	Hosts []string `json:"hosts"`
-}
-
-type routeGroupStatus struct {
-	LoadBalancer routeGroupLoadBalancerStatus `json:"loadBalancer"`
-}
-
-type routeGroupLoadBalancerStatus struct {
-	RouteGroup []routeGroupLoadBalancer `json:"routeGroup"`
-}
-
-type routeGroupLoadBalancer struct {
-	IP       string `json:"ip,omitempty"`
-	Hostname string `json:"hostname,omitempty"`
 }
