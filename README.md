@@ -234,7 +234,7 @@ See the [sources documentation](docs/sources/about.md) for the full list and con
 | [Kubernetes Pod](https://kubernetes.io/docs/concepts/workloads/pods/)                                 | [guide](docs/sources/pod.md)                                                                                                   |
 | [Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/)                | [guide](docs/sources/service.md), [ExternalName](docs/tutorials/externalname.md), [Headless](docs/tutorials/hostport.md)       |
 | [OpenShift Route](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html) | [guide](docs/sources/openshift.md)                                                                                 |
-| [Skipper RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroups/)                  | —                                                                                                                               |
+| [Skipper RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroups/)                  | [guide](docs/sources/skipper-routegroup.md)                                                                                 |
 | [Traefik IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/)              | [guide](docs/sources/traefik-proxy.md)                                                                                         |
 | [Unstructured (custom CRD)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) | [guide](docs/sources/unstructured.md)                                                                              |
 

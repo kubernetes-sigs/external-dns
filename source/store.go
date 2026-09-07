@@ -25,6 +25,7 @@ import (
 
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
@@ -641,19 +642,16 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.
-// Special case: Does not use ClientGenerator pattern, instead manages its own authentication.
-// Retrieves bearer token from REST config for API server authentication.
-func buildSkipperRouteGroupSource(_ context.Context, p ClientGenerator, cfg *Config) (Source, error) {
-	apiServerURL := cfg.APIServerURL
-	tokenPath := ""
-	token := ""
+func buildSkipperRouteGroupSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	restConfig, err := p.RESTConfig()
-	if err == nil {
-		apiServerURL = restConfig.Host
-		tokenPath = restConfig.BearerTokenFile
-		token = restConfig.BearerToken
+	if err != nil {
+		return nil, err
 	}
-	return NewRouteGroupSource(cfg, token, tokenPath, apiServerURL)
+	rgClient, err := rgversioned.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return NewRouteGroupSource(ctx, rgClient, cfg)
 }
 
 func buildKongTCPIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
