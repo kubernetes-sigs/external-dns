@@ -28,6 +28,7 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
@@ -124,7 +125,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 
 			endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
@@ -259,7 +260,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 
 			endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
@@ -360,7 +361,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 
 			endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
@@ -445,7 +446,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 
 	endpoints, err := provider.AdjustEndpoints(generatedEndpoints)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,

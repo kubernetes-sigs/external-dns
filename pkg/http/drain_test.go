@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type trackingReadCloser struct {
@@ -62,6 +63,6 @@ func TestDrainAndClose_OversizedBody(t *testing.T) {
 
 	// Exactly one byte should remain after the capped drain.
 	remaining, err := io.ReadAll(rc.Reader)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, remaining, 1, "expected exactly 1 byte past the drain cap to remain unread")
 }

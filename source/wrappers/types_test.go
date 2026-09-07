@@ -89,8 +89,8 @@ func TestWrapSources(t *testing.T) {
 func TestWrapSources_NAT64Error(t *testing.T) {
 	cfg := NewConfig(WithNAT64Networks([]string{"badnet"}))
 	src, err := wrapSources(nil, cfg)
-	assert.Nil(t, src)
-	assert.Error(t, err)
+	require.Nil(t, src)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create NAT64 source wrapper")
 }
 

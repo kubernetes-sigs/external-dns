@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	ambassador "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
@@ -631,14 +630,14 @@ func TestAmbassadorHostSource(t *testing.T) {
 
 			// Create Ambassador service
 			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &ti.service, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Create host resource
 			host, err := createAmbassadorHost(&ti.host)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(t.Context(), host, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
@@ -646,11 +645,11 @@ func TestAmbassadorHostSource(t *testing.T) {
 					AnnotationFilter: parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:      ti.labelSelector,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			// Validate returned endpoints against expected endpoints.
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})

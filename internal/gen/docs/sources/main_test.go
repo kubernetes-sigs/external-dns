@@ -36,7 +36,7 @@ func TestIndexMdExists(t *testing.T) {
 	testPath, _ := os.Getwd()
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	st, err := fs.Stat(fsys, fileName)
-	assert.NoError(t, err, "expected file %s to exist", fileName)
+	require.NoError(t, err, "expected file %s to exist", fileName)
 	assert.Equal(t, fileName, st.Name())
 }
 
@@ -44,13 +44,13 @@ func TestIndexMdUpToDate(t *testing.T) {
 	testPath, _ := os.Getwd()
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	expected, err := fs.ReadFile(fsys, fileName)
-	assert.NoError(t, err, "expected file %s to exist", fileName)
+	require.NoError(t, err, "expected file %s to exist", fileName)
 
 	sourceDir := fmt.Sprintf("%s/../../../../source", testPath)
 	sources, err := discoverSources(sourceDir)
 	require.NoError(t, err, "expected to find sources")
 	actual, err := sources.generateMarkdown()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(expected), actual, "expected file 'docs/sources/index.md' to be up to date. execute 'make generate-sources-documentation'")
 }
 
