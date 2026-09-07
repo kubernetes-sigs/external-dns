@@ -19,9 +19,9 @@ package rfc2317
 import (
 	"fmt"
 	"net"
-	"slices"
-	"strconv"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 // CidrToInAddr converts a CIDR block into its reverse lookup (in-addr) name.
@@ -29,100 +29,75 @@ import (
 // Given "10.20.30.0/24" returns "30.20.10.in-addr.arpa"
 // Given "10.20.30.0/25" returns "0/25.30.20.10.in-addr.arpa" (RFC2317)
 func CidrToInAddr(cidr string) (string, error) {
-	// If the user sent an IP instead of a CIDR (i.e. no "/"), turn it
-	// into a CIDR by adding /32 or /128 as appropriate.
-	ip := net.ParseIP(cidr)
-	if ip != nil {
-		if ip.To4() != nil {
-			cidr = ip.String() + "/32"
-			// Older code used `cidr + "/32"` but that didn't work with
-			// "IPv4 mapped IPv6 address". ip.String() returns the IPv4
-			// address for all IPv4 addresses no matter how they are
-			// expressed internally.
-		} else {
-			cidr += "/128"
-		}
-	}
+	cidr = normalizeCIDR(cidr)
 
 	a, c, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return "", err
 	}
-	base, err := reverseaddr(a.String())
-	if err != nil {
-		return "", err
-	}
-	base = strings.TrimRight(base, ".")
 	if !a.Equal(c.IP) {
 		return "", fmt.Errorf("CIDR %v has 1 bits beyond the mask", cidr)
 	}
 
 	bits, total := c.Mask.Size()
-	var toTrim int
 	if bits == 0 {
 		return "", fmt.Errorf("cannot use /0 in reverse CIDR")
 	}
+	base, err := dns.ReverseAddr(a.String())
+	if err != nil {
+		return "", err
+	}
+	base = strings.TrimRight(base, ".")
 
 	// Handle IPv4 "Classless in-addr.arpa delegation" RFC2317:
-	if total == 32 && bits >= 25 && bits < 32 {
-		// first address / netmask . Class-b-arpa.
-		fparts := strings.Split(c.IP.String(), ".")
-		first := fparts[3]
-		bparts := strings.SplitN(base, ".", 2)
-		return fmt.Sprintf("%s/%d.%s", first, bits, bparts[1]), nil
+	if name, ok := classlessIPv4Name(base, total, bits); ok {
+		return name, nil
 	}
 
-	// Handle IPv4 Class-full and IPv6:
-	switch total {
-	case 32:
-		if bits%8 != 0 {
-			return "", fmt.Errorf("IPv4 mask must be multiple of 8 bits")
-		}
-		toTrim = (total - bits) / 8
-	case 128:
-		if bits%4 != 0 {
-			return "", fmt.Errorf("IPv6 mask must be multiple of 4 bits")
-		}
-		toTrim = (total - bits) / 4
-	default:
-		return "", fmt.Errorf("invalid address (not IPv4 or IPv6): %v", cidr)
+	toTrim, err := reverseNameTrimCount(total, bits, cidr)
+	if err != nil {
+		return "", err
 	}
 
 	parts := strings.SplitN(base, ".", toTrim+1)
 	return parts[len(parts)-1], nil
 }
 
-// copied from go source.
-// https://github.com/golang/go/blob/38b2c06e144c6ea7087c575c76c66e41265ae0b7/src/net/dnsclient.go#L26C1-L51C1
-// The go source does not export this function so we copy it here.
-
-// reverseaddr returns the in-addr.arpa. or ip6.arpa. hostname of the IP
-// address addr suitable for rDNS (PTR) record lookup or an error if it fails
-// to parse the IP address.
-func reverseaddr(addr string) (string, error) {
-	ip := net.ParseIP(addr)
+// normalizeCIDR turns a bare IP address into a host-sized CIDR. Using
+// ip.String() for IPv4 also normalizes IPv4-mapped IPv6 addresses.
+func normalizeCIDR(cidr string) string {
+	ip := net.ParseIP(cidr)
 	if ip == nil {
-		return "", &net.DNSError{Err: "unrecognized address", Name: addr}
+		return cidr
 	}
 	if ip.To4() != nil {
-		return Uitoa(uint(ip[15])) + "." + Uitoa(uint(ip[14])) + "." + Uitoa(uint(ip[13])) + "." + Uitoa(uint(ip[12])) + ".in-addr.arpa.", nil
+		return ip.String() + "/32"
 	}
-	// Must be IPv6
-	buf := make([]byte, 0, len(ip)*4+len("ip6.arpa."))
-	// Add it, in reverse, to the buffer
-	for _, v := range slices.Backward(ip) {
-		buf = append(buf, hexDigit[v&0xF],
-			'.',
-			hexDigit[v>>4],
-			'.')
-	}
-	// Append "ip6.arpa." and return (buf already has the final .)
-	buf = append(buf, "ip6.arpa."...)
-	return string(buf), nil
+	return cidr + "/128"
 }
 
-const hexDigit = "0123456789abcdef"
+func classlessIPv4Name(base string, total, bits int) (string, bool) {
+	if total != 32 || bits < 25 || bits >= 32 {
+		return "", false
+	}
 
-func Uitoa(val uint) string {
-	return strconv.FormatInt(int64(val), 10)
+	parts := strings.SplitN(base, ".", 2)
+	return fmt.Sprintf("%s/%d.%s", parts[0], bits, parts[1]), true
+}
+
+func reverseNameTrimCount(total, bits int, cidr string) (int, error) {
+	switch total {
+	case 32:
+		if bits%8 != 0 {
+			return 0, fmt.Errorf("IPv4 mask must be multiple of 8 bits")
+		}
+		return (total - bits) / 8, nil
+	case 128:
+		if bits%4 != 0 {
+			return 0, fmt.Errorf("IPv6 mask must be multiple of 4 bits")
+		}
+		return (total - bits) / 4, nil
+	default:
+		return 0, fmt.Errorf("invalid address (not IPv4 or IPv6): %v", cidr)
+	}
 }
