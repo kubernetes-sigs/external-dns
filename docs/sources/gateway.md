@@ -43,6 +43,14 @@ Matching Gateways are discovered by iterating over the \*Route's `status.parents
 - Ignores parents with a `parentRef.group` other than
   `gateway.networking.k8s.io` or a `parentRef.kind` other than `Gateway`.
 
+- Ignores a `status.parents` entry whose `parentRef.sectionName` or `parentRef.port` is no
+  longer listed in `spec.parentRefs`, once every distinct `parentRef` selector the spec still
+  lists for that parent is accepted for the current Route generation and resolves a target. This stops
+  publishing the hostname of a listener the \*Route has left, while a status that has not caught
+  up with the spec is kept so its records are not dropped ([#6639](https://github.com/kubernetes-sigs/external-dns/issues/6639)).
+  A later edit that leaves `spec.parentRefs` alone still moves the Route generation, so until the
+  controller records it the retired listener's hostname is published again.
+
 - If the `--gateway-name` flag was specified, ignores parents with a `parentRef.name` other than the
   specified value.
 
