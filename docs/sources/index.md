@@ -46,7 +46,7 @@ Sources are responsible for:
 | **openshift-route**      | annotation,label | all,single | true          | false  | true              | openshift           | Route.route.openshift.io                                                              |
 | **pod**                  | annotation,label | all,single | true          | true   | false             | kubernetes core     | Pod                                                                                   |
 | **service**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Service                                                                               |
-| **skipper-routegroup**   | annotation,label | all,single | true          | false  | true              | ingress controllers | RouteGroup.zalando.org                                                                |
+| **skipper-routegroup**   | annotation,label | all,single | true          | true   | true              | ingress controllers | RouteGroup.zalando.org                                                                |
 | **traefik-proxy**        | annotation,label | all,single | true          | false  | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
 | **unstructured**         | annotation,label | all,single | true          | false  | false             | custom resources    | Unstructured                                                                          |
 
