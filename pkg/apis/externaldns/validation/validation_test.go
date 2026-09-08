@@ -132,37 +132,15 @@ func TestValidateFlags(t *testing.T) {
 		}
 	})
 
-	t.Run("enable-legacy-annotation-prefix rejects filters and templates that name the legacy prefix", func(t *testing.T) {
-		for _, tc := range []struct {
-			name    string
-			flag    bool
-			filter  string
-			fqdn    []string
-			target  []string
-			wantErr string
-		}{
-			{name: "filter on the legacy key", flag: true, filter: annotations.LegacyAnnotationPrefix + "hostname", wantErr: "--annotation-filter"},
-			{name: "filter on the legacy key with a value", flag: true, filter: annotations.LegacyAnnotationPrefix + "controller=dns", wantErr: "--annotation-filter"},
-			{name: "filter on the configured key", flag: true, filter: "external-dns.kubernetes.io/hostname"},
-			{name: "filter on an unrelated key", flag: true, filter: "team=dns,tier in (a,b)"},
-			{name: "fqdn template with the legacy key", flag: true, fqdn: []string{`{{ index .Annotations "` + annotations.LegacyAnnotationPrefix + `hostname" }}`}, wantErr: "template"},
-			{name: "target template with the legacy key", flag: true, target: []string{`{{ index .Annotations "` + annotations.LegacyAnnotationPrefix + `target" }}`}, wantErr: "template"},
-			{name: "fqdn template without annotations", flag: true, fqdn: []string{"{{.Name}}.example.org"}},
-			{name: "legacy filter is fine while the flag is off", flag: false, filter: annotations.LegacyAnnotationPrefix + "hostname"},
-		} {
-			t.Run(tc.name, func(t *testing.T) {
-				cfg := newValidConfig(t)
-				cfg.EnableLegacyAnnotationPrefix = tc.flag
-				cfg.AnnotationFilter = tc.filter
-				cfg.FQDNTemplate = tc.fqdn
-				cfg.TargetTemplate = tc.target
-				if tc.wantErr != "" {
-					require.ErrorContains(t, ValidateConfig(cfg), tc.wantErr)
-				} else {
-					require.NoError(t, ValidateConfig(cfg))
-				}
-			})
-		}
+	t.Run("enable-legacy-annotation-prefix accepts filters and templates that name the legacy prefix", func(t *testing.T) {
+		// The legacy key is kept alongside its configured equivalent, so filters and templates written
+		// against either prefix keep working while the flag is on.
+		cfg := newValidConfig(t)
+		cfg.EnableLegacyAnnotationPrefix = true
+		cfg.AnnotationFilter = annotations.LegacyAnnotationPrefix + "controller=dns"
+		cfg.FQDNTemplate = []string{`{{ index .Annotations "` + annotations.LegacyAnnotationPrefix + `hostname" }}`}
+		cfg.TargetTemplate = []string{`{{ index .Annotations "` + annotations.LegacyAnnotationPrefix + `target" }}`}
+		require.NoError(t, ValidateConfig(cfg))
 	})
 
 	t.Run("kube-api-qps and kube-api-burst", func(t *testing.T) {

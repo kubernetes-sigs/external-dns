@@ -432,7 +432,7 @@ func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
 
 	legacyTTL := annotations.LegacyAnnotationPrefix + "ttl"
 
-	t.Run("rewrites legacy annotations on typed objects", func(t *testing.T) {
+	t.Run("copies legacy annotations on typed objects and keeps the legacy key", func(t *testing.T) {
 		svc := fakeService()
 		svc.Annotations[legacyTTL] = "60"
 
@@ -440,7 +440,7 @@ func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
 		require.NoError(t, err)
 		result := got.(*corev1.Service)
 
-		assert.NotContains(t, result.Annotations, legacyTTL)
+		assert.Equal(t, "60", result.Annotations[legacyTTL])
 		assert.Equal(t, "60", result.Annotations[annotations.TtlKey])
 		assert.Equal(t, "some annotation", result.Annotations["description"])
 	})
@@ -454,11 +454,11 @@ func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
 		require.NoError(t, err)
 		result := got.(*corev1.Service)
 
-		assert.NotContains(t, result.Annotations, annotations.LegacyAnnotationPrefix+"hostname")
+		assert.Equal(t, "legacy.example.org", result.Annotations[annotations.LegacyAnnotationPrefix+"hostname"])
 		assert.Equal(t, configured, result.Annotations[annotations.HostnameKey])
 	})
 
-	t.Run("rewrites legacy annotations on unstructured objects", func(t *testing.T) {
+	t.Run("copies legacy annotations on unstructured objects", func(t *testing.T) {
 		svc := fakeService()
 		svc.Annotations[legacyTTL] = "60"
 		content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(svc)
@@ -468,7 +468,7 @@ func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
 		require.NoError(t, err)
 		result := got.(*unstructured.Unstructured)
 
-		assert.NotContains(t, result.GetAnnotations(), legacyTTL)
+		assert.Equal(t, "60", result.GetAnnotations()[legacyTTL])
 		assert.Equal(t, "60", result.GetAnnotations()[annotations.TtlKey])
 	})
 
@@ -488,6 +488,17 @@ func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
 		svc := fakeService()
 		svc.Annotations[legacyTTL] = "60"
 		selector, err := labels.Parse(annotations.TtlKey + "=60")
+		require.NoError(t, err)
+
+		got, err := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(selector))(svc)
+		require.NoError(t, err)
+		require.NotNil(t, got)
+	})
+
+	t.Run("a selector written against the legacy key still matches", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+		selector, err := labels.Parse(legacyTTL + "=60")
 		require.NoError(t, err)
 
 		got, err := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(selector))(svc)

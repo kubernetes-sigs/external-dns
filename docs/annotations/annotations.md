@@ -35,12 +35,10 @@ The following table documents which sources support which annotations:
 Annotations below use the prefix set by `--annotation-prefix`, default `external-dns.kubernetes.io/`. Releases before v0.22.0
 used `external-dns.alpha.kubernetes.io/`.
 
-`--enable-legacy-annotation-prefix` rewrites legacy-prefixed annotations to the configured prefix before any filter, indexer or
-source reads them, so resources can be migrated gradually. On conflict the configured prefix wins and the ignored value is
-logged with the resource.
-
-Because the legacy key is rewritten rather than duplicated, `--annotation-filter` and templates must reference the configured prefix;
-a filter or template that names the legacy prefix is rejected at startup while the flag is on.
+`--enable-legacy-annotation-prefix` adds the configured-prefix equivalent of every legacy-prefixed annotation before any
+filter, indexer or source reads the resource, so resources can be migrated gradually. The legacy key is kept, so an
+`--annotation-filter` or template written against either prefix keeps matching. On conflict the configured prefix wins and
+the ignored value is logged with the resource. Nothing is written back to the cluster.
 
 The flag is a migration aid and will be removed in a future release; drop it once no resource uses the legacy prefix.
 

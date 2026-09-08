@@ -138,13 +138,13 @@ func TestResolveLegacyAnnotations(t *testing.T) {
 			expected:    map[string]string{HostnameKey: "example.org", "description": "kept"},
 		},
 		{
-			name:        "legacy annotation is rewritten to the configured prefix",
+			name:        "legacy annotation is copied to the configured prefix and kept",
 			annotations: map[string]string{LegacyAnnotationPrefix + "hostname": "example.org"},
-			expected:    map[string]string{HostnameKey: "example.org"},
+			expected:    map[string]string{LegacyAnnotationPrefix + "hostname": "example.org", HostnameKey: "example.org"},
 			resolved:    true,
 		},
 		{
-			name: "every legacy annotation is rewritten, other annotations are untouched",
+			name: "every legacy annotation is copied, other annotations are untouched",
 			annotations: map[string]string{
 				LegacyAnnotationPrefix + "hostname": "example.org",
 				LegacyAnnotationPrefix + "ttl":      "60",
@@ -152,21 +152,22 @@ func TestResolveLegacyAnnotations(t *testing.T) {
 				"description":                       "kept",
 			},
 			expected: map[string]string{
-				HostnameKey:   "example.org",
-				TtlKey:        "60",
-				TargetKey:     "1.2.3.4",
-				"description": "kept",
+				LegacyAnnotationPrefix + "hostname": "example.org",
+				LegacyAnnotationPrefix + "ttl":      "60",
+				HostnameKey:                         "example.org",
+				TtlKey:                              "60",
+				TargetKey:                           "1.2.3.4",
+				"description":                       "kept",
 			},
 			resolved: true,
 		},
 		{
-			name: "same value under both prefixes is not a conflict",
+			name: "same value under both prefixes is not a conflict and nothing changes",
 			annotations: map[string]string{
 				LegacyAnnotationPrefix + "hostname": "example.org",
 				HostnameKey:                         "example.org",
 			},
-			expected: map[string]string{HostnameKey: "example.org"},
-			resolved: true,
+			expected: map[string]string{LegacyAnnotationPrefix + "hostname": "example.org", HostnameKey: "example.org"},
 		},
 		{
 			name: "the configured prefix wins on conflict and the conflict is logged",
@@ -174,8 +175,7 @@ func TestResolveLegacyAnnotations(t *testing.T) {
 				LegacyAnnotationPrefix + "hostname": "legacy.example.org",
 				HostnameKey:                         "example.org",
 			},
-			expected: map[string]string{HostnameKey: "example.org"},
-			resolved: true,
+			expected: map[string]string{LegacyAnnotationPrefix + "hostname": "legacy.example.org", HostnameKey: "example.org"},
 			warning:  `Ingress default/web: ignoring annotation external-dns.alpha.kubernetes.io/hostname="legacy.example.org" because external-dns.kubernetes.io/hostname="example.org" is set`,
 		},
 	} {
@@ -183,6 +183,9 @@ func TestResolveLegacyAnnotations(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
 
 			assert.Equal(t, tc.resolved, ResolveLegacyAnnotations("Ingress", "default", "web", tc.annotations))
+			assert.Equal(t, tc.expected, tc.annotations)
+			// Informers run the transformer on every delta, so a second pass must be a no-op.
+			assert.False(t, ResolveLegacyAnnotations("Ingress", "default", "web", tc.annotations))
 			assert.Equal(t, tc.expected, tc.annotations)
 			if tc.warning != "" {
 				logtest.TestHelperLogContains(tc.warning, hook, t)

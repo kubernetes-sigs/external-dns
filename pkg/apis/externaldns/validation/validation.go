@@ -19,7 +19,6 @@ package validation
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,23 +66,6 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	// Rewriting the legacy prefix into a prefix that itself starts with it does not make sense
 	if cfg.EnableLegacyAnnotationPrefix && strings.HasPrefix(cfg.AnnotationPrefix, annotations.LegacyAnnotationPrefix) {
 		return fmt.Errorf("--enable-legacy-annotation-prefix cannot be used with --annotation-prefix %s, which starts with the legacy prefix", cfg.AnnotationPrefix)
-	}
-	// Legacy keys are rewritten to the configured prefix before any filter or template sees them, so a filter
-	// or template that names the legacy prefix can never match: fail at startup instead of syncing nothing.
-	if cfg.EnableLegacyAnnotationPrefix {
-		if selector, err := labels.Parse(cfg.AnnotationFilter); err == nil {
-			requirements, _ := selector.Requirements()
-			for _, r := range requirements {
-				if strings.HasPrefix(r.Key(), annotations.LegacyAnnotationPrefix) {
-					return fmt.Errorf("--annotation-filter %q names the legacy prefix %s, which --enable-legacy-annotation-prefix rewrites to %s before the filter runs; use the configured prefix", cfg.AnnotationFilter, annotations.LegacyAnnotationPrefix, cfg.AnnotationPrefix)
-				}
-			}
-		}
-		for _, tmpl := range slices.Concat(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate) {
-			if strings.Contains(tmpl, annotations.LegacyAnnotationPrefix) {
-				return fmt.Errorf("template %q names the legacy prefix %s, which --enable-legacy-annotation-prefix rewrites to %s before templates run; use the configured prefix", tmpl, annotations.LegacyAnnotationPrefix, cfg.AnnotationPrefix)
-			}
-		}
 	}
 
 	if cfg.KubeAPIQPS <= 0 {

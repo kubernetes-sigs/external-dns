@@ -136,9 +136,10 @@ func LegacyAnnotationPrefixEnabled() bool {
 	return legacyAnnotationPrefix != ""
 }
 
-// ResolveLegacyAnnotations rewrites, in place, every annotation carrying the legacy prefix to its
-// AnnotationKeyPrefix equivalent so that sources only ever see the configured prefix. When both forms
-// of a key are present the value under AnnotationKeyPrefix wins and the conflict is logged.
+// ResolveLegacyAnnotations adds, in place, an AnnotationKeyPrefix equivalent for every annotation carrying
+// the legacy prefix so that sources read the configured prefix, while the legacy key stays in the map so
+// that --annotation-filter and templates written against it keep matching. When both forms of a key are
+// present the value under AnnotationKeyPrefix wins and the conflict is logged.
 // It returns true when anns was modified and is a no-op unless a legacy prefix was enabled
 // with SetLegacyAnnotationPrefix.
 func ResolveLegacyAnnotations(kind, namespace, name string, anns map[string]string) bool {
@@ -151,15 +152,16 @@ func ResolveLegacyAnnotations(kind, namespace, name string, anns map[string]stri
 			legacyKeys = append(legacyKeys, key)
 		}
 	}
+	modified := false
 	for _, key := range legacyKeys {
 		value := anns[key]
-		delete(anns, key)
 		resolved := AnnotationKeyPrefix + strings.TrimPrefix(key, legacyAnnotationPrefix)
 		if existing, ok := anns[resolved]; !ok {
 			anns[resolved] = value
+			modified = true
 		} else if existing != value {
 			log.Warnf("%s %s/%s: ignoring annotation %s=%q because %s=%q is set", kind, namespace, name, key, value, resolved, existing)
 		}
 	}
-	return len(legacyKeys) > 0
+	return modified
 }
