@@ -20,7 +20,9 @@ package kubeclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"time"
 
@@ -116,6 +118,9 @@ func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		log.Debug("Using inCluster-config based on serviceaccount-token")
 		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, enrichInClusterConfigError(err)
+		}
 	} else {
 		log.Debug("Using kubeConfig")
 		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
@@ -125,6 +130,22 @@ func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	}
 
 	return config, nil
+}
+
+// inClusterTokenFile mirrors the path client-go's rest.InClusterConfig reads
+// the service account token from.
+const inClusterTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+// enrichInClusterConfigError adds an actionable hint when rest.InClusterConfig
+// fails because the service account token is missing, e.g. when
+// automountServiceAccountToken is disabled without an alternative auth method
+// (--kubeconfig, --apiserver-host) configured.
+func enrichInClusterConfigError(err error) error {
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) && pathErr.Path == inClusterTokenFile {
+		return fmt.Errorf("is automountServiceAccountToken disabled? set --kubeconfig or --apiserver-host to authenticate another way: %w", err)
+	}
+	return err
 }
 
 // rateLimiter wraps a RateLimiter and enriches Wait errors with an
