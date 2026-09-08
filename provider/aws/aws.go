@@ -424,7 +424,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					continue
 				}
 
-				if !p.zoneTypeFilter.Match(zone) {
+				if !p.zoneTypeFilter.Match(zoneType(zone)) {
 					continue
 				}
 
@@ -1450,4 +1450,13 @@ func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	default:
 		return provider.SupportedRecordType(string(recordType))
 	}
+}
+
+// zoneType maps a Route53 hosted zone to the zone type understood by provider.ZoneTypeFilter.
+// A zone without config is treated as public, matching the zero value of HostedZoneConfig.PrivateZone.
+func zoneType(zone route53types.HostedZone) string {
+	if zone.Config != nil && zone.Config.PrivateZone {
+		return provider.ZoneTypePrivate
+	}
+	return provider.ZoneTypePublic
 }
