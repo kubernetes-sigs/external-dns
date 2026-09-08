@@ -432,8 +432,62 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 		},
 		{
+			name:        "Single routegroup with combineFQDNAnnotation with fqdn template prefixed with .Metadata should return endpoints from fqdnTemplate and routegroup",
+			templates:   "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
+			combineFQDN: true,
+			rgs: []*rgv1.RouteGroup{
+				createTestRouteGroup(
+					"namespace1",
+					"rg1",
+					nil,
+					[]string{"rg1.k8s.example"},
+					[]rgv1.RouteGroupLoadBalancer{
+						{
+							Hostname: "lb.example.org",
+						},
+					},
+				),
+			},
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+				},
+				{
+					DNSName:    "rg1.namespace1.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+				},
+			},
+		},
+		{
 			name:      "Single routegroup without hosts, with fqdn template should return endpoints from fqdnTemplate",
 			templates: "{{.Name}}.{{.Namespace}}.example",
+			rgs: []*rgv1.RouteGroup{
+				createTestRouteGroup(
+					"namespace1",
+					"rg1",
+					nil,
+					nil,
+					[]rgv1.RouteGroupLoadBalancer{
+						{
+							Hostname: "lb.example.org",
+						},
+					},
+				),
+			},
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.namespace1.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+				},
+			},
+		},
+		{
+			name:      "Single routegroup without hosts, with fqdn template using .Metadata should return endpoints from fqdnTemplate",
+			templates: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
 			rgs: []*rgv1.RouteGroup{
 				createTestRouteGroup(
 					"namespace1",
@@ -472,6 +526,30 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		{
 			name:      "Single routegroup without combineFQDNAnnotation with fqdn template should return endpoints not from fqdnTemplate",
 			templates: "{{.Name}}.{{.Namespace}}.example",
+			rgs: []*rgv1.RouteGroup{
+				createTestRouteGroup(
+					"namespace1",
+					"rg1",
+					nil,
+					[]string{"rg1.k8s.example"},
+					[]rgv1.RouteGroupLoadBalancer{
+						{
+							Hostname: "lb.example.org",
+						},
+					},
+				),
+			},
+			want: []*endpoint.Endpoint{
+				{
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+				},
+			},
+		},
+		{
+			name:      "Single routegroup without combineFQDNAnnotation with fqdn template using .Metadata should return endpoints not from fqdnTemplate",
+			templates: "{{.Metadata.Name}}.{{.Metadata.Namespace}}.example",
 			rgs: []*rgv1.RouteGroup{
 				createTestRouteGroup(
 					"namespace1",

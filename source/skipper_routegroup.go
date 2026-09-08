@@ -25,6 +25,7 @@ import (
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	rginformers "github.com/szuecs/routegroup-client/client/informers/externalversions"
 	rginformersv1 "github.com/szuecs/routegroup-client/client/informers/externalversions/zalando.org/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -59,9 +60,24 @@ type routeGroupSource struct {
 	rgInformer               rginformersv1.RouteGroupInformer
 }
 
+// routeGroupWrapper adds a Metadata() accessor to *rgv1.RouteGroup so that
+// fqdn templates using {{.Metadata.Name}} continue to work alongside the
+// canonical {{.Name}} form.
+//
+// Deprecated: use top-level fields directly (e.g. {{.Name}} instead of {{.Metadata.Name}}).
+type routeGroupWrapper struct {
+	*rgv1.RouteGroup
+}
+
+// Metadata returns the ObjectMeta for backward-compatible template access.
+//
+// Deprecated: use top-level fields directly (e.g. {{.Name}} instead of {{.Metadata.Name}}).
+func (w *routeGroupWrapper) Metadata() *metav1.ObjectMeta {
+	return &w.ObjectMeta
+}
+
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
-
 	informerFactory := rginformers.NewSharedInformerFactoryWithOptions(
 		client, 0,
 		rginformers.WithNamespace(cfg.Namespace),
@@ -137,7 +153,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 }
 
 func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(rg)
+	hostnames, err := sc.templateEngine.ExecFQDN(&routeGroupWrapper{rg})
 	if err != nil {
 		return nil, err
 	}
