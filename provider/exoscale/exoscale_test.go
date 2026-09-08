@@ -545,3 +545,54 @@ func (s *errListRecordsStub) DeleteDNSDomainRecord(_ context.Context, _ v3.UUID,
 func (s *errListRecordsStub) UpdateDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.UUID, _ v3.UpdateDNSDomainRecordRequest) error {
 	return nil
 }
+
+func TestExoscaleApplyChangesListRecordsError(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		changes *plan.Changes
+	}{
+		{
+			name: "update",
+			changes: &plan.Changes{
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "v1.foo.com", RecordType: "TXT", Targets: []string{"new"}},
+				},
+			},
+		},
+		{
+			name: "delete",
+			changes: &plan.Changes{
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "v1.foo.com", RecordType: "TXT", Targets: []string{"old"}},
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := NewExoscaleProviderWithClient(&errListRecordsStub{}, false, 0)
+			assert.Error(t, provider.ApplyChanges(t.Context(), tt.changes))
+		})
+	}
+}
+
+func TestExoscaleApplyChangesNoMatchingRecord(t *testing.T) {
+	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), false, 0)
+
+	deleteExoscale = make([]deleteRecordExoscale, 0)
+	updateExoscale = make([]updateRecordExoscale, 0)
+
+	// "v1" exists in the foo.com zone as a TXT record only, so neither the
+	// update nor the delete below matches an existing record.
+	changes := &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{
+			{DNSName: "v1.foo.com", RecordType: "A", Targets: []string{"1.2.3.4"}},
+		},
+		Delete: []*endpoint.Endpoint{
+			{DNSName: "v1.foo.com", RecordType: "A", Targets: []string{"1.2.3.4"}},
+		},
+	}
+
+	assert.NoError(t, provider.ApplyChanges(t.Context(), changes))
+	assert.Empty(t, updateExoscale)
+	assert.Empty(t, deleteExoscale)
+}

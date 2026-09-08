@@ -200,13 +200,28 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	for _, epoint := range changes.Create {
-		if !ep.domain.Match(epoint.DNSName) {
-			continue
-		}
+	if err := ep.createRecords(ctx, zones, changes.Create); err != nil {
+		return err
+	}
 
-		zoneID, name := ep.filter.EndpointZoneID(epoint, zones)
-		if zoneID == "" {
+	if err := ep.updateRecords(ctx, zones, changes.UpdateNew); err != nil {
+		return err
+	}
+
+	for _, epoint := range changes.UpdateOld {
+		// Since Exoscale "Patches", we've ignored UpdateOld
+		// We leave this logging here for information
+		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
+	}
+
+	return ep.deleteRecords(ctx, zones, changes.Delete)
+}
+
+// createRecords adds a DNS record for every endpoint that resolves to a known zone.
+func (ep *ExoscaleProvider) createRecords(ctx context.Context, zones map[string]string, endpoints []*endpoint.Endpoint) error {
+	for _, epoint := range endpoints {
+		zoneID, name, ok := ep.resolveZone(epoint, zones)
+		if !ok {
 			continue
 		}
 
@@ -224,82 +239,96 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		}
 	}
 
-	for _, epoint := range changes.UpdateNew {
-		if !ep.domain.Match(epoint.DNSName) {
+	return nil
+}
+
+// updateRecords patches the existing record matching each endpoint. Endpoints
+// without a matching record in their zone are skipped.
+func (ep *ExoscaleProvider) updateRecords(ctx context.Context, zones map[string]string, endpoints []*endpoint.Endpoint) error {
+	for _, epoint := range endpoints {
+		zoneID, name, ok := ep.resolveZone(epoint, zones)
+		if !ok {
 			continue
 		}
 
-		zoneID, name := ep.filter.EndpointZoneID(epoint, zones)
-		if zoneID == "" {
-			continue
-		}
-
-		records, err := ep.client.ListDNSDomainRecords(ctx, v3.UUID(zoneID))
+		recordID, found, err := ep.findRecordID(ctx, zoneID, name, epoint.RecordType)
 		if err != nil {
 			return err
 		}
-
-		for _, record := range records {
-			if record.Name != name {
-				continue
-			}
-			if string(record.Type) != epoint.RecordType {
-				continue
-			}
-
-			req := v3.UpdateDNSDomainRecordRequest{
-				Content: epoint.Targets[0],
-			}
-			if epoint.RecordTTL != 0 {
-				req.Ttl = int64(epoint.RecordTTL)
-			}
-
-			if err := ep.client.UpdateDNSDomainRecord(ctx, v3.UUID(zoneID), record.ID, req); err != nil {
-				return err
-			}
-
-			break
-		}
-	}
-
-	for _, epoint := range changes.UpdateOld {
-		// Since Exoscale "Patches", we've ignored UpdateOld
-		// We leave this logging here for information
-		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
-	}
-
-	for _, epoint := range changes.Delete {
-		if !ep.domain.Match(epoint.DNSName) {
+		if !found {
 			continue
 		}
 
-		zoneID, name := ep.filter.EndpointZoneID(epoint, zones)
-		if zoneID == "" {
-			continue
+		req := v3.UpdateDNSDomainRecordRequest{
+			Content: epoint.Targets[0],
+		}
+		if epoint.RecordTTL != 0 {
+			req.Ttl = int64(epoint.RecordTTL)
 		}
 
-		records, err := ep.client.ListDNSDomainRecords(ctx, v3.UUID(zoneID))
-		if err != nil {
+		if err := ep.client.UpdateDNSDomainRecord(ctx, v3.UUID(zoneID), recordID, req); err != nil {
 			return err
-		}
-
-		for _, record := range records {
-			if record.Name != name {
-				continue
-			}
-			if string(record.Type) != epoint.RecordType {
-				continue
-			}
-
-			if err := ep.client.DeleteDNSDomainRecord(ctx, v3.UUID(zoneID), record.ID); err != nil {
-				return err
-			}
-
-			break
 		}
 	}
 
 	return nil
+}
+
+// deleteRecords removes the existing record matching each endpoint. Endpoints
+// without a matching record in their zone are skipped.
+func (ep *ExoscaleProvider) deleteRecords(ctx context.Context, zones map[string]string, endpoints []*endpoint.Endpoint) error {
+	for _, epoint := range endpoints {
+		zoneID, name, ok := ep.resolveZone(epoint, zones)
+		if !ok {
+			continue
+		}
+
+		recordID, found, err := ep.findRecordID(ctx, zoneID, name, epoint.RecordType)
+		if err != nil {
+			return err
+		}
+		if !found {
+			continue
+		}
+
+		if err := ep.client.DeleteDNSDomainRecord(ctx, v3.UUID(zoneID), recordID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// resolveZone maps an endpoint onto the zone that should hold its record. It
+// reports false when the endpoint is filtered out or belongs to no known zone.
+func (ep *ExoscaleProvider) resolveZone(epoint *endpoint.Endpoint, zones map[string]string) (string, string, bool) {
+	if !ep.domain.Match(epoint.DNSName) {
+		return "", "", false
+	}
+
+	zoneID, name := ep.filter.EndpointZoneID(epoint, zones)
+	if zoneID == "" {
+		return "", "", false
+	}
+
+	return zoneID, name, true
+}
+
+// findRecordID returns the ID of the first record in the zone matching both the
+// record name and the record type.
+func (ep *ExoscaleProvider) findRecordID(ctx context.Context, zoneID, name, recordType string) (v3.UUID, bool, error) {
+	records, err := ep.client.ListDNSDomainRecords(ctx, v3.UUID(zoneID))
+	if err != nil {
+		return "", false, err
+	}
+
+	for _, record := range records {
+		if record.Name == name && string(record.Type) == recordType {
+			return record.ID, true, nil
+		}
+	}
+
+	return "", false, nil
 }
 
 // Records returns the list of endpoints
