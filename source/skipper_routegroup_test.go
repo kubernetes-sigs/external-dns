@@ -1291,3 +1291,52 @@ func TestRouteGroupSourceLegacyAnnotationPrefix(t *testing.T) {
 		}).WithRefObject(testutils.RefSource(string(types.SkipperRouteGroup))),
 	})
 }
+
+// Not parallel: it toggles the package-level legacy annotation prefix.
+func TestRouteGroupSourceLegacyAnnotationFilter(t *testing.T) {
+	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
+
+	selector, err := labels.Parse(annotations.LegacyAnnotationPrefix + "controller=" + annotations.ControllerValue)
+	require.NoError(t, err)
+
+	lb := routeGroupStatus{LoadBalancer: routeGroupLoadBalancerStatus{RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}}}}
+	source := &routeGroupSource{
+		annotationFilter: selector,
+		cli: &fakeRouteGroupClient{
+			rg: &routeGroupList{
+				Items: []*routeGroup{
+					{
+						Namespace: "namespace1", Name: "legacy-match", UID: "uid-1",
+						Annotations: map[string]string{
+							annotations.LegacyAnnotationPrefix + "controller": annotations.ControllerValue,
+							annotations.LegacyAnnotationPrefix + "hostname":   "legacy.k8s.example",
+						},
+						Status: lb,
+					},
+					{
+						Namespace: "namespace1", Name: "configured-only", UID: "uid-2",
+						Annotations: map[string]string{
+							annotations.ControllerKey: annotations.ControllerValue,
+							annotations.HostnameKey:   "configured.k8s.example",
+						},
+						Status: lb,
+					},
+				},
+			},
+		},
+	}
+
+	// A filter written against the legacy key keeps matching legacy-annotated RouteGroups because the
+	// legacy key is kept next to its configured equivalent; a RouteGroup that only carries the
+	// configured key never had the legacy key and is filtered out, exactly as before v0.22.0.
+	got, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		(&endpoint.Endpoint{
+			DNSName:    "legacy.k8s.example",
+			RecordType: endpoint.RecordTypeCNAME,
+			Targets:    endpoint.Targets{"lb.example.org"},
+		}).WithRefObject(testutils.RefSource(string(types.SkipperRouteGroup))),
+	})
+}
