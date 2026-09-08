@@ -61,9 +61,6 @@ type routeGroupSource struct {
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
-	if cfg.SkipperRouteGroupVersion != "" && cfg.SkipperRouteGroupVersion != DefaultRoutegroupVersion {
-		log.Warnf("skipper-routegroup-version %q is not supported; only %q is used", cfg.SkipperRouteGroupVersion, DefaultRoutegroupVersion)
-	}
 
 	informerFactory := rginformers.NewSharedInformerFactoryWithOptions(
 		client, 0,
