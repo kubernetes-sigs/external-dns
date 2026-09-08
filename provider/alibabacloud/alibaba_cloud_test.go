@@ -440,16 +440,41 @@ func createDefaultEndpoints(domain string) []*endpoint.Endpoint {
 func TestAlibabaCloudProvider_Records(t *testing.T) {
 	domain := "container-service.top"
 	defaultEndpoints := createDefaultEndpoints(domain)
-	provider := newTestAlibabaCloudProviderWithConfig(
-		endpoint.NewDomainFilter([]string{domain}), false, map[string][]*endpoint.Endpoint{
-			domain: defaultEndpoints,
-		},
-	)
-	endpoints, err := provider.Records(t.Context())
 
-	require.NoError(t, err, "Failed to get records: %v", err)
-	require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
-	assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
+	tests := []struct {
+		name    string
+		filters []string
+	}{
+		{
+			name:    "single domain filter",
+			filters: []string{domain},
+		},
+		{
+			// Regression test: multiple --domain-filter flags resolving to the
+			// same hosted zone used to make records() query that zone once per
+			// filter, duplicating targets in the resulting endpoints.
+			name:    "multiple domain filters targeting the same zone",
+			filters: []string{"abc." + domain, "a-abc." + domain},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := newTestAlibabaCloudProviderWithConfig(
+				endpoint.NewDomainFilter(tt.filters), false, map[string][]*endpoint.Endpoint{
+					domain: defaultEndpoints,
+				},
+			)
+			endpoints, err := provider.Records(t.Context())
+
+			require.NoError(t, err, "Failed to get records: %v", err)
+			require.Len(t, endpoints, len(defaultEndpoints), "Incorrect number of records: %d", len(endpoints))
+			assert.True(t, testutils.SameEndpoints(defaultEndpoints, endpoints), "expected and actual endpoints don't match. %s:%s", defaultEndpoints, endpoints)
+			for _, ep := range endpoints {
+				assert.Len(t, ep.Targets, 1, "targets must not be duplicated: %v", ep.Targets)
+			}
+		})
+	}
 }
 
 func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {

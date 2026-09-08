@@ -391,8 +391,14 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 			results = append(results, domainRecords...)
 		}
 	} else {
+		zonesToFetch := make(map[string]struct{})
 		for _, domainName := range p.domainFilter.Filters {
-			_, domainName = p.splitDNSName(domainName, hostedZoneDomains)
+			_, zone := p.splitDNSName(domainName, hostedZoneDomains)
+			if zone != "" {
+				zonesToFetch[zone] = struct{}{}
+			}
+		}
+		for domainName := range zonesToFetch {
 			tmpResults, err := p.getDomainRecords(domainName)
 			if err != nil {
 				log.Errorf("getDomainRecords %s error %v", domainName, err)
