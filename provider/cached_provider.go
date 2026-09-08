@@ -67,6 +67,13 @@ func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedPro
 	}
 }
 
+func (c *CachedProvider) TXTZoneNames() []string {
+	if p, ok := c.Provider.(TXTZoneProvider); ok {
+		return p.TXTZoneNames()
+	}
+	return nil
+}
+
 func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	if c.needRefresh() {
 		log.Info("Records cache provider: refreshing records list cache")

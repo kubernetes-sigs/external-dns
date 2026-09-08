@@ -115,6 +115,40 @@ the record type of the DNS record for which it is storing metadata.
 The prefix is specified using the `--txt-prefix` flag and the suffix is specified using
 the `--txt-suffix` flag. The two flags are mutually exclusive.
 
+### Zone-aware ownership names
+
+By default, suffixes are added to the first label, preserving existing naming behavior.
+With `--registry=txt --txt-zone-aware`, the suffix is instead added immediately before
+the authoritative zone boundary. For example, with zone `example.com` and
+`--txt-suffix=-txtsuffix`, an A record for `name.192.sub.example.com` uses
+`a-name.192.sub-txtsuffix.example.com` rather than `a-name-txtsuffix.192.sub.example.com`.
+
+This opt-in currently requires RFC2136 with explicit, non-root `--rfc2136-zone` values.
+Provider caching is supported. Domain filters do not define zone boundaries: a filter
+such as `sub.example.com` does not replace the configured zone `example.com`.
+Other providers without authoritative zone support are rejected when this flag is enabled.
+The DynamoDB registry retains its existing naming behavior.
+
+Existing ownership TXT names are retained on updates and deletes; enabling this flag
+does not automatically migrate them. If legacy and zone-aware parsing interpret a TXT
+name as different records, or ownership records conflict, reconciliation stops with an
+error rather than choosing an owner. Ambiguous new ownership names are rejected before
+any changes reach the provider. Resolve such conflicts explicitly before retrying.
+
+In zone-aware mode, recognized ownership TXT records must have exactly one target;
+multiple targets are rejected even if they contain identical metadata. Unmatched TXT
+names and ordinary TXT values without ExternalDNS ownership metadata are not subject
+to this restriction. Typed, untyped, and legacy alias markers applicable to the same
+record must agree on all ownership metadata. Distinct typed markers for different
+record types remain independent. If one marker applies to multiple existing records
+(for example, an untyped marker shared by A and MX records), reconciliation stops
+before updates or deletes, including when only one of those types is managed. Resolve
+shared ownership explicitly before enabling this mode; no automatic migration or
+partial deletion of shared ownership values is performed.
+
+Do not disable the flag after creating zone-aware names without planning an ownership
+migration: the default parser may not recognize those records.
+
 ## Wildcard Replacement
 
 The `--txt-wildcard-replacement` flag specifies a string to use to replace the "\*" in

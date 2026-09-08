@@ -20,6 +20,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"errors"
+	"fmt"
 	"maps"
 	"strings"
 	"time"
@@ -41,9 +42,11 @@ const (
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
-	provider provider.Provider
-	ownerID  string // refers to the owner id of the current instance
-	mapper   mapper.NameMapper
+	provider     provider.Provider
+	ownerID      string // refers to the owner id of the current instance
+	mapper       mapper.NameMapper
+	legacyMapper mapper.NameMapper
+	storedTXTs   map[endpoint.EndpointKey][]*endpoint.Endpoint
 
 	// cache the records in memory and update on an interval instead.
 	recordsCache            []*endpoint.Endpoint
@@ -126,10 +129,28 @@ func keyFor(ep *endpoint.Endpoint) recordKey {
 
 // New creates a TXTRegistry from the given configuration.
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	return newRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
+	r, err := newRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID,
 		cfg.TXTCacheInterval, cfg.TXTWildcardReplacement,
 		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes,
 		cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.TXTZoneAware {
+		zones, ok := p.(provider.TXTZoneProvider)
+		if !ok || len(zones.TXTZoneNames()) == 0 {
+			return nil, errors.New("txt-zone-aware requires authoritative provider zones")
+		}
+		zoneNames := zones.TXTZoneNames()
+		for _, zone := range zoneNames {
+			if strings.Trim(zone, ". ") == "" {
+				return nil, errors.New("txt-zone-aware requires authoritative provider zones other than the root zone")
+			}
+		}
+		r.legacyMapper = r.mapper
+		r.mapper = mapper.NewAffixNameMapperWithZones(cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, zoneNames)
+	}
+	return r, nil
 }
 
 // newRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
@@ -165,7 +186,7 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 	return &TXTRegistry{
 		provider:            provider,
 		ownerID:             ownerID,
-		mapper:              mapper.NewAffixNameMapperWithZones(txtPrefix, txtSuffix, txtWildcardReplacement, mapper.ZonesFromDomainFilter(provider.GetDomainFilter())),
+		mapper:              mapper.NewAffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement),
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
@@ -212,6 +233,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpoints := []*endpoint.Endpoint{}
 
+	im.storedTXTs = map[endpoint.EndpointKey][]*endpoint.Endpoint{}
+	txtMap := map[endpoint.EndpointKey][]*endpoint.Endpoint{}
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
 	txtRecordsSet := make(sets.Set[string], len(records))
 
@@ -226,6 +249,19 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			log.Errorf("TXT record has no targets %s", record.DNSName)
 			continue
 		}
+		if im.legacyMapper != nil && len(record.Targets) > 1 {
+			for _, target := range record.Targets {
+				if _, err := endpoint.NewLabelsFromString(target, im.txtEncryptAESKey); err == nil {
+					name, _, err := im.endpointName(record.DNSName)
+					if err != nil {
+						return nil, err
+					}
+					if name != "" {
+						return nil, fmt.Errorf("TXT ownership record %q has multiple targets", record.DNSName)
+					}
+				}
+			}
+		}
 		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
 		if errors.Is(err, endpoint.ErrInvalidHeritage) {
 			// if no heritage is found or it is invalid
@@ -235,17 +271,28 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 
-		endpointName, recordType := im.mapper.ToEndpointName(record.DNSName)
+		endpointName, recordType, err := im.endpointName(record.DNSName)
+		if err != nil {
+			return nil, err
+		}
+		if im.legacyMapper != nil && endpointName == "" {
+			continue
+		}
 		key := endpoint.EndpointKey{
 			DNSName:       endpointName,
 			RecordType:    recordType,
 			SetIdentifier: record.SetIdentifier,
 		}
+		if previous, ok := labelMap[key]; im.legacyMapper != nil && ok && !maps.Equal(previous, labels) {
+			return nil, fmt.Errorf("conflicting TXT ownership for %q (%s)", endpointName, recordType)
+		}
 		labelMap[key] = labels
+		txtMap[key] = append(txtMap[key], record)
 		txtRecordsSet.Insert(record.DNSName)
 		im.existingTXTs.add(record)
 	}
 
+	claims := map[endpoint.EndpointKey]endpoint.EndpointKey{}
 	for _, ep := range endpoints {
 		if ep.Labels == nil {
 			ep.Labels = endpoint.NewLabels()
@@ -262,28 +309,61 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
-		labels, labelsExist := labelMap[key]
-
-		// A ALIAS records used the legacy "cname-" prefix. Fall back to it so ownership
-		// survives migration to "a-", and report the stale record once. See issue #2903.
-		if isAliasARecord(ep) {
-			legacyKey := key
-			legacyKey.RecordType = endpoint.RecordTypeCNAME
-			if legacyLabels, ok := labelMap[legacyKey]; ok {
-				if !labelsExist {
-					labels, labelsExist = legacyLabels, true
-				}
-				im.warnObsoleteAliasTXT(dnsName)
+		if im.legacyMapper != nil {
+			keys := []endpoint.EndpointKey{key}
+			if isAliasARecord(ep) {
+				aliasKey := key
+				aliasKey.RecordType = endpoint.RecordTypeCNAME
+				keys = append(keys, aliasKey)
 			}
-		}
-
-		// Handle both new and old registry format with the preference for the new one
-		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
-			key.RecordType = ""
-			labels, labelsExist = labelMap[key]
-		}
-		if labelsExist {
+			if ep.RecordType != endpoint.RecordTypeAAAA {
+				untypedKey := key
+				untypedKey.RecordType = ""
+				keys = append(keys, untypedKey)
+			}
+			var labels endpoint.Labels
+			dataKey := endpoint.EndpointKey{DNSName: ep.DNSName, RecordType: ep.RecordType, SetIdentifier: ep.SetIdentifier}
+			for _, candidate := range keys {
+				candidateLabels, ok := labelMap[candidate]
+				if !ok {
+					continue
+				}
+				if labels != nil && !maps.Equal(labels, candidateLabels) {
+					return nil, fmt.Errorf("conflicting TXT ownership for %q (%s)", dnsName, ep.RecordType)
+				}
+				if previous, ok := claims[candidate]; ok && previous != dataKey {
+					return nil, fmt.Errorf("shared TXT ownership for %q (%s, %s)", dnsName, previous.RecordType, ep.RecordType)
+				}
+				claims[candidate] = dataKey
+				labels = candidateLabels
+				im.storedTXTs[dataKey] = append(im.storedTXTs[dataKey], txtMap[candidate]...)
+			}
 			maps.Copy(ep.Labels, labels)
+		} else {
+			labels, labelsExist := labelMap[key]
+
+			// A ALIAS records used the legacy "cname-" prefix. Fall back to it so ownership
+			// survives migration to "a-", and report the stale record once. See issue #2903.
+			if isAliasARecord(ep) {
+				legacyKey := key
+				legacyKey.RecordType = endpoint.RecordTypeCNAME
+				if legacyLabels, ok := labelMap[legacyKey]; ok {
+					if !labelsExist {
+						labels, labelsExist = legacyLabels, true
+						key = legacyKey
+					}
+					im.warnObsoleteAliasTXT(dnsName)
+				}
+			}
+
+			// Handle both new and old registry format with the preference for the new one
+			if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
+				key.RecordType = ""
+				labels, labelsExist = labelMap[key]
+			}
+			if labelsExist {
+				maps.Copy(ep.Labels, labels)
+			}
 		}
 
 		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
@@ -315,6 +395,17 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
+func (im *TXTRegistry) endpointName(name string) (string, string, error) {
+	dnsName, recordType := im.mapper.ToEndpointName(name)
+	if im.legacyMapper != nil {
+		legacyName, legacyType := im.legacyMapper.ToEndpointName(name)
+		if legacyName != "" && dnsName != "" && (legacyName != dnsName || legacyType != recordType) {
+			return "", "", fmt.Errorf("ambiguous TXT ownership name %q: legacy %q (%s), zone-aware %q (%s)", name, legacyName, legacyType, dnsName, recordType)
+		}
+	}
+	return dnsName, recordType, nil
+}
+
 // isAliasARecord reports whether the endpoint is an A ALIAS record (used to recognize the legacy
 // "cname-" ownership TXT during migration to the "a-" prefix).
 func isAliasARecord(ep *endpoint.Endpoint) bool {
@@ -331,6 +422,23 @@ func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 	im.obsoleteTXTWarned.Insert(legacyName)
 	log.Warnf("Obsolete legacy TXT record %q for A ALIAS %q can be removed; now using %q (see scripts/aws-cleanup-legacy-txt-records.py).",
 		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
+}
+
+func (im *TXTRegistry) storedTXTRecords(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	stored := im.storedTXTs[endpoint.EndpointKey{DNSName: r.DNSName, RecordType: r.RecordType, SetIdentifier: r.SetIdentifier}]
+	if len(stored) == 0 {
+		return im.generateTXTRecordForRemoval(r)
+	}
+	result := make([]*endpoint.Endpoint, 0, len(stored))
+	for _, txt := range stored {
+		storedTXT := txt.DeepCopy()
+		if storedTXT.Labels == nil {
+			storedTXT.Labels = endpoint.NewLabels()
+		}
+		storedTXT.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+		result = append(result, storedTXT)
+	}
+	return result
 }
 
 // generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
@@ -350,13 +458,22 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 
-	txtNew := endpoint.NewEndpoint(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
-		txtNew.WithSetIdentifier(r.SetIdentifier)
-		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
+	names := []string{im.mapper.ToTXTName(r.DNSName, recordType)}
+	if stored := im.storedTXTs[endpoint.EndpointKey{DNSName: r.DNSName, RecordType: r.RecordType, SetIdentifier: r.SetIdentifier}]; len(stored) > 0 {
+		names = nil
+		for _, txt := range stored {
+			names = append(names, txt.DNSName)
+		}
+	}
+	for _, name := range names {
+		txtNew := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+		if txtNew != nil {
+			txtNew.WithSetIdentifier(r.SetIdentifier)
+			txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+			txtNew.ProviderSpecific = r.ProviderSpecific
+			if filter(txtNew) {
+				endpoints = append(endpoints, txtNew)
+			}
 		}
 	}
 	return endpoints
@@ -380,6 +497,17 @@ func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endp
 
 // ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if im.legacyMapper != nil {
+		for _, records := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew} {
+			for _, record := range records {
+				for _, txt := range im.generateTXTRecord(record) {
+					if _, _, err := im.endpointName(txt.DNSName); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
@@ -402,7 +530,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	for _, r := range filteredChanges.Delete {
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecordForRemoval(r)...)
+		filteredChanges.Delete = append(filteredChanges.Delete, im.storedTXTRecords(r)...)
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -411,7 +539,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.storedTXTRecords(r)...)
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -430,6 +558,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	// when caching is enabled, disable the provider from using the cache
 	if im.cacheInterval > 0 {
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
+	}
+	if im.legacyMapper != nil {
+		im.recordsCache = nil
 	}
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }

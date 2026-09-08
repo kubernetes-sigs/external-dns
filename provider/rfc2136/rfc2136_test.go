@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry/txt"
 )
 
 type rfc2136Stub struct {
@@ -180,6 +181,106 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, 
 	}()
 
 	return outChan, nil
+}
+
+type txtZoneActions struct {
+	*rfc2136Stub
+	messages []*dns.Msg
+}
+
+func (s *txtZoneActions) SendMessage(m *dns.Msg) error {
+	s.messages = append(s.messages, m)
+	return nil
+}
+
+func TestRFC2136ZoneAwareTXTLifecycle(t *testing.T) {
+	ctx := t.Context()
+	cfg := &externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", TXTZoneAware: true,
+		RFC2136Zone: []string{"example.com"}, RFC2136Insecure: true, RFC2136AXFR: true,
+		RFC2136Host: []string{"unused.invalid"}, RFC2136BatchChangeSize: 100,
+		ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}
+	p, err := New(ctx, cfg, endpoint.NewDomainFilter([]string{"sub.example.com"}))
+	require.NoError(t, err)
+	actions := &txtZoneActions{rfc2136Stub: newStub()}
+	p.(*rfc2136Provider).actions = actions
+	r, err := txt.New(cfg, provider.NewCachedProvider(p, time.Minute))
+	require.NoError(t, err)
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name.192.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+	}}))
+	require.Len(t, actions.messages, 1)
+	message := actions.messages[0]
+	assert.Equal(t, "example.com.", message.Question[0].Name)
+	require.Len(t, message.Ns, 2, "both data and ownership TXT must reach the authoritative zone")
+	assert.Equal(t, "a-name.192.sub-txtsuffix.example.com.", message.Ns[1].Header().Name)
+	actions.output = []*dns.Envelope{{RR: message.Ns}}
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, "owner", records[0].Labels[endpoint.OwnerLabelKey])
+	updated := records[0].DeepCopy()
+	updated.Targets = endpoint.Targets{"192.0.2.2"}
+	updated.Labels[endpoint.ResourceLabelKey] = "service/default/updated"
+	actions.messages = nil
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{UpdateOld: records, UpdateNew: []*endpoint.Endpoint{updated}}))
+	require.Len(t, actions.messages, 1)
+	message = actions.messages[0]
+	require.Len(t, message.Ns, 4)
+	actions.output = nil
+	for _, rr := range message.Ns {
+		if rr.Header().Class == dns.ClassINET {
+			actions.output = append(actions.output, &dns.Envelope{RR: []dns.RR{rr}})
+		}
+	}
+	records, err = r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, "service/default/updated", records[0].Labels[endpoint.ResourceLabelKey])
+	actions.messages = nil
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Delete: records}))
+	require.Len(t, actions.messages, 1)
+	require.Len(t, actions.messages[0].Ns, 2)
+	assert.Equal(t, "a-name.192.sub-txtsuffix.example.com.", actions.messages[0].Ns[1].Header().Name)
+}
+
+func TestRFC2136ZoneAwareTXTDomainFilter(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		enabled    bool
+		recordType string
+		dnsName    string
+		ownedName  string
+		want       bool
+	}{
+		{"default keeps name filtering", false, endpoint.RecordTypeTXT, "a-name.sub-txtsuffix.example.com", "name.sub.example.com", false},
+		{"owned TXT follows endpoint", true, endpoint.RecordTypeTXT, "a-name.sub-txtsuffix.example.com", "name.sub.example.com", true},
+		{"unowned TXT stays filtered", true, endpoint.RecordTypeTXT, "a-name.sub-txtsuffix.example.com", "", false},
+		{"excluded endpoint stays filtered", true, endpoint.RecordTypeTXT, "a-name.sub.example.com", "name.other.example.com", false},
+		{"data cannot use ownership label", true, endpoint.RecordTypeA, "name.other.example.com", "name.sub.example.com", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &rfc2136Provider{domainFilter: endpoint.NewDomainFilter([]string{"sub.example.com"}), txtZoneAware: tc.enabled}
+			ep := endpoint.NewEndpoint(tc.dnsName, tc.recordType, "value")
+			ep.Labels[endpoint.OwnedRecordLabelKey] = tc.ownedName
+			assert.Equal(t, tc.want, p.matchesDomainFilter(ep))
+		})
+	}
+}
+
+func TestRFC2136TXTZoneNames(t *testing.T) {
+	p := &rfc2136Provider{zoneNames: []string{"example.com"}, domainFilter: endpoint.NewDomainFilter([]string{"sub.example.com"})}
+	zones, ok := any(p).(interface{ TXTZoneNames() []string })
+	require.True(t, ok, "RFC2136 must expose authoritative zones separately from filters")
+	assert.Equal(t, []string{"example.com"}, zones.TXTZoneNames())
+	zones.TXTZoneNames()[0] = "changed.example"
+	assert.Equal(t, []string{"example.com"}, zones.TXTZoneNames())
+}
+
+func TestRFC2136GetDomainFilter(t *testing.T) {
+	filter := endpoint.NewDomainFilter([]string{"sub.example.com"})
+	p := &rfc2136Provider{zoneNames: []string{"example.com"}, domainFilter: filter}
+	assert.Same(t, filter, p.GetDomainFilter())
+	assert.False(t, p.GetDomainFilter().Match("other.example.com"))
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error) {

@@ -89,15 +89,6 @@ func NewAffixNameMapperWithZones(prefix, suffix, wildcardReplacement string, zon
 	}
 }
 
-// ZonesFromDomainFilter returns include filters for zone-aware TXT mapping.
-func ZonesFromDomainFilter(df endpoint.DomainFilterInterface) []string {
-	d, ok := df.(*endpoint.DomainFilter)
-	if !ok || d == nil {
-		return nil
-	}
-	return d.Filters
-}
-
 func (a AffixNameMapper) findZone(dns string) string {
 	dns = strings.ToLower(strings.TrimSuffix(dns, "."))
 	for _, zone := range a.zones {
@@ -108,13 +99,13 @@ func (a AffixNameMapper) findZone(dns string) string {
 	return ""
 }
 
-func (a AffixNameMapper) splitName(dns string) (hostname, domain string) {
+func (a AffixNameMapper) splitName(dns string) (string, string) {
 	dns = strings.TrimSuffix(dns, ".")
 	if zone := a.findZone(dns); zone != "" {
-		return strings.TrimSuffix(dns, "."+zone), zone
+		return dns[:len(dns)-len(zone)-1], zone
 	}
 	parts := strings.SplitN(dns, ".", 2)
-	hostname = parts[0]
+	hostname, domain := parts[0], ""
 	if len(parts) > 1 {
 		domain = parts[1]
 	}
@@ -132,12 +123,11 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 	// drop suffix
 	if a.isSuffix() {
 		if zone := a.findZone(lowerDNSName); zone != "" {
-			hostPart := strings.TrimSuffix(lowerDNSName, "."+zone)
+			hostPart, _ := a.splitName(lowerDNSName)
 			r, rType := a.dropAffixExtractType(hostPart)
-			if r == "" && rType == "" {
-				return "", ""
+			if r != "" || rType != "" {
+				return r + "." + zone, rType
 			}
-			return r + "." + zone, rType
 		}
 		dc := strings.Count(a.suffix, ".")
 		parts := strings.SplitN(lowerDNSName, ".", 2+dc)
@@ -146,6 +136,9 @@ func (a AffixNameMapper) ToEndpointName(dns string) (string, string) {
 			return "", ""
 		}
 		r, rType := a.dropAffixExtractType(strings.Join(parts[:1+dc], "."))
+		if r == "" && rType == "" {
+			return "", ""
+		}
 		if len(parts) <= 1+dc {
 			return r, rType
 		}
@@ -163,8 +156,8 @@ func (a AffixNameMapper) ToTXTName(dns, recordType string) string {
 	suffix := a.normalizeAffixTemplate(a.suffix, recordType)
 
 	// If specified, replace a leading asterisk in the generated txt record name with some other string
-	if a.wildcardReplacement != "" && hostname == "*" {
-		hostname = a.wildcardReplacement
+	if a.wildcardReplacement != "" && (hostname == "*" || strings.HasPrefix(hostname, "*.")) {
+		hostname = a.wildcardReplacement + strings.TrimPrefix(hostname, "*")
 	}
 
 	if !a.recordTypeInAffix() {

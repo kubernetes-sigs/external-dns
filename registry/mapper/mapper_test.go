@@ -482,6 +482,45 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 	}
 }
 
+func TestAffixNameMapper_UnmatchedSuffix(t *testing.T) {
+	m := NewAffixNameMapper("", "-txtsuffix", "")
+	name, recordType := m.ToEndpointName("a-name.192.sub-txtsuffix.example.com")
+	assert.Empty(t, name)
+	assert.Empty(t, recordType)
+}
+
+func TestAffixNameMapper_LegacySuffixWithZones(t *testing.T) {
+	m := NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"})
+	name, recordType := m.ToEndpointName("a-name-192-txtsuffix.168.0.1.example.com")
+	assert.Equal(t, "name-192.168.0.1.example.com", name)
+	assert.Equal(t, endpoint.RecordTypeA, recordType)
+}
+
+func TestAffixNameMapper_WildcardSubdomainWithZones(t *testing.T) {
+	m := NewAffixNameMapperWithZones("", "-txtsuffix", "wildcard", []string{"example.com"})
+	txt := m.ToTXTName("*.sub.example.com", endpoint.RecordTypeA)
+	assert.Equal(t, "a-wildcard.sub-txtsuffix.example.com", txt)
+	name, recordType := m.ToEndpointName(txt)
+	assert.Equal(t, "wildcard.sub.example.com", name)
+	assert.Equal(t, endpoint.RecordTypeA, recordType)
+}
+
+func TestAffixNameMapper_MixedCaseZone(t *testing.T) {
+	m := NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"EXAMPLE.COM."})
+	txt := m.ToTXTName("name.sub.Example.COM", endpoint.RecordTypeA)
+	assert.Equal(t, "a-name.sub-txtsuffix.example.com", txt)
+	name, recordType := m.ToEndpointName(txt)
+	assert.Equal(t, "name.sub.example.com", name)
+	assert.Equal(t, endpoint.RecordTypeA, recordType)
+}
+
+func TestAffixNameMapper_ZoneSuffixTrailingDot(t *testing.T) {
+	m := NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"})
+	name, recordType := m.ToEndpointName("a-name.sub-txtsuffix.Example.COM.")
+	assert.Equal(t, "name.sub.example.com", name)
+	assert.Equal(t, endpoint.RecordTypeA, recordType)
+}
+
 func TestAffixNameMapper_DottedHostnameRoundTrip(t *testing.T) {
 	m := NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"})
 	dns := "name-192.168.0.1.example.com"

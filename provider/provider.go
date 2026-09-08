@@ -58,6 +58,10 @@ type Provider interface {
 	GetDomainFilter() endpoint.DomainFilterInterface
 }
 
+type TXTZoneProvider interface {
+	TXTZoneNames() []string
+}
+
 type BaseProvider struct{}
 
 // AdjustEndpoints returns the endpoints unchanged. Providers that need to

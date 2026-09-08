@@ -28,6 +28,32 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+type txtZoneProvider struct {
+	Provider
+}
+
+func (txtZoneProvider) TXTZoneNames() []string {
+	return []string{"example.com"}
+}
+
+func TestCachedProviderTXTZoneNames(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		provider Provider
+		want     []string
+	}{
+		{"supported", txtZoneProvider{}, []string{"example.com"}},
+		{"unsupported", &testProviderFunc{}, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := NewCachedProvider(tc.provider, time.Minute)
+			zones, ok := any(p).(interface{ TXTZoneNames() []string })
+			require.True(t, ok, "cache must forward zone capability")
+			assert.Equal(t, tc.want, zones.TXTZoneNames())
+		})
+	}
+}
+
 type testProviderFunc struct {
 	records             func(ctx context.Context) ([]*endpoint.Endpoint, error)
 	applyChanges        func(ctx context.Context, changes *plan.Changes) error

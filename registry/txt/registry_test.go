@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/provider/rfc2136"
 )
 
 const (
@@ -116,6 +117,259 @@ func TestTXTRegistry_OwnerID(t *testing.T) {
 	r, err := newRegistry(p, "", "", "my-owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, "my-owner", r.OwnerID())
+}
+
+func TestTXTRegistryZoneAwareRequiresZones(t *testing.T) {
+	cfg := &externaldns.Config{TXTOwnerID: "owner", TXTZoneAware: true}
+	p := filteredProvider{inmemory.NewInMemoryProvider()}
+	for _, wrapped := range []provider.Provider{p, provider.NewCachedProvider(p, time.Minute)} {
+		_, err := New(cfg, wrapped)
+		require.ErrorContains(t, err, "txt-zone-aware requires authoritative provider zones")
+	}
+}
+
+func TestTXTRegistryZoneAwareRejectsRootZone(t *testing.T) {
+	cfg := &externaldns.Config{TXTOwnerID: "owner", TXTZoneAware: true, RFC2136Insecure: true}
+	p, err := rfc2136.New(t.Context(), cfg, endpoint.NewDomainFilter([]string{"sub.example.com"}))
+	require.NoError(t, err)
+	_, err = New(cfg, p)
+	require.ErrorContains(t, err, "txt-zone-aware requires authoritative provider zones")
+}
+
+func TestTXTRegistryZoneAwareOptIn(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
+			cfg := externaldns.NewConfig()
+			cfg.TXTOwnerID = "owner"
+			cfg.TXTZoneAware = enabled
+			cfg.TXTSuffix = "-txtsuffix"
+			cfg.RFC2136Zone = []string{"example.com"}
+			cfg.RFC2136Insecure = true
+			p, err := rfc2136.New(t.Context(), cfg, endpoint.NewDomainFilter([]string{"sub.example.com"}))
+			require.NoError(t, err)
+			for _, wrapped := range []provider.Provider{p, provider.NewCachedProvider(p, time.Minute)} {
+				r, err := New(cfg, wrapped)
+				require.NoError(t, err)
+				want := "a-name-txtsuffix.192.sub.example.com"
+				if enabled {
+					want = "a-name.192.sub-txtsuffix.example.com"
+				}
+				assert.Equal(t, want, r.(*TXTRegistry).mapper.ToTXTName("name.192.sub.example.com", endpoint.RecordTypeA))
+			}
+		})
+	}
+}
+
+type zonedProvider struct {
+	provider.Provider
+}
+
+func (zonedProvider) TXTZoneNames() []string { return []string{"example.com"} }
+
+func TestTXTRegistryZoneAwareLegacyLifecycle(t *testing.T) {
+	testZoneAwareLifecycle(t, 0, false)
+}
+
+func TestTXTRegistryZoneAwareCachedLifecycle(t *testing.T) {
+	testZoneAwareLifecycle(t, time.Hour, false)
+}
+
+func TestTXTRegistryZoneAwareNewLifecycle(t *testing.T) {
+	testZoneAwareLifecycle(t, time.Hour, true)
+}
+
+func testZoneAwareLifecycle(t *testing.T, cacheInterval time.Duration, zoneAwareCreate bool) {
+	t.Helper()
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	cfg := &externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}, TXTCacheInterval: cacheInterval, TXTZoneAware: zoneAwareCreate}
+	legacy, err := New(cfg, zonedProvider{p})
+	require.NoError(t, err)
+	require.NoError(t, legacy.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name.192.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+	}}))
+	cfg.TXTZoneAware = true
+	r, err := New(cfg, zonedProvider{p})
+	require.NoError(t, err)
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, "owner", records[0].Labels[endpoint.OwnerLabelKey])
+	_, forced := records[0].GetProviderSpecificProperty(providerSpecificForceUpdate)
+	assert.False(t, forced, "opting in must not migrate existing ownership names")
+	updated := records[0].DeepCopy()
+	updated.Targets = endpoint.Targets{"192.0.2.2"}
+	updated.Labels[endpoint.ResourceLabelKey] = "service/default/updated"
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{UpdateOld: records, UpdateNew: []*endpoint.Endpoint{updated}}))
+	stored, err := p.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, stored, 2)
+	for _, record := range stored {
+		if record.RecordType == endpoint.RecordTypeTXT {
+			want := "a-name-txtsuffix.192.sub.example.com"
+			if zoneAwareCreate {
+				want = "a-name.192.sub-txtsuffix.example.com"
+			}
+			assert.Equal(t, want, record.DNSName)
+			assert.Contains(t, record.Targets[0], "service/default/updated")
+		}
+	}
+	records, err = r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, endpoint.Targets{"192.0.2.2"}, records[0].Targets)
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Delete: records}))
+	stored, err = p.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, stored)
+}
+
+func TestTXTRegistryZoneAwareRejectsAmbiguousOwnership(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("foo.bar-txtsuffix.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+		endpoint.NewEndpoint("foo-txtsuffix.bar.example.com", endpoint.RecordTypeA, "192.0.2.2"),
+		endpoint.NewEndpoint("a-foo-txtsuffix.bar-txtsuffix.example.com", endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=owner"`),
+	}}))
+	r, err := New(&externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", TXTZoneAware: true}, zonedProvider{p})
+	require.NoError(t, err)
+	records, err := r.Records(ctx)
+	require.ErrorContains(t, err, "ambiguous TXT ownership name")
+	assert.Nil(t, records)
+	stored, err := p.Records(ctx)
+	require.NoError(t, err)
+	assert.Len(t, stored, 3)
+}
+
+func TestTXTRegistryZoneAwareRejectsAmbiguousCreate(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	r, err := New(&externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", TXTZoneAware: true}, zonedProvider{p})
+	require.NoError(t, err)
+	err = r.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("safe.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+		endpoint.NewEndpoint("foo-txtsuffix.bar.example.com", endpoint.RecordTypeA, "192.0.2.2"),
+	}})
+	require.ErrorContains(t, err, "ambiguous TXT ownership name")
+	stored, err := p.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, stored)
+}
+
+func TestTXTRegistryZoneAwareStoredTXTValues(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	cfg := &externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", TXTZoneAware: true,
+		TXTEncryptEnabled: true, TXTEncryptAESKey: strings.Repeat("a", 32), ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}
+	labels := endpoint.Labels{endpoint.OwnerLabelKey: "owner"}
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+		endpoint.NewEndpoint("a-name-txtsuffix.sub.example.com", endpoint.RecordTypeTXT, labels.Serialize(false, true, []byte(cfg.TXTEncryptAESKey))),
+	}}))
+	r, err := New(cfg, zonedProvider{p})
+	require.NoError(t, err)
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	updated := records[0].DeepCopy()
+	updated.Targets = endpoint.Targets{"192.0.2.2"}
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{UpdateOld: records, UpdateNew: []*endpoint.Endpoint{updated}}))
+	records, err = r.Records(ctx)
+	require.NoError(t, err)
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Delete: records}))
+	stored, err := p.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, stored)
+}
+
+func TestTXTRegistryZoneAwareLegacyAliasLifecycle(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name.sub.example.com", endpoint.RecordTypeA, "lb.example.net").WithAliasProperty(endpoint.AliasTrue),
+		endpoint.NewEndpoint("cname-name-txtsuffix.sub.example.com", endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=owner"`),
+	}}))
+	r, err := New(&externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", TXTZoneAware: true, ManagedDNSRecordTypes: []string{endpoint.RecordTypeA}}, zonedProvider{p})
+	require.NoError(t, err)
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, "owner", records[0].Labels[endpoint.OwnerLabelKey])
+	_, forced := records[0].GetProviderSpecificProperty(providerSpecificForceUpdate)
+	assert.False(t, forced)
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Delete: records}))
+	stored, err := p.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, stored)
+}
+
+func TestTXTRegistryZoneAwareConflictingOwners(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+		endpoint.NewEndpoint("a-name-txtsuffix.sub.example.com", endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=owner"`),
+		endpoint.NewEndpoint("a-name.sub-txtsuffix.example.com", endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=other"`),
+	}}))
+	r, err := New(&externaldns.Config{TXTOwnerID: "owner", TXTSuffix: "-txtsuffix", TXTZoneAware: true}, zonedProvider{p})
+	require.NoError(t, err)
+	records, err := r.Records(ctx)
+	require.ErrorContains(t, err, "conflicting TXT ownership")
+	assert.Nil(t, records)
+}
+
+type filteredProvider struct {
+	provider.Provider
+}
+
+func (p filteredProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return endpoint.NewDomainFilter([]string{"sub.example.com"})
+}
+
+func TestTXTRegistry_LegacySuffixLifecycleWithDomainFilter(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name.192.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+		endpoint.NewEndpoint("a-name-txtsuffix.192.sub.example.com", endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=owner"`),
+	}}))
+	r, err := newRegistry(filteredProvider{p}, "", "-txtsuffix", "owner", 0, "", []string{endpoint.RecordTypeA}, nil, false, nil, "")
+	require.NoError(t, err)
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, "owner", records[0].Labels[endpoint.OwnerLabelKey])
+	_, forced := records[0].GetProviderSpecificProperty(providerSpecificForceUpdate)
+	assert.False(t, forced)
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{Delete: records}))
+	remaining, err := p.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, remaining)
+}
+
+func TestTXTRegistry_ZoneMapperReadsLegacyOwnership(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("example.com"))
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{
+		endpoint.NewEndpoint("name-192.168.0.1.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+		endpoint.NewEndpoint("a-name-192-txtsuffix.168.0.1.example.com", endpoint.RecordTypeTXT, `"heritage=external-dns,external-dns/owner=owner"`),
+	}}))
+	r, err := newRegistry(p, "", "-txtsuffix", "owner", 0, "", []string{endpoint.RecordTypeA}, nil, false, nil, "")
+	require.NoError(t, err)
+	r.mapper = mapper.NewAffixNameMapperWithZones("", "-txtsuffix", "", []string{"example.com"})
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, records, 1)
+	assert.Equal(t, "owner", records[0].Labels[endpoint.OwnerLabelKey])
 }
 
 func TestTXTRegistry_GetDomainFilter(t *testing.T) {

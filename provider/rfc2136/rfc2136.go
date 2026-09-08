@@ -70,6 +70,7 @@ type rfc2136Provider struct {
 
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter *endpoint.DomainFilter
+	txtZoneAware bool
 	dryRun       bool
 	actions      rfc2136Actions
 
@@ -139,7 +140,27 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		log.Warnf("--rfc2136-axfr is not set: ExternalDNS cannot list existing records, so --policy=%s will never update or delete them", cfg.Policy)
 	}
 
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	p, err := newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	if err != nil {
+		return nil, err
+	}
+	p.(*rfc2136Provider).txtZoneAware = cfg.TXTZoneAware
+	return p, nil
+}
+
+func (r *rfc2136Provider) matchesDomainFilter(ep *endpoint.Endpoint) bool {
+	if r.txtZoneAware && ep.RecordType == endpoint.RecordTypeTXT && ep.Labels[endpoint.OwnedRecordLabelKey] != "" {
+		return r.domainFilter.Match(ep.Labels[endpoint.OwnedRecordLabelKey])
+	}
+	return r.domainFilter.Match(ep.DNSName)
+}
+
+func (r *rfc2136Provider) TXTZoneNames() []string {
+	return append([]string(nil), r.zoneNames...)
+}
+
+func (r *rfc2136Provider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return r.domainFilter
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
@@ -388,7 +409,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
+			if !r.matchesDomainFilter(ep) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
@@ -422,7 +443,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		}
 
 		for i, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
+			if !r.matchesDomainFilter(ep) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
@@ -457,7 +478,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
+			if !r.matchesDomainFilter(ep) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}

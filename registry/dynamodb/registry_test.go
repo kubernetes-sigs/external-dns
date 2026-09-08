@@ -41,6 +41,21 @@ const (
 	testZone = "test-zone.example.org"
 )
 
+type filteredProvider struct {
+	provider.Provider
+}
+
+func (p filteredProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return endpoint.NewDomainFilter([]string{"sub.example.com"})
+}
+
+func TestDynamoDBRegistry_DomainFilterPreservesSuffix(t *testing.T) {
+	api, p := newDynamoDBAPIStub(t, nil)
+	r, err := newRegistry(filteredProvider{p}, "owner", api, "table", "", "-txtsuffix", "", nil, nil, nil, 0)
+	require.NoError(t, err)
+	assert.Equal(t, "a-name-txtsuffix.192.sub.example.com", r.mapper.ToTXTName("name.192.sub.example.com", endpoint.RecordTypeA))
+}
+
 func TestDynamoDBRegistryNew(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)
 

@@ -161,6 +161,7 @@ type Config struct {
 	TXTOwnerOld                                   string
 	TXTPrefix                                     string
 	TXTSuffix                                     string
+	TXTZoneAware                                  bool
 	TXTEncryptEnabled                             bool
 	TXTEncryptAESKey                              string `secure:"yes"`
 	Interval                                      time.Duration
@@ -671,6 +672,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("crd-registry-namespace", "When using the CRD registry, the namespace the DNSRecord objects are stored in (default: the namespace ExternalDNS runs in)", defaultConfig.CRDRegistryNamespace, &cfg.CRDRegistryNamespace)
 	b.StringVar("txt-owner-id", "When using the TXT, DynamoDB or CRD registry, a name that identifies this instance of ExternalDNS (default: default)", defaultConfig.TXTOwnerID, &cfg.TXTOwnerID)
 	b.StringVar("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!", defaultConfig.TXTPrefix, &cfg.TXTPrefix)
+	b.BoolVar("txt-zone-aware", "Use authoritative zone boundaries for TXT registry ownership names (requires provider support; existing names are preserved).", defaultConfig.TXTZoneAware, &cfg.TXTZoneAware)
 	b.StringVar("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!", defaultConfig.TXTSuffix, &cfg.TXTSuffix)
 	b.StringVar("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)", defaultConfig.TXTWildcardReplacement, &cfg.TXTWildcardReplacement)
 	b.BoolVar("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)", defaultConfig.TXTEncryptEnabled, &cfg.TXTEncryptEnabled)

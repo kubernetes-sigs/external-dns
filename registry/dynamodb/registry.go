@@ -118,7 +118,7 @@ func newRegistry(
 		ownerID:             ownerID,
 		dynamodbAPI:         dynamodbAPI,
 		table:               table,
-		mapper:              mapper.NewAffixNameMapperWithZones(txtPrefix, txtSuffix, txtWildcardReplacement, mapper.ZonesFromDomainFilter(provider.GetDomainFilter())),
+		mapper:              mapper.NewAffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement),
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
 		excludeRecordTypes:  excludeRecordTypes,

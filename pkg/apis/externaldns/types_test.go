@@ -862,6 +862,13 @@ func TestParseFlagsTraefik(t *testing.T) {
 	assert.True(t, cfg.TraefikDisableNew)
 }
 
+func TestParseFlagsTXTZoneAware(t *testing.T) {
+	cfg := NewConfig()
+	assert.False(t, cfg.TXTZoneAware)
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=rfc2136", "--source=service", "--txt-zone-aware"}))
+	assert.True(t, cfg.TXTZoneAware)
+}
+
 func TestParseFlagsTXTRegistry(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t,
