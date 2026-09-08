@@ -25,7 +25,6 @@ const (
 	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
 
 	// LegacyAnnotationPrefix is the annotation prefix used by releases before v0.22.0.
-	// It is only honored when enabled with SetLegacyAnnotationPrefix, see ResolveLegacyAnnotations.
 	LegacyAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 
 	ttlMinimum = 1
@@ -124,7 +123,6 @@ func SetAnnotationPrefix(prefix string) {
 // SetLegacyAnnotationPrefix makes ResolveLegacyAnnotations accept annotations carrying prefix in addition
 // to AnnotationKeyPrefix. An empty prefix disables the resolution, as does one that AnnotationKeyPrefix
 // itself starts with: rewriting would then be a no-op or would rewrite its own output.
-// Like SetAnnotationPrefix, this must be called before any sources are initialized.
 func SetLegacyAnnotationPrefix(prefix string) {
 	if strings.HasPrefix(AnnotationKeyPrefix, prefix) {
 		prefix = ""
@@ -134,9 +132,9 @@ func SetLegacyAnnotationPrefix(prefix string) {
 
 // ResolveLegacyAnnotations rewrites, in place, every annotation carrying the legacy prefix to its
 // AnnotationKeyPrefix equivalent so that sources only ever see the configured prefix. When both forms
-// of a key are present the value under AnnotationKeyPrefix wins and the conflict is logged; kind,
-// namespace and name identify the object in that log line. It returns true when anns was modified
-// and is a no-op unless a legacy prefix was enabled with SetLegacyAnnotationPrefix.
+// of a key are present the value under AnnotationKeyPrefix wins and the conflict is logged.
+// It returns true when anns was modified and is a no-op unless a legacy prefix was enabled
+// with SetLegacyAnnotationPrefix.
 func ResolveLegacyAnnotations(kind, namespace, name string, anns map[string]string) bool {
 	if legacyAnnotationPrefix == "" {
 		return false
