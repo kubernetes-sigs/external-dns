@@ -19,39 +19,35 @@ package provider
 import (
 	"testing"
 
-	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
-
 	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneTypeFilterMatch(t *testing.T) {
 	publicZoneStr := "public"
 	privateZoneStr := "private"
-	publicZoneAWS := route53types.HostedZone{Config: &route53types.HostedZoneConfig{PrivateZone: false}}
-	privateZoneAWS := route53types.HostedZone{Config: &route53types.HostedZoneConfig{PrivateZone: true}}
 
 	for _, tc := range []struct {
 		zoneTypeFilter string
 		matches        bool
-		zones          []any
+		zones          []string
 	}{
 		{
-			"", true, []any{publicZoneStr, privateZoneStr, route53types.HostedZone{}},
+			"", true, []string{publicZoneStr, privateZoneStr},
 		},
 		{
-			"public", true, []any{publicZoneStr, publicZoneAWS, route53types.HostedZone{}},
+			"public", true, []string{publicZoneStr},
 		},
 		{
-			"public", false, []any{privateZoneStr, privateZoneAWS},
+			"public", false, []string{privateZoneStr},
 		},
 		{
-			"private", true, []any{privateZoneStr, privateZoneAWS},
+			"private", true, []string{privateZoneStr},
 		},
 		{
-			"private", false, []any{publicZoneStr, publicZoneAWS, route53types.HostedZone{}},
+			"private", false, []string{publicZoneStr},
 		},
 		{
-			"unknown", false, []any{publicZoneStr},
+			"unknown", false, []string{publicZoneStr},
 		},
 	} {
 		t.Run(tc.zoneTypeFilter, func(t *testing.T) {
