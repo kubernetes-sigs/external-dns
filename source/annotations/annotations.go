@@ -130,6 +130,12 @@ func SetLegacyAnnotationPrefix(prefix string) {
 	legacyAnnotationPrefix = prefix
 }
 
+// LegacyAnnotationPrefixEnabled reports whether ResolveLegacyAnnotations has anything to do, so callers
+// on hot paths can skip fetching annotations when the migration aid is off (the default).
+func LegacyAnnotationPrefixEnabled() bool {
+	return legacyAnnotationPrefix != ""
+}
+
 // ResolveLegacyAnnotations rewrites, in place, every annotation carrying the legacy prefix to its
 // AnnotationKeyPrefix equivalent so that sources only ever see the configured prefix. When both forms
 // of a key are present the value under AnnotationKeyPrefix wins and the conflict is logged.

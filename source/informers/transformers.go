@@ -127,15 +127,19 @@ func TransformerWithOptions[T Object](optFns ...func(*TransformOptions)) cache.T
 		if !ok {
 			return nil, nil
 		}
-		populateGVK(entity)
-		if anns := entity.GetAnnotations(); annotations.ResolveLegacyAnnotations(entity.GetObjectKind().GroupVersionKind().Kind, entity.GetNamespace(), entity.GetName(), anns) {
-			entity.SetAnnotations(anns)
+		if annotations.LegacyAnnotationPrefixEnabled() {
+			// Kind is only needed for the conflict log line; populateGVK is idempotent and runs again below.
+			populateGVK(entity)
+			if anns := entity.GetAnnotations(); annotations.ResolveLegacyAnnotations(entity.GetObjectKind().GroupVersionKind().Kind, entity.GetNamespace(), entity.GetName(), anns) {
+				entity.SetAnnotations(anns)
+			}
 		}
 		if sel := options.requireAnnotationSelector; sel != nil && !sel.Empty() {
 			if !sel.Matches(labels.Set(entity.GetAnnotations())) {
 				return nil, nil
 			}
 		}
+		populateGVK(entity)
 		if options.removeManagedFields {
 			entity.SetManagedFields(nil)
 		}

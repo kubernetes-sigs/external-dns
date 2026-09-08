@@ -39,7 +39,8 @@ used `external-dns.alpha.kubernetes.io/`.
 source reads them, so resources can be migrated gradually. On conflict the configured prefix wins and the ignored value is
 logged with the resource.
 
-Because the legacy key is rewritten rather than duplicated, `--annotation-filter` and `--fqdn-template` must reference the configured prefix.
+Because the legacy key is rewritten rather than duplicated, `--annotation-filter` and templates must reference the configured prefix;
+a filter or template that names the legacy prefix is rejected at startup while the flag is on.
 
 The flag is a migration aid and will be removed in a future release; drop it once no resource uses the legacy prefix.
 

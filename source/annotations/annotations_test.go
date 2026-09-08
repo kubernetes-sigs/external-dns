@@ -99,9 +99,13 @@ func TestSetLegacyAnnotationPrefix(t *testing.T) {
 	})
 
 	t.Run("a legacy prefix equal to the configured prefix disables resolution", func(t *testing.T) {
+		// A key under the configured prefix would be deleted and re-inserted (and reported as a change)
+		// if the guard were missing, so it has to be in the fixture for this test to prove anything.
+		anns := map[string]string{LegacyAnnotationPrefix + "hostname": "example.org", HostnameKey: "configured.example.org"}
 		SetLegacyAnnotationPrefix(AnnotationKeyPrefix)
+		assert.False(t, LegacyAnnotationPrefixEnabled())
 		assert.False(t, ResolveLegacyAnnotations("Service", "default", "svc", anns))
-		assert.Equal(t, map[string]string{LegacyAnnotationPrefix + "hostname": "example.org"}, anns)
+		assert.Equal(t, map[string]string{LegacyAnnotationPrefix + "hostname": "example.org", HostnameKey: "configured.example.org"}, anns)
 	})
 
 	t.Run("a configured prefix starting with the legacy prefix disables resolution", func(t *testing.T) {
