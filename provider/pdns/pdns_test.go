@@ -27,6 +27,7 @@ import (
 
 	pgo "github.com/joeig/go-powerdns/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -1373,7 +1374,7 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 func TestPDNSHTTPClientTimeout(t *testing.T) {
 	tlsConfig := TLSConfig{}
 	httpClient, err := tlsConfig.newHTTPClient()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, defaultRequestTimeout, httpClient.Timeout)
 }
 
@@ -1392,7 +1393,7 @@ func TestPDNSHTTPClientTimeoutTriggered(t *testing.T) {
 	}
 
 	_, err := client.ListZones(t.Context())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestPDNSContextCancellation(t *testing.T) {
@@ -1404,13 +1405,13 @@ func TestPDNSContextCancellation(t *testing.T) {
 	cancel()
 
 	_, err := client.ListZones(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	_, err = client.ListZone(ctx, "example.com.")
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	err = client.PatchZone(ctx, "example.com.", &pgo.Zone{})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestPDNSContextCancellationInFlight(t *testing.T) {
@@ -1444,7 +1445,7 @@ func TestPDNSContextCancellationInFlight(t *testing.T) {
 
 	select {
 	case err := <-errCh:
-		assert.Error(t, err)
+		require.Error(t, err)
 	case <-time.After(2 * time.Second):
 		t.Fatal("ListZones did not abort on context cancellation")
 	}

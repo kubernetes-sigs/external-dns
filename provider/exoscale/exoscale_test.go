@@ -593,7 +593,7 @@ func TestExoscaleApplyChangesNoMatchingRecord(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, provider.ApplyChanges(t.Context(), changes))
+	require.NoError(t, provider.ApplyChanges(t.Context(), changes))
 	assert.Empty(t, updateExoscale)
 	assert.Empty(t, deleteExoscale)
 }

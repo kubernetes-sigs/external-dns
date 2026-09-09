@@ -17,7 +17,6 @@ limitations under the License.
 package godaddy
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -66,7 +65,7 @@ func TestClient_DoWhenQuotaExceeded(t *testing.T) {
 	err = client.UnmarshalResponse(resp, &respContents)
 	require.Error(t, err)
 	var apiErr *APIError
-	errors.As(err, &apiErr)
+	require.ErrorAs(t, err, &apiErr)
 	assert.Equal("QUOTA_EXCEEDED", apiErr.Code)
 	assert.Equal("rate limit exceeded", apiErr.Message)
 }
