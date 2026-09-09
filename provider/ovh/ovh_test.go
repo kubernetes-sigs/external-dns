@@ -603,35 +603,29 @@ func TestOvhChange(t *testing.T) {
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
 
 	// Record creation
-	client.On("PostWithContext", "/domain/zone/example.net/record", ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}}).Return(nil, nil).Once()
+	client.On("PostWithContext", "/domain/zone/example.net/record", ovhRecordFields{SubDomain: "ovh"}).Return(nil, nil).Once()
 	require.NoError(t, provider.change(t.Context(), ovhChange{
-		Action: ovhCreate,
-		ovhRecord: ovhRecord{
-			Zone: "example.net",
-			ovhRecordFields: ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}},
-		},
+		Action:    ovhCreate,
+		Zone:      "example.net",
+		SubDomain: "ovh",
 	}))
 	client.AssertExpectations(t)
 
 	// Record deletion
 	client.On("DeleteWithContext", "/domain/zone/example.net/record/42").Return(nil, nil).Once()
 	require.NoError(t, provider.change(t.Context(), ovhChange{
-		Action: ovhDelete,
-		ovhRecord: ovhRecord{
-			ID:   42,
-			Zone: "example.net",
-			ovhRecordFields: ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}},
-		},
+		Action:    ovhDelete,
+		ID:        42,
+		Zone:      "example.net",
+		SubDomain: "ovh",
 	}))
 	client.AssertExpectations(t)
 
 	// Record deletion error
 	require.Error(t, provider.change(t.Context(), ovhChange{
-		Action: ovhDelete,
-		ovhRecord: ovhRecord{
-			Zone: "example.net",
-			ovhRecordFields: ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}},
-		},
+		Action:    ovhDelete,
+		Zone:      "example.net",
+		SubDomain: "ovh",
 	}))
 	client.AssertExpectations(t)
 }
