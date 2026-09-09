@@ -154,8 +154,23 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				continue
 			}
 
-			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
-			crdEndpoints = append(crdEndpoints, ep)
+			// Normalize via NewEndpointWithTTL so CNAME/NS/PTR targets match
+			// provider AXFR form (trailing dots stripped), same as Ingress/Service.
+			normalized := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...)
+			if normalized == nil {
+				log.Debugf(
+					"Skipping endpoint with DNSName %s in DNSEndpoint %s/%s: failed normalization",
+					ep.DNSName, dnsEndpoint.Namespace, dnsEndpoint.Name,
+				)
+				continue
+			}
+			normalized.SetIdentifier = ep.SetIdentifier
+			normalized.ProviderSpecific = ep.ProviderSpecific
+			for k, v := range ep.Labels {
+				normalized.WithLabel(k, v)
+			}
+			normalized.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
+			crdEndpoints = append(crdEndpoints, normalized)
 		}
 
 		endpoint.AttachRefObject(crdEndpoints, events.NewObjectReference(dnsEndpoint, types.CRD))
