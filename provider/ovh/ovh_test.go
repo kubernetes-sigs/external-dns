@@ -601,38 +601,24 @@ func TestOvhApplyChangesPunyCode(t *testing.T) {
 func TestOvhChange(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+	ovhUpdateFields := ovhRecordFieldUpdate{SubDomain: "ovh"}
+	ovhRecordData := ovhRecordFields{ovhRecordFieldUpdate: ovhUpdateFields}
 
 	// Record creation
-	client.On("PostWithContext", "/domain/zone/example.net/record", ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}}).Return(nil, nil).Once()
-	require.NoError(t, provider.change(t.Context(), ovhChange{
-		Action: ovhCreate,
-		ovhRecord: ovhRecord{
-			Zone: "example.net",
-			ovhRecordFields: ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}},
-		},
-	}))
+	client.On("PostWithContext", "/domain/zone/example.net/record", ovhRecordData).Return(nil, nil).Once()
+	createRecord := ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordData}
+	require.NoError(t, provider.change(t.Context(), ovhChange{Action: ovhCreate, ovhRecord: createRecord}))
 	client.AssertExpectations(t)
 
 	// Record deletion
 	client.On("DeleteWithContext", "/domain/zone/example.net/record/42").Return(nil, nil).Once()
-	require.NoError(t, provider.change(t.Context(), ovhChange{
-		Action: ovhDelete,
-		ovhRecord: ovhRecord{
-			ID:   42,
-			Zone: "example.net",
-			ovhRecordFields: ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}},
-		},
-	}))
+	deleteRecord := ovhRecord{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordData}
+	require.NoError(t, provider.change(t.Context(), ovhChange{Action: ovhDelete, ovhRecord: deleteRecord}))
 	client.AssertExpectations(t)
 
 	// Record deletion error
-	require.Error(t, provider.change(t.Context(), ovhChange{
-		Action: ovhDelete,
-		ovhRecord: ovhRecord{
-			Zone: "example.net",
-			ovhRecordFields: ovhRecordFields{ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "ovh"}},
-		},
-	}))
+	errRecord := ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordData}
+	require.Error(t, provider.change(t.Context(), ovhChange{Action: ovhDelete, ovhRecord: errRecord}))
 	client.AssertExpectations(t)
 }
 

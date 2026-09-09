@@ -1228,11 +1228,9 @@ func TestRfc2136AxfrEnvelopeErrorReturnsSoftError(t *testing.T) {
 		"round-robin",
 		stub,
 	)
-	assert.NoError(t, err)
-
 	records, err := providerInstance.Records(t.Context())
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when AXFR envelope carries an error")
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError, "Expected SoftError when AXFR envelope carries an error")
 	assert.Empty(t, records, "Expected no records returned when AXFR envelope carries an error")
 }
 
@@ -1316,7 +1314,7 @@ func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
 	require.NoError(t, err)
 
 	endpoints, err := providerInstance.Records(t.Context())
-	assert.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
+	require.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
 	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
 }
 
