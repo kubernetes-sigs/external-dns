@@ -376,6 +376,53 @@ reference. At minimum, test that:
 * Zone names are correctly mapped to filter entries (including the leading-dot variant)
 * An error from `ListZones` returns an empty `DomainFilter` gracefully
 
+## Error Handling
+
+The controller reconcile loop treats errors in two tiers. The tier you return
+from a `Source` or `Provider` decides whether ExternalDNS keeps running.
+
+### Hard errors exit the process
+
+A plain `error` from `Source.Endpoints`, `Provider.Records`, or
+`Provider.ApplyChanges` propagates out of `Controller.RunOnce`, then out of
+`Controller.Run` to `main`, and the process exits non-zero.
+
+Throwing a hard error is expected **during startup** — provider or source
+construction, credential loading, config validation. A misconfigured ExternalDNS
+should fail fast rather than run in a broken state.
+
+Inside the reconcile loop it is different: Kubernetes restarts the pod, a
+persistent hard error becomes `CrashLoopBackOff`, and every restart forces the
+informers to resync with full LIST calls against the Kubernetes API. See
+[Operational best practices](../advanced/operational-best-practices.md) for how
+this amplifies under load. Once the controller is running, return a hard error
+only for a condition a restart cannot fix.
+
+### Soft errors are logged and retried
+
+For transient or expected conditions (rate limiting, an upstream timeout, a zone
+that is not visible yet), wrap the error with `provider.NewSoftErrorf`
+(`provider/provider.go`):
+
+```go
+if err != nil {
+    return provider.NewSoftErrorf("failed to list zones: %w", err)
+}
+```
+
+The controller logs the error, keeps running, and retries on the next reconcile.
+Consecutive soft errors are exported as the
+`external_dns_controller_consecutive_soft_errors` gauge, which resets after a
+successful reconcile. The webhook provider maps HTTP `5xx` to this same
+behaviour (see [Webhook provider](../tutorials/webhook-provider.md)).
+
+### "Nothing to do" is not an error
+
+If a method has no work (no matching records, an empty change set, a resource
+this provider does not manage), log at `debug` or `info` and return `nil`.
+Returning an error for an expected no-op inflates the soft-error metric or, as a
+hard error, crashes the controller.
+
 ## Provider Blueprints
 
 The `provider/blueprint` package contains reusable building blocks for provider
