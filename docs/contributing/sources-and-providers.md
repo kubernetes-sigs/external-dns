@@ -395,8 +395,9 @@ Inside the reconcile loop it is different: Kubernetes restarts the pod, a
 persistent hard error becomes `CrashLoopBackOff`, and every restart forces the
 informers to resync with full LIST calls against the Kubernetes API. See
 [Operational best practices](../advanced/operational-best-practices.md) for how
-this amplifies under load. Once the controller is running, prefer a soft error;
-a hard error is justified only when continuing would corrupt state.
+this amplifies under load. Once running, treat a hard error as a last resort: it
+helps only if a fresh process would behave differently. Transient and
+recoverable conditions belong in a soft error.
 
 ### Soft errors are logged and retried
 
