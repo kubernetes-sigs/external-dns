@@ -108,11 +108,6 @@ Self-check the change against this guide before handing it back:
 - Comments explain *why*, not *what* — no prose mirroring an `if` condition.
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
-- Anything non-obvious you learned about a source or provider is written back
-  into `docs/contributing/sources-and-providers.md`.
-- Flags or metrics added → ran `make generate-flags-documentation` /
-  `make generate-metrics-documentation`.
-- CRD types changed → ran `make crd`.
 - Ran `make go-lint` locally, and `go test -race ./<pkg>/...` for every package
   you touched (`make test` for cross-cutting changes). Both green.
 - PR title follows Conventional Commits.
