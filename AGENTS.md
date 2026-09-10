@@ -89,6 +89,14 @@ Full details in `docs/contributing/sources-and-providers.md` ("Error Handling").
 When you learn something non-obvious about a source or provider, update that
 guide.
 
+## Commit and PR Titles
+
+PR titles must follow Conventional Commits: `type(scope): imperative summary`
+(e.g. `fix(aws): respect --dry-run on record updates`). The title becomes the
+squashed commit and feeds the release changelog, so the type and scope matter.
+Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `build`. See
+`CONTRIBUTING.md`.
+
 ## Linting Notes
 
 Uses `golangci-lint` with strict `.golangci.yml` (32+ linters). Key rules: `testifylint` (use `assert`/`require` helpers correctly), `errorlint` (wrap errors properly), `gocritic`, `gochecknoinits` (no `init()` functions). All new Go files need Apache 2.0 license header.
