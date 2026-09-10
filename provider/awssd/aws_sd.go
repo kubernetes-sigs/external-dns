@@ -233,16 +233,8 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sdtypes.NamespaceSummary, srv *s
 	return newEndpoint
 }
 
-// AdjustEndpoints consumes the generic external-dns.kubernetes.io/alias
-// intent (exposed as endpoint.ProviderSpecificAlias) before the planner runs.
-// For a CNAME endpoint that targets a recognized AWS load balancer with
-// alias=true, that intent is translated into the transient DualstackLabelKey
-// that CreateService uses to select an A+AAAA Cloud Map service.
-//
-// The alias property itself is always removed here, regardless of whether it
-// triggered dual-stack intent: Records() never reconstructs it for
-// AWS_ALIAS_DNS_NAME instances, so leaving it on desired endpoints would make
-// plan.providerSpecificChanged report a spurious diff on every reconciliation.
+// AdjustEndpoints converts alias=true into transient dual-stack intent.
+// The alias property is removed because AWS-SD Records() does not restore it.
 func (p *AWSSDProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
 		if ep.RecordType == endpoint.RecordTypeCNAME &&
@@ -347,7 +339,7 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				services[*srv.Name] = srv
 			} else if ch.RecordTTL.IsConfigured() {
 				if srv.DnsConfig == nil || len(srv.DnsConfig.DnsRecords) == 0 {
-					return fmt.Errorf("service %q has no DNS records to update", srvName)
+					return provider.NewSoftErrorf("service %q has no DNS records to update", srvName)
 				}
 
 				needsTTLUpdate := false
@@ -493,7 +485,7 @@ func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, 
 		Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 		DnsConfig: &sdtypes.DnsConfig{
 			RoutingPolicy: routingPolicy,
-			DnsRecords:    dnsRecordsFromTypes(p.serviceTypesFromEndpoint(ep), ttl),
+			DnsRecords:    dnsRecords(p.serviceTypesFromEndpoint(ep), ttl),
 		},
 		NamespaceId: namespaceID,
 		Tags:        p.tags,
@@ -519,7 +511,7 @@ func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Serv
 	}
 
 	if service.DnsConfig == nil || len(service.DnsConfig.DnsRecords) == 0 {
-		return fmt.Errorf("service %q has no DNS records to update", aws.ToString(service.Name))
+		return provider.NewSoftErrorf("service %q has no DNS records to update", aws.ToString(service.Name))
 	}
 
 	_, err := p.client.UpdateService(ctx, &sd.UpdateServiceInput{
@@ -527,7 +519,7 @@ func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Serv
 		Service: &sdtypes.ServiceChange{
 			Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 			DnsConfig: &sdtypes.DnsConfigChange{
-				DnsRecords: dnsRecordsWithTTL(service.DnsConfig.DnsRecords, ttl),
+				DnsRecords: dnsRecords(recordTypes(service.DnsConfig.DnsRecords), ttl),
 			},
 		},
 	})
@@ -678,7 +670,7 @@ func (p *AWSSDProvider) serviceTypeFromEndpoint(ep *endpoint.Endpoint) sdtypes.R
 	case endpoint.RecordTypeCNAME:
 		// FIXME service type is derived from the first target only. Theoretically this may be problem.
 		// But I don't see a scenario where one endpoint contains targets of different types.
-		if p.isAWSLoadBalancer(ep.Targets[0]) {
+		if len(ep.Targets) > 0 && p.isAWSLoadBalancer(ep.Targets[0]) {
 			// ALIAS target uses DNS record of type A
 			return sdtypes.RecordTypeA
 		}
@@ -690,15 +682,13 @@ func (p *AWSSDProvider) serviceTypeFromEndpoint(ep *endpoint.Endpoint) sdtypes.R
 	}
 }
 
-// serviceTypesFromEndpoint returns the DNS record types to use when
-// creating a Cloud Map service. AWS load-balancer aliases remain A-only
-// unless AdjustEndpoints marked the endpoint dual-stack (DualstackLabelKey),
-// which it does only for the external-dns.kubernetes.io/alias: "true"
-// annotation on a recognized AWS load-balancer CNAME.
+// serviceTypesFromEndpoint returns A+AAAA when AdjustEndpoints marked the
+// endpoint dual-stack, otherwise the single primary type.
 func (p *AWSSDProvider) serviceTypesFromEndpoint(ep *endpoint.Endpoint) []sdtypes.RecordType {
 	primary := p.serviceTypeFromEndpoint(ep)
 
 	if ep.RecordType == endpoint.RecordTypeCNAME &&
+		len(ep.Targets) > 0 &&
 		p.isAWSLoadBalancer(ep.Targets[0]) &&
 		ep.Labels[endpoint.DualstackLabelKey] == "true" {
 		return []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa}
@@ -707,7 +697,7 @@ func (p *AWSSDProvider) serviceTypesFromEndpoint(ep *endpoint.Endpoint) []sdtype
 	return []sdtypes.RecordType{primary}
 }
 
-func dnsRecordsFromTypes(types []sdtypes.RecordType, ttl int64) []sdtypes.DnsRecord {
+func dnsRecords(types []sdtypes.RecordType, ttl int64) []sdtypes.DnsRecord {
 	records := make([]sdtypes.DnsRecord, 0, len(types))
 	for _, recordType := range types {
 		records = append(records, sdtypes.DnsRecord{
@@ -718,17 +708,12 @@ func dnsRecordsFromTypes(types []sdtypes.RecordType, ttl int64) []sdtypes.DnsRec
 	return records
 }
 
-// dnsRecordsWithTTL preserves the immutable record types of an existing
-// Cloud Map service while updating their TTL.
-func dnsRecordsWithTTL(records []sdtypes.DnsRecord, ttl int64) []sdtypes.DnsRecord {
-	updated := make([]sdtypes.DnsRecord, 0, len(records))
+func recordTypes(records []sdtypes.DnsRecord) []sdtypes.RecordType {
+	types := make([]sdtypes.RecordType, 0, len(records))
 	for _, record := range records {
-		updated = append(updated, sdtypes.DnsRecord{
-			Type: record.Type,
-			TTL:  aws.Int64(ttl),
-		})
+		types = append(types, record.Type)
 	}
-	return updated
+	return types
 }
 
 // determine if a given hostname belongs to an AWS load balancer

@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 func TestAWSSDProvider_Records(t *testing.T) {
@@ -1317,9 +1318,6 @@ func TestAWSSDProvider_CreateService_LoadBalancerAliasRecordTypes(t *testing.T) 
 				"",
 			)
 
-			// Desired endpoint carries the generic external-dns.kubernetes.io/alias
-			// intent as ProviderSpecific, exactly as the ingress/service sources
-			// produce it via annotations.ProviderSpecificAnnotations.
 			desired := &endpoint.Endpoint{
 				Labels: map[string]string{
 					endpoint.AWSSDDescriptionLabel: tc.description,
@@ -1355,6 +1353,48 @@ func TestAWSSDProvider_CreateService_LoadBalancerAliasRecordTypes(t *testing.T) 
 			}
 		})
 	}
+}
+
+func TestAWSSDProvider_CreateService_CNAMENoTargets(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+	}
+
+	sdProvider := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	var service *sdtypes.Service
+	var err error
+	require.NotPanics(t, func() {
+		service, err = sdProvider.CreateService(
+			t.Context(),
+			aws.String("private"),
+			aws.String("no-targets-srv"),
+			&endpoint.Endpoint{
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  60,
+				Targets:    endpoint.Targets{},
+			},
+		)
+	})
+	require.NoError(t, err)
+	require.NotNil(t, service)
+
+	require.Len(t, service.DnsConfig.DnsRecords, 1)
+	assert.Equal(t, sdtypes.RecordTypeCname, service.DnsConfig.DnsRecords[0].Type)
 }
 
 func TestAWSSDProvider_UpdateService_PreservesExistingRecordTypes(t *testing.T) {
@@ -1488,9 +1528,7 @@ func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t 
 		"",
 	)
 
-	// Desired endpoint starts with the generic alias annotation intent, exactly
-	// as it arrives from the source, and must pass through AdjustEndpoints
-	// before reaching the planner/ApplyChanges.
+	// Must pass through AdjustEndpoints before ApplyChanges.
 	ep := &endpoint.Endpoint{
 		DNSName:    "service1.private.com",
 		RecordType: endpoint.RecordTypeCNAME,
@@ -1531,7 +1569,7 @@ func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t 
 }
 
 func TestAWSSDProvider_UpdateService_MissingDNSRecords(t *testing.T) {
-	provider := newTestAWSSDProvider(
+	sdProvider := newTestAWSSDProvider(
 		&AWSSDClientStub{},
 		endpoint.NewDomainFilter([]string{}),
 		"",
@@ -1559,7 +1597,7 @@ func TestAWSSDProvider_UpdateService_MissingDNSRecords(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := provider.UpdateService(
+			err := sdProvider.UpdateService(
 				t.Context(),
 				tc.service,
 				&endpoint.Endpoint{
@@ -1572,6 +1610,7 @@ func TestAWSSDProvider_UpdateService_MissingDNSRecords(t *testing.T) {
 			)
 
 			require.Error(t, err)
+			require.ErrorIs(t, err, provider.SoftError)
 			assert.Contains(t, err.Error(), "has no DNS records to update")
 		})
 	}
@@ -1602,14 +1641,14 @@ func TestAWSSDProvider_ApplyChanges_MissingDNSRecordsReturnsError(t *testing.T) 
 		instances:  make(map[string]map[string]*sdtypes.Instance),
 	}
 
-	provider := newTestAWSSDProvider(
+	sdProvider := newTestAWSSDProvider(
 		api,
 		endpoint.NewDomainFilter([]string{}),
 		"",
 		"",
 	)
 
-	err := provider.ApplyChanges(
+	err := sdProvider.ApplyChanges(
 		t.Context(),
 		&plan.Changes{
 			Create: []*endpoint.Endpoint{
@@ -1626,6 +1665,7 @@ func TestAWSSDProvider_ApplyChanges_MissingDNSRecordsReturnsError(t *testing.T) 
 	)
 
 	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
 	assert.Contains(t, err.Error(), "has no DNS records to update")
 }
 
@@ -1703,13 +1743,7 @@ func TestAWSSDProvider_ApplyChanges_UpdatesTTLWhenSecondRecordIsStale(t *testing
 	assert.Equal(t, int64(100), *records[1].TTL)
 }
 
-// TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop proves that once a desired
-// endpoint has passed through AdjustEndpoints, comparing it against the
-// equivalent endpoint that Records() would read back (no alias
-// ProviderSpecific property, since Records() never reconstructs one) produces
-// no plan changes. This guards against the alias intent, or the transient
-// DualstackLabelKey it becomes, causing a spurious update on every
-// reconciliation.
+// Guards against the alias intent causing a spurious update every reconciliation.
 func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
 	provider := newTestAWSSDProvider(
 		&AWSSDClientStub{},
@@ -1732,8 +1766,7 @@ func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, adjusted, 1)
 
-	// Equivalent read-back endpoint as Records() would produce: same name,
-	// type, target, and TTL, but no alias ProviderSpecific property.
+	// Read-back endpoint: no alias property, as Records() would produce.
 	current := &endpoint.Endpoint{
 		DNSName:    "service1.private.com",
 		RecordType: endpoint.RecordTypeCNAME,

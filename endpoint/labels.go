@@ -41,9 +41,7 @@ const (
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
 	AWSSDDescriptionLabel = "aws-sd-description"
 
-	// DualstackLabelKey marks endpoints backed by an explicitly dual-stack
-	// load balancer. It is transient source-to-provider metadata and is not
-	// serialized into ownership records.
+	// DualstackLabelKey is transient AdjustEndpoints metadata, excluded from serialization.
 	DualstackLabelKey = "dualstack"
 
 	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
