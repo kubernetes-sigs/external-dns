@@ -260,6 +260,9 @@ OuterLoop:
 		case dns.TypePTR:
 			rrValues = []string{rr.(*dns.PTR).Ptr}
 			rrType = "PTR"
+		case dns.TypeTLSA:
+			rrValues = []string{tlsaTarget(rr.(*dns.TLSA))}
+			rrType = "TLSA"
 		default:
 			continue // Unhandled record type
 		}
@@ -279,6 +282,43 @@ OuterLoop:
 		)
 
 		eps = append(eps, ep)
+	}
+
+	return eps, nil
+}
+
+// tlsaTarget renders a TLSA RR in the presentation format used for endpoint
+// targets. Nameservers are free to hand the certificate association data back
+// in either case, so it is normalised the same way the endpoint package does
+// and compares equal to the target the sources asked for.
+func tlsaTarget(rr *dns.TLSA) string {
+	target := fmt.Sprintf("%d %d %d %s", rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate)
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		log.Warnf("could not parse TLSA record %q for %s, using it verbatim: %v", target, rr.Header().Name, err)
+		return target
+	}
+	return tlsa.String()
+}
+
+// AdjustEndpoints canonicalises TLSA targets. RFC 6698 presentation format
+// tolerates mixed case and separators in the certificate association data, so
+// without this a record read back from the nameserver would never compare
+// equal to its source and the plan would rewrite it on every run.
+func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range eps {
+		if ep.RecordType != endpoint.RecordTypeTLSA {
+			continue
+		}
+		for i, target := range ep.Targets {
+			tlsa, err := endpoint.NewTLSARecord(target)
+			if err != nil {
+				// AddRecord reports this as a hard error when the change is applied.
+				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+				continue
+			}
+			ep.Targets[i] = tlsa.String()
+		}
 	}
 
 	return eps, nil
@@ -505,7 +545,12 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	}
 
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target)
+		rrTarget, err := rrTargetFor(ep.RecordType, target)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %w", err)
+		}
+
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, rrTarget)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -522,7 +567,12 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		rrTarget, err := rrTargetFor(ep.RecordType, target)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %w", err)
+		}
+
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, rrTarget)
 		log.Infof("Removing RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -534,6 +584,23 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	}
 
 	return nil
+}
+
+// rrTargetFor renders an endpoint target for the RR text that is handed to
+// dns.NewRR. TLSA targets are canonicalised and validated here: the parser
+// accepts any token as certificate association data, so separators or invalid
+// hex would otherwise only surface as a malformed record on the wire.
+func rrTargetFor(recordType, target string) (string, error) {
+	if recordType != endpoint.RecordTypeTLSA {
+		return target, nil
+	}
+
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		return "", err
+	}
+
+	return tlsa.String(), nil
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given
