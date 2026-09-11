@@ -94,7 +94,7 @@ guide.
 PR titles must follow Conventional Commits: `type(scope): imperative summary`
 (e.g. `fix(aws): respect --dry-run on record updates`). The title becomes the
 squashed commit and feeds the release changelog, so the type and scope matter.
-Common types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `build`. See
+Common types: `feat`, `fix`, `docs`, `chore`, `ci`, `refactor`, `test`. See
 `CONTRIBUTING.md`.
 
 ## Linting Notes
