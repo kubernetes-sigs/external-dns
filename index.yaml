@@ -4,6 +4,49 @@ entries:
   - annotations:
       artifacthub.io/changes: |-
         - kind: added
+          description: "Add value .service.enabled to enable the creation of the Kubernetes service."
+        - kind: added
+          description: "Add value replicaCount to set the number of external-dns replicas (bounded to 0 or 1, since external-dns does not support leader election)."
+        - kind: added
+          description: "Add crd as a valid registry value and grant the matching RBAC on dnsrecords for the CRD registry."
+        - kind: added
+          description: "Add value hostAliases to inject entries into the Pod's /etc/hosts, for reaching a provider or webhook by a hostname that cluster DNS cannot resolve."
+        - kind: changed
+          description: "Breaking: policy no longer defaults to upsert-only and is now required. You must set policy explicitly to one of create-only, sync, or upsert-only."
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.22.0."
+        - kind: fixed
+          description: "RBAC compliance checkbox for dnsendpoints/status #6442 @vflaux."
+    apiVersion: v2
+    appVersion: 0.22.0
+    created: "2026-09-11T08:59:07.293045888Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: ec26bba67e02f46a55ac33790ad9d9ded724a163af6f6b4a63ce68f883201f4f
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.22.0/external-dns-1.22.0.tgz
+    version: 1.22.0
+  - annotations:
+      artifacthub.io/changes: |-
+        - kind: added
           description: "Add value .sourceNamespace to watch a namespace which is different from the one that external-dns is installed into when .namespaced is true."
         - kind: added
           description: "Add option to enable Gateway API ListenerSet support."
@@ -1187,4 +1230,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2026-04-30T08:45:52.748533308Z"
+generated: "2026-09-11T08:59:07.293325836Z"
