@@ -67,6 +67,47 @@ Existing in-tree providers are being actively migrated out-of-tree (see issue #4
 1. Create `source/<name>.go` implementing `Source` interface (`Endpoints`, `AddEventHandler`).
 2. Register in `source/store.go`.
 
+## Comments
+
+Comments capture intent: why the code is shaped this way, what constraint forced
+it, what breaks if you change it. The code already shows what it does.
+
+Do not narrate control flow or restate an `if` condition in prose; if the
+comment goes stale when the line below it changes, delete it. Keep comments
+short. Exported-identifier doc comments are the exception: a concise behavioral
+summary is their job.
+
+## Error Handling
+
+Hard errors (a plain `error`) are fine at startup: provider/source construction,
+credential loading, and config validation should fail fast. Inside the reconcile
+loop a plain `error` from a `Source` or `Provider` is fatal (the process exits
+and Kubernetes CrashLoopBackOffs the pod); wrap transient or expected conditions
+with `provider.NewSoftErrorf`, and return `nil` for "nothing to do".
+
+Full details in `docs/contributing/sources-and-providers.md` ("Error Handling").
+When you learn something non-obvious about a source or provider, update that
+guide.
+
+## Commit and PR Titles
+
+PR titles must follow Conventional Commits: `type(scope): imperative summary`
+(e.g. `fix(aws): respect --dry-run on record updates`). The title becomes the
+squashed commit and feeds the release changelog, so the type and scope matter.
+Common types: `feat`, `fix`, `docs`, `chore`, `ci`, `refactor`, `test`. See
+`CONTRIBUTING.md`.
+
 ## Linting Notes
 
 Uses `golangci-lint` with strict `.golangci.yml` (32+ linters). Key rules: `testifylint` (use `assert`/`require` helpers correctly), `errorlint` (wrap errors properly), `gocritic`, `gochecknoinits` (no `init()` functions). All new Go files need Apache 2.0 license header.
+
+## Before You Finish
+
+Self-check the change against this guide before handing it back:
+
+- Comments explain *why*, not *what* — no prose mirroring an `if` condition.
+- Provider/source errors: hard only for unrecoverable startup conditions,
+  otherwise `provider.NewSoftErrorf` or return `nil`.
+- Ran `make go-lint` locally, and `go test -race ./<pkg>/...` for every package
+  you touched (`make test` for cross-cutting changes). Both green.
+- PR title follows Conventional Commits.
