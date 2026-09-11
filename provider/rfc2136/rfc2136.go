@@ -260,6 +260,9 @@ OuterLoop:
 		case dns.TypePTR:
 			rrValues = []string{rr.(*dns.PTR).Ptr}
 			rrType = "PTR"
+		case dns.TypeTLSA:
+			rrValues = []string{tlsaTarget(rr.(*dns.TLSA))}
+			rrType = "TLSA"
 		default:
 			continue // Unhandled record type
 		}
@@ -279,6 +282,38 @@ OuterLoop:
 		)
 
 		eps = append(eps, ep)
+	}
+
+	return eps, nil
+}
+
+// Canonicalize a TLSA RR. Per RFC 6698, those are case-insensitive, which can
+// cause re-synchronising for records even if not needed.
+func tlsaTarget(rr *dns.TLSA) string {
+	target := fmt.Sprintf("%d %d %d %s", rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate)
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		log.Warnf("could not parse TLSA record %q for %s, using it verbatim: %v", target, rr.Header().Name, err)
+		return target
+	}
+	return tlsa.String()
+}
+
+// Canonicalize targets to avoid reconciliation when not needed.
+func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range eps {
+		if ep.RecordType != endpoint.RecordTypeTLSA {
+			continue
+		}
+		for i, target := range ep.Targets {
+			tlsa, err := endpoint.NewTLSARecord(target)
+			if err != nil {
+				// AddRecord reports this as a hard error when the change is applied.
+				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+				continue
+			}
+			ep.Targets[i] = tlsa.String()
+		}
 	}
 
 	return eps, nil
@@ -505,7 +540,12 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	}
 
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target)
+		rrTarget, err := rrTargetFor(ep.RecordType, target)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %w", err)
+		}
+
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, rrTarget)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -522,7 +562,12 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		rrTarget, err := rrTargetFor(ep.RecordType, target)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %w", err)
+		}
+
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, rrTarget)
 		log.Infof("Removing RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -534,6 +579,21 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	}
 
 	return nil
+}
+
+// rrTargetFor renders an endpoint target for the RR text that is handed to
+// dns.NewRR. Handles validation and canonicalisation.
+func rrTargetFor(recordType, target string) (string, error) {
+	if recordType != endpoint.RecordTypeTLSA {
+		return target, nil
+	}
+
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		return "", err
+	}
+
+	return tlsa.String(), nil
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given
