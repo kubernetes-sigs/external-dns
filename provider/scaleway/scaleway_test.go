@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
@@ -30,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
 type mockScalewayDomain struct {
@@ -84,6 +86,13 @@ func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRe
 				Priority: 0,
 				Type:     domain.RecordTypeA,
 			},
+			{
+				Data:     "one.example.com.",
+				Name:     "",
+				TTL:      300,
+				Priority: 0,
+				Type:     domain.RecordTypeALIAS,
+			},
 		}
 	} else if req.DNSZone == "test.example.com" {
 		records = []*domain.Record{
@@ -100,6 +109,13 @@ func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRe
 				TTL:      600,
 				Priority: 30,
 				Type:     domain.RecordTypeCNAME,
+			},
+			{
+				Data:     "foo.example.com.",
+				Name:     "www",
+				TTL:      300,
+				Priority: 0,
+				Type:     domain.RecordTypeALIAS,
 			},
 		}
 	}
@@ -173,7 +189,12 @@ func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
 }
 
 func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
-	provider := &ScalewayProvider{}
+	mocked := mockScalewayDomain{nil}
+	provider := &ScalewayProvider{
+		domainAPI:    &mocked,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
+	}
 
 	before := []*endpoint.Endpoint{
 		{
@@ -206,6 +227,62 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			RecordType:       "A",
 			Targets:          []string{"1.1.1.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
+		{
+			// CNAME at the zone apex gets the alias property added
+			DNSName:    "example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			// CNAME with the alias annotation keeps the alias property
+			DNSName:    "four.example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+			},
+		},
+		{
+			// CNAME with the alias property set to false gets it removed
+			DNSName:    "five.example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "false",
+				},
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			// non-CNAME with the alias property gets it removed
+			DNSName:    "six.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+			},
 		},
 	}
 
@@ -246,6 +323,62 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			DNSName:    "example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+			},
+		},
+		{
+			DNSName:    "four.example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			DNSName:    "five.example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			DNSName:    "six.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
 	}
 
 	after, err := provider.AdjustEndpoints(before)
@@ -262,6 +395,7 @@ func TestScalewayProvider_Zones(t *testing.T) {
 	provider := &ScalewayProvider{
 		domainAPI:    &mocked,
 		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
 	}
 
 	expected := []*domain.DNSZone{
@@ -282,6 +416,39 @@ func TestScalewayProvider_Zones(t *testing.T) {
 	for i, zone := range zones {
 		assert.Equal(t, expected[i], zone)
 	}
+
+	// the apex names used to detect ALIAS records come from the same listing
+	apexNames := provider.apexNames(t.Context())
+	assert.Contains(t, apexNames, "example.com")
+	assert.Contains(t, apexNames, "test.example.com")
+}
+
+// countingScalewayDomain counts the calls to ListDNSZones to assert on the zone cache.
+type countingScalewayDomain struct {
+	mockScalewayDomain
+	listDNSZonesCalls int
+}
+
+func (m *countingScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
+	m.listDNSZonesCalls++
+	return m.mockScalewayDomain.ListDNSZones(req, opts...)
+}
+
+func TestScalewayProvider_ZonesCache(t *testing.T) {
+	mocked := &countingScalewayDomain{mockScalewayDomain: mockScalewayDomain{nil}}
+	provider := &ScalewayProvider{
+		domainAPI:    mocked,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](time.Minute),
+	}
+
+	first, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+	second, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+
+	assert.Equal(t, first, second)
+	assert.Equal(t, 1, mocked.listDNSZonesCalls, "the zone list should be served from the cache until it expires")
 }
 
 func TestScalewayProvider_Records(t *testing.T) {
@@ -289,6 +456,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 	provider := &ScalewayProvider{
 		domainAPI:    &mocked,
 		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
 	}
 
 	expected := []*endpoint.Endpoint{
@@ -340,6 +508,40 @@ func TestScalewayProvider_Records(t *testing.T) {
 				},
 			},
 		},
+		{
+			// ALIAS records at the zone apex are read back as CNAME endpoints
+			DNSName:    "example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"one.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+			},
+		},
+		{
+			// ALIAS records below the zone apex are read back as CNAME endpoints too
+			DNSName:    "www.test.example.com",
+			RecordTTL:  300,
+			RecordType: "CNAME",
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+			},
+		},
 	}
 
 	records, err := provider.Records(t.Context())
@@ -359,6 +561,72 @@ func TestScalewayProvider_Records(t *testing.T) {
 	}
 }
 
+// mockScalewayDomainAliasAndCNAME serves a zone holding an ALIAS and a CNAME record
+// with the same name, which ExternalDNS never creates but a user can.
+type mockScalewayDomainAliasAndCNAME struct {
+	*domain.API
+}
+
+func (m *mockScalewayDomainAliasAndCNAME) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
+	return &domain.ListDNSZonesResponse{
+		DNSZones: []*domain.DNSZone{
+			{
+				Domain:    "example.com",
+				Subdomain: "",
+			},
+		},
+	}, nil
+}
+
+func (m *mockScalewayDomainAliasAndCNAME) ListDNSZoneRecords(_ *domain.ListDNSZoneRecordsRequest, _ ...scw.RequestOption) (*domain.ListDNSZoneRecordsResponse, error) {
+	return &domain.ListDNSZoneRecordsResponse{
+		Records: []*domain.Record{
+			{
+				Data:     "alias.example.com.",
+				Name:     "www",
+				TTL:      300,
+				Priority: 0,
+				Type:     domain.RecordTypeALIAS,
+			},
+			{
+				Data:     "cname.example.com.",
+				Name:     "www",
+				TTL:      300,
+				Priority: 0,
+				Type:     domain.RecordTypeCNAME,
+			},
+		},
+	}, nil
+}
+
+func (m *mockScalewayDomainAliasAndCNAME) UpdateDNSZoneRecords(_ *domain.UpdateDNSZoneRecordsRequest, _ ...scw.RequestOption) (*domain.UpdateDNSZoneRecordsResponse, error) {
+	return &domain.UpdateDNSZoneRecordsResponse{}, nil
+}
+
+// TestScalewayProvider_RecordsAliasAndCNAMESameName ensures that an ALIAS and a
+// CNAME record sharing a name are read back as two endpoints: both are exposed
+// as CNAME, so merging them would drop either the alias property or a target.
+func TestScalewayProvider_RecordsAliasAndCNAMESameName(t *testing.T) {
+	provider := &ScalewayProvider{
+		domainAPI:    &mockScalewayDomainAliasAndCNAME{},
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
+	}
+
+	endpoints, err := provider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, endpoints, 2)
+
+	aliases := map[string]endpoint.Targets{}
+	for _, ep := range endpoints {
+		assert.Equal(t, "www.example.com", ep.DNSName)
+		assert.Equal(t, endpoint.RecordTypeCNAME, ep.RecordType)
+		aliases[string(ep.GetAliasProperty())] = ep.Targets
+	}
+	assert.Equal(t, endpoint.Targets{"alias.example.com"}, aliases[string(endpoint.AliasTrue)])
+	assert.Equal(t, endpoint.Targets{"cname.example.com"}, aliases[""])
+}
+
 // this test is really ugly since we are working on maps, so array are randomly sorted
 // feel free to modify if you have a better idea
 func TestScalewayProvider_generateApplyRequests(t *testing.T) {
@@ -366,6 +634,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 	provider := &ScalewayProvider{
 		domainAPI:    &mocked,
 		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
 	}
 
 	expected := []*domain.UpdateDNSZoneRecordsRequest{
@@ -426,6 +695,26 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 						},
 					},
 				},
+				{
+					// apex CNAME records are deleted as ALIAS records
+					Delete: &domain.RecordChangeDelete{
+						IDFields: &domain.RecordIdentifier{
+							Data: new("foo.example.com."),
+							Name: "",
+							Type: domain.RecordTypeALIAS,
+						},
+					},
+				},
+				{
+					// CNAME records with the alias property are deleted as ALIAS records
+					Delete: &domain.RecordChangeDelete{
+						IDFields: &domain.RecordIdentifier{
+							Data: new("bar.example.com."),
+							Name: "old",
+							Type: domain.RecordTypeALIAS,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -435,11 +724,20 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 					Add: &domain.RecordChangeAdd{
 						Records: []*domain.Record{
 							{
+								// apex CNAME records are created as ALIAS records
 								Data:     "example.com.",
 								Name:     "",
 								TTL:      600,
-								Type:     domain.RecordTypeCNAME,
+								Type:     domain.RecordTypeALIAS,
 								Priority: 20,
+							},
+							{
+								// CNAME records with the alias property are created as ALIAS records
+								Data:     "foo.example.com.",
+								Name:     "www",
+								TTL:      600,
+								Type:     domain.RecordTypeALIAS,
+								Priority: 0,
 							},
 							{
 								Data:     "1.2.3.4",
@@ -508,6 +806,18 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				RecordTTL: 600,
 				Targets:   []string{"example.com"},
 			},
+			{
+				DNSName:    "www.test.example.com",
+				RecordType: "CNAME",
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  endpoint.ProviderSpecificAlias,
+						Value: "true",
+					},
+				},
+				RecordTTL: 600,
+				Targets:   []string{"foo.example.com"},
+			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
@@ -519,6 +829,22 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				DNSName:    "here.is.my.test.example.com",
 				RecordType: "A",
 				Targets:    []string{"1.1.1.1"},
+			},
+			{
+				DNSName:    "example.com",
+				RecordType: "CNAME",
+				Targets:    []string{"foo.example.com"},
+			},
+			{
+				DNSName:    "old.example.com",
+				RecordType: "CNAME",
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  endpoint.ProviderSpecificAlias,
+						Value: "true",
+					},
+				},
+				Targets: []string{"bar.example.com"},
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
@@ -575,6 +901,138 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 0, total)
+}
+
+// TestScalewayProvider_AliasRoundTrip ensures that desired CNAME endpoints
+// stored as ALIAS records, once adjusted, exactly match the endpoints read
+// back from those ALIAS records. If they diverge, the plan detects a
+// difference and rewrites the records on every reconciliation cycle.
+func TestScalewayProvider_AliasRoundTrip(t *testing.T) {
+	mocked := mockScalewayDomain{nil}
+	provider := &ScalewayProvider{
+		domainAPI:    &mocked,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
+	}
+
+	current, err := provider.Records(t.Context())
+	require.NoError(t, err)
+
+	desired := []*endpoint.Endpoint{
+		{
+			// apex CNAME without any annotation
+			DNSName:    "example.com",
+			RecordType: "CNAME",
+			RecordTTL:  300,
+			Targets:    []string{"one.example.com"},
+		},
+		{
+			// CNAME below the apex opted in via the alias annotation
+			DNSName:    "www.test.example.com",
+			RecordType: "CNAME",
+			RecordTTL:  300,
+			Targets:    []string{"foo.example.com"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  endpoint.ProviderSpecificAlias,
+					Value: "true",
+				},
+			},
+		},
+	}
+	adjusted, err := provider.AdjustEndpoints(desired)
+	require.NoError(t, err)
+
+	for _, d := range adjusted {
+		found := false
+		for _, c := range current {
+			if c.DNSName == d.DNSName && c.RecordType == d.RecordType {
+				found = true
+				assert.True(t, c.Targets.Same(d.Targets), "targets mismatch for %s", d.DNSName)
+				assert.Equal(t, c.RecordTTL, d.RecordTTL, "TTL mismatch for %s", d.DNSName)
+				assert.ElementsMatch(t, c.ProviderSpecific, d.ProviderSpecific,
+					"provider-specific mismatch for %s would cause an update on every cycle", d.DNSName)
+			}
+		}
+		assert.True(t, found, "no record found for %s", d.DNSName)
+	}
+}
+
+func TestScalewayProvider_scalewayRecordType(t *testing.T) {
+	tests := []struct {
+		name               string
+		ep                 *endpoint.Endpoint
+		relativeRecordName string
+		expected           domain.RecordType
+	}{
+		{
+			name:               "CNAME at zone apex becomes ALIAS",
+			ep:                 &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME},
+			relativeRecordName: "",
+			expected:           domain.RecordTypeALIAS,
+		},
+		{
+			name:               "CNAME below zone apex stays CNAME",
+			ep:                 &endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME},
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeCNAME,
+		},
+		{
+			name: "CNAME with alias property becomes ALIAS",
+			ep: (&endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME}).
+				WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeALIAS,
+		},
+		{
+			name: "CNAME with alias property set to false stays CNAME",
+			ep: (&endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME}).
+				WithProviderSpecific(endpoint.ProviderSpecificAlias, "false"),
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeCNAME,
+		},
+		{
+			// "A" and "AAAA" are AWS-specific dual-stack alias values, they do
+			// not opt in to Scaleway ALIAS records
+			name: "CNAME with alias property set to A stays CNAME",
+			ep: (&endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME}).
+				WithProviderSpecific(endpoint.ProviderSpecificAlias, "A"),
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeCNAME,
+		},
+		{
+			name: "CNAME with alias property set to AAAA stays CNAME",
+			ep: (&endpoint.Endpoint{RecordType: endpoint.RecordTypeCNAME}).
+				WithProviderSpecific(endpoint.ProviderSpecificAlias, "AAAA"),
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeCNAME,
+		},
+		{
+			name:               "A at zone apex stays A",
+			ep:                 &endpoint.Endpoint{RecordType: endpoint.RecordTypeA},
+			relativeRecordName: "",
+			expected:           domain.RecordTypeA,
+		},
+		{
+			name: "A with alias property stays A",
+			ep: (&endpoint.Endpoint{RecordType: endpoint.RecordTypeA}).
+				WithProviderSpecific(endpoint.ProviderSpecificAlias, "true"),
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeA,
+		},
+		{
+			name:               "TXT below zone apex stays TXT",
+			ep:                 &endpoint.Endpoint{RecordType: endpoint.RecordTypeTXT},
+			relativeRecordName: "www",
+			expected:           domain.RecordTypeTXT,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, scalewayRecordType(tt.ep, tt.relativeRecordName))
+		})
+	}
 }
 
 func checkRecordEquality(record1, record2 *endpoint.Endpoint) bool {
