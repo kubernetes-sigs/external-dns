@@ -310,9 +310,17 @@ func tlsaTarget(rr *dns.TLSA) string {
 	return tlsa.String()
 }
 
-// Canonicalize targets to avoid reconciliation when not needed.
+// AdjustEndpoints applies the rfc2136-min-ttl floor to the desired endpoints so
+// that the planned state matches what AddRecord will actually write. Without
+// this, a record whose configured TTL is below rfc2136-min-ttl is rewritten on
+// every reconciliation cycle. See https://github.com/kubernetes-sigs/external-dns/issues/6723.
+// It also canonicalizes targets to avoid reconciliation when not needed.
 func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	minTTL := int64(r.minTTL.Seconds())
 	for _, ep := range eps {
+		if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) < minTTL {
+			ep.RecordTTL = endpoint.TTL(minTTL)
+		}
 		if ep.RecordType != endpoint.RecordTypeTLSA {
 			continue
 		}
