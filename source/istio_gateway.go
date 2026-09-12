@@ -42,11 +42,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
-// instead of a standard LoadBalancer service type
-// Using var instead of const because annotation keys can be customized
-var IstioGatewayIngressSource = annotations.Ingress
-
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use annotations.TargetKey to explicitly set Endpoint.
@@ -221,7 +216,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endp
 		return targets, nil
 	}
 
-	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	ingressStr, ok := gateway.Annotations[annotations.Ingress]
 	if ok && ingressStr != "" {
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
