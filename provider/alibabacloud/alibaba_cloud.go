@@ -382,30 +382,28 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	if err != nil {
 		return results, fmt.Errorf("getting domain list: %w", err)
 	}
-	if !p.domainFilter.IsConfigured() {
-		for _, zoneDomain := range hostedZoneDomains {
-			domainRecords, err := p.getDomainRecords(zoneDomain)
-			if err != nil {
-				return nil, fmt.Errorf("getDomainRecords %q: %w", zoneDomain, err)
-			}
-			results = append(results, domainRecords...)
-		}
-	} else {
-		zonesToFetch := make(map[string]struct{})
+	zonesToFetch := hostedZoneDomains
+	if p.domainFilter.IsConfigured() {
+		seen := make(map[string]struct{})
+		zonesToFetch = nil
 		for _, domainName := range p.domainFilter.Filters {
 			_, zone := p.splitDNSName(domainName, hostedZoneDomains)
-			if zone != "" {
-				zonesToFetch[zone] = struct{}{}
-			}
-		}
-		for domainName := range zonesToFetch {
-			tmpResults, err := p.getDomainRecords(domainName)
-			if err != nil {
-				log.Errorf("getDomainRecords %s error %v", domainName, err)
+			if zone == "" {
 				continue
 			}
-			results = append(results, tmpResults...)
+			if _, ok := seen[zone]; ok {
+				continue
+			}
+			seen[zone] = struct{}{}
+			zonesToFetch = append(zonesToFetch, zone)
 		}
+	}
+	for _, zoneDomain := range zonesToFetch {
+		domainRecords, err := p.getDomainRecords(zoneDomain)
+		if err != nil {
+			return nil, fmt.Errorf("getDomainRecords %q: %w", zoneDomain, err)
+		}
+		results = append(results, domainRecords...)
 	}
 	log.Infof("Found %d Alibaba Cloud DNS record(s).", len(results))
 	return results, nil
