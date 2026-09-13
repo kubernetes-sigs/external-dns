@@ -107,7 +107,7 @@ and field, resolved via a dynamic client and the RESTMapper so no source imports
 
 Key: `external-dns.kubernetes.io/target-from` (subject to `--annotation-prefix`).
 
-Value grammar (`;`-separated for multiple references):
+Value grammar — one reference per annotation:
 
 ```text
 <resource>[.<group>]/[<namespace>/]<name>#<template>
@@ -125,11 +125,16 @@ Value grammar (`;`-separated for multiple references):
   already use — so one template can yield one target or many. `hasKey` is excluded until its
   signature is generalized (see [Implementation Steps](#implementation-steps)).
 
-Parsing: references are separated by `;`; within a reference, the template is everything after the
-**first** `#`. `,` cannot separate references because it is the multi-value separator *inside* a
-template's output. The value is tokenized left to right, and a `;` inside a `{{ … }}` action does
-not terminate a reference. `<group>` is everything after the first `.` in the first path segment;
-no dot means the core group (`services`, `endpoints`).
+Parsing: the template is everything after the **first** `#`, taken verbatim.
+
+Nothing terminates it, so there is no escaping rule and its source text may contain any character — `;` and `#` included, in literal text or inside an action.
+`<group>` is everything after the first `.` in the first path segment; no dot means the core group (`services`, `endpoints`).
+
+One annotation therefore names exactly one object, while the template over that object can still
+yield many targets (see the third example below).
+
+The reference is static: parsed before the object is fetched, so it cannot be templated
+(`services/{{ .metadata.namespace }}/lb#…` is unsupported).
 
 The API **version** is omitted and resolved via discovery/RESTMapper to the preferred served
 version (like `kubectl`), so a CRD graduating `v1beta1` → `v1` does not silently break records.
@@ -189,10 +194,14 @@ a hard template error
 
 Neither path may reach the plan as a deletion.
 
-**Edge cases** — multiple refs: de-duplicated union. Template parse/exec error (bad syntax,
-missing key, non-scalar value rendered): config error, warn+skip. No RBAC access: warn+skip, never
-crash. Unknown GVR (CRD not installed / RESTMapper miss): warn+skip. Cluster-scoped resource:
-`<namespace>` must be omitted, supplying one is an error.
+**Edge cases**
+
+- Repeated targets from one template: de-duplicated.
+- Template parse/exec error (bad syntax, missing key, non-scalar value rendered): warn+skip.
+- No RBAC access: warn+skip.
+- Unknown GVR (CRD not installed / RESTMapper miss): warn+skip.
+- Cluster-scoped resource: `<namespace>` must be omitted, warn+skip.
+- Value with no `#`: warn+skip.
 
 ### Security Considerations
 
