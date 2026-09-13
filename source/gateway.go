@@ -418,14 +418,12 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
 	meta := rt.Metadata()
 	ref := rps.ParentRef
-	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+	group, kind, namespace := normParentRef(ref, meta.Namespace)
 	if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
 		log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
 	}
 
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
 	if group != gatewayGroup || (kind != gatewayKind && kind != listenerSetKind) {
 		log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
@@ -633,7 +631,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Lis
 	}
 	gvk := rt.Object().GetObjectKind().GroupVersionKind()
 	for _, gk := range allow.Kinds {
-		group := strVal((*string)(gk.Group), gatewayGroup)
+		group := gwGroupOrDefault(gk.Group)
 		if gvk.Group == group && gvk.Kind == string(gk.Kind) {
 			return true
 		}
@@ -768,19 +766,34 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 	}
 }
 
+// gwGroupOrDefault defaults an omitted group to the Gateway API group. An explicit empty group is
+// the core group, so it is kept as is.
+func gwGroupOrDefault(group *v1.Group) string {
+	if group == nil {
+		return gatewayGroup
+	}
+	return string(*group)
+}
+
+// normParentRef returns the group, kind and namespace that identify a parent, with the API
+// defaults applied, so that membership and lookup cannot drift apart.
+func normParentRef(ref v1.ParentReference, defaultNamespace string) (string, string, string) {
+	kind := gatewayKind
+	if ref.Kind != nil {
+		kind = string(*ref.Kind)
+	}
+	return gwGroupOrDefault(ref.Group), kind, strVal((*string)(ref.Namespace), defaultNamespace)
+}
+
 func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
 	// Ensure that the parent reference is in the routeParentRefs list
-	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
+	group, kind, namespace := normParentRef(ref, meta.Namespace)
 	for _, rpr := range routeParentRefs {
-		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
-		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
-		if rprGroup != group || rprKind != kind {
+		rprGroup, rprKind, rprNamespace := normParentRef(rpr, meta.Namespace)
+		if rprGroup != group || rprKind != kind || rprNamespace != namespace {
 			continue
 		}
-		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
-		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
+		if string(rpr.Name) != string(ref.Name) {
 			continue
 		}
 		return true
