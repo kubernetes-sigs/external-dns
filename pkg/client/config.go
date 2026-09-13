@@ -138,12 +138,12 @@ const inClusterTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 // enrichInClusterConfigError adds an actionable hint when rest.InClusterConfig
 // fails because the service account token is missing, e.g. when
-// automountServiceAccountToken is disabled without an alternative auth method
-// (--kubeconfig, --apiserver-host) configured.
+// automountServiceAccountToken is disabled without --kubeconfig set to use an
+// alternative auth method.
 func enrichInClusterConfigError(err error) error {
 	var pathErr *fs.PathError
 	if errors.As(err, &pathErr) && pathErr.Path == inClusterTokenFile {
-		return fmt.Errorf("is automountServiceAccountToken disabled? set --kubeconfig or --apiserver-host to authenticate another way: %w", err)
+		return fmt.Errorf("is automountServiceAccountToken disabled? set --kubeconfig to authenticate another way: %w", err)
 	}
 	return err
 }
