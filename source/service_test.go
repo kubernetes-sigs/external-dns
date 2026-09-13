@@ -5504,6 +5504,262 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	assert.True(t, foundPodHostname, "Should create endpoint for pod-specific hostname when pod.Spec.Hostname is set")
 }
 
+// TestHeadlessServicesCloudflareCustomHostname verifies the fix for
+// https://github.com/kubernetes-sigs/external-dns/issues/6698:
+// when a headless Service is annotated with cloudflare-custom-hostname,
+// only the aggregate record (DNSName == annotated hostname) should inherit
+// the custom hostname ProviderSpecific property. Per-pod records derived
+// from pods with pod.Spec.Hostname set (typical for StatefulSet pods) must
+// NOT inherit it — Cloudflare custom hostnames are a 1:1 mapping
+// (custom hostname → origin), so applying the same custom hostname to
+// multiple DNSNames causes 409 Conflict errors on every reconciliation.
+// Other ProviderSpecific properties (e.g. cloudflare-proxied) continue to
+// propagate to per-pod records since they are per-record settings.
+func TestHeadlessServicesCloudflareCustomHostname(t *testing.T) {
+	t.Parallel()
+
+	kubernetes := fake.NewClientset()
+
+	svcNamespace := "testing"
+	svcName := "example-external-dns"
+	selector := map[string]string{"app": "example"}
+
+	// Headless Service annotated with hostname + cloudflare-custom-hostname + cloudflare-proxied.
+	service := &v1.Service{
+		Namespace: svcNamespace,
+		Name:      svcName,
+		Labels:    selector,
+		Annotations: map[string]string{
+			annotations.HostnameKey:                 "app.internal.example.com",
+			annotations.CloudflareCustomHostnameKey: "custom.example.com",
+			annotations.CloudflareProxiedKey:        "true",
+		},
+		Spec: v1.ServiceSpec{
+			Type:      v1.ServiceTypeClusterIP,
+			ClusterIP: v1.ClusterIPNone,
+			Selector:  selector,
+			Ports:     []v1.ServicePort{{Port: 9200, Protocol: v1.ProtocolTCP}},
+		},
+	}
+	_, err := kubernetes.CoreV1().Services(svcNamespace).Create(t.Context(), service, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Two StatefulSet-style pods — each has pod.Spec.Hostname set (non-empty).
+	podIPs := []string{"10.0.0.1", "10.0.0.2"}
+	podNames := []string{"example-0", "example-1"}
+	podHostnames := []string{"example-0", "example-1"}
+	for i, podName := range podNames {
+		pod := &v1.Pod{
+			Namespace: svcNamespace,
+			Name:      podName,
+			Labels:    selector,
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{{Name: "app", Image: "example"}},
+				Hostname:   podHostnames[i],
+			},
+			Status: v1.PodStatus{
+				PodIP: podIPs[i],
+			},
+		}
+		_, err = kubernetes.CoreV1().Pods(svcNamespace).Create(t.Context(), pod, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	// EndpointSlice referencing both pods.
+	ready := true
+	portName := "9200"
+	portNum := int32(9200)
+	portProto := v1.ProtocolTCP
+	endpointSlice := &discoveryv1.EndpointSlice{
+		Namespace: svcNamespace,
+		Name:      svcName + "-abc12",
+		Labels: map[string]string{
+			discoveryv1.LabelServiceName: svcName,
+		},
+		AddressType: discoveryv1.AddressTypeIPv4,
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses:  []string{podIPs[0]},
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: podNames[0]},
+				Conditions: discoveryv1.EndpointConditions{Ready: &ready},
+			},
+			{
+				Addresses:  []string{podIPs[1]},
+				TargetRef:  &v1.ObjectReference{Kind: "Pod", Name: podNames[1]},
+				Conditions: discoveryv1.EndpointConditions{Ready: &ready},
+			},
+		},
+		Ports: []discoveryv1.EndpointPort{{Name: &portName, Port: &portNum, Protocol: &portProto}},
+	}
+	_, err = kubernetes.DiscoveryV1().EndpointSlices(svcNamespace).Create(t.Context(), endpointSlice, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewServiceSource(t.Context(), kubernetes,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	// We expect 3 A records:
+	//   - example-0.app.internal.example.com (per-pod)
+	//   - example-1.app.internal.example.com (per-pod)
+	//   - app.internal.example.com           (aggregate)
+	aRecords := filterEndpointsByType(endpoints, endpoint.RecordTypeA)
+	require.Len(t, aRecords, 3, "expected 3 A records (2 per-pod + 1 aggregate)")
+
+	// Locate aggregate vs per-pod records.
+	var aggregate, perPod0, perPod1 *endpoint.Endpoint
+	for _, ep := range aRecords {
+		switch ep.DNSName {
+		case "app.internal.example.com":
+			aggregate = ep
+		case "example-0.app.internal.example.com":
+			perPod0 = ep
+		case "example-1.app.internal.example.com":
+			perPod1 = ep
+		}
+	}
+	require.NotNil(t, aggregate, "aggregate A record must exist")
+	require.NotNil(t, perPod0, "per-pod A record for example-0 must exist")
+	require.NotNil(t, perPod1, "per-pod A record for example-1 must exist")
+
+	// Aggregate record: must carry BOTH CloudflareCustomHostnameKey and CloudflareProxiedKey.
+	aggregateCH, aggregateCHFound := findProviderSpecificProperty(aggregate, annotations.CloudflareCustomHostnameKey)
+	assert.True(t, aggregateCHFound, "aggregate record must carry CloudflareCustomHostnameKey")
+	if aggregateCHFound {
+		assert.Equal(t, "custom.example.com", aggregateCH.Value)
+	}
+	aggregateProxied, aggregateProxiedFound := findProviderSpecificProperty(aggregate, annotations.CloudflareProxiedKey)
+	assert.True(t, aggregateProxiedFound, "aggregate record must carry CloudflareProxiedKey")
+	if aggregateProxiedFound {
+		assert.Equal(t, "true", aggregateProxied.Value)
+	}
+
+	// Per-pod records: must carry CloudflareProxiedKey but NOT CloudflareCustomHostnameKey.
+	for _, perPod := range []*endpoint.Endpoint{perPod0, perPod1} {
+		_, chFound := findProviderSpecificProperty(perPod, annotations.CloudflareCustomHostnameKey)
+		assert.False(t, chFound, "per-pod record %s must NOT carry CloudflareCustomHostnameKey (issue #6698)", perPod.DNSName)
+
+		proxied, proxiedFound := findProviderSpecificProperty(perPod, annotations.CloudflareProxiedKey)
+		assert.True(t, proxiedFound, "per-pod record %s must still carry CloudflareProxiedKey", perPod.DNSName)
+		if proxiedFound {
+			assert.Equal(t, "true", proxied.Value)
+		}
+	}
+}
+
+func filterEndpointsByType(endpoints []*endpoint.Endpoint, recordType string) []*endpoint.Endpoint {
+	var out []*endpoint.Endpoint
+	for _, ep := range endpoints {
+		if ep.RecordType == recordType {
+			out = append(out, ep)
+		}
+	}
+	return out
+}
+
+// TestNodePortServicesCloudflareCustomHostname verifies that the fix for
+// https://github.com/kubernetes-sigs/external-dns/issues/6698 also applies
+// to NodePort services: SRV records derived by extractNodePortEndpoints
+// have DNSName = "_<svc>._<proto>.<hostname>", which differs from the
+// annotated hostname, so they must NOT inherit CloudflareCustomHostnameKey.
+// Other ProviderSpecific properties (e.g. cloudflare-proxied) still propagate.
+func TestNodePortServicesCloudflareCustomHostname(t *testing.T) {
+	t.Parallel()
+
+	kubernetes := fake.NewClientset()
+
+	svcNamespace := "testing"
+	svcName := "foo"
+
+	service := &v1.Service{
+		Namespace: svcNamespace,
+		Name:      svcName,
+		Annotations: map[string]string{
+			annotations.HostnameKey:                 "foo.example.org",
+			annotations.CloudflareCustomHostnameKey: "custom.example.com",
+			annotations.CloudflareProxiedKey:        "true",
+		},
+		Spec: v1.ServiceSpec{
+			Type: v1.ServiceTypeNodePort,
+			Ports: []v1.ServicePort{
+				{Port: 8080, NodePort: 30192, Protocol: v1.ProtocolTCP},
+			},
+		},
+	}
+	_, err := kubernetes.CoreV1().Services(svcNamespace).Create(t.Context(), service, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// NodePort services need at least one node with external IPs so the
+	// A record targets get populated.
+	node := &v1.Node{
+		Name: "node1",
+		Status: v1.NodeStatus{
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+			},
+		},
+	}
+	_, err = kubernetes.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewServiceSource(t.Context(), kubernetes,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	// Locate the SRV record — its DNSName is "_foo._tcp.foo.example.org"
+	// which is NOT equal to the annotated hostname "foo.example.org".
+	srvRecords := filterEndpointsByType(endpoints, endpoint.RecordTypeSRV)
+	require.Len(t, srvRecords, 1, "expected exactly one SRV record")
+	srv := srvRecords[0]
+	assert.Equal(t, "_foo._tcp.foo.example.org", srv.DNSName)
+
+	// SRV record: must NOT carry CloudflareCustomHostnameKey (the fix).
+	_, chFound := findProviderSpecificProperty(srv, annotations.CloudflareCustomHostnameKey)
+	assert.False(t, chFound, "SRV record must NOT carry CloudflareCustomHostnameKey (issue #6698)")
+
+	// SRV record: must still carry CloudflareProxiedKey.
+	proxied, proxiedFound := findProviderSpecificProperty(srv, annotations.CloudflareProxiedKey)
+	assert.True(t, proxiedFound, "SRV record must still carry CloudflareProxiedKey")
+	if proxiedFound {
+		assert.Equal(t, "true", proxied.Value)
+	}
+
+	// Locate the aggregate A record — DNSName == annotated hostname.
+	var aggregate *endpoint.Endpoint
+	for _, ep := range endpoints {
+		if ep.DNSName == "foo.example.org" && ep.RecordType == endpoint.RecordTypeA {
+			aggregate = ep
+			break
+		}
+	}
+	require.NotNil(t, aggregate, "aggregate A record must exist")
+
+	// Aggregate A record: must carry BOTH CloudflareCustomHostnameKey AND CloudflareProxiedKey.
+	aggregateCH, aggregateCHFound := findProviderSpecificProperty(aggregate, annotations.CloudflareCustomHostnameKey)
+	assert.True(t, aggregateCHFound, "aggregate A record must carry CloudflareCustomHostnameKey")
+	if aggregateCHFound {
+		assert.Equal(t, "custom.example.com", aggregateCH.Value)
+	}
+	aggregateProxied, aggregateProxiedFound := findProviderSpecificProperty(aggregate, annotations.CloudflareProxiedKey)
+	assert.True(t, aggregateProxiedFound, "aggregate A record must carry CloudflareProxiedKey")
+	if aggregateProxiedFound {
+		assert.Equal(t, "true", aggregateProxied.Value)
+	}
+}
+
 func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 	elements := []runtime.Object{
 		&v1.Service{
@@ -5919,4 +6175,109 @@ func findEndpointByType(endpoints []*endpoint.Endpoint, recordType string) *endp
 		}
 	}
 	return nil
+}
+
+// Helper function to find a ProviderSpecific property by name on an endpoint.
+func findProviderSpecificProperty(ep *endpoint.Endpoint, name string) (endpoint.ProviderSpecificProperty, bool) {
+	for _, p := range ep.ProviderSpecific {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return endpoint.ProviderSpecificProperty{}, false
+}
+
+func TestFilterProviderSpecificForDerivedEndpoint(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		title          string
+		input          endpoint.ProviderSpecific
+		expectedKeys   []string
+		unexpectedKeys []string
+		expectedValues map[string]string
+	}{
+		{
+			"strips CloudflareCustomHostnameKey but keeps other Cloudflare properties",
+			endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameKey, Value: "custom.example.com"},
+				{Name: annotations.CloudflareProxiedKey, Value: "true"},
+				{Name: annotations.CloudflareTagsKey, Value: "tag1,tag2"},
+				{Name: annotations.CloudflareRegionKey, Value: "us"},
+				{Name: annotations.CloudflareRecordCommentKey, Value: "hello"},
+			},
+			[]string{
+				annotations.CloudflareProxiedKey,
+				annotations.CloudflareTagsKey,
+				annotations.CloudflareRegionKey,
+				annotations.CloudflareRecordCommentKey,
+			},
+			[]string{annotations.CloudflareCustomHostnameKey},
+			map[string]string{
+				annotations.CloudflareProxiedKey:       "true",
+				annotations.CloudflareTagsKey:          "tag1,tag2",
+				annotations.CloudflareRegionKey:        "us",
+				annotations.CloudflareRecordCommentKey: "hello",
+			},
+		},
+		{
+			"keeps all properties when none are aggregate-only",
+			endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareProxiedKey, Value: "false"},
+				{Name: "aws/weight", Value: "100"},
+			},
+			[]string{annotations.CloudflareProxiedKey, "aws/weight"},
+			[]string{},
+			map[string]string{
+				annotations.CloudflareProxiedKey: "false",
+				"aws/weight":                     "100",
+			},
+		},
+		{
+			"returns empty slice when input is empty",
+			endpoint.ProviderSpecific{},
+			[]string{},
+			[]string{annotations.CloudflareCustomHostnameKey},
+			map[string]string{},
+		},
+		{
+			"returns empty slice when only aggregate-only keys are present",
+			endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameKey, Value: "custom.example.com"},
+			},
+			[]string{},
+			[]string{annotations.CloudflareCustomHostnameKey},
+			map[string]string{},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
+			result := filterProviderSpecificForDerivedEndpoint(tc.input)
+
+			for _, key := range tc.expectedKeys {
+				prop, ok := findProviderSpecificPropertyFromSlice(result, key)
+				assert.True(t, ok, "expected key %q to be present", key)
+				if expected, has := tc.expectedValues[key]; has {
+					assert.Equal(t, expected, prop.Value, "value mismatch for key %q", key)
+				}
+			}
+			for _, key := range tc.unexpectedKeys {
+				_, ok := findProviderSpecificPropertyFromSlice(result, key)
+				assert.False(t, ok, "expected key %q to be stripped", key)
+			}
+			assert.Len(t, result, len(tc.expectedKeys), "result length must match expected key count")
+		})
+	}
+}
+
+// findProviderSpecificPropertyFromSlice is a test helper that searches a
+// ProviderSpecific slice (as opposed to an Endpoint) for a property by name.
+func findProviderSpecificPropertyFromSlice(ps endpoint.ProviderSpecific, name string) (endpoint.ProviderSpecificProperty, bool) {
+	for _, p := range ps {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return endpoint.ProviderSpecificProperty{}, false
 }

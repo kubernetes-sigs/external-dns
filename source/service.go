@@ -549,8 +549,18 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		}
 
 		for _, en := range endpoints {
-			en.ProviderSpecific = providerSpecific
-			en.SetIdentifier = setIdentifier
+			if en.DNSName == hostname {
+				en.ProviderSpecific = providerSpecific
+				en.SetIdentifier = setIdentifier
+			} else {
+				// Derived endpoint (per-pod from headless, SRV from NodePort, ...):
+				// only inherit ProviderSpecific properties that are safe to apply to
+				// multiple DNSNames. SetIdentifier is preserved so that existing
+				// routing policies (e.g. weighted routing across per-pod records)
+				// continue to work.
+				en.ProviderSpecific = filterProviderSpecificForDerivedEndpoint(providerSpecific)
+				en.SetIdentifier = setIdentifier
+			}
 		}
 	}
 
@@ -773,6 +783,34 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 	}
 
 	return endpoints
+}
+
+// aggregateOnlyProviderSpecificKeys lists ProviderSpecific property keys that
+// must only be attached to the DNSName explicitly declared via annotation,
+// never to fan-out derived endpoints (per-pod records from headless services,
+// SRV records from NodePort services, etc.).
+//
+// Properties in this set reference external resources with their own
+// uniqueness constraints — applying the same value to multiple DNSNames would
+// cause provider-side errors (e.g. Cloudflare returns 409 Conflict when the
+// same custom hostname is registered against multiple origins).
+var aggregateOnlyProviderSpecificKeys = map[string]struct{}{
+	annotations.CloudflareCustomHostnameKey: {},
+}
+
+// filterProviderSpecificForDerivedEndpoint returns a copy of ps with
+// aggregate-only keys removed. Used for fan-out derived endpoints whose
+// DNSName differs from the annotated hostname.
+func filterProviderSpecificForDerivedEndpoint(ps endpoint.ProviderSpecific) endpoint.ProviderSpecific {
+	filtered := make(endpoint.ProviderSpecific, 0, len(ps))
+	for _, p := range ps {
+		if _, skip := aggregateOnlyProviderSpecificKeys[p.Name]; skip {
+			log.Debugf("Stripping aggregate-only provider-specific property %q from derived endpoint", p.Name)
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+	return filtered
 }
 
 func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
