@@ -857,6 +857,29 @@ func TestRfc2136AdjustEndpointsAppliesMinTTL(t *testing.T) {
 	assert.False(t, adjusted[2].RecordTTL.IsConfigured(), "unconfigured TTL should remain unconfigured")
 }
 
+func TestRfc2136MinTTLKeepsReconcileStable(t *testing.T) {
+	tlsConfig := TLSConfig{}
+	stub := newStub()
+	p, err := newProvider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 3600*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	require.NoError(t, err)
+
+	endpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("below.example.com", endpoint.RecordTypeA, endpoint.TTL(60), "1.2.3.4"),
+	}
+
+	adjusted, err := p.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
+	require.Len(t, adjusted, 1)
+	assert.Equal(t, endpoint.TTL(3600), adjusted[0].RecordTTL)
+
+	m := new(dns.Msg)
+	m.SetUpdate(".")
+	err = p.(*rfc2136Provider).AddRecord(m, adjusted[0])
+	require.NoError(t, err)
+	require.Len(t, m.Ns, 1)
+	assert.Equal(t, uint32(adjusted[0].RecordTTL), m.Ns[0].Header().Ttl)
+}
+
 func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	stub := newStub()
 

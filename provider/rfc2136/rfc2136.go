@@ -284,16 +284,12 @@ OuterLoop:
 	return eps, nil
 }
 
-// AdjustEndpoints applies the rfc2136-min-ttl floor to the desired endpoints so
-// that the planned state matches what AddRecord will actually write. Without
-// this, a record whose configured TTL is below rfc2136-min-ttl is rewritten on
-// every reconciliation cycle. See https://github.com/kubernetes-sigs/external-dns/issues/6723.
+// AdjustEndpoints raises the TTL of each desired endpoint to the configured
+// minimum. This keeps the planned state equal to the TTL that AddRecord writes,
+// so a record is not rewritten on every reconciliation cycle.
 func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	minTTL := int64(r.minTTL.Seconds())
 	for _, ep := range endpoints {
-		if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) < minTTL {
-			ep.RecordTTL = endpoint.TTL(minTTL)
-		}
+		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
 	}
 	return endpoints, nil
 }
@@ -510,16 +506,26 @@ func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, new
 	return r.AddRecord(m, newEp)
 }
 
+// floorTTL raises a TTL provided by a source up to the configured minimum.
+// A TTL that no source provided is returned unchanged.
+func (r *rfc2136Provider) floorTTL(ttl endpoint.TTL) endpoint.TTL {
+	minTTL := int64(r.minTTL.Seconds())
+	if ttl.IsConfigured() && int64(ttl) < minTTL {
+		return endpoint.TTL(minTTL)
+	}
+	return ttl
+}
+
 func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 
-	ttl := int64(r.minTTL.Seconds())
-	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
-		ttl = int64(ep.RecordTTL)
+	ttl := r.floorTTL(ep.RecordTTL)
+	if !ttl.IsConfigured() {
+		ttl = endpoint.TTL(int64(r.minTTL.Seconds()))
 	}
 
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target)
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, int64(ttl), ep.RecordType, target)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
