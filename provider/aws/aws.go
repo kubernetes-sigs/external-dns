@@ -394,6 +394,15 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53types.Hoste
 	return result, nil
 }
 
+// zoneType maps a Route53 hosted zone to the zone type understood by provider.ZoneTypeFilter.
+// A zone without config is treated as public, matching the zero value of HostedZoneConfig.PrivateZone.
+func zoneType(zone route53types.HostedZone) string {
+	if zone.Config != nil && zone.Config.PrivateZone {
+		return provider.ZoneTypePrivate
+	}
+	return provider.ZoneTypePublic
+}
+
 // zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
 	if !p.zonesCache.Expired() {
@@ -424,7 +433,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					continue
 				}
 
-				if !p.zoneTypeFilter.Match(zone) {
+				if !p.zoneTypeFilter.Match(zoneType(zone)) {
 					continue
 				}
 
