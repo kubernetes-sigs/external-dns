@@ -34,30 +34,21 @@ Usage: $(basename "$0") <options>
 EOF
 }
 
+# Only helm plugins: mise and asdf cannot manage them.
 install() {
-  if [[ -x $(which helm) ]]; then
-      echo "installing https://github.com/losisin/helm-values-schema-json.git plugin"
-      helm plugin install https://github.com/losisin/helm-values-schema-json.git --verify=false | true
-      helm plugin update schema
-      helm plugin list | grep "schema"
-
-      helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false | true
-      helm plugin update unittest
-      helm plugin list | grep "unittest"
-
-      echo "installing helm-docs"
-      # renovate: datasource=github-releases depName=norwoodj/helm-docs
-      go install github.com/norwoodj/helm-docs/cmd/helm-docs@v1.14.2
-
-      if [[ -x $(which brew) ]]; then
-        echo "installing chart-testing https://github.com/helm/chart-testing"
-        brew install chart-testing
-      fi
-    else
-      echo "helm is not installed"
-      echo "install helm https://helm.sh/docs/intro/install/ and try again"
+  if [[ ! -x $(which helm) ]]; then
+      echo "helm is not installed. Run 'mise install' or 'asdf install' and try again"
       exit 1
   fi
+
+  echo "installing https://github.com/losisin/helm-values-schema-json.git plugin"
+  helm plugin install https://github.com/losisin/helm-values-schema-json.git --verify=false | true
+  helm plugin update schema
+  helm plugin list | grep "schema"
+
+  helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false | true
+  helm plugin update unittest
+  helm plugin list | grep "unittest"
 }
 
 update_schema() {
@@ -85,6 +76,11 @@ lint_chart() {
   helm lint . --debug --strict \
   --values values.yaml \
   --values ci/ci-values.yaml
+  # ct ships its schemas next to the binary, outside the paths it searches.
+  if [[ -z "${CT_CONFIG_DIR:-}" ]] && command -v mise &> /dev/null; then
+    CT_CONFIG_DIR="$(mise where helm-ct)/etc"
+    export CT_CONFIG_DIR
+  fi
   # lint with chart testing tool
   ct lint --target-branch=master --check-version-increment=false
 }

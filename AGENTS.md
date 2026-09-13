@@ -12,7 +12,8 @@ ExternalDNS = Kubernetes controller. Syncs exposed resources (Services, Ingresse
 make build          # Build binary to build/external-dns
 make test           # Run tests with race detection: go test -race ./...
 make go-lint        # Run golangci-lint --fix ./...
-make lint           # Run all linters (license headers + golangci-lint)
+make lint           # Run all linters, rewriting files in place (license headers + golangci-lint)
+make lint-check     # Same linters, read-only — fails instead of fixing (what CI runs)
 make licensecheck   # Check license headers in Go files
 make crd            # Regenerate CRD using controller-gen
 ```
