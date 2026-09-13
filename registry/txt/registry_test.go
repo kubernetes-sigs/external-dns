@@ -2264,6 +2264,47 @@ func TestTXTRegistryAliasARecordForceUpdateOnMigration(t *testing.T) {
 	}
 }
 
+// TestTXTRegistryOwnerIDMigrationForceUpdate verifies that a record still owned by the old owner ID
+// gets force-updated during --migrate-from-txt-owner, even when nothing else about it changed.
+func TestTXTRegistryOwnerIDMigrationForceUpdate(t *testing.T) {
+	const dnsName = "same.test-zone.example.org"
+	const oldOwner = "\"heritage=external-dns,external-dns/owner=cluster-1\""
+
+	for _, tt := range []struct {
+		name        string
+		recordOwner string
+		wantOwner   string
+		wantForce   bool
+	}{
+		{"record owned by old owner: migrated and force-updated", oldOwner, "cluster-2", true},
+		{"record already owned by current owner: left alone", "\"heritage=external-dns,external-dns/owner=cluster-2\"", "cluster-2", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+
+			seed := []*endpoint.Endpoint{
+				newEndpointWithOwner(dnsName, "target.com", endpoint.RecordTypeCNAME, ""),
+				newTXTEndpointWithOwnedRecord("cname-"+dnsName, tt.recordOwner, dnsName),
+			}
+			require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: seed}))
+
+			r, err := newRegistry(p, "", "", "cluster-2", time.Hour, "", []string{endpoint.RecordTypeCNAME}, []string{}, false, nil, "cluster-1")
+			require.NoError(t, err)
+
+			records, err := r.Records(t.Context())
+			require.NoError(t, err)
+
+			ep := findEndpoint(records, dnsName, endpoint.RecordTypeCNAME)
+			require.NotNil(t, ep, "expected the CNAME record to be returned")
+			assert.Equal(t, tt.wantOwner, ep.Labels[endpoint.OwnerLabelKey])
+
+			forceUpdate, _ := ep.GetProviderSpecificProperty(providerSpecificForceUpdate)
+			assert.Equal(t, tt.wantForce, forceUpdate == "true")
+		})
+	}
+}
+
 // TestTXTRegistryAliasARecordDeleteLeavesLegacyCNAME verifies that deleting an A ALIAS removes only
 // the "a-" TXT; the obsolete "cname-" is left behind for the cleanup script.
 func TestTXTRegistryAliasARecordDeleteLeavesLegacyCNAME(t *testing.T) {

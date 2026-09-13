@@ -288,6 +288,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
+			// Owner already rewritten above, so current == desired unless we force it.
+			ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 		}
 
 		// TODO: remove this migration logic in some future release
