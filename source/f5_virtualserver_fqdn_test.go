@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -365,7 +364,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}

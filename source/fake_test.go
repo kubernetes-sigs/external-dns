@@ -91,8 +91,8 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				t.Helper()
 				require.Len(t, ep.Targets, 1)
 				ip := net.ParseIP(ep.Targets[0])
-				assert.NotNil(t, ip, "A record target %q is not a valid IP", ep.Targets[0])
-				assert.NotNil(t, ip.To4(), "A record target %q must be IPv4", ep.Targets[0])
+				require.NotNil(t, ip, "A record target %q is not a valid IP", ep.Targets[0])
+				require.NotNil(t, ip.To4(), "A record target %q must be IPv4", ep.Targets[0])
 				refs := ep.RefObjects()
 				require.NotEmpty(t, refs)
 				assert.Equal(t, "Pod", refs[0].Kind())
@@ -157,7 +157,7 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				assert.Equal(t, defaultFQDNTemplate, ep.DNSName)
 				require.Len(t, ep.Targets, 1)
 				_, err := endpoint.NewMXRecord(ep.Targets[0])
-				assert.NoError(t, err, "MX target %q is invalid", ep.Targets[0])
+				require.NoError(t, err, "MX target %q is invalid", ep.Targets[0])
 			},
 		},
 		{

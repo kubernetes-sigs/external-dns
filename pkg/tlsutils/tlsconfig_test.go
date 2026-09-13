@@ -110,7 +110,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			func(actual *tls.Config, err error) {
 				require.NoError(t, err)
 				assert.Equal(t, "server-name", actual.ServerName)
-				assert.NotNil(t, actual.Certificates[0])
+				require.NotNil(t, actual.Certificates[0])
 				assert.False(t, actual.InsecureSkipVerify)
 				assert.Equal(t, actual.MinVersion, uint16(defaultMinVersion))
 			},
@@ -124,7 +124,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"",
 			"",
 			func(_ *tls.Config, err error) {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "could not parse PEM certificates from")
 			},
 		},
@@ -137,7 +137,7 @@ func TestCreateTLSConfig(t *testing.T) {
 			"",
 			"server-name",
 			func(_ *tls.Config, err error) {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Contains(t, err.Error(), "error reading /path/does/not/exist")
 			},
 		},
@@ -152,8 +152,8 @@ func TestCreateTLSConfig(t *testing.T) {
 			func(actual *tls.Config, err error) {
 				require.NoError(t, err)
 				assert.Equal(t, "server-name", actual.ServerName)
-				assert.NotNil(t, actual.Certificates[0])
-				assert.NotNil(t, actual.RootCAs)
+				require.NotNil(t, actual.Certificates[0])
+				require.NotNil(t, actual.RootCAs)
 				assert.False(t, actual.InsecureSkipVerify)
 			},
 		},

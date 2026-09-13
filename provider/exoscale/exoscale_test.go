@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -155,14 +156,14 @@ func TestExoscaleGetRecords(t *testing.T) {
 		assert.False(t, contains(recs, "v3.bar.com"))
 		assert.False(t, contains(recs, "v1.foobar.com"))
 	} else {
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
 func TestExoscaleGetRecordsApex(t *testing.T) {
 	provider := NewExoscaleProviderWithClient(&ExoscaleClientApexStub{}, false, 0)
 	recs, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, recs, 1)
 	// Apex record must appear as the bare zone name, not ".apex.com"
 	assert.True(t, contains(recs, "apex.com"))
@@ -225,7 +226,7 @@ func TestExoscaleApplyChangesApex(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, provider.ApplyChanges(t.Context(), changes))
+	require.NoError(t, provider.ApplyChanges(t.Context(), changes))
 
 	assert.Len(t, createExoscale, 1)
 	assert.Equal(t, v3.UUID(domainIDs[4]), createExoscale[0].domainID)
@@ -420,7 +421,7 @@ func TestExoscaleGetDomainFilter(t *testing.T) {
 		provider := NewExoscaleProviderWithClient(&errListDomainsStub{}, false, 0)
 		filter := provider.GetDomainFilter()
 		// empty filter matches nothing specific; getting a DomainFilter back is enough
-		assert.NotNil(t, filter)
+		require.NotNil(t, filter)
 	})
 }
 
@@ -439,7 +440,7 @@ func TestExoscaleApplyChangesDryRun(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, provider.ApplyChanges(t.Context(), changes))
+	require.NoError(t, provider.ApplyChanges(t.Context(), changes))
 	// dryRun: nothing should be sent to the API
 	assert.Empty(t, createExoscale)
 	assert.Empty(t, deleteExoscale)
@@ -463,7 +464,7 @@ func TestExoscaleApplyChangesWithTTL(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, provider.ApplyChanges(t.Context(), changes))
+	require.NoError(t, provider.ApplyChanges(t.Context(), changes))
 	assert.Len(t, createExoscale, 1)
 	assert.Equal(t, int64(300), createExoscale[0].req.Ttl)
 	assert.Len(t, updateExoscale, 1)
@@ -477,19 +478,19 @@ func TestExoscaleApplyChangesZonesError(t *testing.T) {
 			{DNSName: "v1.foo.com", RecordType: "A", Targets: []string{"1.2.3.4"}},
 		},
 	}
-	assert.Error(t, provider.ApplyChanges(t.Context(), changes))
+	require.Error(t, provider.ApplyChanges(t.Context(), changes))
 }
 
 func TestExoscaleRecordsZonesError(t *testing.T) {
 	provider := NewExoscaleProviderWithClient(&errListDomainsStub{}, false, 0)
 	_, err := provider.Records(t.Context())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestExoscaleRecordsListRecordsError(t *testing.T) {
 	provider := NewExoscaleProviderWithClient(&errListRecordsStub{}, false, 0)
 	_, err := provider.Records(t.Context())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestExoscaleZoneCacheHit(t *testing.T) {
@@ -501,10 +502,10 @@ func TestExoscaleZoneCacheHit(t *testing.T) {
 	)
 	// first call populates the cache
 	recs1, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// second call hits the cache
 	recs2, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, recs2, len(recs1))
 }
 

@@ -23,6 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
@@ -42,7 +43,7 @@ func TestAWSRecordsV1(t *testing.T) {
 
 	ctx := t.Context()
 	z, err := provider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, z, 3)
 }
 
@@ -57,7 +58,7 @@ func TestAWSZonesFilterWithTags(t *testing.T) {
 
 	ctx := t.Context()
 	z, err := provider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, z, 24)
 	assert.Equal(t, 17, stub.calls["listtagsforresource"])
 }
@@ -84,7 +85,7 @@ func TestAWSZonesFiltersWithTags(t *testing.T) {
 				WithZoneTagFilters(tt.filters),
 			)
 			z, err := provider.Zones(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, z, tt.want)
 			assert.Equal(t, tt.calls, stub.calls["listtagsforresource"])
 		})
@@ -100,7 +101,7 @@ func TestAWSZonesSecondRequestHitsTheCache(t *testing.T) {
 
 	ctx := t.Context()
 	_, err := provider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	_, _ = provider.Zones(ctx)
 

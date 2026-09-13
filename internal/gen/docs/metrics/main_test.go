@@ -48,7 +48,7 @@ func TestGenerateMarkdownTableRenderer(t *testing.T) {
 	reg := metrics.NewMetricsRegister()
 
 	got, err := generateMarkdownTable(reg, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Contains(t, got, "# Available Metrics\n\n<!-- THIS FILE MUST NOT BE EDITED BY HAND -->\n")
 	assert.Contains(t, got, "| Name | Metric Type | Subsystem | Labels | Help |")
@@ -78,11 +78,11 @@ func TestMetricsMdUpToDate(t *testing.T) {
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	fileName := "metrics.md"
 	expected, err := fs.ReadFile(fsys, fileName)
-	assert.NoError(t, err, "expected file %s to exist", fileName)
+	require.NoError(t, err, "expected file %s to exist", fileName)
 
 	reg := metrics.RegisterMetric
 	actual, err := generateMarkdownTable(reg, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(expected), actual, "expected file 'docs/monitoring/metrics.md' to be up to date. execute 'make generate-metrics-documentation")
 }
 
@@ -91,7 +91,7 @@ func TestMetricsMdExtraMetricAdded(t *testing.T) {
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	fileName := "metrics.md"
 	expected, err := fs.ReadFile(fsys, fileName)
-	assert.NoError(t, err, "expected file %s to exist", fileName)
+	require.NoError(t, err, "expected file %s to exist", fileName)
 
 	// Use a fresh registry to avoid mutating the global RegisterMetric.
 	reg := metrics.NewMetricsRegister()
@@ -108,7 +108,7 @@ func TestMetricsMdExtraMetricAdded(t *testing.T) {
 	))
 
 	actual, err := generateMarkdownTable(reg, false)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, string(expected), actual)
 }
 

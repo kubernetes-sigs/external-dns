@@ -19,7 +19,7 @@ package controller
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -289,7 +289,7 @@ func TestAAAARecords(t *testing.T) {
 func TestGaugeMetricsWithMixedRecords(t *testing.T) {
 	ctrl := newMixedRecordsFixture()
 
-	assert.NoError(t, ctrl.RunOnce(t.Context()))
+	require.NoError(t, ctrl.RunOnce(t.Context()))
 
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 534, sourceRecords.Gauge, map[string]string{"record_type": "a"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 324, sourceRecords.Gauge, map[string]string{"record_type": "aaaa"})

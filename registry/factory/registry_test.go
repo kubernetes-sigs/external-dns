@@ -118,7 +118,7 @@ func TestSelectRegistry(t *testing.T) {
 				require.Nil(t, reg)
 				require.Error(t, err)
 			} else {
-				assert.NotNil(t, reg)
+				require.NotNil(t, reg)
 				require.NoError(t, err)
 				assert.Contains(t, reflect.TypeOf(reg).String(), tt.wantType)
 			}
