@@ -21,6 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 )
 
 const (
@@ -35,6 +37,11 @@ type IndexSelectorOptions struct {
 	// resource they reference via a label (e.g. EndpointSlices by Service name).
 	indexByLabelKey string
 	conditions      []func(metav1.Object) bool
+	// source, when set, is the source name (e.g. "service") passed to
+	// schema.IsValid to validate any schema.Registry annotations present
+	// on indexed objects.
+	source string
+	mode   schema.Mode
 }
 
 func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
@@ -60,6 +67,17 @@ func IndexSelectorWithConditions[T metav1.Object](fns ...func(T) bool) func(*Ind
 				return ok && fn(typed)
 			})
 		}
+	}
+}
+
+// IndexSelectorWithAnnotationValidation configures IndexerWithOptions to validate
+// annotations known to schema.Registry against the given source name (e.g.
+// "service") and Mode, excluding objects with an invalid strict-mode annotation from
+// the index.
+func IndexSelectorWithAnnotationValidation(source string, mode schema.Mode) func(options *IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		options.source = source
+		options.mode = mode
 	}
 }
 
@@ -102,7 +120,6 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 			if !ok {
 				return nil, fmt.Errorf("object is not of type %T", new(T))
 			}
-
 			if options.annotationFilter != nil && !options.annotationFilter.Matches(labels.Set(entity.GetAnnotations())) {
 				return nil, nil
 			}
@@ -114,6 +131,9 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 				if !condition(entity) {
 					return nil, nil
 				}
+			}
+			if options.source != "" && !schema.IsValid(entity, options.source, options.mode) {
+				return nil, nil
 			}
 			if options.indexByLabelKey != "" {
 				name := entity.GetLabels()[options.indexByLabelKey]
