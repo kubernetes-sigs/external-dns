@@ -226,10 +226,10 @@ func (r *Route53APIStub) ChangeResourceRecordSets(_ context.Context, input *rout
 		// Work on a copy so canonicalization, or a later rejected change in the same
 		// batch, does not mutate the caller's request. The real Route 53 client does not.
 		rrs := *change.ResourceRecordSet
-		rrs.Name = aws.String(wildcardEscape(provider.EnsureTrailingDot(*rrs.Name)))
+		rrs.Name = aws.String(canonicalStubDNSName(*rrs.Name))
 		if rrs.AliasTarget != nil {
 			alias := *rrs.AliasTarget
-			alias.DNSName = aws.String(wildcardEscape(provider.EnsureTrailingDot(*alias.DNSName)))
+			alias.DNSName = aws.String(canonicalStubDNSName(*alias.DNSName))
 			rrs.AliasTarget = &alias
 		}
 
@@ -275,14 +275,19 @@ func equalResourceRecordSet(a, b route53types.ResourceRecordSet) bool {
 	return reflect.DeepEqual(canonicalResourceRecordSet(a), canonicalResourceRecordSet(b))
 }
 
+// canonicalStubDNSName lowercases the name the way Route 53 stores it, whatever case it arrives in.
+func canonicalStubDNSName(name string) string {
+	return wildcardEscape(provider.EnsureTrailingDot(strings.ToLower(name)))
+}
+
 func canonicalResourceRecordSet(rrs route53types.ResourceRecordSet) route53types.ResourceRecordSet {
 	if rrs.Name != nil {
-		rrs.Name = aws.String(wildcardEscape(provider.EnsureTrailingDot(*rrs.Name)))
+		rrs.Name = aws.String(canonicalStubDNSName(*rrs.Name))
 	}
 	if rrs.AliasTarget != nil {
 		alias := *rrs.AliasTarget
 		if alias.DNSName != nil {
-			alias.DNSName = aws.String(wildcardEscape(provider.EnsureTrailingDot(*alias.DNSName)))
+			alias.DNSName = aws.String(canonicalStubDNSName(*alias.DNSName))
 		}
 		rrs.AliasTarget = &alias
 	}
@@ -1940,6 +1945,39 @@ func TestRoute53APIStubDeleteMatchesFullRRSet(t *testing.T) {
 
 // TestRoute53APIStubChangeBatchIsAtomic checks that a batch with a valid change and an invalid
 // delete applies none of it, the way Route 53 rolls a failed ChangeBatch back as one transaction.
+func TestRoute53APIStubStoresDNSNamesLowercased(t *testing.T) {
+	ctx := t.Context()
+	stub := NewRoute53APIStub(t)
+	stub.zones[stubZoneID] = &route53types.HostedZone{Id: aws.String(stubZoneID), Name: aws.String("example.com.")}
+	stub.rejectInvalidZones()
+
+	aRecord := route53types.ResourceRecordSet{
+		Name:            aws.String("app.example.com."),
+		Type:            route53types.RRTypeA,
+		TTL:             aws.Int64(300),
+		ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+	}
+	_, err := stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionCreate, &aRecord))
+	require.NoError(t, err)
+
+	// Route 53 stores the letters lowercased, so this CNAME shares a name with the A record.
+	conflicting := route53types.ResourceRecordSet{
+		Name:            aws.String("APP.example.com."),
+		Type:            route53types.RRTypeCname,
+		TTL:             aws.Int64(300),
+		ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("lb.example.net.")}},
+	}
+	_, err = stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionCreate, &conflicting))
+	require.Error(t, err, "a CNAME may not share a name with an A record in any case")
+
+	// A delete has to find the record whichever case the name is sent in.
+	upperCased := aRecord
+	upperCased.Name = aws.String("APP.example.com.")
+	_, err = stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionDelete, &upperCased))
+	require.NoError(t, err)
+	require.Empty(t, stub.recordSets[stubZoneID])
+}
+
 func TestRoute53APIStubChangeBatchIsAtomic(t *testing.T) {
 	ctx := t.Context()
 	stub := NewRoute53APIStub(t)
