@@ -157,6 +157,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		return v
 	}
 	hostnames := func(names ...v1.Hostname) []v1.Hostname { return names }
+	hostnamePtr := func(h v1.Hostname) *v1.Hostname { return &h }
 
 	tests := []struct {
 		title           string
@@ -1673,6 +1674,45 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("test.org.internal", "1.2.3.4"),
+			},
+		},
+		{
+			title: "OnlyAnnotationHostWithNonMatchingListenerHostname",
+			config: &Config{
+				GatewayNamespace: "gateway-namespace",
+			},
+			namespaces: namespaces("gateway-namespace", "route-namespace"),
+			gateways: []*v1.Gateway{
+				{
+					ObjectMeta: objectMeta("gateway-namespace", "test"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Hostname:      hostnamePtr(v1.Hostname("mywebsite.example.com")),
+							Protocol:      v1.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+			},
+			routes: []*v1.HTTPRoute{
+				{
+					Name:        "route-test",
+					Namespace:   "test",
+					Annotations: map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only", annotations.HostnameKey: "mywebsite.gtw.prod.example.com"},
+					Spec: v1.HTTPRouteSpec{
+						Hostnames: hostnames("mywebsite.example.com"),
+						CommonRouteSpec: v1.CommonRouteSpec{
+							ParentRefs: []v1.ParentReference{
+								gwParentRef("gateway-namespace", "test"),
+							},
+						},
+					},
+					Status: httpRouteStatus(gwParentRef("gateway-namespace", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mywebsite.gtw.prod.example.com", "1.2.3.4"),
 			},
 		},
 		{
