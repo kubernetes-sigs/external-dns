@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -37,7 +38,10 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const defaultTTL = 300
+const (
+	defaultTTL        = 300
+	ociZoneOCIDPrefix = "ocid1.dns-zone."
+)
 
 // OCIAuthConfig holds connection parameters for the OCI API.
 type OCIAuthConfig struct {
@@ -75,6 +79,7 @@ type OCIProvider struct {
 // ociDNSClient is the subset of the OCI DNS API required by the OCI Provider.
 type ociDNSClient interface {
 	ListZones(ctx context.Context, request dns.ListZonesRequest) (response dns.ListZonesResponse, err error)
+	GetZone(ctx context.Context, request dns.GetZoneRequest) (response dns.GetZoneResponse, err error)
 	GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (response dns.GetZoneRecordsResponse, err error)
 	PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error)
 }
@@ -173,15 +178,21 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 		return p.zoneCache.zones, nil
 	}
 	zones := make(map[string]dns.ZoneSummary)
-	scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
-	// If the zone scope is empty, list all zones types.
-	if p.zoneScope == "" {
-		scopes = dns.GetGetZoneScopeEnumValues()
-	}
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
-	for _, scope := range scopes {
-		if err := p.addPaginatedZones(ctx, zones, scope); err != nil {
+	if p.hasFullZoneIDFilter() {
+		if err := p.addZonesByID(ctx, zones); err != nil {
 			return nil, err
+		}
+	} else {
+		scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
+		// If the zone scope is empty, list all zone types.
+		if p.zoneScope == "" {
+			scopes = dns.GetGetZoneScopeEnumValues()
+		}
+		for _, scope := range scopes {
+			if err := p.addPaginatedZones(ctx, zones, scope); err != nil {
+				return nil, err
+			}
 		}
 	}
 	if len(zones) == 0 {
@@ -189,6 +200,20 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	}
 	p.zoneCache.Reset(zones)
 	return zones, nil
+}
+
+// hasFullZoneIDFilter reports whether all configured zone filters are OCI zone OCIDs
+func (p *OCIProvider) hasFullZoneIDFilter() bool {
+	if !p.zoneIDFilter.IsConfigured() {
+		return false
+	}
+
+	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+		if !strings.HasPrefix(zoneID, ociZoneOCIDPrefix) {
+			return false
+		}
+	}
+	return true
 }
 
 // Merge Endpoints with the same Name and Type into a single endpoint with multiple Targets.
@@ -247,6 +272,34 @@ func (p *OCIProvider) addPaginatedZones(ctx context.Context, zones map[string]dn
 		}
 		if page = resp.OpcNextPage; resp.OpcNextPage == nil {
 			break
+		}
+	}
+	return nil
+}
+
+func (p *OCIProvider) addZonesByID(ctx context.Context, zones map[string]dns.ZoneSummary) error {
+	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+		request := dns.GetZoneRequest{ZoneNameOrId: &zoneID}
+		if p.zoneScope != "" {
+			request.Scope = dns.GetZoneScopeEnum(p.zoneScope)
+		}
+		resp, err := p.client.GetZone(ctx, request)
+		if err != nil {
+			var serviceErr common.ServiceError
+			if errors.As(err, &serviceErr) && serviceErr.GetHTTPStatusCode() == http.StatusNotFound {
+				log.Warnf("Zone %q not found, skipping: %v", zoneID, err)
+				continue
+			}
+			return provider.NewSoftErrorf("getting zone %q: %w", zoneID, err)
+		}
+
+		if resp.ZoneType == dns.ZoneZoneTypePrimary &&
+			p.domainFilter.Match(*resp.Name) &&
+			*resp.CompartmentId == p.cfg.CompartmentID {
+			zones[*resp.Id] = dns.ZoneSummary{Id: resp.Id, Name: resp.Name}
+			log.Debugf("Matched %q (%q)", *resp.Name, *resp.Id)
+		} else {
+			log.Debugf("Filtered %q (%q)", *resp.Name, *resp.Id)
 		}
 	}
 	return nil
