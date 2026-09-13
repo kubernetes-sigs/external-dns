@@ -372,7 +372,7 @@ Additionally, you can set the value to `A` or `AAAA` to create only one type of 
 This is useful when your alias target is IPv4-only (i.e., it does not have an AAAA target),
 and creating an AAAA alias record would fail.
 
-Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider.
+Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider — AWS-SD does not support them (see below).
 
 #### Example: IPv4-only alias target
 
@@ -401,6 +401,15 @@ record types (e.g. MX, SRV, TXT) that have this annotation set will be rejected.
 **Supported providers:**
 
 - **AWS**: This annotation is only relevant if the `--aws-prefer-cname` flag is specified.
+- **AWS-SD** (Cloud Map): For a CNAME endpoint whose target is a recognized AWS load-balancer
+  hostname, `alias: "true"` requests a new Cloud Map service with both `A` and `AAAA` DNS
+  records instead of the default `A`-only alias. `AWS_ALIAS_DNS_NAME` instance registration
+  itself is unaffected either way — it remains based solely on the recognized load-balancer
+  hostname. Only the literal value `"true"` is supported; the `A` and `AAAA` values are
+  Route53-only and are not understood by AWS-SD. The underlying load balancer must actually
+  support IPv6/dual-stack for the `AAAA` record to resolve correctly, and Cloud Map DNS record
+  types are immutable — an existing service's record types are never changed in place. See the
+  [AWS Cloud Map tutorial](../tutorials/aws-sd.md#dual-stack-load-balancer-aliases) for details.
 - **PowerDNS**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
   This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses
   on the authoritative server side. Alternatively, use the `--prefer-alias` flag to convert all

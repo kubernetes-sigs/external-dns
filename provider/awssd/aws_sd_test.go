@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 func TestAWSSDProvider_Records(t *testing.T) {
@@ -1183,4 +1184,609 @@ func Test_parseNamespace(t *testing.T) {
 			assert.Equal(t, tc.wantNS, gotNS)
 		})
 	}
+}
+
+func TestAWSSDProvider_AdjustEndpoints(t *testing.T) {
+	newEndpoint := func(recordType string, targets endpoint.Targets, alias endpoint.AliasType, extraProviderSpecific endpoint.ProviderSpecific) *endpoint.Endpoint {
+		ep := &endpoint.Endpoint{
+			DNSName:    "service1.private.com",
+			RecordType: recordType,
+			Targets:    targets,
+		}
+		ep.ProviderSpecific = append(ep.ProviderSpecific, extraProviderSpecific...)
+		if alias != endpoint.AliasNone {
+			ep.WithAliasProperty(alias)
+		}
+		return ep
+	}
+
+	for _, tc := range []struct {
+		name              string
+		endpoint          *endpoint.Endpoint
+		wantDualstack     bool
+		wantAliasRemoved  bool
+		wantOtherProperty bool
+	}{
+		{
+			name:             "AWS load balancer CNAME with alias=true gets dualstack label and loses alias property",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, endpoint.AliasTrue, nil),
+			wantDualstack:    true,
+			wantAliasRemoved: true,
+		},
+		{
+			name:             "AWS load balancer CNAME without alias annotation stays single-stack",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, endpoint.AliasNone, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+		{
+			name:             "non-AWS CNAME with alias=true does not get dualstack label but alias is still consumed",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"cname.target.com"}, endpoint.AliasTrue, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+		{
+			name:              "unrelated provider-specific properties survive alias removal",
+			endpoint:          newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, endpoint.AliasTrue, endpoint.ProviderSpecific{{Name: "other-property", Value: "keep-me"}}),
+			wantDualstack:     true,
+			wantAliasRemoved:  true,
+			wantOtherProperty: true,
+		},
+		{
+			name:             "A record is untouched",
+			endpoint:         newEndpoint(endpoint.RecordTypeA, endpoint.Targets{"1.2.3.4"}, endpoint.AliasTrue, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+		{
+			name:             "CNAME with no targets is not treated as a load balancer",
+			endpoint:         newEndpoint(endpoint.RecordTypeCNAME, endpoint.Targets{}, endpoint.AliasTrue, nil),
+			wantDualstack:    false,
+			wantAliasRemoved: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := newTestAWSSDProvider(
+				&AWSSDClientStub{},
+				endpoint.NewDomainFilter([]string{}),
+				"",
+				"",
+			)
+
+			adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{tc.endpoint})
+			require.NoError(t, err)
+			require.Len(t, adjusted, 1)
+
+			ep := adjusted[0]
+			assert.Equal(t, tc.wantDualstack, ep.Labels[endpoint.DualstackLabelKey] == "true")
+
+			_, aliasStillPresent := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+			assert.Equal(t, !tc.wantAliasRemoved, aliasStillPresent)
+
+			if tc.wantOtherProperty {
+				value, ok := ep.GetProviderSpecificProperty("other-property")
+				assert.True(t, ok)
+				assert.Equal(t, "keep-me", value)
+			}
+		})
+	}
+}
+
+func TestAWSSDProvider_CreateService_LoadBalancerAliasRecordTypes(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	for _, tc := range []struct {
+		name         string
+		description  string
+		withAlias    bool
+		expectedType []sdtypes.RecordType
+	}{
+		{
+			name:        "IPv4 load balancer alias remains A only",
+			description: "ipv4-alias",
+			withAlias:   false,
+			expectedType: []sdtypes.RecordType{
+				sdtypes.RecordTypeA,
+			},
+		},
+		{
+			name:        "explicit dualstack load balancer alias creates A and AAAA",
+			description: "dualstack-alias",
+			withAlias:   true,
+			expectedType: []sdtypes.RecordType{
+				sdtypes.RecordTypeA,
+				sdtypes.RecordTypeAaaa,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			api := &AWSSDClientStub{
+				namespaces: namespaces,
+				services:   make(map[string]map[string]*sdtypes.Service),
+			}
+
+			provider := newTestAWSSDProvider(
+				api,
+				endpoint.NewDomainFilter([]string{}),
+				"",
+				"",
+			)
+
+			desired := &endpoint.Endpoint{
+				Labels: map[string]string{
+					endpoint.AWSSDDescriptionLabel: tc.description,
+				},
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  100,
+				Targets: endpoint.Targets{
+					"load-balancer.us-east-1.elb.amazonaws.com",
+				},
+			}
+			if tc.withAlias {
+				desired.WithAliasProperty(endpoint.AliasTrue)
+			}
+
+			adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{desired})
+			require.NoError(t, err)
+			require.Len(t, adjusted, 1)
+
+			service, err := provider.CreateService(
+				t.Context(),
+				aws.String("private"),
+				aws.String("alias-srv"),
+				adjusted[0],
+			)
+			require.NoError(t, err)
+			require.NotNil(t, service)
+
+			require.Len(t, service.DnsConfig.DnsRecords, len(tc.expectedType))
+
+			for i, expectedType := range tc.expectedType {
+				assert.Equal(t, expectedType, service.DnsConfig.DnsRecords[i].Type)
+				assert.Equal(t, int64(100), *service.DnsConfig.DnsRecords[i].TTL)
+			}
+		})
+	}
+}
+
+func TestAWSSDProvider_CreateService_CNAMENoTargets(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+	}
+
+	sdProvider := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	var service *sdtypes.Service
+	var err error
+	require.NotPanics(t, func() {
+		service, err = sdProvider.CreateService(
+			t.Context(),
+			aws.String("private"),
+			aws.String("no-targets-srv"),
+			&endpoint.Endpoint{
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  60,
+				Targets:    endpoint.Targets{},
+			},
+		)
+	})
+	require.NoError(t, err)
+	require.NotNil(t, service)
+
+	require.Len(t, service.DnsConfig.DnsRecords, 1)
+	assert.Equal(t, sdtypes.RecordTypeCname, service.DnsConfig.DnsRecords[0].Type)
+}
+
+func TestAWSSDProvider_UpdateService_PreservesExistingRecordTypes(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		records []sdtypes.DnsRecord
+	}{
+		{
+			name: "existing A-only alias remains A-only",
+			records: []sdtypes.DnsRecord{
+				{
+					Type: sdtypes.RecordTypeA,
+					TTL:  aws.Int64(60),
+				},
+			},
+		},
+		{
+			name: "existing dualstack alias remains A and AAAA",
+			records: []sdtypes.DnsRecord{
+				{
+					Type: sdtypes.RecordTypeA,
+					TTL:  aws.Int64(60),
+				},
+				{
+					Type: sdtypes.RecordTypeAaaa,
+					TTL:  aws.Int64(60),
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			namespaces := map[string]*sdtypes.Namespace{
+				"private": {
+					Id:   aws.String("private"),
+					Name: aws.String("private.com"),
+					Type: sdtypes.NamespaceTypeDnsPrivate,
+				},
+			}
+
+			services := map[string]map[string]*sdtypes.Service{
+				"private": {
+					"srv1": {
+						Id:          aws.String("srv1"),
+						Name:        aws.String("service1"),
+						NamespaceId: aws.String("private"),
+						DnsConfig: &sdtypes.DnsConfig{
+							RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+							DnsRecords:    tc.records,
+						},
+					},
+				},
+			}
+
+			api := &AWSSDClientStub{
+				namespaces: namespaces,
+				services:   services,
+			}
+
+			provider := newTestAWSSDProvider(
+				api,
+				endpoint.NewDomainFilter([]string{}),
+				"",
+				"",
+			)
+
+			err := provider.UpdateService(
+				t.Context(),
+				services["private"]["srv1"],
+				&endpoint.Endpoint{
+					Labels: map[string]string{
+						endpoint.DualstackLabelKey: "true",
+					},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  100,
+					Targets: endpoint.Targets{
+						"load-balancer.us-east-1.elb.amazonaws.com",
+					},
+				},
+			)
+			require.NoError(t, err)
+
+			got := api.services["private"]["srv1"].DnsConfig.DnsRecords
+			require.Len(t, got, len(tc.records))
+
+			for i := range tc.records {
+				assert.Equal(t, tc.records[i].Type, got[i].Type)
+				assert.Equal(t, int64(100), *got[i].TTL)
+			}
+		})
+	}
+}
+
+func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	services := map[string]map[string]*sdtypes.Service{
+		"private": {
+			"service1": {
+				Id:          aws.String("service1"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
+				DnsConfig: &sdtypes.DnsConfig{
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{
+						{
+							Type: sdtypes.RecordTypeA,
+							TTL:  aws.Int64(60),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   services,
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	provider := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	// Must pass through AdjustEndpoints before ApplyChanges.
+	ep := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets: endpoint.Targets{
+			"load-balancer.us-east-1.elb.amazonaws.com",
+		},
+	}
+	ep.WithAliasProperty(endpoint.AliasTrue)
+
+	adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{ep})
+	require.NoError(t, err)
+	require.Len(t, adjusted, 1)
+	ep = adjusted[0]
+
+	err = provider.ApplyChanges(
+		t.Context(),
+		&plan.Changes{
+			Create: []*endpoint.Endpoint{ep},
+		},
+	)
+	require.NoError(t, err)
+
+	records := api.services["private"]["service1"].DnsConfig.DnsRecords
+	require.Len(t, records, 1)
+
+	assert.Equal(t, sdtypes.RecordTypeA, records[0].Type)
+	assert.Equal(t, int64(100), *records[0].TTL)
+
+	instance := api.instances["service1"]["load-balancer.us-east-1.elb.amazonaws.com"]
+	require.NotNil(t, instance)
+
+	assert.Equal(
+		t,
+		"load-balancer.us-east-1.elb.amazonaws.com",
+		instance.Attributes[sdInstanceAttrAlias],
+	)
+}
+
+func TestAWSSDProvider_UpdateService_MissingDNSRecords(t *testing.T) {
+	sdProvider := newTestAWSSDProvider(
+		&AWSSDClientStub{},
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	for _, tc := range []struct {
+		name    string
+		service *sdtypes.Service
+	}{
+		{
+			name: "nil DNS config",
+			service: &sdtypes.Service{
+				Id:   aws.String("srv1"),
+				Name: aws.String("service1"),
+			},
+		},
+		{
+			name: "empty DNS records",
+			service: &sdtypes.Service{
+				Id:        aws.String("srv1"),
+				Name:      aws.String("service1"),
+				DnsConfig: &sdtypes.DnsConfig{},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := sdProvider.UpdateService(
+				t.Context(),
+				tc.service,
+				&endpoint.Endpoint{
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  60,
+					Targets: endpoint.Targets{
+						"load-balancer.us-east-1.elb.amazonaws.com",
+					},
+				},
+			)
+
+			require.Error(t, err)
+			require.ErrorIs(t, err, provider.SoftError)
+			assert.Contains(t, err.Error(), "has no DNS records to update")
+		})
+	}
+}
+
+func TestAWSSDProvider_ApplyChanges_MissingDNSRecordsReturnsError(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	services := map[string]map[string]*sdtypes.Service{
+		"private": {
+			"service1": {
+				Id:          aws.String("service1"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
+			},
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   services,
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	sdProvider := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	err := sdProvider.ApplyChanges(
+		t.Context(),
+		&plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{
+					DNSName:    "service1.private.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  60,
+					Targets: endpoint.Targets{
+						"load-balancer.us-east-1.elb.amazonaws.com",
+					},
+				},
+			},
+		},
+	)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
+	assert.Contains(t, err.Error(), "has no DNS records to update")
+}
+
+func TestAWSSDProvider_ApplyChanges_UpdatesTTLWhenSecondRecordIsStale(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	services := map[string]map[string]*sdtypes.Service{
+		"private": {
+			"service1": {
+				Id:          aws.String("service1"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
+				DnsConfig: &sdtypes.DnsConfig{
+					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+					DnsRecords: []sdtypes.DnsRecord{
+						{
+							Type: sdtypes.RecordTypeA,
+							TTL:  aws.Int64(100),
+						},
+						{
+							Type: sdtypes.RecordTypeAaaa,
+							TTL:  aws.Int64(60),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   services,
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	provider := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	err := provider.ApplyChanges(
+		t.Context(),
+		&plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{
+					DNSName:    "service1.private.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  100,
+					Targets: endpoint.Targets{
+						"load-balancer.us-east-1.elb.amazonaws.com",
+					},
+					Labels: map[string]string{
+						endpoint.DualstackLabelKey: "true",
+					},
+				},
+			},
+		},
+	)
+	require.NoError(t, err)
+
+	records := api.services["private"]["service1"].DnsConfig.DnsRecords
+	require.Len(t, records, 2)
+
+	assert.Equal(t, sdtypes.RecordTypeA, records[0].Type)
+	assert.Equal(t, int64(100), *records[0].TTL)
+	assert.Equal(t, sdtypes.RecordTypeAaaa, records[1].Type)
+	assert.Equal(t, int64(100), *records[1].TTL)
+}
+
+// Guards against the alias intent causing a spurious update every reconciliation.
+func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
+	provider := newTestAWSSDProvider(
+		&AWSSDClientStub{},
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"",
+	)
+
+	desired := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets: endpoint.Targets{
+			"load-balancer.us-east-1.elb.amazonaws.com",
+		},
+	}
+	desired.WithAliasProperty(endpoint.AliasTrue)
+
+	adjusted, err := provider.AdjustEndpoints([]*endpoint.Endpoint{desired})
+	require.NoError(t, err)
+	require.Len(t, adjusted, 1)
+
+	// Read-back endpoint: no alias property, as Records() would produce.
+	current := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets: endpoint.Targets{
+			"load-balancer.us-east-1.elb.amazonaws.com",
+		},
+	}
+
+	p := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        adjusted,
+		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"private.com"})},
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	assert.Empty(t, changes.Create)
+	assert.Empty(t, changes.UpdateOld)
+	assert.Empty(t, changes.UpdateNew)
+	assert.Empty(t, changes.Delete)
 }
