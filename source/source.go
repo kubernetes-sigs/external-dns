@@ -56,6 +56,19 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 	return selector.Matches(labels.Set(srcAnnotations))
 }
 
+// markTargetsFromAnnotation tags eps as having their Targets sourced from an
+// explicit per-resource target annotation, so the multi-source merge layer
+// can let that override survive --force-default-targets.
+func markTargetsFromAnnotation(eps []*endpoint.Endpoint, fromAnnotation bool) []*endpoint.Endpoint {
+	if !fromAnnotation {
+		return eps
+	}
+	for _, ep := range eps {
+		ep.WithTargetsFromAnnotation(true)
+	}
+	return eps
+}
+
 type eventHandlerFunc func()
 
 func (fn eventHandlerFunc) OnAdd(_ any, _ bool) { fn() }

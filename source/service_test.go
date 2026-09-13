@@ -1332,6 +1332,58 @@ func testMultipleServicesEndpoints(t *testing.T) {
 	}
 }
 
+// TestServiceSourceEndpoints_MergedServicesNotAnnotationOnly covers two
+// LoadBalancer Services that share the same hostname-annotation-derived DNS
+// name: one carries an explicit target annotation, the other resolves its
+// target naturally from the LoadBalancer ingress IP. Once merged under the
+// shared owner record, the result must not be marked annotation-only, since
+// only one of the two contributions was actually annotation-sourced.
+func TestServiceSourceEndpoints_MergedServicesNotAnnotationOnly(t *testing.T) {
+	kubernetesClient := fake.NewClientset()
+
+	annotatedService := &v1.Service{
+		Spec:      v1.ServiceSpec{Type: v1.ServiceTypeLoadBalancer},
+		Namespace: "testing",
+		Name:      "foo-annotated",
+		Annotations: map[string]string{
+			annotations.HostnameKey: "foo.example.org",
+			annotations.TargetKey:   "9.9.9.9",
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{{IP: "9.9.9.9"}},
+			},
+		},
+	}
+	naturalService := &v1.Service{
+		Spec:        v1.ServiceSpec{Type: v1.ServiceTypeLoadBalancer},
+		Namespace:   "testing",
+		Name:        "foo-natural",
+		Annotations: map[string]string{annotations.HostnameKey: "foo.example.org"},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+			},
+		},
+	}
+
+	for _, svc := range []*v1.Service{annotatedService, naturalService} {
+		_, err := kubernetesClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	client, err := NewServiceSource(t.Context(), kubernetesClient, &Config{LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+
+	res, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	require.Len(t, res, 1)
+	assert.ElementsMatch(t, []string{"9.9.9.9", "1.2.3.4"}, []string(res[0].Targets))
+	assert.False(t, res[0].TargetsFromAnnotation(),
+		"the naturally-resolved service's target is not annotation-sourced and must clear annotation-only status for the merged record")
+}
+
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func TestClusterIpServices(t *testing.T) {
 	t.Parallel()
@@ -5132,7 +5184,7 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	publishPodIPs := true
 	publishNotReadyAddresses := false
 
-	result := sc.processHeadlessEndpointsFromSlices(
+	result, _ := sc.processHeadlessEndpointsFromSlices(
 		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added when pod is nil and publishPodIPs is true")
@@ -5158,7 +5210,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 	publishPodIPs := true
 	publishNotReadyAddresses := false
 
-	result := sc.processHeadlessEndpointsFromSlices(
+	result, _ := sc.processHeadlessEndpointsFromSlices(
 		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.Empty(t, result, "No targets should be added for unsupported address type when publishPodIPs is true")
@@ -5188,7 +5240,7 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 	publishPodIPs := false // This should allow processing
 	publishNotReadyAddresses := false
 
-	result := sc.processHeadlessEndpointsFromSlices(
+	result, _ := sc.processHeadlessEndpointsFromSlices(
 		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Targets should be added when publishPodIPs is false")
@@ -5218,7 +5270,7 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 	publishPodIPs := false
 	publishNotReadyAddresses := true // This should allow not-ready endpoints
 
-	result := sc.processHeadlessEndpointsFromSlices(
+	result, _ := sc.processHeadlessEndpointsFromSlices(
 		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 	assert.NotEmpty(t, result, "Not ready endpoints should be processed when publishNotReadyAddresses is true")
@@ -5241,7 +5293,7 @@ func TestGetTargetsForDomain_EmptyAddresses(t *testing.T) {
 	endpointsType := "IPv4"
 	headlessDomain := "test.example.com"
 
-	targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
+	targets, _ := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 	assert.Empty(t, targets, "Should return empty targets when ep.Addresses is empty")
 }
 
@@ -5262,7 +5314,7 @@ func TestGetTargetsForDomain_HostIP(t *testing.T) {
 	endpointsType := EndpointsTypeHostIP
 	headlessDomain := "test.example.com"
 
-	targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
+	targets, _ := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 	assert.Contains(t, targets, "192.168.1.100", "Should return HostIP when endpointsType is HostIP")
 }
 
@@ -5305,7 +5357,7 @@ func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
 	endpointsType := EndpointsTypeNodeExternalIP
 	headlessDomain := "test.example.com"
 
-	targets := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
+	targets, _ := sc.getTargetsForDomain(pod, ep, endpointSlice, endpointsType, headlessDomain)
 	assert.Contains(t, targets, "203.0.113.10", "Should return NodeExternalIP")
 }
 
@@ -5391,7 +5443,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
-		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(0))
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, nil, endpoint.TTL(0))
 
 		assert.Len(t, result, 2)
 
@@ -5415,7 +5467,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}: {"1.2.3.4", "1.2.3.4", "5.6.7.8"},
 		}
 
-		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(0))
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, nil, endpoint.TTL(0))
 
 		assert.Len(t, result, 1)
 		assert.Len(t, result[0].Targets, 2)
@@ -5428,7 +5480,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "test.example.com", RecordType: endpoint.RecordTypeA}: {"1.2.3.4"},
 		}
 
-		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(300))
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, nil, endpoint.TTL(300))
 
 		assert.Len(t, result, 1)
 		assert.Equal(t, endpoint.TTL(300), result[0].RecordTTL)
@@ -5441,7 +5493,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 			{DNSName: "a.example.com", RecordType: endpoint.RecordTypeAAAA}: {"2001:db8::1"},
 		}
 
-		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, endpoint.TTL(0))
+		result := buildHeadlessEndpoints(svc, targetsByHeadlessDomainAndType, nil, endpoint.TTL(0))
 
 		assert.Len(t, result, 3)
 		// Should be sorted by DNSName first, then by RecordType
@@ -5453,8 +5505,60 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 	})
 
 	t.Run("handles empty targets", func(t *testing.T) {
-		result := buildHeadlessEndpoints(svc, map[endpoint.EndpointKey]endpoint.Targets{}, endpoint.TTL(0))
+		result := buildHeadlessEndpoints(svc, map[endpoint.EndpointKey]endpoint.Targets{}, nil, endpoint.TTL(0))
 		assert.Empty(t, result)
+	})
+}
+
+// TestProcessHeadlessEndpointsFromSlices_TargetsFromAnnotation verifies that a
+// headless domain/type key is reported as annotation-only only when every Pod
+// contributing to it resolved its target from the Pod's own explicit target
+// annotation, so a partially-annotated aggregate never wrongly survives
+// --force-default-targets.
+func TestProcessHeadlessEndpointsFromSlices_TargetsFromAnnotation(t *testing.T) {
+	sc := &serviceSource{}
+	hostname := "headless.example.com"
+	endpointsType := "IPv4"
+	key := endpoint.EndpointKey{DNSName: hostname, RecordType: endpoint.RecordTypeA}
+
+	t.Run("all contributions from annotation", func(t *testing.T) {
+		endpointSlice := &discoveryv1.EndpointSlice{
+			Name: "slice1", Namespace: "default",
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{
+				{TargetRef: &v1.ObjectReference{Kind: "Pod", Name: "pod-a"}, Conditions: discoveryv1.EndpointConditions{Ready: new(true)}, Addresses: []string{"10.0.0.1"}},
+				{TargetRef: &v1.ObjectReference{Kind: "Pod", Name: "pod-b"}, Conditions: discoveryv1.EndpointConditions{Ready: new(true)}, Addresses: []string{"10.0.0.2"}},
+			},
+		}
+		pods := []*v1.Pod{
+			{Name: "pod-a", Annotations: map[string]string{annotations.TargetKey: "1.1.1.1"}},
+			{Name: "pod-b", Annotations: map[string]string{annotations.TargetKey: "2.2.2.2"}},
+		}
+
+		_, annotationOnly := sc.processHeadlessEndpointsFromSlices(
+			pods, []*discoveryv1.EndpointSlice{endpointSlice}, hostname, endpointsType, true, false)
+
+		assert.True(t, annotationOnly[key])
+	})
+
+	t.Run("mixed contributions are not annotation-only", func(t *testing.T) {
+		endpointSlice := &discoveryv1.EndpointSlice{
+			Name: "slice1", Namespace: "default",
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{
+				{TargetRef: &v1.ObjectReference{Kind: "Pod", Name: "pod-a"}, Conditions: discoveryv1.EndpointConditions{Ready: new(true)}, Addresses: []string{"10.0.0.1"}},
+				{TargetRef: &v1.ObjectReference{Kind: "Pod", Name: "pod-b"}, Conditions: discoveryv1.EndpointConditions{Ready: new(true)}, Addresses: []string{"10.0.0.2"}},
+			},
+		}
+		pods := []*v1.Pod{
+			{Name: "pod-a", Annotations: map[string]string{annotations.TargetKey: "1.1.1.1"}},
+			{Name: "pod-b"},
+		}
+
+		_, annotationOnly := sc.processHeadlessEndpointsFromSlices(
+			pods, []*discoveryv1.EndpointSlice{endpointSlice}, hostname, endpointsType, true, false)
+
+		assert.False(t, annotationOnly[key])
 	})
 }
 
@@ -5483,7 +5587,7 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	publishPodIPs := false
 	publishNotReadyAddresses := false
 
-	result := sc.processHeadlessEndpointsFromSlices(
+	result, _ := sc.processHeadlessEndpointsFromSlices(
 		pods, []*discoveryv1.EndpointSlice{endpointSlice},
 		hostname, endpointsType, publishPodIPs, publishNotReadyAddresses)
 

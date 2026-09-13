@@ -555,6 +555,60 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 	}
 }
 
+// TestMergeEndpoints_TargetsFromAnnotation covers the case where two
+// resources contribute to the same merged key (e.g. two Ingress objects
+// declaring the same host) and only one of them resolved its target from
+// the explicit target annotation. The merged endpoint must not silently
+// inherit "first" endpoint's flag: it is annotation-only only when every
+// contributing endpoint was itself annotation-sourced.
+func TestMergeEndpoints_TargetsFromAnnotation(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []*Endpoint
+		expected bool
+	}{
+		{
+			name: "annotation-sourced endpoint first, natural endpoint second — not annotation-only",
+			input: []*Endpoint{
+				NewEndpoint("a.example.com", RecordTypeA, "9.9.9.9").WithTargetsFromAnnotation(true),
+				NewEndpoint("a.example.com", RecordTypeA, "8.8.8.8").WithTargetsFromAnnotation(false),
+			},
+			expected: false,
+		},
+		{
+			name: "natural endpoint first, annotation-sourced endpoint second — not annotation-only",
+			input: []*Endpoint{
+				NewEndpoint("a.example.com", RecordTypeA, "8.8.8.8").WithTargetsFromAnnotation(false),
+				NewEndpoint("a.example.com", RecordTypeA, "9.9.9.9").WithTargetsFromAnnotation(true),
+			},
+			expected: false,
+		},
+		{
+			name: "both endpoints annotation-sourced — annotation-only",
+			input: []*Endpoint{
+				NewEndpoint("a.example.com", RecordTypeA, "9.9.9.9").WithTargetsFromAnnotation(true),
+				NewEndpoint("a.example.com", RecordTypeA, "7.7.7.7").WithTargetsFromAnnotation(true),
+			},
+			expected: true,
+		},
+		{
+			name: "single annotation-sourced endpoint — annotation-only",
+			input: []*Endpoint{
+				NewEndpoint("a.example.com", RecordTypeA, "9.9.9.9").WithTargetsFromAnnotation(true),
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := MergeEndpoints(tt.input)
+			require.Len(t, result, 1)
+			assert.Equal(t, tt.expected, result[0].TargetsFromAnnotation())
+		})
+	}
+}
+
 func TestMergeEndpointsLogging(t *testing.T) {
 	t.Run("warns on CNAME conflict", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)

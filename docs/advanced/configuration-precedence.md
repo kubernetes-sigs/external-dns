@@ -25,7 +25,12 @@ flowchart TD
 1. **Annotations**
    - Most configuration options can be set via annotations on supported resources.
    - When present, annotations override the corresponding CLI flags and defaults.
-     - Exception: should be documented.
+     - Exception: `--force-default-targets` overrides source-provided targets, but an
+       explicit per-resource `external-dns.kubernetes.io/target` annotation still wins,
+       for every source that reads that annotation. It does not apply to the `crd`
+       source's `DNSEndpoint.spec.endpoints[].targets` field, which
+       `--force-default-targets` always overrides by design; see the
+       [CRD source tutorial](../tutorials/crd.md).
      - Exception: ignored when applied to `kind: DNSEndpoint`
      - Exception: filter flags (e.g. `--service-type-filter`, `--source`) define the *scope* of resources considered.
 

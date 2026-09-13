@@ -122,6 +122,15 @@ func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets
 	return targets
 }
 
+// TargetsFromTargetAnnotationWithSource behaves like TargetsFromTargetAnnotation,
+// but also reports whether the target annotation was present. Callers that mark
+// endpoints as annotation-sourced (see endpoint.WithTargetsFromAnnotation) should
+// use this instead of separately re-deriving len(targets) > 0.
+func TargetsFromTargetAnnotationWithSource(annotations map[string]string) (endpoint.Targets, bool) {
+	targets := TargetsFromTargetAnnotation(annotations)
+	return targets, len(targets) > 0
+}
+
 // HostnamesFromAnnotations extracts the hostnames from the given annotations map.
 // It returns a slice of hostnames if the HostnameKey annotation is present, otherwise it returns nil.
 func HostnamesFromAnnotations(input map[string]string) []string {

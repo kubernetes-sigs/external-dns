@@ -297,7 +297,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		// Get Route hostnames and their targets.
 		meta := rt.Metadata()
 		annots := meta.Annotations
-		hostTargets, err := resolver.resolve(rt)
+		hostTargets, hostAnnotationOnly, err := resolver.resolve(rt)
 		if err != nil {
 			return nil, err
 		}
@@ -313,7 +313,8 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
 		ttl := annotations.TTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			hostEndpoints := endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)
+			routeEndpoints = append(routeEndpoints, markTargetsFromAnnotation(hostEndpoints, hostAnnotationOnly[host])...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
@@ -386,18 +387,25 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, li
 	}
 }
 
-func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
+// resolve returns, per matched hostname, its resolved targets and whether
+// every contribution to that hostname came from a Gateway/ListenerSet's
+// explicit target annotation (listenerObject.overrides) rather than the
+// Gateway's Status.Addresses, so the caller can let that survive
+// --force-default-targets.
+func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, map[string]bool, error) {
 	rtHosts, err := c.resolveHostnames(rt)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	hostTargets := make(map[string]endpoint.Targets)
+	hostAnnotationOnly := make(map[string]bool)
+	hostContributed := make(map[string]bool)
 
 	routeParentRefs := rt.ParentRefs()
 
 	if len(routeParentRefs) == 0 {
 		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
-		return hostTargets, nil
+		return hostTargets, hostAnnotationOnly, nil
 	}
 
 	for _, rps := range rt.RouteStatus().Parents {
@@ -405,14 +413,14 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		if !ok {
 			continue
 		}
-		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+		c.matchRouteToParent(rt, rtHosts, parent, hostTargets, hostAnnotationOnly, hostContributed)
 	}
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
 	for host, targets := range hostTargets {
 		hostTargets[host] = uniqueTargets(targets)
 	}
-	return hostTargets, nil
+	return hostTargets, hostAnnotationOnly, nil
 }
 
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
@@ -466,7 +474,7 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets, hostAnnotationOnly map[string]bool, hostContributed map[string]bool) {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -478,7 +486,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 			}
 			continue
 		}
-		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets) {
+		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets, hostAnnotationOnly, hostContributed) {
 			match = true
 		}
 	}
@@ -492,7 +500,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
 }
 
-func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
+func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets, hostAnnotationOnly map[string]bool, hostContributed map[string]bool) bool {
 	if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
 		return false
 	}
@@ -518,10 +526,26 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 			continue
 		}
 		override := parent.obj.overrides
-		hostTargets[host] = append(hostTargets[host], override...)
-		if len(override) == 0 {
+		fromAnnotation := len(override) > 0
+		contributed := fromAnnotation
+		if fromAnnotation {
+			hostTargets[host] = append(hostTargets[host], override...)
+		} else if len(parent.obj.gateway.Status.Addresses) > 0 {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
 				hostTargets[host] = append(hostTargets[host], addr.Value)
+			}
+			contributed = true
+		}
+		// Only fold this listener into the annotation-only tracking when it
+		// actually contributed a target. A listener with no override and no
+		// resolved gateway address yet (e.g. not provisioned) must not clear
+		// hostAnnotationOnly for a host another listener already protected.
+		if contributed {
+			if !hostContributed[host] {
+				hostAnnotationOnly[host] = fromAnnotation
+				hostContributed[host] = true
+			} else {
+				hostAnnotationOnly[host] = hostAnnotationOnly[host] && fromAnnotation
 			}
 		}
 		match = true

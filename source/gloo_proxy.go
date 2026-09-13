@@ -257,8 +257,8 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		}
 		log.Debugf("Gloo: Find %s proxy", proxy.Name)
 
-		proxyTargets := annotations.TargetsFromTargetAnnotation(proxy.Annotations)
-		if len(proxyTargets) == 0 {
+		proxyTargets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(proxy.Annotations)
+		if !targetsFromAnnotation {
 			proxyTargets, err = gs.targetsFromGatewayIngress(&proxy)
 			if err != nil {
 				return nil, err
@@ -277,6 +277,7 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		if err != nil {
 			return nil, err
 		}
+		proxyEndpoints = markTargetsFromAnnotation(proxyEndpoints, targetsFromAnnotation)
 		log.Debugf("Gloo[%s]: Generate %d endpoint(s)", proxy.Name, len(proxyEndpoints))
 
 		endpoint.AttachRefObject(proxyEndpoints, events.NewObjectReference(unstructuredObj, types.GlooProxy))
