@@ -84,7 +84,7 @@ func TestGetRestConfig_MissingServiceAccountTokenHasActionableHint(t *testing.T)
 	config, err := buildRestConfig("", "")
 	require.Error(t, err)
 	assert.Nil(t, config)
-	assert.ErrorContains(t, err, inClusterTokenFile)
+	assert.ErrorContains(t, err, "/var/run/secrets/kubernetes.io/serviceaccount/token")
 	assert.ErrorContains(t, err, "automountServiceAccountToken")
 	assert.ErrorContains(t, err, "--kubeconfig")
 }

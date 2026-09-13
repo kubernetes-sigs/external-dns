@@ -132,15 +132,14 @@ func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	return config, nil
 }
 
-// inClusterTokenFile mirrors the path client-go's rest.InClusterConfig reads
-// the service account token from.
-const inClusterTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-
-// enrichInClusterConfigError adds an actionable hint when rest.InClusterConfig
-// fails because the service account token is missing, e.g. when
-// automountServiceAccountToken is disabled without --kubeconfig set to use an
-// alternative auth method.
+// enrichInClusterConfigError replaces the raw, cryptic os.PathError that
+// rest.InClusterConfig returns when the service account token is missing
+// (e.g. automountServiceAccountToken: false) with a hint pointing the
+// operator at --kubeconfig as an alternative auth method.
 func enrichInClusterConfigError(err error) error {
+	// inClusterTokenFile mirrors the path client-go's rest.InClusterConfig reads
+	// the service account token from.
+	const inClusterTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	var pathErr *fs.PathError
 	if errors.As(err, &pathErr) && pathErr.Path == inClusterTokenFile {
 		return fmt.Errorf("is automountServiceAccountToken disabled? set --kubeconfig to authenticate another way: %w", err)
