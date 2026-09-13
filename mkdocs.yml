@@ -34,6 +34,7 @@ nav:
       - Kubernetes Events: docs/advanced/events.md
       - Leader Election: docs/proposal/001-leader-election.md
       - Monitoring: docs/monitoring/*
+      - Multi-Cluster Shared Records: docs/advanced/multi-cluster-shared-records.md
       - MultiTarget: docs/proposal/multi-target.md
       - NAT64: docs/advanced/nat64.md
       - Operational Best Practices: docs/advanced/operational-best-practices.md
