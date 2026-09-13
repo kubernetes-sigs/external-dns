@@ -342,10 +342,15 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RRset) []*endpoint.Endpoin
 			targets = append(targets, pgo.StringValue(record.Content))
 		}
 	}
-	if rrType == string(pgo.RRTypeALIAS) {
+	isAlias := rrType == string(pgo.RRTypeALIAS)
+	if isAlias {
 		rrType = endpoint.RecordTypeCNAME
 	}
-	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(pgo.StringValue(rr.Name), rrType, endpoint.TTL(pgo.Uint32Value(rr.TTL)), targets...))
+	ep := endpoint.NewEndpointWithTTL(pgo.StringValue(rr.Name), rrType, endpoint.TTL(pgo.Uint32Value(rr.TTL)), targets...)
+	if isAlias {
+		ep = ep.WithAliasProperty(endpoint.AliasTrue)
+	}
+	endpoints = append(endpoints, ep)
 	return endpoints
 }
 

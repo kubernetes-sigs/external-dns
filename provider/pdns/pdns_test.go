@@ -203,7 +203,7 @@ var (
 		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
-		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com").WithAliasProperty(endpoint.AliasTrue),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
 		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
@@ -846,6 +846,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	*/
 	eps = p.convertRRSetToEndpoints(RRSetDisabledRecord)
 	suite.Equal(endpointsDisabledRecord, eps)
+
+	eps = p.convertRRSetToEndpoints(RRSetALIASRecord)
+	suite.Equal([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com").WithAliasProperty(endpoint.AliasTrue),
+	}, eps)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
