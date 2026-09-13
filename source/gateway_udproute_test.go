@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakediscovery "k8s.io/client-go/discovery/fake"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -38,6 +39,16 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+func configureGatewayAPIUDPDiscovery(kubeClient *kubefake.Clientset, versions ...string) {
+	discovery := kubeClient.Discovery().(*fakediscovery.FakeDiscovery)
+
+	for _, version := range versions {
+		discovery.Resources = append(discovery.Resources, &metav1.APIResourceList{
+			GroupVersion: version, APIResources: []metav1.APIResource{{Name: "udproutes", Kind: "UDPRoute"}},
+		})
+	}
+}
+
 func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
@@ -46,6 +57,13 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 
 	gwClient := gatewayfake.NewSimpleClientset()
 	kubeClient := kubefake.NewClientset()
+
+	configureGatewayAPIUDPDiscovery(
+		kubeClient,
+		v1.GroupVersion.String(),
+		v1alpha2.GroupVersion.String(),
+	)
+
 	clients := new(testutils.MockClientGenerator)
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
@@ -57,6 +75,86 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create Namespace")
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
+
+	gw := &v1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "internal",
+			Namespace: "default",
+		},
+		Spec: v1.GatewaySpec{
+			Listeners: []v1.Listener{{
+				Protocol: v1.UDPProtocolType,
+			}},
+		},
+		Status: gatewayStatus(ips...),
+	}
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err, "failed to create Gateway")
+
+	rt := &v1.UDPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "api",
+			Namespace: "default",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "api-annotation.foobar.internal",
+			},
+		},
+		Spec: v1.UDPRouteSpec{
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("default", "internal"),
+				},
+			},
+		},
+		Status: v1.UDPRouteStatus{
+			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
+		},
+	}
+	_, err = gwClient.GatewayV1().UDPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err, "failed to create UDPRoute")
+
+	src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{
+		TemplateEngine: templatetest.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
+	})
+	require.NoError(t, err, "failed to create Gateway UDPRoute Source")
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err, "failed to get Endpoints")
+
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("api-annotation.foobar.internal", ips...),
+		newTestEndpoint("api-template.foobar.internal", ips...),
+	})
+}
+
+func TestGatewayUDPRouteSourceV1alpha2Fallback(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+
+	configureGatewayAPIUDPDiscovery(
+		kubeClient,
+		v1alpha2.GroupVersion.String(),
+	)
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "default",
+		},
+	}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err, "failed to create Namespace")
+
+	ips := []string{"10.64.0.1", "10.64.0.2"}
+
 	gw := &v1.Gateway{
 		Name:      "internal",
 		Namespace: "default",
@@ -87,20 +185,31 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},
 	}
+
 	_, err = gwClient.GatewayV1alpha2().UDPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create UDPRoute")
 
-	src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{
-		TemplateEngine: templatetest.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
-	})
+	src, err := NewGatewayUDPRouteSource(ctx, clients, &Config{})
 	require.NoError(t, err, "failed to create Gateway UDPRoute Source")
 
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err, "failed to get Endpoints")
+
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
 		newTestEndpoint("api-annotation.foobar.internal", ips...),
-		newTestEndpoint("api-template.foobar.internal", ips...),
 	})
+}
+
+func TestGatewayUDPRouteSourceUnsupportedVersion(t *testing.T) {
+	t.Parallel()
+
+	kubeClient := kubefake.NewClientset()
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	_, err := NewGatewayUDPRouteSource(t.Context(), clients, &Config{})
+	require.EqualError(t, err, "no supported Gateway API UDPRoute version available")
 }
 
 func TestGatewayUDPRouteSource_InformerTransform(t *testing.T) {
@@ -108,6 +217,11 @@ func TestGatewayUDPRouteSource_InformerTransform(t *testing.T) {
 
 	gwClient := gatewayfake.NewSimpleClientset()
 	kubeClient := kubefake.NewClientset()
+
+	configureGatewayAPIUDPDiscovery(
+		kubeClient,
+		v1alpha2.GroupVersion.String(),
+	)
 
 	rt := &v1alpha2.UDPRoute{ObjectMeta: informerTransformObjectMeta()}
 	require.Contains(t, rt.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
@@ -231,6 +345,11 @@ func TestGatewayUDPRouteIndexer(t *testing.T) {
 
 			gwClient := gatewayfake.NewSimpleClientset()
 			kubeClient := kubefake.NewClientset()
+
+			configureGatewayAPIUDPDiscovery(
+				kubeClient,
+				v1alpha2.GroupVersion.String(),
+			)
 
 			gw := &v1.Gateway{
 				Namespace: "default", Name: "gw",
