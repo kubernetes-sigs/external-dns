@@ -73,6 +73,22 @@ func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
 	assert.NotNil(t, config.RateLimiter, "RateLimiter should always be set")
 }
 
+func TestGetRestConfig_MissingServiceAccountTokenHasActionableHint(t *testing.T) {
+	// Mirrors automountServiceAccountToken: false: the pod runs in a cluster
+	// (KUBERNETES_SERVICE_HOST/PORT set) but has no mounted token, no
+	// explicit kubeconfig, and no recommended home file to fall back to.
+	isolateKubeConfig(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "10.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+
+	config, err := buildRestConfig("", "")
+	require.Error(t, err)
+	assert.Nil(t, config)
+	assert.ErrorContains(t, err, "/var/run/secrets/kubernetes.io/serviceaccount/token")
+	assert.ErrorContains(t, err, "automountServiceAccountToken")
+	assert.ErrorContains(t, err, "--kubeconfig")
+}
+
 func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
