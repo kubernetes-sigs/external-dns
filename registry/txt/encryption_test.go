@@ -281,6 +281,70 @@ func TestApplyRecordsOnEncryptionKeyChangeWithKeyIdLabel(t *testing.T) {
 	assert.LessOrEqual(t, len(encryptionNonce), 5)
 }
 
+// TestRecordsWithMismatchedEncryptionKeyLosesOwnership:
+//  1. registryA (keyA) creates a CNAME record; its TXT ownership marker is encrypted with keyA.
+//  2. The zone's raw DNS content (name/type/target only, no in-process Labels) is replayed into a
+//     second provider, to simulate a real DNS provider, which never persists Endpoint.Labels.
+//  3. registryB, configured with a different key (keyB), reads that second provider's zone.
+//  4. registryB can't decrypt the TXT marker, so the CNAME comes back with no owner label.
+//  5. registryB.ApplyChanges is asked to delete that record; FilterEndpointsByOwnerID drops it
+//     from the change set since ownership can't be verified, so the delete has no effect.
+func TestRecordsWithMismatchedEncryptionKeyLosesOwnership(t *testing.T) {
+	ctx := t.Context()
+	keyA := []byte("01234567890123456789012345678901")
+	keyB := []byte("ZPitL0NGVQBZbTD6DwXJzD8RiStSazzYXQsdUowLURY=")
+
+	// 1. registryA (keyA) creates a CNAME + its encrypted TXT ownership marker.
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone("org"))
+	registryA, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, true, keyA, "")
+	require.NoError(t, err)
+	require.NoError(t, registryA.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("app.example.org", "app-loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
+		},
+	}))
+
+	// Sanity check: reading back through the SAME key correctly recognizes ownership.
+	recordsA, err := registryA.Records(ctx)
+	require.NoError(t, err)
+	ownedRecord := findEndpoint(recordsA, "app.example.org", endpoint.RecordTypeCNAME)
+	require.NotNil(t, ownedRecord)
+	assert.Equal(t, "owner", ownedRecord.Labels[endpoint.OwnerLabelKey])
+
+	// 2. Replay the raw zone content (wire fields only) into a fresh provider.
+	rawRecords, err := p.Records(ctx)
+	require.NoError(t, err)
+	wireRecords := make([]*endpoint.Endpoint, 0, len(rawRecords))
+	for _, r := range rawRecords {
+		wireRecords = append(wireRecords,
+			endpoint.NewEndpointWithTTL(r.DNSName, r.RecordType, r.RecordTTL, r.Targets...).WithSetIdentifier(r.SetIdentifier))
+	}
+	p2 := inmemory.NewInMemoryProvider()
+	require.NoError(t, p2.CreateZone("org"))
+	require.NoError(t, p2.ApplyChanges(ctx, &plan.Changes{Create: wireRecords}))
+
+	// 3. registryB reads the replayed zone, but with a DIFFERENT key.
+	registryB, err := newRegistry(p2, "", "", "owner", time.Hour, "", []string{}, []string{}, true, keyB, "")
+	require.NoError(t, err)
+	recordsB, err := registryB.Records(ctx)
+	require.NoError(t, err)
+	orphanedRecord := findEndpoint(recordsB, "app.example.org", endpoint.RecordTypeCNAME)
+	require.NotNil(t, orphanedRecord)
+
+	// 4. No owner label: the TXT marker failed to decrypt under keyB.
+	assert.Empty(t, orphanedRecord.Labels[endpoint.OwnerLabelKey])
+
+	// 5. ApplyChanges silently drops the record from the change set instead of deleting it.
+	require.NoError(t, registryB.ApplyChanges(ctx, &plan.Changes{
+		Delete: []*endpoint.Endpoint{orphanedRecord},
+	}))
+	recordsAfterDelete, err := p2.Records(ctx)
+	require.NoError(t, err)
+	assert.NotNil(t, findEndpoint(recordsAfterDelete, "app.example.org", endpoint.RecordTypeCNAME),
+		"record should NOT have been deleted: registryB does not recognize it as owned")
+}
+
 func hasPrefixFromSlice(str string, prefixes []string) bool {
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(str, prefix) {
