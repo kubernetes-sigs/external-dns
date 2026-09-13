@@ -284,6 +284,20 @@ OuterLoop:
 	return eps, nil
 }
 
+// AdjustEndpoints applies the rfc2136-min-ttl floor to the desired endpoints so
+// that the planned state matches what AddRecord will actually write. Without
+// this, a record whose configured TTL is below rfc2136-min-ttl is rewritten on
+// every reconciliation cycle. See https://github.com/kubernetes-sigs/external-dns/issues/6723.
+func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	minTTL := int64(r.minTTL.Seconds())
+	for _, ep := range endpoints {
+		if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) < minTTL {
+			ep.RecordTTL = endpoint.TTL(minTTL)
+		}
+	}
+	return endpoints, nil
+}
+
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
 	if !r.insecure && !r.gssTsig {

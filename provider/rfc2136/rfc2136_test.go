@@ -836,6 +836,27 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	assert.Contains(t, createRecords[2], "300")
 }
 
+func TestRfc2136AdjustEndpointsAppliesMinTTL(t *testing.T) {
+	tlsConfig := TLSConfig{}
+	stub := newStub()
+	p, err := newProvider([]string{""}, 0, nil, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 3600*time.Second, false, "", "", "", 50, tlsConfig, "", stub)
+	require.NoError(t, err)
+
+	endpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("below.example.com", endpoint.RecordTypeA, endpoint.TTL(60), "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("above.example.com", endpoint.RecordTypeA, endpoint.TTL(7200), "1.2.3.5"),
+		endpoint.NewEndpoint("unconfigured.example.com", endpoint.RecordTypeA, "1.2.3.6"),
+	}
+
+	adjusted, err := p.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
+	require.Len(t, adjusted, 3)
+
+	assert.Equal(t, endpoint.TTL(3600), adjusted[0].RecordTTL, "TTL below minTTL should be raised")
+	assert.Equal(t, endpoint.TTL(7200), adjusted[1].RecordTTL, "TTL above minTTL should be preserved")
+	assert.False(t, adjusted[2].RecordTTL.IsConfigured(), "unconfigured TTL should remain unconfigured")
+}
+
 func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	stub := newStub()
 
