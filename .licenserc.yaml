@@ -1,0 +1,8 @@
+header:
+  license:
+    # The license scan needs to know the project's own license to run the compatibility matrix.
+    spdx-id: Apache-2.0
+
+dependency:
+  files:
+    - go.mod
