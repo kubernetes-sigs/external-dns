@@ -3532,3 +3532,55 @@ func TestGetDNSRecordsMapDecodesTypedFields(t *testing.T) {
 	assert.Equal(t, []string{"1 10 5060 sip.bar.com."}, targets[endpoint.RecordTypeSRV])
 	assert.Equal(t, []string{"1.2.3.4"}, targets[endpoint.RecordTypeA])
 }
+
+// Read path must render what NormalizeMXTarget produces, else the plan diffs forever.
+func TestGroupByNameAndTypeNullMX(t *testing.T) {
+	t.Parallel()
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": {
+			{
+				ID:       "mx-null",
+				Name:     "nomail.bar.com",
+				Type:     endpoint.RecordTypeMX,
+				TTL:      3600,
+				Content:  ".",
+				Priority: 0,
+			},
+		},
+	})
+	p := &CloudFlareProvider{Client: client}
+	records, err := p.getDNSRecordsMap(t.Context(), "001")
+	require.NoError(t, err)
+
+	endpoints := p.groupByNameAndTypeWithCustomHostnames(records, customHostnamesMap{})
+	require.Len(t, endpoints, 1)
+	assert.Equal(t, endpoint.Targets{"0 ."}, endpoints[0].Targets)
+}
+
+// getRecordID matches on content, so the host must reach the change undotted. Endpoints are built
+// through NewEndpointWithTTL, the way every source and the read path do, since newCloudFlareChange
+// relies on NormalizeMXTarget having run.
+func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		content  string
+		priority float64
+	}{
+		{"trailing dot trimmed", "10 mail.bar.com.", "mail.bar.com", 10},
+		{"null MX preserved", "0 .", ".", 0},
+		{"non-canonical target normalized", "010  mail.bar.com.", "mail.bar.com", 10},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &CloudFlareProvider{}
+			ep := endpoint.NewEndpointWithTTL("bar.com", endpoint.RecordTypeMX, endpoint.TTL(300), tt.target)
+			require.NotNil(t, ep)
+
+			change, err := p.newCloudFlareChange(cloudFlareCreate, ep, ep.Targets[0], nil)
+			require.NoError(t, err)
+			assert.Equal(t, tt.content, change.ResourceRecord.Content)
+			assert.InDelta(t, tt.priority, change.ResourceRecord.Priority, 0)
+		})
+	}
+}
