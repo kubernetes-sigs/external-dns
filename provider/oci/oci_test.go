@@ -206,13 +206,13 @@ func (c *mockOCIDNSClient) GetZone(_ context.Context, request dns.GetZoneRequest
 		return dns.GetZoneResponse{}, fmt.Errorf("zone %q not found", *request.ZoneNameOrId)
 	}
 
-	return dns.GetZoneResponse{Zone: dns.Zone{
+	return dns.GetZoneResponse{
 		Id:            summary.Id,
 		Name:          summary.Name,
 		Scope:         scope,
 		ZoneType:      dns.ZoneZoneTypePrimary,
 		CompartmentId: new(compartmentID),
-	}}, nil
+	}, nil
 }
 
 func validateOCIZones(t *testing.T, actual, expected map[string]dns.ZoneSummary) {
@@ -721,13 +721,13 @@ func (c *mutableMockOCIDNSClient) GetZone(_ context.Context, request dns.GetZone
 		return dns.GetZoneResponse{}, errors.New("zone not found")
 	}
 
-	return dns.GetZoneResponse{Zone: dns.Zone{
+	return dns.GetZoneResponse{
 		Id:            zone.Id,
 		Name:          zone.Name,
 		Scope:         dns.ScopeGlobal,
 		ZoneType:      dns.ZoneZoneTypePrimary,
 		CompartmentId: new(compartmentID),
-	}}, nil
+	}, nil
 }
 
 func (c *mutableMockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
