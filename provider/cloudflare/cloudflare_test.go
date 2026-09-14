@@ -369,7 +369,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	}
 
 	endpoints, err = provider.AdjustEndpoints(endpoints)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{
 		Current:        records,
@@ -942,7 +942,7 @@ func TestGetDNSRecordsMapWithPerPage(t *testing.T) {
 			DNSRecordsConfig: DNSRecordsConfig{PerPage: 100},
 		}
 		_, err := provider.getDNSRecordsMap(ctx, "001")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, client.dnsRecordsListParams.PerPage.Present)
 		assert.InEpsilon(t, float64(100), client.dnsRecordsListParams.PerPage.Value, 0.0001)
 	})
@@ -953,7 +953,7 @@ func TestGetDNSRecordsMapWithPerPage(t *testing.T) {
 			DNSRecordsConfig: DNSRecordsConfig{},
 		}
 		_, err := provider.getDNSRecordsMap(ctx, "001")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.False(t, client.dnsRecordsListParams.PerPage.Present)
 	})
 }
@@ -1544,7 +1544,7 @@ func TestGroupByNameAndTypeWithCustomHostnames_MX(t *testing.T) {
 	ctx := t.Context()
 	chs := customHostnamesMap{}
 	records, err := provider.getDNSRecordsMap(ctx, "001")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	endpoints := provider.groupByNameAndTypeWithCustomHostnames(records, chs)
 	assert.Len(t, endpoints, 1)
@@ -1708,7 +1708,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			}
 
 			desired, err = provider.AdjustEndpoints(desired)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			plan := plan.Plan{
 				Current:        current,
@@ -1778,7 +1778,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			},
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
@@ -1899,7 +1899,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		CustomHostnamesConfig{Enabled: false},
 		DNSRecordsConfig{PerPage: 50, Comment: ""},
 	)
-	assert.NoError(t, err, "should not fail to create provider")
+	require.NoError(t, err, "should not fail to create provider")
 	assert.True(t, provider.RegionalServicesConfig.Enabled, "expect regional services to be enabled")
 	assert.Equal(t, "us", provider.RegionalServicesConfig.RegionKey, "expected region key to be 'us'")
 }
@@ -2011,7 +2011,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			change, err := test.provider.newCloudFlareChange(cloudFlareCreate, test.endpoint, test.endpoint.Targets[0], nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if len(change.ResourceRecord.Comment) != test.expected {
 				t.Errorf("expected comment to be %d characters long, but got %d", test.expected, len(change.ResourceRecord.Comment))
 			}
@@ -2483,7 +2483,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 			}
 			hook.Reset()
 			err := provider.ApplyChanges(t.Context(), tc.changes)
-			assert.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
+			require.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
 			errorLogCount := 0
 			for _, entry := range hook.Entries {
 				if entry.Level == log.ErrorLevel &&
@@ -2571,7 +2571,7 @@ func TestCloudflareZoneChanges(t *testing.T) {
 
 	// Test zone listing and filtering
 	zones, err := cfProvider.Zones(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, zones, 2)
 
 	// Verify zone names
@@ -2590,7 +2590,7 @@ func TestCloudflareZoneChanges(t *testing.T) {
 	}
 
 	filteredZones, err := providerWithZoneFilter.Zones(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, filteredZones, 1)
 	assert.Equal(t, "bar.com", filteredZones[0].Name) // zone 001 is bar.com
 	assert.Equal(t, "001", filteredZones[0].ID)
@@ -2631,9 +2631,9 @@ func TestCloudflareZoneErrors(t *testing.T) {
 	}
 
 	zones, err := cfProvider.Zones(t.Context())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list zones")
-	assert.Nil(t, zones)
+	require.Nil(t, zones)
 
 	// Test get zone error
 	client.listZonesError = nil
@@ -2641,8 +2641,8 @@ func TestCloudflareZoneErrors(t *testing.T) {
 
 	// This should still work for listing but fail when getting individual zones
 	zones, err = cfProvider.Zones(t.Context())
-	assert.NoError(t, err) // List works, individual gets may fail internally
-	assert.NotNil(t, zones)
+	require.NoError(t, err) // List works, individual gets may fail internally
+	require.NotNil(t, zones)
 }
 
 func TestCloudflareZoneFiltering(t *testing.T) {
@@ -2656,7 +2656,7 @@ func TestCloudflareZoneFiltering(t *testing.T) {
 	}
 
 	zones, err := cfProvider.Zones(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, zones, 1)
 	assert.Equal(t, "foo.com", zones[0].Name)
 
@@ -2668,7 +2668,7 @@ func TestCloudflareZoneFiltering(t *testing.T) {
 	}
 
 	filteredZones, err := providerWithIDFilter.Zones(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, filteredZones, 1)
 	assert.Equal(t, "foo.com", filteredZones[0].Name) // zone 002 is foo.com
 	assert.Equal(t, "002", filteredZones[0].ID)
@@ -2714,7 +2714,7 @@ func TestCloudflareChangesByZone(t *testing.T) {
 	}
 
 	zones, err := cfProvider.Zones(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, zones, 2)
 
 	// Test empty changes
@@ -2864,7 +2864,7 @@ func TestConvertCloudflareError(t *testing.T) {
 			result := convertCloudflareError(tt.inputError)
 
 			if tt.expectSoftError {
-				assert.ErrorIs(t, result, provider.SoftError,
+				require.ErrorIs(t, result, provider.SoftError,
 					"Expected soft error for %s: %s", tt.name, tt.description)
 
 				// Verify error message preservation for all errors now that newCloudflareError
@@ -2872,7 +2872,7 @@ func TestConvertCloudflareError(t *testing.T) {
 				assert.Contains(t, result.Error(), tt.inputError.Error(),
 					"Original error message should be preserved")
 			} else {
-				assert.NotErrorIs(t, result, provider.SoftError,
+				require.NotErrorIs(t, result, provider.SoftError,
 					"Expected non-soft error for %s: %s", tt.name, tt.description)
 				assert.Equal(t, tt.inputError, result,
 					"Non-soft errors should be returned unchanged")
@@ -2968,7 +2968,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 			}
 
 			err := tt.function(p)
-			assert.Error(t, err, "Expected an error from %s", tt.name)
+			require.Error(t, err, "Expected an error from %s", tt.name)
 
 			if tt.expectSoftError {
 				assert.ErrorIs(t, err, provider.SoftError,
@@ -3018,7 +3018,7 @@ func TestZoneIDByNameIteratorError(t *testing.T) {
 
 	// Should return empty zone ID and the wrapped iterator error
 	assert.Empty(t, zoneID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to list zones from CloudFlare API")
 	assert.Contains(t, err.Error(), "CloudFlare API connection timeout")
 }
@@ -3037,7 +3037,7 @@ func TestZoneIDByNameZoneNotFound(t *testing.T) {
 
 	// Should return empty zone ID and the improved error message
 	assert.Empty(t, zoneID)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), `zone "nonexistent.com" not found in CloudFlare account`)
 	assert.Contains(t, err.Error(), "verify the zone exists and API credentials have access to it")
 }
@@ -3190,7 +3190,7 @@ func TestZoneService(t *testing.T) {
 	t.Run("GetZone", func(t *testing.T) {
 		t.Parallel()
 		zone, err := client.GetZone(ctx, zoneID)
-		assert.Nil(t, zone)
+		require.Nil(t, zone)
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 

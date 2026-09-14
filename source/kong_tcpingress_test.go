@@ -466,13 +466,13 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			tcpi := unstructured.Unstructured{}
 
 			tcpIngressAsJSON, err := json.Marshal(ti.tcpProxy)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, tcpi.UnmarshalJSON(tcpIngressAsJSON))
+			require.NoError(t, tcpi.UnmarshalJSON(tcpIngressAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &tcpi, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			labelFilter := ti.labelFilter
 			if labelFilter == nil {
@@ -485,8 +485,8 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					LabelFilter:              labelFilter,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -494,7 +494,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}

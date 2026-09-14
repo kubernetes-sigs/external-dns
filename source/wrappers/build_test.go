@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -100,7 +99,7 @@ func TestBuildWrappedSource(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.NotNil(t, src)
+			require.NotNil(t, src)
 		})
 	}
 }

@@ -725,7 +725,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			Server:       "http://localhost:8081",
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
-	suite.Error(err, "--pdns-api-key should be specified")
+	suite.Require().Error(err, "--pdns-api-key should be specified")
 
 	_, err = newProvider(
 		context.Background(),
@@ -734,7 +734,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			APIKey:       "foo",
 			DomainFilter: endpoint.NewDomainFilter([]string{"example.com", "example.org"}),
 		})
-	suite.NoError(err, "--domain-filter should raise no error")
+	suite.Require().NoError(err, "--domain-filter should raise no error")
 
 	_, err = newProvider(
 		context.Background(),
@@ -744,7 +744,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			DryRun:       true,
 		})
-	suite.Error(err, "--dry-run should raise an error")
+	suite.Require().Error(err, "--dry-run should raise an error")
 
 	// This is our "regular" code path, no error should be thrown
 	_, err = newProvider(
@@ -754,7 +754,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			APIKey:       "foo",
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
-	suite.NoError(err, "Regular case should raise no error")
+	suite.Require().NoError(err, "Regular case should raise no error")
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
@@ -765,32 +765,32 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		return err
 	}
 
-	suite.NoError(newProvider(TLSConfig{SkipTLSVerify: true}), "Disabled TLS Config should raise no error")
+	suite.Require().NoError(newProvider(TLSConfig{SkipTLSVerify: true}), "Disabled TLS Config should raise no error")
 
-	suite.NoError(newProvider(TLSConfig{
+	suite.Require().NoError(newProvider(TLSConfig{
 		SkipTLSVerify:         true,
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 	}), "Disabled TLS Config with additional flags should raise no error")
 
-	suite.NoError(newProvider(TLSConfig{}), "Enabled TLS Config without --tls-ca should raise no error")
+	suite.Require().NoError(newProvider(TLSConfig{}), "Enabled TLS Config without --tls-ca should raise no error")
 
-	suite.NoError(newProvider(TLSConfig{
+	suite.Require().NoError(newProvider(TLSConfig{
 		CAFilePath: "../../internal/testresources/ca.pem",
 	}), "Enabled TLS Config with --tls-ca should raise no error")
 
-	suite.Error(newProvider(TLSConfig{
+	suite.Require().Error(newProvider(TLSConfig{
 		CAFilePath:         "../../internal/testresources/ca.pem",
 		ClientCertFilePath: "../../internal/testresources/client-cert.pem",
 	}), "Enabled TLS Config with --tls-client-cert only should raise an error")
 
-	suite.Error(newProvider(TLSConfig{
+	suite.Require().Error(newProvider(TLSConfig{
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 	}), "Enabled TLS Config with --tls-client-cert-key only should raise an error")
 
-	suite.NoError(newProvider(TLSConfig{
+	suite.Require().NoError(newProvider(TLSConfig{
 		CAFilePath:            "../../internal/testresources/ca.pem",
 		ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
 		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
@@ -870,15 +870,15 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 		client: &PDNSAPIClientStubListZoneFailure{},
 	}
 	_, err = p.Records(ctx)
-	suite.Error(err)
-	suite.ErrorIs(err, provider.SoftError)
+	suite.Require().Error(err)
+	suite.Require().ErrorIs(err, provider.SoftError)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
 	_, err = p.Records(ctx)
-	suite.Error(err)
-	suite.ErrorIs(err, provider.SoftError)
+	suite.Require().Error(err)
+	suite.Require().ErrorIs(err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
@@ -891,42 +891,42 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 
 	// Check inserting endpoints from a single zone
 	zlist, err := p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check deleting endpoints from a single zone
 	zlist, err = p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsDelete)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
 
 	// Check endpoints from multiple zones #1
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch2}, zlist)
 
 	// Check endpoints from multiple zones #2
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones2, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch3}, zlist)
 
 	// Check endpoints from multiple zones where some endpoints which don't exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithNoExist, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from a zone that does not exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsNonexistantZone, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{}, zlist)
 
 	// Check endpoints that match multiple zones (one longer than other), is assigned to the right zone
 	zlist, err = p.ConvertEndpointsToZones(endpointsLongRecord, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToLongPatch}, zlist)
 
 	// Check endpoints of type CNAME, ALIAS, MX, SRV, and NS always have their values end with a trailing dot.
 	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	trailingTypes := sets.New(
 		endpoint.RecordTypeCNAME,
@@ -950,18 +950,18 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 
 	// Check endpoints of type CNAME are converted to ALIAS on the domain apex
 	zlist, err = p.ConvertEndpointsToZones(endpointsApexRecords, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToApexPatch}, zlist)
 
 	// Check endpoints of type CNAME remain CNAME when no alias annotation is set
 	zlist, err = p.ConvertEndpointsToZones(endpointsPreferAlias, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToCNAMEPatch}, zlist)
 
 	// Check endpoints with alias annotation are converted to ALIAS
 	// Note: The --prefer-alias flag now works via PostProcessor wrapper which sets the alias annotation
 	zlist, err = p.ConvertEndpointsToZones([]*endpoint.Endpoint{endpointWithAliasAnnotation}, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToPreferAliasPatch}, zlist)
 }
 
@@ -984,30 +984,30 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZ
 
 	// Check endpoints from multiple zones # which one is specified in DomainFilter and one is not
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from multiple zones where some endpoints which don't exist and one that does
 	// and is part of DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithNoExist, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from a zone that does not exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsNonexistantZone, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{}, zlist)
 
 	// Check endpoints that match multiple zones (one longer than other), is assigned to the right zone when the longer
 	// zone is not part of the DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithLongRecordNotInDomainFilter, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatchLongRecordIgnoredInDomainFilter}, zlist)
 
 	// Check endpoints that match multiple zones (one longer than other and one is very similar)
 	// is assigned to the right zone when the similar zone is not part of the DomainFilter
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithSimilarRecordNotInDomainFilter, PdnsReplace)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 }
 
@@ -1022,7 +1022,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 
 	// Check inserting endpoints from a single zone
 	err := p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimplePatch}, c.patchedZones)
 
 	// Reset the "patchedZones"
@@ -1030,7 +1030,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 
 	// Check deleting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("DELETE"))
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.Equal([]pgo.Zone{ZoneEmptyToSimpleDelete}, c.patchedZones)
 
 	// Check we fail correctly when patching fails for whatever reason
@@ -1039,8 +1039,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	}
 	// Check inserting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
-	suite.Error(err)
-	suite.ErrorIs(err, provider.SoftError)
+	suite.Require().Error(err)
+	suite.Require().ErrorIs(err, provider.SoftError)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
@@ -1132,7 +1132,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 
 	for _, tt := range tests {
 		actual, err := p.AdjustEndpoints(tt.endpoints)
-		suite.NoError(err)
+		suite.Require().NoError(err)
 		suite.Equal(tt.expected, actual)
 	}
 }

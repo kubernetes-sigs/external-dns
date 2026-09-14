@@ -60,7 +60,7 @@ func (suite *IngressSuite) SetupTest() {
 		hostnames: []string{"v1"},
 	}).Ingress()
 	_, err := fakeClient.NetworkingV1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 
 	suite.sc, err = NewIngressSource(
 		context.TODO(),
@@ -70,7 +70,7 @@ func (suite *IngressSuite) SetupTest() {
 			LabelFilter:    labels.Everything(),
 		},
 	)
-	suite.NoError(err, "should initialize ingress source")
+	suite.Require().NoError(err, "should initialize ingress source")
 }
 
 func (suite *IngressSuite) TestResourceLabelIsSet() {
@@ -131,9 +131,9 @@ func TestNewIngressSource(t *testing.T) {
 				},
 			)
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
