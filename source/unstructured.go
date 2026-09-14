@@ -86,6 +86,7 @@ func NewUnstructuredFQDNSource(
 		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithAnnotationValidation(types.Unstructured, cfg.AnnotationValidationMode),
 			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 		))
 		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
@@ -128,16 +129,8 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 	var endpoints []*endpoint.Endpoint
 
 	// Get objects that match the indexer filter (annotation and label selectors)
-	indexKeys := informer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
-	if len(indexKeys) == 0 {
-		return nil, nil
-	}
-	for _, key := range indexKeys {
-		obj, err := informers.GetByKey[*unstructured.Unstructured](informer.Informer().GetIndexer(), key)
-		if err != nil {
-			continue
-		}
-
+	objs := informers.ListIndexed[*unstructured.Unstructured](informer.Informer().GetIndexer())
+	for _, obj := range objs {
 		el := newUnstructuredWrapper(obj)
 
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())

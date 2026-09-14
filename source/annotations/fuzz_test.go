@@ -36,7 +36,7 @@ func FuzzParseTTL(f *testing.F) {
 		if len(input) > 256 {
 			t.Skip()
 		}
-		_, _ = parseTTL(input)
+		_, _ = ParseTTL(input)
 	})
 }
 
