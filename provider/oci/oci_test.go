@@ -390,7 +390,7 @@ func TestOCIZones(t *testing.T) {
 
 func TestOCIZonesWithFullZoneIDFiltersUsesGetZone(t *testing.T) {
 	client := &mockOCIDNSClient{}
-	provider := newOCIProvider(
+	ociProvider := newOCIProvider(
 		client,
 		endpoint.NewDomainFilter([]string{"baz.com"}),
 		provider.NewZoneIDFilter([]string{zoneIdBaz, zoneIdQux}),
@@ -398,7 +398,7 @@ func TestOCIZonesWithFullZoneIDFiltersUsesGetZone(t *testing.T) {
 		false,
 	)
 
-	zones, err := provider.zones(t.Context())
+	zones, err := ociProvider.zones(t.Context())
 
 	require.NoError(t, err)
 	validateOCIZones(t, zones, map[string]dns.ZoneSummary{zoneIdBaz: testPrivateZoneSummaryBaz})
@@ -456,7 +456,7 @@ func TestOCIZonesWithFullZoneIDFiltersReturnsSoftError(t *testing.T) {
 
 func TestOCIZonesWithSuffixZoneIDFilterUsesListZones(t *testing.T) {
 	client := &mockOCIDNSClient{}
-	provider := newOCIProvider(
+	ociProvider := newOCIProvider(
 		client,
 		endpoint.NewDomainFilter([]string{""}),
 		provider.NewZoneIDFilter([]string{"e1e042ef0bfbb5c251b9713fd7bf8959"}),
@@ -464,7 +464,7 @@ func TestOCIZonesWithSuffixZoneIDFilterUsesListZones(t *testing.T) {
 		false,
 	)
 
-	zones, err := provider.zones(t.Context())
+	zones, err := ociProvider.zones(t.Context())
 
 	require.NoError(t, err)
 	validateOCIZones(t, zones, map[string]dns.ZoneSummary{*testGlobalZoneSummaryFoo.Id: testGlobalZoneSummaryFoo})
