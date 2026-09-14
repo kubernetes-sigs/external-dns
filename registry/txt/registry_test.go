@@ -2307,7 +2307,30 @@ func TestTXTRegistryCrossOwnerTakeover(t *testing.T) {
 	assert.True(t, found, "ownership TXT should exist for cluster-b")
 }
 
-func TestTXTRegistryOrphanOwnershipTXT(t *testing.T) {
+func TestFindOrphanOwnershipTXTs_keepsLegacyCNAMEWhenA(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+
+	ownerId := "owner"
+	const host = "app.test-zone.example.org"
+	existing := []*endpoint.Endpoint{
+		newEndpointWithOwner(host, "foo.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeA, ownerId).WithAliasProperty(endpoint.AliasTrue),
+		newEndpointWithOwner("cname-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+		newEndpointWithOwner("a-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+	}
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: existing}))
+
+	r, err := newRegistry(p, "", "", ownerId, time.Hour, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeTXT}, nil, false, nil, "")
+	require.NoError(t, err)
+
+	_, err = r.Records(ctx)
+	require.NoError(t, err)
+
+	assert.Empty(t, r.orphanTXTs, "legacy cname- ownership TXT must not be classified as orphan when A is present")
+}
+
+func TestFindOrphanOwnershipTXTs_keepsAAndAAAAWhenCNAME(t *testing.T) {
 	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	require.NoError(t, p.CreateZone(testZone))
@@ -2327,24 +2350,57 @@ func TestTXTRegistryOrphanOwnershipTXT(t *testing.T) {
 	_, err = r.Records(ctx)
 	require.NoError(t, err)
 
-	var orphanNames []string
-	for _, ep := range r.orphanTXTs {
-		orphanNames = append(orphanNames, ep.DNSName)
-	}
-	assert.ElementsMatch(t, []string{"a-app.test-zone.example.org", "aaaa-app.test-zone.example.org"}, orphanNames)
+	assert.Empty(t, r.orphanTXTs, "a-/aaaa- ownership TXTs must not be orphans while CNAME still occupies the name")
+}
 
-	changes := &plan.Changes{}
+// TestTXTRegistryRecoveryFromFailedTransition starts from the #6683 state left by a rejected
+// CNAME to A/AAAA transition and checks sync recovery keeps the ownership TXTs that already
+// belong to us. Registry tests that call ApplyChanges with an empty plan will not catch this,
+// because the controller skips ApplyChanges when the plan has no changes.
+func TestTXTRegistryRecoveryFromFailedTransition(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+
+	ownerId := "owner"
+	const host = "app.test-zone.example.org"
+	existing := []*endpoint.Endpoint{
+		newEndpointWithOwner(host, "external.example.net", endpoint.RecordTypeCNAME, ownerId),
+		newEndpointWithOwner("cname-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+		newEndpointWithOwner("a-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+		newEndpointWithOwner("aaaa-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
+	}
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: existing}))
+
+	r, err := newRegistry(p, "", "", ownerId, time.Hour, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}, nil, false, nil, "")
+	require.NoError(t, err)
+
+	desired := []*endpoint.Endpoint{
+		newEndpointWithOwner(host, "foo.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeA, ownerId).WithAliasProperty(endpoint.AliasTrue),
+	}
+
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, r.orphanTXTs, "ownership TXTs from the failed transition must not be marked as orphans")
+
+	pl := &plan.Plan{
+		Policies:       []plan.Policy{plan.Policies["sync"]},
+		Current:        records,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
+		OwnerID:        ownerId,
+	}
+	changes := pl.Calculate().Changes
+	require.True(t, changes.HasChanges(), "sync recovery should create A and delete CNAME")
+
 	require.NoError(t, r.ApplyChanges(ctx, changes))
 
-	records, err := p.Records(ctx)
+	records, err = p.Records(ctx)
 	require.NoError(t, err)
-	for _, name := range []string{"a-app.test-zone.example.org", "aaaa-app.test-zone.example.org"} {
-		for _, ep := range records {
-			if ep.DNSName == name {
-				t.Fatalf("orphan TXT %s should have been deleted", name)
-			}
-		}
-	}
+	assert.NotNil(t, findEndpoint(records, host, endpoint.RecordTypeA), "A record should be present after recovery")
+	assert.Nil(t, findEndpoint(records, host, endpoint.RecordTypeCNAME), "CNAME should be removed after recovery")
+	assert.NotNil(t, findEndpoint(records, "a-app.test-zone.example.org", endpoint.RecordTypeTXT), "a- ownership TXT must survive recovery")
+	assert.NotNil(t, findEndpoint(records, "aaaa-app.test-zone.example.org", endpoint.RecordTypeTXT), "aaaa- ownership TXT must survive recovery")
 }
 
 // TestTXTRegistryAliasARecordUsesARecordTXTPrefix verifies an A ALIAS record (a CNAME converted by

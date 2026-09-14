@@ -429,7 +429,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	if len(im.orphanTXTs) > 0 {
-		filteredChanges.Delete = append(filteredChanges.Delete, im.orphanTXTs...)
+		filteredChanges.Delete = append(filteredChanges.Delete, im.filterOrphanTXTsForDeletion(im.orphanTXTs, filteredChanges)...)
 	}
 
 	if im.cacheInterval > 0 {
@@ -482,9 +482,47 @@ func (im *TXTRegistry) findOrphanOwnershipTXTs(records []*endpoint.Endpoint, rec
 		if recordType == endpoint.RecordTypeCNAME && types.Has(endpoint.RecordTypeA) {
 			continue
 		}
+		// A failed CNAME to A/AAAA transition (#6683) can leave a-/aaaa- ownership
+		// TXTs behind while a CNAME still occupies the name. Keep them so a later
+		// reconcile can recover without deleting TXTs the create loop would skip.
+		if (recordType == endpoint.RecordTypeA || recordType == endpoint.RecordTypeAAAA) && types.Has(endpoint.RecordTypeCNAME) {
+			continue
+		}
 		orphanTXTs = append(orphanTXTs, record)
 	}
 	return orphanTXTs
+}
+
+func (im *TXTRegistry) filterOrphanTXTsForDeletion(orphans []*endpoint.Endpoint, changes *plan.Changes) []*endpoint.Endpoint {
+	creating := make(map[string]sets.Set[string])
+	for _, ep := range changes.Create {
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			continue
+		}
+		if _, ok := creating[ep.DNSName]; !ok {
+			creating[ep.DNSName] = sets.New[string]()
+		}
+		creating[ep.DNSName].Insert(ep.RecordType)
+	}
+	for _, ep := range changes.UpdateNew {
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			continue
+		}
+		if _, ok := creating[ep.DNSName]; !ok {
+			creating[ep.DNSName] = sets.New[string]()
+		}
+		creating[ep.DNSName].Insert(ep.RecordType)
+	}
+
+	var toDelete []*endpoint.Endpoint
+	for _, txt := range orphans {
+		endpointName, recordType := im.mapper.ToEndpointName(txt.DNSName)
+		if types, ok := creating[endpointName]; ok && types.Has(recordType) {
+			continue
+		}
+		toDelete = append(toDelete, txt)
+	}
+	return toDelete
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
