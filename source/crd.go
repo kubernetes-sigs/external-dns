@@ -87,8 +87,8 @@ func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects for all DNSEndpoint resources visible to this
-// source. The cache scopes namespace and labels; annotation filtering and
-// target-format validation happen here.
+// source. The cache scopes namespace and labels;
+// annotation filtering and target-format validation happen here.
 func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	list := &apiv1alpha1.DNSEndpointList{}
 	if err := cs.crReader.List(ctx, list, cs.listOpts...); err != nil {
@@ -99,9 +99,10 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	for i := range list.Items {
 		items = append(items, &list.Items[i])
 	}
+	filtered := annotations.Filter(items, cs.annotationFilter)
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(list.Items))
-	for _, dnsEndpoint := range annotations.Filter(items, cs.annotationFilter) {
+	endpoints := make([]*endpoint.Endpoint, 0, len(filtered))
+	for _, dnsEndpoint := range filtered {
 		var crdEndpoints []*endpoint.Endpoint
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if ep == nil {
@@ -239,7 +240,7 @@ func startAndSync(ctx context.Context, c crcache.Cache) error {
 // logic can be unit-tested without a running API server.
 //
 // No annotation filter here: dropping an object from the transform empties the whole
-// cache (#6728). crdSource.Endpoints filters instead.
+// cache since client-go 1.36 (#6728). crdSource.Endpoints filters instead.
 func buildCacheOptions(namespace string, labelFilter labels.Selector) (crcache.Options, error) {
 	scheme := runtime.NewScheme()
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {

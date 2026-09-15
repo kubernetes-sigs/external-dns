@@ -35,8 +35,7 @@ import (
 )
 
 // TestCRDSourceAnnotationFilterAgainstAPIServer runs NewCRDSource against a fake API
-// server, so informer and cache behave as in a cluster. The fake cache in crd_test.go is
-// populated directly and misses what happens between the LIST response and the cache (#6728).
+// server, so informer and cache behave as in a cluster.
 func TestCRDSourceAnnotationFilterAgainstAPIServer(t *testing.T) {
 	matching := newFilterTestDNSEndpoint("matching", "matching.example.com", "192.0.2.1", map[string]string{"example.com/filter": "yes"})
 	other := newFilterTestDNSEndpoint("other", "other.example.com", "192.0.2.2", map[string]string{"example.com/filter": "no"})
