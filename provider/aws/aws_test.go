@@ -302,7 +302,6 @@ func canonicalResourceRecordSet(rrs route53types.ResourceRecordSet) route53types
 	return rrs
 }
 
-// validateNoCNAMEConflict rejects a batch whose result would leave a CNAME sharing a name
 // rejectInvalidZones makes the stub enforce a Route 53 constraint the lenient stub
 // skips: a CNAME cannot share a name with another record type. A reconcile loop turns
 // it on so it cannot settle on a zone Route 53 would refuse. The record-reading tests
