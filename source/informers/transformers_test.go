@@ -218,65 +218,6 @@ func TestTransformKeepAnnotationPrefix(t *testing.T) {
 	})
 }
 
-func TestTransformRequireAnnotation(t *testing.T) {
-	t.Run("matching selector keeps object", func(t *testing.T) {
-		svc := fakeService() // annotations include external-dns.kubernetes.io/hostname=example.com
-		sel, err := labels.Parse("external-dns.kubernetes.io/hostname=example.com")
-		require.NoError(t, err)
-
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-		assert.Equal(t, svc.Name, got.(*corev1.Service).Name)
-	})
-
-	t.Run("non-matching selector drops object", func(t *testing.T) {
-		svc := fakeService()
-		sel, err := labels.Parse("external-dns.kubernetes.io/hostname=other.com")
-		require.NoError(t, err)
-
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.Nil(t, got)
-	})
-
-	t.Run("nil selector is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(nil))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-
-	t.Run("empty selector is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(labels.Everything()))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-
-	t.Run("drops object after annotation mutation (simulates MODIFIED event)", func(t *testing.T) {
-		sel, err := labels.Parse("external-dns.kubernetes.io/hostname=example.com")
-		require.NoError(t, err)
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
-
-		// First call: annotation matches, object is admitted.
-		svc := fakeService() // annotations include external-dns.kubernetes.io/hostname=example.com
-		got, err := transform(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-
-		// Annotation mutates — simulate MODIFIED event with new value.
-		svc.Annotations["external-dns.kubernetes.io/hostname"] = "other.com"
-		got, err = transform(svc)
-		require.NoError(t, err)
-		assert.Nil(t, got, "mutated object must be dropped as a local guard")
-	})
-}
-
 func TestTransformerWithOptions_Combined(t *testing.T) {
 	svc := fakeService()
 
@@ -301,19 +242,22 @@ func TestTransformerWithOptions_Combined(t *testing.T) {
 	assert.NotEmpty(t, result.Status.LoadBalancer.Ingress)
 }
 
+// Returning nil would discard the whole LIST batch (#6728).
 func TestTransformerWithOptions_TypeMismatch(t *testing.T) {
-	t.Run("non-matching type returns nil", func(t *testing.T) {
+	t.Run("non-matching type is returned unchanged", func(t *testing.T) {
+		pod := fakePod()
 		transform := TransformerWithOptions[*corev1.Service](TransformRemoveManagedFields())
-		got, err := transform(fakePod())
+		got, err := transform(pod)
 		require.NoError(t, err)
-		assert.Nil(t, got)
+		assert.Same(t, pod, got)
+		assert.NotEmpty(t, pod.ManagedFields, "options must not be applied to another type")
 	})
 
-	t.Run("non-matching primitive returns nil", func(t *testing.T) {
+	t.Run("non-matching primitive is returned unchanged", func(t *testing.T) {
 		transform := TransformerWithOptions[*corev1.Service]()
 		got, err := transform("not-a-service")
 		require.NoError(t, err)
-		assert.Nil(t, got)
+		assert.Equal(t, "not-a-service", got)
 	})
 }
 
@@ -484,26 +428,21 @@ func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
 		assert.NotContains(t, result.Annotations, "description")
 	})
 
-	t.Run("resolution happens before the required annotation selector", func(t *testing.T) {
+	// Annotation filtering runs on the transformed object — in an indexer, or at read
+	// time for the crd source — so a selector against either key matches after resolution.
+	t.Run("both the configured and the legacy key match after resolution", func(t *testing.T) {
 		svc := fakeService()
 		svc.Annotations[legacyTTL] = "60"
-		selector, err := labels.Parse(annotations.TtlKey + "=60")
-		require.NoError(t, err)
 
-		got, err := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(selector))(svc)
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
 		require.NoError(t, err)
-		require.NotNil(t, got)
-	})
+		anns := labels.Set(got.(*corev1.Service).Annotations)
 
-	t.Run("a selector written against the legacy key still matches", func(t *testing.T) {
-		svc := fakeService()
-		svc.Annotations[legacyTTL] = "60"
-		selector, err := labels.Parse(legacyTTL + "=60")
-		require.NoError(t, err)
-
-		got, err := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(selector))(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
+		for _, key := range []string{annotations.TtlKey, legacyTTL} {
+			selector, err := labels.Parse(key + "=60")
+			require.NoError(t, err)
+			assert.True(t, selector.Matches(anns), "selector on %s must match", key)
+		}
 	})
 
 	t.Run("leaves annotations untouched when disabled", func(t *testing.T) {
