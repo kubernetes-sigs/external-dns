@@ -246,6 +246,9 @@ var (
 		WebhookProviderIdleTimeout:                    30 * time.Second,
 		WebhookProviderMaxBodySize:                    32 << 20,
 		ExcludeUnschedulable:                          false,
+		ACMEDelegationTargetTemplate:                  "{{ .HostnameWithoutWildcard }}.acme.example.net",
+		ACMEDelegationDomainFilter:                    []string{"example.org", "company.com"},
+		ACMEDelegationTTL:                             300 * time.Second,
 	}
 )
 
@@ -310,6 +313,10 @@ func TestParseFlags(t *testing.T) {
 				"--source=connector",
 				"--namespace=namespace",
 				"--fqdn-template={{.Name}}.service.example.com",
+				"--acme-cname-delegation-target-template={{ .HostnameWithoutWildcard }}.acme.example.net",
+				"--acme-cname-delegation-domain-filter=example.org",
+				"--acme-cname-delegation-domain-filter=company.com",
+				"--acme-cname-delegation-ttl=300s",
 				"--ignore-non-host-network-pods",
 				"--ignore-hostname-annotation",
 				"--ignore-ingress-tls-spec",
@@ -433,6 +440,9 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_SOURCE":                                            "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                                         "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":                                     "{{.Name}}.service.example.com",
+				"EXTERNAL_DNS_ACME_CNAME_DELEGATION_TARGET_TEMPLATE":             "{{ .HostnameWithoutWildcard }}.acme.example.net",
+				"EXTERNAL_DNS_ACME_CNAME_DELEGATION_DOMAIN_FILTER":               "example.org\ncompany.com",
+				"EXTERNAL_DNS_ACME_CNAME_DELEGATION_TTL":                         "300s",
 				"EXTERNAL_DNS_IGNORE_NON_HOST_NETWORK_PODS":                      "1",
 				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":                        "1",
 				"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":                           "1",
