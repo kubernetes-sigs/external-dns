@@ -79,14 +79,6 @@ func TestNewRouteGroupSource(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, src)
 	})
-
-	t.Run("logs warning for non-default version", func(t *testing.T) {
-		t.Parallel()
-		fakeClient := rgfake.NewSimpleClientset()
-		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{SkipperRouteGroupVersion: "zalando.org/v1alpha1"})
-		require.NoError(t, err)
-		require.NotNil(t, src)
-	})
 }
 
 func TestEndpointsFromRouteGroups(t *testing.T) {

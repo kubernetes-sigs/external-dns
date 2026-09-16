@@ -57,7 +57,6 @@ type Config struct {
 	KubeAPIBurst                                  int
 	DefaultTargets                                []string
 	GlooNamespaces                                []string
-	SkipperRouteGroupVersion                      string
 	Sources                                       []string
 	Namespace                                     string
 	AnnotationFilter                              string
@@ -371,7 +370,6 @@ var defaultConfig = &Config{
 	RFC2136UseTLS:                    false,
 	RFC2136Zone:                      []string{},
 	ServiceTypeFilter:                []string{},
-	SkipperRouteGroupVersion:         "zalando.org/v1",
 	Sources:                          nil,
 	TargetNetFilter:                  []string{},
 	TLSCA:                            "",
@@ -511,9 +509,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 	// Flags related to Gloo
 	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
-
-	// Flags related to Skipper RouteGroup
-	b.StringVar("skipper-routegroup-groupversion", "The resource version for skipper routegroup", defaultConfig.SkipperRouteGroupVersion, &cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)

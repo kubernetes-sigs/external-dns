@@ -86,7 +86,6 @@ type Config struct {
 	APIServerURL                   string
 	ServiceTypeFilter              []string
 	GlooNamespaces                 []string
-	SkipperRouteGroupVersion       string
 	KubeAPIRequestTimeout          time.Duration
 	KubeAPIQPS                     int
 	KubeAPIBurst                   int
@@ -167,7 +166,6 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		APIServerURL:                   cfg.APIServerURL,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
 		GlooNamespaces:                 cfg.GlooNamespaces,
-		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		KubeAPIRequestTimeout:          cfg.KubeAPIRequestTimeout,
 		KubeAPIQPS:                     cfg.KubeAPIQPS,
 		KubeAPIBurst:                   cfg.KubeAPIBurst,
