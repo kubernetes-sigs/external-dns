@@ -661,29 +661,29 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if proxied {
 			e.RecordTTL = 0
 		}
-		e.SetProviderSpecificProperty(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e.SetProviderSpecificProperty(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 
 		if p.CustomHostnamesConfig.Enabled {
 			// sort custom hostnames in annotation to properly detect changes
 			if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 1 {
 				sort.Strings(customHostnames)
-				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
 			}
 		} else {
 			// ignore custom hostnames annotations if not enabled
-			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
 		}
 
-		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsProperty); ok {
 			sortedTags := parseTagsAnnotation(val)
-			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
+			e.SetProviderSpecificProperty(annotations.CloudflareTagsProperty, strings.Join(sortedTags, ","))
 		}
 
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
-			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !found {
-				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
+			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty); !found {
+				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty, p.DNSRecordsConfig.Comment)
 			}
 		}
 
@@ -759,13 +759,13 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	// Load comment from program flag
 	comment := p.DNSRecordsConfig.Comment
-	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); ok {
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty); ok {
 		// Replace comment with Ingress annotation
 		comment = val
 	}
 
 	var tags []string
-	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsProperty); ok {
 		tags = parseTagsAnnotation(val)
 	}
 
@@ -833,10 +833,10 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareProxiedKey {
+		if v.Name == annotations.CloudflareProxiedProperty {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedProperty, err)
 			} else {
 				proxied = b
 			}
@@ -852,7 +852,7 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareCustomHostnameKey {
+		if v.Name == annotations.CloudflareCustomHostnameProperty {
 			customHostnames := strings.Split(v.Value, ",")
 			return customHostnames
 		}
@@ -908,21 +908,21 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 		if e == nil {
 			continue
 		}
-		e = e.WithProviderSpecific(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e = e.WithProviderSpecific(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 		// noop (customHostnames is empty) if custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
-			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
 		}
 
 		if records[0].Comment != "" {
-			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
+			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentProperty, records[0].Comment)
 		}
 
 		if records[0].Tags != nil {
 			if tags, ok := records[0].Tags.([]string); ok && len(tags) > 0 {
 				sort.Strings(tags)
-				e = e.WithProviderSpecific(annotations.CloudflareTagsKey, strings.Join(tags, ","))
+				e = e.WithProviderSpecific(annotations.CloudflareTagsProperty, strings.Join(tags, ","))
 			}
 		}
 

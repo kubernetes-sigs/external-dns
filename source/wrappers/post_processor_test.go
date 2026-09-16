@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestWithPostProcessorProvider(t *testing.T) {
@@ -336,14 +337,14 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 			},
 		},
 		{
-			title:    "cloudflare retains all properties regardless of prefix",
+			title:    "cloudflare drops other providers' properties",
 			provider: "cloudflare",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: annotations.CloudflareTagsProperty, Value: "tag1"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
 						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 					},
@@ -355,21 +356,20 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
-						{Name: "aws/evaluate-target-health", Value: "true"},
-						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: annotations.CloudflareTagsProperty, Value: "tag1"},
 					},
 				},
 			},
 		},
 		{
-			title:    "cloudflare properties are sorted",
+			title:    "legacy cloudflare property names are normalized",
 			provider: "cloudflare",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
 						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
 					},
 				},
@@ -379,8 +379,8 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
-						{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: annotations.CloudflareProxiedProperty, Value: "true"},
+						{Name: annotations.CloudflareTagsProperty, Value: "tag1"},
 					},
 				},
 			},

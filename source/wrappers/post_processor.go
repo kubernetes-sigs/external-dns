@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type postProcessor struct {
@@ -85,6 +86,14 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	endpoints, err := pp.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Not gated on isConfigured: property names reach the plan and the provider
+	// whatever else this wrapper was asked to do.
+	for _, ep := range endpoints {
+		if ep != nil {
+			annotations.NormalizeProviderSpecific(ep)
+		}
 	}
 
 	if !pp.cfg.isConfigured {
