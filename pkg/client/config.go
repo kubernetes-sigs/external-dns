@@ -21,7 +21,6 @@ package kubeclient
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/flowcontrol"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -98,33 +98,27 @@ func CurrentNamespace(kubeConfig string) string {
 // 1. KubeConfig file if specified
 // 2. Recommended home file (~/.kube/config)
 // 3. In-cluster config
-// TODO: consider clientcmd.NewDefaultClientConfigLoadingRules() with clientcmd.NewNonInteractiveDeferredLoadingClientConfig
 func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if kubeConfig != "" {
+		rules.ExplicitPath = kubeConfig
+		log.Debugf("kubeConfig: %s", kubeConfig)
 	}
-	log.Debugf("apiServerURL: %s", apiServerURL)
-	log.Debugf("kubeConfig: %s", kubeConfig)
 
-	// evaluate whether to use kubeConfig-file or serviceaccount-token
-	var (
-		config *rest.Config
-		err    error
-	)
-	if kubeConfig == "" {
-		log.Debug("Using inCluster-config based on serviceaccount-token")
-		config, err = rest.InClusterConfig()
-	} else {
-		log.Debug("Using kubeConfig")
-		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
+	overrides := &clientcmd.ConfigOverrides{
+		ClusterInfo: clientcmdapi.Cluster{
+			Server: apiServerURL,
+		},
 	}
+
+	client, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	log.Debugf("apiServerURL: %s", client.Host)
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 }
 
 // rateLimiter wraps a RateLimiter and enriches Wait errors with an
