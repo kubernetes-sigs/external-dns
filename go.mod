@@ -50,6 +50,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
+	github.com/szuecs/routegroup-client v0.36.4
 	go.etcd.io/etcd/api/v3 v3.7.1
 	go.etcd.io/etcd/client/v3 v3.7.1
 	go.uber.org/ratelimit v0.3.1
@@ -166,7 +167,6 @@ require (
 	github.com/spf13/viper v1.21.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/szuecs/routegroup-client v0.36.4 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
