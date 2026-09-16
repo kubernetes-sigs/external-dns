@@ -36,16 +36,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-const (
-	// DefaultRoutegroupVersion is the default version for route groups.
-	// Deprecated: the informer-based implementation is hardwired to zalando.org/v1.
-	DefaultRoutegroupVersion = "zalando.org/v1"
-
-	routeGroupListResource       = "/apis/%s/routegroups"
-	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
-	routeGroupKind               = "RouteGroup"
-)
-
 // +externaldns:source:name=skipper-routegroup
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
