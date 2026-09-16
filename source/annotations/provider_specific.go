@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 // Canonical Cloudflare property names. Deliberately independent of
