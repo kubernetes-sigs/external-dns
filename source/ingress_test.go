@@ -2116,3 +2116,43 @@ func createTestIngresses(count int, funcs ...func([]*networkv1.Ingress)) []*netw
 	}
 	return ingresses
 }
+
+// Not parallel: it toggles the package-level legacy annotation prefix.
+func TestIngressSourceLegacyAnnotationPrefix(t *testing.T) {
+	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
+
+	fakeClient := fake.NewClientset()
+	ingress := fakeIngress{
+		name:      "legacy",
+		namespace: "default",
+		ips:       []string{"8.8.8.8"},
+		annotations: map[string]string{
+			annotations.LegacyAnnotationPrefix + "hostname": "legacy.example.org",
+			annotations.LegacyAnnotationPrefix + "ttl":      "60",
+		},
+	}.Ingress()
+	_, err := fakeClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewIngressSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		{
+			DNSName:    "legacy.example.org",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"8.8.8.8"},
+			RecordTTL:  endpoint.TTL(60),
+		},
+	})
+}
