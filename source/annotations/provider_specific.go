@@ -133,10 +133,10 @@ func NormalizeProviderSpecific(ep *endpoint.Endpoint) {
 		return
 	}
 
-	canonical := make(map[string]bool, len(ep.ProviderSpecific))
+	canonical := sets.New[string]()
 	for _, prop := range ep.ProviderSpecific {
 		if _, legacy := LegacyProviderSpecificName(prop.Name); !legacy {
-			canonical[prop.Name] = true
+			canonical.Insert(prop.Name)
 		}
 	}
 
@@ -147,13 +147,13 @@ func NormalizeProviderSpecific(ep *endpoint.Endpoint) {
 			normalized = append(normalized, prop)
 			continue
 		}
-		if canonical[name] {
+		if canonical.Has(name) {
 			log.Debugf("%s: ignoring provider-specific property %q because %q is already set", ep.DNSName, prop.Name, name)
 			continue
 		}
 		warnLegacyProviderSpecificName(prop.Name, name)
 		prop.Name = name
-		canonical[name] = true
+		canonical.Insert(name)
 		normalized = append(normalized, prop)
 	}
 	ep.ProviderSpecific = normalized
