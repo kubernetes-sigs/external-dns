@@ -106,8 +106,8 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 
 // LegacyProviderSpecificName maps a property name written in the old Cloudflare
 // annotation form onto its canonical name, reporting whether it rewrote
-// anything. Any prefix is accepted, not just the current --annotation-prefix: a
-// DNSEndpoint carries whatever prefix was in force when it was authored.
+// anything.
+// Any prefix is accepted, not just the current --annotation-prefix, for easier migration
 func LegacyProviderSpecificName(name string) (string, bool) {
 	attr := name
 	if i := strings.LastIndex(name, "/"); i >= 0 {
@@ -126,8 +126,8 @@ func LegacyProviderSpecificName(name string) (string, bool) {
 
 // NormalizeProviderSpecific rewrites ep's legacy property names to their
 // canonical form, so sources, the plan and providers only ever compare
-// canonical names. A canonical property already present wins over the legacy
-// one it collides with.
+// canonical names.
+// A canonical property already present wins over the legacy one it collides with.
 func NormalizeProviderSpecific(ep *endpoint.Endpoint) {
 	if len(ep.ProviderSpecific) == 0 {
 		return
