@@ -123,7 +123,9 @@ func startFakeDNSEndpointAPIServer(t *testing.T, items []apiv1alpha1.DNSEndpoint
 	gv := apiv1alpha1.GroupVersion
 	writeJSON := func(w http.ResponseWriter, payload any) {
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(payload))
+		// assert, not require: this runs in the server goroutine, where FailNow would
+		// only kill that goroutine and leave the test running against a truncated response.
+		assert.NoError(t, json.NewEncoder(w).Encode(payload))
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
