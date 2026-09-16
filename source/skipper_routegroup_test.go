@@ -24,6 +24,7 @@ import (
 	rgfake "github.com/szuecs/routegroup-client/client/clientset/versioned/fake"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -979,28 +980,18 @@ func TestRouteGroupSourceLegacyAnnotationPrefix(t *testing.T) {
 	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
 	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
 
-	source := &routeGroupSource{
-		cli: &fakeRouteGroupClient{
-			rg: &routeGroupList{
-				Items: []*routeGroup{
-					{
-						Namespace: "namespace1",
-						Name:      "rg1",
-						UID:       "skipper-rg-uid-1234",
-						Annotations: map[string]string{
-							annotations.LegacyAnnotationPrefix + "hostname": "legacy.k8s.example",
-							annotations.LegacyAnnotationPrefix + "ttl":      "60",
-						},
-						Status: routeGroupStatus{
-							LoadBalancer: routeGroupLoadBalancerStatus{
-								RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}},
-							},
-						},
-					},
-				},
-			},
+	rgv := createTestRouteGroup(
+		"namespace1",
+		"rg1",
+		map[string]string{
+			annotations.LegacyAnnotationPrefix + "hostname": "legacy.k8s.example",
+			annotations.LegacyAnnotationPrefix + "ttl":      "60",
 		},
-	}
+		[]string{"legacy.k8s.example"},
+		[]rgv1.RouteGroupLoadBalancer{{Hostname: "lb.example.org"}},
+	)
+	rgv.UID = k8stypes.UID("skipper-rg-uid-1234")
+	source := newTestRouteGroupSource(t, &Config{}, rgv)
 
 	got, err := source.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -1022,32 +1013,36 @@ func TestRouteGroupSourceLegacyAnnotationFilter(t *testing.T) {
 	selector, err := labels.Parse(annotations.LegacyAnnotationPrefix + "controller=" + annotations.ControllerValue)
 	require.NoError(t, err)
 
-	lb := routeGroupStatus{LoadBalancer: routeGroupLoadBalancerStatus{RouteGroup: []routeGroupLoadBalancer{{Hostname: "lb.example.org"}}}}
-	source := &routeGroupSource{
-		annotationFilter: selector,
-		cli: &fakeRouteGroupClient{
-			rg: &routeGroupList{
-				Items: []*routeGroup{
-					{
-						Namespace: "namespace1", Name: "legacy-match", UID: "uid-1",
-						Annotations: map[string]string{
-							annotations.LegacyAnnotationPrefix + "controller": annotations.ControllerValue,
-							annotations.LegacyAnnotationPrefix + "hostname":   "legacy.k8s.example",
-						},
-						Status: lb,
-					},
-					{
-						Namespace: "namespace1", Name: "configured-only", UID: "uid-2",
-						Annotations: map[string]string{
-							annotations.ControllerKey: annotations.ControllerValue,
-							annotations.HostnameKey:   "configured.k8s.example",
-						},
-						Status: lb,
-					},
-				},
-			},
+	rg1 := createTestRouteGroup(
+		"namespace1",
+		"legacy-match",
+		map[string]string{
+			annotations.LegacyAnnotationPrefix + "hostname":   "legacy.k8s.example",
+			annotations.LegacyAnnotationPrefix + "controller": annotations.ControllerValue,
 		},
-	}
+		[]string{"legacy.k8s.example"},
+		[]rgv1.RouteGroupLoadBalancer{{Hostname: "lb.example.org"}},
+	)
+	rg1.UID = k8stypes.UID("uid-1")
+
+	rg2 := createTestRouteGroup(
+		"namespace1",
+		"configured-only",
+		map[string]string{
+			annotations.HostnameKey:   "configured.k8s.example",
+			annotations.ControllerKey: annotations.ControllerValue,
+		},
+		[]string{"legacy.k8s.example"},
+		[]rgv1.RouteGroupLoadBalancer{{Hostname: "lb.example.org"}},
+	)
+	rg2.UID = k8stypes.UID("uid-2")
+
+	source := newTestRouteGroupSource(t, &Config{
+		AnnotationFilter: selector,
+	},
+		rg1,
+		rg2,
+	)
 
 	// A filter written against the legacy key keeps matching legacy-annotated RouteGroups because the
 	// legacy key is kept next to its configured equivalent; a RouteGroup that only carries the
