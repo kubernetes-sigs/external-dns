@@ -157,7 +157,8 @@ from the usage of any externally developed webhook.
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
-| Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infoblox NIOS         | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infoblox UDDI         | https://github.com/wayvz-io/external-dns-uddi-webhook                |
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
