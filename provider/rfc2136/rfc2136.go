@@ -266,7 +266,14 @@ OuterLoop:
 
 		for idx, existingEndpoint := range eps {
 			if existingEndpoint.DNSName == strings.TrimSuffix(rrFqdn, ".") && existingEndpoint.RecordType == rrType {
-				eps[idx].Targets = append(eps[idx].Targets, rrValues...)
+				// Rebuild through NewEndpointWithTTL so merge-appended targets
+				// get the same trailing-dot normalization as the first RR.
+				eps[idx] = endpoint.NewEndpointWithTTL(
+					existingEndpoint.DNSName,
+					rrType,
+					existingEndpoint.RecordTTL,
+					append(existingEndpoint.Targets, rrValues...)...,
+				)
 				continue OuterLoop
 			}
 		}
