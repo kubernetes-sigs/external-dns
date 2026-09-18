@@ -386,6 +386,30 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 			},
 		},
 		{
+			title:    "legacy cloudflare names are left alone for other providers",
+			provider: "webhook",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "webhook/cloudflare-tags", Value: "tag1"},
+						{Name: "webhook/cloudflare-proxied", Value: "true"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "webhook/cloudflare-proxied", Value: "true"},
+						{Name: "webhook/cloudflare-tags", Value: "tag1"},
+					},
+				},
+			},
+		},
+		{
 			title:    "nil endpoint is skipped",
 			provider: "aws",
 			endpoints: []*endpoint.Endpoint{

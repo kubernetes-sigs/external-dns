@@ -44,8 +44,7 @@ var cloudflareProperties = map[string]string{
 	"tags":            CloudflareTagsProperty,
 }
 
-// Warn once per distinct name: NormalizeProviderSpecific runs on every endpoint
-// of every sync.
+// Keyed by canonical name so it stays bounded whatever prefixes manifests use.
 var warnedLegacyNames sync.Map
 
 func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
@@ -161,7 +160,8 @@ func NormalizeProviderSpecific(ep *endpoint.Endpoint) {
 }
 
 func warnLegacyProviderSpecificName(legacy, canonical string) {
-	if _, seen := warnedLegacyNames.LoadOrStore(legacy, struct{}{}); seen {
+	log.Debugf("Rewriting provider-specific property %q to %q", legacy, canonical)
+	if _, seen := warnedLegacyNames.LoadOrStore(canonical, struct{}{}); seen {
 		return
 	}
 	log.Warnf("Provider-specific property %q is deprecated and will be removed in a future release; use %q instead", legacy, canonical)
