@@ -613,7 +613,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+					Name:  annotations.CloudflareProxiedProperty,
 					Value: "true",
 				},
 			},
@@ -647,7 +647,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+					Name:  annotations.CloudflareProxiedProperty,
 					Value: "false",
 				},
 			},
@@ -681,7 +681,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 			Targets:    endpoint.Targets{"127.0.0.1"},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{
-					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+					Name:  annotations.CloudflareProxiedProperty,
 					Value: "asfasdfa",
 				},
 			},
@@ -750,7 +750,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 					Targets:    endpoint.Targets{targets[0]},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						endpoint.ProviderSpecificProperty{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "true",
 						},
 					},
@@ -1298,7 +1298,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1332,7 +1332,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1380,7 +1380,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1393,7 +1393,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1434,7 +1434,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1447,7 +1447,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1488,7 +1488,7 @@ func TestCloudflareGroupByNameAndTypeWithCustomHostnames(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+							Name:  annotations.CloudflareProxiedProperty,
 							Value: "false",
 						},
 					},
@@ -1587,7 +1587,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = true },
 			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = false },
 			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareProxiedKey,
+			PropertyKey:         annotations.CloudflareProxiedProperty,
 			ExpectPropertyValue: "true",
 		},
 		{
@@ -1595,7 +1595,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			SetupProvider:       func(p *CloudFlareProvider) { p.proxiedByDefault = false },
 			SetupRecord:         func(r *dns.RecordResponse) { r.Proxied = true },
 			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareProxiedKey,
+			PropertyKey:         annotations.CloudflareProxiedProperty,
 			ExpectPropertyValue: "false",
 		},
 		// Comment tests
@@ -1610,7 +1610,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			SetupProvider:         func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "" },
 			SetupRecord:           func(r *dns.RecordResponse) { r.Comment = "foo" },
 			ShouldBeUpdated:       true,
-			PropertyKey:           annotations.CloudflareRecordCommentKey,
+			PropertyKey:           annotations.CloudflareRecordCommentProperty,
 			ExpectPropertyPresent: false,
 		},
 		{
@@ -1618,7 +1618,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			SetupProvider:       func(p *CloudFlareProvider) { p.DNSRecordsConfig.Comment = "foo" },
 			SetupRecord:         func(r *dns.RecordResponse) { r.Comment = "" },
 			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareRecordCommentKey,
+			PropertyKey:         annotations.CloudflareRecordCommentProperty,
 			ExpectPropertyValue: "foo",
 		},
 		// Regional Hostname tests
@@ -1639,7 +1639,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			},
 			RegionKey:           "eu",
 			ShouldBeUpdated:     true,
-			PropertyKey:         annotations.CloudflareRegionKey,
+			PropertyKey:         annotations.CloudflareRegionProperty,
 			ExpectPropertyValue: "us",
 		},
 		// Custom Hostname tests
@@ -1772,7 +1772,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+					Name:  annotations.CloudflareProxiedProperty,
 					Value: "true",
 				},
 			},
@@ -1860,7 +1860,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 			Labels:     endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
-					Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+					Name:  annotations.CloudflareProxiedProperty,
 					Value: "true",
 				},
 			},
@@ -1950,7 +1950,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  annotations.CloudflareRecordCommentKey,
+						Name:  annotations.CloudflareRecordCommentProperty,
 						Value: freeValidComment,
 					},
 				},
@@ -1966,7 +1966,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  annotations.CloudflareRecordCommentKey,
+						Name:  annotations.CloudflareRecordCommentProperty,
 						Value: freeInvalidComment,
 					},
 				},
@@ -1982,7 +1982,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  annotations.CloudflareRecordCommentKey,
+						Name:  annotations.CloudflareRecordCommentProperty,
 						Value: paidValidComment,
 					},
 				},
@@ -1998,7 +1998,7 @@ func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 				Targets:    []string{"192.0.2.1"},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  annotations.CloudflareRecordCommentKey,
+						Name:  annotations.CloudflareRecordCommentProperty,
 						Value: paidInvalidComment,
 					},
 				},
@@ -2374,7 +2374,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "bad-create-custom.bar.com",
 						},
 					},
@@ -2392,7 +2392,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "bad-delete-custom.bar.com",
 						},
 					},
@@ -2410,7 +2410,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "bad-update-add-custom.bar.com",
 						},
 					},
@@ -2421,7 +2421,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx-but-still-updated"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "bad-update-add-custom.bar.com",
 						},
 					},
@@ -2439,7 +2439,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "bad-update-leave-custom.bar.com",
 						},
 					},
@@ -2450,7 +2450,7 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 					Targets:    endpoint.Targets{"not-a-valid-mx"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "bad-update-leave-custom.bar.com",
 						},
 					},
@@ -3308,7 +3308,7 @@ func TestSubmitChanges_ErrorPaths(t *testing.T) {
 					RecordType: "A",
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "newerror-create.foo.fancybar.com",
 						},
 					},
@@ -3357,7 +3357,7 @@ func TestParseTagsAnnotation(t *testing.T) {
 }
 
 func TestAdjustEndpoints_TagsAnnotation(t *testing.T) {
-	// parseTagsAnnotation is only invoked when the CloudflareTagsKey annotation
+	// parseTagsAnnotation is only invoked when the cloudflare-tags annotation
 	// is present on the endpoint. This test exercises that branch via AdjustEndpoints.
 	p := &CloudFlareProvider{}
 	ep := &endpoint.Endpoint{
@@ -3366,7 +3366,7 @@ func TestAdjustEndpoints_TagsAnnotation(t *testing.T) {
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			{
-				Name:  annotations.CloudflareTagsKey,
+				Name:  annotations.CloudflareTagsProperty,
 				Value: "beta, alpha, gamma",
 			},
 		},
@@ -3375,7 +3375,7 @@ func TestAdjustEndpoints_TagsAnnotation(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, adjusted, 1)
 
-	val, ok := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareTagsKey)
+	val, ok := adjusted[0].GetProviderSpecificProperty(annotations.CloudflareTagsProperty)
 	require.True(t, ok, "tags annotation should still be present after AdjustEndpoints")
 	// Tags should be sorted and whitespace-trimmed
 	assert.Equal(t, "alpha,beta,gamma", val)

@@ -39,13 +39,6 @@ var (
 	// legacyAnnotationPrefix is an additional prefix accepted by ResolveLegacyAnnotations. Empty means disabled.
 	legacyAnnotationPrefix string
 
-	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
-	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
-	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
-	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
-	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
-
 	// AzureTagsKey The annotation used for Azure DNS record tags
 	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
 
@@ -86,13 +79,6 @@ var (
 // The prefix must end with '/'.
 func SetAnnotationPrefix(prefix string) {
 	AnnotationKeyPrefix = prefix
-
-	// Cloudflare annotations
-	CloudflareProxiedKey = AnnotationKeyPrefix + "cloudflare-proxied"
-	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
-	CloudflareRegionKey = AnnotationKeyPrefix + "cloudflare-region-key"
-	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
-	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
 
 	// Azure annotations
 	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"

@@ -442,15 +442,11 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 // "provider/" (e.g. "aws/evaluate-target-health" for provider "aws").
 // Properties belonging to other providers are dropped.
 // Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
-// TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
-// annotation form "external-dns.kubernetes.io/cloudflare-*", so filtering is skipped for
-// cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
-// adopts the standard prefix convention.
 func (e *Endpoint) RetainProviderProperties(provider string) {
 	if len(e.ProviderSpecific) == 0 {
 		return
 	}
-	if provider != "" && provider != "cloudflare" {
+	if provider != "" {
 		prefix := provider + "/"
 		e.ProviderSpecific = slices.DeleteFunc(e.ProviderSpecific, func(prop ProviderSpecificProperty) bool {
 			return strings.Contains(prop.Name, "/") && !strings.HasPrefix(prop.Name, prefix)
