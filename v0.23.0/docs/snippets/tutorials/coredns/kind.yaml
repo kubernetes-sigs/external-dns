@@ -1,0 +1,38 @@
+# ref: https://kind.sigs.k8s.io/docs/user/quick-start/
+# https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings
+
+# kind create cluster --config=docs/snippets/tutorials/coredns/kind.yaml
+# kind delete cluster --name coredns-etcd
+# kubectl cluster-info --context kind-coredns-etcd
+# kubectl get nodes -o wide
+---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: coredns-etcd
+networking:
+  apiServerAddress: 127.0.0.1
+  apiServerPort: 6443
+nodes:
+- role: control-plane
+  image: kindest/node:v1.33.0
+  kubeadmConfigPatches:
+    - |
+      kind: InitConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "ingress-ready=true"
+  extraPortMappings:
+    - containerPort: 80
+      hostPort: 8080
+      listenAddress: "0.0.0.0"
+      protocol: TCP
+    - containerPort: 43
+      hostPort: 4443
+      listenAddress: "0.0.0.0"
+      protocol: TCP
+    - containerPort: 32379   # inside kind node
+      hostPort: 32379        # exposed on host
+      listenAddress: "0.0.0.0"
+      protocol: TCP
+- role: worker
+  image: kindest/node:v1.33.0

@@ -1,0 +1,158 @@
+# kubectl apply -f docs/snippets/tutorials/rfc2136/bind9.yaml
+# kubectl delete -f docs/snippets/tutorials/rfc2136/bind9.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bind9
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-config
+  namespace: bind9
+data:
+  named.conf: |
+    options {
+      directory "/data";
+      listen-on { any; };
+      listen-on-v6 { any; };
+      allow-query { any; };
+      allow-transfer { any; };
+      recursion no;
+      dnssec-validation no;
+    };
+
+    key "externaldns-key" {
+      algorithm hmac-sha256;
+      secret "96Ah/a2g0/nLeFGK+d/0tzQcccf9hCEIy34PoXX2Qg8=";
+    };
+
+    zone "example.local" {
+      type primary;
+      file "/data/db.example.local";
+      allow-update { key externaldns-key; };
+      allow-transfer { key externaldns-key; };
+    };
+
+    zone "49.168.192.in-addr.arpa" {
+      type primary;
+      file "/data/db.reverse";
+      allow-update { key externaldns-key; };
+      allow-transfer { key externaldns-key; };
+    };
+  db.forward: |
+    $TTL 86400
+    @   IN  SOA ns1.example.local. admin.example.local. (
+                2024010101 ; serial
+                3600       ; refresh
+                1800       ; retry
+                604800     ; expire
+                86400 )    ; minimum
+        IN  NS  ns1.example.local.
+    ns1 IN  A   10.0.0.1
+  db.reverse: |
+    $TTL 86400
+    @   IN  SOA ns1.example.local. admin.example.local. (
+                2024010101 ; serial
+                3600       ; refresh
+                1800       ; retry
+                604800     ; expire
+                86400 )    ; minimum
+        IN  NS  ns1.example.local.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind9
+  namespace: bind9
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bind9
+  template:
+    metadata:
+      labels:
+        app: bind9
+    spec:
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      initContainers:
+      - name: init-zones
+        image: busybox:1.36
+        command: ["sh", "-c"]
+        args:
+        - |
+          cp /config/named.conf /data/named.conf
+          cp /config/db.forward /data/db.example.local
+          cp /config/db.reverse /data/db.reverse
+          chmod -R 777 /data
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: bind-data
+          mountPath: /data
+      containers:
+      - name: bind9
+        image: internetsystemsconsortium/bind9:9.21
+        command: ["named", "-g", "-u", "root", "-c", "/data/named.conf"]
+        ports:
+        - containerPort: 53
+          protocol: TCP
+        - containerPort: 53
+          protocol: UDP
+        volumeMounts:
+        - name: bind-data
+          mountPath: /data
+        readinessProbe:
+          tcpSocket:
+            port: 53
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: bind-config
+      - name: bind-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bind9
+  namespace: bind9
+spec:
+  selector:
+    app: bind9
+  ports:
+  - name: dns-tcp
+    port: 53
+    targetPort: 53
+    protocol: TCP
+  - name: dns-udp
+    port: 53
+    targetPort: 53
+    protocol: UDP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bind9-nodeport
+  namespace: bind9
+spec:
+  type: NodePort
+  selector:
+    app: bind9
+  ports:
+  - name: dns-tcp
+    port: 53
+    targetPort: 53
+    nodePort: 30053
+    protocol: TCP
+  - name: dns-udp
+    port: 53
+    targetPort: 53
+    nodePort: 30053
+    protocol: UDP

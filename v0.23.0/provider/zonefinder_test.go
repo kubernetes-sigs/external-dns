@@ -1,0 +1,134 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package provider
+
+import (
+	"testing"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+)
+
+func TestZoneIDName(t *testing.T) {
+	z := ZoneIDName{}
+	z.Add("123456", "foo.bar")
+	z.Add("123456", "qux.baz")
+	z.Add("654321", "foo.qux.baz")
+	z.Add("987654", "エイミー.みんな")
+	z.Add("123123", "_metadata.example.com")
+	z.Add("1231231", "_foo._metadata.example.com")
+	z.Add("456456", "_metadata.エイミー.みんな")
+	z.Add("123412", "*.example.com")
+	// adding a zone as punycode, see that it is injected as unicode/international format
+	z.Add("234567", "xn--testcass-e1ae.fr")
+
+	assert.Equal(t, ZoneIDName{
+		"123456":  "qux.baz",
+		"654321":  "foo.qux.baz",
+		"987654":  "エイミー.みんな",
+		"123123":  "_metadata.example.com",
+		"1231231": "_foo._metadata.example.com",
+		"456456":  "_metadata.エイミー.みんな",
+		"123412":  "*.example.com",
+		"234567":  "testécassé.fr",
+	}, z)
+
+	// simple entry in a domain
+	zoneID, zoneName := z.FindZone("name.qux.baz")
+	assert.Equal(t, "qux.baz", zoneName)
+	assert.Equal(t, "123456", zoneID)
+
+	// simple entry in a domain's subdomain.
+	zoneID, zoneName = z.FindZone("name.foo.qux.baz")
+	assert.Equal(t, "foo.qux.baz", zoneName)
+	assert.Equal(t, "654321", zoneID)
+
+	// no possible zone for entry
+	zoneID, zoneName = z.FindZone("name.qux.foo")
+	assert.Empty(t, zoneName)
+	assert.Empty(t, zoneID)
+
+	// no possible zone for entry of a substring to valid a zone
+	zoneID, zoneName = z.FindZone("nomatch-foo.bar")
+	assert.Empty(t, zoneName)
+	assert.Empty(t, zoneID)
+
+	// entry's suffix matches a subdomain but doesn't belong there
+	zoneID, zoneName = z.FindZone("name-foo.qux.baz")
+	assert.Equal(t, "qux.baz", zoneName)
+	assert.Equal(t, "123456", zoneID)
+
+	// entry is an exact match of the domain (e.g. azure provider)
+	zoneID, zoneName = z.FindZone("foo.qux.baz")
+	assert.Equal(t, "foo.qux.baz", zoneName)
+	assert.Equal(t, "654321", zoneID)
+
+	// entry gets normalized before finding
+	zoneID, zoneName = z.FindZone("xn--eckh0ome.xn--q9jyb4c")
+	assert.Equal(t, "エイミー.みんな", zoneName)
+	assert.Equal(t, "987654", zoneID)
+
+	zoneID, zoneName = z.FindZone("_foo._metadata.example.com")
+	assert.Equal(t, "_foo._metadata.example.com", zoneName)
+	assert.Equal(t, "1231231", zoneID)
+
+	zoneID, zoneName = z.FindZone("*.example.com")
+	assert.Equal(t, "*.example.com", zoneName)
+	assert.Equal(t, "123412", zoneID)
+
+	// looking for a zone that has been inserted as punycode
+	zoneID, zoneName = z.FindZone("example.testécassé.fr")
+	assert.Equal(t, "testécassé.fr", zoneName)
+	assert.Equal(t, "234567", zoneID)
+
+	zoneID, zoneName = z.FindZone("example.xn--testcass-e1ae.fr")
+	assert.Equal(t, "testécassé.fr", zoneName)
+	assert.Equal(t, "234567", zoneID)
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	_, _ = z.FindZone("xn--not-a-valid-punycode")
+
+	logtest.TestHelperLogContains("Failed to convert label \"xn--not-a-valid-punycode\" of hostname \"xn--not-a-valid-punycode\" to its Unicode form: idna: invalid label", hook, t)
+}
+
+func TestZoneIDName_FindZone_InvalidPunycodeStillFindsZone(t *testing.T) {
+	z := ZoneIDName{}
+	z.Add("zone1", "example.com")
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	// The first label is invalid punycode: ToUnicode fails, the original label is kept
+	// as fallback, and the remaining suffix still matches the zone.
+	zoneID, zoneName := z.FindZone("xn--not-a-valid-punycode.example.com")
+
+	assert.Equal(t, "zone1", zoneID)
+	assert.Equal(t, "example.com", zoneName)
+	logtest.TestHelperLogContains(`Failed to convert label "xn--not-a-valid-punycode"`, hook, t)
+}
+
+func TestZoneIDName_Add_ConversionError(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	z := ZoneIDName{}
+	z.Add("zone1", "xn--not-a-valid-punycode")
+
+	// Conversion fails: original zoneName is stored as fallback.
+	assert.Equal(t, "xn--not-a-valid-punycode", z["zone1"])
+	logtest.TestHelperLogContains(`failed to convert zonename "xn--not-a-valid-punycode" to its Unicode form`, hook, t)
+}

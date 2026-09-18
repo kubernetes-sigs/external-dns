@@ -1,0 +1,40 @@
+---
+apiVersion: traefik.io/v1
+kind: IngressRoute
+metadata:
+  name: traefik-public-abc
+  annotations:
+    kubernetes.io/ingress.class: traefik-public
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`application.public.example.com`)
+      kind: Rule
+      services:
+        - name: service
+          namespace: namespace
+          port: port
+  tls:
+    secretName: traefik-tls-cert-public
+---
+apiVersion: traefik.io/v1
+kind: IngressRoute
+metadata:
+  name: traefik-private-abc
+  annotations:
+    kubernetes.io/ingress.class: traefik-private
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`application.private.tlc`)
+      kind: Rule
+      services:
+        - name: service
+          namespace: namespace
+          port: port
+  tls:
+    secretName: traefik-tls-cert-private

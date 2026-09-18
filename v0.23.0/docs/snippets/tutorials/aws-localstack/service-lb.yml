@@ -1,0 +1,17 @@
+# ref: docs/snippets/tutorials/aws-localstack/service-lb.yml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loadbalancer-service
+  annotations:
+    external-dns.kubernetes.io/hostname: my-loadbalancer.example.com
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  selector:
+    app: test-app
