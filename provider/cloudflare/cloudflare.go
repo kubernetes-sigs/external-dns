@@ -655,6 +655,16 @@ func parseTagsAnnotation(tagString string) []string {
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Deduplicate custom hostnames across all endpoints before per-endpoint
+	// processing. A Cloudflare custom hostname is a 1:1 mapping (custom
+	// hostname → origin); if multiple endpoints carry the same custom
+	// hostname — whether from headless/NodePort fan-out within one source
+	// or from independent resources sharing the annotation — only one
+	// CreateCustomHostname POST can succeed. See #6698.
+	if p.CustomHostnamesConfig.Enabled {
+		deduplicateCustomHostnames(endpoints)
+	}
+
 	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
