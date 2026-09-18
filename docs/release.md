@@ -14,7 +14,7 @@ A new staging image is released weekly and can be found on [the official staging
 Example command to fetch `10` most recent staging images:
 
 ```sh
-export EXT_DNS_VERSION="v0.22.0"
+export EXT_DNS_VERSION="v0.23.0"
 curl -sLk https://gcr.io/v2/k8s-staging-external-dns/external-dns/tags/list | jq | grep "$EXT_DNS_VERSION" | tail -n 10
 ```
 
