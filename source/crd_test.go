@@ -69,7 +69,7 @@ func dnsEndpointByObj(t *testing.T, opts crcache.Options) crcache.ByObject {
 
 func TestBuildCacheOptions(t *testing.T) {
 	t.Run("all namespaces when namespace is empty", func(t *testing.T) {
-		opts, err := buildCacheOptions("", nil, nil)
+		opts, err := buildCacheOptions("", nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.Contains(t, byObj.Namespaces, "", "empty string key means NamespaceAll")
@@ -77,7 +77,7 @@ func TestBuildCacheOptions(t *testing.T) {
 	})
 
 	t.Run("single namespace", func(t *testing.T) {
-		opts, err := buildCacheOptions("my-ns", nil, nil)
+		opts, err := buildCacheOptions("my-ns", nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.Contains(t, byObj.Namespaces, "my-ns")
@@ -86,7 +86,7 @@ func TestBuildCacheOptions(t *testing.T) {
 
 	t.Run("label filter applied", func(t *testing.T) {
 		sel := labels.SelectorFromSet(labels.Set{"app": "foo"})
-		opts, err := buildCacheOptions("", sel, nil)
+		opts, err := buildCacheOptions("", sel)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.NotNil(t, byObj.Label)
@@ -95,32 +95,23 @@ func TestBuildCacheOptions(t *testing.T) {
 	})
 
 	t.Run("empty label selector not applied", func(t *testing.T) {
-		opts, err := buildCacheOptions("", labels.Everything(), nil)
+		opts, err := buildCacheOptions("", labels.Everything())
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 		require.Nil(t, byObj.Label)
 	})
 
-	t.Run("transform keeps object matching annotation filter", func(t *testing.T) {
-		opts, err := buildCacheOptions("", nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
+	// Dropping one object from the transform empties the whole cache (#6728).
+	t.Run("transform keeps every object", func(t *testing.T) {
+		opts, err := buildCacheOptions("", nil)
 		require.NoError(t, err)
 		byObj := dnsEndpointByObj(t, opts)
 
-		obj := &apiv1alpha1.DNSEndpoint{Annotations: map[string]string{"env": "prod"}}
-		got, err := byObj.Transform(obj)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-	})
-
-	t.Run("transform drops object not matching annotation filter", func(t *testing.T) {
-		opts, err := buildCacheOptions("", nil, labels.SelectorFromSet(labels.Set{"env": "prod"}))
-		require.NoError(t, err)
-		byObj := dnsEndpointByObj(t, opts)
-
-		obj := &apiv1alpha1.DNSEndpoint{Annotations: map[string]string{"env": "staging"}}
-		got, err := byObj.Transform(obj)
-		require.NoError(t, err)
-		require.Nil(t, got)
+		for _, anns := range []map[string]string{nil, {"env": "prod"}, {"env": "staging"}} {
+			got, err := byObj.Transform(&apiv1alpha1.DNSEndpoint{Annotations: anns})
+			require.NoError(t, err)
+			require.NotNil(t, got)
+		}
 	})
 }
 
@@ -130,12 +121,8 @@ func TestCRDSource(t *testing.T) {
 
 // testCRDSourceEndpoints tests various scenarios of using CRD source.
 //
-// Namespace and label filtering are handled by the controller-runtime cache via
-// ByObject at construction time — not inside Endpoints().  Tests mirror this by
-// only adding objects to the fake cache that the real cache would deliver:
-// objects whose namespace and labels match the source configuration.
-// Annotation filtering and target validation are performed inside Endpoints()
-// and are tested with objects already present in the fake cache.
+// The cache scopes namespace and labels, so the fake cache only holds objects the real
+// one would deliver. Annotation filtering and target validation happen in Endpoints().
 func testCRDSourceEndpoints(t *testing.T) {
 	for _, ti := range []struct {
 		title              string
@@ -552,9 +539,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{
-				ti.namespaceFilter, ti.labelSelector, ti.annotationSelector}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector)
+			fakeCache := newFakeCRDCache(t, nil, obj)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector, ti.annotationSelector)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
@@ -641,8 +627,8 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 				Spec:       apiv1alpha1.DNSEndpointSpec{Endpoints: ti.endpoints},
 			}
 
-			fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+			fakeCache := newFakeCRDCache(t, nil, obj)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 			require.NoError(t, err)
 
 			_, err = cs.Endpoints(t.Context())
@@ -674,7 +660,7 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 		},
 	}
 
-	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, obj)
+	fakeCache := newFakeCRDCache(t, nil, obj)
 
 	failWriter := interceptor.NewClient(fakeCache.Client.(client.WithWatch), interceptor.Funcs{
 		SubResourceUpdate: func(
@@ -690,7 +676,7 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 		},
 	})
 
-	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, failWriter, "", nil, nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -784,8 +770,8 @@ func TestDNSEndpointsWithSetResourceLabels(t *testing.T) {
 		}
 	}
 
-	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(crds.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	fakeCache := newFakeCRDCache(t, nil, dnsEndpointListToObjects(crds.Items)...)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 	require.NoError(t, err)
 
 	res, err := cs.Endpoints(t.Context())
@@ -804,8 +790,8 @@ func TestProcessEndpoint_CRD_RefObjectExist(t *testing.T) {
 
 	elements := generateTestFixtureDNSEndpointsByType("test-ns", typeCounts)
 
-	fakeCache := newFakeCRDCache(t, nil, fakeCRDCacheFilter{}, dnsEndpointListToObjects(elements.Items)...)
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil)
+	fakeCache := newFakeCRDCache(t, nil, dnsEndpointListToObjects(elements.Items)...)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
 	require.NoError(t, err)
 
 	endpoints, err := cs.Endpoints(t.Context())
@@ -832,8 +818,8 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 		return toolscache.WaitForCacheSync(ctx.Done(), informer.HasSynced)
 	}, 2*time.Second, 10*time.Millisecond)
 
-	fakeCache := newFakeCRDCache(t, informer, fakeCRDCacheFilter{})
-	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil)
+	fakeCache := newFakeCRDCache(t, informer)
+	cs, err := newCrdSource(ctx, fakeCache, fakeCache.Client, "", nil, nil)
 	require.NoError(t, err)
 
 	return watcher, cs
@@ -1014,21 +1000,11 @@ func (*fakeCRDCache) IndexField(_ context.Context, _ client.Object, _ string, _ 
 	return nil
 }
 
-// fakeCRDCacheFilter holds the admission criteria applied by the real controller-runtime
-// cache (namespace, label selector, annotation selector). Zero value means no filtering.
-type fakeCRDCacheFilter struct {
-	namespace          string
-	labelSelector      labels.Selector
-	annotationSelector labels.Selector
-}
-
-// newFakeCRDCache builds a test cache backed by the given objects.
-// Annotation filtering is applied via the transform (mirroring buildCacheOptions).
-// Namespace and label filtering are applied at read time by the fake client, mirroring
-// the crReader.List options used in Endpoints().
-// When informer is nil a real SharedIndexInformer backed by a FakeControllerSource
-// is created to satisfy newCrdSource's GetInformer call; it is not started.
-func newFakeCRDCache(t *testing.T, informer toolscache.SharedIndexInformer, filter fakeCRDCacheFilter, objs ...client.Object) *fakeCRDCache {
+// newFakeCRDCache builds a test cache backed by the given objects. The fake client
+// applies the namespace and label list options, as the real cache does; neither filters
+// on annotations. A nil informer gets a FakeControllerSource-backed one, never started,
+// to satisfy newCrdSource's GetInformer call.
+func newFakeCRDCache(t *testing.T, informer toolscache.SharedIndexInformer, objs ...client.Object) *fakeCRDCache {
 	t.Helper()
 	if informer == nil {
 		informer = toolscache.NewSharedIndexInformer(
@@ -1037,20 +1013,6 @@ func newFakeCRDCache(t *testing.T, informer toolscache.SharedIndexInformer, filt
 			0,
 			toolscache.Indexers{},
 		)
-	}
-	if len(objs) > 0 {
-		cacheOpts, err := buildCacheOptions(filter.namespace, filter.labelSelector, filter.annotationSelector)
-		require.NoError(t, err)
-		byObj := dnsEndpointByObj(t, cacheOpts)
-		var admitted []client.Object
-		for _, obj := range objs {
-			got, err := byObj.Transform(obj)
-			require.NoError(t, err)
-			if got != nil {
-				admitted = append(admitted, obj)
-			}
-		}
-		objs = admitted
 	}
 	fc := fake.NewClientBuilder().
 		WithScheme(newCRDTestScheme(t)).

@@ -176,7 +176,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.22.0
+          image: registry.k8s.io/external-dns/external-dns:v0.23.0
           args:
             - --source=service # ingress is also possible
             - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
@@ -258,7 +258,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.22.0
+          image: registry.k8s.io/external-dns/external-dns:v0.23.0
           args:
             - --source=service # ingress is also possible
             - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
@@ -450,3 +450,20 @@ metadata:
 ## Using CRD source to manage DNS records in Cloudflare
 
 Please refer to the [CRD source documentation](../sources/crd.md#example) for more information.
+
+On a `DNSEndpoint`, the settings above are `providerSpecific` entries, not annotations:
+
+```yaml
+    providerSpecific:
+      - name: cloudflare/proxied
+        value: "true"
+```
+
+Names: `cloudflare/proxied`, `cloudflare/custom-hostname`, `cloudflare/region-key`,
+`cloudflare/record-comment`, `cloudflare/tags`.
+
+Up to v0.22.0 these were named after the annotation
+(`external-dns.kubernetes.io/cloudflare-proxied`), tying a `DNSEndpoint` to
+`--annotation-prefix`.
+
+Still accepted with any prefix, but now deprecated.
