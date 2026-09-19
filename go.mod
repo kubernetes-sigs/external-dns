@@ -50,6 +50,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.37
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
+	github.com/szuecs/routegroup-client v0.36.4
 	go.etcd.io/etcd/api/v3 v3.7.1
 	go.etcd.io/etcd/client/v3 v3.7.1
 	go.uber.org/ratelimit v0.3.1
