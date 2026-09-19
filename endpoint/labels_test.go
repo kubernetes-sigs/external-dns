@@ -75,6 +75,16 @@ func (suite *LabelsSuite) TestSerialize() {
 	suite.NotEqual(suite.fooAsTextWithQuotes, suite.foo.Serialize(true, true, suite.aesKey), "should serializeLabel and encrypt")
 }
 
+func (suite *LabelsSuite) TestSerializeOmitsTransientDualstackLabel() {
+	labels := Labels{
+		OwnerLabelKey:     "foo-owner",
+		ResourceLabelKey:  "foo-resource",
+		DualstackLabelKey: "true",
+	}
+
+	suite.Equal(suite.fooAsText, labels.SerializePlain(false))
+}
+
 func (suite *LabelsSuite) TestEncryptionNonceReUsage() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
 	suite.NoError(err, "should succeed for valid label text")
