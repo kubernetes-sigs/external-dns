@@ -20,7 +20,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestGatewayMatchingHost(t *testing.T) {
@@ -242,6 +246,131 @@ func TestIsDNS1123Domain(t *testing.T) {
 			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
 				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
 			}
+		})
+	}
+}
+
+func TestGatewayRouteStatusIsCurrent(t *testing.T) {
+	ref := gwParentRef("default", "gw", withSectionName("bar"))
+
+	condition := func(status metav1.ConditionStatus, observed int64) v1.RouteParentStatus {
+		return v1.RouteParentStatus{
+			ParentRef: ref,
+			Conditions: []metav1.Condition{{
+				Type:               string(v1.RouteConditionAccepted),
+				Status:             status,
+				ObservedGeneration: observed,
+			}},
+		}
+	}
+
+	tests := []struct {
+		desc       string
+		status     v1.RouteParentStatus
+		generation int64
+		want       bool
+	}{
+		{"accepted for the generation in hand", condition(metav1.ConditionTrue, 3), 3, true},
+		{"accepted, but for an older generation", condition(metav1.ConditionTrue, 1), 3, false},
+		{"accepted, but for a generation newer than the object", condition(metav1.ConditionTrue, 4), 3, false},
+		{"accepted, but with no generation recorded", condition(metav1.ConditionTrue, 0), 3, false},
+		{"not accepted", condition(metav1.ConditionFalse, 3), 3, false},
+		{"acceptance still Unknown", condition(metav1.ConditionUnknown, 3), 3, false},
+		{"no accepted condition at all", v1.RouteParentStatus{ParentRef: ref}, 3, false},
+		{
+			"looks past the conditions a controller writes alongside Accepted",
+			v1.RouteParentStatus{
+				ParentRef: ref,
+				Conditions: []metav1.Condition{
+					{Type: string(v1.RouteConditionResolvedRefs), Status: metav1.ConditionTrue, ObservedGeneration: 1},
+					{Type: string(v1.RouteConditionAccepted), Status: metav1.ConditionTrue, ObservedGeneration: 3},
+				},
+			},
+			3, true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			require.Equal(t, tt.want, gwRouteStatusIsCurrent(tt.status, tt.generation))
+		})
+	}
+}
+
+func TestGatewayRouteHasParentRef(t *testing.T) {
+	meta := &metav1.ObjectMeta{Namespace: "default"}
+	gatewayAPIGroup := v1.Group(gatewayGroup)
+
+	omitted := v1.ParentReference{Name: "gw"}
+	explicitGateway := v1.ParentReference{Name: "gw", Group: &gatewayAPIGroup}
+
+	tests := []struct {
+		desc string
+		spec v1.ParentReference
+		got  v1.ParentReference
+		want bool
+	}{
+		{"an omitted group matches an omitted group", omitted, omitted, true},
+		{"an omitted group matches the spelled out Gateway API group", omitted, explicitGateway, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			require.Equal(t, tt.want, gwRouteHasParentRef([]v1.ParentReference{tt.spec}, tt.got, meta))
+		})
+	}
+}
+
+func TestGatewayMatchRouteToParent(t *testing.T) {
+	c := &gatewayRouteResolver{src: &gatewayRouteSource{rtKind: "HTTPRoute"}}
+	rt := &gatewayHTTPRoute{route: v1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "route"},
+	}}
+	rtHosts := []string{"example.net"}
+
+	// A listener with no hostname matches any of the route's hostnames.
+	parent := func(gw *v1.Gateway, overrides endpoint.Targets) *resolvedParent {
+		return &resolvedParent{
+			kind:      "Gateway",
+			namespace: "default",
+			ref:       gwParentRef("default", "gw"),
+			obj: &listenerObject{
+				gateway:        gw,
+				ownerNamespace: "default",
+				overrides:      overrides,
+			},
+			listeners: []listenerSection{{
+				listener: v1.Listener{Name: "web", Protocol: v1.HTTPProtocolType},
+				attached: true,
+			}},
+		}
+	}
+
+	withAddress := &v1.Gateway{Status: v1.GatewayStatus{
+		Addresses: []v1.GatewayStatusAddress{{Value: "203.0.113.1"}},
+	}}
+
+	tests := []struct {
+		desc    string
+		parent  *resolvedParent
+		want    bool
+		targets endpoint.Targets
+	}{
+		{"a matched listener with no target does not attach", parent(&v1.Gateway{}, nil), false, nil},
+		{"a Gateway status address is a target", parent(withAddress, nil), true, endpoint.Targets{"203.0.113.1"}},
+		{"a target annotation override is a target", parent(&v1.Gateway{}, endpoint.Targets{"lb.example.net"}), true, endpoint.Targets{"lb.example.net"}},
+		{"a blank target annotation override is not a target", parent(&v1.Gateway{}, endpoint.Targets{"", " "}), false, nil},
+		{"a blank override falls back to the Gateway address", parent(withAddress, endpoint.Targets{"", " "}), true, endpoint.Targets{"203.0.113.1"}},
+		{"a usable override keeps the Gateway address out", parent(withAddress, endpoint.Targets{"lb.example.net", " "}), true, endpoint.Targets{"lb.example.net"}},
+	}
+
+	// Targets are asserted too: filtering blank overrides decides whether the Gateway
+	// address is used instead.
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			hostTargets := map[string]endpoint.Targets{}
+			require.Equal(t, tt.want, c.matchRouteToParent(rt, rtHosts, tt.parent, hostTargets))
+			require.Equal(t, tt.targets, hostTargets["example.net"])
 		})
 	}
 }

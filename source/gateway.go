@@ -31,12 +31,14 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/ptr"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -400,19 +402,63 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return hostTargets, nil
 	}
 
-	for _, rps := range rt.RouteStatus().Parents {
-		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
-		if !ok {
-			continue
-		}
-		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
-	}
+	c.resolveParents(rt, rtHosts, routeParentRefs, hostTargets)
+
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
 	for host, targets := range hostTargets {
 		hostTargets[host] = uniqueTargets(targets)
 	}
 	return hostTargets, nil
+}
+
+// resolveParents adds the targets of every parent the Route attaches to. A stale status is
+// ignored only once every distinct ParentRef selector the spec still lists for that parent is
+// accepted for the current generation and resolves a target, so a lagging cache keeps the record. See #6639.
+func (c *gatewayRouteResolver) resolveParents(rt gatewayRoute, rtHosts []string, routeParentRefs []v1.ParentReference, hostTargets map[string]endpoint.Targets) {
+	meta := rt.Metadata()
+	wanted := gwRouteWantedSelectors(meta, routeParentRefs)
+
+	usable := make(map[objectRef]sets.Set[gwRouteParentSelector], len(wanted))
+	var superseded []v1.RouteParentStatus
+
+	for _, rps := range rt.RouteStatus().Parents {
+		parentRef := gwRouteParentObjectRef(rps.ParentRef, meta)
+		selector := gwRouteParentSelectorOf(rps.ParentRef)
+		if !wanted[parentRef].Has(selector) {
+			superseded = append(superseded, rps)
+			continue
+		}
+		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
+		if !ok {
+			continue
+		}
+		if !c.matchRouteToParent(rt, rtHosts, parent, hostTargets) {
+			continue
+		}
+		if !gwRouteStatusIsCurrent(rps, meta.Generation) {
+			continue
+		}
+		if usable[parentRef] == nil {
+			usable[parentRef] = sets.New[gwRouteParentSelector]()
+		}
+		usable[parentRef].Insert(selector)
+	}
+
+	// Readiness is scoped to the parent object, not to the status writer: the
+	// confirmations count together, whoever wrote them. Keying them per controllerName
+	// would let a status left by a retired controller survive indefinitely.
+	for _, rps := range superseded {
+		parentRef := gwRouteParentObjectRef(rps.ParentRef, meta)
+		if selectors, inSpec := wanted[parentRef]; inSpec && len(usable[parentRef]) >= len(selectors) {
+			continue
+		}
+		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
+		if !ok {
+			continue
+		}
+		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+	}
 }
 
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
@@ -466,7 +512,8 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+// matchRouteToParent reports whether the parent contributed at least one target.
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) bool {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -483,13 +530,14 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 		}
 	}
 	if match {
-		return
+		return true
 	}
 	if parent.section != "" && unattachedReason != "" {
 		log.Debugf("%s %s/%s section %q is not attached for %s %s/%s: %s", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, unattachedReason)
-		return
+		return false
 	}
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
+	return false
 }
 
 func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
@@ -517,13 +565,25 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		if !ok {
 			continue
 		}
-		override := parent.obj.overrides
-		hostTargets[host] = append(hostTargets[host], override...)
-		if len(override) == 0 {
+		targets := make(endpoint.Targets, 0, len(parent.obj.overrides))
+		for _, target := range parent.obj.overrides {
+			if strings.TrimSpace(target) == "" {
+				continue
+			}
+			targets = append(targets, target)
+		}
+		if len(targets) == 0 && parent.obj.gateway != nil {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
-				hostTargets[host] = append(hostTargets[host], addr.Value)
+				if addr.Value != "" {
+					targets = append(targets, addr.Value)
+				}
 			}
 		}
+		// Not a match without a target; matchRouteToParent reports target contribution.
+		if len(targets) == 0 {
+			continue
+		}
+		hostTargets[host] = append(hostTargets[host], targets...)
 		match = true
 	}
 	return match
@@ -770,20 +830,64 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 
 func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
 	// Ensure that the parent reference is in the routeParentRefs list
-	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
+	key := gwRouteParentObjectRef(ref, meta)
 	for _, rpr := range routeParentRefs {
-		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
-		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
-		if rprGroup != group || rprKind != kind {
+		if gwRouteParentObjectRef(rpr, meta) == key {
+			return true
+		}
+	}
+	return false
+}
+
+// gwRouteParentObjectRef is the parent a reference points at, in the same shape the
+// resolver looks listener objects up by, without the sectionName and port.
+func gwRouteParentObjectRef(ref v1.ParentReference, meta *metav1.ObjectMeta) objectRef {
+	return newObjectRef(
+		strVal((*string)(ref.Group), gatewayGroup),
+		strVal((*string)(ref.Kind), gatewayKind),
+		strVal((*string)(ref.Namespace), meta.Namespace),
+		string(ref.Name),
+	)
+}
+
+// gwRouteParentSelector is the part of a reference that picks listeners on a parent.
+type gwRouteParentSelector struct {
+	sectionName v1.SectionName
+	port        v1.PortNumber
+	hasPort     bool
+}
+
+func gwRouteParentSelectorOf(ref v1.ParentReference) gwRouteParentSelector {
+	return gwRouteParentSelector{
+		sectionName: sectionVal(ref.SectionName, ""),
+		port:        ptr.Deref(ref.Port, 0),
+		hasPort:     ref.Port != nil,
+	}
+}
+
+// gwRouteWantedSelectors groups the listeners the spec selects by parent object.
+func gwRouteWantedSelectors(meta *metav1.ObjectMeta, routeParentRefs []v1.ParentReference) map[objectRef]sets.Set[gwRouteParentSelector] {
+	wanted := make(map[objectRef]sets.Set[gwRouteParentSelector], len(routeParentRefs))
+	for _, ref := range routeParentRefs {
+		key := gwRouteParentObjectRef(ref, meta)
+		if wanted[key] == nil {
+			wanted[key] = sets.New[gwRouteParentSelector]()
+		}
+		wanted[key].Insert(gwRouteParentSelectorOf(ref))
+	}
+	return wanted
+}
+
+// gwRouteStatusIsCurrent reports whether the controller accepted this parent at the Route's
+// current generation. It only marks a superseded status as safe to exclude, it does not gate
+// endpoints from the current status. See #5349, #5490.
+func gwRouteStatusIsCurrent(status v1.RouteParentStatus, generation int64) bool {
+	for _, condition := range status.Conditions {
+		if condition.Type != string(v1.RouteConditionAccepted) {
 			continue
 		}
-		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
-		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
-			continue
-		}
-		return true
+		return condition.Status == metav1.ConditionTrue &&
+			condition.ObservedGeneration == generation
 	}
 	return false
 }
