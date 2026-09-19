@@ -581,9 +581,9 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
-	// The route named no hostname of its own, so fall back to the attached listeners' hostnames.
-	// Only useful for {HTTP,TLS}Routes, but it doesn't break {TCP,UDP}Routes.
-	if len(rt.Hostnames()) == 0 {
+	// Fall back to the listeners' hostnames only when spec, annotation and template named nothing:
+	// checking the spec alone would publish a wildcard listener hostname next to an annotated one.
+	if len(hostnames) == 0 {
 		hostnames = append(hostnames, "")
 	}
 	return hostnames, nil
