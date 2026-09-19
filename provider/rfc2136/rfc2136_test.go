@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1467,4 +1468,90 @@ func TestRfc2136MissingAXFRWarns(t *testing.T) {
 			}
 		})
 	}
+}
+
+// sendTsigCaptureHandler records how many TSIG records each received message
+// carries and always answers success, so a test can assert that a failover
+// retry did not reuse a previously signed message.
+type sendTsigCaptureHandler struct {
+	mu     sync.Mutex
+	counts []int
+}
+
+func (h *sendTsigCaptureHandler) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
+	h.mu.Lock()
+	n := 0
+	for _, rr := range req.Extra {
+		if _, ok := rr.(*dns.TSIG); ok {
+			n++
+		}
+	}
+	h.counts = append(h.counts, n)
+	h.mu.Unlock()
+
+	resp := new(dns.Msg)
+	resp.SetReply(req)
+	_ = w.WriteMsg(resp)
+}
+
+// Regression: SendMessage reused one shared message across nameserver attempts,
+// so after the first attempt failed the retry carried a second TSIG record and
+// the fallback nameserver rejected the UPDATE with FORMERR.
+func TestRfc2136SendMessageSignsEachNameserverAttempt(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+
+	handler := &sendTsigCaptureHandler{}
+	srv := &dns.Server{
+		Listener: ln,
+		Handler:  handler,
+		// The default accept func rejects dynamic updates (UPDATE opcode).
+		MsgAcceptFunc: func(dh dns.Header) dns.MsgAcceptAction {
+			return dns.MsgAccept
+		},
+	}
+	go func() { _ = srv.ActivateAndServe() }()
+	defer srv.Shutdown()
+
+	port := ln.Addr().(*net.TCPAddr).Port
+
+	tlsConfig := TLSConfig{}
+
+	providerInstance, err := newProvider(
+		[]string{"127.0.0.2", "127.0.0.1"}, // 127.0.0.2 is unreachable on this host
+		port,
+		[]string{"example.com"},
+		false,
+		"key",
+		"c2VjcmV0", // base64-encoded secret
+		"hmac-sha512",
+		false,
+		&endpoint.DomainFilter{},
+		false,
+		300*time.Second,
+		false,
+		"",
+		"",
+		"",
+		50,
+		tlsConfig,
+		"round-robin",
+		nil, // exercise the real SendMessage loop
+	)
+	require.NoError(t, err)
+
+	p := providerInstance.(*rfc2136Provider)
+
+	msg := new(dns.Msg)
+	msg.SetUpdate(dns.Fqdn("example.com"))
+	rr, err := dns.NewRR("test.example.com. 60 A 1.2.3.4")
+	require.NoError(t, err)
+	msg.Insert([]dns.RR{rr})
+
+	require.NoError(t, p.SendMessage(msg))
+
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	assert.Equal(t, []int{1}, handler.counts, "the fallback nameserver must receive exactly one TSIG record")
 }
