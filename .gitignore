@@ -57,6 +57,9 @@ profile.cov
 # Helm charts
 !/charts/external-dns/
 
+# AI
+.claude/
+
 docs/LICENSE.md
 docs/code-of-conduct.md
 docs/CONTRIBUTING.md

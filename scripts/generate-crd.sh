@@ -36,10 +36,9 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${PROJECT_ROOT}"
 
-# Define tool commands (using tools from go.tool.mod)
-CONTROLLER_GEN="go tool -modfile=go.tool.mod controller-gen"
-YQ="go tool -modfile=go.tool.mod yq"
-YAMLFMT="go tool -modfile=go.tool.mod yamlfmt"
+CONTROLLER_GEN="controller-gen"
+YQ="yq"
+YAMLFMT="yamlfmt"
 
 echo " Generating CRDs using controller-gen..."
 
