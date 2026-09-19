@@ -14,8 +14,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.5
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.5
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.21.4
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.68.0
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.21.5
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.69.0
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.0
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0
@@ -40,7 +40,7 @@ require (
 	github.com/miekg/dns v1.1.73
 	github.com/openshift/api v0.0.0-20260819011109-af5c920502e2
 	github.com/openshift/client-go v0.0.0-20260810202730-ddca5e0b7146
-	github.com/oracle/oci-go-sdk/v65 v65.124.2
+	github.com/oracle/oci-go-sdk/v65 v65.125.0
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/projectcontour/contour v1.33.7
