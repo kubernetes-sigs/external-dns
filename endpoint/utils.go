@@ -150,6 +150,8 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // When several endpoints merge into one, the first endpoint's scalar metadata (TTL, ProviderSpecific,
 // Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
 // record references every source object that contributed to it. "First" follows the input slice order.
+// The exception is targetsFromAnnotation, which is ANDed across every contributing endpoint rather
+// than taken from the first: see the AND-merge comment at the call site below.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
@@ -182,6 +184,12 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 		}
 		if existing, ok := endpointMap[key]; ok {
 			existing.Targets = append(existing.Targets, ep.Targets...)
+			// The merged record is annotation-only if every endpoint that
+			// contributed to it was itself annotation-sourced. Otherwise a
+			// naturally-resolved contribution from one resource would ride
+			// along under another resource's annotation protection (or vice
+			// versa) once merged into a single key.
+			existing.targetsFromAnnotation = existing.targetsFromAnnotation && ep.targetsFromAnnotation
 			for _, ref := range ep.refObjects {
 				existing.WithRefObject(ref)
 			}

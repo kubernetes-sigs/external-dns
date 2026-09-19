@@ -1282,3 +1282,90 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 	require.NoError(t, err)
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Pod, len(elements))
 }
+
+// TestEndpointsFromPodAnnotations_TargetsFromAnnotation verifies that an
+// endpoint whose target came from the Pod's own target annotation is marked
+// so it can survive --force-default-targets, while one resolved naturally
+// from the Pod's own IP is not.
+func TestEndpointsFromPodAnnotations_TargetsFromAnnotation(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Pod{
+			Namespace:   "default",
+			Name:        "annotated",
+			Annotations: map[string]string{annotations.TargetKey: "1.2.3.4"},
+			Status:      v1.PodStatus{PodIP: "10.0.0.1"},
+		},
+		&v1.Pod{
+			Namespace: "default",
+			Name:      "natural",
+			Status:    v1.PodStatus{PodIP: "10.0.0.2"},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewPodSource(
+		t.Context(),
+		fakeClient,
+		&Config{PodSourceDomain: "example.org"},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	byName := make(map[string]*endpoint.Endpoint, len(endpoints))
+	for _, ep := range endpoints {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "annotated.example.org")
+	assert.True(t, byName["annotated.example.org"].TargetsFromAnnotation())
+
+	require.Contains(t, byName, "natural.example.org")
+	assert.False(t, byName["natural.example.org"].TargetsFromAnnotation())
+}
+
+// TestEndpointsFromPodAnnotations_KopsCollisionIsNotAnnotationOnly covers a
+// single Pod where the standard hostname annotation (with an explicit target)
+// and the kOps DNS controller internal-hostname annotation name the same
+// domain. The kOps contribution is always naturally resolved (pod IP), never
+// annotation-sourced, so the merged endpoint for that domain must not be
+// marked annotation-only even though one of its two contributions was.
+func TestEndpointsFromPodAnnotations_KopsCollisionIsNotAnnotationOnly(t *testing.T) {
+	elements := []runtime.Object{
+		&v1.Pod{
+			Namespace: "default",
+			Name:      "collision",
+			Annotations: map[string]string{
+				annotations.HostnameKey:                        "shared.example.org",
+				annotations.TargetKey:                          "9.9.9.9",
+				kopsDNSControllerInternalHostnameAnnotationKey: "shared.example.org",
+			},
+			Status: v1.PodStatus{PodIP: "10.0.0.5"},
+		},
+	}
+
+	fakeClient := fake.NewClientset(elements...)
+
+	client, err := NewPodSource(
+		t.Context(),
+		fakeClient,
+		&Config{Compatibility: "kops-dns-controller"},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := client.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	byName := make(map[string]*endpoint.Endpoint, len(endpoints))
+	for _, ep := range endpoints {
+		byName[ep.DNSName] = ep
+	}
+
+	require.Contains(t, byName, "shared.example.org")
+	ep := byName["shared.example.org"]
+	assert.ElementsMatch(t, []string{"9.9.9.9", "10.0.0.5"}, []string(ep.Targets))
+	assert.False(t, ep.TargetsFromAnnotation(),
+		"the kOps-resolved pod IP is a natural contribution and must clear annotation-only status for the shared domain")
+}

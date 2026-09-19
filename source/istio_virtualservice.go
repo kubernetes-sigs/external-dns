@@ -230,23 +230,28 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
+		targets, targetsFromAnnotation, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
 		if err != nil {
 			return endpoints, err
 		}
-		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource), targetsFromAnnotation)...)
 	}
 	return endpoints, nil
 }
 
-// append a target to the list of targets unless it's already in the list
-func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, vService *networkingv1.VirtualService, vsHost string) ([]string, error) {
+// append a target to the list of targets unless it's already in the list.
+// The second return value reports whether every bound gateway that
+// contributed a target resolved it from its own explicit target annotation,
+// so that priority can survive --force-default-targets.
+func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, vService *networkingv1.VirtualService, vsHost string) ([]string, bool, error) {
 	var targets []string
+	targetsFromAnnotation := true
+	contributed := false
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
 	for _, gateway := range vService.Spec.Gateways {
 		gw, err := sc.getGateway(ctx, gateway, vService)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if gw == nil {
 			continue
@@ -254,17 +259,21 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(vService, gw, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gw)
+		tgs, tgsFromAnnotation, err := sc.targetsFromGateway(gw)
 		if err != nil {
-			return targets, err
+			return targets, false, err
 		}
 		for _, target := range tgs {
 			if !slices.Contains(targets, target) {
 				targets = append(targets, target)
 			}
 		}
+		if len(tgs) > 0 {
+			contributed = true
+			targetsFromAnnotation = targetsFromAnnotation && tgsFromAnnotation
+		}
 	}
-	return targets, nil
+	return targets, contributed && targetsFromAnnotation, nil
 }
 
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
@@ -277,6 +286,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 	ttl := annotations.TTLFromAnnotations(vService.Annotations, resource)
 
 	targetsFromAnnotation := annotations.TargetsFromTargetAnnotation(vService.Annotations)
+	vsTargetsFromAnnotation := len(targetsFromAnnotation) > 0
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(vService.Annotations)
 
@@ -294,14 +304,15 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 		}
 
 		targets := targetsFromAnnotation
-		if len(targets) == 0 {
-			targets, err = sc.targetsFromVirtualService(ctx, vService, host)
+		fromAnnotation := vsTargetsFromAnnotation
+		if !fromAnnotation {
+			targets, fromAnnotation, err = sc.targetsFromVirtualService(ctx, vService, host)
 			if err != nil {
 				return endpoints, err
 			}
 		}
 
-		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource), fromAnnotation)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
@@ -309,13 +320,14 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 		hostnameList := annotations.HostnamesFromAnnotations(vService.Annotations)
 		for _, hostname := range hostnameList {
 			targets := targetsFromAnnotation
-			if len(targets) == 0 {
-				targets, err = sc.targetsFromVirtualService(ctx, vService, hostname)
+			fromAnnotation := vsTargetsFromAnnotation
+			if !fromAnnotation {
+				targets, fromAnnotation, err = sc.targetsFromVirtualService(ctx, vService, hostname)
 				if err != nil {
 					return endpoints, err
 				}
 			}
-			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			endpoints = append(endpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource), fromAnnotation)...)
 		}
 	}
 
@@ -398,16 +410,21 @@ func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *n
 	return targets, nil
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
+// targetsFromGateway resolves the Gateway's targets. The second return value
+// reports whether they came from the Gateway's own explicit target
+// annotation rather than the Ingress/Service selector fallbacks.
+func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, bool, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
-		return targets, nil
+		return targets, true, nil
 	}
 
 	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
 	if ok && ingressStr != "" {
-		return sc.targetsFromIngress(ingressStr, gateway)
+		targets, err := sc.targetsFromIngress(ingressStr, gateway)
+		return targets, false, err
 	}
 
-	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	targets, err := EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	return targets, false, err
 }

@@ -1757,6 +1757,98 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 	}
 }
 
+// TestGatewayHTTPRouteSource_AnnotationSurvivesUnprovisionedGateway guards the
+// AND-merge fix in matchRouteToListener: a Gateway listener that matches the
+// route's host but contributes no target of its own (no override annotation,
+// and Status.Addresses still empty because the Gateway isn't provisioned yet)
+// must not clear the annotation-only status a different Gateway already
+// earned for that host via its own target annotation.
+func TestGatewayHTTPRouteSource_AnnotationSurvivesUnprovisionedGateway(t *testing.T) {
+	fromAll := v1.NamespacesFromAll
+	allowAllNamespaces := &v1.AllowedRoutes{
+		Namespaces: &v1.RouteNamespaces{From: &fromAll},
+	}
+
+	gateways := []*v1.Gateway{
+		{
+			Name:      "annotated-gateway",
+			Namespace: "gateway-namespace",
+			Annotations: map[string]string{
+				annotations.TargetKey: "4.3.2.1",
+			},
+			Spec: v1.GatewaySpec{
+				Listeners: []v1.Listener{{
+					Protocol:      v1.HTTPProtocolType,
+					AllowedRoutes: allowAllNamespaces,
+				}},
+			},
+			Status: gatewayStatus("1.2.3.4"),
+		},
+		{
+			Name:      "unprovisioned-gateway",
+			Namespace: "gateway-namespace",
+			Spec: v1.GatewaySpec{
+				Listeners: []v1.Listener{{
+					Protocol:      v1.HTTPProtocolType,
+					AllowedRoutes: allowAllNamespaces,
+				}},
+			},
+			Status: gatewayStatus(), // not provisioned yet: no addresses
+		},
+	}
+
+	route := &v1.HTTPRoute{
+		Name:      "test",
+		Namespace: "route-namespace",
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"test.example.internal"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					gwParentRef("gateway-namespace", "annotated-gateway"),
+					gwParentRef("gateway-namespace", "unprovisioned-gateway"),
+				},
+			},
+		},
+		Status: httpRouteStatus(
+			gwParentRef("gateway-namespace", "annotated-gateway"),
+			gwParentRef("gateway-namespace", "unprovisioned-gateway"),
+		),
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	for _, gw := range gateways {
+		_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+		require.NoError(t, err, "failed to create Gateway")
+	}
+	_, err := gwClient.GatewayV1().HTTPRoutes(route.Namespace).Create(ctx, route, metav1.CreateOptions{})
+	require.NoError(t, err, "failed to create HTTPRoute")
+
+	kubeClient := kubefake.NewClientset()
+	for _, name := range []string{"gateway-namespace", "route-namespace"} {
+		_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+			Name: name,
+		}, metav1.CreateOptions{})
+		require.NoError(t, err, "failed to create Namespace")
+	}
+
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{GatewayNamespace: "gateway-namespace"})
+	require.NoError(t, err, "failed to create Gateway HTTPRoute Source")
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err, "failed to get Endpoints")
+	require.Len(t, endpoints, 1)
+	assert.Equal(t, endpoint.Targets{"4.3.2.1"}, endpoints[0].Targets)
+	assert.True(t, endpoints[0].TargetsFromAnnotation(),
+		"the unprovisioned second gateway contributed no target and must not clear annotation-only status earned from the first gateway's target annotation")
+}
+
 func TestGatewayHTTPRouteSource_RouteInformerTransform(t *testing.T) {
 	t.Parallel()
 

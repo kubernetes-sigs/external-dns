@@ -168,8 +168,8 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-	if len(targets) == 0 {
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(ing.Annotations)
+	if !targetsFromAnnotation {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
@@ -177,7 +177,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		endpoints = append(endpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource), targetsFromAnnotation)...)
 	}
 	return endpoints, nil
 }
@@ -232,9 +232,9 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(ing.Annotations)
 
-	if len(targets) == 0 {
+	if !targetsFromAnnotation {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
@@ -248,7 +248,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpoint.EndpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			definedHostsEndpoints = append(definedHostsEndpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource), targetsFromAnnotation)...)
 		}
 	}
 
@@ -259,7 +259,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 				if host == "" {
 					continue
 				}
-				definedHostsEndpoints = append(definedHostsEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+				definedHostsEndpoints = append(definedHostsEndpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource), targetsFromAnnotation)...)
 			}
 		}
 	}
@@ -268,7 +268,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	var annotationEndpoints []*endpoint.Endpoint
 	if !ignoreHostnameAnnotation {
 		for _, hostname := range annotations.HostnamesFromAnnotations(ing.Annotations) {
-			annotationEndpoints = append(annotationEndpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+			annotationEndpoints = append(annotationEndpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource), targetsFromAnnotation)...)
 		}
 	}
 
