@@ -77,32 +77,28 @@ func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
 
-	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
-	mockKubeCfgPath := filepath.Join(mockKubeCfgDir, "config")
-	err := os.MkdirAll(mockKubeCfgDir, 0755)
-	require.NoError(t, err)
+	kubeCfgPath := writeKubeConfig(t, svr.URL)
 
-	kubeCfgTemplate := `apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: %s
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-`
-	err = os.WriteFile(mockKubeCfgPath, fmt.Appendf(nil, kubeCfgTemplate, svr.URL), 0644)
-	require.NoError(t, err)
-
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
 	prevRecommendedHomeFile := clientcmd.RecommendedHomeFile
 	t.Cleanup(func() {
 		clientcmd.RecommendedHomeFile = prevRecommendedHomeFile
 	})
-	clientcmd.RecommendedHomeFile = mockKubeCfgPath
+	clientcmd.RecommendedHomeFile = kubeCfgPath
+
+	config, err := buildRestConfig("", "")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, svr.URL, config.Host)
+}
+
+func TestGetRestConfig_RecommendedConfigPathEnvVar(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer svr.Close()
+
+	kubeCfgPath := writeKubeConfig(t, svr.URL)
+
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, kubeCfgPath)
 
 	config, err := buildRestConfig("", "")
 	require.NoError(t, err)
