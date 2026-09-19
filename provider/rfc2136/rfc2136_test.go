@@ -1032,7 +1032,7 @@ func TestGetNextNameserverListAndSendLastErrAreIndependent(t *testing.T) {
 	}
 
 	// Simulate a failed AXFR attempt.
-	r.listLastErr = errors.New("boom")
+	r.listLastErr = nameserverError{nameserver: "ns1:53", err: errors.New("boom")}
 
 	// Send rotation must be unaffected by List()'s failure and must not
 	// fail over to the next nameserver.
@@ -1041,6 +1041,26 @@ func TestGetNextNameserverListAndSendLastErrAreIndependent(t *testing.T) {
 
 	// List rotation, however, must fail over since its own last error was set.
 	assert.Equal(t, "ns2:53", r.getNextNameserverFor(nameserverOpList))
+}
+
+// TestGetNextNameserverFailedWarningNamesTheFailedNameserver guards against
+// the regression described in https://github.com/kubernetes-sigs/external-dns/issues/6715:
+// after a nameserver fails and the round-robin counter advances, the deferred
+// warning must name the nameserver that actually failed, not the next one
+// the counter now points at.
+func TestGetNextNameserverFailedWarningNamesTheFailedNameserver(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers:           []string{"ns1:53", "ns2:53"},
+		loadBalancingStrategy: "round-robin",
+	}
+	r.listCounter = 1
+	r.listLastErr = nameserverError{nameserver: "ns1:53", err: errors.New("dial timeout")}
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	_ = r.getNextNameserverFor(nameserverOpList)
+
+	logtest.TestHelperLogContains("Last operation failed for nameserver ns1:53", hook, t)
+	logtest.TestHelperLogNotContains("Last operation failed for nameserver ns2:53", hook, t)
 }
 
 // TestRfc2136ApplyChangesWithMultipleChunks tests Updates with multiple chunks
