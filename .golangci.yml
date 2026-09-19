@@ -4,6 +4,7 @@ linters:
   default: none
   enable: # golangci-lint help linters
     - copyloopvar # A linter detects places where loop variables are copied. https://golangci-lint.run/docs/linters/configuration/#copyloopvar
+    - depguard # Checks imports against a deny list. https://golangci-lint.run/docs/linters/configuration/#depguard
     - dogsled # Checks assignments with too many blank identifiers. https://golangci-lint.run/docs/linters/configuration/#dogsled
     - dupword # Duplicate word. https://golangci-lint.run/docs/linters/configuration/#dupword
     - goprintffuncname
@@ -38,6 +39,12 @@ linters:
     - testifylint # Checks usage of github.com/stretchr/testify. https://golangci-lint.run/docs/linters/configuration/#testifylint
     - usetesting # Reports uses of functions with replacement inside the testing package.
   settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: k8s.io/utils/set
+              desc: use sigs.k8s.io/external-dns/internal/sets instead
     exhaustive:
       default-signifies-exhaustive: false
     misspell:
