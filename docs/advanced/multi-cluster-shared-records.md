@@ -127,10 +127,8 @@ chosen roughly at random, varying per resolver, and returns all of them when the
 field on every etcd entry it writes — one entry per target, registry TXT entries included — and filters reads
 by it. Each instance sees only its own entries, so two clusters never contend for the same name, while CoreDNS
 answers with every entry stored under it. Both clusters publishing `app.example.com` therefore produce one
-A response carrying both targets, and removing the workload in one cluster leaves the other's target in place.
-
-Caveat: the departed cluster's ownership entry is not cleaned up. It stays in etcd, and is answered as a TXT
-record under the registry name. Harmless, but it does not disappear on its own.
+A response carrying both targets, and removing the workload in one cluster takes its entries — the ownership
+one included — out of etcd while leaving the other's target in place.
 
 ## Not supported: merging targets with the TXT registry
 
