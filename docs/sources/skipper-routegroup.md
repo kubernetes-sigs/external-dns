@@ -12,8 +12,7 @@ Without it, ExternalDNS exits at startup.
 kubectl apply -f https://raw.githubusercontent.com/zalando/skipper/master/dataclients/kubernetes/deploy/apply/routegroups_crd.yaml
 ```
 
-The service account needs `get`, `list` and `watch` on `routegroups.zalando.org`. `watch` is newly
-required: the source watches RouteGroups instead of re-listing them on every sync.
+The service account needs `get`, `list` and `watch` on `routegroups.zalando.org`.
 
 ## FQDN templates
 
