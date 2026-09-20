@@ -64,13 +64,12 @@ var (
 // +externaldns:source:description=Creates DNS entries based on Kubernetes Service resources
 // +externaldns:source:resources=Service
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
 type serviceSource struct {
 	client         kubernetes.Interface
-	namespace      string
 	templateEngine template.Engine
 
 	ignoreHostnameAnnotation       bool
@@ -79,13 +78,14 @@ type serviceSource struct {
 	alwaysPublishNotReadyAddresses bool
 	resolveLoadBalancerHostname    bool
 	listenEndpointEvents           bool
-	serviceInformer                coreinformers.ServiceInformer
-	endpointSlicesInformer         discoveryinformers.EndpointSliceInformer
-	podInformer                    coreinformers.PodInformer
-	nodeInformer                   coreinformers.NodeInformer
-	serviceTypeFilter              *serviceTypes
-	exposeInternalIPv6             bool
-	excludeUnschedulable           bool
+	serviceInformers               *informers.Informers[coreinformers.ServiceInformer]
+	endpointSlicesInformers        *informers.Informers[discoveryinformers.EndpointSliceInformer]
+	podInformers                   *informers.Informers[coreinformers.PodInformer]
+	// nodeInformer is cluster-scoped, so a single one covers every watched namespace.
+	nodeInformer         coreinformers.NodeInformer
+	serviceTypeFilter    *serviceTypes
+	exposeInternalIPv6   bool
+	excludeUnschedulable bool
 
 	// process Services with legacy annotations
 	compatibility string
@@ -97,10 +97,14 @@ func NewServiceSource(
 	kubeClient kubernetes.Interface,
 	config *Config,
 ) (Source, error) {
-	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
+	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespaces.
 	// Set the resync period to 0 to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(config.Namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
+	factories := informers.NewFactories(config.Namespaces, func(namespace string) kubeinformers.SharedInformerFactory {
+		return kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	})
+	serviceInformers := informers.Map(factories, func(_ string, factory kubeinformers.SharedInformerFactory) coreinformers.ServiceInformer {
+		return factory.Core().V1().Services()
+	})
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
 	sTypesFilter, err := newServiceTypesFilter(config.ServiceTypeFilter)
@@ -108,7 +112,7 @@ func NewServiceSource(
 		return nil, err
 	}
 
-	informers.MustAddIndexers(serviceInformer.Informer(), informers.IndexerWithOptions[*v1.Service](
+	serviceInformers.MustAddIndexers(informers.IndexerWithOptions[*v1.Service](
 		informers.IndexSelectorWithAnnotationFilter(config.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(config.LabelFilter),
 		informers.IndexSelectorWithConditions(
@@ -117,42 +121,47 @@ func NewServiceSource(
 		),
 	))
 
-	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*v1.Service](
+	serviceInformers.MustSetTransform(informers.TransformerWithOptions[*v1.Service](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
+	serviceInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	var endpointSlicesInformer discoveryinformers.EndpointSliceInformer
-	var podInformer coreinformers.PodInformer
+	var endpointSlicesInformers *informers.Informers[discoveryinformers.EndpointSliceInformer]
+	var podInformers *informers.Informers[coreinformers.PodInformer]
 	if sTypesFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
-		endpointSlicesInformer = informerFactory.Discovery().V1().EndpointSlices()
-		podInformer = informerFactory.Core().V1().Pods()
+		endpointSlicesInformers = informers.Map(factories, func(_ string, factory kubeinformers.SharedInformerFactory) discoveryinformers.EndpointSliceInformer {
+			return factory.Discovery().V1().EndpointSlices()
+		})
+		podInformers = informers.Map(factories, func(_ string, factory kubeinformers.SharedInformerFactory) coreinformers.PodInformer {
+			return factory.Core().V1().Pods()
+		})
 
 		// Add an indexer to the EndpointSlice informer to index by the service name label
-		informers.MustAddIndexers(endpointSlicesInformer.Informer(), informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
+		endpointSlicesInformers.MustAddIndexers(informers.IndexerWithOptions[*discoveryv1.EndpointSlice](
 			informers.IndexSelectorWithLabelKey(discoveryv1.LabelServiceName),
 		))
-		informers.MustSetTransform(endpointSlicesInformer.Informer(), informers.TransformerWithOptions[*discoveryv1.EndpointSlice](
+		endpointSlicesInformers.MustSetTransform(informers.TransformerWithOptions[*discoveryv1.EndpointSlice](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
-		informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
+		podInformers.MustSetTransform(informers.TransformerWithOptions[*v1.Pod](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 			informers.TransformKeepAnnotationPrefix(annotations.AnnotationKeyPrefix),
 		))
 
-		informers.MustAddEventHandler(endpointSlicesInformer.Informer(), informers.DefaultEventHandler())
-		informers.MustAddEventHandler(podInformer.Informer(), informers.DefaultEventHandler())
+		endpointSlicesInformers.MustAddEventHandler(informers.DefaultEventHandler())
+		podInformers.MustAddEventHandler(informers.DefaultEventHandler())
 	}
 
 	var nodeInformer coreinformers.NodeInformer
 	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
-		nodeInformer = informerFactory.Core().V1().Nodes()
+		// Nodes are cluster-scoped: any factory returns the same objects.
+		nodeInformer = factories.All()[0].Core().V1().Nodes()
 		informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
@@ -161,25 +170,24 @@ func NewServiceSource(
 		informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 	}
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
 	return &serviceSource{
 		client:                         kubeClient,
-		namespace:                      config.Namespace,
 		compatibility:                  config.Compatibility,
 		templateEngine:                 config.TemplateEngine,
 		ignoreHostnameAnnotation:       config.IgnoreHostnameAnnotation,
 		publishInternal:                config.PublishInternal,
 		publishHostIP:                  config.PublishHostIP,
 		alwaysPublishNotReadyAddresses: config.AlwaysPublishNotReadyAddresses,
-		serviceInformer:                serviceInformer,
-		endpointSlicesInformer:         endpointSlicesInformer,
-		podInformer:                    podInformer,
+		serviceInformers:               serviceInformers,
+		endpointSlicesInformers:        endpointSlicesInformers,
+		podInformers:                   podInformers,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
 		resolveLoadBalancerHostname:    config.ResolveLoadBalancerHostname,
@@ -191,7 +199,7 @@ func NewServiceSource(
 
 // Endpoints return endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	services := informers.ListIndexed[*v1.Service](sc.serviceInformer.Informer().GetIndexer())
+	services := informers.ListIndexedAll[*v1.Service](sc.serviceInformers.Indexers()...)
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(services))
 
@@ -286,15 +294,22 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return nil
 	}
 
+	endpointSlicesInformer, ok := sc.endpointSlicesInformers.For(svc.Namespace)
+	podInformer, podsFound := sc.podInformers.For(svc.Namespace)
+	if !ok || !podsFound {
+		log.Errorf("No informer watching namespace %s of service[%s]", svc.Namespace, svc.GetName())
+		return nil
+	}
+
 	serviceKey := cache.ObjectName{Namespace: svc.Namespace, Name: svc.Name}.String()
-	rawEndpointSlices, err := sc.endpointSlicesInformer.Informer().GetIndexer().ByIndex(informers.IndexWithSelectors, serviceKey)
+	rawEndpointSlices, err := endpointSlicesInformer.Informer().GetIndexer().ByIndex(informers.IndexWithSelectors, serviceKey)
 	if err != nil {
 		log.Errorf("Get EndpointSlices of service[%s] error:%v", svc.GetName(), err)
 		return nil
 	}
 
 	endpointSlices := convertToEndpointSlices(rawEndpointSlices)
-	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+	pods, err := podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
 		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
@@ -679,7 +694,11 @@ func (sc *serviceSource) pods(svc *v1.Service) []*v1.Pod {
 	if err != nil {
 		return nil
 	}
-	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+	podInformer, ok := sc.podInformers.For(svc.Namespace)
+	if !ok {
+		return nil
+	}
+	pods, err := podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
 		return nil
 	}
@@ -780,9 +799,9 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.serviceInformer.Informer(), eventHandlerFunc(handler))
+	sc.serviceInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
-		informers.MustAddEventHandler(sc.endpointSlicesInformer.Informer(), eventHandlerFunc(handler))
+		sc.endpointSlicesInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	}
 }
 

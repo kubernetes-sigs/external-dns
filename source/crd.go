@@ -45,7 +45,7 @@ import (
 // +externaldns:source:description=Creates DNS entries from DNSEndpoint CRD resources
 // +externaldns:source:resources=DNSEndpoint.externaldns.k8s.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
@@ -60,7 +60,7 @@ type crdSource struct {
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
 // It builds the scheme, cache, and status-write client from restConfig and cfg.
 func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (Source, error) {
-	opts, err := buildCacheOptions(cfg.Namespace, cfg.LabelFilter)
+	opts, err := buildCacheOptions(cfg.Namespaces, cfg.LabelFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 		return nil, err
 	}
 
-	return newCrdSource(ctx, c, crWriter, cfg.Namespace, cfg.LabelFilter, cfg.AnnotationFilter)
+	return newCrdSource(ctx, c, crWriter, cfg.Namespaces, cfg.LabelFilter, cfg.AnnotationFilter)
 }
 
 func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
@@ -191,7 +191,7 @@ func newCrdSource(
 	ctx context.Context,
 	c crcache.Cache,
 	crWriter client.Client,
-	namespace string,
+	namespaces []string,
 	labelSelector, annotationFilter labels.Selector) (*crdSource, error) {
 	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
 	if err != nil {
@@ -200,7 +200,12 @@ func newCrdSource(
 
 	_, _ = inf.AddEventHandler(informers.DefaultEventHandler())
 
-	listOpts := []client.ListOption{client.InNamespace(namespace)}
+	// The cache is already scoped to the watched namespaces, so the list is restricted
+	// further only when a single one is watched, as it was before multi-namespace support.
+	var listOpts []client.ListOption
+	if watched := informers.NormalizeNamespaces(namespaces); len(watched) == 1 {
+		listOpts = append(listOpts, client.InNamespace(watched[0]))
+	}
 	if labelSelector != nil && !labelSelector.Empty() {
 		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector})
 	}
@@ -239,13 +244,13 @@ func startAndSync(ctx context.Context, c crcache.Cache) error {
 	return nil
 }
 
-// buildCacheOptions constructs the controller-runtime cache options for the
-// given namespace and label selector. Extracted so the namespace/label scoping
-// logic can be unit-tested without a running API server.
+// buildCacheOptions constructs the controller-runtime cache options for the given
+// namespaces and label selector. Extracted so the namespace/label scoping logic can be
+// unit-tested without a running API server.
 //
 // No annotation filter here: dropping an object from the transform empties the whole
 // cache since client-go 1.36 (#6728). crdSource.Endpoints filters instead.
-func buildCacheOptions(namespace string, labelFilter labels.Selector) (crcache.Options, error) {
+func buildCacheOptions(namespaces []string, labelFilter labels.Selector) (crcache.Options, error) {
 	scheme := runtime.NewScheme()
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
@@ -255,8 +260,9 @@ func buildCacheOptions(namespace string, labelFilter labels.Selector) (crcache.O
 	// as URL parameters when building watch requests for this group.
 	metav1.AddToGroupVersion(scheme, apiv1alpha1.GroupVersion)
 
-	nsMap := map[string]crcache.Config{
-		namespace: {}, // "" == NamespaceAll
+	nsMap := make(map[string]crcache.Config, len(namespaces))
+	for _, namespace := range informers.NormalizeNamespaces(namespaces) {
+		nsMap[namespace] = crcache.Config{} // "" == NamespaceAll
 	}
 	byObj := crcache.ByObject{
 		Namespaces: nsMap,
