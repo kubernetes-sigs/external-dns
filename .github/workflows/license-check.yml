@@ -21,7 +21,7 @@ jobs:
 
       # https://github.com/apache/skywalking-eyes
       - name: Check dependency licenses
-        uses: apache/skywalking-eyes/dependency@61275cc80d0798a405cb070f7d3a8aaf7cf2c2c1 # v0.8.0
+        uses: apache/skywalking-eyes/dependency@a196742f472feaffafea537ce5a2a4c3c53a8de4 # v0.9.0
         with:
           config: .licenserc.yaml
           mode: check
