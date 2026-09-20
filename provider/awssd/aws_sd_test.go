@@ -280,6 +280,56 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 	assert.Equal(t, "1.2.3.5", api.deregistered[0], "wrong target de-registered")
 }
 
+func TestAWSSDProvider_ApplyChanges_DottedServiceName(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"dev-local": {
+			Id:   aws.String("dev-local"),
+			Name: aws.String("dev.local"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	createEndpoints := []*endpoint.Endpoint{
+		{DNSName: "my-app.elb.dev.local", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA, RecordTTL: 60},
+	}
+
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{"dev.local"}), "", "")
+
+	ctx := t.Context()
+
+	err := provider.ApplyChanges(ctx, &plan.Changes{
+		Create: createEndpoints,
+	})
+	require.NoError(t, err)
+
+	// service must be created with the dotted name "my-app.elb"
+	assert.Len(t, api.services["dev-local"], 1)
+	existingServices, err := provider.ListServicesByNamespaceID(ctx, namespaces["dev-local"].Id)
+	require.NoError(t, err)
+	assert.NotNil(t, existingServices["my-app.elb"], "service should be named 'my-app.elb'")
+
+	// verify the record round-trips through Records()
+	endpoints, err := provider.Records(ctx)
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(createEndpoints, endpoints),
+		"expected and actual endpoints don't match, expected=%v, actual=%v", createEndpoints, endpoints)
+
+	// apply deletes
+	err = provider.ApplyChanges(ctx, &plan.Changes{
+		Delete: createEndpoints,
+	})
+	require.NoError(t, err)
+
+	endpoints, _ = provider.Records(ctx)
+	assert.Empty(t, endpoints)
+}
+
 func TestAWSSDProvider_ListNamespaces(t *testing.T) {
 	namespaces := map[string]*sdtypes.Namespace{
 		"private": {
@@ -1040,5 +1090,97 @@ func TestAWSSDProvider_awsTags(t *testing.T) {
 
 	for _, test := range tests {
 		require.ElementsMatch(t, test.Expectation, awsTags(test.Input))
+	}
+}
+
+func Test_parseNamespace(t *testing.T) {
+	tests := []struct {
+		name       string
+		hostname   string
+		namespaces []*sdtypes.NamespaceSummary
+		wantNS     string
+	}{
+		{
+			name:     "simple service name",
+			hostname: "foo.dev.local",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "dev.local",
+		},
+		{
+			name:     "dotted service name",
+			hostname: "foo.bar.dev.local",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "dev.local",
+		},
+		{
+			name:     "SRV-style hostname",
+			hostname: "_tcp.backend.mynet.internal",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("mynet.internal")},
+			},
+			wantNS: "mynet.internal",
+		},
+		{
+			name:     "longest namespace match wins",
+			hostname: "foo.a.b.c",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("b.c")},
+				{Name: aws.String("a.b.c")},
+			},
+			wantNS: "a.b.c",
+		},
+		{
+			name:     "no matching namespace falls back to first-dot split",
+			hostname: "foo.unknown.tld",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "unknown.tld",
+		},
+		{
+			name:       "empty namespaces falls back to first-dot split",
+			hostname:   "foo.bar.baz",
+			namespaces: []*sdtypes.NamespaceSummary{},
+			wantNS:     "bar.baz",
+		},
+		{
+			name:       "nil namespaces falls back to first-dot split",
+			hostname:   "foo.bar.baz",
+			namespaces: nil,
+			wantNS:     "bar.baz",
+		},
+		{
+			name:     "trailing dot is stripped before matching",
+			hostname: "foo.bar.dev.local.",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "dev.local",
+		},
+		{
+			name:     "hostname is namespace only, no service prefix",
+			hostname: "dev.local",
+			namespaces: []*sdtypes.NamespaceSummary{
+				{Name: aws.String("dev.local")},
+			},
+			wantNS: "local",
+		},
+		{
+			name:       "single label hostname, no dots",
+			hostname:   "foo",
+			namespaces: nil,
+			wantNS:     "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotNS := parseNamespace(tc.hostname, tc.namespaces)
+			assert.Equal(t, tc.wantNS, gotNS)
+		})
 	}
 }

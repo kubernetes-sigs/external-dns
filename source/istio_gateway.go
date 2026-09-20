@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -60,7 +61,6 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string
-	annotationFilter         string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -100,6 +100,7 @@ func NewIstioGatewaySource(
 	informers.MustAddIndexers(gatewayInformer.Informer(), informers.IndexerWithOptions[*networkingv1.Gateway](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.Gateway]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -120,7 +121,6 @@ func NewIstioGatewaySource(
 
 	return &gatewaySource{
 		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
@@ -142,10 +142,6 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	for _, key := range indexKeys {
 		gateway, err := informers.GetByKey[*networkingv1.Gateway](indexer, key)
 		if err != nil || gateway == nil {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(gateway, types.IstioGateway) {
 			continue
 		}
 
@@ -177,11 +173,13 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
+		endpoint.AttachRefObject(gwEndpoints, events.NewObjectReference(gateway, types.IstioGateway))
+
 		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(gateway.Kind), gateway.Namespace, gateway.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.

@@ -77,7 +77,7 @@ type Client struct {
 	// API endpoint
 	APIEndPoint string
 
-	// Client is the underlying HTTP client used to run the requests. It may be overloaded but a default one is instanciated in ``NewClient`` by default.
+	// Client is the underlying HTTP client used to run the requests. It may be overloaded but a default one is instantiated in ``NewClient`` by default.
 	Client *http.Client
 
 	// GoDaddy limits to 60 requests per minute
@@ -301,7 +301,7 @@ func (c *Client) CallAPI(method, path string, reqBody, resType any) error {
 // - full serialized request body
 // - server current time (takes time delta into account)
 //
-// # Context is used by http.Client to handle context cancelation
+// # Context is used by http.Client to handle context cancellation
 //
 // Call will automatically assemble the target url from the endpoint
 // configured in the client instance and the path argument. If the reqBody

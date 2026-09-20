@@ -1,6 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "required": [
+    "policy"
+  ],
   "properties": {
     "affinity": {
       "description": "Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels.",
@@ -64,6 +67,10 @@
     "domainFilters": {
       "description": "Limit possible target zones by domain suffixes.",
       "type": "array"
+    },
+    "enableGatewayListenerSets": {
+      "description": "if `true`, the Gateway API ListenerSet flag will be enabled.",
+      "type": "boolean"
     },
     "enabled": {
       "description": "No effect - reserved for use in sub-charting",
@@ -129,6 +136,10 @@
           }
         }
       }
+    },
+    "hostAliases": {
+      "description": "[Host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to add to the `Pod` definition, injected into the pod's `/etc/hosts`.",
+      "type": "array"
     },
     "image": {
       "type": "object",
@@ -249,6 +260,13 @@
         "null"
       ]
     },
+    "namespaceOverride": {
+      "description": "Override the namespace that chart resources are rendered into. Defaults to the release namespace. Useful when installing the chart as a subchart that should live in its own namespace, separate from the umbrella release namespace.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "namespaced": {
       "description": "if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).",
       "type": "boolean"
@@ -286,8 +304,7 @@
       }
     },
     "policy": {
-      "description": "How DNS records are synchronized between sources and providers; available values are `create-only`, `sync`, \u0026 `upsert-only`.",
-      "default": "upsert-only",
+      "description": "How DNS records are synchronized between sources and providers; must be set explicitly to one of `create-only`, `sync`, or `upsert-only`.",
       "type": "string",
       "enum": [
         "create-only",
@@ -587,15 +604,22 @@
       }
     },
     "registry": {
-      "description": "Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `dynamodb` \u0026 `noop`.",
+      "description": "Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `crd`, `dynamodb` \u0026 `noop`.",
       "default": "txt",
       "type": "string",
       "enum": [
         "txt",
         "aws-sd",
+        "crd",
         "dynamodb",
         "noop"
       ]
+    },
+    "replicaCount": {
+      "description": "Number of replicas of the `external-dns` `Deployment`. external-dns does not support leader election, so this must be `0` or `1` to avoid duplicate or conflicting DNS record updates. Set to `0` to scale the `Deployment` down.",
+      "type": "integer",
+      "maximum": 1,
+      "minimum": 0
     },
     "resources": {
       "description": "[Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container.",
@@ -701,6 +725,10 @@
         "annotations": {
           "description": "Service annotations.",
           "type": "object"
+        },
+        "enabled": {
+          "description": "If `true`, create a `Service` Kubernetes.",
+          "type": "boolean"
         },
         "ipFamilies": {
           "description": "Service IP families (e.g. IPv4 and/or IPv6).",
@@ -839,6 +867,13 @@
     "shareProcessNamespace": {
       "description": "If `true`, the `Pod` will have [process namespace sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/) enabled.",
       "type": "boolean"
+    },
+    "sourceNamespace": {
+      "description": "Source namespace to watch for Kubernetes resources other than Gateway API gateways. Used only when `namespaced=true`. Defaults to Release.Namespace",
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "sources": {
       "description": "_Kubernetes_ resources to monitor for DNS entries.",

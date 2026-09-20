@@ -1,0 +1,14 @@
+# ref: docs/snippets/tutorials/aws-localstack/dnsendpoint-alias.yml
+---
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: alias-example
+  namespace: default
+spec:
+  endpoints:
+    - dnsName: alias.example.com
+      recordTTL: 300
+      recordType: CNAME
+      targets:
+        - my-lb.eu-west-1.elb.amazonaws.com

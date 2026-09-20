@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ package pihole
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -31,6 +34,12 @@ func newTestServer(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	svr := httptest.NewServer(hdlr)
 	return svr
+}
+
+type errorTransport struct{}
+
+func (t *errorTransport) RoundTrip(_ *http.Request) (*http.Response, error) {
+	return nil, errors.New("network error")
 }
 
 func TestNewPiholeClient(t *testing.T) {
@@ -42,8 +51,7 @@ func TestNewPiholeClient(t *testing.T) {
 		t.Error("Expected ErrNoPiholeServer, got", err)
 	}
 
-	// Test new client with no password. Should create the
-	// client cleanly.
+	// Test new client with no password. Should create the client cleanly.
 	cl, err := newPiholeClient(PiholeConfig{
 		Server: "test",
 	})
@@ -54,32 +62,51 @@ func TestNewPiholeClient(t *testing.T) {
 		t.Error("Did not create a new pihole client")
 	}
 
-	// Create a test server for auth tests
+	// Create a test server
 	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			t.Fatal(err)
-		}
-		pw := r.Form.Get("pw")
-		if pw != "correct" {
-			// Pihole actually server side renders the fact that you failed, normal 200
-			_, err = w.Write([]byte("Invalid"))
+		if r.URL.Path == "/api/auth" && r.Method == http.MethodPost {
+			var requestData map[string]string
+			err := json.NewDecoder(r.Body).Decode(&requestData)
 			if err != nil {
 				t.Fatal(err)
 			}
-			return
-		}
-		// This is a subset of what happens on successful login
-		_, err = w.Write([]byte(`
-		<!doctype html>
-		<html lang="en">
-			<body>
-				<div id="token" hidden>supersecret</div>
-			</body>
-		</html>
-		`))
-		if err != nil {
-			t.Fatal(err)
+			defer r.Body.Close()
+
+			w.Header().Set("Content-Type", "application/json")
+
+			if requestData["password"] != "correct" {
+				// Return unsuccessful authentication response
+				w.WriteHeader(http.StatusUnauthorized)
+				_, err = w.Write([]byte(`{
+				"session": {
+					"valid": false,
+					"totp": false,
+					"sid": null,
+					"validity": -1,
+					"message": "password incorrect"
+				},
+				"took": 0.2
+			}`))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+
+			// Return successful authentication response
+			_, err = w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "supersecret",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.18
+		}`))
+		} else {
+			http.NotFound(w, r)
 		}
 	})
 	defer srvr.Close()
@@ -104,71 +131,93 @@ func TestNewPiholeClient(t *testing.T) {
 	}
 }
 
-// Helper function to validate records against expected values
-func ValidateRecords(t *testing.T, records []*endpoint.Endpoint, expected [][]string, expectedCount int, recordType string) {
-	t.Helper()
-	if len(records) != expectedCount {
-		t.Fatalf("Expected %d %s records returned, got: %d", expectedCount, recordType, len(records))
-	}
-	for idx, rec := range records {
-		if rec.DNSName != expected[idx][0] {
-			t.Errorf("Got invalid DNS Name: %s, expected: %s", rec.DNSName, expected[idx][0])
-		}
-		if rec.Targets[0] != expected[idx][1] {
-			t.Errorf("Got invalid target: %s, expected: %s", rec.Targets[0], expected[idx][1])
-		}
-	}
-}
+func TestRetrieveNewTokenSpecialPassword(t *testing.T) {
+	// Passwords containing JSON metacharacters must be correctly escaped.
+	specialPassword := `p4ss"w\ord`
 
-// Helper function to test record retrieval for a specific type
-func CheckRecordRetrieval(t *testing.T, cl *piholeClient, recordType string, expected [][]string, expectedCount int) {
-	t.Helper()
-	records, err := cl.listRecords(t.Context(), recordType)
+	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/auth" || r.Method != http.MethodPost {
+			http.NotFound(w, r)
+			return
+		}
+		var body map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("server failed to decode request body: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if body["password"] != specialPassword {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"session":{"valid":false,"sid":null,"validity":-1,"message":"wrong"},"took":0.1}`))
+			return
+		}
+		w.Write([]byte(`{"session":{"valid":true,"sid":"tok123","csrf":"x","validity":1800,"message":"ok"},"took":0.1}`))
+	})
+	defer srvr.Close()
+
+	cl, err := newPiholeClient(PiholeConfig{Server: srvr.URL, Password: specialPassword})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ValidateRecords(t, records, expected, expectedCount, recordType)
+	if cl.(*piholeClient).token != "tok123" {
+		t.Errorf("expected token %q, got %q", "tok123", cl.(*piholeClient).token)
+	}
 }
 
 func TestListRecords(t *testing.T) {
+	// Create a test server
 	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if r.Form.Get("action") != "get" {
-			t.Error("Expected 'get' action in form from client")
-		}
-		if strings.Contains(r.URL.Path, "cname") {
-			_, err = w.Write([]byte(`
-			{
-				"data": [
-					["test4.example.com", "cname.example.com"],
-					["test5.example.com", "cname.example.com"],
-					["test6.match.com", "cname.example.com"]
-				]
-			}
-			`))
-			if err != nil {
+		switch {
+		case r.URL.Path == "/api/config/dns/hosts" && r.Method == http.MethodGet:
+
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			if _, err := w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"hosts": [
+							"192.168.178.33 service1.example.com",
+							"192.168.178.34 service2.example.com",
+							"192.168.178.34 service3.example.com",
+							"192.168.178.35 service8.example.com",
+							"192.168.178.36 service8.example.com",
+							"fc00::1:192:168:1:1 service4.example.com",
+							"fc00::1:192:168:1:2 service5.example.com",
+							"fc00::1:192:168:1:3 service6.example.com",
+							"::ffff:192.168.20.3 service7.example.com",
+							"fc00::1:192:168:1:4 service9.example.com",
+							"fc00::1:192:168:1:5 service9.example.com",
+							"192.168.20.3 service7.example.com"
+						]
+					}
+				},
+				"took": 5
+			}`)); err != nil {
 				t.Fatal(err)
 			}
-			return
-		}
-		// Pihole makes no distinction between A and AAAA records
-		_, err = w.Write([]byte(`
-		{
-			"data": [
-				["test1.example.com", "192.168.1.1"],
-				["test2.example.com", "192.168.1.2"],
-				["test3.match.com", "192.168.1.3"],
-				["test1.example.com", "fc00::1:192:168:1:1"],
-				["test2.example.com", "fc00::1:192:168:1:2"],
-				["test3.match.com", "fc00::1:192:168:1:3"]
-			]
-		}
-		`))
-		if err != nil {
-			t.Fatal(err)
+		case r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet:
+
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"cnameRecords": [
+							"source1.example.com,target1.domain.com,1000",
+							"source2.example.com,target2.domain.com,50",
+							"source3.example.com,target3.domain.com"
+						]
+					}
+				},
+				"took": 5
+			}`))
+		default:
+			http.NotFound(w, r)
 		}
 	})
 	defer srvr.Close()
@@ -182,146 +231,640 @@ func TestListRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Ensure A records were parsed correctly
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName: "service1.example.com",
+			Targets: []string{"192.168.178.33"},
+		},
+		{
+			DNSName: "service2.example.com",
+			Targets: []string{"192.168.178.34"},
+		},
+		{
+			DNSName: "service3.example.com",
+			Targets: []string{"192.168.178.34"},
+		},
+		{
+			DNSName: "service7.example.com",
+			Targets: []string{"192.168.20.3"},
+		},
+		{
+			DNSName: "service8.example.com",
+			Targets: []string{"192.168.178.35", "192.168.178.36"},
+		},
+	}
 	// Test retrieve A records unfiltered
-	CheckRecordRetrieval(t, cl.(*piholeClient), endpoint.RecordTypeA, [][]string{
-		{"test1.example.com", "192.168.1.1"},
-		{"test2.example.com", "192.168.1.2"},
-		{"test3.match.com", "192.168.1.3"},
-	}, 3)
-
-	// Test retrieve AAAA records unfiltered
-	CheckRecordRetrieval(t, cl.(*piholeClient), endpoint.RecordTypeAAAA, [][]string{
-		{"test1.example.com", "fc00::1:192:168:1:1"},
-		{"test2.example.com", "fc00::1:192:168:1:2"},
-		{"test3.match.com", "fc00::1:192:168:1:3"},
-	}, 3)
-
-	// Test retrieve CNAME records unfiltered
-	CheckRecordRetrieval(t, cl.(*piholeClient), endpoint.RecordTypeCNAME, [][]string{
-		{"test4.example.com", "cname.example.com"},
-		{"test5.example.com", "cname.example.com"},
-		{"test6.match.com", "cname.example.com"},
-	}, 3)
-
-	// Same tests but with a domain filter
-	cfg.DomainFilter = endpoint.NewDomainFilter([]string{"match.com"})
-	cl, err = newPiholeClient(cfg)
+	arecs, err := cl.listRecords(t.Context(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Test retrieve A records filtered
-	CheckRecordRetrieval(t, cl.(*piholeClient), endpoint.RecordTypeA, [][]string{
-		{"test3.match.com", "192.168.1.3"},
-	}, 1)
+	expectedMap := make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range arecs {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
+		}
+	}
 
-	// Test retrieve AAAA records filtered
-	CheckRecordRetrieval(t, cl.(*piholeClient), endpoint.RecordTypeAAAA, [][]string{
-		{"test3.match.com", "fc00::1:192:168:1:3"},
-	}, 1)
+	// Ensure AAAA records were parsed correctly
+	expected = []*endpoint.Endpoint{
+		{
+			DNSName: "service4.example.com",
+			Targets: []string{"fc00::1:192:168:1:1"},
+		},
+		{
+			DNSName: "service5.example.com",
+			Targets: []string{"fc00::1:192:168:1:2"},
+		},
+		{
+			DNSName: "service6.example.com",
+			Targets: []string{"fc00::1:192:168:1:3"},
+		},
+		{
+			DNSName: "service7.example.com",
+			Targets: []string{"::ffff:192.168.20.3"},
+		},
+		{
+			DNSName: "service9.example.com",
+			Targets: []string{"fc00::1:192:168:1:4", "fc00::1:192:168:1:5"},
+		},
+	}
 
-	// Test retrieve CNAME records filtered
-	CheckRecordRetrieval(t, cl.(*piholeClient), endpoint.RecordTypeCNAME, [][]string{
-		{"test6.match.com", "cname.example.com"},
-	}, 1)
+	// Test retrieve AAAA records unfiltered
+	arecs, err = cl.listRecords(t.Context(), endpoint.RecordTypeAAAA)
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	if len(arecs) != len(expected) {
+		t.Fatalf("Expected %d AAAA records returned, got: %d", len(expected), len(arecs))
+	}
+
+	expectedMap = make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range arecs {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
+		}
+	}
+
+	// Ensure CNAME records were parsed correctly
+	expected = []*endpoint.Endpoint{
+		{
+			DNSName:   "source1.example.com",
+			Targets:   []string{"target1.domain.com"},
+			RecordTTL: 1000,
+		},
+		{
+			DNSName:   "source2.example.com",
+			Targets:   []string{"target2.domain.com"},
+			RecordTTL: 50,
+		},
+		{
+			DNSName: "source3.example.com",
+			Targets: []string{"target3.domain.com"},
+		},
+	}
+
+	// Test retrieve CNAME records unfiltered
+	cnamerecs, err := cl.listRecords(t.Context(), endpoint.RecordTypeCNAME)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cnamerecs) != len(expected) {
+		t.Fatalf("Expected %d CAME records returned, got: %d", len(expected), len(cnamerecs))
+	}
+
+	expectedMap = make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range arecs {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
+		}
+	}
+
+	// Note: filtered tests are not needed since A/AAAA records are tested filtered already
+	// and cnameRecords have their own element
+
+	// unsupported type
+	_, err = cl.listRecords(t.Context(), endpoint.RecordTypeNAPTR)
+	if err == nil || err.Error() != fmt.Sprintf("unsupported record type: %s", endpoint.RecordTypeNAPTR) {
+		t.Fatal("Expected error for using unsupported record type")
+	}
 }
 
-func TestErrorScenarios(t *testing.T) {
-	// Test errors token
+func TestErrors(t *testing.T) {
+	// Error test cases
+
+	// Create a client
+	cfgErrURL := PiholeConfig{
+		Server: "not an url",
+	}
+	clErrURL, err := newPiholeClient(cfgErrURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = clErrURL.listRecords(t.Context(), endpoint.RecordTypeCNAME)
+	if err == nil {
+		t.Fatal("Expected error for using invalid URL")
+	}
+	_, err = clErrURL.listRecords(nil, endpoint.RecordTypeCNAME)
+	if err == nil {
+		t.Fatal("Expected error for nil context")
+	}
+	// Unmarshalling error
+	srvrErrJson := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+
+		// Return A records
+		w.Write([]byte(`I am not JSON`))
+	})
+	defer srvrErrJson.Close()
+	// Create a client
+	cfgErr := PiholeConfig{
+		Server: srvrErrJson.URL,
+	}
+	clErr, _ := newPiholeClient(cfgErr)
+
+	resp, err := clErr.listRecords(t.Context(), endpoint.RecordTypeA)
+	if err == nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(err.Error(), "failed to unmarshal error response:") {
+		t.Fatal("Expected unmarshalling error, got:", err)
+	}
+
+	// bad record format return by server
 	srvrErr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			t.Fatal(err)
-		}
-		pw := r.Form.Get("pw")
-		if pw != "" {
-			if pw != "correct" {
-				_, err = w.Write([]byte("Invalid"))
-				if err != nil {
-					t.Fatal(err)
-				}
-				return
-			}
-		}
-		if strings.Contains(r.URL.Path, "admin/scripts/pi-hole/php/customcname.php") && r.Form.Get("token") == "correct" {
-			_, err = w.Write([]byte(`
-				{
-					"nodata": [
-						["nodata", "no"]
-					]
-				}
-			`))
-			if err != nil {
-				t.Fatal(err)
-			}
+		switch {
+		case r.URL.Path == "/api/config/dns/hosts" && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"hosts": [
+							"192.168.178.33"
+						]
+					}
+				},
+				"took": 5
+			}`))
+		case r.URL.Path == "/api/config/dns/cnameRecords" && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return A records
+			w.Write([]byte(`{
+				"config": {
+					"dns": {
+						"cnameRecords": [
+							"source1.example.com,target1.domain.com,100",
+							"source2.example.com,target2.domain.com,not_an_integer"
+						]
+					}
+				},
+				"took": 5
+			}`))
+		default:
+			http.NotFound(w, r)
 		}
 	})
 	defer srvrErr.Close()
 
-	cfgExpired := PiholeConfig{
+	// Create a client
+	cfgErr = PiholeConfig{
 		Server: srvrErr.URL,
 	}
-	clExpired, err := newPiholeClient(cfgExpired)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// set clExpired.token to a valid token
-	clExpired.(*piholeClient).token = "expired"
-	clExpired.(*piholeClient).cfg.Password = "notcorrect"
+	clErr, _ = newPiholeClient(cfgErr)
 
-	_, err = clExpired.listRecords(t.Context(), "notarealrecordtype")
-	if err == nil {
-		t.Fatal("Should return error, type is unknown ! ")
-	}
-	_, err = clExpired.listRecords(t.Context(), endpoint.RecordTypeCNAME)
-	if err == nil {
-		t.Fatal("Should return error on failed auth ! ")
-	}
-	clExpired.(*piholeClient).token = "correct"
-	clExpired.(*piholeClient).cfg.Password = "correct"
-	cnamerecs, err := clExpired.listRecords(t.Context(), endpoint.RecordTypeCNAME)
+	resp, err = clErr.listRecords(t.Context(), endpoint.RecordTypeA)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cnamerecs) != 0 {
-		t.Fatal("Should return empty on missing data in response ! ")
+	if len(resp) != 0 {
+		t.Fatal("Expected no records returned, got:", len(resp))
 	}
+	resp, err = clErr.listRecords(t.Context(), endpoint.RecordTypeCNAME)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) != 2 {
+		t.Fatal("Expected one records returned, got:", len(resp))
+	}
+
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName:   "source1.example.com",
+			Targets:   []string{"target1.domain.com"},
+			RecordTTL: 100,
+		},
+		{
+			DNSName: "source2.example.com",
+			Targets: []string{"target2.domain.com"},
+		},
+	}
+
+	expectedMap := make(map[string]*endpoint.Endpoint)
+	for _, ep := range expected {
+		expectedMap[ep.DNSName] = ep
+	}
+	for _, rec := range resp {
+		if ep, ok := expectedMap[rec.DNSName]; ok {
+			if cmp.Diff(ep.Targets, rec.Targets) != "" {
+				t.Errorf("Got invalid targets for %s: %v, expected: %v", rec.DNSName, rec.Targets, ep.Targets)
+			}
+			if ep.RecordTTL != rec.RecordTTL {
+				t.Errorf("Got invalid TTL for %s: %d, expected: %d", rec.DNSName, rec.RecordTTL, ep.RecordTTL)
+			}
+		} else {
+			t.Errorf("Unexpected record found: %s", rec.DNSName)
+		}
+	}
+
+}
+
+func TestTokenValidity(t *testing.T) {
+	srvok := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/auth" && r.Method == http.MethodGet {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "supersecret",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.17
+			}`))
+		}
+	})
+	// Create a client
+	cfgOK := PiholeConfig{
+		Server: srvok.URL,
+	}
+	clOK, err := newPiholeClient(cfgOK)
+	clOK.(*piholeClient).token = "valid"
+	validity, err := clOK.(*piholeClient).checkTokenValidity(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !validity {
+		t.Fatal("Should be valid")
+	}
+
+	// Create a test server
+	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+
+		if r.URL.Path == "/api/auth" && r.Method == http.MethodGet {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+
+			// Return bad content
+			w.Write([]byte(`Not a JSON`))
+		}
+	})
+	defer srvr.Close()
+	//
+	// Create a client
+	cfg := PiholeConfig{
+		Server: srvr.URL,
+	}
+	cl, err := newPiholeClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	validity, err = cl.(*piholeClient).checkTokenValidity(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if validity {
+		t.Fatal("Should be invalid : no token")
+	}
+	// Test token validity
+	cl.(*piholeClient).token = "valid"
+
+	validity, err = cl.(*piholeClient).checkTokenValidity(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if validity {
+		t.Fatal("Should be invalid : nil context")
+	}
+
+	validity, err = cl.(*piholeClient).checkTokenValidity(t.Context())
+	if err == nil {
+		t.Fatal("Should be invalid : failed to unmarshal error")
+	}
+	if !strings.HasPrefix(err.Error(), "failed to unmarshal error response") {
+		t.Fatal("Expected unmarshalling error, got:", err)
+	}
+	if validity {
+		t.Fatal("Should be invalid : unmarshalling error")
+	}
+}
+
+func TestDo(t *testing.T) {
+
+	srvDo := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/auth/ok" && r.Method == http.MethodGet:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "supersecret",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.16
+			}`))
+		case r.URL.Path == "/api/auth" && r.Method == http.MethodPost:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": false,
+				"totp": false,
+				"sid": "",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.15
+			}`))
+		case r.URL.Path == "/api/auth" && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusUnauthorized)
+			// Return bad content
+			w.Write([]byte(`{
+			"error": {
+				"key": "401",
+				"message": "Expired token",
+				"hint": "Expired token"
+			},
+			"took": 0.14
+			}`))
+		case r.URL.Path == "/api/auth/418" && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusTeapot)
+			// Return bad content
+			w.Write([]byte(`{
+			"error": {
+				"key": "418",
+				"message": "I'm a teapot",
+				"hint": "It is a teapot"
+			},
+			"took": 0.13
+			}`))
+		case r.URL.Path == "/api/auth/nojson" && r.Method == http.MethodGet:
+			// Return bad content
+			w.WriteHeader(http.StatusTeapot)
+			w.Write([]byte(`Not a JSON`))
+		case r.URL.Path == "/api/auth/401" && r.Method == http.MethodGet:
+			w.WriteHeader(http.StatusUnauthorized)
+			// Return bad content
+			w.Write([]byte(`{
+			"error": {
+				"key": "401",
+				"message": "Expired token",
+				"hint": "Expired token"
+			},
+			"took": 0.10
+			}`))
+		}
+	})
+	defer srvDo.Close()
+
+	// Create a client
+	cfg := PiholeConfig{
+		Server: srvDo.URL,
+	}
+	cl, err := newPiholeClient(cfg)
+	cl.(*piholeClient).token = "valid"
+
+	rq, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/ok", nil)
+	resp, err := cl.(*piholeClient).do(rq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp) == 0 {
+		t.Fatal("Should have a response")
+	}
+	// Test not handled error code
+	rq, _ = http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/418", nil)
+	resp, err = cl.(*piholeClient).do(rq)
+	if resp != nil {
+		t.Fatal(err)
+	}
+	if err == nil {
+		t.Fatal("Should have an error")
+	}
+	if !strings.HasPrefix(err.Error(), "received 418 status code from request") {
+		t.Fatal("Expected error for unexpected status code, got:", err)
+	}
+	// Test error on non JSON response
+	rq, _ = http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/nojson", nil)
+	resp, err = cl.(*piholeClient).do(rq)
+	if resp != nil {
+		t.Fatal(err)
+	}
+	if err == nil {
+		t.Fatal("Should have an error")
+	}
+	if !strings.HasPrefix(err.Error(), "failed to unmarshal error response") {
+		t.Fatal("Expected error for unmarshal", err)
+	}
+	// Test Unauthorized retry failed
+	rq, _ = http.NewRequestWithContext(t.Context(), http.MethodGet, srvDo.URL+"/api/auth/401", nil)
+	resp, err = cl.(*piholeClient).do(rq)
+	if resp != nil {
+		t.Fatal(err)
+	}
+	if err == nil {
+		t.Fatal("Should have an error")
+	}
+	if !strings.HasPrefix(err.Error(), "max tries reached for token renewal") {
+		t.Fatal("Expected error for max tries reached", err)
+	}
+}
+
+func TestDoRetryOne(t *testing.T) {
+	nbCall := 0
+	srvRetry := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/auth" && r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Return bad content
+			w.Write([]byte(`{
+			"session": {
+				"valid": true,
+				"totp": false,
+				"sid": "123465468",
+				"csrf": "csrfvalue",
+				"validity": 1800,
+				"message": "password correct"
+			},
+			"took": 0.24
+			}`))
+		} else if r.URL.Path == "/api/auth/401" && r.Method == http.MethodGet {
+			if nbCall == 0 {
+				w.WriteHeader(http.StatusUnauthorized)
+				// Return bad content
+				w.Write([]byte(`{
+				"error": {
+					"key": "401",
+					"message": "Expired token",
+					"hint": "Expired token"
+				},
+				"took": 0.25
+				}`))
+			} else {
+				w.WriteHeader(http.StatusOK)
+				// Return bad content
+				w.Write([]byte(`Success`))
+			}
+			nbCall += 1
+		}
+	})
+	defer srvRetry.Close()
+	// Create a client
+	cfgRetryOK := PiholeConfig{
+		Server: srvRetry.URL,
+	}
+	clRetryOK, err := newPiholeClient(cfgRetryOK)
+	clRetryOK.(*piholeClient).token = "valid"
+	// Test Unauthorized refresh OK
+	rq, _ := http.NewRequestWithContext(t.Context(), http.MethodGet, srvRetry.URL+"/api/auth/401", nil)
+	resp, err := clRetryOK.(*piholeClient).do(rq)
+	if err != nil {
+		t.Fatal("Should succeed", err)
+	}
+	if string(resp) != "Success" {
+		t.Fatal("Should have a response")
+	}
+
+}
+
+func TestDoAdditionalCases(t *testing.T) {
+	t.Run("http client error", func(t *testing.T) {
+		client := &piholeClient{
+			httpClient: &http.Client{
+				Transport: &errorTransport{},
+			},
+		}
+		req, _ := http.NewRequest(http.MethodGet, "http://localhost", nil)
+		_, err := client.do(req)
+		if err == nil {
+			t.Fatal("expected an error, but got none")
+		}
+		if !strings.Contains(err.Error(), "network error") {
+			t.Fatalf("expected error to contain 'network error', but got '%v'", err)
+		}
+	})
+
+	t.Run("item already present", func(t *testing.T) {
+		server := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(`{
+				"error": {
+					"key": "bad_request",
+					"message": "Item already present",
+					"hint": "The item you're trying to add already exists"
+				},
+				"took": 0.1
+			}`))
+		})
+		defer server.Close()
+
+		client := &piholeClient{
+			httpClient: server.Client(),
+			token:      "test-token",
+		}
+		req, _ := http.NewRequest(http.MethodPut, server.URL+"/api/test", nil)
+		resp, err := client.do(req)
+		if err != nil {
+			t.Fatalf("expected no error for 'Item already present', but got '%v'", err)
+		}
+		if resp == nil {
+			t.Fatal("expected response, but got nil")
+		}
+	})
+
+	t.Run("404 on DELETE", func(t *testing.T) {
+		server := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{
+				"error": {
+					"key": "not_found",
+					"message": "Item not found",
+					"hint": "The item you're trying to delete does not exist"
+				},
+				"took": 0.1
+			}`))
+		})
+		defer server.Close()
+
+		client := &piholeClient{
+			httpClient: server.Client(),
+			token:      "test-token",
+		}
+		req, _ := http.NewRequest(http.MethodDelete, server.URL+"/api/test", nil)
+		resp, err := client.do(req)
+		if err != nil {
+			t.Fatalf("expected no error for 404 on DELETE, but got '%v'", err)
+		}
+		if resp == nil {
+			t.Fatal("expected response, but got nil")
+		}
+	})
 }
 
 func TestCreateRecord(t *testing.T) {
 	var ep *endpoint.Endpoint
 	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		if r.Form.Get("action") != "add" {
-			t.Error("Expected 'add' action in form from client")
+		if r.Method == http.MethodPut && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
+			r.URL.Path == "/api/config/dns/hosts/192.168.1.2 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/192.168.1.3 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:2 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:3 test.example.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
+
+			// Return A records
+			w.WriteHeader(http.StatusCreated)
+		} else {
+			http.NotFound(w, r)
 		}
-		if r.Form.Get("domain") != ep.DNSName {
-			t.Error("Invalid domain in form:", r.Form.Get("domain"), "Expected:", ep.DNSName)
-		}
-		switch ep.RecordType {
-		case endpoint.RecordTypeA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		// Pihole makes no distinction between A and AAAA records
-		case endpoint.RecordTypeAAAA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		case endpoint.RecordTypeCNAME:
-			if r.Form.Get("target") != ep.Targets[0] {
-				t.Error("Invalid target in form:", r.Form.Get("target"), "Expected:", ep.Targets[0])
-			}
-		}
-		out, err := json.Marshal(actionResponse{
-			Success: true,
-			Message: "",
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		w.Write(out)
 	})
 	defer srvr.Close()
 
@@ -345,6 +888,16 @@ func TestCreateRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Test create multiple A records
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"192.168.1.2", "192.168.1.3"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.createRecord(t.Context(), ep); err != nil {
+		t.Fatal(err)
+	}
+
 	// Test create AAAA record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
@@ -355,13 +908,44 @@ func TestCreateRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Test create CNAME record
+	// Test create multiple AAAA records
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
-		Targets:    []string{"test.cname.com"},
+		Targets:    []string{"fc00::1:192:168:1:2", "fc00::1:192:168:1:3"},
+		RecordType: endpoint.RecordTypeAAAA,
+	}
+	if err := cl.createRecord(t.Context(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record
+	ep = &endpoint.Endpoint{
+		DNSName:    "source1.example.com",
+		Targets:    []string{"target1.domain.com"},
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.createRecord(t.Context(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record with TTL
+	ep = &endpoint.Endpoint{
+		DNSName:    "source2.example.com",
+		Targets:    []string{"target2.domain.com"},
+		RecordTTL:  endpoint.TTL(500),
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.createRecord(t.Context(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test create CNAME record with multiple targets and ensure it fails
+	ep = &endpoint.Endpoint{
+		DNSName:    "source3.example.com",
+		Targets:    []string{"target3.domain.com", "target4.domain.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.createRecord(t.Context(), ep); err == nil {
 		t.Fatal(err)
 	}
 
@@ -371,7 +955,6 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	cl.(*piholeClient).token = "correct"
 	if err := cl.createRecord(t.Context(), ep); err == nil {
 		t.Fatal(err)
 	}
@@ -382,7 +965,8 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := cl.createRecord(t.Context(), ep); err != nil {
+	err = cl.createRecord(t.Context(), ep)
+	if err != nil {
 		t.Fatal("Should not return error on non filtered domain")
 	}
 
@@ -392,7 +976,8 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: "not a type",
 	}
-	if err := cl.createRecord(t.Context(), ep); err != nil {
+	err = cl.createRecord(t.Context(), ep)
+	if err != nil {
 		t.Fatal("Should not return error on unsupported type")
 	}
 
@@ -412,45 +997,35 @@ func TestCreateRecord(t *testing.T) {
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
 	}
-	if err := clDr.createRecord(t.Context(), ep); err != nil {
+	err = clDr.createRecord(t.Context(), ep)
+	if err != nil {
 		t.Fatal("Should not return error on dry run")
 	}
-
+	// skip missing targets
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{},
+		RecordType: endpoint.RecordTypeA,
+	}
+	err = clDr.createRecord(t.Context(), ep)
+	if err != nil {
+		t.Fatal("Should not return error on missing targets")
+	}
 }
 
 func TestDeleteRecord(t *testing.T) {
 	var ep *endpoint.Endpoint
 	srvr := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		if r.Form.Get("action") != "delete" {
-			t.Error("Expected 'delete' action in form from client")
+		if r.Method == http.MethodDelete && (r.URL.Path == "/api/config/dns/hosts/192.168.1.1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/hosts/fc00::1:192:168:1:1 test.example.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source1.example.com,target1.domain.com" ||
+			r.URL.Path == "/api/config/dns/cnameRecords/source2.example.com,target2.domain.com,500") {
+
+			// Return A records
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			http.NotFound(w, r)
 		}
-		if r.Form.Get("domain") != ep.DNSName {
-			t.Error("Invalid domain in form:", r.Form.Get("domain"), "Expected:", ep.DNSName)
-		}
-		switch ep.RecordType {
-		case endpoint.RecordTypeA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		// Pihole makes no distinction between A and AAAA records
-		case endpoint.RecordTypeAAAA:
-			if r.Form.Get("ip") != ep.Targets[0] {
-				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
-			}
-		case endpoint.RecordTypeCNAME:
-			if r.Form.Get("target") != ep.Targets[0] {
-				t.Error("Invalid target in form:", r.Form.Get("target"), "Expected:", ep.Targets[0])
-			}
-		}
-		out, err := json.Marshal(actionResponse{
-			Success: true,
-			Message: "",
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		w.Write(out)
 	})
 	defer srvr.Close()
 
@@ -485,8 +1060,19 @@ func TestDeleteRecord(t *testing.T) {
 
 	// Test delete CNAME record
 	ep = &endpoint.Endpoint{
-		DNSName:    "test.example.com",
-		Targets:    []string{"test.cname.com"},
+		DNSName:    "source1.example.com",
+		Targets:    []string{"target1.domain.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+	}
+	if err := cl.deleteRecord(t.Context(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test delete CNAME record with TTL
+	ep = &endpoint.Endpoint{
+		DNSName:    "source2.example.com",
+		Targets:    []string{"target2.domain.com"},
+		RecordTTL:  endpoint.TTL(500),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.deleteRecord(t.Context(), ep); err != nil {

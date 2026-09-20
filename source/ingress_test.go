@@ -18,6 +18,8 @@ package source
 
 import (
 	"context"
+	"fmt"
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,7 +125,7 @@ func TestNewIngressSource(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				&Config{
-					AnnotationFilter:  ti.annotationFilter,
+					AnnotationFilter:  parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:    templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IngressClassNames: ti.ingressClassNames,
 				},
@@ -588,8 +590,13 @@ func testIngressEndpoints(t *testing.T) {
 					ips:      []string{"8.8.8.8"},
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
-			expectError: true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
 		},
 		{
 			title:            "valid matching annotation filter label",
@@ -1083,7 +1090,7 @@ func testIngressEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets{"ingress-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name: "alias", Value: "true",
+						Name: endpoint.ProviderSpecificAlias, Value: "true",
 					}},
 				},
 			},
@@ -1417,7 +1424,7 @@ func testIngressEndpoints(t *testing.T) {
 				fakeClient,
 				&Config{
 					Namespace:                ti.targetNamespace,
-					AnnotationFilter:         ti.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					IgnoreIngressTLSSpec:     ti.ignoreIngressTLSSpec,
@@ -1458,12 +1465,10 @@ type fakeIngress struct {
 
 func (ing fakeIngress) Ingress() *networkv1.Ingress {
 	ingress := &networkv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   ing.namespace,
-			Name:        ing.name,
-			Annotations: ing.annotations,
-			Labels:      ing.labels,
-		},
+		Namespace:   ing.namespace,
+		Name:        ing.name,
+		Annotations: ing.annotations,
+		Labels:      ing.labels,
 		Spec: networkv1.IngressSpec{
 			Rules:            []networkv1.IngressRule{},
 			IngressClassName: &ing.ingressClassName,
@@ -1508,13 +1513,11 @@ func TestIngressWithConfiguration(t *testing.T) {
 			title: "hostname and targets configured as annotations",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-						Annotations: map[string]string{
-							annotations.HostnameKey: "bla.example.org",
-							annotations.TargetKey:   "target.example.org",
-						},
+					Name:      "my-ingress",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "bla.example.org",
+						annotations.TargetKey:   "target.example.org",
 					},
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("nginx"),
@@ -1543,11 +1546,9 @@ func TestIngressWithConfiguration(t *testing.T) {
 			},
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:        "my-ingress",
-						Namespace:   "default",
-						Annotations: map[string]string{},
-					},
+					Name:        "my-ingress",
+					Namespace:   "default",
+					Annotations: map[string]string{},
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("alb"),
 						TLS: []networkv1.IngressTLS{
@@ -1580,10 +1581,8 @@ func TestIngressWithConfiguration(t *testing.T) {
 			},
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("alb"),
 						TLS: []networkv1.IngressTLS{
@@ -1609,16 +1608,112 @@ func TestIngressWithConfiguration(t *testing.T) {
 			},
 		},
 		{
+			title: "multiple ingresses with same hostname, different CNAME targets and hostname annotation override",
+			ingresses: []*networkv1.Ingress{
+				{
+					Name:      "keycloak",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "keycloak.blah.com",
+					},
+					Spec: networkv1.IngressSpec{
+						Rules: []networkv1.IngressRule{
+							{Host: "keycloak.blah.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "blah-1922533626.us-west-2.elb.amazonaws.com"},
+							},
+						},
+					},
+				},
+				{
+					Name:      "keycloak-another",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.HostnameKey: "anotherkeycloak.blah.com",
+					},
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("alb"),
+						Rules: []networkv1.IngressRule{
+							{Host: "keycloak.blah.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{Hostname: "blah-3488114.us-west-2.elb.amazonaws.com"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-1922533626.us-west-2.elb.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak"),
+				endpoint.NewEndpoint("keycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak-another"),
+				endpoint.NewEndpoint("anotherkeycloak.blah.com", endpoint.RecordTypeCNAME, "blah-3488114.us-west-2.elb.amazonaws.com").
+					WithLabel(endpoint.ResourceLabelKey, "ingress/default/keycloak-another"),
+			},
+		},
+		{
+			title: "multiple ingresses with same hostname, different IPs from different ingressClasses are merged",
+			ingresses: []*networkv1.Ingress{
+				{
+					Name:      "my-service",
+					Namespace: "old-ns",
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("old-class"),
+						Rules: []networkv1.IngressRule{
+							{Host: "my-service.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "10.0.0.1"},
+							},
+						},
+					},
+				},
+				{
+					Name:      "my-service",
+					Namespace: "new-ns",
+					Spec: networkv1.IngressSpec{
+						IngressClassName: new("new-class"),
+						Rules: []networkv1.IngressRule{
+							{Host: "my-service.example.com"},
+						},
+					},
+					Status: networkv1.IngressStatus{
+						LoadBalancer: networkv1.IngressLoadBalancerStatus{
+							Ingress: []networkv1.IngressLoadBalancerIngress{
+								{IP: "10.0.0.2"},
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "my-service.example.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"10.0.0.1", "10.0.0.2"},
+				},
+			},
+		},
+		{
 			title: "ingress with when AWS ALB controller and NLB type generates two targets for CNAME",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-						Annotations: map[string]string{
-							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
-							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
-						},
+					Name:      "my-ingress",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+						"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
 					},
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("alb"),
@@ -1651,14 +1746,12 @@ func TestIngressWithConfiguration(t *testing.T) {
 			title: "ingress with when AWS ALB controller and NLB with target annotation and CNAME with single target",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-						Annotations: map[string]string{
-							"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
-							"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
-							annotations.TargetKey:                           "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
-						},
+					Name:      "my-ingress",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"alb.ingress.kubernetes.io/enable-frontend-nlb": "true",
+						"alb.ingress.kubernetes.io/frontend-nlb-scheme": "internal",
+						annotations.TargetKey:                           "k8s-another-domain-nlb-123456789.elb.us-east-1.amazonaws.com",
 					},
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("alb"),
@@ -1688,10 +1781,8 @@ func TestIngressWithConfiguration(t *testing.T) {
 			title: "no annotations, multiple ingresses, mixed IP and Hostname targets",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("alb"),
 						Rules: []networkv1.IngressRule{
@@ -1750,19 +1841,17 @@ func TestIngressWithConfiguration(t *testing.T) {
 
 func TestTransformerInIngressSource(t *testing.T) {
 	ingress := &networkv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-ingress",
-			Namespace: "default",
-			Labels:    map[string]string{"label1": "value1"},
-			Annotations: map[string]string{
-				"user-annotation": "value",
-				"external-dns.alpha.kubernetes.io/hostname": "ingress.example.com",
-				corev1.LastAppliedConfigAnnotation:          `{"apiVersion":"networking.k8s.io/v1"}`,
-			},
-			UID: "someuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name:      "fake-ingress",
+		Namespace: "default",
+		Labels:    map[string]string{"label1": "value1"},
+		Annotations: map[string]string{
+			"user-annotation":                     "value",
+			"external-dns.kubernetes.io/hostname": "ingress.example.com",
+			corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"networking.k8s.io/v1"}`,
+		},
+		UID: "someuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Spec: networkv1.IngressSpec{
 			Rules: []networkv1.IngressRule{
@@ -1794,7 +1883,7 @@ func TestTransformerInIngressSource(t *testing.T) {
 	assert.Empty(t, retrieved.ManagedFields)
 	assert.NotContains(t, retrieved.Annotations, corev1.LastAppliedConfigAnnotation)
 	assert.Contains(t, retrieved.Annotations, "user-annotation")
-	assert.Contains(t, retrieved.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+	assert.Contains(t, retrieved.Annotations, "external-dns.kubernetes.io/hostname")
 	// Status.LoadBalancer preserved — used for endpoint generation
 	assert.Equal(t, ingress.Status.LoadBalancer, retrieved.Status.LoadBalancer)
 	// Spec preserved
@@ -1804,24 +1893,20 @@ func TestTransformerInIngressSource(t *testing.T) {
 func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	elements := []runtime.Object{
 		&networkv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "foo",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "foo.example.com",
-					annotations.TargetKey:   "1.2.3",
-				},
-				UID: "uid-1",
+			Name: "foo",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.com",
+				annotations.TargetKey:   "1.2.3",
 			},
+			UID: "uid-1",
 		},
 		&networkv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "bar",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "bar.example.com",
-					annotations.TargetKey:   "3.4.5",
-				},
-				UID: "uid-2",
+			Name: "bar",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "bar.example.com",
+				annotations.TargetKey:   "3.4.5",
 			},
+			UID: "uid-2",
 		},
 	}
 
@@ -1850,16 +1935,6 @@ func TestNewIngressSource_Errors(t *testing.T) {
 		wantErr string
 	}{
 		{
-			title: "getLabelSelector error propagates",
-			cfg: &Config{
-				IngressClassNames: []string{"nginx"},
-				AnnotationFilter:  "=invalid",
-				LabelFilter:       labels.Everything(),
-			},
-			ctx:     t.Context,
-			wantErr: "invalid",
-		},
-		{
 			title: "WaitForCacheSync error propagates",
 			cfg: &Config{
 				LabelFilter: labels.Everything(),
@@ -1884,23 +1959,13 @@ func TestNewIngressSource_Errors(t *testing.T) {
 func TestIngressSource_Errors(t *testing.T) {
 	t.Parallel()
 
-	t.Run("annotations.Filter error propagates", func(t *testing.T) {
-		t.Parallel()
-		sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
-		require.NoError(t, err)
-		// Inject an invalid annotationFilter post-construction to bypass constructor validation.
-		sc.(*ingressSource).annotationFilter = "=invalid"
-		_, err = sc.Endpoints(t.Context())
-		require.Error(t, err)
-	})
-
 	t.Run("endpointsFromTemplate ExecFQDN error propagates", func(t *testing.T) {
 		t.Parallel()
 		// {{index . 0}} parses fine but fails at runtime for *networkv1.Ingress.
 		// An ingress with no rule hosts yields empty ingEndpoints, so CombineWithEndpoints
 		// calls endpointsFromTemplate which calls ExecFQDN.
 		ing := &networkv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"},
+			Name: "foo", Namespace: "default",
 		}
 		fakeClient := fake.NewClientset(ing)
 		sc, err := NewIngressSource(t.Context(), fakeClient, &Config{
@@ -1918,4 +1983,176 @@ func TestIngressSource_AddEventHandler(t *testing.T) {
 	sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	sc.AddEventHandler(t.Context(), func() {})
+}
+
+func TestIngressIndexer(t *testing.T) {
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		ingresses        []*networkv1.Ingress
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all ingresses",
+			expectedCount: 5,
+			ingresses:     createTestIngresses(5),
+		},
+		{
+			name:             "annotation filter matches subset",
+			annotationFilter: "tier=frontend",
+			expectedCount:    3,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i < 3 {
+						ing.Annotations["tier"] = "frontend"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation filter no match returns empty",
+			annotationFilter: "tier=backend",
+			expectedCount:    0,
+			ingresses: createTestIngresses(3, func(ings []*networkv1.Ingress) {
+				for _, ing := range ings {
+					ing.Annotations["tier"] = "frontend"
+				}
+			}),
+		},
+		{
+			name:          "label filter matches subset",
+			labelFilter:   "app=nginx",
+			expectedCount: 2,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i < 2 {
+						ing.Labels["app"] = "nginx"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation and label filter intersection",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "app=nginx",
+			expectedCount:    2,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i < 3 {
+						ing.Annotations["tier"] = "frontend"
+					}
+					if i < 2 {
+						ing.Labels["app"] = "nginx"
+					}
+				}
+			}),
+		},
+		{
+			name:          "controller mismatch excludes ingress",
+			expectedCount: 3,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				for i, ing := range ings {
+					if i >= 3 {
+						ing.Annotations[annotations.ControllerKey] = "other-controller"
+					}
+				}
+			}),
+		},
+		{
+			name:             "invalid annotation filter is silently ignored and all ingresses pass through",
+			annotationFilter: "tier in (x y)", // no comma — invalid set-based selector
+			expectedCount:    3,
+			ingresses:        createTestIngresses(3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewClientset()
+
+			for i, ing := range tt.ingresses {
+				maps.Copy(ing.Annotations, map[string]string{
+					annotations.HostnameKey: fmt.Sprintf("ing-%d.example.org", i),
+					annotations.TargetKey:   fmt.Sprintf("target-%d.example.com", i),
+				})
+				_, err := client.NetworkingV1().Ingresses(ing.Namespace).Create(t.Context(), ing, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewIngressSource(t.Context(), client, &Config{
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+func createTestIngresses(count int, funcs ...func([]*networkv1.Ingress)) []*networkv1.Ingress {
+	ingresses := make([]*networkv1.Ingress, count)
+	for i := range count {
+		ingresses[i] = &networkv1.Ingress{
+			Name:        fmt.Sprintf("ing-%d", i),
+			Namespace:   "default",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		}
+	}
+	for _, fn := range funcs {
+		fn(ingresses)
+	}
+	return ingresses
+}
+
+// Not parallel: it toggles the package-level legacy annotation prefix.
+func TestIngressSourceLegacyAnnotationPrefix(t *testing.T) {
+	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
+
+	fakeClient := fake.NewClientset()
+	ingress := fakeIngress{
+		name:      "legacy",
+		namespace: "default",
+		ips:       []string{"8.8.8.8"},
+		annotations: map[string]string{
+			annotations.LegacyAnnotationPrefix + "hostname": "legacy.example.org",
+			annotations.LegacyAnnotationPrefix + "ttl":      "60",
+		},
+	}.Ingress()
+	_, err := fakeClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewIngressSource(
+		t.Context(),
+		fakeClient,
+		&Config{
+			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+			LabelFilter:    labels.Everything(),
+		},
+	)
+	require.NoError(t, err)
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		{
+			DNSName:    "legacy.example.org",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"8.8.8.8"},
+			RecordTTL:  endpoint.TTL(60),
+		},
+	})
 }

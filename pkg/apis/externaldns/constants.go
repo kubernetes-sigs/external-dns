@@ -21,8 +21,8 @@ const (
 	RegistryNoop     = "noop"
 	RegistryDynamoDB = "dynamodb"
 	RegistryAWSSD    = "aws-sd"
+	RegistryCRD      = "crd"
 
-	ProviderAkamai       = "akamai"
 	ProviderAlibabaCloud = "alibabacloud"
 	ProviderAWS          = "aws"
 	ProviderAWSSD        = "aws-sd"
@@ -35,7 +35,6 @@ const (
 	ProviderSkyDNS       = "skydns"
 	ProviderDNSimple     = "dnsimple"
 	ProviderExoscale     = "exoscale"
-	ProviderGandi        = "gandi"
 	ProviderGoDaddy      = "godaddy"
 	ProviderGoogle       = "google"
 	ProviderInMemory     = "inmemory"
@@ -45,9 +44,7 @@ const (
 	ProviderOVH          = "ovh"
 	ProviderPDNS         = "pdns"
 	ProviderPihole       = "pihole"
-	ProviderPlural       = "plural"
 	ProviderRFC2136      = "rfc2136"
 	ProviderScaleway     = "scaleway"
-	ProviderTransip      = "transip"
 	ProviderWebhook      = "webhook"
 )

@@ -15,8 +15,9 @@
 # limitations under the License.
 
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANG_CI_LINTER_VERSION=v2.11.4
-GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT=8f3b0c7ed018e57905fbd873c697e0b1ede605a5
+GOLANG_CI_LINTER_VERSION=v2.13.2
+GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT=27774aaf853a4fd21f1dd5e69439459dc1b26e68
+GOLANG_CI_LINTER_INSTALL_SCRIPT_SHA256=f4bf83f0b64f055c42b28fc9a38861839f69c096e61c788e72dfaae412011789
 
 # Execute
 # scripts/install-tools.sh
@@ -48,8 +49,12 @@ install_golangci() {
       install=true
   fi
   if [[ "$install" == true ]]; then
-      curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT}/install.sh" \
-        | sh -s -- -b $(go env GOPATH)/bin "${GOLANG_CI_LINTER_VERSION}"
+      local script
+      script=$(mktemp)
+      curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT}/install.sh" -o "$script"
+      echo "${GOLANG_CI_LINTER_INSTALL_SCRIPT_SHA256}  ${script}" | sha256sum --check --strict
+      sh "$script" -b "$(go env GOPATH)/bin" "${GOLANG_CI_LINTER_VERSION}"
+      rm -f "$script"
   fi
 }
 

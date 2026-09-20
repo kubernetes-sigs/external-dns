@@ -1,4 +1,6 @@
 suite: Test NOTES.txt deprecations
+set:
+  policy: upsert-only
 templates:
   - templates/NOTES.txt
 release:

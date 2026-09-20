@@ -24,9 +24,10 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=kong-tcpingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -34,7 +35,7 @@ spec:
 
 ## Manifest (for clusters with RBAC enabled)
 
-Could be changed if you have mulitple sources
+Could be changed if you have multiple sources
 
 ```yaml
 apiVersion: v1
@@ -92,9 +93,10 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=kong-tcpingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier

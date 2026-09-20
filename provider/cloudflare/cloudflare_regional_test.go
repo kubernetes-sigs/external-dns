@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go/v6/addressing"
-	"github.com/cloudflare/cloudflare-go/v6/dns"
+	"github.com/cloudflare/cloudflare-go/v7/addressing"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -121,7 +121,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Targets:    endpoint.Targets{"127.0.0.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "eu",
 						},
 					},
@@ -176,7 +176,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Targets:    endpoint.Targets{"127.0.0.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "eu",
 						},
 					},
@@ -266,7 +266,7 @@ func TestCloudflareRegionalHostnameActions(t *testing.T) {
 					Targets:    endpoint.Targets{"127.0.0.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "eu",
 						},
 					},
@@ -398,7 +398,7 @@ func Test_regionalHostname(t *testing.T) {
 					DNSName:    "example.com",
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "eu",
 						},
 					},
@@ -421,7 +421,7 @@ func Test_regionalHostname(t *testing.T) {
 					DNSName:    "example.com",
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "",
 						},
 					},
@@ -444,7 +444,7 @@ func Test_regionalHostname(t *testing.T) {
 					DNSName:    "example.com",
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "eu",
 						},
 					},
@@ -464,7 +464,7 @@ func Test_regionalHostname(t *testing.T) {
 					DNSName:    "example.com",
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.alpha.kubernetes.io/cloudflare-region-key",
+							Name:  annotations.CloudflareRegionProperty,
 							Value: "us",
 						},
 					},
@@ -794,25 +794,19 @@ func Test_dataLocalizationRegionalHostnamesChanges(t *testing.T) {
 			},
 			want: []regionalHostnameChange{
 				{
-					action: cloudFlareCreate,
-					regionalHostname: regionalHostname{
-						hostname:  "create.example.com",
-						regionKey: "eu",
-					},
+					action:    cloudFlareCreate,
+					hostname:  "create.example.com",
+					regionKey: "eu",
 				},
 				{
-					action: cloudFlareUpdate,
-					regionalHostname: regionalHostname{
-						hostname:  "update.example.com",
-						regionKey: "eu",
-					},
+					action:    cloudFlareUpdate,
+					hostname:  "update.example.com",
+					regionKey: "eu",
 				},
 				{
-					action: cloudFlareDelete,
-					regionalHostname: regionalHostname{
-						hostname:  "delete.example.com",
-						regionKey: "",
-					},
+					action:    cloudFlareDelete,
+					hostname:  "delete.example.com",
+					regionKey: "",
 				},
 			},
 		},
@@ -870,7 +864,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 							DNSName:    "foo.error.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -893,7 +887,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 							DNSName:    "rherror.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -925,7 +919,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 							DNSName:    "rherror.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -935,7 +929,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 							DNSName:    "rherror.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.2"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -988,7 +982,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 							DNSName:    "foo.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 						{
@@ -996,7 +990,7 @@ func TestApplyChangesWithRegionalHostnamesFaillures(t *testing.T) {
 							DNSName:    "foo.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "us"},
+								{Name: annotations.CloudflareRegionProperty, Value: "us"},
 							},
 						},
 					},
@@ -1074,7 +1068,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 							DNSName:    "foo.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -1106,7 +1100,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 							DNSName:    "foo.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.1"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -1116,7 +1110,7 @@ func TestApplyChangesWithRegionalHostnamesDryRun(t *testing.T) {
 							DNSName:    "foo.bar.com",
 							Targets:    endpoint.Targets{"127.0.0.2"},
 							ProviderSpecific: endpoint.ProviderSpecific{
-								{Name: "external-dns.alpha.kubernetes.io/cloudflare-region-key", Value: "eu"},
+								{Name: annotations.CloudflareRegionProperty, Value: "eu"},
 							},
 						},
 					},
@@ -1267,7 +1261,7 @@ func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
 			if tc.initialRegionKey != "" {
 				testEndpoint.ProviderSpecific = endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
-						Name:  annotations.CloudflareRegionKey,
+						Name:  annotations.CloudflareRegionProperty,
 						Value: tc.initialRegionKey,
 					},
 				}
@@ -1281,7 +1275,7 @@ func TestCloudflareAdjustEndpointsRegionalServices(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Len(t, adjustedEndpoints, 1)
 
-			regionKey, exists := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareRegionKey)
+			regionKey, exists := adjustedEndpoints[0].GetProviderSpecificProperty(annotations.CloudflareRegionProperty)
 
 			if tc.expectedRegionKey != nil {
 				// Region key should be present with expected value

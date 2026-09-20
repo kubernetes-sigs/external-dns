@@ -26,7 +26,7 @@ The set of domain names from a \*Route is sourced from the following places:
 
 - If the \*Route is a GRPCRoute, HTTPRoute, or TLSRoute, adds each of the`spec.hostnames`.
 
-- Adds the hostnames from any `external-dns.alpha.kubernetes.io/hostname` annotation on the \*Route.
+- Adds the hostnames from any `external-dns.kubernetes.io/hostname` annotation on the \*Route.
   This behavior is suppressed if the `--ignore-hostname-annotation` flag was specified.
 
 - If no endpoints were produced by the previous steps
@@ -106,7 +106,7 @@ Iterates over all listeners for the parent's `parentRef.sectionName`:
 
 The targets of the DNS entries created from a \*Route are sourced from the following places:
 
-1. If a matching parent Gateway has an `external-dns.alpha.kubernetes.io/target` annotation, uses
+1. If a matching parent Gateway has an `external-dns.kubernetes.io/target` annotation, uses
    the values from that.
 
 2. Otherwise, iterates over that parent Gateway's `status.addresses`,

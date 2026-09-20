@@ -14,7 +14,7 @@ We have full documentation on how to get started contributing here:
 
 ## Developer Documentation
 
-For more detailed contribution guides, see [Developer Documentation](docs/contributing) which includes:
+For more detailed contribution guides, see [Developer Documentation](docs/contributing/index.md) which includes:
 
 - [Development Guide](docs/contributing/dev-guide.md) - Setting up development environment, building, and testing
 - [Chart Development](docs/contributing/chart.md) - Working with Helm charts

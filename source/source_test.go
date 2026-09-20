@@ -40,39 +40,6 @@ func TestEventHandlerFunc(t *testing.T) {
 	}
 }
 
-func TestGetLabelSelector(t *testing.T) {
-	tests := []struct {
-		name             string
-		annotationFilter string
-		expectError      bool
-		expectedSelector string
-	}{
-		{
-			name:             "Valid label selector",
-			annotationFilter: "key1=value1,key2=value2",
-			expectedSelector: "key1=value1,key2=value2",
-		},
-		{
-			name:             "Invalid label selector",
-			annotationFilter: "key1==value1",
-			expectedSelector: "key1=value1",
-		},
-		{
-			name:             "Empty label selector",
-			annotationFilter: "",
-			expectedSelector: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			selector, err := getLabelSelector(tt.annotationFilter)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedSelector, selector.String())
-		})
-	}
-}
-
 func TestMatchLabelSelector(t *testing.T) {
 	tests := []struct {
 		name           string

@@ -32,7 +32,7 @@ var (
 )
 
 // NormalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
-// it: removes space, get ASCII version of dnsName complient with Section 5 of RFC 5891, ensures there is a trailing dot
+// it: removes space, get ASCII version of dnsName compliant with Section 5 of RFC 5891, ensures there is a trailing dot
 func NormalizeDNSName(dnsName string) string {
 	s, err := Profile.ToASCII(strings.TrimSpace(dnsName))
 	if err != nil {

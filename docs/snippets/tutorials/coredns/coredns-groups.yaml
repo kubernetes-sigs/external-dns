@@ -4,8 +4,8 @@ kind: Service
 metadata:
   name: a
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: a.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+    external-dns.kubernetes.io/hostname: a.domain.local
+    external-dns.kubernetes.io/coredns-group: "g1"
 spec:
   type: LoadBalancer
 status:
@@ -18,8 +18,8 @@ kind: Service
 metadata:
   name: b
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: b.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+    external-dns.kubernetes.io/hostname: b.domain.local
+    external-dns.kubernetes.io/coredns-group: "g1"
 spec:
   type: LoadBalancer
 status:
@@ -32,8 +32,8 @@ kind: Service
 metadata:
   name: c
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: c.subdom.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g2"
+    external-dns.kubernetes.io/hostname: c.subdom.domain.local
+    external-dns.kubernetes.io/coredns-group: "g2"
 spec:
   type: LoadBalancer
 status:
@@ -46,8 +46,8 @@ kind: Service
 metadata:
   name: d
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: d.subdom.domain.local
-    external-dns.alpha.kubernetes.io/coredns-group: "g2"
+    external-dns.kubernetes.io/hostname: d.subdom.domain.local
+    external-dns.kubernetes.io/coredns-group: "g2"
 spec:
   type: LoadBalancer
 status:

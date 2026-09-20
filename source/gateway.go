@@ -26,17 +26,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
-	informers_v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
+	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -45,6 +46,7 @@ import (
 const (
 	gatewayGroup                               = "gateway.networking.k8s.io"
 	gatewayKind                                = "Gateway"
+	listenerSetKind                            = "ListenerSet"
 	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
 	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
 )
@@ -67,7 +69,7 @@ type gatewayRoute interface {
 type newGatewayRouteInformerFunc func(gwinformers.SharedInformerFactory) gatewayRouteInformer
 
 type gatewayRouteInformer interface {
-	List(namespace string, selector labels.Selector) ([]gatewayRoute, error)
+	List() []gatewayRoute
 	Informer() cache.SharedIndexInformer
 }
 
@@ -132,16 +134,12 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type gatewayRouteSource struct {
-	gwName      string
-	gwNamespace string
-	gwLabels    labels.Selector
-	gwInformer  informers_v1beta1.GatewayInformer
+	gwName     string
+	gwInformer informers_v1.GatewayInformer
+	lsInformer informers_v1.ListenerSetInformer
 
-	rtKind        string
-	rtNamespace   string
-	rtLabels      labels.Selector
-	rtAnnotations labels.Selector
-	rtInformer    gatewayRouteInformer
+	rtKind     string
+	rtInformer gatewayRouteInformer
 
 	nsInformer coreinformers.NamespaceInformer
 
@@ -155,7 +153,7 @@ func newGatewayRouteSource(
 	config *Config,
 	kind string,
 	newInformerFn newGatewayRouteInformerFunc) (Source, error) {
-	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
+	gwLabels, err := annotations.ParseFilter(config.GatewayLabelFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +161,9 @@ func newGatewayRouteSource(
 	if rtLabels == nil {
 		rtLabels = labels.Everything()
 	}
-	rtAnnotations, err := getLabelSelector(config.AnnotationFilter)
-	if err != nil {
-		return nil, err
+	rtAnnotations := config.AnnotationFilter
+	if rtAnnotations == nil {
+		rtAnnotations = labels.Everything()
 	}
 
 	client, err := clients.GatewayClient()
@@ -173,16 +171,52 @@ func newGatewayRouteSource(
 		return nil, err
 	}
 
-	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                        // Register with factory before starting.
+	gwInformerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
+	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
 
-	rtInformerFactory := informerFactory
+	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(gwInformer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
+		informers.IndexSelectorWithLabelSelector(gwLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
+	))
+
+	var lsInformer informers_v1.ListenerSetInformer
+	lsInformerFactory := gwInformerFactory
+	if config.GatewayListenerSets {
+		// Gateway filters should apply only to Gateways, not ListenerSets.
+		if config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
+			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
+		}
+		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
+		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
+			informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
+		))
+	}
+
+	rtInformerFactory := gwInformerFactory
 	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
 		rtInformerFactory = newGatewayInformerFactory(client, config.Namespace, rtLabels)
 	}
 	rtInformer := newInformerFn(rtInformerFactory)
-	rtInformer.Informer() // Register with factory before starting.
+	informers.MustSetTransform(rtInformer.Informer(), informers.TransformerWithOptions[informers.Object](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(rtInformer.Informer(), informers.IndexerWithOptions[informers.Object](
+		informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+		informers.IndexSelectorWithLabelSelector(rtLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[informers.Object]),
+	))
 
 	kubeClient, err := clients.KubeClient()
 	if err != nil {
@@ -191,18 +225,30 @@ func newGatewayRouteSource(
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
-	nsInformer.Informer()                                      // Register with factory before starting.
+	informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
 
-	informerFactory.Start(ctx.Done())
+	gwInformerFactory.Start(ctx.Done())
+	if lsInformerFactory != gwInformerFactory {
+		lsInformerFactory.Start(ctx.Done())
+	}
 	kubeInformerFactory.Start(ctx.Done())
-	if rtInformerFactory != informerFactory {
+	if rtInformerFactory != gwInformerFactory {
 		rtInformerFactory.Start(ctx.Done())
-
-		if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+	}
+	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
+		return nil, err
+	}
+	if lsInformer != nil && lsInformerFactory != gwInformerFactory {
+		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
 			return nil, err
 		}
 	}
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
 		return nil, err
 	}
 	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
@@ -210,16 +256,12 @@ func newGatewayRouteSource(
 	}
 
 	src := &gatewayRouteSource{
-		gwName:      config.GatewayName,
-		gwNamespace: config.GatewayNamespace,
-		gwLabels:    gwLabels,
-		gwInformer:  gwInformer,
+		gwName:     config.GatewayName,
+		gwInformer: gwInformer,
+		lsInformer: lsInformer,
 
-		rtKind:        kind,
-		rtNamespace:   config.Namespace,
-		rtLabels:      rtLabels,
-		rtAnnotations: rtAnnotations,
-		rtInformer:    rtInformer,
+		rtKind:     kind,
+		rtInformer: rtInformer,
 
 		nsInformer: nsInformer,
 
@@ -233,39 +275,28 @@ func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()
 	log.Debugf("Adding event handlers for %s", src.rtKind)
 	eventHandler := eventHandlerFunc(handler)
 	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandler)
+	if src.lsInformer != nil {
+		informers.MustAddEventHandler(src.lsInformer.Informer(), eventHandler)
+	}
 	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
 	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
 }
 
 func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-	routes, err := src.rtInformer.List(src.rtNamespace, src.rtLabels)
-	if err != nil {
-		return nil, err
+	routes := src.rtInformer.List()
+	gateways := informers.ListIndexed[*v1.Gateway](src.gwInformer.Informer().GetIndexer())
+	var listenerSets []*v1.ListenerSet
+	if src.lsInformer != nil {
+		listenerSets = informers.ListIndexed[*v1.ListenerSet](src.lsInformer.Informer().GetIndexer())
 	}
-	gateways, err := src.gwInformer.Lister().Gateways(src.gwNamespace).List(src.gwLabels)
-	if err != nil {
-		return nil, err
-	}
-	namespaces, err := src.nsInformer.Lister().List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	namespaces := informers.ListIndexed[*corev1.Namespace](src.nsInformer.Informer().GetIndexer())
 	kind := strings.ToLower(src.rtKind)
-	resolver := newGatewayRouteResolver(src, gateways, namespaces)
+	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
+	var endpoints []*endpoint.Endpoint
 	for _, rt := range routes {
-		// Filter by annotations.
+		// Get Route hostnames and their targets.
 		meta := rt.Metadata()
 		annots := meta.Annotations
-		if !src.rtAnnotations.Matches(labels.Set(annots)) {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(meta, src.rtKind) {
-			continue
-		}
-
-		// Get Route hostnames and their targets.
 		hostTargets, err := resolver.resolve(rt)
 		if err != nil {
 			return nil, err
@@ -286,9 +317,11 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
+		endpoint.AttachRefObject(routeEndpoints, events.NewObjectReference(rt.Object(), "gateway-"+kind))
+
 		endpoints = append(endpoints, routeEndpoints...)
 	}
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func namespacedName(namespace, name string) types.NamespacedName {
@@ -296,44 +329,65 @@ func namespacedName(namespace, name string) types.NamespacedName {
 }
 
 type gatewayRouteResolver struct {
-	src *gatewayRouteSource
-	gws map[types.NamespacedName]gatewayListeners
-	nss map[string]*corev1.Namespace
+	src     *gatewayRouteSource
+	objects map[objectRef]*listenerObject
+	nss     map[string]*corev1.Namespace
 }
 
-type gatewayListeners struct {
-	gateway   *v1beta1.Gateway
-	listeners map[v1.SectionName][]v1.Listener
+type objectRef struct {
+	schema.GroupKind
+	types.NamespacedName
 }
 
-func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
-	// Create Gateway Listener lookup table.
-	gws := make(map[types.NamespacedName]gatewayListeners, len(gateways))
-	for _, gw := range gateways {
-		lss := make(map[v1.SectionName][]v1.Listener, len(gw.Spec.Listeners)+1)
-		for i, lis := range gw.Spec.Listeners {
-			lss[lis.Name] = gw.Spec.Listeners[i : i+1]
-		}
-		lss[""] = gw.Spec.Listeners
-		gws[namespacedName(gw.Namespace, gw.Name)] = gatewayListeners{
-			gateway:   gw,
-			listeners: lss,
-		}
-	}
+type listenerObject struct {
+	gateway        *v1.Gateway
+	gatewayRef     types.NamespacedName
+	listenerSet    *v1.ListenerSet
+	ownerNamespace string
+	sections       map[v1.SectionName][]listenerSection
+	attached       bool
+	attachReason   string
+	overrides      endpoint.Targets
+}
+
+type listenerSection struct {
+	listener     v1.Listener
+	attached     bool
+	attachReason string
+}
+
+type resolvedParent struct {
+	kind      string
+	namespace string
+	ref       v1.ParentReference
+	obj       *listenerObject
+	section   v1.SectionName
+	listeners []listenerSection
+}
+
+func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {
 	// Create Namespace lookup table.
 	nss := make(map[string]*corev1.Namespace, len(namespaces))
 	for _, ns := range namespaces {
 		nss[ns.Name] = ns
 	}
+
+	objects := make(map[objectRef]*listenerObject, len(gateways)+len(listenerSets))
+	for _, gw := range gateways {
+		objects[newObjectRef(gatewayGroup, gatewayKind, gw.Namespace, gw.Name)] = newGatewayListenerObject(gw)
+	}
+	for _, ls := range listenerSets {
+		objects[newObjectRef(gatewayGroup, listenerSetKind, ls.Namespace, ls.Name)] = newListenerSetObject(ls, objects, nss)
+	}
 	return &gatewayRouteResolver{
-		src: src,
-		gws: gws,
-		nss: nss,
+		src:     src,
+		objects: objects,
+		nss:     nss,
 	}
 }
 
 func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
-	rtHosts, err := c.hosts(rt)
+	rtHosts, err := c.resolveHostnames(rt)
 	if err != nil {
 		return nil, err
 	}
@@ -346,90 +400,12 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		return hostTargets, nil
 	}
 
-	meta := rt.Metadata()
 	for _, rps := range rt.RouteStatus().Parents {
-		// Confirm the Parent is the standard Gateway kind.
-		ref := rps.ParentRef
-		namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-		// Ensure that the parent reference is in the routeParentRefs list
-		if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
-			log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
-			continue
-		}
-
-		group := strVal((*string)(ref.Group), gatewayGroup)
-		kind := strVal((*string)(ref.Kind), gatewayKind)
-		if group != gatewayGroup || kind != gatewayKind {
-			log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
-			continue
-		}
-		// Lookup the Gateway and its Listeners.
-		gw, ok := c.gws[namespacedName(namespace, string(ref.Name))]
+		parent, ok := c.resolveParentRef(rt, routeParentRefs, rps)
 		if !ok {
-			log.Debugf("Gateway %s/%s not found for %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			continue
 		}
-		// Confirm the Gateway has the correct name, if specified.
-		if c.src.gwName != "" && c.src.gwName != gw.gateway.Name {
-			log.Debugf("Gateway %s/%s does not match %s %s/%s", namespace, ref.Name, c.src.gwName, meta.Namespace, meta.Name)
-			continue
-		}
-
-		// Confirm the Gateway has accepted the Route.
-		if !gwRouteIsAccepted(rps.Conditions) {
-			log.Debugf("Gateway %s/%s has not accepted the current generation %s %s/%s", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
-			continue
-		}
-
-		// Match the Route to all possible Listeners.
-		match := false
-		section := sectionVal(ref.SectionName, "")
-		listeners := gw.listeners[section]
-		for i := range listeners {
-			lis := &listeners[i]
-			// Confirm that the Listener and Route protocols match.
-			if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
-				continue
-			}
-			// Confirm that the Listener and Route ports match, if specified.
-			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
-			if ref.Port != nil && *ref.Port != lis.Port {
-				continue
-			}
-			// Confirm that the Listener allows the Route (based on namespace and kind).
-			if !c.routeIsAllowed(gw.gateway, lis, rt) {
-				continue
-			}
-			// Find all overlapping hostnames between the Route and Listener.
-			// For {TCP,UDP}Routes, all annotation-generated hostnames should match since the Listener doesn't specify a hostname.
-			// For {HTTP,TLS}Routes, hostnames (including any annotation-generated) will be required to match any Listeners specified hostname.
-			gwHost := ""
-			if lis.Hostname != nil {
-				gwHost = string(*lis.Hostname)
-			}
-			for _, rtHost := range rtHosts {
-				if gwHost == "" && rtHost == "" {
-					// For {HTTP,TLS}Routes, this means the Route and the Listener both allow _any_ hostnames.
-					// For {TCP,UDP}Routes, this should always happen since neither specifies hostnames.
-					continue
-				}
-				host, ok := gwMatchingHost(gwHost, rtHost)
-				if !ok {
-					continue
-				}
-				override := annotations.TargetsFromTargetAnnotation(gw.gateway.Annotations)
-				hostTargets[host] = append(hostTargets[host], override...)
-				if len(override) == 0 {
-					for _, addr := range gw.gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
-					}
-				}
-				match = true
-			}
-		}
-		if !match {
-			log.Debugf("Gateway %s/%s section %q does not match %s %s/%s hostnames %q", namespace, ref.Name, section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
-		}
+		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
 	}
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
@@ -439,12 +415,124 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	return hostTargets, nil
 }
 
-func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
-	var hostnames []string
-	for _, name := range rt.Hostnames() {
-		hostnames = append(hostnames, string(name))
+func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
+	meta := rt.Metadata()
+	ref := rps.ParentRef
+	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+	if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
+		log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
 	}
-	// TODO: The combine-fqdn-annotation flag is similarly vague.
+
+	group := strVal((*string)(ref.Group), gatewayGroup)
+	kind := strVal((*string)(ref.Kind), gatewayKind)
+	if group != gatewayGroup || (kind != gatewayKind && kind != listenerSetKind) {
+		log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
+	}
+
+	obj, ok := c.objects[newObjectRef(group, kind, namespace, string(ref.Name))]
+	if !ok {
+		log.Debugf("%s %s/%s not found for %s %s/%s", kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
+	}
+	if c.src.gwName != "" && c.src.gwName != obj.gatewayRef.Name {
+		log.Debugf("Gateway %s/%s does not match %s %s/%s", obj.gatewayRef.Namespace, obj.gatewayRef.Name, c.src.gwName, meta.Namespace, meta.Name)
+		return nil, false
+	}
+	if !gwRouteIsAccepted(rps.Conditions) {
+		log.Debugf("%s %s/%s has not accepted the current generation %s %s/%s", kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
+	}
+	if !obj.attached {
+		log.Debugf("%s %s/%s is not attached for %s %s/%s: %s", kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name, obj.attachReason)
+		return nil, false
+	}
+
+	sectionName := sectionVal(ref.SectionName, "")
+	listeners := obj.sections[sectionName]
+	if len(listeners) == 0 {
+		log.Debugf("%s %s/%s section %q not found for %s %s/%s", kind, namespace, ref.Name, sectionName, c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
+	}
+
+	return &resolvedParent{
+		kind:      kind,
+		namespace: namespace,
+		ref:       ref,
+		obj:       obj,
+		section:   sectionName,
+		listeners: listeners,
+	}, true
+}
+
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+	meta := rt.Metadata()
+	match := false
+	var unattachedReason string
+	for i := range parent.listeners {
+		section := &parent.listeners[i]
+		if !section.attached {
+			if parent.section != "" && unattachedReason == "" {
+				unattachedReason = section.attachReason
+			}
+			continue
+		}
+		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets) {
+			match = true
+		}
+	}
+	if match {
+		return
+	}
+	if parent.section != "" && unattachedReason != "" {
+		log.Debugf("%s %s/%s section %q is not attached for %s %s/%s: %s", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, unattachedReason)
+		return
+	}
+	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
+}
+
+func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
+	if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
+		return false
+	}
+	// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
+	if parent.ref.Port != nil && *parent.ref.Port != lis.Port {
+		return false
+	}
+	if !c.routeIsAllowed(parent.obj.ownerNamespace, lis, rt) {
+		return false
+	}
+
+	match := false
+	gwHost := ""
+	if lis.Hostname != nil {
+		gwHost = string(*lis.Hostname)
+	}
+	for _, rtHost := range rtHosts {
+		if gwHost == "" && rtHost == "" {
+			continue
+		}
+		host, ok := gwMatchingHost(gwHost, rtHost)
+		if !ok {
+			continue
+		}
+		override := parent.obj.overrides
+		hostTargets[host] = append(hostTargets[host], override...)
+		if len(override) == 0 {
+			for _, addr := range parent.obj.gateway.Status.Addresses {
+				hostTargets[host] = append(hostTargets[host], addr.Value)
+			}
+		}
+		match = true
+	}
+	return match
+}
+
+// appendFQDNTemplate appends the template-generated hostnames, unless another source already
+// supplied one and the template is not combining.
+// TODO: The combine-fqdn-annotation flag is similarly vague.
+func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
 	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
 		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
 		if err != nil {
@@ -452,45 +540,56 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		}
 		hostnames = append(hostnames, hosts...)
 	}
-
-	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
-	if !hostNameAnnotationExists {
-		// This means that the route doesn't specify a hostname and should use any provided by
-		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
-		// break {TCP,UDP}Routes.
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
-		}
-		if !c.src.ignoreHostnameAnnotation {
-			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-		}
-		return hostnames, nil
-	}
-
-	switch strings.ToLower(hostNameAnnotation) {
-	case gatewayHostnameSourceAnnotationOnlyValue:
-		if c.src.ignoreHostnameAnnotation {
-			return []string{}, nil
-		}
-		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
-	case gatewayHostnameSourceDefinedHostsOnlyValue:
-		// Explicitly use only defined hostnames (route spec and optional template result)
-		return hostnames, nil
-	default:
-		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
-		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
-			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
-		}
-		if !c.src.ignoreHostnameAnnotation {
-			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-		}
-		return hostnames, nil
-	}
+	return hostnames, nil
 }
 
-func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {
+// resolveHostnames returns a route's hostnames in the order documented for the gateway sources:
+// spec, annotation, FQDN template, listener fallback, subject to gateway-hostname-source.
+func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, error) {
+	var hostnames []string
+	for _, name := range rt.Hostnames() {
+		hostnames = append(hostnames, string(name))
+	}
+
+	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
+	if hostNameAnnotationExists {
+		switch strings.ToLower(hostNameAnnotation) {
+		case gatewayHostnameSourceAnnotationOnlyValue:
+			if c.src.ignoreHostnameAnnotation {
+				return []string{}, nil
+			}
+			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+		case gatewayHostnameSourceDefinedHostsOnlyValue:
+			// Explicitly use only defined hostnames (route spec and optional template result)
+			return c.appendFQDNTemplate(hostnames, rt)
+		default:
+			// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
+			log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
+				annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
+		}
+	}
+
+	if !c.src.ignoreHostnameAnnotation {
+		// Skip empty values so an empty annotation does not gate the template below.
+		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
+			if hostname != "" {
+				hostnames = append(hostnames, hostname)
+			}
+		}
+	}
+	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
+	if err != nil {
+		return nil, err
+	}
+	// The route named no hostname of its own, so fall back to the attached listeners' hostnames.
+	// Only useful for {HTTP,TLS}Routes, but it doesn't break {TCP,UDP}Routes.
+	if len(rt.Hostnames()) == 0 {
+		hostnames = append(hostnames, "")
+	}
+	return hostnames, nil
+}
+
+func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Listener, rt gatewayRoute) bool {
 	meta := rt.Metadata()
 	allow := lis.AllowedRoutes
 
@@ -503,13 +602,13 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 	case v1.NamespacesFromAll:
 		// OK
 	case v1.NamespacesFromSame:
-		if gw.Namespace != meta.Namespace {
+		if ownerNamespace != meta.Namespace {
 			return false
 		}
 	case v1.NamespacesFromSelector:
 		selector, err := metav1.LabelSelectorAsSelector(allow.Namespaces.Selector)
 		if err != nil {
-			log.Debugf("Gateway %s/%s section %q has invalid namespace selector: %v", gw.Namespace, gw.Name, lis.Name, err)
+			log.Debugf("Listener %q has invalid namespace selector: %v", lis.Name, err)
 			return false
 		}
 		// Get namespace.
@@ -522,7 +621,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 			return false
 		}
 	default:
-		log.Debugf("Gateway %s/%s section %q has unknown namespace from %q", gw.Namespace, gw.Name, lis.Name, from)
+		log.Debugf("Listener %q has unknown namespace from %q", lis.Name, from)
 		return false
 	}
 
@@ -540,6 +639,133 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1.Liste
 		}
 	}
 	return false
+}
+
+func newObjectRef(group, kind, namespace, name string) objectRef {
+	return objectRef{
+		Group: group, Kind: kind,
+		NamespacedName: namespacedName(namespace, name),
+	}
+}
+
+func newGatewayListenerObject(gw *v1.Gateway) *listenerObject {
+	return &listenerObject{
+		gateway:        gw,
+		gatewayRef:     namespacedName(gw.Namespace, gw.Name),
+		ownerNamespace: gw.Namespace,
+		sections:       gatewaySections(gw.Spec.Listeners),
+		attached:       true,
+		overrides:      annotations.TargetsFromTargetAnnotation(gw.Annotations),
+	}
+}
+
+func newListenerSetObject(ls *v1.ListenerSet, objects map[objectRef]*listenerObject, namespaces map[string]*corev1.Namespace) *listenerObject {
+	gwNamespace := strVal((*string)(ls.Spec.ParentRef.Namespace), ls.Namespace)
+	gwRef := namespacedName(gwNamespace, string(ls.Spec.ParentRef.Name))
+	obj := &listenerObject{
+		gatewayRef:     gwRef,
+		listenerSet:    ls,
+		ownerNamespace: ls.Namespace,
+	}
+
+	gwObj, ok := objects[newObjectRef(gatewayGroup, gatewayKind, gwRef.Namespace, gwRef.Name)]
+	switch {
+	case !ok:
+		obj.attachReason = fmt.Sprintf("parent Gateway %s/%s not found", gwRef.Namespace, gwRef.Name)
+	case !gatewayAllowsListenerSet(gwObj.gateway, ls, namespaces):
+		obj.gateway = gwObj.gateway
+		obj.attachReason = fmt.Sprintf("parent Gateway %s/%s does not allow ListenerSets from namespace %s", gwRef.Namespace, gwRef.Name, ls.Namespace)
+	case !listenerSetIsAccepted(ls.Status.Conditions):
+		obj.gateway = gwObj.gateway
+		obj.attachReason = fmt.Sprintf("ListenerSet %s/%s has not been accepted", ls.Namespace, ls.Name)
+	default:
+		obj.gateway = gwObj.gateway
+		obj.attached = true
+	}
+
+	if obj.gateway != nil {
+		obj.overrides = annotations.TargetsFromTargetAnnotation(ls.Annotations)
+		if len(obj.overrides) == 0 {
+			obj.overrides = annotations.TargetsFromTargetAnnotation(obj.gateway.Annotations)
+		}
+	}
+
+	obj.sections = listenerSetSections(ls, obj.attached, obj.attachReason)
+	return obj
+}
+
+func gatewaySections(listeners []v1.Listener) map[v1.SectionName][]listenerSection {
+	sections := make([]listenerSection, 0, len(listeners))
+	bySection := make(map[v1.SectionName][]listenerSection, len(listeners)+1)
+	for _, lis := range listeners {
+		section := listenerSection{
+			listener: lis,
+			attached: true,
+		}
+		sections = append(sections, section)
+		bySection[lis.Name] = []listenerSection{section}
+	}
+	bySection[""] = sections
+	return bySection
+}
+
+func listenerSetSections(ls *v1.ListenerSet, objectAttached bool, objectReason string) map[v1.SectionName][]listenerSection {
+	sections := make([]listenerSection, 0, len(ls.Spec.Listeners))
+	bySection := make(map[v1.SectionName][]listenerSection, len(ls.Spec.Listeners)+1)
+	for _, entry := range ls.Spec.Listeners {
+		section := listenerSection{
+			listener: v1.Listener(entry),
+		}
+		accepted, hasStatus := listenerSetListenerAcceptedCondition(ls.Status.Listeners, entry.Name)
+		switch {
+		case !objectAttached:
+			section.attachReason = objectReason
+		case !hasStatus:
+			section.attachReason = fmt.Sprintf("ListenerSet %s/%s section %q has no Accepted status", ls.Namespace, ls.Name, entry.Name)
+		case accepted:
+			section.attached = true
+		default:
+			section.attachReason = fmt.Sprintf("ListenerSet %s/%s section %q has not been accepted", ls.Namespace, ls.Name, entry.Name)
+		}
+		sections = append(sections, section)
+		bySection[entry.Name] = []listenerSection{section}
+	}
+	bySection[""] = sections
+	return bySection
+}
+
+func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map[string]*corev1.Namespace) bool {
+	from := v1.NamespacesFromNone
+	if gw.Spec.AllowedListeners != nil && gw.Spec.AllowedListeners.Namespaces != nil && gw.Spec.AllowedListeners.Namespaces.From != nil {
+		from = *gw.Spec.AllowedListeners.Namespaces.From
+	}
+	switch from {
+	case v1.NamespacesFromAll:
+		return true
+	case v1.NamespacesFromSame:
+		return gw.Namespace == ls.Namespace
+	case v1.NamespacesFromSelector:
+		if gw.Spec.AllowedListeners == nil || gw.Spec.AllowedListeners.Namespaces == nil || gw.Spec.AllowedListeners.Namespaces.Selector == nil {
+			log.Debugf("Gateway %s/%s has invalid AllowedListeners selector", gw.Namespace, gw.Name)
+			return false
+		}
+		selector, err := metav1.LabelSelectorAsSelector(gw.Spec.AllowedListeners.Namespaces.Selector)
+		if err != nil {
+			log.Debugf("Gateway %s/%s has invalid AllowedListeners selector: %v", gw.Namespace, gw.Name, err)
+			return false
+		}
+		ns, ok := namespaces[ls.Namespace]
+		if !ok {
+			log.Errorf("Namespace %q not found for ListenerSet %s/%s", ls.Namespace, ls.Namespace, ls.Name)
+			return false
+		}
+		return selector.Matches(labels.Set(ns.Labels))
+	case v1.NamespacesFromNone:
+		return false
+	default:
+		log.Debugf("Gateway %s/%s has unknown AllowedListeners namespace from %q", gw.Namespace, gw.Name, from)
+		return false
+	}
 }
 
 func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
@@ -563,8 +789,26 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 }
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {
+	return conditionStatusIsTrue(conds, string(v1.RouteConditionAccepted))
+}
+
+func listenerSetIsAccepted(conds []metav1.Condition) bool {
+	return conditionStatusIsTrue(conds, string(v1.ListenerSetConditionAccepted))
+}
+
+func listenerSetListenerAcceptedCondition(statuses []v1.ListenerEntryStatus, name v1.SectionName) (bool, bool) {
+	for _, status := range statuses {
+		if status.Name != name {
+			continue
+		}
+		return conditionStatusIsTrue(status.Conditions, string(v1.ListenerEntryConditionAccepted)), true
+	}
+	return false, false
+}
+
+func conditionStatusIsTrue(conds []metav1.Condition, conditionType string) bool {
 	for _, c := range conds {
-		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
+		if c.Type == conditionType {
 			return c.Status == metav1.ConditionTrue
 		}
 	}

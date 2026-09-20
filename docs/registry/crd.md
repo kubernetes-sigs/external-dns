@@ -1,0 +1,143 @@
+# The CRD registry
+
+!!! warning "Alpha"
+    The CRD registry is at an early, alpha stage. The `DNSRecord` API
+    (`externaldns.k8s.io/v1alpha1`) and its behaviour may change in a backward
+    incompatible way. It is not yet recommended for production use.
+
+The CRD registry stores DNS record ownership and metadata as `DNSRecord` custom
+resources in the Kubernetes cluster, instead of in TXT records (TXT registry) or
+an external table (DynamoDB registry).
+
+Each managed endpoint is persisted as a `DNSRecord` object, so the records
+ExternalDNS owns can be inspected with plain `kubectl`:
+
+```bash
+kubectl get dnsrecords
+```
+
+```text
+NAME                         DNS NAME             TYPE    SET ID   TARGETS    STATUS
+sub-example-com-a-1a2b3c4d   sub.example.com      A                1.2.3.4    Programmed
+```
+
+> The CRD registry is a **record of what ExternalDNS applied**, not a mirror of
+> the DNS provider: records changed out-of-band in the provider are not
+> reconciled.
+> Only records that reached `Programmed` (see [Status](#status)) count
+> as current state, so anything left un-programmed by a provider failure is
+> re-applied on the next reconcile.
+
+## Limitations
+
+* Only the **in-cluster** Kubernetes API is currently supported (the cluster
+  ExternalDNS runs in). Using another kubeconfig is planned for a follow-up.
+
+## Helm chart
+
+The [Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns)
+installs the `DNSRecord` CRD and grants the required RBAC when `registry` is set
+to `crd`:
+
+```yaml
+registry: crd
+txtOwnerId: my-identifier
+```
+
+The remaining sections cover manual installation.
+
+## Install the DNSRecord CRD
+
+Apply the `DNSRecord` CustomResourceDefinition before enabling the registry:
+
+```bash
+kubectl apply -f config/crd/standard/dnsrecords.externaldns.k8s.io.yaml
+```
+
+## RBAC
+
+ExternalDNS needs to read and write `DNSRecord` objects (including their status)
+in the namespace where they are stored:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: external-dns-crd-registry
+  namespace: external-dns
+rules:
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsrecords"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsrecords/status"]
+    verbs: ["get", "update"]
+```
+
+Bind it to the ExternalDNS `ServiceAccount`:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: external-dns-crd-registry
+  namespace: external-dns
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-dns-crd-registry
+subjects:
+  - kind: ServiceAccount
+    name: external-dns
+    namespace: external-dns
+```
+
+## Configuration
+
+Enable the registry with the `--registry` flag and identify this ExternalDNS
+instance with `--txt-owner-id`:
+
+* `--registry=crd` — use the CRD registry.
+* `--txt-owner-id=my-identifier` — a value unique to this ExternalDNS deployment,
+  stable for its lifetime. Deployments sharing a DNS zone must use different
+  owner IDs. See [Registries](registry.md).
+* `--crd-registry-namespace=external-dns` — the namespace `DNSRecord` objects are
+  created in. When unset, the registry uses the namespace ExternalDNS runs in,
+  falling back to `default` outside of a cluster. It is independent of
+  `--namespace`, which scopes the sources.
+
+## Status
+
+Each `DNSRecord` carries a status:
+
+* `status.conditions[type=Ready]` reports whether the endpoint is live in the DNS
+  provider. Its `reason` captures the lifecycle stage and is surfaced as the
+  `STATUS` print column:
+  * `Accepted` (`Ready=False`) — ExternalDNS has taken the endpoint into its
+      plan but has not programmed it yet.
+  * `Programmed` (`Ready=True`) — the endpoint has been applied to the provider.
+  * `Failed` (`Ready=False`) — the provider rejected the change. Because the
+      provider reports a single batch error that cannot be attributed to
+      individual records, every record in a failed batch is marked `Failed`;
+      records that were in fact applied are corrected to `Programmed` on the next
+      reconcile.
+
+Inspect it with:
+
+```bash
+kubectl get dnsrecord sub-example-com-a-1a2b3c4d -o yaml
+```
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSRecord
+metadata: [...]
+spec: [...]
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Programmed
+      message: Endpoint applied to the DNS provider
+      lastTransitionTime: "2026-06-04T10:00:00Z"
+```

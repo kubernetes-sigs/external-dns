@@ -173,12 +173,12 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=service
         - --source=ingress
         - --provider=oci
-        - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --txt-owner-id=my-identifier
         # Specifies the OCI DNS Zone scope, defaults to GLOBAL.
         # May be GLOBAL, PRIVATE, or an empty value to specify both GLOBAL and PRIVATE OCI DNS Zones
@@ -199,7 +199,7 @@ spec:
 
 Create the following sample application to test that ExternalDNS works.
 
-> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+> For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -207,7 +207,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: example.com
+    external-dns.kubernetes.io/hostname: example.com
 spec:
   type: LoadBalancer
   ports:

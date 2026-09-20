@@ -109,7 +109,7 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*ScalewayPro
 	}, nil
 }
 
-// AdjustEndpoints is used to normalize the endoints
+// AdjustEndpoints is used to normalize the endpoints
 func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	eps := make([]*endpoint.Endpoint, len(endpoints))
 	for i := range endpoints {
@@ -323,7 +323,7 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 
 	for _, target := range ep.Targets {
 		finalTargetName := target
-		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+		if endpoint.RequiresTrailingDot(ep.RecordType) {
 			finalTargetName = provider.EnsureTrailingDot(target)
 		}
 
@@ -344,7 +344,7 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 
 	for _, target := range ep.Targets {
 		finalTargetName := target
-		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+		if endpoint.RequiresTrailingDot(ep.RecordType) {
 			finalTargetName = provider.EnsureTrailingDot(target)
 		}
 

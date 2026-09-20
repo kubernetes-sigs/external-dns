@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/target: {{ Elastic-IP-address }}
+    external-dns.kubernetes.io/target: {{ Elastic-IP-address }}
 spec:
   ingressClassName: nginx
   rules:

@@ -17,7 +17,6 @@ limitations under the License.
 package flags
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -107,38 +106,4 @@ func (b *KingpinBinder) RegexpVar(name, help string, def *regexp.Regexp, target 
 		defStr = def.String()
 	}
 	b.App.Flag(name, help).Default(defStr).RegexpVar(target)
-}
-
-type regexpValue struct {
-	target **regexp.Regexp
-}
-
-func (rv *regexpValue) String() string {
-	if rv == nil || rv.target == nil || *rv.target == nil {
-		return ""
-	}
-	return (*rv.target).String()
-}
-
-func (rv *regexpValue) Set(s string) error {
-	re, err := regexp.Compile(s)
-	if err != nil {
-		return err
-	}
-	*rv.target = re
-	return nil
-}
-
-func (rv *regexpValue) Type() string { return "regexp" }
-
-type regexpSetter interface {
-	Set(string) error
-}
-
-func setRegexpDefault(rs regexpSetter, def *regexp.Regexp, name string) {
-	if def != nil {
-		if err := rs.Set(def.String()); err != nil {
-			panic(fmt.Errorf("invalid default regexp for flag %s: %w", name, err))
-		}
-	}
 }

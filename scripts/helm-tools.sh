@@ -46,7 +46,8 @@ install() {
       helm plugin list | grep "unittest"
 
       echo "installing helm-docs"
-      go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest | true
+      # renovate: datasource=github-releases depName=norwoodj/helm-docs
+      go install github.com/norwoodj/helm-docs/cmd/helm-docs@v1.14.2
 
       if [[ -x $(which brew) ]]; then
         echo "installing chart-testing https://github.com/helm/chart-testing"

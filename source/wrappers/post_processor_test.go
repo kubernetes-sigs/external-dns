@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestWithPostProcessorProvider(t *testing.T) {
@@ -318,7 +319,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "alias", Value: "true"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
 						{Name: "coredns/group", Value: "my-group"},
 					},
@@ -329,23 +330,23 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "alias", Value: "true"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "true"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
 					},
 				},
 			},
 		},
 		{
-			title:    "cloudflare retains all properties regardless of prefix",
+			title:    "cloudflare drops other providers' properties",
 			provider: "cloudflare",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: annotations.CloudflareTagsProperty, Value: "tag1"},
 						{Name: "aws/evaluate-target-health", Value: "true"},
-						{Name: "alias", Value: "false"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
 					},
 				},
 			},
@@ -354,15 +355,14 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "alias", Value: "false"},
-						{Name: "aws/evaluate-target-health", Value: "true"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: endpoint.ProviderSpecificAlias, Value: "false"},
+						{Name: annotations.CloudflareTagsProperty, Value: "tag1"},
 					},
 				},
 			},
 		},
 		{
-			title:    "cloudflare properties are sorted",
+			title:    "legacy cloudflare property names are normalized",
 			provider: "cloudflare",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -370,7 +370,7 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
+						{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
 					},
 				},
 			},
@@ -379,8 +379,32 @@ func TestPostProcessorEndpointsWithPostProcessorProviderFilter(t *testing.T) {
 					DNSName: "foo-1",
 					Targets: endpoint.Targets{"1.2.3.4"},
 					ProviderSpecific: endpoint.ProviderSpecific{
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-						{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+						{Name: annotations.CloudflareProxiedProperty, Value: "true"},
+						{Name: annotations.CloudflareTagsProperty, Value: "tag1"},
+					},
+				},
+			},
+		},
+		{
+			title:    "legacy cloudflare names are left alone for other providers",
+			provider: "webhook",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "webhook/cloudflare-tags", Value: "tag1"},
+						{Name: "webhook/cloudflare-proxied", Value: "true"},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo-1",
+					Targets: endpoint.Targets{"1.2.3.4"},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{Name: "webhook/cloudflare-proxied", Value: "true"},
+						{Name: "webhook/cloudflare-tags", Value: "tag1"},
 					},
 				},
 			},
@@ -464,7 +488,7 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific("alias", "true"),
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 				endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
@@ -489,7 +513,27 @@ func TestPostProcessorEndpointsWithPreferAlias(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 				endpoint.NewEndpoint("aaaa.example.com", endpoint.RecordTypeAAAA, "::1"),
-				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithProviderSpecific("alias", "true"),
+				endpoint.NewEndpoint("cname.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+			},
+		},
+		{
+			title:       "existing alias=false is not overridden by preferAlias",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasFalse),
+			},
+		},
+		{
+			title:       "existing alias=true is preserved when preferAlias is enabled",
+			preferAlias: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithAliasProperty(endpoint.AliasTrue),
 			},
 		},
 	}

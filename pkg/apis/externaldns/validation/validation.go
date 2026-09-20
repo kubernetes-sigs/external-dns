@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // ValidateConfig performs validation on the Config object
@@ -39,7 +40,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return err
 	}
 
-	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
+	if cfg.IgnoreHostnameAnnotation && len(cfg.FQDNTemplate) == 0 {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
 
@@ -61,6 +62,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	}
 	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
 		return errors.New("--annotation-prefix must end with '/'")
+	}
+	// Rewriting the legacy prefix into a prefix that itself starts with it does not make sense
+	if cfg.EnableLegacyAnnotationPrefix && strings.HasPrefix(cfg.AnnotationPrefix, annotations.LegacyAnnotationPrefix) {
+		return fmt.Errorf("--enable-legacy-annotation-prefix cannot be used with --annotation-prefix %s, which starts with the legacy prefix", cfg.AnnotationPrefix)
 	}
 
 	if cfg.KubeAPIQPS <= 0 {
@@ -87,6 +92,9 @@ func preValidateConfig(cfg *externaldns.Config) error {
 	if cfg.Provider == "" {
 		return errors.New("no provider specified")
 	}
+	if cfg.Policy == "" {
+		return errors.New("--policy must be set explicitly (one of: sync, upsert-only, create-only)")
+	}
 	return nil
 }
 
@@ -94,8 +102,6 @@ func validateConfigForProvider(cfg *externaldns.Config) error {
 	switch cfg.Provider {
 	case externaldns.ProviderAzure:
 		return validateConfigForAzure(cfg)
-	case externaldns.ProviderAkamai:
-		return validateConfigForAkamai(cfg)
 	case externaldns.ProviderRFC2136:
 		return validateConfigForRfc2136(cfg)
 	default:
@@ -106,22 +112,6 @@ func validateConfigForProvider(cfg *externaldns.Config) error {
 func validateConfigForAzure(cfg *externaldns.Config) error {
 	if cfg.AzureConfigFile == "" {
 		return errors.New("no Azure config file specified")
-	}
-	return nil
-}
-
-func validateConfigForAkamai(cfg *externaldns.Config) error {
-	if cfg.AkamaiServiceConsumerDomain == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai ServiceConsumerDomain specified")
-	}
-	if cfg.AkamaiClientToken == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai client token specified")
-	}
-	if cfg.AkamaiClientSecret == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai client secret specified")
-	}
-	if cfg.AkamaiAccessToken == "" && cfg.AkamaiEdgercPath != "" {
-		return errors.New("no Akamai access token specified")
 	}
 	return nil
 }

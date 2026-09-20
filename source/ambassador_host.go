@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
+	ambassador "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
@@ -51,7 +52,7 @@ const (
 )
 
 var (
-	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v2"}
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
 	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
 )
 
@@ -72,7 +73,7 @@ type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface
 	namespace              string
-	annotationFilter       string
+	annotationFilter       labels.Selector
 	ambassadorHostInformer kubeinformers.GenericInformer
 	unstructuredConverter  *unstructuredConverter
 	labelSelector          labels.Selector
@@ -90,6 +91,11 @@ func NewAmbassadorHostSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 
+	informers.MustSetTransform(ambassadorHostInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
 	// Add default resource event handlers to properly initialize informer.
 	informers.MustAddEventHandler(ambassadorHostInformer.Informer(), informers.DefaultEventHandler())
 
@@ -100,7 +106,7 @@ func NewAmbassadorHostSource(
 		return nil, err
 	}
 
-	uc, err := newUnstructuredConverter()
+	uc, err := newAmbassadorUnstructuredConverter()
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup Unstructured Converter: %w", err)
 	}
@@ -141,10 +147,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	// Filter Ambassador Hosts
-	ambassadorHosts, err = annotations.Filter(ambassadorHosts, sc.annotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to filter Ambassador Hosts by annotation: %w", err)
-	}
+	ambassadorHosts = annotations.Filter(ambassadorHosts, sc.annotationFilter)
 
 	var endpoints []*endpoint.Endpoint
 
@@ -172,11 +175,13 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
+		endpoint.AttachRefObject(hostEndpoints, events.NewObjectReference(host, types.AmbassadorHost))
+
 		log.Debugf("Endpoints generated from Host: %s: %v", fullname, hostEndpoints)
 		endpoints = append(endpoints, hostEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // endpointsFromHost extracts the endpoints from a Host object
@@ -268,8 +273,8 @@ type unstructuredConverter struct {
 	scheme *runtime.Scheme
 }
 
-// newUnstructuredConverter returns a new unstructuredConverter initialized
-func newUnstructuredConverter() (*unstructuredConverter, error) {
+// newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized
+func newAmbassadorUnstructuredConverter() (*unstructuredConverter, error) {
 	uc := &unstructuredConverter{
 		scheme: runtime.NewScheme(),
 	}

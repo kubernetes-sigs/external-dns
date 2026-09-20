@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 type OCPRouteSuite struct {
@@ -60,11 +61,9 @@ func (suite *OCPRouteSuite) SetupTest() {
 		Spec: routev1.RouteSpec{
 			Host: "my-domain.com",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "default",
-			Name:        "route-with-targets",
-			Annotations: map[string]string{},
-		},
+		Namespace:   "default",
+		Name:        "route-with-targets",
+		Annotations: map[string]string{},
 		Status: routev1.RouteStatus{
 			Ingress: []routev1.RouteIngress{
 				{
@@ -113,10 +112,9 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname and route status target",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
+				UID:       "openshift-route-uid",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -133,22 +131,20 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"apps.my-domain.com",
 					},
-				},
+				}).WithRefObject(testutils.RefSource(types.OpenShiftRoute)),
 			},
 		},
 		{
 			title: "route with basic hostname, route status target and ocpRouterName defined",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -179,10 +175,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname, route status target, one ocpRouterName and two router canonical names",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -224,10 +218,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route not admitted by the given router",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -264,10 +256,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					Host: "my-domain.com",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -300,10 +290,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route admitted by first appropriate router",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -344,12 +332,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with incorrect externalDNS controller annotation",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-ignore-annotation",
-					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/controller": "foo",
-					},
+				Namespace: "default",
+				Name:      "route-with-ignore-annotation",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/controller": "foo",
 				},
 			},
 			expected: []*endpoint.Endpoint{},
@@ -357,12 +343,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname and annotation target",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-annotation-target",
-					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
-					},
+				Namespace: "default",
+				Name:      "route-with-annotation-target",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/target": "my.site.foo.com",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -394,16 +378,14 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			title:       "route with matching labels",
 			labelFilter: "app=web-external",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-matching-labels",
-					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
-					},
-					Labels: map[string]string{
-						"app":  "web-external",
-						"name": "service-frontend",
-					},
+				Namespace: "default",
+				Name:      "route-with-matching-labels",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/target": "my.site.foo.com",
+				},
+				Labels: map[string]string{
+					"app":  "web-external",
+					"name": "service-frontend",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -438,16 +420,14 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					Host: "my-annotation-domain.com",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-without-matching-labels",
-					Annotations: map[string]string{
-						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
-					},
-					Labels: map[string]string{
-						"app":  "web-internal",
-						"name": "service-frontend",
-					},
+				Namespace: "default",
+				Name:      "route-without-matching-labels",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/target": "my.site.foo.com",
+				},
+				Labels: map[string]string{
+					"app":  "web-internal",
+					"name": "service-frontend",
 				},
 			},
 			expected: []*endpoint.Endpoint{},
@@ -455,12 +435,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with provider-specific annotation",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-provider-specific",
-					Annotations: map[string]string{
-						annotations.AWSPrefix + "weight": "10",
-					},
+				Namespace: "default",
+				Name:      "route-with-provider-specific",
+				Annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -521,4 +499,141 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, res, tc.expected)
 		})
 	}
+}
+
+func TestOcpRouteIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeRoute := func(namespace, name, host, target string, ann, lbls map[string]string) *routev1.Route {
+		return &routev1.Route{
+			Namespace:   namespace,
+			Name:        name,
+			Annotations: ann,
+			Labels:      lbls,
+			Status: routev1.RouteStatus{
+				Ingress: []routev1.RouteIngress{
+					{
+						Host:                    host,
+						RouterCanonicalHostname: target,
+						Conditions: []routev1.RouteIngressCondition{
+							{Type: routev1.RouteAdmitted, Status: corev1.ConditionTrue},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*routev1.Route
+		wantCount        int
+	}{
+		{
+			name: "no filters — all namespaces included",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, nil),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, nil),
+				makeRoute("production", "r3", "c.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 3,
+		},
+		{
+			name:             "annotation filter matches",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 1,
+		},
+		{
+			name:        "label filter matches",
+			labelFilter: "tier=external",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, map[string]string{"tier": "external"}),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com", nil, map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			labelFilter:      "tier=external",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "external"}),
+				makeRoute("staging", "r2", "b.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "no-match annotation filter",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com", nil, nil),
+				makeRoute("production", "r2", "b.example.com", "apps.example.com", nil, nil),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "controller mismatch is excluded",
+			routes: []*routev1.Route{
+				makeRoute("default", "r1", "a.example.com", "apps.example.com",
+					map[string]string{"external-dns.kubernetes.io/controller": "other-controller"},
+					nil),
+			},
+			wantCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeClient := fake.NewClientset()
+			for _, r := range tc.routes {
+				_, err := fakeClient.RouteV1().Routes(r.Namespace).Create(t.Context(), r, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{
+				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tc.wantCount)
+		})
+	}
+}
+
+func TestOcpRouteSource_InformerTransform(t *testing.T) {
+	t.Parallel()
+
+	route := &routev1.Route{
+		ObjectMeta: informerTransformObjectMeta(),
+	}
+	assert.Contains(t, route.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
+	assert.NotEmpty(t, route.GetManagedFields())
+
+	fakeClient := fake.NewClientset()
+	_, err := fakeClient.RouteV1().Routes(route.GetNamespace()).Create(t.Context(), route, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{})
+	require.NoError(t, err)
+	require.IsType(t, &ocpRouteSource{}, source)
+
+	testInformerTransformHelper(t,
+		source.(*ocpRouteSource).routeInformer.Informer(),
+		route,
+		withRemovedLastAppliedConfigAnnotation(),
+		withRemovedManagedFields(),
+	)
 }

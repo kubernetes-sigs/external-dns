@@ -16,16 +16,43 @@ package annotations
 import (
 	"fmt"
 	"strings"
+	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
+
+// Canonical Cloudflare property names. Deliberately independent of
+// --annotation-prefix: they are part of the DNSEndpoint API, so a prefixed name
+// would tie a manifest to the controller's flags.
+const (
+	CloudflareProxiedProperty        = "cloudflare/proxied"
+	CloudflareCustomHostnameProperty = "cloudflare/custom-hostname"
+	CloudflareRegionProperty         = "cloudflare/region-key"
+	CloudflareRecordCommentProperty  = "cloudflare/record-comment"
+	CloudflareTagsProperty           = "cloudflare/tags"
+)
+
+// Keyed by the attribute part of "<prefix>cloudflare-<attribute>".
+var cloudflareProperties = map[string]string{
+	"proxied":         CloudflareProxiedProperty,
+	"custom-hostname": CloudflareCustomHostnameProperty,
+	"region-key":      CloudflareRegionProperty,
+	"record-comment":  CloudflareRecordCommentProperty,
+	"tags":            CloudflareTagsProperty,
+}
+
+// Keyed by canonical name so it stays bounded whatever prefixes manifests use.
+var warnedLegacyNames sync.Map
 
 func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
 	if hasAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  "alias",
+			Name:  endpoint.ProviderSpecificAlias,
 			Value: "true",
 		})
 	}
@@ -60,40 +87,82 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				Name:  fmt.Sprintf("coredns/%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, CloudflarePrefix) {
-			// TODO: unlike other providers which normalise to "provider/attr",
-			// Cloudflare retains the full annotation key as the property name
-			// (e.g. "external-dns.alpha.kubernetes.io/cloudflare-proxied").
-			// This is why RetainProviderProperties has a special case for cloudflare.
-			// Should be aligned with the standard convention in a future change.
-			switch {
-			case strings.Contains(k, CloudflareCustomHostnameKey):
+		} else if k == AzureTagsKey {
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  "azure/tags",
+				Value: v,
+			})
+		} else if attr, ok := strings.CutPrefix(k, CloudflarePrefix); ok {
+			if name, known := cloudflareProperties[attr]; known {
 				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareCustomHostnameKey,
-					Value: v,
-				})
-			case strings.Contains(k, CloudflareProxiedKey):
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareProxiedKey,
-					Value: v,
-				})
-			case strings.Contains(k, CloudflareRegionKey):
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareRegionKey,
-					Value: v,
-				})
-			case strings.Contains(k, CloudflareRecordCommentKey):
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareRecordCommentKey,
-					Value: v,
-				})
-			case strings.Contains(k, CloudflareTagsKey):
-				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-					Name:  CloudflareTagsKey,
+					Name:  name,
 					Value: v,
 				})
 			}
 		}
 	}
 	return providerSpecificAnnotations, setIdentifier
+}
+
+// LegacyProviderSpecificName maps a property name written in the old Cloudflare
+// annotation form onto its canonical name, reporting whether it rewrote
+// anything.
+// Any prefix is accepted, not just the current --annotation-prefix, for easier migration
+func LegacyProviderSpecificName(name string) (string, bool) {
+	attr := name
+	if i := strings.LastIndex(name, "/"); i >= 0 {
+		attr = name[i+1:]
+	}
+	attr, ok := strings.CutPrefix(attr, "cloudflare-")
+	if !ok {
+		return name, false
+	}
+	canonical, known := cloudflareProperties[attr]
+	if !known || canonical == name {
+		return name, false
+	}
+	return canonical, true
+}
+
+// NormalizeProviderSpecific rewrites ep's legacy property names to their
+// canonical form, so sources, the plan and providers only ever compare
+// canonical names.
+// A canonical property already present wins over the legacy one it collides with.
+func NormalizeProviderSpecific(ep *endpoint.Endpoint) {
+	if len(ep.ProviderSpecific) == 0 {
+		return
+	}
+
+	canonical := sets.New[string]()
+	for _, prop := range ep.ProviderSpecific {
+		if _, legacy := LegacyProviderSpecificName(prop.Name); !legacy {
+			canonical.Insert(prop.Name)
+		}
+	}
+
+	normalized := make(endpoint.ProviderSpecific, 0, len(ep.ProviderSpecific))
+	for _, prop := range ep.ProviderSpecific {
+		name, legacy := LegacyProviderSpecificName(prop.Name)
+		if !legacy {
+			normalized = append(normalized, prop)
+			continue
+		}
+		if canonical.Has(name) {
+			log.Debugf("%s: ignoring provider-specific property %q because %q is already set", ep.DNSName, prop.Name, name)
+			continue
+		}
+		warnLegacyProviderSpecificName(prop.Name, name)
+		prop.Name = name
+		canonical.Insert(name)
+		normalized = append(normalized, prop)
+	}
+	ep.ProviderSpecific = normalized
+}
+
+func warnLegacyProviderSpecificName(legacy, canonical string) {
+	log.Debugf("Rewriting provider-specific property %q to %q", legacy, canonical)
+	if _, seen := warnedLegacyNames.LoadOrStore(canonical, struct{}{}); seen {
+		return
+	}
+	log.Warnf("Provider-specific property %q is deprecated and will be removed in a future release; use %q instead", legacy, canonical)
 }

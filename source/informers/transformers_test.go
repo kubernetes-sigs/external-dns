@@ -23,9 +23,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestTransformRemoveManagedFields(t *testing.T) {
@@ -80,7 +83,7 @@ func TestTransformRemoveLastAppliedConfig(t *testing.T) {
 		assert.NotContains(t, result.Annotations, corev1.LastAppliedConfigAnnotation)
 		// other annotations must survive
 		assert.Contains(t, result.Annotations, "description")
-		assert.Contains(t, result.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+		assert.Contains(t, result.Annotations, "external-dns.kubernetes.io/hostname")
 	})
 
 	t.Run("idempotent when annotation is absent", func(t *testing.T) {
@@ -134,6 +137,36 @@ func TestTransformRemoveStatusConditions(t *testing.T) {
 		assert.NotEmpty(t, result.Status.Addresses)
 	})
 
+	t.Run("removes conditions from Unstructured", func(t *testing.T) {
+		svc := fakeService()
+		require.NotEmpty(t, svc.Status.Conditions)
+		unstructuredSvc, err := runtime.DefaultUnstructuredConverter.ToUnstructured(svc)
+		require.NoError(t, err)
+		unstructuredSvcObj := &unstructured.Unstructured{Object: unstructuredSvc}
+		initialConditions, found, err := unstructured.NestedSlice(unstructuredSvcObj.Object, "status", "conditions")
+		require.NoError(t, err)
+		require.True(t, found)
+		require.NotEmpty(t, initialConditions)
+
+		transform := TransformerWithOptions[*unstructured.Unstructured](TransformRemoveStatusConditions())
+		got, err := transform(unstructuredSvcObj)
+		require.NoError(t, err)
+		require.IsType(t, new(unstructured.Unstructured), got)
+		result := got.(*unstructured.Unstructured)
+
+		conditions, found, err := unstructured.NestedSlice(unstructuredSvcObj.Object, "status", "conditions")
+		require.NoError(t, err)
+		assert.False(t, found)
+		assert.Nil(t, conditions)
+
+		// Status.LoadBalancer must be preserved
+		assert.Contains(t, result.Object["status"], "loadBalancer")
+		loadBalancerStatus, found, err := unstructured.NestedMap(unstructuredSvcObj.Object, "status", "loadBalancer")
+		require.NoError(t, err)
+		assert.True(t, found)
+		assert.NotNil(t, loadBalancerStatus)
+	})
+
 	t.Run("no-op when conditions are already empty", func(t *testing.T) {
 		svc := fakeService()
 		svc.Status.Conditions = nil
@@ -150,12 +183,12 @@ func TestTransformKeepAnnotationPrefix(t *testing.T) {
 		pod := fakePod()
 		require.Len(t, pod.Annotations, 3)
 
-		transform := TransformerWithOptions[*corev1.Pod](TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"))
+		transform := TransformerWithOptions[*corev1.Pod](TransformKeepAnnotationPrefix("external-dns.kubernetes.io/"))
 		got, err := transform(pod)
 		require.NoError(t, err)
 		result := got.(*corev1.Pod)
 		assert.Equal(t, map[string]string{
-			"external-dns.alpha.kubernetes.io/hostname": "pod.example.com",
+			"external-dns.kubernetes.io/hostname": "pod.example.com",
 		}, result.Annotations)
 	})
 
@@ -163,13 +196,13 @@ func TestTransformKeepAnnotationPrefix(t *testing.T) {
 		pod := fakePod()
 
 		transform := TransformerWithOptions[*corev1.Pod](
-			TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"),
+			TransformKeepAnnotationPrefix("external-dns.kubernetes.io/"),
 			TransformKeepAnnotationPrefix("unrelated.io/"),
 		)
 		got, err := transform(pod)
 		require.NoError(t, err)
 		result := got.(*corev1.Pod)
-		assert.Contains(t, result.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+		assert.Contains(t, result.Annotations, "external-dns.kubernetes.io/hostname")
 		assert.Contains(t, result.Annotations, "unrelated.io/annotation")
 		assert.NotContains(t, result.Annotations, corev1.LastAppliedConfigAnnotation)
 	})
@@ -178,69 +211,10 @@ func TestTransformKeepAnnotationPrefix(t *testing.T) {
 		pod := fakePod()
 		pod.Annotations = nil
 
-		transform := TransformerWithOptions[*corev1.Pod](TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"))
+		transform := TransformerWithOptions[*corev1.Pod](TransformKeepAnnotationPrefix("external-dns.kubernetes.io/"))
 		got, err := transform(pod)
 		require.NoError(t, err)
 		assert.Nil(t, got.(*corev1.Pod).Annotations)
-	})
-}
-
-func TestTransformRequireAnnotation(t *testing.T) {
-	t.Run("matching selector keeps object", func(t *testing.T) {
-		svc := fakeService() // annotations include external-dns.alpha.kubernetes.io/hostname=example.com
-		sel, err := labels.Parse("external-dns.alpha.kubernetes.io/hostname=example.com")
-		require.NoError(t, err)
-
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-		assert.Equal(t, svc.Name, got.(*corev1.Service).Name)
-	})
-
-	t.Run("non-matching selector drops object", func(t *testing.T) {
-		svc := fakeService()
-		sel, err := labels.Parse("external-dns.alpha.kubernetes.io/hostname=other.com")
-		require.NoError(t, err)
-
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.Nil(t, got)
-	})
-
-	t.Run("nil selector is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(nil))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-
-	t.Run("empty selector is a no-op", func(t *testing.T) {
-		svc := fakeService()
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(labels.Everything()))
-		got, err := transform(svc)
-		require.NoError(t, err)
-		assert.NotNil(t, got)
-	})
-
-	t.Run("drops object after annotation mutation (simulates MODIFIED event)", func(t *testing.T) {
-		sel, err := labels.Parse("external-dns.alpha.kubernetes.io/hostname=example.com")
-		require.NoError(t, err)
-		transform := TransformerWithOptions[*corev1.Service](TransformRequireAnnotation(sel))
-
-		// First call: annotation matches, object is admitted.
-		svc := fakeService() // annotations include external-dns.alpha.kubernetes.io/hostname=example.com
-		got, err := transform(svc)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-
-		// Annotation mutates — simulate MODIFIED event with new value.
-		svc.Annotations["external-dns.alpha.kubernetes.io/hostname"] = "other.com"
-		got, err = transform(svc)
-		require.NoError(t, err)
-		assert.Nil(t, got, "mutated object must be dropped as a local guard")
 	})
 }
 
@@ -251,7 +225,7 @@ func TestTransformerWithOptions_Combined(t *testing.T) {
 		TransformRemoveManagedFields(),
 		TransformRemoveLastAppliedConfig(),
 		TransformRemoveStatusConditions(),
-		TransformKeepAnnotationPrefix("external-dns.alpha.kubernetes.io/"),
+		TransformKeepAnnotationPrefix("external-dns.kubernetes.io/"),
 	)
 	got, err := transform(svc)
 	require.NoError(t, err)
@@ -261,26 +235,29 @@ func TestTransformerWithOptions_Combined(t *testing.T) {
 	assert.Empty(t, result.Status.Conditions)
 	assert.NotContains(t, result.Annotations, corev1.LastAppliedConfigAnnotation)
 	assert.NotContains(t, result.Annotations, "description")
-	assert.Contains(t, result.Annotations, "external-dns.alpha.kubernetes.io/hostname")
+	assert.Contains(t, result.Annotations, "external-dns.kubernetes.io/hostname")
 	// Spec and remaining Status fields are fully preserved
 	assert.NotEmpty(t, result.Spec.Selector)
 	assert.NotEmpty(t, result.Spec.ExternalIPs)
 	assert.NotEmpty(t, result.Status.LoadBalancer.Ingress)
 }
 
+// Returning nil would discard the whole LIST batch (#6728).
 func TestTransformerWithOptions_TypeMismatch(t *testing.T) {
-	t.Run("non-matching type returns nil", func(t *testing.T) {
+	t.Run("non-matching type is returned unchanged", func(t *testing.T) {
+		pod := fakePod()
 		transform := TransformerWithOptions[*corev1.Service](TransformRemoveManagedFields())
-		got, err := transform(fakePod())
+		got, err := transform(pod)
 		require.NoError(t, err)
-		assert.Nil(t, got)
+		assert.Same(t, pod, got)
+		assert.NotEmpty(t, pod.ManagedFields, "options must not be applied to another type")
 	})
 
-	t.Run("non-matching primitive returns nil", func(t *testing.T) {
+	t.Run("non-matching primitive is returned unchanged", func(t *testing.T) {
 		transform := TransformerWithOptions[*corev1.Service]()
 		got, err := transform("not-a-service")
 		require.NoError(t, err)
-		assert.Nil(t, got)
+		assert.Equal(t, "not-a-service", got)
 	})
 }
 
@@ -390,5 +367,95 @@ func TestPopulateGVK(t *testing.T) {
 		populateGVK(gw)
 		assert.Equal(t, "Gateway", gw.Kind)
 		assert.Empty(t, gw.APIVersion) // Group/Version unknown without the Istio scheme
+	})
+}
+
+func TestTransformerResolvesLegacyAnnotations(t *testing.T) {
+	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
+
+	legacyTTL := annotations.LegacyAnnotationPrefix + "ttl"
+
+	t.Run("copies legacy annotations on typed objects and keeps the legacy key", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.Equal(t, "60", result.Annotations[legacyTTL])
+		assert.Equal(t, "60", result.Annotations[annotations.TtlKey])
+		assert.Equal(t, "some annotation", result.Annotations["description"])
+	})
+
+	t.Run("keeps the configured prefix value on conflict", func(t *testing.T) {
+		svc := fakeService()
+		configured := svc.Annotations[annotations.HostnameKey]
+		svc.Annotations[annotations.LegacyAnnotationPrefix+"hostname"] = "legacy.example.org"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.Equal(t, "legacy.example.org", result.Annotations[annotations.LegacyAnnotationPrefix+"hostname"])
+		assert.Equal(t, configured, result.Annotations[annotations.HostnameKey])
+	})
+
+	t.Run("copies legacy annotations on unstructured objects", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+		content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(svc)
+		require.NoError(t, err)
+
+		got, err := TransformerWithOptions[*unstructured.Unstructured]()(&unstructured.Unstructured{Object: content})
+		require.NoError(t, err)
+		result := got.(*unstructured.Unstructured)
+
+		assert.Equal(t, "60", result.GetAnnotations()[legacyTTL])
+		assert.Equal(t, "60", result.GetAnnotations()[annotations.TtlKey])
+	})
+
+	t.Run("resolution happens before the annotation prefix filter", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service](TransformKeepAnnotationPrefix(annotations.AnnotationKeyPrefix))(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.Equal(t, "60", result.Annotations[annotations.TtlKey])
+		assert.NotContains(t, result.Annotations, "description")
+	})
+
+	// Annotation filtering runs on the transformed object — in an indexer, or at read
+	// time for the crd source — so a selector against either key matches after resolution.
+	t.Run("both the configured and the legacy key match after resolution", func(t *testing.T) {
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		anns := labels.Set(got.(*corev1.Service).Annotations)
+
+		for _, key := range []string{annotations.TtlKey, legacyTTL} {
+			selector, err := labels.Parse(key + "=60")
+			require.NoError(t, err)
+			assert.True(t, selector.Matches(anns), "selector on %s must match", key)
+		}
+	})
+
+	t.Run("leaves annotations untouched when disabled", func(t *testing.T) {
+		annotations.SetLegacyAnnotationPrefix("")
+		t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix) })
+		svc := fakeService()
+		svc.Annotations[legacyTTL] = "60"
+
+		got, err := TransformerWithOptions[*corev1.Service]()(svc)
+		require.NoError(t, err)
+		result := got.(*corev1.Service)
+
+		assert.Equal(t, "60", result.Annotations[legacyTTL])
+		assert.NotContains(t, result.Annotations, annotations.TtlKey)
 	})
 }

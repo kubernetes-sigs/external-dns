@@ -22,12 +22,13 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/cloudflare/cloudflare-go/v6"
-	"github.com/cloudflare/cloudflare-go/v6/addressing"
+	"github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/addressing"
 
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
@@ -36,11 +37,11 @@ type RegionalServicesConfig struct {
 	RegionKey string
 }
 
-var recordTypeRegionalHostnameSupported = map[string]bool{
-	"A":     true,
-	"AAAA":  true,
-	"CNAME": true,
-}
+var recordTypeRegionalHostnameSupported = sets.New(
+	"A",
+	"AAAA",
+	"CNAME",
+)
 
 type regionalHostname struct {
 	hostname  string
@@ -121,10 +122,10 @@ func (p *CloudFlareProvider) submitRegionalHostnameChanges(ctx context.Context, 
 // submitRegionalHostnameChange applies a single regional hostname change, returns false if it fails
 func (p *CloudFlareProvider) submitRegionalHostnameChange(ctx context.Context, zoneID string, rhChange regionalHostnameChange) bool {
 	changeLog := log.WithFields(log.Fields{
-		"hostname":   rhChange.hostname,
-		"region_key": rhChange.regionKey,
-		"action":     rhChange.action.String(),
-		"zone":       zoneID,
+		"hostname":     rhChange.hostname,
+		"region_key":   rhChange.regionKey,
+		logFieldAction: rhChange.action.String(),
+		logFieldZone:   zoneID,
 	})
 	if p.DryRun {
 		changeLog.Debug("Dry run: skipping regional hostname change", rhChange.action)
@@ -181,11 +182,11 @@ func (p *CloudFlareProvider) listDataLocalisationRegionalHostnames(ctx context.C
 // it returns an empty regionalHostname.
 // If the endpoint has a specific region key set, it uses that; otherwise, it defaults to the region key configured in the provider.
 func (p *CloudFlareProvider) regionalHostname(ep *endpoint.Endpoint) regionalHostname {
-	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
+	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
 		return regionalHostname{}
 	}
 	regionKey := p.RegionalServicesConfig.RegionKey
-	if epRegionKey, exists := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); exists {
+	if epRegionKey, exists := ep.GetProviderSpecificProperty(annotations.CloudflareRegionProperty); exists {
 		regionKey = epRegionKey
 	}
 	return regionalHostname{
@@ -208,7 +209,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 	// so we can skip regional hostname lookups if not needed.
 	var supportedEndpoints []*endpoint.Endpoint
 	for _, ep := range endpoints {
-		if recordTypeRegionalHostnameSupported[ep.RecordType] {
+		if recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
 			supportedEndpoints = append(supportedEndpoints, ep)
 		}
 	}
@@ -226,7 +227,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 		if rh, found := regionalHostnames[ep.DNSName]; found {
 			regionKey = rh.regionKey
 		}
-		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, regionKey)
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionProperty, regionKey)
 	}
 	return nil
 }
@@ -240,13 +241,13 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 //
 // The endpoint is modified in place and any explicitly set region key is left unchanged.
 func (p *CloudFlareProvider) adjustEndpointProviderSpecificRegionKeyProperty(ep *endpoint.Endpoint) {
-	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported[ep.RecordType] {
-		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionKey)
+	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
+		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionProperty)
 		return
 	}
 	// Add default region key if not set
-	if _, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); !ok {
-		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, p.RegionalServicesConfig.RegionKey)
+	if _, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRegionProperty); !ok {
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionProperty, p.RegionalServicesConfig.RegionKey)
 	}
 }
 

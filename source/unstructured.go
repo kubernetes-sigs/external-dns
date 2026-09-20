@@ -20,10 +20,8 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"slices"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
+	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -88,6 +86,7 @@ func NewUnstructuredFQDNSource(
 		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 		))
 		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
 			informers.TransformRemoveManagedFields(),
@@ -141,30 +140,11 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		el := newUnstructuredWrapper(obj)
 
-		if annotations.IsControllerMismatch(el, types.Unstructured) {
-			continue
-		}
-
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())
 		addrs := annotations.TargetsFromTargetAnnotation(el.GetAnnotations())
-		annotationEdps := EndpointsForHostsAndTargets(hosts, addrs)
+		annotationEdps := endpoint.EndpointsForHostsAndTargets(hosts, addrs)
 
-		fqdnTargetEdps, err := us.templateEngine.CombineWithEndpoints(
-			annotationEdps,
-			func() ([]*endpoint.Endpoint, error) {
-				return us.endpointsFromFQDNTargetTemplate(el)
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		edps, err := us.templateEngine.CombineWithEndpoints(
-			fqdnTargetEdps,
-			func() ([]*endpoint.Endpoint, error) {
-				return us.endpointsFromTemplate(el)
-			},
-		)
+		edps, err := us.templateEngine.ApplyTemplates(annotationEdps, el)
 		if err != nil {
 			return nil, err
 		}
@@ -182,61 +162,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
-}
-
-// endpointsFromTemplate creates endpoints using DNS names from the FQDN template.
-func (us *unstructuredSource) endpointsFromTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	hostnames, err := us.templateEngine.ExecFQDN(el)
-	if err != nil {
-		return nil, err
-	}
-	if len(hostnames) == 0 {
-		return nil, nil
-	}
-
-	targets, err := us.templateEngine.ExecTarget(el)
-	if err != nil {
-		return nil, err
-	}
-
-	return EndpointsForHostsAndTargets(hostnames, targets), nil
-}
-
-// endpointsFromFQDNTargetTemplate creates endpoints from a template that returns host:target pairs.
-// Each pair creates a single endpoint with 1:1 mapping between host and target.
-func (us *unstructuredSource) endpointsFromFQDNTargetTemplate(el *unstructuredWrapper) ([]*endpoint.Endpoint, error) {
-	pairs, err := us.templateEngine.ExecFQDNTarget(el)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(pairs) == 0 {
-		return nil, nil
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(pairs))
-	for _, pair := range pairs {
-		// Split at first colon (hostnames can't contain colons, IPv6 targets can)
-		parts := strings.SplitN(pair, ":", 2)
-		if len(parts) != 2 {
-			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
-				pair, strings.ToLower(el.GetKind()), el.GetNamespace(), el.GetName())
-			continue
-		}
-
-		host := strings.TrimSpace(parts[0])
-		target := strings.TrimSpace(parts[1])
-		if host == "" || target == "" {
-			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
-				pair, strings.ToLower(el.GetKind()), el.GetNamespace(), el.GetName())
-			continue
-		}
-
-		endpoints = append(endpoints, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
-	}
-
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that is called when resources change.
@@ -289,13 +215,76 @@ func newUnstructuredWrapper(u *unstructured.Unstructured) *unstructuredWrapper {
 		w.Metadata = metadata
 	}
 	if spec, ok := u.Object["spec"].(map[string]any); ok {
-		w.Spec = spec
+		w.Spec = withTitleCaseAliases(spec)
 	}
 	if status, ok := u.Object["status"].(map[string]any); ok {
-		w.Status = status
+		w.Status = withTitleCaseAliases(status)
 	}
 
 	return w
+}
+
+// withTitleCaseAliases lets a template address a JSON-keyed map field
+// (spec.hostnames) by its Go field name too (Spec.Hostnames), since a map
+// key miss in text/template renders empty instead of erroring.
+//
+// Deliberately shallow: an earlier version recursed into nested map values
+// to alias their keys too, but that duplicated every key one level down, so
+// a template ranging or taking len() over nested data (spec.records) saw
+// twice as many entries as were actually declared. Nested JSON keys stay
+// reachable through their literal path (spec.endpoint.hostname) instead.
+func withTitleCaseAliases(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
+	maps.Copy(out, m)
+	for k := range m {
+		title := titleCaseKey(k)
+		if title == k {
+			continue
+		}
+		if _, collision := m[title]; collision {
+			continue
+		}
+		out[title] = out[k]
+	}
+	return out
+}
+
+// commonInitialisms are the field-name segments Kubernetes' code generator
+// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
+// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
+// staticcheck/golint treat as standard Go convention.
+var commonInitialisms = map[string]bool{
+	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
+	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
+	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
+	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
+	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
+	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
+	"xml": true, "yaml": true,
+}
+
+// titleCaseKey converts a lowerCamelCase JSON key into its Go-convention
+// exported field name: dnsNames -> DNSNames, url -> URL, hostname ->
+// Hostname. It upper-cases the leading word in full when that word is a
+// known initialism, matching how Kubernetes generates Go types from CRD
+// schemas; otherwise it capitalizes just the first letter, as before.
+func titleCaseKey(k string) string {
+	if k == "" {
+		return k
+	}
+	r := []rune(k)
+	if unicode.IsUpper(r[0]) {
+		return k
+	}
+	end := 0
+	for end < len(r) && !unicode.IsUpper(r[end]) {
+		end++
+	}
+	word := string(r[:end])
+	if commonInitialisms[strings.ToLower(word)] {
+		return strings.ToUpper(word) + string(r[end:])
+	}
+	return strings.ToUpper(word[:1]) + word[1:] + string(r[end:])
 }
 
 // discoverResources parses and validates resource identifiers against the cluster.
@@ -342,46 +331,4 @@ func validateResource(discoveryClient discovery.DiscoveryInterface, gvr schema.G
 	}
 
 	return fmt.Errorf("resource %q not found in %q", gvr.Resource, gv)
-}
-
-// EndpointsForHostsAndTargets creates endpoints by grouping targets by record type
-// and creating an endpoint for each hostname/record-type combination.
-// The function returns endpoints in deterministic order (sorted by record type).
-func EndpointsForHostsAndTargets(hostnames, targets []string) []*endpoint.Endpoint {
-	if len(hostnames) == 0 || len(targets) == 0 {
-		return nil
-	}
-
-	// Deduplicate hostnames
-	hostSet := make(map[string]struct{}, len(hostnames))
-	for _, h := range hostnames {
-		hostSet[h] = struct{}{}
-	}
-	sortedHosts := slices.Sorted(maps.Keys(hostSet))
-
-	// Group and deduplicate targets by record type
-	targetsByType := make(map[string]map[string]struct{})
-	for _, target := range targets {
-		recordType := endpoint.SuitableType(target)
-		if targetsByType[recordType] == nil {
-			targetsByType[recordType] = make(map[string]struct{})
-		}
-		targetsByType[recordType][target] = struct{}{}
-	}
-
-	// Resolve to sorted slices once
-	sortedTypes := slices.Sorted(maps.Keys(targetsByType))
-	sortedTargets := make(map[string][]string, len(targetsByType))
-	for _, recordType := range sortedTypes {
-		sortedTargets[recordType] = slices.Sorted(maps.Keys(targetsByType[recordType]))
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0, len(sortedHosts)*len(sortedTypes))
-	for _, hostname := range sortedHosts {
-		for _, recordType := range sortedTypes {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
-		}
-	}
-
-	return endpoints
 }

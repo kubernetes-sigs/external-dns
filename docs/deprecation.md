@@ -53,7 +53,7 @@ Any maintainer may propose deprecating a feature, component, or behavior (both i
 
 The proposal must clearly outline the rationale for deprecation, the impact on users, and any alternatives, if such.
 
-The proposal must be formalized by submiting a `design` document as a Pull Request.
+The proposal must be formalized by submitting a `design` document as a Pull Request.
 
 ### Showcase to Maintainers
 

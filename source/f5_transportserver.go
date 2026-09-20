@@ -18,14 +18,13 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -37,7 +36,10 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 var f5TransportServerGVR = schema.GroupVersionResource{
@@ -52,16 +54,14 @@ var f5TransportServerGVR = schema.GroupVersionResource{
 // +externaldns:source:category=Load Balancers
 // +externaldns:source:description=Creates DNS entries from F5 TransportServer resources
 // +externaldns:source:resources=TransportServer.cis.f5.com
-// +externaldns:source:filters=annotation
+// +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 type f5TransportServerSource struct {
-	dynamicKubeClient       dynamic.Interface
 	transportServerInformer kubeinformers.GenericInformer
 	kubeClient              kubernetes.Interface
-	annotationFilter        string
-	namespace               string
+	templateEngine          template.Engine
 	unstructuredConverter   *unstructuredConverter
 }
 
@@ -73,6 +73,17 @@ func NewF5TransportServerSource(
 ) (Source, error) {
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
+
+	informers.MustSetTransform(transportServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+
+	informers.MustAddIndexers(transportServerInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
+	))
 
 	informers.MustAddEventHandler(transportServerInformer.Informer(), informers.DefaultEventHandler())
 
@@ -89,11 +100,9 @@ func NewF5TransportServerSource(
 	}
 
 	return &f5TransportServerSource{
-		dynamicKubeClient:       dynamicKubeClient,
 		transportServerInformer: transportServerInformer,
 		kubeClient:              kubeClient,
-		namespace:               cfg.Namespace,
-		annotationFilter:        cfg.AnnotationFilter,
+		templateEngine:          cfg.TemplateEngine,
 		unstructuredConverter:   uc,
 	}, nil
 }
@@ -101,34 +110,27 @@ func NewF5TransportServerSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TransportServers in the source's namespace(s).
 func (ts *f5TransportServerSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	transportServerObjects, err := ts.transportServerInformer.Lister().ByNamespace(ts.namespace).List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	transportServerObjects := informers.ListIndexed[*unstructured.Unstructured](ts.transportServerInformer.Informer().GetIndexer())
 
 	var transportServers []*f5.TransportServer
 	for _, tsObj := range transportServerObjects {
-		unstructuredHost, ok := tsObj.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert")
-		}
-
 		transportServer := &f5.TransportServer{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, transportServer, nil)
-		if err != nil {
+		if err := ts.unstructuredConverter.scheme.Convert(tsObj, transportServer, nil); err != nil {
 			return nil, err
+		}
+		transportServer.TypeMeta = metav1.TypeMeta{
+			Kind:       "TransportServer",
+			APIVersion: f5TransportServerGVR.GroupVersion().String(),
 		}
 		transportServers = append(transportServers, transportServer)
 	}
 
-	transportServers, err = annotations.Filter(transportServers, ts.annotationFilter)
+	endpoints, err := ts.endpointsFromTransportServers(transportServers)
 	if err != nil {
-		return nil, fmt.Errorf("failed to filter TransportServers: %w", err)
+		return nil, err
 	}
 
-	endpoints := ts.endpointsFromTransportServers(transportServers)
-
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler func()) {
@@ -137,33 +139,46 @@ func (ts *f5TransportServerSource) AddEventHandler(_ context.Context, handler fu
 	informers.MustAddEventHandler(ts.transportServerInformer.Informer(), eventHandlerFunc(handler))
 }
 
-// endpointsFromTransportServers extracts the endpoints from a slice of TransportServers
-func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) []*endpoint.Endpoint {
+// endpointsFromTransportServers extracts the endpoints from a slice of TransportServers.
+func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServers []*f5.TransportServer) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	for _, transportServer := range transportServers {
-		if !hasValidTransportServerIP(transportServer) {
+		var tsEndpoints []*endpoint.Endpoint
+
+		if hasValidTransportServerIP(transportServer) {
+			resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
+
+			ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
+
+			targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
+			if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
+				targets = append(targets, transportServer.Spec.VirtualServerAddress)
+			}
+			if len(targets) == 0 && transportServer.Status.VSAddress != "" {
+				targets = append(targets, transportServer.Status.VSAddress)
+			}
+
+			tsEndpoints = append(tsEndpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		}
+
+		var err error
+		tsEndpoints, err = ts.templateEngine.ApplyTemplates(tsEndpoints, transportServer)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(tsEndpoints) == 0 {
 			log.Warnf("F5 TransportServer %s/%s is missing a valid IP address, skipping endpoint creation.",
 				transportServer.Namespace, transportServer.Name)
-			continue
 		}
 
-		resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
+		endpoint.AttachRefObject(tsEndpoints, events.NewObjectReference(transportServer, types.F5TransportServer))
 
-		ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
-
-		targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
-		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, transportServer.Spec.VirtualServerAddress)
-		}
-		if len(targets) == 0 && transportServer.Status.VSAddress != "" {
-			targets = append(targets, transportServer.Status.VSAddress)
-		}
-
-		endpoints = append(endpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+		endpoints = append(endpoints, tsEndpoints...)
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

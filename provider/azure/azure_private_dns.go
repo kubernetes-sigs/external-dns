@@ -27,6 +27,7 @@ import (
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -233,7 +234,7 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 type azurePrivateDNSChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, changes *plan.Changes) (azurePrivateDNSChangeMap, azurePrivateDNSChangeMap) {
-	ignored := map[string]bool{}
+	ignored := sets.New[string]()
 	deleted := azurePrivateDNSChangeMap{}
 	updated := azurePrivateDNSChangeMap{}
 	zoneNameIDMapper := provider.ZoneIDName{}
@@ -245,8 +246,8 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 	mapChange := func(changeMap azurePrivateDNSChangeMap, change *endpoint.Endpoint) {
 		zone, _ := zoneNameIDMapper.FindZone(change.DNSName)
 		if zone == "" {
-			if _, ok := ignored[change.DNSName]; !ok {
-				ignored[change.DNSName] = true
+			if !ignored.Has(change.DNSName) {
+				ignored.Insert(change.DNSName)
 				log.Infof("Ignoring changes to '%s' because a suitable Azure Private DNS zone was not found.", change.DNSName)
 			}
 			return

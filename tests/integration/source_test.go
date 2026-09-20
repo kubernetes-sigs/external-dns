@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/tests/integration/toolkit"
 )
 
@@ -47,7 +46,8 @@ func TestParseResources(t *testing.T) {
 			parsed, err := toolkit.ParseResources(scenario.Resources)
 			require.NoError(t, err, "failed to parse resources")
 
-			totalParsed := len(parsed.Services) + len(parsed.Ingresses) + len(parsed.Pods) + len(parsed.EndpointSlices)
+			totalParsed := len(parsed.Services) + len(parsed.Ingresses) + len(parsed.Pods) +
+				len(parsed.EndpointSlices) + len(parsed.Nodes) + len(parsed.DNSEndpoints)
 			// Pods and EndpointSlices may be auto-generated from dependencies, so count
 			// only the explicitly declared resources when checking nothing was silently dropped.
 			explicitResources := 0
@@ -69,17 +69,17 @@ func TestSourceIntegration(t *testing.T) {
 		t.Run(scenario.Name, func(t *testing.T) {
 			ctx := t.Context()
 
-			client, err := toolkit.LoadResources(ctx, scenario)
+			loaded, err := toolkit.LoadResources(ctx, scenario)
 			require.NoError(t, err, "failed to populate resources")
 
 			// Create wrapped source
-			wrappedSource, err := toolkit.CreateWrappedSource(ctx, client, scenario.Config)
+			wrappedSource, err := toolkit.CreateWrappedSource(ctx, loaded, scenario.Config)
 			require.NoError(t, err, "failed to create wrapped source")
 
 			// Get endpoints
 			endpoints, err := wrappedSource.Endpoints(ctx)
 			require.NoError(t, err)
-			testutils.ValidateEndpoints(t, endpoints, scenario.Expected)
+			toolkit.ValidateScenarioEndpoints(t, endpoints, scenario.Expected)
 		})
 	}
 }

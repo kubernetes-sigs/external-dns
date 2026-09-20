@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func TestValidateFlags(t *testing.T) {
@@ -53,8 +54,18 @@ func TestValidateFlags(t *testing.T) {
 	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
+	cfg.Policy = ""
+	require.Error(t, ValidateConfig(cfg))
+
+	for _, policy := range []string{"sync", "upsert-only", "create-only"} {
+		cfg = newValidConfig(t)
+		cfg.Policy = policy
+		require.NoError(t, ValidateConfig(cfg))
+	}
+
+	cfg = newValidConfig(t)
 	cfg.IgnoreHostnameAnnotation = true
-	cfg.FQDNTemplate = ""
+	cfg.FQDNTemplate = []string{}
 	require.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
@@ -95,8 +106,42 @@ func TestValidateFlags(t *testing.T) {
 	require.NoError(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
-	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	require.NoError(t, ValidateConfig(cfg))
+
+	t.Run("enable-legacy-annotation-prefix", func(t *testing.T) {
+		for _, tc := range []struct {
+			prefix  string
+			wantErr bool
+		}{
+			{prefix: "external-dns.kubernetes.io/"},
+			{prefix: "custom.io/"},
+			{prefix: annotations.LegacyAnnotationPrefix, wantErr: true},
+			{prefix: annotations.LegacyAnnotationPrefix + "v2/", wantErr: true},
+		} {
+			t.Run(tc.prefix, func(t *testing.T) {
+				cfg := newValidConfig(t)
+				cfg.AnnotationPrefix = tc.prefix
+				cfg.EnableLegacyAnnotationPrefix = true
+				if tc.wantErr {
+					require.ErrorContains(t, ValidateConfig(cfg), "--enable-legacy-annotation-prefix")
+				} else {
+					require.NoError(t, ValidateConfig(cfg))
+				}
+			})
+		}
+	})
+
+	t.Run("enable-legacy-annotation-prefix accepts filters and templates that name the legacy prefix", func(t *testing.T) {
+		// The legacy key is kept alongside its configured equivalent, so filters and templates written
+		// against either prefix keep working while the flag is on.
+		cfg := newValidConfig(t)
+		cfg.EnableLegacyAnnotationPrefix = true
+		cfg.AnnotationFilter = annotations.LegacyAnnotationPrefix + "controller=dns"
+		cfg.FQDNTemplate = []string{`{{ index .Annotations "` + annotations.LegacyAnnotationPrefix + `hostname" }}`}
+		cfg.TargetTemplate = []string{`{{ index .Annotations "` + annotations.LegacyAnnotationPrefix + `target" }}`}
+		require.NoError(t, ValidateConfig(cfg))
+	})
 
 	t.Run("kube-api-qps and kube-api-burst", func(t *testing.T) {
 		for _, tc := range []struct {
@@ -131,6 +176,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "test-provider"
+	cfg.Policy = "sync"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
 	cfg.KubeAPIBurst = rest.DefaultBurst
 
@@ -142,7 +188,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
 	cfg := externaldns.NewConfig()
 	cfg.IgnoreHostnameAnnotation = true
-	cfg.FQDNTemplate = ""
+	cfg.FQDNTemplate = []string{}
 
 	assert.Error(t, ValidateConfig(cfg))
 }
@@ -153,6 +199,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.Policy = "sync"
 	cfg.RFC2136MinTTL = -1
 	cfg.RFC2136BatchChangeSize = 50
 
@@ -167,6 +214,7 @@ func TestValidateBadRfc2136Batch(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.Policy = "sync"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 0
 
@@ -181,6 +229,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
+	cfg.Policy = "sync"
 	cfg.RFC2136MinTTL = 3600
 	cfg.RFC2136BatchChangeSize = 50
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
@@ -197,7 +246,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "test-user",
@@ -209,7 +259,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "",
@@ -221,7 +272,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
 			RFC2136KerberosRealm:    "test-realm",
@@ -234,7 +286,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
 			RFC2136KerberosUsername: "test-user",
@@ -246,7 +299,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
 			RFC2136KerberosUsername: "",
@@ -258,7 +312,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
 			RFC2136KerberosRealm:    "",
@@ -271,7 +326,8 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136KerberosRealm:    "",
 			RFC2136KerberosUsername: "test-user",
@@ -294,7 +350,8 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
-			AnnotationPrefix:        "external-dns.alpha.kubernetes.io/",
+			Policy:                  "sync",
+			AnnotationPrefix:        "external-dns.kubernetes.io/",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         false,
 			RFC2136KerberosRealm:    "test-realm",
@@ -314,98 +371,14 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 	}
 }
 
-func TestValidateBadAkamaiConfig(t *testing.T) {
-	invalidAkamaiConfigs := []*externaldns.Config{
-		{
-			LogFormat:          "json",
-			Sources:            []string{"test-source"},
-			Provider:           "akamai",
-			AnnotationPrefix:   "external-dns.alpha.kubernetes.io/",
-			AkamaiClientToken:  "test-token",
-			AkamaiClientSecret: "test-secret",
-			AkamaiAccessToken:  "test-access-token",
-			AkamaiEdgercPath:   "/path/to/edgerc",
-			// Missing AkamaiServiceConsumerDomain
-		},
-		{
-			LogFormat:                   "json",
-			Sources:                     []string{"test-source"},
-			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
-			AkamaiServiceConsumerDomain: "test-domain",
-			AkamaiClientSecret:          "test-secret",
-			AkamaiAccessToken:           "test-access-token",
-			AkamaiEdgercPath:            "/path/to/edgerc",
-			// Missing AkamaiClientToken
-		},
-		{
-			LogFormat:                   "json",
-			Sources:                     []string{"test-source"},
-			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
-			AkamaiServiceConsumerDomain: "test-domain",
-			AkamaiClientToken:           "test-token",
-			AkamaiAccessToken:           "test-access-token",
-			AkamaiEdgercPath:            "/path/to/edgerc",
-			// Missing AkamaiClientSecret
-		},
-		{
-			LogFormat:                   "json",
-			Sources:                     []string{"test-source"},
-			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
-			AkamaiServiceConsumerDomain: "test-domain",
-			AkamaiClientToken:           "test-token",
-			AkamaiClientSecret:          "test-secret",
-			AkamaiEdgercPath:            "/path/to/edgerc",
-			// Missing AkamaiAccessToken
-		},
-	}
-
-	for _, cfg := range invalidAkamaiConfigs {
-		err := ValidateConfig(cfg)
-		assert.Error(t, err)
-	}
-}
-
-func TestValidateGoodAkamaiConfig(t *testing.T) {
-	validAkamaiConfigs := []*externaldns.Config{
-		{
-			LogFormat:                   "json",
-			Sources:                     []string{"test-source"},
-			Provider:                    "akamai",
-			AnnotationPrefix:            "external-dns.alpha.kubernetes.io/",
-			AkamaiServiceConsumerDomain: "test-domain",
-			AkamaiClientToken:           "test-token",
-			AkamaiClientSecret:          "test-secret",
-			AkamaiAccessToken:           "test-access-token",
-			AkamaiEdgercPath:            "/path/to/edgerc",
-			KubeAPIQPS:                  int(rest.DefaultQPS),
-			KubeAPIBurst:                rest.DefaultBurst,
-		},
-		{
-			LogFormat:        "json",
-			Sources:          []string{"test-source"},
-			Provider:         "akamai",
-			AnnotationPrefix: "external-dns.alpha.kubernetes.io/",
-			KubeAPIQPS:       int(rest.DefaultQPS),
-			KubeAPIBurst:     rest.DefaultBurst,
-		},
-	}
-
-	for _, cfg := range validAkamaiConfigs {
-		err := ValidateConfig(cfg)
-		assert.NoError(t, err)
-	}
-}
-
 func TestValidateBadAzureConfig(t *testing.T) {
 	cfg := externaldns.NewConfig()
 
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "azure"
-	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	cfg.Policy = "sync"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	// AzureConfigFile is empty
 
 	err := ValidateConfig(cfg)
@@ -419,7 +392,8 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 	cfg.LogFormat = "json"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "azure"
-	cfg.AnnotationPrefix = "external-dns.alpha.kubernetes.io/"
+	cfg.Policy = "sync"
+	cfg.AnnotationPrefix = "external-dns.kubernetes.io/"
 	cfg.AzureConfigFile = "/path/to/azure.json"
 	cfg.KubeAPIQPS = int(rest.DefaultQPS)
 	cfg.KubeAPIBurst = rest.DefaultBurst

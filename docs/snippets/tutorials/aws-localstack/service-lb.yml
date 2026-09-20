@@ -5,8 +5,7 @@ kind: Service
 metadata:
   name: loadbalancer-service
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: my-loadbalancer.example.com
-    dns.why/type: aws-localstack-tutorial
+    external-dns.kubernetes.io/hostname: my-loadbalancer.example.com
   namespace: default
 spec:
   type: LoadBalancer

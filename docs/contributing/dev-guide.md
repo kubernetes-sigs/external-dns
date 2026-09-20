@@ -27,7 +27,7 @@ Building and/or testing `external-dns` requires additional tooling.
 
 ### Go Tools
 
-Additional Go-based tools are managed in [`go.tool.mod`](../../go.tool.mod) and used for code generation:
+Additional Go-based tools are managed in `go.tool.mod` and used for code generation:
 
 | Tool                                                                  | Purpose                                            |
 |-----------------------------------------------------------------------|----------------------------------------------------|
@@ -84,7 +84,7 @@ In the context of the `external-dns`, acceptance tests are tests of interactions
 
 ### Log Unit Testing
 
-Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [build-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
+Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [built-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
 
 This practice enables:
 
@@ -202,7 +202,7 @@ Add an entry to `tests/integration/scenarios/tests.yaml`. Each scenario declares
           name: my-svc
           namespace: default
           annotations:
-            external-dns.alpha.kubernetes.io/hostname: my.example.com
+            external-dns.kubernetes.io/hostname: my.example.com
         spec:
           type: LoadBalancer
         status:
@@ -224,7 +224,7 @@ go test ./tests/integration/...
 ## Complete test on local env
 
 It's possible to run ExternalDNS locally. CoreDNS can be used for easier testing.
-See the [related tutorials](../tutorials/coredns-etc.md) for full instructions.
+See the [related tutorials](../tutorials/coredns-etcd.md) for full instructions.
 
 ### Continuous Integration
 
@@ -239,6 +239,7 @@ go run main.go \
     --provider=aws \
     --registry=txt \
     --source=fake \
+    --policy=sync \
     --log-level=info
 ```
 

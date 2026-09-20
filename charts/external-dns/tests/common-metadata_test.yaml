@@ -1,4 +1,6 @@
 suite: All resources contains metadata
+set:
+  policy: upsert-only
 templates:
   - "*.yaml"
 release:

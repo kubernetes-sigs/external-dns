@@ -63,15 +63,12 @@ const (
 // +externaldns:source:events=true
 type ingressSource struct {
 	client                   kubernetes.Interface
-	namespace                string
-	annotationFilter         string
 	ingressClassNames        []string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
-	labelSelector            labels.Selector
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -81,13 +78,8 @@ func NewIngressSource(
 	cfg *Config) (Source, error) {
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
-	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != "" {
-		selector, err := getLabelSelector(cfg.AnnotationFilter)
-		if err != nil {
-			return nil, err
-		}
-
-		requirements, _ := selector.Requirements()
+	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != nil && !cfg.AnnotationFilter.Empty() {
+		requirements, _ := cfg.AnnotationFilter.Requirements()
 		for _, requirement := range requirements {
 			if requirement.Key() == IngressClassAnnotationKey {
 				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")
@@ -98,6 +90,12 @@ func NewIngressSource(
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
+
+	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkv1.Ingress]),
+	))
 
 	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
@@ -114,34 +112,21 @@ func NewIngressSource(
 		return nil, err
 	}
 
-	sc := &ingressSource{
+	return &ingressSource{
 		client:                   kubeClient,
-		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
 		ingressClassNames:        cfg.IngressClassNames,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
-		labelSelector:            cfg.LabelFilter,
-	}
-	return sc, nil
+	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(sc.labelSelector)
-	if err != nil {
-		return nil, err
-	}
-	ingresses, err = annotations.Filter(ingresses, sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	ingresses, err = sc.filterByIngressClass(ingresses)
+	ingresses, err := sc.filterByIngressClass(informers.ListIndexed[*networkv1.Ingress](sc.ingressInformer.Informer().GetIndexer()))
 	if err != nil {
 		return nil, err
 	}
@@ -149,10 +134,6 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
-		if annotations.IsControllerMismatch(ing, types.Ingress) {
-			continue
-		}
-
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
@@ -174,7 +155,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {

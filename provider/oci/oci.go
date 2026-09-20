@@ -114,7 +114,6 @@ func loadOCIConfig(path string) (*OCIConfig, error) {
 
 // newProvider initializes a new OCI DNS based Provider.
 func newProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
-	var client ociDNSClient
 	var err error
 	var configProvider common.ConfigurationProvider
 	if cfg.Auth.UseInstancePrincipal && cfg.Auth.UseWorkloadIdentity {
@@ -149,10 +148,11 @@ func newProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilte
 		)
 	}
 
-	client, err = dns.NewDnsClientWithConfigurationProvider(configProvider)
+	client, err := dns.NewDnsClientWithConfigurationProvider(configProvider)
 	if err != nil {
 		return nil, fmt.Errorf("initializing OCI DNS API client: %w", err)
 	}
+	client.UserAgent = fmt.Sprintf("%s %s", client.UserAgent, externaldns.UserAgent())
 
 	return &OCIProvider{
 		client:       client,
@@ -287,9 +287,9 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 		var page *string
 		for {
 			resp, err := p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
-				ZoneNameOrId:  zone.Id,
-				Page:          page,
-				CompartmentId: &p.cfg.CompartmentID,
+				ZoneNameOrId: zone.Id,
+				Page:         page,
+				Limit:        common.Int64(100),
 			})
 			if err != nil {
 				return nil, provider.NewSoftErrorf("getting records for zone %q: %w", *zone.Id, err)
@@ -357,9 +357,8 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 
 	for zoneID, ops := range opsByZone {
 		if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
-			CompartmentId:           &p.cfg.CompartmentID,
-			ZoneNameOrId:            &zoneID,
-			PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
+			ZoneNameOrId: &zoneID,
+			Items:        ops,
 		}); err != nil {
 			return provider.NewSoftError(err)
 		}
@@ -374,7 +373,7 @@ func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 	for _, e := range endpoints {
 		// OCI DNS does not support the set-identifier attribute, so we remove it to avoid plan failure
 		if e.SetIdentifier != "" {
-			log.Warnf("Adjusting endpont: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
+			log.Warnf("Adjusting endpoint: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
 			e.SetIdentifier = ""
 		}
 		adjustedEndpoints = append(adjustedEndpoints, e)
@@ -386,7 +385,7 @@ func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperationEnum) dns.RecordOperation {
 	targets := make([]string, len(ep.Targets))
 	copy(targets, ep.Targets)
-	if ep.RecordType == endpoint.RecordTypeCNAME {
+	if endpoint.RequiresTrailingDot(ep.RecordType) {
 		targets[0] = provider.EnsureTrailingDot(targets[0])
 	}
 	rdata := strings.Join(targets, " ")

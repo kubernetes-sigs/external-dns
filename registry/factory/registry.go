@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/registry/awssd"
+	"sigs.k8s.io/external-dns/registry/crd"
 	"sigs.k8s.io/external-dns/registry/dynamodb"
 	"sigs.k8s.io/external-dns/registry/noop"
 	"sigs.k8s.io/external-dns/registry/txt"
@@ -47,6 +48,7 @@ func registries(selector string) (RegistryConstructor, bool) {
 		externaldns.RegistryNoop:     noop.New,
 		externaldns.RegistryTXT:      txt.New,
 		externaldns.RegistryAWSSD:    awssd.New,
+		externaldns.RegistryCRD:      crd.New,
 	}
 	c, ok := m[selector]
 	return c, ok

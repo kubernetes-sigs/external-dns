@@ -73,7 +73,7 @@ This configuration will create DNS A records for:
 
 The source follows this priority order for determining targets:
 
-1. **Target annotation**: `external-dns.alpha.kubernetes.io/target` (highest priority)
+1. **Target annotation**: `external-dns.kubernetes.io/target` (highest priority)
 2. **Spec address**: `spec.virtualServerAddress`
 3. **Status address**: `status.vsAddress`
 
@@ -85,7 +85,7 @@ You can set a custom TTL using the annotation:
 
 ```yaml
 annotations:
-  external-dns.alpha.kubernetes.io/ttl: "300"
+  external-dns.kubernetes.io/ttl: "300"
 ```
 
 ### Annotation Filtering

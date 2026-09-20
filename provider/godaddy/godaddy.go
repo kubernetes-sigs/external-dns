@@ -27,6 +27,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -396,29 +397,27 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 
 	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
 
-	iOldSkip := make(map[int]bool)
-	iNewSkip := make(map[int]bool)
+	iOldSkip := sets.New[int]()
+	iNewSkip := sets.New[int]()
 
 	for iOld, recOld := range changes.UpdateOld {
 		for iNew, recNew := range changes.UpdateNew {
 			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
 				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
 				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
-				iOldSkip[iOld] = true
-				iNewSkip[iNew] = true
+				iOldSkip.Insert(iOld)
+				iNewSkip.Insert(iNew)
 				break
 			}
 		}
 	}
 
 	for iOld, recOld := range changes.UpdateOld {
-		_, found := iOldSkip[iOld]
-		if found {
+		if iOldSkip.Has(iOld) {
 			continue
 		}
 		for iNew, recNew := range changes.UpdateNew {
-			_, found := iNewSkip[iNew]
-			if found {
+			if iNewSkip.Has(iNew) {
 				continue
 			}
 

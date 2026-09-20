@@ -18,23 +18,21 @@ package txt
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"errors"
 	"maps"
-
 	"strings"
 	"time"
 
-	b64 "encoding/base64"
-
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/registry"
-	"sigs.k8s.io/external-dns/registry/mapper"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
 const (
@@ -70,13 +68,16 @@ type TXTRegistry struct {
 	// existingTXTs is the TXT records that already exist in the zone so that
 	// ApplyChanges() can skip re-creating them. See the struct below for details.
 	existingTXTs *existingTXTs
+
+	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
+	obsoleteTXTWarned sets.Set[string]
 }
 
-// existingTXTs stores pre‑existing TXT records to avoid duplicate creation.
+// existingTXTs maps pre‑existing TXT records to the value they hold at the provider.
 // It relies on the fact that Records() is always called **before** ApplyChanges()
 // within a single reconciliation cycle.
 type existingTXTs struct {
-	entries map[recordKey]struct{}
+	entries map[recordKey]string
 }
 
 type recordKey struct {
@@ -86,33 +87,41 @@ type recordKey struct {
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{
-		entries: make(map[recordKey]struct{}),
+		entries: map[recordKey]string{},
 	}
 }
 
 func (im *existingTXTs) add(r *endpoint.Endpoint) {
-	key := recordKey{
-		dnsName:       r.DNSName,
-		setIdentifier: r.SetIdentifier,
+	var value string
+	if len(r.Targets) > 0 {
+		value = r.Targets[0]
 	}
-	im.entries[key] = struct{}{}
+	im.entries[keyFor(r)] = value
 }
 
 // isAbsent returns true when there is no entry for the given name in the store.
 // This is intended for the "if absent -> create" pattern.
 func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
-	key := recordKey{
-		dnsName:       ep.DNSName,
-		setIdentifier: ep.SetIdentifier,
-	}
-	_, ok := im.entries[key]
+	_, ok := im.entries[keyFor(ep)]
 	return !ok
+}
+
+func (im *existingTXTs) storedValue(ep *endpoint.Endpoint) (string, bool) {
+	value, ok := im.entries[keyFor(ep)]
+	return value, ok && value != ""
 }
 
 func (im *existingTXTs) reset() {
 	// Reset the existing TXT records for the next reconciliation loop.
 	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
-	im.entries = make(map[recordKey]struct{})
+	im.entries = map[recordKey]string{}
+}
+
+func keyFor(ep *endpoint.Endpoint) recordKey {
+	return recordKey{
+		dnsName:       ep.DNSName,
+		setIdentifier: ep.SetIdentifier,
+	}
 }
 
 // New creates a TXTRegistry from the given configuration.
@@ -165,6 +174,7 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		txtEncryptAESKey:    txtEncryptAESKey,
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
+		obsoleteTXTWarned:   sets.New[string](),
 	}, nil
 }
 
@@ -182,18 +192,18 @@ func (im *TXTRegistry) OwnerID() string {
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
 func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	// existingTXTs must always hold the latest TXT records, so it needs to be reset every time.
-	// Previously, it was reset with a defer after ApplyChanges, but ApplyChanges is not called
-	// when plan.HasChanges() is false (i.e., when there are no changes to apply).
-	// In that case, stale TXT record information could remain, so we reset it here instead.
-	im.existingTXTs.reset()
-
 	// If we have the zones cached AND we have refreshed the cache since the
-	// last given interval, then just use the cached results.
+	// last given interval, then just use the cached results. existingTXTs is left
+	// untouched so that it keeps describing the records behind that cache.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
 		log.Debug("Using cached records.")
 		return im.recordsCache, nil
 	}
+
+	// existingTXTs is only ever added to, so it has to be dropped before the read below repopulates it.
+	// A key surviving from an earlier cycle would claim its TXT still
+	// exists, and isAbsent would then skip re-creating it.
+	im.existingTXTs.reset()
 
 	records, err := im.provider.Records(ctx)
 	if err != nil {
@@ -203,7 +213,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	endpoints := []*endpoint.Endpoint{}
 
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
-	txtRecordsMap := map[string]struct{}{}
+	txtRecordsSet := make(sets.Set[string], len(records))
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
@@ -232,7 +242,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: record.SetIdentifier,
 		}
 		labelMap[key] = labels
-		txtRecordsMap[record.DNSName] = struct{}{}
+		txtRecordsSet.Insert(record.DNSName)
 		im.existingTXTs.add(record)
 	}
 
@@ -252,13 +262,22 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
-		// AWS Alias records have "new" format encoded as type "cname"
-		if isAlias, found := ep.GetBoolProviderSpecificProperty("alias"); found && isAlias && ep.RecordType == endpoint.RecordTypeA {
-			key.RecordType = endpoint.RecordTypeCNAME
+		labels, labelsExist := labelMap[key]
+
+		// A ALIAS records used the legacy "cname-" prefix. Fall back to it so ownership
+		// survives migration to "a-", and report the stale record once. See issue #2903.
+		if isAliasARecord(ep) {
+			legacyKey := key
+			legacyKey.RecordType = endpoint.RecordTypeCNAME
+			if legacyLabels, ok := labelMap[legacyKey]; ok {
+				if !labelsExist {
+					labels, labelsExist = legacyLabels, true
+				}
+				im.warnObsoleteAliasTXT(dnsName)
+			}
 		}
 
 		// Handle both new and old registry format with the preference for the new one
-		labels, labelsExist := labelMap[key]
 		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
 			key.RecordType = ""
 			labels, labelsExist = labelMap[key]
@@ -274,12 +293,12 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// TODO: remove this migration logic in some future release
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
-		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
+		if len(txtRecordsSet) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Get desired TXT records and detect the missing ones
 				desiredTXTs := im.generateTXTRecord(ep)
 				for _, desiredTXT := range desiredTXTs {
-					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
+					if !txtRecordsSet.Has(desiredTXT.DNSName) {
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 					}
 				}
@@ -296,6 +315,24 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
+// isAliasARecord reports whether the endpoint is an A ALIAS record (used to recognize the legacy
+// "cname-" ownership TXT during migration to the "a-" prefix).
+func isAliasARecord(ep *endpoint.Endpoint) bool {
+	aliasType := ep.GetAliasProperty()
+	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
+}
+
+// warnObsoleteAliasTXT logs, once per record, that a legacy "cname-" alias TXT can be removed.
+func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
+	legacyName := im.mapper.ToTXTName(dnsName, endpoint.RecordTypeCNAME)
+	if im.obsoleteTXTWarned.Has(legacyName) {
+		return
+	}
+	im.obsoleteTXTWarned.Insert(legacyName)
+	log.Warnf("Obsolete legacy TXT record %q for A ALIAS %q can be removed; now using %q (see scripts/aws-cleanup-legacy-txt-records.py).",
+		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
+}
+
 // generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
 // depending on the newFormatOnly configuration. The old format is maintained for backwards
 // compatibility but can be disabled to reduce the number of DNS records.
@@ -306,12 +343,8 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	// Always create new format record
+	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
 	recordType := r.RecordType
-	// AWS Alias records are encoded as type "cname"
-	if isAlias, found := r.GetBoolProviderSpecificProperty("alias"); found && isAlias && recordType == endpoint.RecordTypeA {
-		recordType = endpoint.RecordTypeCNAME
-	}
 
 	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
@@ -329,8 +362,23 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 	return endpoints
 }
 
-// ApplyChanges updates dns provider with the changes
-// for each created/deleted record it will also take into account TXT records for creation/deletion
+// generateTXTRecordForRemoval builds the TXT records to delete alongside an endpoint, preferring
+// the value read from the provider over a regenerated one, as deletes match by value.
+// With gzip output, a regenerated one can differ between two Go standard library implementations.
+func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	txts := im.generateTXTRecord(r)
+	for _, txt := range txts {
+		stored, ok := im.existingTXTs.storedValue(txt)
+		if !ok {
+			// Records() saw no TXT under this name; keep the generated value.
+			continue
+		}
+		txt.Targets = endpoint.Targets{stored}
+	}
+	return txts
+}
+
+// ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
@@ -353,10 +401,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
-		// when we delete TXT records for which value has changed (due to new label) this would still work because
-		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
+		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecordForRemoval(r)...)
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -365,9 +411,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
-		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)

@@ -17,11 +17,14 @@ limitations under the License.
 package endpoint
 
 import (
+	"maps"
 	"net/netip"
+	"slices"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
@@ -40,6 +43,19 @@ func SuitableType(target string) string {
 		return RecordTypeA
 	}
 	return RecordTypeAAAA
+}
+
+// RequiresTrailingDot reports whether the record type's target is a single
+// domain name that must be an absolute FQDN (i.e. end with a trailing dot)
+// when written to a provider. CNAME and DNAME are such types; providers that
+// canonicalize the target use this to append the dot when it is missing.
+func RequiresTrailingDot(recordType string) bool {
+	switch recordType {
+	case RecordTypeCNAME, RecordTypeDNAME:
+		return true
+	default:
+		return false
+	}
 }
 
 // HasNoEmptyEndpoints checks if the endpoint list is empty and logs
@@ -90,4 +106,96 @@ func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
 	for _, ep := range eps {
 		ep.WithRefObject(ref)
 	}
+}
+
+// EndpointsForHostsAndTargets creates endpoints by grouping targets by record type
+// and creating an endpoint for each hostname/record-type combination.
+// Hostnames and targets are deduplicated; output order is deterministic.
+func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
+	if len(hostnames) == 0 || len(targets) == 0 {
+		return nil
+	}
+
+	sortedHosts := sets.Sorted(sets.New(hostnames...))
+
+	targetsByType := make(map[string]sets.Set[string])
+	for _, target := range targets {
+		recordType := SuitableType(target)
+		if targetsByType[recordType] == nil {
+			targetsByType[recordType] = sets.New(target)
+		} else {
+			targetsByType[recordType].Insert(target)
+		}
+	}
+
+	sortedTypes := slices.Sorted(maps.Keys(targetsByType))
+	sortedTargets := make(map[string][]string, len(targetsByType))
+	for _, recordType := range sortedTypes {
+		sortedTargets[recordType] = slices.Sorted(maps.Keys(targetsByType[recordType]))
+	}
+
+	endpoints := make([]*Endpoint, 0, len(sortedHosts)*len(sortedTypes))
+	for _, hostname := range sortedHosts {
+		for _, recordType := range sortedTypes {
+			endpoints = append(endpoints, NewEndpoint(hostname, recordType, sortedTargets[recordType]...))
+		}
+	}
+	return endpoints
+}
+
+// MergeEndpoints merges endpoints with the same key (DNSName + RecordType + SetIdentifier + RecordTTL)
+// by combining their targets. CNAME endpoints are not merged (per DNS spec) but are deduplicated.
+// This is useful when multiple resources (e.g., pods, nodes) contribute targets to the same DNS record.
+//
+// When several endpoints merge into one, the first endpoint's scalar metadata (TTL, ProviderSpecific,
+// Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
+// record references every source object that contributed to it. "First" follows the input slice order.
+func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
+	if len(endpoints) == 0 {
+		return endpoints
+	}
+
+	endpointMap := make(map[EndpointKey]*Endpoint)
+	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
+
+	for _, ep := range endpoints {
+		key := EndpointKey{
+			DNSName:       ep.DNSName,
+			RecordType:    ep.RecordType,
+			SetIdentifier: ep.SetIdentifier,
+			RecordTTL:     ep.RecordTTL,
+		}
+		// CNAME and DNAME records can only have one target per DNS spec, and they should not be merged.
+		if ep.RecordType == RecordTypeCNAME || ep.RecordType == RecordTypeDNAME {
+			if len(ep.Targets) == 0 {
+				log.Debugf("Skipping %s endpoint %q with no targets", ep.RecordType, ep.DNSName)
+				continue
+			}
+			key.Target = ep.Targets[0]
+			singleKey := ep.RecordType + "/" + ep.DNSName + "/" + ep.SetIdentifier
+			// This will be caught by the provider when it tries to create the record, but log a warning here to make it more obvious.
+			// TODO: add metric for CNAME/DNAME conflicts
+			if first, ok := singleTargets[singleKey]; ok && first != ep.Targets[0] {
+				log.Warnf("Only one %[1]s per name — %[2]s %[1]s %[3]s and %[2]s %[1]s %[4]s is invalid DNS. A resolver wouldn't know which canonical name to follow.", ep.RecordType, ep.DNSName, first, ep.Targets[0])
+			}
+			singleTargets[singleKey] = ep.Targets[0]
+		}
+		if existing, ok := endpointMap[key]; ok {
+			existing.Targets = append(existing.Targets, ep.Targets...)
+			for _, ref := range ep.refObjects {
+				existing.WithRefObject(ref)
+			}
+		} else {
+			endpointMap[key] = ep
+		}
+	}
+
+	result := make([]*Endpoint, 0, len(endpointMap))
+	for _, ep := range endpointMap {
+		slices.Sort(ep.Targets)
+		ep.Targets = slices.Compact(ep.Targets)
+		result = append(result, ep)
+	}
+
+	return result
 }

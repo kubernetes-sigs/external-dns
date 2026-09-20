@@ -63,11 +63,10 @@ func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 	tokens := strings.Split(labelText, ",")
 	foundExternalDNSHeritage := false
 	for _, token := range tokens {
-		if len(strings.Split(token, "=")) != 2 {
+		key, val, ok := strings.Cut(token, "=")
+		if !ok {
 			continue
 		}
-		key := strings.Split(token, "=")[0]
-		val := strings.Split(token, "=")[1]
 		if key == "heritage" && val != heritage {
 			return nil, ErrInvalidHeritage
 		}

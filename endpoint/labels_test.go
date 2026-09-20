@@ -50,7 +50,7 @@ func (suite *LabelsSuite) SetupTest() {
 	suite.aesKey = []byte(")K_Fy|?Z.64#UuHm`}[d!GC%WJM_fs{_")
 	suite.fooAsText = "heritage=external-dns,external-dns/owner=foo-owner,external-dns/resource=foo-resource"
 	suite.fooAsTextWithQuotes = fmt.Sprintf(`"%s"`, suite.fooAsText)
-	suite.fooAsTextEncrypted = `+lvP8q9KHJ6BS6O81i2Q6DLNdf2JSKy8j/gbZKviTZlGYj7q+yDoYMgkQ1hPn6urtGllM5bfFMcaaHto52otQtiOYrX8990J3kQqg4s47m3bH3Ejl8RSxSSuWJM3HJtPghQzYg0/LSOsdQ0=`
+	suite.fooAsTextEncrypted = `+lvP8q9KHJ6BS6O81i2Q6DLNdf2JSKy8j/gbZKviTZlGYj7q+yDoYMgkQ1hPn6urtGllM5bfFMcaaHto52otQtiOYrX8990J3kQqg4s47G27hzNNpXlckPuVVSGSLOQ25dQ9IBuqjbc=`
 	suite.fooAsTextWithQuotesEncrypted = fmt.Sprintf(`"%s"`, suite.fooAsTextEncrypted)
 	suite.barTextAsMap = map[string]string{
 		"owner":    "bar-owner",
@@ -180,4 +180,48 @@ func (suite *LabelsSuite) TestDeserialize() {
 
 func TestLabels(t *testing.T) {
 	suite.Run(t, new(LabelsSuite))
+}
+
+func TestParseLabels(t *testing.T) {
+	testCases := []struct {
+		name      string
+		labelText string
+		expected  Labels
+	}{
+		{
+			name:      "parses regular owner value",
+			labelText: "heritage=external-dns,external-dns/owner=team-platform,external-dns/resource=ingress/default/example",
+			expected: Labels{
+				"owner":    "team-platform",
+				"resource": "ingress/default/example",
+			},
+		},
+		{
+			name:      "preserves equals in owner value",
+			labelText: "heritage=external-dns,external-dns/owner=team=platform,external-dns/resource=ingress/default/example",
+			expected: Labels{
+				"owner":    "team=platform",
+				"resource": "ingress/default/example",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			parsed, err := NewLabelsFromStringPlain(tc.labelText)
+			if err != nil {
+				t.Fatalf("NewLabelsFromStringPlain(%q) returned error: %v", tc.labelText, err)
+			}
+
+			if len(parsed) != len(tc.expected) {
+				t.Fatalf("NewLabelsFromStringPlain(%q) returned %#v, want %#v", tc.labelText, parsed, tc.expected)
+			}
+
+			for key, expectedValue := range tc.expected {
+				if parsed[key] != expectedValue {
+					t.Fatalf("NewLabelsFromStringPlain(%q) returned value %q for key %q, want %q", tc.labelText, parsed[key], key, expectedValue)
+				}
+			}
+		})
+	}
 }

@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=service
         - --source=ingress
@@ -39,7 +39,7 @@ spec:
         - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -105,7 +105,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=service
         - --source=ingress
@@ -113,7 +113,7 @@ spec:
         - --source=istio-virtualservice
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -264,7 +264,7 @@ EOF
 To get the targets to the extracted DNS names, external-dns is able to gather information from the kubernetes service of the Istio Ingress Gateway.
 Please take a look at the [source service documentation](../sources/service.md) for more information on this.
 
-It is also possible to set the targets manually by using the `external-dns.alpha.kubernetes.io/target` annotation on the Istio Ingress Gateway resource or the Istio VirtualService.
+It is also possible to set the targets manually by using the `external-dns.kubernetes.io/target` annotation on the Istio Ingress Gateway resource or the Istio VirtualService.
 
 ### Access the sample service using `curl`
 
@@ -306,7 +306,7 @@ metadata:
   name: httpbin-gateway
   namespace: istio-system
   annotations:
-    "external-dns.alpha.kubernetes.io/ingress": "$ingressNamespace/$ingressName"
+    "external-dns.kubernetes.io/ingress": "$ingressNamespace/$ingressName"
 spec:
   selector:
     istio: ingressgateway # use Istio default gateway implementation

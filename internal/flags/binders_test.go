@@ -17,7 +17,6 @@ limitations under the License.
 package flags
 
 import (
-	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -26,10 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type badSetter struct{}
-
-func (b *badSetter) Set(_ string) error { return errors.New("bad default") }
 
 func TestKingpinBinderParsesAllTypes(t *testing.T) {
 	app := kingpin.New("test", "")
@@ -95,24 +90,20 @@ func TestKingpinBinderStringsVarNoDefaultAndBoolDefaultFalse(t *testing.T) {
 	assert.False(t, b2)
 }
 
-func TestCobraRegexValueSetStringType(t *testing.T) {
-	var r *regexp.Regexp
-	rv := &regexpValue{target: &r}
+func TestKingpinBinderStringMapVar(t *testing.T) {
+	app := kingpin.New("test", "")
+	b := NewKingpinBinder(app)
 
-	require.Equal(t, "regexp", rv.Type())
-	// empty when target nil
-	assert.Empty(t, rv.String())
+	labels := map[string]string{}
+	b.StringMapVar("label", "map flag", &labels)
 
-	// invalid pattern returns error
-	err := rv.Set("(")
-	require.Error(t, err)
-
-	// valid pattern sets target
-	err = rv.Set("^foo$")
+	_, err := app.Parse([]string{"--label=env=prod", "--label=team=dns"})
 	require.NoError(t, err)
-	require.NotNil(t, r)
-	assert.Equal(t, "^foo$", r.String())
-	assert.Equal(t, "^foo$", rv.String())
+
+	assert.Equal(t, map[string]string{
+		"env":  "prod",
+		"team": "dns",
+	}, labels)
 }
 
 func TestKingpinRegexpVarDefaultAndParse(t *testing.T) {
@@ -156,10 +147,4 @@ func TestKingpinStringsEnumVarWithAndWithoutDefault(t *testing.T) {
 	_, err = app2.Parse([]string{"--se=a", "--se=c"})
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"a", "c"}, vals2)
-}
-
-func TestSetRegexDefaultPanicsOnInvalidDefault(t *testing.T) {
-	bs := &badSetter{}
-	def := regexp.MustCompile("^")
-	require.Panics(t, func() { setRegexpDefault(bs, def, "flag") })
 }

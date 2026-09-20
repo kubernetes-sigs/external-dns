@@ -29,12 +29,12 @@ import (
 	sdtypes "github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	extdnsaws "sigs.k8s.io/external-dns/provider/aws"
-
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	extdnsaws "sigs.k8s.io/external-dns/provider/aws"
 )
 
 const (
@@ -276,15 +276,12 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) ([]*endpoint.End
 		current := updateNewMap[old.DNSName]
 
 		if !old.Targets.Same(current.Targets) {
-			currentTargetsMap := make(map[string]struct{}, len(current.Targets))
-			for _, newTarget := range current.Targets {
-				currentTargetsMap[newTarget] = struct{}{}
-			}
+			currentTargetsSet := sets.New(current.Targets...)
 
 			// If targets changed, only deregister removed targets (i.e. in `UpdateOld` but not in `UpdateNew`)
 			targetsToRemove := make(endpoint.Targets, 0)
 			for _, oldTarget := range old.Targets {
-				if _, found := currentTargetsMap[oldTarget]; !found {
+				if !currentTargetsSet.Has(oldTarget) {
 					targetsToRemove = append(targetsToRemove, oldTarget)
 				}
 			}
@@ -303,14 +300,18 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) ([]*endpoint.End
 func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes.NamespaceSummary, changes []*endpoint.Endpoint) error {
 	changesByNamespaceID := p.changesByNamespaceID(namespaces, changes)
 
+	nsIDToName := namespaceIDToName(namespaces)
+
 	for nsID, changeList := range changesByNamespaceID {
 		services, err := p.ListServicesByNamespaceID(ctx, aws.String(nsID))
 		if err != nil {
 			return err
 		}
 
+		nsName := nsIDToName[nsID]
 		for _, ch := range changeList {
-			_, srvName := p.parseHostname(ch.DNSName)
+			hostname := strings.TrimSuffix(ch.DNSName, ".")
+			srvName := strings.TrimSuffix(hostname, "."+nsName)
 
 			srv := services[srvName]
 			if srv == nil {
@@ -342,15 +343,18 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 func (p *AWSSDProvider) submitDeletes(ctx context.Context, namespaces []*sdtypes.NamespaceSummary, changes []*endpoint.Endpoint) error {
 	changesByNamespaceID := p.changesByNamespaceID(namespaces, changes)
 
+	nsIDToName := namespaceIDToName(namespaces)
+
 	for nsID, changeList := range changesByNamespaceID {
 		services, err := p.ListServicesByNamespaceID(ctx, aws.String(nsID))
 		if err != nil {
 			return err
 		}
 
+		nsName := nsIDToName[nsID]
 		for _, ch := range changeList {
-			hostname := ch.DNSName
-			_, srvName := p.parseHostname(hostname)
+			hostname := strings.TrimSuffix(ch.DNSName, ".")
+			srvName := strings.TrimSuffix(hostname, "."+nsName)
 
 			srv := services[srvName]
 			if srv == nil {
@@ -605,7 +609,7 @@ func (p *AWSSDProvider) changesByNamespaceID(namespaces []*sdtypes.NamespaceSumm
 	for _, c := range changes {
 		// trim the trailing dot from hostname if any
 		hostname := strings.TrimSuffix(c.DNSName, ".")
-		nsName, _ := p.parseHostname(hostname)
+		nsName := parseNamespace(hostname, namespaces)
 
 		matchingNamespaces := matchingNamespaces(nsName, namespaces)
 		if len(matchingNamespaces) == 0 {
@@ -625,25 +629,6 @@ func (p *AWSSDProvider) changesByNamespaceID(namespaces []*sdtypes.NamespaceSumm
 	}
 
 	return changesByNsID
-}
-
-// returns list of all namespaces matching given hostname
-func matchingNamespaces(hostname string, namespaces []*sdtypes.NamespaceSummary) []*sdtypes.NamespaceSummary {
-	matchingNamespaces := make([]*sdtypes.NamespaceSummary, 0)
-
-	for _, ns := range namespaces {
-		if *ns.Name == hostname {
-			matchingNamespaces = append(matchingNamespaces, ns)
-		}
-	}
-
-	return matchingNamespaces
-}
-
-// parseHostname parse hostname to namespace (domain) and service
-func (p *AWSSDProvider) parseHostname(hostname string) (string, string) {
-	parts := strings.Split(hostname, ".")
-	return strings.Join(parts[1:], "."), parts[0]
 }
 
 // determine service routing policy based on endpoint type
@@ -679,4 +664,45 @@ func (p *AWSSDProvider) isAWSLoadBalancer(hostname string) bool {
 	matchNlb := sdNlbHostnameRegex.MatchString(hostname)
 
 	return matchElb || matchNlb
+}
+
+// returns list of all namespaces matching given hostname
+func matchingNamespaces(hostname string, namespaces []*sdtypes.NamespaceSummary) []*sdtypes.NamespaceSummary {
+	matchingNamespaces := make([]*sdtypes.NamespaceSummary, 0)
+
+	for _, ns := range namespaces {
+		if *ns.Name == hostname {
+			matchingNamespaces = append(matchingNamespaces, ns)
+		}
+	}
+
+	return matchingNamespaces
+}
+
+// parseNamespace returns the Cloud Map namespace name that matches the given
+// hostname using longest-suffix matching. Falls back to the original first-dot
+// split when no namespace suffix matches.
+func parseNamespace(hostname string, namespaces []*sdtypes.NamespaceSummary) string {
+	hostname = strings.TrimSuffix(hostname, ".")
+	var bestNS string
+	for _, ns := range namespaces {
+		nsName := aws.ToString(ns.Name)
+		if len(nsName) > len(bestNS) && strings.HasSuffix(hostname, "."+nsName) {
+			bestNS = nsName
+		}
+	}
+	if bestNS != "" {
+		return bestNS
+	}
+	parts := strings.Split(hostname, ".")
+	return strings.Join(parts[1:], ".")
+}
+
+// namespaceIDToName builds a map from namespace ID to namespace name.
+func namespaceIDToName(namespaces []*sdtypes.NamespaceSummary) map[string]string {
+	m := make(map[string]string, len(namespaces))
+	for _, ns := range namespaces {
+		m[aws.ToString(ns.Id)] = aws.ToString(ns.Name)
+	}
+	return m
 }

@@ -47,6 +47,12 @@ import (
 )
 
 func Execute() {
+	ctx, finalize := contextWithSigtermHandler(context.Background())
+	defer finalize()
+	execute(ctx)
+}
+
+func execute(ctx context.Context) {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
@@ -62,7 +68,14 @@ func Execute() {
 		log.Infof("Using custom annotation prefix: %s", cfg.AnnotationPrefix)
 	}
 
-	configureLogger(cfg)
+	if err := configureLogger(cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	if cfg.EnableLegacyAnnotationPrefix {
+		annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+		log.Warnf("Annotations with the legacy prefix %s are also read; %s takes precedence when both are present. --enable-legacy-annotation-prefix is a migration aid and will be removed in a future release", annotations.LegacyAnnotationPrefix, cfg.AnnotationPrefix)
+	}
 
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
@@ -81,10 +94,7 @@ func Execute() {
 
 	log.Info(externaldns.Banner())
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(cancel)
 
 	sCfg, err := source.NewSourceConfig(cfg)
 	if err != nil {
@@ -108,7 +118,15 @@ func Execute() {
 	}
 
 	if cfg.WebhookServer {
-		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		webhookapi.StartHTTPApi(webhookapi.ServerOptions{
+			Provider:          prvdr,
+			ProviderPort:      "127.0.0.1:8888",
+			ReadTimeout:       cfg.WebhookProviderReadTimeout,
+			WriteTimeout:      cfg.WebhookProviderWriteTimeout,
+			ReadHeaderTimeout: cfg.WebhookProviderReadHeaderTimeout,
+			IdleTimeout:       cfg.WebhookProviderIdleTimeout,
+			MaxBodySize:       cfg.WebhookProviderMaxBodySize,
+		})
 		os.Exit(0)
 	}
 
@@ -134,7 +152,9 @@ func Execute() {
 	}
 
 	ctrl.ScheduleRunOnce(time.Now())
-	ctrl.Run(ctx)
+	if err := ctrl.Run(ctx); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func buildController(
@@ -185,25 +205,35 @@ func buildController(
 }
 
 // This function configures the logger format and level based on the provided configuration.
-func configureLogger(cfg *externaldns.Config) {
+func configureLogger(cfg *externaldns.Config) error {
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 	ll, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		log.Fatalf("failed to parse log level: %v", err)
+		return err
 	}
 	log.SetLevel(ll)
+	return nil
 }
 
-// handleSigterm listens for a SIGTERM signal and triggers the provided cancel function
-// to gracefully terminate the application. It logs a message when the signal is received.
-func handleSigterm(cancel func()) {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGTERM)
-	<-signals
-	log.Info("Received SIGTERM. Terminating...")
-	cancel()
+// contextWithSigtermHandler returns a context that is canceled when a SIGTERM signal is received and
+// a function to wait for the signal handler to finish processing.
+func contextWithSigtermHandler(ctx context.Context) (context.Context, func()) {
+	endCh := make(chan struct{})
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGTERM)
+	context.AfterFunc(ctx, func() {
+		log.Info("Received SIGTERM. Terminating...")
+		close(endCh)
+	})
+	return ctx, func() {
+		stop()
+		select {
+		case <-ctx.Done():
+			<-endCh
+		default:
+		}
+	}
 }
 
 // serveMetrics starts an HTTP server that serves health and metrics endpoints.

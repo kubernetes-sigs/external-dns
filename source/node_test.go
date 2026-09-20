@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -196,12 +197,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 			expectError:        true,
 		},
 		{
+			title:              "node name with a label over 63 characters is skipped instead of panicking",
+			nodeName:           strings.Repeat("a", 64),
+			exposeInternalIPv6: true,
+			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected:           nil,
+		},
+		{
 			title:              "node with target annotation",
 			nodeName:           "node1.example.org",
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+				"external-dns.kubernetes.io/target": "203.2.45.7",
 			},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
@@ -374,11 +382,9 @@ func testNodeSourceEndpoints(t *testing.T) {
 			kubeClient := fake.NewClientset()
 
 			node := &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        tc.nodeName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
+				Name:        tc.nodeName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
 				Spec: v1.NodeSpec{
 					Unschedulable: tc.unschedulable,
 				},
@@ -395,7 +401,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				&Config{
-					AnnotationFilter:     tc.annotationFilter,
+					AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
 					ExposeInternalIPv6:   tc.exposeInternalIPv6,
@@ -488,11 +494,9 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		kubeClient := fake.NewClientset()
 
 		node := &v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        tc.nodeName,
-				Labels:      tc.labels,
-				Annotations: tc.annotations,
-			},
+			Name:        tc.nodeName,
+			Labels:      tc.labels,
+			Annotations: tc.annotations,
 			Spec: v1.NodeSpec{
 				Unschedulable: tc.unschedulable,
 			},
@@ -509,7 +513,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 			t.Context(),
 			kubeClient,
 			&Config{
-				AnnotationFilter:     tc.annotationFilter,
+				AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
 				ExposeInternalIPv6:   tc.exposeInternalIPv6,
@@ -537,20 +541,18 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 
 func TestTransformerInNodeSource(t *testing.T) {
 	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "fake-node",
-			Labels: map[string]string{
-				"label1": "value1",
-				"label2": "value2",
-			},
-			Annotations: map[string]string{
-				"user-annotation":              "value",
-				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
-			},
-			UID: "someuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name: "fake-node",
+		Labels: map[string]string{
+			"label1": "value1",
+			"label2": "value2",
+		},
+		Annotations: map[string]string{
+			"user-annotation":              "value",
+			v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+		},
+		UID: "someuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Status: v1.NodeStatus{
 			Addresses: []v1.NodeAddress{
@@ -621,24 +623,20 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 	elements := []runtime.Object{
 		&v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "foo",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "foo.example.com",
-					annotations.TargetKey:   "1.2.3",
-				},
-				UID: "uid-1",
+			Name: "foo",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.com",
+				annotations.TargetKey:   "1.2.3",
 			},
+			UID: "uid-1",
 		},
 		&v1.Node{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "bar",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "bar.example.com",
-					annotations.TargetKey:   "3.4.5",
-				},
-				UID: "uid-2",
+			Name: "bar",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "bar.example.com",
+				annotations.TargetKey:   "3.4.5",
 			},
+			UID: "uid-2",
 		},
 	}
 
@@ -702,23 +700,21 @@ func (b *nodeListBuilder) withNode(labels map[string]string) *nodeListBuilder {
 	idx := len(b.nodes) + 1
 	nodeName := fmt.Sprintf("ip-10-1-176-%d.internal", idx)
 	b.nodes = append(b.nodes, v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: nodeName,
-			Labels: func() map[string]string {
-				base := map[string]string{
-					"test-label":                    "test-value",
-					"name":                          nodeName,
-					"topology.kubernetes.io/region": "eu-west-1",
-					"node.kubernetes.io/lifecycle":  "spot",
-				}
-				maps.Copy(base, labels)
-				return base
-			}(),
-			Annotations: map[string]string{
-				"volumes.kubernetes.io/controller-managed-attach-detach": "true",
-				"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
-				"external-dns.alpha.kubernetes.io/hostname":              fmt.Sprintf("node-%d.example.com", idx),
-			},
+		Name: nodeName,
+		Labels: func() map[string]string {
+			base := map[string]string{
+				"test-label":                    "test-value",
+				"name":                          nodeName,
+				"topology.kubernetes.io/region": "eu-west-1",
+				"node.kubernetes.io/lifecycle":  "spot",
+			}
+			maps.Copy(base, labels)
+			return base
+		}(),
+		Annotations: map[string]string{
+			"volumes.kubernetes.io/controller-managed-attach-detach": "true",
+			"alpha.kubernetes.io/provided-node-ip":                   fmt.Sprintf("10.1.176.%d", idx),
+			"external-dns.kubernetes.io/hostname":                    fmt.Sprintf("node-%d.example.com", idx),
 		},
 		Spec: v1.NodeSpec{
 			Unschedulable: false,
@@ -743,4 +739,116 @@ func (b *nodeListBuilder) build() v1.NodeList {
 		})
 	}
 	return v1.NodeList{Items: b.nodes}
+}
+
+func TestNodeIndexer(t *testing.T) {
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		nodes            []*v1.Node
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all nodes",
+			expectedCount: 5,
+			nodes:         createTestNodes(5),
+		},
+		{
+			name:             "annotation filter matches subset",
+			annotationFilter: "tier=frontend",
+			expectedCount:    3,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i < 3 {
+						node.Annotations["tier"] = "frontend"
+					}
+				}
+			}),
+		},
+		{
+			name:             "annotation filter no match returns empty",
+			annotationFilter: "tier=backend",
+			expectedCount:    0,
+			nodes: createTestNodes(3, func(nodes []*v1.Node) {
+				for _, node := range nodes {
+					node.Annotations["tier"] = "frontend"
+				}
+			}),
+		},
+		{
+			name:          "label filter matches subset",
+			labelFilter:   "app=my-node",
+			expectedCount: 2,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i < 2 {
+						node.Labels["app"] = "my-node"
+					}
+				}
+			}),
+		},
+		{
+			name:          "controller mismatch excludes node",
+			expectedCount: 3,
+			nodes: createTestNodes(5, func(nodes []*v1.Node) {
+				for i, node := range nodes {
+					if i >= 3 {
+						node.Annotations[annotations.ControllerKey] = "other-controller"
+					}
+				}
+			}),
+		},
+		{
+			name:             "invalid annotation filter is silently ignored and all nodes pass through",
+			annotationFilter: "tier in (x y)", // no comma — invalid set-based selector
+			expectedCount:    3,
+			nodes:            createTestNodes(3),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewClientset()
+
+			for i, node := range tt.nodes {
+				node.Annotations[annotations.TargetKey] = fmt.Sprintf("1.2.3.%d", i+1)
+				_, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewNodeSource(t.Context(), client, &Config{
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+func createTestNodes(count int, funcs ...func([]*v1.Node)) []*v1.Node {
+	nodes := make([]*v1.Node, count)
+	for i := range count {
+		nodes[i] = &v1.Node{
+			Name:        fmt.Sprintf("node-%d", i),
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		}
+	}
+	for _, fn := range funcs {
+		fn(nodes)
+	}
+	return nodes
 }

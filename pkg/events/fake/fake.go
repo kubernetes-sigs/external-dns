@@ -27,7 +27,9 @@ type EventEmitter struct {
 }
 
 func (m *EventEmitter) Add(events ...events.Event) {
-	m.Called(events[0])
+	for _, e := range events {
+		m.Called(e)
+	}
 }
 
 func NewFakeEventEmitter() *EventEmitter {

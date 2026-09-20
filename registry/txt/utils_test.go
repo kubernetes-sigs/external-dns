@@ -48,6 +48,16 @@ func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, 
 	return e
 }
 
+// findEndpoint returns the first endpoint matching dnsName and recordType, or nil.
+func findEndpoint(eps []*endpoint.Endpoint, dnsName, recordType string) *endpoint.Endpoint {
+	for _, ep := range eps {
+		if ep.DNSName == dnsName && ep.RecordType == recordType {
+			return ep
+		}
+	}
+	return nil
+}
+
 func newCNAMEEndpointWithOwnerResource(dnsName, target, ownerID, resource string) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, endpoint.RecordTypeCNAME, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
