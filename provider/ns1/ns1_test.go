@@ -317,3 +317,58 @@ func TestNewNS1ChangesByZone(t *testing.T) {
 	assert.Len(t, changes["bar.com"], 1)
 	assert.Len(t, changes["foo.com"], 3)
 }
+
+type MockNS1DryRunClient struct {
+	MockNS1DomainClient
+	createCalls int
+	deleteCalls int
+	updateCalls int
+}
+
+func (m *MockNS1DryRunClient) CreateRecord(_ *dns.Record) (*http.Response, error) {
+	m.createCalls++
+	return &http.Response{}, nil
+}
+
+func (m *MockNS1DryRunClient) DeleteRecord(_ string, _ string, _ string) (*http.Response, error) {
+	m.deleteCalls++
+	return &http.Response{}, nil
+}
+
+func (m *MockNS1DryRunClient) UpdateRecord(_ *dns.Record) (*http.Response, error) {
+	m.updateCalls++
+	return &http.Response{}, nil
+}
+
+func TestNS1ApplyChangesDryRun(t *testing.T) {
+	t.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
+	provider, err := newProvider(NS1Config{
+		DomainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
+		ZoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+		DryRun:       true,
+	})
+	require.NoError(t, err)
+	assert.True(t, provider.dryRun, "DryRun config must be propagated to the provider")
+
+	client := &MockNS1DryRunClient{}
+	provider.client = client
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{DNSName: "new.foo.com", Targets: endpoint.Targets{"target"}, RecordType: "A"},
+			{DNSName: "new.subdomain.bar.com", Targets: endpoint.Targets{"target"}, RecordType: "A"},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{DNSName: "test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: "A"},
+		},
+		Delete: []*endpoint.Endpoint{
+			{DNSName: "test.foo.com", Targets: endpoint.Targets{"target"}, RecordType: "A"},
+		},
+	}
+
+	require.NoError(t, provider.ApplyChanges(t.Context(), changes))
+
+	assert.Zero(t, client.createCalls, "dry-run must not create records")
+	assert.Zero(t, client.updateCalls, "dry-run must not update records")
+	assert.Zero(t, client.deleteCalls, "dry-run must not delete records")
+}

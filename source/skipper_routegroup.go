@@ -49,6 +49,7 @@ const (
 	DefaultRoutegroupVersion     = "zalando.org/v1"
 	routeGroupListResource       = "/apis/%s/routegroups"
 	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
+	routeGroupKind               = "RouteGroup"
 )
 
 // +externaldns:source:name=skipper-routegroup
@@ -92,7 +93,6 @@ func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeG
 		DialContext: (&net.Dialer{
 			Timeout:   timeout,
 			KeepAlive: 30 * time.Second,
-			DualStack: true,
 		}).DialContext,
 		TLSHandshakeTimeout:   3 * time.Second,
 		ResponseHeaderTimeout: timeout,
@@ -251,10 +251,11 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 
-	// RouteGroups are fetched over the Kubernetes API without server-side label
-	// filtering, so apply the label selector client-side to match other sources.
+	// RouteGroups bypass the shared informers, so the label selector and the legacy
+	// annotation prefix are applied here instead of by the informer transformer.
 	var labelFiltered []*routeGroup
 	for _, rg := range rgList.Items {
+		annotations.ResolveLegacyAnnotations(routeGroupKind, rg.Namespace, rg.Name, rg.Annotations)
 		if sc.labelSelector == nil || sc.labelSelector.Matches(labels.Set(rg.Labels)) {
 			labelFiltered = append(labelFiltered, rg)
 		}

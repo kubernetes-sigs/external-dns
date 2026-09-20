@@ -48,10 +48,8 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			},
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: routev1.RouteSpec{
 						Host: "example.org",
 						To: routev1.RouteTargetReference{
@@ -86,11 +84,9 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			combineFqdn: true,
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
-					Spec: routev1.RouteSpec{},
+					Name:      "my-gateway",
+					Namespace: "default",
+					Spec:      routev1.RouteSpec{},
 					Status: routev1.RouteStatus{
 						Ingress: []routev1.RouteIngress{
 							{
@@ -117,12 +113,10 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			combineFqdn: true,
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "kube-system",
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.0",
-						},
+					Name:      "my-gateway",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.0",
 					},
 				},
 			},
@@ -140,37 +134,31 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			combineFqdn: true,
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route-1",
-						Namespace: "kube-system",
-						Labels: map[string]string{
-							"env": "prod",
-						},
-						Annotations: map[string]string{
-							"env":                 "prod",
-							annotations.TargetKey: "10.1.1.0",
-						},
+					Name:      "route-1",
+					Namespace: "kube-system",
+					Labels: map[string]string{
+						"env": "prod",
+					},
+					Annotations: map[string]string{
+						"env":                 "prod",
+						annotations.TargetKey: "10.1.1.0",
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route-2",
-						Namespace: "default",
-						Labels: map[string]string{
-							"env": "dev",
-						},
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.3",
-						},
+					Name:      "route-2",
+					Namespace: "default",
+					Labels: map[string]string{
+						"env": "dev",
+					},
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.3",
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "no-labels-route-3",
-						Namespace: "default",
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.3",
-						},
+					Name:      "no-labels-route-3",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.3",
 					},
 				},
 			},
@@ -183,12 +171,10 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			},
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route-1",
-						Namespace: "kube-system",
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.0",
-						},
+					Name:      "route-1",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.0",
 					},
 					Spec: routev1.RouteSpec{
 						Port: &routev1.RoutePort{
@@ -198,12 +184,10 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 					Status: routev1.RouteStatus{},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route-2",
-						Namespace: "default",
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.3",
-						},
+					Name:      "route-2",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.3",
 					},
 				},
 			},
@@ -217,11 +201,9 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			},
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:        "my-route",
-						Namespace:   "kube-system",
-						Annotations: map[string]string{},
-					},
+					Name:        "my-route",
+					Namespace:   "kube-system",
+					Annotations: map[string]string{},
 					Status: routev1.RouteStatus{
 						Ingress: []routev1.RouteIngress{
 							{
@@ -258,12 +240,10 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route-2",
-						Namespace: "default",
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.3",
-						},
+					Name:      "route-2",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.3",
 					},
 				},
 			},
@@ -278,11 +258,9 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			},
 			ocpRoute: []*routev1.Route{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:        "my-route",
-						Namespace:   "kube-system",
-						Annotations: map[string]string{},
-					},
+					Name:        "my-route",
+					Namespace:   "kube-system",
+					Annotations: map[string]string{},
 					Status: routev1.RouteStatus{
 						Ingress: []routev1.RouteIngress{
 							{
@@ -319,12 +297,10 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "route-2",
-						Namespace: "default",
-						Annotations: map[string]string{
-							annotations.TargetKey: "10.1.1.3",
-						},
+					Name:      "route-2",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "10.1.1.3",
 					},
 				},
 			},

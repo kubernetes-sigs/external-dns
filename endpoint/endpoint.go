@@ -54,6 +54,8 @@ const (
 	RecordTypeNAPTR = "NAPTR"
 	// RecordTypeDNAME is a RecordType enum value
 	RecordTypeDNAME = "DNAME"
+	// RecordTypeTLSA is a RecordType enum value
+	RecordTypeTLSA = "TLSA"
 
 	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
 	// provider-native alias record (e.g. AWS ALIAS).
@@ -62,6 +64,11 @@ const (
 	// ProviderSpecificRecordType is the provider-specific property name used to
 	// request a particular DNS record type (e.g. "ptr") on an endpoint.
 	ProviderSpecificRecordType = "record-type"
+)
+
+const (
+	logFieldTargets           = "targets"
+	logFieldComparisonTargets = "comparisonTargets"
 )
 
 var (
@@ -76,6 +83,7 @@ var (
 		RecordTypeMX,
 		RecordTypeNAPTR,
 		RecordTypeDNAME,
+		RecordTypeTLSA,
 	}
 )
 
@@ -148,23 +156,21 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(t)
 	sort.Stable(o)
 
+	logFields := log.Fields{
+		logFieldTargets:           t,
+		logFieldComparisonTargets: o,
+	}
 	for i, e := range t {
 		if !strings.EqualFold(e, o[i]) {
 			// IPv6 can be shortened, so it should be parsed for equality checking
 			ipA, err := netip.ParseAddr(e)
 			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			ipB, err := netip.ParseAddr(o[i])
 			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			// IPv6 Address Shortener == IPv6 Address Expander
@@ -193,6 +199,10 @@ func (t Targets) IsLess(o Targets) bool {
 	sort.Sort(t)
 	sort.Sort(o)
 
+	logFields := log.Fields{
+		logFieldTargets:           t,
+		logFieldComparisonTargets: o,
+	}
 	for i, e := range t {
 		if e != o[i] {
 			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
@@ -202,18 +212,12 @@ func (t Targets) IsLess(o Targets) bool {
 				// Ignoring parsing errors is fine due to the empty netip.Addr{} type being an invalid IP,
 				// which is checked by IsValid() below. However, still log them in case a provider is experiencing
 				// non-obvious issues with the records being created.
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			ipB, err := netip.ParseAddr(o[i])
 			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+				log.WithFields(logFields).Debugf("Couldn't parse %s as an IP address: %v", e, err)
 			}
 
 			// If both targets are valid IP addresses, use the built-in Less() function to do the comparison.
@@ -288,6 +292,20 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
+// NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
+// Unparseable targets pass through; the null MX "0 ." (RFC 7505) keeps its dot, which is the host.
+func NormalizeMXTarget(target string) string {
+	mx, err := NewMXRecord(target)
+	if err != nil {
+		return target
+	}
+	host := mx.GetHost()
+	if host != "." {
+		host = strings.TrimSuffix(host, ".")
+	}
+	return fmt.Sprintf("%d %s", *mx.GetPriority(), host)
+}
+
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
 	cleanTargets := make([]string, len(targets))
@@ -298,6 +316,8 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		switch recordType {
 		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV:
 			cleanTargets[idx] = target
+		case RecordTypeMX:
+			cleanTargets[idx] = NormalizeMXTarget(target)
 		default:
 			cleanTargets[idx] = strings.TrimSuffix(target, ".")
 		}
@@ -438,15 +458,11 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 // "provider/" (e.g. "aws/evaluate-target-health" for provider "aws").
 // Properties belonging to other providers are dropped.
 // Properties with no provider prefix (e.g. "alias") are provider-agnostic and always retained.
-// TODO: cloudflare does not follow the "provider/" prefix convention — its properties use the
-// annotation form "external-dns.kubernetes.io/cloudflare-*", so filtering is skipped for
-// cloudflare and all properties are retained (only sorted). This should be removed once cloudflare
-// adopts the standard prefix convention.
 func (e *Endpoint) RetainProviderProperties(provider string) {
 	if len(e.ProviderSpecific) == 0 {
 		return
 	}
-	if provider != "" && provider != "cloudflare" {
+	if provider != "" {
 		prefix := provider + "/"
 		e.ProviderSpecific = slices.DeleteFunc(e.ProviderSpecific, func(prop ProviderSpecificProperty) bool {
 			return strings.Contains(prop.Name, "/") && !strings.HasPrefix(prop.Name, prefix)

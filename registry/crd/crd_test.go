@@ -182,12 +182,10 @@ func TestCRDRegistryRecords(t *testing.T) {
 	})
 
 	seeded := &apiv1alpha1.DNSRecord{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sub-mytestdomain-io-cname",
-			Namespace: "default",
-			Labels: map[string]string{
-				apiv1alpha1.RecordOwnerLabel: "test",
-			},
+		Name:      "sub-mytestdomain-io-cname",
+		Namespace: "default",
+		Labels: map[string]string{
+			apiv1alpha1.RecordOwnerLabel: "test",
 		},
 		Spec: apiv1alpha1.DNSRecordSpec{
 			Endpoint: endpoint.Endpoint{
@@ -207,11 +205,9 @@ func TestCRDRegistryRecords(t *testing.T) {
 	}
 	// A record owned by another instance must not be returned.
 	other := &apiv1alpha1.DNSRecord{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "other-cname",
-			Namespace: "default",
-			Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "someone-else"},
-		},
+		Name:      "other-cname",
+		Namespace: "default",
+		Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "someone-else"},
 	}
 
 	reg, _ := newTestRegistry(t, prov, "test", seeded, other)
@@ -286,11 +282,9 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
 			seedRecord: &apiv1alpha1.DNSRecord{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Labels: map[string]string{
-						apiv1alpha1.RecordOwnerLabel: "test",
-					},
+				Namespace: "default",
+				Labels: map[string]string{
+					apiv1alpha1.RecordOwnerLabel: "test",
 				},
 			},
 			assertFn: func(t *testing.T, c client.Client, name string) {
@@ -318,11 +312,9 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				Labels:        map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
 			seedRecord: &apiv1alpha1.DNSRecord{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Labels: map[string]string{
-						apiv1alpha1.RecordOwnerLabel: "test",
-					},
+				Namespace: "default",
+				Labels: map[string]string{
+					apiv1alpha1.RecordOwnerLabel: "test",
 				},
 				Spec: apiv1alpha1.DNSRecordSpec{Endpoint: endpoint.Endpoint{
 					DNSName:       "to.be.updated.mytestdomain.io",
@@ -348,10 +340,8 @@ func TestCRDRegistryApplyChanges(t *testing.T) {
 				Labels:     map[string]string{endpoint.OwnerLabelKey: "test"},
 			},
 			seedRecord: &apiv1alpha1.DNSRecord{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
-				},
+				Namespace: "default",
+				Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
 				Spec: apiv1alpha1.DNSRecordSpec{Endpoint: endpoint.Endpoint{
 					DNSName:    "to.be.refreshed.mytestdomain.io",
 					RecordType: "A",
@@ -626,12 +616,10 @@ func TestCRDApplyChangesErrorPaths(t *testing.T) {
 	}
 	seedFor := func(e *endpoint.Endpoint) *apiv1alpha1.DNSRecord {
 		return &apiv1alpha1.DNSRecord{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      recordObjectName(e),
-				Namespace: "default",
-				Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
-			},
-			Spec: apiv1alpha1.DNSRecordSpec{Endpoint: *e},
+			Name:      recordObjectName(e),
+			Namespace: "default",
+			Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
+			Spec:      apiv1alpha1.DNSRecordSpec{Endpoint: *e},
 		}
 	}
 

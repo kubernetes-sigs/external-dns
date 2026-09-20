@@ -5,7 +5,7 @@ options:
   # Temporary bump, while working on job improvements.
   machineType: 'N1_HIGHCPU_32'
 steps:
-  - name: 'docker.io/library/golang:1.26.6-bookworm'
+  - name: 'docker.io/library/golang:1.27.0-bookworm'
     entrypoint: make
     env:
       - VERSION=$_GIT_TAG

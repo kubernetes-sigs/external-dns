@@ -738,16 +738,12 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 			lbls = map[string]string{}
 		}
 		return &f5.VirtualServer{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: f5VirtualServerGVR.GroupVersion().String(),
-				Kind:       "VirtualServer",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Namespace:   defaultF5VirtualServerNamespace,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			APIVersion:  f5VirtualServerGVR.GroupVersion().String(),
+			Kind:        "VirtualServer",
+			Name:        name,
+			Namespace:   defaultF5VirtualServerNamespace,
+			Annotations: ann,
+			Labels:      lbls,
 			Spec: f5.VirtualServerSpec{
 				Host:                 name + ".example.org",
 				VirtualServerAddress: vsAddress,

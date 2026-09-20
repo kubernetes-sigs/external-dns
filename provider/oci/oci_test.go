@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -225,7 +226,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			_, err := newProvider(
+			provider, err := newProvider(
 				tc.config,
 				endpoint.NewDomainFilter([]string{"com"}),
 				provider.NewZoneIDFilter([]string{""}),
@@ -234,6 +235,10 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 			)
 			if err == nil {
 				require.NoError(t, err)
+				client, ok := provider.client.(dns.DnsClient)
+				require.True(t, ok)
+				require.Contains(t, client.UserAgent, "Oracle-GoSDK/")
+				require.True(t, strings.HasSuffix(client.UserAgent, externaldns.UserAgent()))
 			} else {
 				// have to use prefix testing because the expected instance-principal error strings vary after a known prefix
 				require.Truef(t, strings.HasPrefix(err.Error(), tc.err.Error()), "observed: %s", err.Error())
@@ -666,15 +671,13 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	// Remove the A record.
 	_, err = client.PatchZoneRecords(t.Context(), dns.PatchZoneRecordsRequest{
 		ZoneNameOrId: new("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
-		PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{
-			Items: []dns.RecordOperation{{
-				Domain:    new("foo.foo.com"),
-				Rdata:     new("127.0.0.1"),
-				Rtype:     new("A"),
-				Ttl:       new(300),
-				Operation: dns.RecordOperationOperationRemove,
-			}},
-		},
+		Items: []dns.RecordOperation{{
+			Domain:    new("foo.foo.com"),
+			Rdata:     new("127.0.0.1"),
+			Rtype:     new("A"),
+			Ttl:       new(300),
+			Operation: dns.RecordOperationOperationRemove,
+		}},
 	})
 	require.NoError(t, err)
 
@@ -689,15 +692,13 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	// Add the A record back.
 	_, err = client.PatchZoneRecords(t.Context(), dns.PatchZoneRecordsRequest{
 		ZoneNameOrId: new("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
-		PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{
-			Items: []dns.RecordOperation{{
-				Domain:    new("foo.foo.com"),
-				Rdata:     new("127.0.0.1"),
-				Rtype:     new("A"),
-				Ttl:       new(300),
-				Operation: dns.RecordOperationOperationAdd,
-			}},
-		},
+		Items: []dns.RecordOperation{{
+			Domain:    new("foo.foo.com"),
+			Rdata:     new("127.0.0.1"),
+			Rtype:     new("A"),
+			Ttl:       new(300),
+			Operation: dns.RecordOperationOperationAdd,
+		}},
 	})
 	require.NoError(t, err)
 

@@ -87,10 +87,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-virtualservice",
-						Namespace: "default",
-					},
+					Name:      "my-virtualservice",
+					Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"app.example.org"},
 						Gateways: []string{"my-gateway"},
@@ -99,10 +97,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -113,11 +109,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -139,10 +133,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			combineFqdn: true,
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-virtualservice",
-						Namespace: "default",
-					},
+					Name:      "my-virtualservice",
+					Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"app.example.org"},
 						Gateways: []string{"my-gateway"},
@@ -151,10 +143,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -165,11 +155,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -193,20 +181,16 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "api-service",
-						Namespace: "production",
-					},
+					Name:      "api-service",
+					Namespace: "production",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"api.example.org"},
 						Gateways: []string{"api-gateway"},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "web-service",
-						Namespace: "staging",
-					},
+					Name:      "web-service",
+					Namespace: "staging",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"web.example.org"},
 						Gateways: []string{"web-gateway"},
@@ -215,10 +199,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "api-gateway",
-						Namespace: "production",
-					},
+					Name:      "api-gateway",
+					Namespace: "production",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -227,10 +209,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "web-gateway",
-						Namespace: "staging",
-					},
+					Name:      "web-gateway",
+					Namespace: "staging",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway-staging"},
 						Servers: []*istionetworking.Server{
@@ -241,11 +221,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "production",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "production",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -257,11 +235,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway-staging",
-						Namespace: "staging",
-						Labels:    map[string]string{"istio": "ingressgateway-staging"},
-					},
+					Name:      "istio-ingressgateway-staging",
+					Namespace: "staging",
+					Labels:    map[string]string{"istio": "ingressgateway-staging"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway-staging"},
@@ -283,10 +259,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "multi-host",
-						Namespace: "default",
-					},
+					Name:      "multi-host",
+					Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Gateways: []string{"my-gateway"},
 					},
@@ -294,10 +268,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -308,11 +280,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -334,10 +304,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "combined-vs",
-						Namespace: "default",
-					},
+					Name:      "combined-vs",
+					Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"app.example.org"},
 						Gateways: []string{"my-gateway"},
@@ -346,10 +314,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -360,11 +326,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -385,22 +349,18 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "labeled-vs",
-						Namespace: "default",
-						Labels: map[string]string{
-							"env": "dev",
-						},
+					Name:      "labeled-vs",
+					Namespace: "default",
+					Labels: map[string]string{
+						"env": "dev",
 					},
 					Spec: istionetworking.VirtualService{
 						Gateways: []string{"my-gateway"},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "no-labels",
-						Namespace: "default",
-					},
+					Name:      "no-labels",
+					Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Gateways: []string{"my-gateway"},
 					},
@@ -408,10 +368,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -422,10 +380,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -447,10 +403,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "cross-ns-vs",
-						Namespace: "app-namespace",
-					},
+					Name:      "cross-ns-vs",
+					Namespace: "app-namespace",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"cross-ns.example.org"},
 						Gateways: []string{"istio-system/shared-gateway"},
@@ -459,10 +413,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "shared-gateway",
-						Namespace: "istio-system",
-					},
+					Name:      "shared-gateway",
+					Namespace: "istio-system",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -473,11 +425,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "istio-system",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "istio-system",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -501,10 +451,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "multi-host-vs",
-						Namespace: "default",
-					},
+					Name:      "multi-host-vs",
+					Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"app1.example.org", "app2.example.org", "app3.example.org"},
 						Gateways: []string{"my-gateway"},
@@ -513,10 +461,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -527,11 +473,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -552,12 +496,10 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "orphan-vs",
-						Namespace: "default",
-						Annotations: map[string]string{
-							annotations.TargetKey: "fallback.local",
-						},
+					Name:      "orphan-vs",
+					Namespace: "default",
+					Annotations: map[string]string{
+						annotations.TargetKey: "fallback.local",
 					},
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"orphan.example.org"},
@@ -574,13 +516,11 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "annotated-vs",
-						Namespace: "default",
-						Annotations: map[string]string{
-							"dns.company.com/subdomain": "api-v2",
-							annotations.TargetKey:       "10.20.30.40",
-						},
+					Name:      "annotated-vs",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"dns.company.com/subdomain": "api-v2",
+						annotations.TargetKey:       "10.20.30.40",
 					},
 					Spec: istionetworking.VirtualService{
 						Gateways: []string{"my-gateway"},
@@ -589,10 +529,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-gateway",
-						Namespace: "default",
-					},
+					Name:      "my-gateway",
+					Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers: []*istionetworking.Server{
@@ -603,10 +541,8 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio",
-						Namespace: "default",
-					},
+					Name:      "istio",
+					Namespace: "default",
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -628,7 +564,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "my-virtualservice", Namespace: "default"},
+					Name: "my-virtualservice", Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"app.example.org"},
 						Gateways: []string{"my-gateway"},
@@ -637,7 +573,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Name: "my-gateway", Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers:  []*istionetworking.Server{{Hosts: []string{"*"}}},
@@ -646,11 +582,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},
@@ -671,7 +605,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			virtualServices: []*networkingv1.VirtualService{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "my-virtualservice", Namespace: "default"},
+					Name: "my-virtualservice", Namespace: "default",
 					Spec: istionetworking.VirtualService{
 						Hosts:    []string{"app.example.org"},
 						Gateways: []string{"my-gateway"},
@@ -680,7 +614,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			gateways: []*networkingv1.Gateway{
 				{
-					ObjectMeta: metav1.ObjectMeta{Name: "my-gateway", Namespace: "default"},
+					Name: "my-gateway", Namespace: "default",
 					Spec: istionetworking.Gateway{
 						Selector: map[string]string{"istio": "ingressgateway"},
 						Servers:  []*istionetworking.Server{{Hosts: []string{"*"}}},
@@ -689,11 +623,9 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "istio-ingressgateway",
-						Namespace: "default",
-						Labels:    map[string]string{"istio": "ingressgateway"},
-					},
+					Name:      "istio-ingressgateway",
+					Namespace: "default",
+					Labels:    map[string]string{"istio": "ingressgateway"},
 					Spec: v1.ServiceSpec{
 						Type:     v1.ServiceTypeLoadBalancer,
 						Selector: map[string]string{"istio": "ingressgateway"},

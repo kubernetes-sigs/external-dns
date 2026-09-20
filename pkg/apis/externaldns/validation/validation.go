@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // ValidateConfig performs validation on the Config object
@@ -61,6 +62,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	}
 	if !strings.HasSuffix(cfg.AnnotationPrefix, "/") {
 		return errors.New("--annotation-prefix must end with '/'")
+	}
+	// Rewriting the legacy prefix into a prefix that itself starts with it does not make sense
+	if cfg.EnableLegacyAnnotationPrefix && strings.HasPrefix(cfg.AnnotationPrefix, annotations.LegacyAnnotationPrefix) {
+		return fmt.Errorf("--enable-legacy-annotation-prefix cannot be used with --annotation-prefix %s, which starts with the legacy prefix", cfg.AnnotationPrefix)
 	}
 
 	if cfg.KubeAPIQPS <= 0 {

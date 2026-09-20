@@ -39,11 +39,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 
 	makeSvc := func(anns map[string]string) *v1.Service {
 		return &v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        svcName,
-				Namespace:   "default",
-				Annotations: anns,
-			},
+			Name:        svcName,
+			Namespace:   "default",
+			Annotations: anns,
 			Spec: v1.ServiceSpec{
 				Type:      v1.ServiceTypeClusterIP,
 				ClusterIP: clusterIP,
@@ -132,12 +130,12 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			combine: true,
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-1"},
-					Spec:       v1.ServiceSpec{Type: v1.ServiceTypeClusterIP, ClusterIP: "170.19.58.167"},
+					Namespace: "default", Name: "service-1",
+					Spec: v1.ServiceSpec{Type: v1.ServiceTypeClusterIP, ClusterIP: "170.19.58.167"},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "kube-system", Name: "service-2"},
-					Spec:       v1.ServiceSpec{Type: v1.ServiceTypeClusterIP, ClusterIP: "127.20.24.218"},
+					Namespace: "kube-system", Name: "service-2",
+					Spec: v1.ServiceSpec{Type: v1.ServiceTypeClusterIP, ClusterIP: "127.20.24.218"},
 				},
 			},
 			fqdnTemplate: "{{ .Name }}.{{ .Namespace }}.example.tld, all.example.org",
@@ -152,12 +150,10 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			combine: true,
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
-						Name:      "service-one",
-						Annotations: map[string]string{
-							annotations.InternalHostnameKey: "service-one.internal.tld,service-one.internal.example.tld",
-						},
+					Namespace: "default",
+					Name:      "service-one",
+					Annotations: map[string]string{
+						annotations.InternalHostnameKey: "service-one.internal.tld,service-one.internal.example.tld",
 					},
 					Spec: v1.ServiceSpec{
 						Type:       v1.ServiceTypeLoadBalancer,
@@ -182,14 +178,14 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title: "fqdn-template filters by service type",
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-one"},
-					Spec:       v1.ServiceSpec{Type: v1.ServiceTypeLoadBalancer},
+					Namespace: "default", Name: "service-one",
+					Spec: v1.ServiceSpec{Type: v1.ServiceTypeLoadBalancer},
 					Status: v1.ServiceStatus{LoadBalancer: v1.LoadBalancerStatus{
 						Ingress: []v1.LoadBalancerIngress{{Hostname: "service-one.example.tld"}},
 					}},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-two"},
+					Namespace: "default", Name: "service-two",
 					Spec: v1.ServiceSpec{
 						Type:         v1.ServiceTypeExternalName,
 						ExternalName: "bucket-name.s3.us-east-1.amazonaws.com",
@@ -205,14 +201,14 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title: "fqdn-template filters by selector value",
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-one"},
+					Namespace: "default", Name: "service-one",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeExternalName, ExternalName: "api.example.tld",
 						Selector: map[string]string{"app": "my-app"},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-two"},
+					Namespace: "default", Name: "service-two",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeExternalName, ExternalName: "www.bucket-name.amazonaws.com",
 						Selector: map[string]string{"app": "my-website"},
@@ -229,11 +225,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			serviceTypesFilter: []string{},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   "svc-ns",
-						Name:        "svc-one",
-						Annotations: map[string]string{annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP},
-					},
+					Namespace:   "svc-ns",
+					Name:        "svc-one",
+					Annotations: map[string]string{annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						ClusterIPs: []string{v1.ClusterIPNone},
@@ -242,12 +236,10 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "svc-one-xxxxx", Namespace: "svc-ns",
-						Labels: map[string]string{
-							discoveryv1.LabelServiceName: "svc-one",
-							v1.IsHeadlessService:         "",
-						},
+					Name: "svc-one-xxxxx", Namespace: "svc-ns",
+					Labels: map[string]string{
+						discoveryv1.LabelServiceName: "svc-one",
+						v1.IsHeadlessService:         "",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -277,11 +269,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			serviceTypesFilter: []string{string(v1.ServiceTypeClusterIP)},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   "svc-ns",
-						Name:        "svc-one",
-						Annotations: map[string]string{annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP},
-					},
+					Namespace:   "svc-ns",
+					Name:        "svc-one",
+					Annotations: map[string]string{annotations.EndpointsTypeKey: EndpointsTypeNodeExternalIP},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						ClusterIPs: []string{v1.ClusterIPNone},
@@ -290,12 +280,10 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "svc-one-xxxxx", Namespace: "svc-ns",
-						Labels: map[string]string{
-							discoveryv1.LabelServiceName: "svc-one",
-							v1.IsHeadlessService:         "",
-						},
+					Name: "svc-one-xxxxx", Namespace: "svc-ns",
+					Labels: map[string]string{
+						discoveryv1.LabelServiceName: "svc-one",
+						v1.IsHeadlessService:         "",
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
@@ -321,11 +309,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title: "fqdn-template with TrafficDistribution zone annotation",
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   "default",
-						Name:        "service-one",
-						Annotations: map[string]string{"topology.kubernetes.io/zone": "us-west-1a"},
-					},
+					Namespace:   "default",
+					Name:        "service-one",
+					Annotations: map[string]string{"topology.kubernetes.io/zone": "us-west-1a"},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "192.51.100.22",
 						ExternalIPs:         []string{"198.51.100.30"},
@@ -333,11 +319,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   "default",
-						Name:        "service-two",
-						Annotations: map[string]string{"topology.kubernetes.io/zone": "us-west-1c"},
-					},
+					Namespace:   "default",
+					Name:        "service-two",
+					Annotations: map[string]string{"topology.kubernetes.io/zone": "us-west-1c"},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "192.51.100.5",
 						ExternalIPs:         []string{"198.51.100.32"},
@@ -345,11 +329,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   "default",
-						Name:        "service-three",
-						Annotations: map[string]string{"topology.kubernetes.io/zone": "us-west-1a"},
-					},
+					Namespace:   "default",
+					Name:        "service-three",
+					Annotations: map[string]string{"topology.kubernetes.io/zone": "us-west-1a"},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "192.51.100.33",
 						ExternalIPs:         []string{"198.51.100.70"},
@@ -368,21 +350,21 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title: "fqdn-template with specific port names",
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-one"},
+					Namespace: "default", Name: "service-one",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "192.51.100.22",
 						Ports: []v1.ServicePort{{Name: "http", Port: 8080}, {Name: "debug", Port: 8082}},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-two"},
+					Namespace: "default", Name: "service-two",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "192.51.100.5",
 						Ports: []v1.ServicePort{{Name: "http", Port: 8080}, {Name: "http2", Port: 8086}},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-three"},
+					Namespace: "default", Name: "service-three",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "2041:0000:140F::875B:131B",
 						Ports: []v1.ServicePort{{Name: "debug", Port: 8082}, {Name: "http2", Port: 8086}},
@@ -403,7 +385,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title: "fqdn-template resolves headless services using pod IPs",
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-one"},
+					Namespace: "default", Name: "service-one",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
@@ -411,7 +393,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-two"},
+					Namespace: "default", Name: "service-two",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol, v1.IPv6Protocol},
@@ -419,7 +401,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-three"},
+					Namespace: "default", Name: "service-three",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
@@ -429,10 +411,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-one-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-one"},
-					},
+					Namespace: "default", Name: "service-one-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-one"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -442,10 +422,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-two-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-two"},
-					},
+					Namespace: "default", Name: "service-two-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-two"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -455,10 +433,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-three-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-three"},
-					},
+					Namespace: "default", Name: "service-three-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-three"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -487,7 +463,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			publishHostIP: true,
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-one"},
+					Namespace: "default", Name: "service-one",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
@@ -495,7 +471,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-two"},
+					Namespace: "default", Name: "service-two",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol, v1.IPv6Protocol},
@@ -503,7 +479,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-three"},
+					Namespace: "default", Name: "service-three",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
@@ -513,10 +489,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-one-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-one"},
-					},
+					Namespace: "default", Name: "service-one-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-one"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -526,10 +500,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-two-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-two"},
-					},
+					Namespace: "default", Name: "service-two-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-two"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -539,10 +511,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-three-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-three"},
-					},
+					Namespace: "default", Name: "service-three-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-three"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -570,7 +540,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title: "fqdn-template for NodePort services produces SRV records",
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-one"},
+					Namespace: "default", Name: "service-one",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeNodePort, ClusterIP: "10.96.41.131",
 						Ports: []v1.ServicePort{
@@ -580,14 +550,14 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-two"},
+					Namespace: "default", Name: "service-two",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: "10.96.41.132",
 						Ports: []v1.ServicePort{{Name: "http", Port: 8080}, {Name: "http2", Port: 8086}},
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "service-three"},
+					Namespace: "default", Name: "service-three",
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeNodePort, ClusterIP: "10.96.41.133",
 						Ports: []v1.ServicePort{
@@ -621,10 +591,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 			services: []*v1.Service{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-one",
-						Labels: map[string]string{"app1": "my-service-123"},
-					},
+					Namespace: "default", Name: "service-one",
+					Labels: map[string]string{"app1": "my-service-123"},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
@@ -632,10 +600,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-two",
-						Labels: map[string]string{"app2": "my-service-345"},
-					},
+					Namespace: "default", Name: "service-two",
+					Labels: map[string]string{"app2": "my-service-345"},
 					Spec: v1.ServiceSpec{
 						Type: v1.ServiceTypeClusterIP, ClusterIP: v1.ClusterIPNone,
 						IPFamilies: []v1.IPFamily{v1.IPv4Protocol},
@@ -645,10 +611,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 			endpointSlices: []*discoveryv1.EndpointSlice{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-one-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-one"},
-					},
+					Namespace: "default", Name: "service-one-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-one"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -658,10 +622,8 @@ func TestServiceFQDNTemplate(t *testing.T) {
 					},
 				},
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default", Name: "service-two-xxxxx",
-						Labels: map[string]string{discoveryv1.LabelServiceName: "service-two"},
-					},
+					Namespace: "default", Name: "service-two-xxxxx",
+					Labels:      map[string]string{discoveryv1.LabelServiceName: "service-two"},
 					AddressType: discoveryv1.AddressTypeIPv4,
 					Endpoints: []discoveryv1.Endpoint{
 						{
@@ -686,7 +648,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			}
 
 			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &v1.Node{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+				Name: "test-node",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "203.0.113.10"},
@@ -705,9 +667,9 @@ func TestServiceFQDNTemplate(t *testing.T) {
 						hostname = *ep.Hostname
 					}
 					_, err = kubeClient.CoreV1().Pods(el.Namespace).Create(t.Context(), &v1.Pod{
-						ObjectMeta: metav1.ObjectMeta{Name: ep.TargetRef.Name, Namespace: el.Namespace},
-						Spec:       v1.PodSpec{Hostname: hostname, NodeName: "test-node"},
-						Status:     v1.PodStatus{HostIP: fmt.Sprintf("10.1.20.4%d", i)},
+						Name: ep.TargetRef.Name, Namespace: el.Namespace,
+						Spec:   v1.PodSpec{Hostname: hostname, NodeName: "test-node"},
+						Status: v1.PodStatus{HostIP: fmt.Sprintf("10.1.20.4%d", i)},
 					}, metav1.CreateOptions{})
 					require.NoError(t, err)
 				}

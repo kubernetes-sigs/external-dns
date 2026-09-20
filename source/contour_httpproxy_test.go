@@ -66,10 +66,8 @@ type fakeLoadBalancerService struct {
 
 func (ig fakeLoadBalancerService) Service() *v1.Service {
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ig.namespace,
-			Name:      ig.name,
-		},
+		Namespace: ig.namespace,
+		Name:      ig.name,
 		Status: v1.ServiceStatus{
 			LoadBalancer: v1.LoadBalancerStatus{
 				Ingress: []v1.LoadBalancerIngress{},
@@ -1114,13 +1112,11 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 	}
 
 	httpProxy := &projectcontour.HTTPProxy{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   ir.namespace,
-			Name:        ir.name,
-			UID:         k8stypes.UID(ir.uid),
-			Annotations: ir.annotations,
-		},
-		Spec: spec,
+		Namespace:   ir.namespace,
+		Name:        ir.name,
+		UID:         k8stypes.UID(ir.uid),
+		Annotations: ir.annotations,
+		Spec:        spec,
 		Status: projectcontour.HTTPProxyStatus{
 			LoadBalancer: lb,
 		},
@@ -1136,11 +1132,9 @@ func TestContourHTTPProxyLabelFilter(t *testing.T) {
 
 	for _, hp := range []*projectcontour.HTTPProxy{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "relevant",
-				Namespace: "default",
-				Labels:    map[string]string{"app": "relevant"},
-			},
+			Name:      "relevant",
+			Namespace: "default",
+			Labels:    map[string]string{"app": "relevant"},
 			Spec: projectcontour.HTTPProxySpec{
 				VirtualHost: &projectcontour.VirtualHost{Fqdn: "relevant.example.org"},
 			},
@@ -1151,11 +1145,9 @@ func TestContourHTTPProxyLabelFilter(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "other",
-				Namespace: "default",
-				Labels:    map[string]string{"app": "other"},
-			},
+			Name:      "other",
+			Namespace: "default",
+			Labels:    map[string]string{"app": "other"},
 			Spec: projectcontour.HTTPProxySpec{
 				VirtualHost: &projectcontour.VirtualHost{Fqdn: "other.example.org"},
 			},
@@ -1222,12 +1214,10 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 			lbls = map[string]string{}
 		}
 		return &projectcontour.HTTPProxy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Namespace:   namespace,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			Name:        name,
+			Namespace:   namespace,
+			Annotations: ann,
+			Labels:      lbls,
 			Spec: projectcontour.HTTPProxySpec{
 				VirtualHost: &projectcontour.VirtualHost{Fqdn: fqdn},
 			},
