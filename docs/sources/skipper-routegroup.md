@@ -3,6 +3,28 @@
 This tutorial describes how to configure ExternalDNS to use the Skipper [RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroup-crd) source.
 It is meant to supplement the other provider-specific setup tutorials.
 
+## Requirements
+
+`--source=skipper-routegroup` needs the RouteGroup CRD installed before ExternalDNS starts.
+Without it, ExternalDNS exits at startup.
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/zalando/skipper/master/dataclients/kubernetes/deploy/apply/routegroups_crd.yaml
+```
+
+The service account needs `get`, `list` and `watch` on `routegroups.zalando.org`. `watch` is newly
+required: the source watches RouteGroups instead of re-listing them on every sync.
+
+## FQDN templates
+
+`--fqdn-template` is evaluated against the RouteGroup, so fields are addressed at the top level:
+
+```sh
+--fqdn-template={{.Name}}.{{.Namespace}}.example.com
+```
+
+The `.Metadata` prefix (`{{.Metadata.Name}}`) still resolves but is deprecated and will be removed.
+
 ## Manifest (for clusters without RBAC enabled)
 
 ```yaml

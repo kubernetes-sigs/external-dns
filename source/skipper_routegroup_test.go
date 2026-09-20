@@ -17,14 +17,18 @@ limitations under the License.
 package source
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	rgfake "github.com/szuecs/routegroup-client/client/clientset/versioned/fake"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+	k8stesting "k8s.io/client-go/testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -71,6 +75,28 @@ func TestNewRouteGroupSource(t *testing.T) {
 		require.NoError(t, err)
 		_, ok := src.(*routeGroupSource)
 		require.True(t, ok)
+	})
+
+	t.Run("fails fast when the RouteGroup CRD is missing", func(t *testing.T) {
+		t.Parallel()
+		fakeClient := rgfake.NewSimpleClientset()
+		fakeClient.PrependReactor("list", "routegroups", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierrors.NewNotFound(rgv1.Resource("routegroups"), "")
+		})
+
+		_, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{})
+		require.ErrorContains(t, err, "requires the RouteGroup CRD")
+	})
+
+	t.Run("surfaces a failing initial list", func(t *testing.T) {
+		t.Parallel()
+		fakeClient := rgfake.NewSimpleClientset()
+		fakeClient.PrependReactor("list", "routegroups", func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierrors.NewForbidden(rgv1.Resource("routegroups"), "", errors.New("no permission"))
+		})
+
+		_, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{})
+		require.ErrorContains(t, err, "failed to list RouteGroups")
 	})
 
 	t.Run("respects namespace", func(t *testing.T) {
@@ -1056,4 +1082,13 @@ func TestRouteGroupSourceLegacyAnnotationFilter(t *testing.T) {
 			Targets:    endpoint.Targets{"lb.example.org"},
 		}).WithRefObject(testutils.RefSource(string(types.SkipperRouteGroup))),
 	})
+}
+
+func TestRouteGroupAddEventHandler(t *testing.T) {
+	t.Parallel()
+
+	src := newTestRouteGroupSource(t, &Config{})
+	called := false
+	src.(*routeGroupSource).AddEventHandler(t.Context(), func() { called = true })
+	assert.False(t, called, "handler should not be called immediately")
 }
