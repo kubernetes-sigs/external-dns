@@ -556,21 +556,16 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 	return nil
 }
 
-// needsStoredKeyLookup reports whether the etcd key holding ep can no longer be
-// derived from ep itself. A TXT record is stored under a random prefix that only
-// Records() knows, and the TXT registry rebuilds its ownership endpoints from
-// scratch, so they reach this point without that label — the derived key would
-// not exist and the entry would be orphaned. Reverse zones are exempt: their TXT
-// records are stored at the exact reverse-DNS path, with no prefix.
+// Registry-built TXT endpoints lose the prefix label Records() attaches, so their
+// etcd key must be read back, not derived. Reverse zones store no prefix.
 func (p coreDNSProvider) needsStoredKeyLookup(ep *endpoint.Endpoint) bool {
 	return ep.RecordType == endpoint.RecordTypeTXT &&
 		ep.Labels[randomPrefixLabel] == "" &&
 		!isPTRDomain(ep.DNSName)
 }
 
-// deleteTXTServices removes the etcd entries that hold ep's TXT values, looking
-// their keys up instead of deriving them. Entries carrying a host are left alone:
-// there the text shares a key with an A or CNAME record and goes away with it.
+// An entry carrying a host is skipped: its text shares a key with an A or CNAME
+// record and goes away with it.
 func (p coreDNSProvider) deleteTXTServices(ctx context.Context, ep *endpoint.Endpoint) error {
 	services, err := p.client.GetServices(ctx, p.etcdKeyFor(ep.DNSName)+"/")
 	if err != nil {
