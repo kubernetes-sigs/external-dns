@@ -612,6 +612,11 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			continue
 		}
 
+		// Signing mutates the message Extra section, so each nameserver
+		// attempt gets a fresh copy rather than leaking TSIG state from a
+		// failed attempt into the next.
+		attemptMsg := msg.Copy()
+
 		if !r.insecure {
 			if r.gssTsig {
 				keyName, handle, err := r.KeyData(nameserver)
@@ -625,14 +630,14 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 				c.TsigProvider = handle
 
-				msg.SetTsig(keyName, tsig.GSS, clockSkew, time.Now().Unix())
+				attemptMsg.SetTsig(keyName, tsig.GSS, clockSkew, time.Now().Unix())
 			} else {
 				c.TsigProvider = tsig.HMAC{r.tsigKeyName: r.tsigSecret}
-				msg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
+				attemptMsg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 			}
 		}
 
-		resp, _, err := c.Exchange(msg, nameserver)
+		resp, _, err := c.Exchange(attemptMsg, nameserver)
 		if err != nil {
 			if resp != nil && resp.Rcode != dns.RcodeSuccess {
 				log.Infof("error in dns.Client.Exchange: %s", err)
