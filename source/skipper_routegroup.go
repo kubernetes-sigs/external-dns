@@ -25,8 +25,8 @@ import (
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	rginformers "github.com/szuecs/routegroup-client/client/informers/externalversions"
 	rginformersv1 "github.com/szuecs/routegroup-client/client/informers/externalversions/zalando.org/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -46,8 +46,6 @@ import (
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
 type routeGroupSource struct {
-	annotationFilter         labels.Selector
-	labelSelector            labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	rgInformer               rginformersv1.RouteGroupInformer
@@ -71,6 +69,15 @@ func (w *routeGroupWrapper) Metadata() *metav1.ObjectMeta {
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
+	// The reflector retries a failing List until WaitForCacheSync gives up a minute later,
+	// so probe up front: a missing CRD should fail startup at once, and say so.
+	if _, err := client.ZalandoV1().RouteGroups(cfg.Namespace).List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, fmt.Errorf("--source=skipper-routegroup requires the RouteGroup CRD (routegroups.zalando.org) to be installed: %w", err)
+		}
+		return nil, fmt.Errorf("failed to list RouteGroups: %w", err)
+	}
+
 	informerFactory := rginformers.NewSharedInformerFactoryWithOptions(
 		client, 0,
 		rginformers.WithNamespace(cfg.Namespace),
@@ -99,8 +106,6 @@ func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg 
 	}
 
 	return &routeGroupSource{
-		annotationFilter:         cfg.AnnotationFilter,
-		labelSelector:            cfg.LabelFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		rgInformer:               rgInformer,
