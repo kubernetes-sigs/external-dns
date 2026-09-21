@@ -208,10 +208,12 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	for _, epoint := range changes.UpdateOld {
-		// Since Exoscale "Patches", we've ignored UpdateOld
-		// We leave this logging here for information
-		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		for _, epoint := range changes.UpdateOld {
+			// Since Exoscale "Patches", we've ignored UpdateOld
+			// We leave this logging here for information
+			log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
+		}
 	}
 
 	return ep.deleteRecords(ctx, zones, changes.Delete)
