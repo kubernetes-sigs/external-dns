@@ -267,6 +267,18 @@ func (p *OVHProvider) handleSingleZoneUpdate(ctx context.Context, zoneName strin
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, records := p.lastRunZones, p.lastRunRecords
+
+	// Lazy initialization: when using the CRD registry, Records() is not called
+	// before ApplyChanges(), so lastRunZones/lastRunRecords are empty. Fetch them
+	// on demand to stay compatible with all registry implementations.
+	if len(zones) == 0 {
+		var err error
+		zones, records, err = p.zonesRecords(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	defer func() {
 		p.lastRunRecords = []ovhRecord{}
 		p.lastRunZones = []string{}
