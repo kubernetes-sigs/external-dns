@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "charts/external-dns/Chart.yaml"
+      - "charts/*/Chart.yaml"
 
 concurrency:
   group: chart-release
@@ -15,9 +15,17 @@ permissions: {}
 
 jobs:
   release:
-    name: Release
+    name: Release ${{ matrix.chart }}
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # The index is pushed once per chart, so the charts release one after the other.
+      max-parallel: 1
+      matrix:
+        chart:
+          - external-dns
+          - external-dns-crds
     permissions:
       contents: write
     defaults:
@@ -55,14 +63,14 @@ jobs:
         id: chart_version
         run: |
           set -euo pipefail
-          chart_version="$(grep -Po "(?<=^version: ).+" charts/external-dns/Chart.yaml)"
+          chart_version="$(grep -Po "(?<=^version: ).+" charts/${{ matrix.chart }}/Chart.yaml)"
           echo "version=${chart_version}" >> $GITHUB_OUTPUT
 
       - name: Get changelog entry
         id: changelog_reader
         uses: mindsers/changelog-reader-action@1faaf50aa09d5793d9a100819973df801febfb31 # v2.4.0
         with:
-          path: charts/external-dns/CHANGELOG.md
+          path: charts/${{ matrix.chart }}/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
 
       - name: Process changelog
@@ -74,7 +82,7 @@ jobs:
           mkdir -p "${package_dir}"
 
           release_notes_file="RELEASE.md"
-          release_notes_path="./charts/external-dns/${release_notes_file}"
+          release_notes_path="./charts/${{ matrix.chart }}/${release_notes_file}"
 
           cat <<"EOF" > "${release_notes_path}"
           ${{ steps.changelog_reader.outputs.changes }}
@@ -87,7 +95,7 @@ jobs:
           fixed="$(mdq --output plain '# Fixed | -' <"${release_notes_path}" || true)"
           security="$(mdq --output plain '# Security | -' <"${release_notes_path}" || true)"
 
-          changes_path="./charts/external-dns/changes.txt"
+          changes_path="./charts/${{ matrix.chart }}/changes.txt"
           rm -f "${changes_path}"
 
           old_ifs="${IFS}"
@@ -120,7 +128,7 @@ jobs:
           IFS="${old_ifs}"
 
           if [[ -f "${changes_path}" ]]; then
-            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/external-dns/Chart.yaml
+            changes="$(cat "${changes_path}")" yq eval --inplace '.annotations["artifacthub.io/changes"] |= strenv(changes)' ./charts/${{ matrix.chart }}/Chart.yaml
             rm -f "${changes_path}"
           fi
 
@@ -137,7 +145,7 @@ jobs:
           version: latest
 
       - name: Run Artifact Hub lint
-        run: ah lint --kind helm --path ./charts/external-dns || exit 1
+        run: ah lint --kind helm --path ./charts/${{ matrix.chart }} || exit 1
 
       - name: Configure Git
         run: |
@@ -164,5 +172,6 @@ jobs:
           CR_TOKEN: "${{ github.token }}"
         run: |
           scripts/chart-release.sh \
+            "${{ matrix.chart }}" \
             "${{ steps.chart_version.outputs.version }}" \
-            "charts/external-dns/${{ steps.changelog.outputs.release_notes_file }}"
+            "charts/${{ matrix.chart }}/${{ steps.changelog.outputs.release_notes_file }}"

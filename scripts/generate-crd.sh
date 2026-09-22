@@ -65,13 +65,16 @@ ${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout
 # Clean up empty import statements from generated files
 find ./apis -name "zz_generated.deepcopy.go" -exec gofmt -s -w {} \;
 
-# Step 3: Copy CRDs to Helm chart with filtered annotations
+# Step 3: Copy CRDs to the Helm charts with filtered annotations
 # - Reads CRDs from config/crd/standard/
 # - Filters annotations to only keep kubernetes.io/* (removes controller-gen annotations)
 # - Splits and saves to charts/external-dns/crds/ for Helm chart packaging
-echo "  → Copying CRDs to chart directory..."
-${YQ} eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
-    --no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
-    ./config/crd/standard/*.yaml
+# - Splits and saves to charts/external-dns-crds/files/crds/, which the CRDs chart renders as templates
+echo "  → Copying CRDs to chart directories..."
+for chart_crd_dir in ./charts/external-dns/crds ./charts/external-dns-crds/files/crds; do
+    ${YQ} eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
+        --no-doc --split-exp "\"${chart_crd_dir}/\" + .metadata.name + \".yaml\"" \
+        ./config/crd/standard/*.yaml
+done
 
 echo -e "  ✅ CRD generation complete"

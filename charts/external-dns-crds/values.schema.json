@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "annotations": {
+      "description": "Annotations to add to the CRDs.",
+      "type": "object"
+    },
+    "crds": {
+      "description": "CRDs to install, keyed by resource plural. A CRD missing from this map is installed.",
+      "type": "object",
+      "properties": {
+        "dnsendpoints": {
+          "type": "boolean"
+        },
+        "dnsrecords": {
+          "type": "boolean"
+        }
+      }
+    },
+    "keep": {
+      "description": "Annotate the CRDs with `helm.sh/resource-policy: keep`, so an uninstall keeps the custom resources.",
+      "type": "boolean"
+    },
+    "labels": {
+      "description": "Labels to add to the CRDs.",
+      "type": "object"
+    },
+    "nameOverride": {
+      "description": "Override the `app.kubernetes.io/name` label.",
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

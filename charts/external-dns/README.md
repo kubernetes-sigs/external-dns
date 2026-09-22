@@ -32,6 +32,10 @@ After you've installed the repo you can install the chart.
 helm upgrade --install external-dns external-dns/external-dns --version 1.22.0
 ```
 
+### CRDs
+
+The `crds/` directory of this chart installs the _ExternalDNS_ CRDs on first install only; Helm never upgrades or deletes them. Install the [`external-dns-crds`](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns-crds/README.md) chart first to manage the CRDs through their own release, which makes the `crds/` directory a no-op.
+
 ## Providers
 
 > Legacy support of setting `provider: <name>` is deprecated.

@@ -10,6 +10,9 @@ nav:
   - Chart:
       - About: charts/external-dns/README.md
       - Changelog: charts/external-dns/CHANGELOG.md
+  - CRDs Chart:
+      - About: charts/external-dns-crds/README.md
+      - Changelog: charts/external-dns-crds/CHANGELOG.md
   - About:
       - FAQ: docs/faq.md
       - Flags: docs/flags.md

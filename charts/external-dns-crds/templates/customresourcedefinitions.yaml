@@ -1,0 +1,35 @@
+{{- /*
+Render the CRDs from files/crds/, which scripts/generate-crd.sh keeps in sync with config/crd/standard/.
+The CRD keeps its own metadata; the chart only adds labels and annotations on top.
+*/ -}}
+{{- $root := . -}}
+{{- range $path, $_ := .Files.Glob "files/crds/*.yaml" }}
+{{- $crd := $root.Files.Get $path | fromYaml }}
+{{- $name := $crd.metadata.name }}
+{{- $key := $name | splitList "." | first }}
+{{- $enabled := true }}
+{{- if hasKey ($root.Values.crds | default dict) $key }}
+{{- $enabled = get $root.Values.crds $key }}
+{{- end }}
+{{- if $enabled }}
+{{- $annotations := deepCopy ($crd.metadata.annotations | default dict) }}
+{{- $extraAnnotations := deepCopy ($root.Values.annotations | default dict) }}
+{{- if $root.Values.keep }}
+{{- $_ := set $extraAnnotations "helm.sh/resource-policy" "keep" }}
+{{- end }}
+{{- $annotations = mergeOverwrite $extraAnnotations $annotations }}
+---
+apiVersion: {{ $crd.apiVersion }}
+kind: {{ $crd.kind }}
+metadata:
+  name: {{ $name }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "external-dns-crds.labels" $root | nindent 4 }}
+spec:
+  {{- toYaml $crd.spec | nindent 2 }}
+{{- end }}
+{{- end }}

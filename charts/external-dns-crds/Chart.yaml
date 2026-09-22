@@ -1,0 +1,21 @@
+apiVersion: v2
+name: external-dns-crds
+description: Custom Resource Definitions for ExternalDNS, packaged on their own so they can be managed independently of the ExternalDNS release.
+type: application
+version: 1.22.0
+appVersion: 0.22.0
+keywords:
+  - kubernetes
+  - k8s
+  - externaldns
+  - external-dns
+  - dns
+  - crd
+home: https://github.com/kubernetes-sigs/external-dns/
+icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+sources:
+  - https://github.com/kubernetes-sigs/external-dns/
+maintainers:
+  - name: stevehipwell
+    email: steve.hipwell@gmail.com
+annotations: {}

@@ -1,0 +1,5 @@
+keep: false
+annotations:
+  example.com/annotation: "ci"
+labels:
+  example.com/label: "ci"

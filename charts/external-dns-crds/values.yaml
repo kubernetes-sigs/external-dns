@@ -1,0 +1,16 @@
+# -- CRDs to install, keyed by resource plural. A CRD missing from this map is installed.
+crds:
+  dnsendpoints: true
+  dnsrecords: true
+
+# -- Annotate the CRDs with `helm.sh/resource-policy: keep`, so an uninstall keeps the custom resources.
+keep: true
+
+# -- Annotations to add to the CRDs.
+annotations: {}
+
+# -- Labels to add to the CRDs.
+labels: {}
+
+# -- Override the `app.kubernetes.io/name` label.
+nameOverride: ""

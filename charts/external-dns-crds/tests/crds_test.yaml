@@ -1,0 +1,97 @@
+suite: CRDs
+templates:
+  - customresourcedefinitions.yaml
+release:
+  name: external-dns-crds
+chart:
+  version: "1.22.0"
+  appVersion: "0.22.0"
+tests:
+  - it: "should render every CRD by default"
+    asserts:
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: CustomResourceDefinition
+      - isAPIVersion:
+          of: apiextensions.k8s.io/v1
+      - equal:
+          path: metadata.name
+          value: dnsendpoints.externaldns.k8s.io
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: dnsrecords.externaldns.k8s.io
+        documentIndex: 1
+
+  - it: "should keep the CRD's own annotations"
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: metadata.annotations["api-approved.kubernetes.io"]
+          value: https://github.com/kubernetes-sigs/external-dns/pull/2007
+
+  - it: "should contain labels metadata in each template"
+    asserts:
+      - equal:
+          path: metadata.labels
+          value:
+            helm.sh/chart: external-dns-crds-1.22.0
+            app.kubernetes.io/name: external-dns-crds
+            app.kubernetes.io/instance: external-dns-crds
+            app.kubernetes.io/version: "0.22.0"
+            app.kubernetes.io/managed-by: Helm
+
+  - it: "should add the keep policy by default"
+    asserts:
+      - equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: "should not add the keep policy when keep is false"
+    set:
+      keep: false
+    asserts:
+      - notExists:
+          path: metadata.annotations["helm.sh/resource-policy"]
+
+  - it: "should add custom annotations and labels"
+    set:
+      annotations:
+        foo: bar
+      labels:
+        baz: qux
+    asserts:
+      - equal:
+          path: metadata.annotations.foo
+          value: bar
+      - equal:
+          path: metadata.labels.baz
+          value: qux
+
+  - it: "should skip a disabled CRD"
+    set:
+      crds:
+        dnsrecords: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: dnsendpoints.externaldns.k8s.io
+
+  - it: "should render the served and stored versions"
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.group
+          value: externaldns.k8s.io
+      - equal:
+          path: spec.versions[0].name
+          value: v1alpha1
+      - equal:
+          path: spec.versions[0].served
+          value: true
+      - equal:
+          path: spec.versions[0].storage
+          value: true

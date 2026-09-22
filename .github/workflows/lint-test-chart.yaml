@@ -5,7 +5,8 @@ on:
     branches:
       - master
     paths:
-      - "charts/external-dns/**"
+      - "charts/**"
+      - "scripts/chart-release.sh"
 
 concurrency:
   group: chart-pr-${{ github.ref }}
@@ -15,9 +16,15 @@ permissions: {}
 
 jobs:
   lint-test:
-    name: Lint and Test
+    name: Lint and Test ${{ matrix.chart }}
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - external-dns
+          - external-dns-crds
     permissions:
       contents: read
     defaults:
@@ -42,7 +49,7 @@ jobs:
           helm plugin install https://github.com/helm-unittest/helm-unittest.git --verify=false
 
       - name: Run Helm Schema check
-        working-directory: charts/external-dns
+        working-directory: charts/${{ matrix.chart }}
         run: |
           set -euo pipefail
 
@@ -78,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          helm unittest -f 'tests/*_test.yaml' charts/external-dns
+          helm unittest -f 'tests/*_test.yaml' charts/${{ matrix.chart }}
 
       - name: Install YQ
         uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
@@ -106,13 +113,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          chart_file_path="./charts/external-dns/Chart.yaml"
-          changelog_file_path="./charts/external-dns/CHANGELOG.md"
+          chart_file_path="./charts/${{ matrix.chart }}/Chart.yaml"
+          changelog_file_path="./charts/${{ matrix.chart }}/CHANGELOG.md"
           version="$(yq eval '.version' "${chart_file_path}")"
           entry="$(mdq --no-br --link-format inline "# v${version}" <"${changelog_file_path}" || true)"
           if [[ -z "${entry}" ]]
           then
-            echo "No CHANGELOG entry for ${chart} version ${version}!" >&2
+            echo "No CHANGELOG entry for ${{ matrix.chart }} version ${version}!" >&2
             exit 1
           fi
 
@@ -123,7 +130,7 @@ jobs:
           fixed="$(mdq --output plain "# v${version} | # Fixed | -" <"${changelog_file_path}" || true)"
           security="$(mdq --output plain "# v${version} | # Security | -" <"${changelog_file_path}" || true)"
 
-          changes_path="./charts/external-dns/changes.txt"
+          changes_path="./charts/${{ matrix.chart }}/changes.txt"
           rm -f "${changes_path}"
 
           old_ifs="${IFS}"
@@ -175,7 +182,7 @@ jobs:
           version: latest
 
       - name: Run Artifact Hub lint
-        run: ah lint --kind helm --path ./charts/external-dns || exit 1
+        run: ah lint --kind helm --path ./charts/${{ matrix.chart }} || exit 1
 
       - name: Install Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -187,7 +194,7 @@ jobs:
         uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
 
       - name: Run chart-testing lint
-        run: ct lint --charts=./charts/external-dns --target-branch=${{ github.event.repository.default_branch }} --check-version-increment=false
+        run: ct lint --charts=./charts/${{ matrix.chart }} --target-branch=${{ github.event.repository.default_branch }} --check-version-increment=false
 
       - name: Create Kind cluster
         uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
@@ -195,4 +202,4 @@ jobs:
           wait: 120s
 
       - name: Run chart-testing install
-        run: ct install --charts=./charts/external-dns --target-branch=${{ github.event.repository.default_branch }}
+        run: ct install --charts=./charts/${{ matrix.chart }} --target-branch=${{ github.event.repository.default_branch }}

@@ -1,26 +1,27 @@
 #!/bin/bash
-# Publish the external-dns Helm chart as a GitHub release, then update the chart
+# Publish a Helm chart from charts/ as a GitHub release, then update the chart
 # index. Works around chart-releaser not supporting GitHub immutable releases:
 # the asset must be attached while the release is still a draft, then the draft
 # is published. Drop this script and restore chart-releaser-action once
 # https://github.com/helm/chart-releaser/issues/591 lands.
 #
-# Usage: scripts/chart-release.sh <version> <release-notes-file>
+# Usage: scripts/chart-release.sh <chart> <version> <release-notes-file>
 #
 # Requires cr, gh and jq on PATH. CI provides GITHUB_REPOSITORY, GITHUB_SHA and
 # GH_TOKEN / CR_TOKEN.
 
 set -euo pipefail
 
-VERSION="${1:?version required}"
-RELEASE_NOTES_PATH="${2:?release notes file required}"
+CHART="${1:?chart required}"
+VERSION="${2:?version required}"
+RELEASE_NOTES_PATH="${3:?release notes file required}"
 
 REPO="${GITHUB_REPOSITORY:-kubernetes-sigs/external-dns}"
 OWNER="${REPO%%/*}"
 NAME="${REPO##*/}"
 
-RELEASE_TAG="external-dns-helm-chart-${VERSION}"
-CHART_ASSET=".cr-release-packages/external-dns-${VERSION}.tgz"
+RELEASE_TAG="${CHART}-helm-chart-${VERSION}"
+CHART_ASSET=".cr-release-packages/${CHART}-${VERSION}.tgz"
 ASSET_NAME="$(basename "${CHART_ASSET}")"
 
 # retry <attempts> <command...> with exponential backoff.
@@ -37,7 +38,7 @@ retry() {
 package_chart() {
   rm -rf .cr-release-packages .cr-index
   mkdir -p .cr-release-packages .cr-index
-  cr package charts/external-dns --package-path .cr-release-packages
+  cr package "charts/${CHART}" --package-path .cr-release-packages
 }
 
 # Echo {id, draft} for the release, creating a draft release if it is missing.
@@ -81,7 +82,7 @@ update_index() {
   retry 5 cr index \
     --owner "${OWNER}" --git-repo "${NAME}" \
     --package-path .cr-release-packages \
-    --release-name-template "external-dns-helm-chart-{{ .Version }}" \
+    --release-name-template "${CHART}-helm-chart-{{ .Version }}" \
     --push
 }
 
