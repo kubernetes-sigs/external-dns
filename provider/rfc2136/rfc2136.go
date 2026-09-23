@@ -310,10 +310,8 @@ func tlsaTarget(rr *dns.TLSA) string {
 	return tlsa.String()
 }
 
-// AdjustEndpoints raises the TTL of each desired endpoint to the configured
-// minimum. This keeps the planned state equal to the TTL that AddRecord writes,
-// so a record is not rewritten on every reconciliation cycle.
-// It also canonicalizes targets to avoid reconciliation when not needed.
+// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum
+// and canonicalizes TLSA targets. This is required to avoid diff on reconciliation loop.
 func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range eps {
 		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
