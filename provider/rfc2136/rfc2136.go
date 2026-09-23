@@ -284,9 +284,8 @@ OuterLoop:
 	return eps, nil
 }
 
-// AdjustEndpoints raises the TTL of each desired endpoint to the configured
-// minimum. This keeps the planned state equal to the TTL that AddRecord writes,
-// so a record is not rewritten on every reconciliation cycle.
+// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum. 
+// This is required to avoid diff on reconciliation loop.
 func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
 		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
