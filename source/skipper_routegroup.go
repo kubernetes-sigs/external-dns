@@ -161,9 +161,9 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup) ([]*endpo
 	// error handled in endpointsFromRouteGroup(), otherwise duplicate log
 	ttl := annotations.TTLFromAnnotations(rg.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(rg.Annotations)
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(rg.Annotations)
 
-	if len(targets) == 0 {
+	if !targetsFromAnnotation {
 		targets = targetsFromRouteGroupStatus(rg.Status)
 	}
 
@@ -173,7 +173,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup) ([]*endpo
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation), nil
 }
 
 func (sc *routeGroupSource) endpointsFromRouteGroup(rg *rgv1.RouteGroup) []*endpoint.Endpoint {
@@ -183,8 +183,8 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *rgv1.RouteGroup) []*endp
 
 	ttl := annotations.TTLFromAnnotations(rg.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(rg.Annotations)
-	if len(targets) == 0 {
+	targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(rg.Annotations)
+	if !targetsFromAnnotation {
 		for _, lb := range rg.Status.LoadBalancer.RouteGroup {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
@@ -211,7 +211,7 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *rgv1.RouteGroup) []*endp
 			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
-	return endpoints
+	return markTargetsFromAnnotation(endpoints, targetsFromAnnotation)
 }
 
 func targetsFromRouteGroupStatus(status rgv1.RouteGroupStatus) endpoint.Targets {

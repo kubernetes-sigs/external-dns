@@ -151,7 +151,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 
 			ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
 
-			targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
+			targets, targetsFromAnnotation := annotations.TargetsFromTargetAnnotationWithSource(transportServer.Annotations)
 			if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
 				targets = append(targets, transportServer.Spec.VirtualServerAddress)
 			}
@@ -159,7 +159,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 				targets = append(targets, transportServer.Status.VSAddress)
 			}
 
-			tsEndpoints = append(tsEndpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
+			tsEndpoints = append(tsEndpoints, markTargetsFromAnnotation(endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource), targetsFromAnnotation)...)
 		}
 
 		var err error
