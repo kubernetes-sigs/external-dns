@@ -253,6 +253,18 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
+			name: "endpoints without targets are dropped",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "a.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{}},
+				{DNSName: "cname.example.org", RecordType: endpoint.RecordTypeCNAME},
+				{DNSName: "txt.example.org", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{}},
+				{DNSName: "ok.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "ok.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
 			name: "valid MX record",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.org"}},
@@ -402,6 +414,39 @@ func TestDedupEndpointsValidation(t *testing.T) {
 
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 			mockSource.AssertExpectations(t)
+		})
+	}
+}
+
+// Same wiring as types.go: default targets are applied before the dedup check.
+func TestDedupSource_EmptyTargetsWithDefaultTargets(t *testing.T) {
+	for _, tt := range []struct {
+		name           string
+		defaultTargets []string
+		expected       []*endpoint.Endpoint
+	}{
+		{
+			name:           "filled by default targets",
+			defaultTargets: []string{"1.2.3.4"},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "default.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			name:     "dropped without default targets",
+			expected: []*endpoint.Endpoint{},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			src := new(testutils.MockSource)
+			src.On("Endpoints").Return([]*endpoint.Endpoint{
+				{DNSName: "default.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{}},
+			}, nil)
+
+			sr := NewDedupSource(NewMultiSource([]source.Source{src}, tt.defaultTargets, false))
+			endpoints, err := sr.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }
