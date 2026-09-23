@@ -2195,59 +2195,7 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, append(desired, txtRecord...)), "Expected records after reconciliation: %v, but got: %v", append(desired, txtRecord...), records)
 }
 
-func TestFindOrphanOwnershipTXTs_noConflict(t *testing.T) {
-	ctx := t.Context()
-	p := inmemory.NewInMemoryProvider()
-	require.NoError(t, p.CreateZone(testZone))
-
-	ownerId := "owner"
-	existing := []*endpoint.Endpoint{
-		newEndpointWithOwner("record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("a-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("record-5.test-zone.example.org", "cluster-b", endpoint.RecordTypeCNAME, ownerId),
-		newEndpointWithOwner("cname-record-5.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-	}
-	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: existing}))
-
-	r, err := newRegistry(p, "", "", ownerId, time.Hour, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}, nil, false, nil, "")
-	require.NoError(t, err)
-
-	_, err = r.Records(ctx)
-	require.NoError(t, err)
-
-	assert.Empty(t, r.orphanTXTs, "expected no orphan TXTs, got %v", r.orphanTXTs)
-}
-
-func TestFindOrphanOwnershipTXTs_onlyOneAMissing(t *testing.T) {
-	ctx := t.Context()
-	p := inmemory.NewInMemoryProvider()
-	require.NoError(t, p.CreateZone(testZone))
-
-	ownerId := "owner"
-	existing := []*endpoint.Endpoint{
-		newEndpointWithOwner("record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("a-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("record-2.test-zone.example.org", "1.1.1.2", endpoint.RecordTypeA, ownerId),
-		newEndpointWithOwner("record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("a-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("record-5.test-zone.example.org", "cluster-b", endpoint.RecordTypeCNAME, ownerId),
-		newEndpointWithOwner("cname-record-5.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-	}
-	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: existing}))
-
-	r, err := newRegistry(p, "", "", ownerId, time.Hour, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}, nil, false, nil, "")
-	require.NoError(t, err)
-
-	_, err = r.Records(ctx)
-	require.NoError(t, err)
-
-	for _, o := range r.orphanTXTs {
-		t.Logf("orphan: %s", o.DNSName)
-	}
-	assert.Empty(t, r.orphanTXTs, "expected no orphan TXTs, got %v", r.orphanTXTs)
-}
-
-func TestTXTRegistryCrossOwnerTakeover(t *testing.T) {
+func TestTXTRegistryCrossOwnerSkipsTXT(t *testing.T) {
 	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	require.NoError(t, p.CreateZone(testZone))
@@ -2290,7 +2238,7 @@ func TestTXTRegistryCrossOwnerTakeover(t *testing.T) {
 			}
 		}
 		assert.Zero(t, txtCreates, "TXT should not be created when another owner holds the name")
-		assert.Equal(t, 1, txtUpdates, "TXT should be updated to the new owner")
+		assert.Zero(t, txtUpdates, "TXT should not be updated when another owner holds the name")
 	}
 
 	require.NoError(t, r.ApplyChanges(ctx, changes))
@@ -2300,57 +2248,11 @@ func TestTXTRegistryCrossOwnerTakeover(t *testing.T) {
 	found := false
 	for _, ep := range records {
 		if ep.DNSName == txtName && ep.RecordType == endpoint.RecordTypeTXT {
-			assert.Contains(t, ep.Targets[0], clusterB)
+			assert.Contains(t, ep.Targets[0], clusterA)
 			found = true
 		}
 	}
-	assert.True(t, found, "ownership TXT should exist for cluster-b")
-}
-
-func TestFindOrphanOwnershipTXTs_keepsLegacyCNAMEWhenA(t *testing.T) {
-	ctx := t.Context()
-	p := inmemory.NewInMemoryProvider()
-	require.NoError(t, p.CreateZone(testZone))
-
-	ownerId := "owner"
-	const host = "app.test-zone.example.org"
-	existing := []*endpoint.Endpoint{
-		newEndpointWithOwner(host, "foo.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeA, ownerId).WithAliasProperty(endpoint.AliasTrue),
-		newEndpointWithOwner("cname-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("a-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-	}
-	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: existing}))
-
-	r, err := newRegistry(p, "", "", ownerId, time.Hour, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeTXT}, nil, false, nil, "")
-	require.NoError(t, err)
-
-	_, err = r.Records(ctx)
-	require.NoError(t, err)
-
-	assert.Empty(t, r.orphanTXTs, "legacy cname- ownership TXT must not be classified as orphan when A is present")
-}
-
-func TestFindOrphanOwnershipTXTs_keepsAAndAAAAWhenCNAME(t *testing.T) {
-	ctx := t.Context()
-	p := inmemory.NewInMemoryProvider()
-	require.NoError(t, p.CreateZone(testZone))
-
-	ownerId := "owner"
-	existing := []*endpoint.Endpoint{
-		newEndpointWithOwner("app.test-zone.example.org", "external.example.net", endpoint.RecordTypeCNAME, ownerId),
-		newEndpointWithOwner("cname-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("a-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-		newEndpointWithOwner("aaaa-app.test-zone.example.org", "\"heritage=external-dns,external-dns/owner="+ownerId+"\"", endpoint.RecordTypeTXT, ownerId),
-	}
-	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: existing}))
-
-	r, err := newRegistry(p, "", "", ownerId, time.Hour, "", []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}, nil, false, nil, "")
-	require.NoError(t, err)
-
-	_, err = r.Records(ctx)
-	require.NoError(t, err)
-
-	assert.Empty(t, r.orphanTXTs, "a-/aaaa- ownership TXTs must not be orphans while CNAME still occupies the name")
+	assert.True(t, found, "ownership TXT should remain owned by cluster-a")
 }
 
 // TestTXTRegistryRecoveryFromFailedTransition starts from the #6683 state left by a rejected
@@ -2381,7 +2283,6 @@ func TestTXTRegistryRecoveryFromFailedTransition(t *testing.T) {
 
 	records, err := r.Records(ctx)
 	require.NoError(t, err)
-	assert.Empty(t, r.orphanTXTs, "ownership TXTs from the failed transition must not be marked as orphans")
 
 	pl := &plan.Plan{
 		Policies:       []plan.Policy{plan.Policies["sync"]},
