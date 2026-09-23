@@ -442,10 +442,12 @@ Summary of behavior for a recognized AWS load-balancer hostname:
 
 Cloud Map DNS record types cannot be changed on an existing service, so
 ExternalDNS always preserves the existing record-type set when updating one
-(only the TTL can change in place). To change an existing load balancer's
-Cloud Map service between IPv4-only and dual-stack, deregister all instances
-from the Cloud Map service, delete the service, and allow ExternalDNS to
-recreate it on the next reconciliation with the new record-type set.
+(only the TTL can change in place). If the record types of an existing service
+differ from what the annotation asks for, ExternalDNS logs a warning when it
+detects the drift and leaves the service as it is. To change an existing load
+balancer's Cloud Map service between IPv4-only and dual-stack, deregister all
+instances from the Cloud Map service, delete the service, and allow ExternalDNS
+to recreate it on the next reconciliation with the new record-type set.
 
 AWS Cloud Map supports `A` and `AAAA` together for one service. Alias
 registrations using `AWS_ALIAS_DNS_NAME` require `WEIGHTED` routing. See the

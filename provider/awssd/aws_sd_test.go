@@ -17,10 +17,13 @@ limitations under the License.
 package awssd
 
 import (
+	"context"
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	sdtypes "github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -1258,7 +1261,7 @@ func TestAWSSDProvider_AdjustEndpoints(t *testing.T) {
 			require.Len(t, adjusted, 1)
 
 			ep := adjusted[0]
-			assert.Equal(t, tc.wantDualstack, ep.Labels[endpoint.DualstackLabelKey] == "true")
+			assert.Equal(t, tc.wantDualstack, ep.Labels[endpoint.AWSSDDualstackLabelKey] == "true")
 
 			_, aliasStillPresent := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
 			assert.Equal(t, !tc.wantAliasRemoved, aliasStillPresent)
@@ -1465,7 +1468,7 @@ func TestAWSSDProvider_UpdateService_PreservesExistingRecordTypes(t *testing.T) 
 				services["private"]["srv1"],
 				&endpoint.Endpoint{
 					Labels: map[string]string{
-						endpoint.DualstackLabelKey: "true",
+						endpoint.AWSSDDualstackLabelKey: "true",
 					},
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  100,
@@ -1528,7 +1531,6 @@ func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t 
 		"",
 	)
 
-	// Must pass through AdjustEndpoints before ApplyChanges.
 	ep := &endpoint.Endpoint{
 		DNSName:    "service1.private.com",
 		RecordType: endpoint.RecordTypeCNAME,
@@ -1726,7 +1728,7 @@ func TestAWSSDProvider_ApplyChanges_UpdatesTTLWhenSecondRecordIsStale(t *testing
 						"load-balancer.us-east-1.elb.amazonaws.com",
 					},
 					Labels: map[string]string{
-						endpoint.DualstackLabelKey: "true",
+						endpoint.AWSSDDualstackLabelKey: "true",
 					},
 				},
 			},
@@ -1743,7 +1745,6 @@ func TestAWSSDProvider_ApplyChanges_UpdatesTTLWhenSecondRecordIsStale(t *testing
 	assert.Equal(t, int64(100), *records[1].TTL)
 }
 
-// Guards against the alias intent causing a spurious update every reconciliation.
 func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
 	provider := newTestAWSSDProvider(
 		&AWSSDClientStub{},
@@ -1789,4 +1790,162 @@ func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
 	assert.Empty(t, changes.UpdateOld)
 	assert.Empty(t, changes.UpdateNew)
 	assert.Empty(t, changes.Delete)
+}
+
+const recordTypeDriftWarning = "record types are immutable"
+
+func newProviderWithAliasService(existing ...sdtypes.RecordType) *AWSSDProvider {
+	records := make([]sdtypes.DnsRecord, 0, len(existing))
+	for _, recordType := range existing {
+		records = append(records, sdtypes.DnsRecord{Type: recordType, TTL: aws.Int64(100)})
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: map[string]*sdtypes.Namespace{
+			"private": {
+				Id:   aws.String("private"),
+				Name: aws.String("private.com"),
+				Type: sdtypes.NamespaceTypeDnsPrivate,
+			},
+		},
+		services: map[string]map[string]*sdtypes.Service{
+			"private": {
+				"srv1": {
+					Id:          aws.String("srv1"),
+					Name:        aws.String("service1"),
+					NamespaceId: aws.String("private"),
+					Description: aws.String("owner-id"),
+					DnsConfig: &sdtypes.DnsConfig{
+						RoutingPolicy: sdtypes.RoutingPolicyWeighted,
+						DnsRecords:    records,
+					},
+				},
+			},
+		},
+		instances: map[string]map[string]*sdtypes.Instance{
+			"srv1": {
+				"load-balancer.us-east-1.elb.amazonaws.com": {
+					Id: aws.String("load-balancer.us-east-1.elb.amazonaws.com"),
+					Attributes: map[string]string{
+						sdInstanceAttrAlias: "load-balancer.us-east-1.elb.amazonaws.com",
+					},
+				},
+			},
+		},
+	}
+
+	return newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "owner-id")
+}
+
+func desiredAliasEndpoint(dualstack bool) *endpoint.Endpoint {
+	ep := &endpoint.Endpoint{
+		DNSName:    "service1.private.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		RecordTTL:  100,
+		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"},
+	}
+	if dualstack {
+		ep.WithAliasProperty(endpoint.AliasTrue)
+	}
+	return ep
+}
+
+func TestAWSSDProvider_AdjustEndpoints_WarnsOnRecordTypeDrift(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		existing  []sdtypes.RecordType
+		dualstack bool
+		warning   string
+	}{
+		{
+			name:      "existing A, desired A+AAAA",
+			existing:  []sdtypes.RecordType{sdtypes.RecordTypeA},
+			dualstack: true,
+			warning:   "has record types [A] but desired types are [A AAAA]",
+		},
+		{
+			name:      "existing A+AAAA, desired A",
+			existing:  []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa},
+			dualstack: false,
+			warning:   "has record types [A AAAA] but desired types are [A]",
+		},
+		{
+			name:      "matching A",
+			existing:  []sdtypes.RecordType{sdtypes.RecordTypeA},
+			dualstack: false,
+		},
+		{
+			name:      "matching A+AAAA",
+			existing:  []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa},
+			dualstack: true,
+		},
+		{
+			name:      "matching A+AAAA in a different order",
+			existing:  []sdtypes.RecordType{sdtypes.RecordTypeAaaa, sdtypes.RecordTypeA},
+			dualstack: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			logs := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			sdProvider := newProviderWithAliasService(tc.existing...)
+
+			_, err := sdProvider.Records(t.Context())
+			require.NoError(t, err)
+			_, err = sdProvider.AdjustEndpoints([]*endpoint.Endpoint{desiredAliasEndpoint(tc.dualstack)})
+			require.NoError(t, err)
+
+			if tc.warning == "" {
+				logtest.TestHelperLogNotContains(recordTypeDriftWarning, logs, t)
+				return
+			}
+			logtest.TestHelperLogContainsWithLogLevel(tc.warning, log.WarnLevel, logs, t)
+		})
+	}
+}
+
+func TestAWSSDProvider_AdjustEndpoints_DriftDoesNotChangePlan(t *testing.T) {
+	logs := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	sdProvider := newProviderWithAliasService(sdtypes.RecordTypeA)
+
+	current, err := sdProvider.Records(t.Context())
+	require.NoError(t, err)
+	desired, err := sdProvider.AdjustEndpoints([]*endpoint.Endpoint{desiredAliasEndpoint(true)})
+	require.NoError(t, err)
+	logtest.TestHelperLogContainsWithLogLevel(recordTypeDriftWarning, log.WarnLevel, logs, t)
+
+	p := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"private.com"})},
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	assert.Empty(t, changes.Create)
+	assert.Empty(t, changes.UpdateOld)
+	assert.Empty(t, changes.UpdateNew)
+	assert.Empty(t, changes.Delete)
+}
+
+type failingDiscoverClient struct{ AWSSDClient }
+
+func (failingDiscoverClient) DiscoverInstances(context.Context, *sd.DiscoverInstancesInput, ...func(*sd.Options)) (*sd.DiscoverInstancesOutput, error) {
+	return nil, errors.New("discover failed")
+}
+
+func TestAWSSDProvider_Records_FailedReadKeepsRecordTypeSnapshot(t *testing.T) {
+	logs := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+	sdProvider := newProviderWithAliasService(sdtypes.RecordTypeA)
+
+	_, err := sdProvider.Records(t.Context())
+	require.NoError(t, err)
+
+	sdProvider.client = failingDiscoverClient{sdProvider.client}
+	_, err = sdProvider.Records(t.Context())
+	require.Error(t, err)
+
+	_, err = sdProvider.AdjustEndpoints([]*endpoint.Endpoint{desiredAliasEndpoint(true)})
+	require.NoError(t, err)
+	logtest.TestHelperLogContainsWithLogLevel("has record types [A] but desired types are [A AAAA]", log.WarnLevel, logs, t)
 }

@@ -420,7 +420,9 @@ record types (e.g. MX, SRV, TXT) that have this annotation set will be rejected.
   hostname. Only the literal value `"true"` is supported; the `A` and `AAAA` values are
   Route53-only and are not understood by AWS-SD. The underlying load balancer must actually
   support IPv6/dual-stack for the `AAAA` record to resolve correctly, and Cloud Map DNS record
-  types are immutable — an existing service's record types are never changed in place. See the
+  types are immutable — an existing service's record types are never changed in place. When
+  ExternalDNS detects that the desired record types differ from an existing Cloud Map service,
+  it logs a warning; recreate the service to apply the new record types. See the
   [AWS Cloud Map tutorial](../tutorials/aws-sd.md#dual-stack-load-balancer-aliases) for details.
 - **PowerDNS**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
   This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses

@@ -22,7 +22,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
@@ -30,6 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
@@ -88,6 +91,10 @@ type AWSSDProvider struct {
 	ownerID string
 	// tags to be added to the service
 	tags []sdtypes.Tag
+
+	mu sync.RWMutex
+	// observedRecordTypes caches Cloud Map record types for drift warnings.
+	observedRecordTypes map[string][]sdtypes.RecordType
 }
 
 // New creates an AWS Service Discovery provider from the given configuration.
@@ -157,6 +164,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 	}
 
 	endpoints := make([]*endpoint.Endpoint, 0)
+	observed := make(map[string][]sdtypes.RecordType)
 
 	for _, ns := range namespaces {
 		services, err := p.ListServicesByNamespaceID(ctx, ns.Id)
@@ -185,9 +193,15 @@ func (p *AWSSDProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 				continue
 			}
 
-			endpoints = append(endpoints, p.instancesToEndpoint(ns, srv, resp.Instances))
+			ep := p.instancesToEndpoint(ns, srv, resp.Instances)
+			endpoints = append(endpoints, ep)
+			observed[idna.NormalizeDNSName(ep.DNSName)] = sets.Sorted(sets.New(recordTypes(srv.DnsConfig.DnsRecords)...))
 		}
 	}
+
+	p.mu.Lock()
+	p.observedRecordTypes = observed
+	p.mu.Unlock()
 
 	return endpoints, nil
 }
@@ -235,17 +249,36 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sdtypes.NamespaceSummary, srv *s
 
 // AdjustEndpoints converts alias=true into transient dual-stack intent.
 // The alias property is removed because AWS-SD Records() does not restore it.
+// It also warns when the desired record types differ from an existing service.
 func (p *AWSSDProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
 		if ep.RecordType == endpoint.RecordTypeCNAME &&
 			len(ep.Targets) > 0 &&
 			p.isAWSLoadBalancer(ep.Targets[0]) &&
 			ep.GetAliasProperty() == endpoint.AliasTrue {
-			ep.WithLabel(endpoint.DualstackLabelKey, "true")
+			ep.WithLabel(endpoint.AWSSDDualstackLabelKey, "true")
 		}
 		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+		p.warnOnRecordTypeDrift(ep)
 	}
 	return endpoints, nil
+}
+
+func (p *AWSSDProvider) warnOnRecordTypeDrift(ep *endpoint.Endpoint) {
+	if ep.RecordType != endpoint.RecordTypeCNAME || len(ep.Targets) == 0 {
+		return
+	}
+
+	p.mu.RLock()
+	current, exists := p.observedRecordTypes[idna.NormalizeDNSName(ep.DNSName)]
+	p.mu.RUnlock()
+
+	desired := sets.Sorted(sets.New(p.serviceTypesFromEndpoint(ep)...))
+	if !exists || slices.Equal(current, desired) {
+		return
+	}
+
+	log.Warnf("Cloud Map service for %q has record types %v but desired types are %v; record types are immutable, recreate the service to change them", ep.DNSName, current, desired)
 }
 
 // ApplyChanges applies Kubernetes changes in endpoints to AWS API
@@ -690,7 +723,7 @@ func (p *AWSSDProvider) serviceTypesFromEndpoint(ep *endpoint.Endpoint) []sdtype
 	if ep.RecordType == endpoint.RecordTypeCNAME &&
 		len(ep.Targets) > 0 &&
 		p.isAWSLoadBalancer(ep.Targets[0]) &&
-		ep.Labels[endpoint.DualstackLabelKey] == "true" {
+		ep.Labels[endpoint.AWSSDDualstackLabelKey] == "true" {
 		return []sdtypes.RecordType{sdtypes.RecordTypeA, sdtypes.RecordTypeAaaa}
 	}
 

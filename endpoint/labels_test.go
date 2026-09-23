@@ -75,11 +75,11 @@ func (suite *LabelsSuite) TestSerialize() {
 	suite.NotEqual(suite.fooAsTextWithQuotes, suite.foo.Serialize(true, true, suite.aesKey), "should serializeLabel and encrypt")
 }
 
-func (suite *LabelsSuite) TestSerializeOmitsTransientDualstackLabel() {
+func (suite *LabelsSuite) TestSerializeOmitsAWSSDDualstackLabel() {
 	labels := Labels{
-		OwnerLabelKey:     "foo-owner",
-		ResourceLabelKey:  "foo-resource",
-		DualstackLabelKey: "true",
+		OwnerLabelKey:          "foo-owner",
+		ResourceLabelKey:       "foo-resource",
+		AWSSDDualstackLabelKey: "true",
 	}
 
 	suite.Equal(suite.fooAsText, labels.SerializePlain(false))
