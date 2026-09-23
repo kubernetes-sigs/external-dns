@@ -101,6 +101,8 @@ Common types: `feat`, `fix`, `docs`, `chore`, `ci`, `refactor`, `test`. See
 
 Uses `golangci-lint` with strict `.golangci.yml` (32+ linters). Key rules: `testifylint` (use `assert`/`require` helpers correctly), `errorlint` (wrap errors properly), `gocritic`, `gochecknoinits` (no `init()` functions). All new Go files need Apache 2.0 license header.
 
+Use `internal/sets` for set semantics (`sets.New[string]()`, `Insert`, `Has`, `Sorted`), not `map[string]bool` or `k8s.io/utils/set`.
+
 ## Before You Finish
 
 Self-check the change against this guide before handing it back:

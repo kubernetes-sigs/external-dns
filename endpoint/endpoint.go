@@ -27,7 +27,6 @@ import (
 
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/utils/set"
 
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -115,7 +114,7 @@ type SRVTarget struct {
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings.
 // Returns a new Targets slice with duplicates removed and elements sorted in order.
 func NewTargets(target ...string) Targets {
-	return set.New(target...).SortedList()
+	return sets.Sorted(sets.New(target...))
 }
 
 // String returns the targets joined by semicolons.
