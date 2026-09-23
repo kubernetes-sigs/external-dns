@@ -63,7 +63,7 @@ To convert all `CNAME` records to `ALIAS` globally, use the `--prefer-alias` fla
 > TXT registry, configure a `--txt-prefix` that contains the record type substitution
 > and ends in a period, e.g. `--txt-prefix=extdns-%{record_type}.`. With the default
 > TXT naming, the ownership record for an apex endpoint falls outside the zone and is
-> silently skipped, leaving the apex record unowned — it will then never be updated or
+> skipped, leaving the apex record unowned — it will then never be updated or
 > deleted. See the [TXT registry documentation](../registry/txt.md) for details.
 
 ## Deploy ExternalDNS

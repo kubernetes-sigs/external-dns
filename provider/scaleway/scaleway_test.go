@@ -17,6 +17,7 @@ limitations under the License.
 package scaleway
 
 import (
+	"errors"
 	"io"
 	"os"
 	"reflect"
@@ -31,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
@@ -141,39 +143,39 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	}
 	t.Setenv(scw.ScwActiveProfileEnv, "foo")
 	t.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
-	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	_ = os.Unsetenv(scw.ScwSecretKeyEnv)
-	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	t.Setenv(scw.ScwSecretKeyEnv, "dummy")
-	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Unsetenv(scw.ScwAccessKeyEnv)
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	t.Setenv(scw.ScwAccessKeyEnv, "dummy")
-	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -184,7 +186,7 @@ func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
 	t.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	t.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 
-	_, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), true, 0)
 	assert.NoError(t, err)
 }
 
@@ -417,8 +419,8 @@ func TestScalewayProvider_Zones(t *testing.T) {
 		assert.Equal(t, expected[i], zone)
 	}
 
-	// the apex names used to detect ALIAS records come from the same listing
-	apexNames := provider.apexNames(t.Context())
+	apexNames, err := provider.apexNames(t.Context())
+	require.NoError(t, err)
 	assert.Contains(t, apexNames, "example.com")
 	assert.Contains(t, apexNames, "test.example.com")
 }
@@ -432,6 +434,27 @@ type countingScalewayDomain struct {
 func (m *countingScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
 	m.listDNSZonesCalls++
 	return m.mockScalewayDomain.ListDNSZones(req, opts...)
+}
+
+type failingScalewayDomain struct {
+	mockScalewayDomain
+}
+
+func (m *failingScalewayDomain) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
+	return nil, errors.New("api unavailable")
+}
+
+func TestScalewayProvider_AdjustEndpointsZonesError(t *testing.T) {
+	p := &ScalewayProvider{
+		domainAPI:    &failingScalewayDomain{},
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		zonesCache:   blueprint.NewZoneCache[[]*domain.DNSZone](0),
+	}
+
+	_, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "target.example.com"),
+	})
+	require.ErrorIs(t, err, provider.SoftError)
 }
 
 func TestScalewayProvider_ZonesCache(t *testing.T) {
@@ -603,9 +626,7 @@ func (m *mockScalewayDomainAliasAndCNAME) UpdateDNSZoneRecords(_ *domain.UpdateD
 	return &domain.UpdateDNSZoneRecordsResponse{}, nil
 }
 
-// TestScalewayProvider_RecordsAliasAndCNAMESameName ensures that an ALIAS and a
-// CNAME record sharing a name are read back as two endpoints: both are exposed
-// as CNAME, so merging them would drop either the alias property or a target.
+// Merging both into one CNAME endpoint would drop the alias flag or a target.
 func TestScalewayProvider_RecordsAliasAndCNAMESameName(t *testing.T) {
 	provider := &ScalewayProvider{
 		domainAPI:    &mockScalewayDomainAliasAndCNAME{},
@@ -903,10 +924,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 	assert.Equal(t, 0, total)
 }
 
-// TestScalewayProvider_AliasRoundTrip ensures that desired CNAME endpoints
-// stored as ALIAS records, once adjusted, exactly match the endpoints read
-// back from those ALIAS records. If they diverge, the plan detects a
-// difference and rewrites the records on every reconciliation cycle.
+// Adjusted ALIAS endpoints must match Records, or the plan rewrites them every loop.
 func TestScalewayProvider_AliasRoundTrip(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
 	provider := &ScalewayProvider{
@@ -943,19 +961,13 @@ func TestScalewayProvider_AliasRoundTrip(t *testing.T) {
 	adjusted, err := provider.AdjustEndpoints(desired)
 	require.NoError(t, err)
 
-	for _, d := range adjusted {
-		found := false
-		for _, c := range current {
-			if c.DNSName == d.DNSName && c.RecordType == d.RecordType {
-				found = true
-				assert.True(t, c.Targets.Same(d.Targets), "targets mismatch for %s", d.DNSName)
-				assert.Equal(t, c.RecordTTL, d.RecordTTL, "TTL mismatch for %s", d.DNSName)
-				assert.ElementsMatch(t, c.ProviderSpecific, d.ProviderSpecific,
-					"provider-specific mismatch for %s would cause an update on every cycle", d.DNSName)
-			}
-		}
-		assert.True(t, found, "no record found for %s", d.DNSName)
-	}
+	changes := (&plan.Plan{
+		Current:        current,
+		Desired:        adjusted,
+		Policies:       []plan.Policy{&plan.UpsertOnlyPolicy{}},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}).Calculate().Changes
+	assert.False(t, changes.HasChanges(), "ALIAS records must not be updated on every cycle: %+v", changes)
 }
 
 func TestScalewayProvider_scalewayRecordType(t *testing.T) {

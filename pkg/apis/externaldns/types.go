@@ -180,6 +180,7 @@ type Config struct {
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
 	ExoscaleZoneCacheDuration                     time.Duration
+	ScalewayZonesCacheDuration                    time.Duration
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
@@ -369,6 +370,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecretAlg:             "",
 	RFC2136UseTLS:                    false,
 	RFC2136Zone:                      []string{},
+	ScalewayZonesCacheDuration:       0 * time.Second,
 	ServiceTypeFilter:                []string{},
 	SkipperRouteGroupVersion:         "zalando.org/v1",
 	Sources:                          nil,
@@ -637,6 +639,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("exoscale-apikey", "Provide your API Key for the Exoscale provider", defaultConfig.ExoscaleAPIKey, &cfg.ExoscaleAPIKey)
 	b.StringVar("exoscale-apisecret", "Provide your API Secret for the Exoscale provider", defaultConfig.ExoscaleAPISecret, &cfg.ExoscaleAPISecret)
 	b.DurationVar("exoscale-zones-cache-duration", "When using Exoscale provider, set the zones list cache TTL (0s to disable)", defaultConfig.ExoscaleZoneCacheDuration, &cfg.ExoscaleZoneCacheDuration)
+	b.DurationVar("scaleway-zones-cache-duration", "When using the Scaleway provider, set the zones list cache TTL (0s to disable).", defaultConfig.ScalewayZonesCacheDuration, &cfg.ScalewayZonesCacheDuration)
 
 	// Flags related to RFC2136 provider
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)
