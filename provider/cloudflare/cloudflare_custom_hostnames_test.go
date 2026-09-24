@@ -183,7 +183,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "a.foo.fancybar.com",
 						},
 					},
@@ -203,7 +203,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "c1.foo.fancybar.com",
 						},
 					},
@@ -229,7 +229,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "b.foo.fancybar.com",
 						},
 					},
@@ -242,7 +242,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "c2.foo.fancybar.com",
 						},
 					},
@@ -308,7 +308,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "newerror-getCustomHostnameOrigin.foo.fancybar.com",
 						},
 					},
@@ -340,7 +340,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "a.foo.fancybar.com",
 						},
 					},
@@ -431,7 +431,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 				Labels:     endpoint.Labels{},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+						Name:  annotations.CloudflareCustomHostnameProperty,
 						Value: fmt.Sprintf("host-%d.foo.fancybar.com", i),
 					},
 				},
@@ -834,10 +834,10 @@ func TestDeduplicateCustomHostnames(t *testing.T) {
 		t.Parallel()
 		eps := []*endpoint.Endpoint{
 			{DNSName: "a.example.com", ProviderSpecific: endpoint.ProviderSpecific{
-				{Name: "external-dns.kubernetes.io/cloudflare-custom-hostname", Value: "ch-a.example.com"},
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "ch-a.example.com"},
 			}},
 			{DNSName: "b.example.com", ProviderSpecific: endpoint.ProviderSpecific{
-				{Name: "external-dns.kubernetes.io/cloudflare-custom-hostname", Value: "ch-b.example.com"},
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "ch-b.example.com"},
 			}},
 		}
 		deduplicateCustomHostnames(eps)
