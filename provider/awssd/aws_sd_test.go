@@ -201,14 +201,14 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	err := provider.ApplyChanges(ctx, &plan.Changes{
 		Create: expectedEndpoints,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// make sure services were created
 	assert.Len(t, api.services["private"], 3)
 	existingServices, _ := provider.ListServicesByNamespaceID(t.Context(), namespaces["private"].Id)
-	assert.NotNil(t, existingServices["service1"])
-	assert.NotNil(t, existingServices["service2"])
-	assert.NotNil(t, existingServices["service3"])
+	require.NotNil(t, existingServices["service1"])
+	require.NotNil(t, existingServices["service2"])
+	require.NotNil(t, existingServices["service3"])
 
 	// make sure instances were registered
 	endpoints, _ := provider.Records(ctx)
@@ -219,7 +219,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	err = provider.ApplyChanges(ctx, &plan.Changes{
 		Delete: expectedEndpoints,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// make sure all instances are gone
 	endpoints, _ = provider.Records(ctx)
@@ -269,7 +269,7 @@ func TestAWSSDProvider_ApplyChanges_Update(t *testing.T) {
 	// make sure services were created
 	assert.Len(t, api.services["private"], 1)
 	existingServices, _ := provider.ListServicesByNamespaceID(ctx, namespaces["private"].Id)
-	assert.NotNil(t, existingServices["service1"])
+	require.NotNil(t, existingServices["service1"])
 
 	// make sure instances were registered
 	endpoints, _ := provider.Records(ctx)
@@ -312,7 +312,7 @@ func TestAWSSDProvider_ApplyChanges_DottedServiceName(t *testing.T) {
 	assert.Len(t, api.services["dev-local"], 1)
 	existingServices, err := provider.ListServicesByNamespaceID(ctx, namespaces["dev-local"].Id)
 	require.NoError(t, err)
-	assert.NotNil(t, existingServices["my-app.elb"], "service should be named 'my-app.elb'")
+	require.NotNil(t, existingServices["my-app.elb"], "service should be named 'my-app.elb'")
 
 	// verify the record round-trips through Records()
 	endpoints, err := provider.Records(ctx)
@@ -461,7 +461,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 		RecordTTL:  60,
 		Targets:    endpoint.Targets{"1.2.3.4"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expectedServices["A-srv"] = &sdtypes.Service{
 		Name:        aws.String("A-srv"),
@@ -485,7 +485,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 		RecordTTL:  60,
 		Targets:    endpoint.Targets{"::1234:5678:"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedServices["AAAA-srv"] = &sdtypes.Service{
 		Name:        aws.String("AAAA-srv"),
 		Description: aws.String("AAAA-srv"),
@@ -508,7 +508,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 		RecordTTL:  80,
 		Targets:    endpoint.Targets{"cname.target.com"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedServices["CNAME-srv"] = &sdtypes.Service{
 		Name:        aws.String("CNAME-srv"),
 		Description: aws.String("CNAME-srv"),
@@ -531,7 +531,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 		RecordTTL:  100,
 		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedServices["ALIAS-srv"] = &sdtypes.Service{
 		Name:        aws.String("ALIAS-srv"),
 		Description: aws.String("ALIAS-srv"),
@@ -573,9 +573,9 @@ func TestAWSSDProvider_CreateServiceDryRun(t *testing.T) {
 		RecordTTL:  60,
 		Targets:    endpoint.Targets{"1.2.3.4"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NotNil(t, service)
+	require.NotNil(t, service)
 	assert.Equal(t, "dry-run-service", *service.Name)
 }
 
@@ -604,8 +604,8 @@ func TestAWSSDProvider_CreateService_LabelNotSet(t *testing.T) {
 		Targets:    endpoint.Targets{"1.2.3.4"},
 	})
 
-	assert.NoError(t, err)
-	assert.NotNil(t, service)
+	require.NoError(t, err)
+	require.NotNil(t, service)
 	assert.Empty(t, *service.Description)
 }
 
@@ -648,7 +648,7 @@ func TestAWSSDProvider_UpdateService(t *testing.T) {
 		RecordTTL:  100,
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 	assert.Equal(t, int64(100), *api.services["private"]["srv1"].DnsConfig.DnsRecords[0].TTL)
 }
@@ -693,7 +693,7 @@ func TestAWSSDProvider_UpdateService_DryRun(t *testing.T) {
 		RecordTTL:  100,
 	})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 	// records should not be updated
 	assert.NotEqual(t, 100, api.services["private"]["srv1"].DnsConfig.DnsRecords[0].TTL)
@@ -747,17 +747,17 @@ func TestAWSSDProvider_DeleteService(t *testing.T) {
 
 	// delete first service
 	err := provider.DeleteService(t.Context(), services["private"]["srv1"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 3)
 
 	// delete third service
 	err = provider.DeleteService(t.Context(), services["private"]["srv3"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 2)
 
 	// delete service with no description
 	err = provider.DeleteService(t.Context(), services["private"]["srv4"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expected := map[string]*sdtypes.Service{
 		"srv2": {
@@ -808,7 +808,7 @@ func TestAWSSDProvider_DeleteServiceEmptyDescription_Logging(t *testing.T) {
 
 	// delete service
 	err := provider.DeleteService(t.Context(), services["private"]["srv1"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 
 	logtest.TestHelperLogContainsWithLogLevel("Skipping service removal \"service1\" because owner id (service.Description) not set, when should be", log.DebugLevel, logs, t)
@@ -844,7 +844,7 @@ func TestAWSSDProvider_DeleteServiceDryRun(t *testing.T) {
 
 	// delete first service
 	err := provider.DeleteService(t.Context(), services["private"]["srv1"])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, api.services["private"], 1)
 }
 
@@ -928,7 +928,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		RecordTTL:  300,
 		Targets:    endpoint.Targets{"1.2.3.4", "1.2.3.5"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedInstances["1.2.3.4"] = &sdtypes.Instance{
 		Id: aws.String("1.2.3.4"),
 		Attributes: map[string]string{
@@ -949,7 +949,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		RecordTTL:  300,
 		Targets:    endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com", "load-balancer.us-west-2.elb.amazonaws.com"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedInstances["load-balancer.us-east-1.elb.amazonaws.com"] = &sdtypes.Instance{
 		Id: aws.String("load-balancer.us-east-1.elb.amazonaws.com"),
 		Attributes: map[string]string{

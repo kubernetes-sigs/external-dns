@@ -160,7 +160,7 @@ func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 			r, _ := newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
 
 			_, err := r.Records(t.Context())
-			assert.EqualError(t, err, tc.expected)
+			require.EqualError(t, err, tc.expected)
 		})
 	}
 }
@@ -1089,9 +1089,9 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 
 			err = r.ApplyChanges(ctx, &tc.changes)
 			if tc.expectedError == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedError)
+				require.EqualError(t, err, tc.expectedError)
 			}
 
 			assert.Empty(t, tc.stubConfig.ExpectInsert, "all expected inserts made")
@@ -1177,7 +1177,7 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 }
 
 func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.DescribeTableInput, _ ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
-	assert.NotNil(r.t, ctx)
+	require.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	return &dynamodb.DescribeTableOutput{
 		Table: &r.tableDescription,
@@ -1185,12 +1185,12 @@ func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.Descri
 }
 
 func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, _ ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
-	assert.NotNil(r.t, ctx)
+	require.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	assert.Equal(r.t, "o = :ownerval", *input.FilterExpression)
 	assert.Len(r.t, input.ExpressionAttributeValues, 1)
 	var owner string
-	assert.NoError(r.t, attributevalue.Unmarshal(input.ExpressionAttributeValues[":ownerval"], &owner))
+	require.NoError(r.t, attributevalue.Unmarshal(input.ExpressionAttributeValues[":ownerval"], &owner))
 	assert.Equal(r.t, "test-owner", owner)
 	assert.Equal(r.t, "k,l", *input.ProjectionExpression)
 	assert.True(r.t, *input.ConsistentRead)
@@ -1225,7 +1225,7 @@ func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, _ ..
 }
 
 func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dynamodb.BatchExecuteStatementInput, _ ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
-	assert.NotNil(r.t, context)
+	require.NotNil(r.t, context)
 	hasDelete := strings.HasPrefix(strings.ToLower(*input.Statements[0].Statement), "delete")
 	assert.Equal(r.t, hasDelete, r.changesApplied, "delete after provider changes, everything else before")
 	assert.LessOrEqual(r.t, len(input.Statements), 25)
@@ -1243,7 +1243,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 			r.stubConfig.ExpectDelete.Delete(key)
 
 			var testOwner string
-			assert.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[1], &testOwner))
+			require.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[1], &testOwner))
 			assert.Equal(r.t, "test-owner", testOwner)
 
 			responses = append(responses, dynamodbtypes.BatchStatementResponse{})
@@ -1252,7 +1252,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 			assert.False(r.t, r.changesApplied, "unexpected insert after provider changes")
 
 			var key string
-			assert.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
+			require.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
 			if code, ok := r.stubConfig.ExpectInsertError[key]; ok {
 				delete(r.stubConfig.ExpectInsertError, key)
 				responses = append(responses, dynamodbtypes.BatchStatementResponse{
@@ -1274,7 +1274,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 
 			var labels map[string]string
 			err := attributevalue.Unmarshal(statement.Parameters[2], &labels)
-			assert.NoError(r.t, err)
+			require.NoError(r.t, err)
 
 			for label, value := range labels {
 				expectedValue, found := expectedLabels[label]
@@ -1293,7 +1293,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 			assert.False(r.t, r.changesApplied, "unexpected update after provider changes")
 
 			var key string
-			assert.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[1], &key))
+			require.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[1], &key))
 			if code, exists := r.stubConfig.ExpectUpdateError[key]; exists {
 				delete(r.stubConfig.ExpectInsertError, key)
 				responses = append(responses, dynamodbtypes.BatchStatementResponse{
@@ -1310,7 +1310,7 @@ func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dyn
 			delete(r.stubConfig.ExpectUpdate, key)
 
 			var labels map[string]string
-			assert.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[0], &labels))
+			require.NoError(r.t, attributevalue.Unmarshal(statement.Parameters[0], &labels))
 
 			for label, value := range labels {
 				expectedValue, found := expectedLabels[label]

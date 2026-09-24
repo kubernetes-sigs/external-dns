@@ -51,7 +51,7 @@ func Test_newV2Config(t *testing.T) {
 		creds, err := cfg.Credentials.Retrieve(t.Context())
 
 		// then
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "AKID2345", creds.AccessKeyID)
 		assert.Equal(t, "SECRET2", creds.SecretAccessKey)
 	})
@@ -69,7 +69,7 @@ func Test_newV2Config(t *testing.T) {
 		creds, err := cfg.Credentials.Retrieve(t.Context())
 
 		// then
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "AKIAIOSFODNN7EXAMPLE", creds.AccessKeyID)
 		assert.Equal(t, "topsecret", creds.SecretAccessKey)
 	})
@@ -85,7 +85,7 @@ func Test_newV2Config(t *testing.T) {
 		require.NoError(t, err)
 
 		// then
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("should configure assume role credentials", func(t *testing.T) {

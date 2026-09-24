@@ -190,7 +190,7 @@ func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
 	cfg.IgnoreHostnameAnnotation = true
 	cfg.FQDNTemplate = []string{}
 
-	assert.Error(t, ValidateConfig(cfg))
+	require.Error(t, ValidateConfig(cfg))
 }
 
 func TestValidateBadRfc2136Config(t *testing.T) {
@@ -205,7 +205,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestValidateBadRfc2136Batch(t *testing.T) {
@@ -220,7 +220,7 @@ func TestValidateBadRfc2136Batch(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestValidateGoodRfc2136Config(t *testing.T) {
@@ -237,7 +237,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
@@ -340,7 +340,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range invalidRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
@@ -367,7 +367,7 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 	for _, cfg := range validRfc2136GssTsigConfigs {
 		err := ValidateConfig(cfg)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -465,7 +465,7 @@ func TestValidateBadAzureConfig(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestValidateGoodAzureConfig(t *testing.T) {
@@ -482,7 +482,7 @@ func TestValidateGoodAzureConfig(t *testing.T) {
 
 	err := ValidateConfig(cfg)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestValidateCreatePTRRequiresManagedRecordType(t *testing.T) {
@@ -491,7 +491,7 @@ func TestValidateCreatePTRRequiresManagedRecordType(t *testing.T) {
 	// ManagedDNSRecordTypes defaults to [A, AAAA, CNAME] — no PTR
 
 	err := ValidateConfig(cfg)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "--create-ptr requires PTR in --managed-record-types")
 }
 
@@ -501,5 +501,5 @@ func TestValidateCreatePTRWithPTRManagedPasses(t *testing.T) {
 	cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
 
 	err := ValidateConfig(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }

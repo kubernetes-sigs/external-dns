@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProfileWithDefault(t *testing.T) {
@@ -52,7 +53,7 @@ func TestProfileWithDefault(t *testing.T) {
 	for _, tt := range tets {
 		t.Run(strings.ToLower(tt.input), func(t *testing.T) {
 			result, err := Profile.ToUnicode(tt.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

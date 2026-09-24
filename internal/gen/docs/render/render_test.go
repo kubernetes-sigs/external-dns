@@ -183,7 +183,7 @@ func TestFuncs(t *testing.T) {
 	for _, tt := range tests {
 		var b strings.Builder
 		err := template.Must(template.New("test").Funcs(FuncMap()).Parse(tt.tpl)).Execute(&b, tt.vars)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, tt.expect, b.String(), tt.tpl)
 	}
 }
