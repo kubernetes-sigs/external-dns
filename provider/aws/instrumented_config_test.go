@@ -42,12 +42,12 @@ func Test_GetInstrumentationMiddlewares(t *testing.T) {
 		// Check Initialize stage
 		timedOperationMiddleware, found := stack.Initialize.Get("timedOperation")
 		assert.True(t, found, "timedOperation middleware should be present in Initialize stage")
-		assert.NotNil(t, timedOperationMiddleware)
+		require.NotNil(t, timedOperationMiddleware)
 
 		// Check Deserialize stage
 		extractAWSRequestParametersMiddleware, found := stack.Deserialize.Get("extractAWSRequestParameters")
 		assert.True(t, found, "extractAWSRequestParameters middleware should be present in Deserialize stage")
-		assert.NotNil(t, extractAWSRequestParametersMiddleware)
+		require.NotNil(t, extractAWSRequestParametersMiddleware)
 	})
 }
 
@@ -69,7 +69,7 @@ func Test_InitializedTimedOperationMiddleware(t *testing.T) {
 	require.NoError(t, err)
 
 	requestMetrics := middleware.GetStackValue(mockInitializeHandler.CapturedContext, requestMetricsKey{}).(requestMetrics)
-	assert.NotNil(t, requestMetrics.StartTime)
+	require.NotNil(t, requestMetrics.StartTime)
 }
 
 type MockDeserializeHandler struct {

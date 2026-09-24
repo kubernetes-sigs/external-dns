@@ -157,14 +157,14 @@ func TestTransformRemoveStatusConditions(t *testing.T) {
 		conditions, found, err := unstructured.NestedSlice(unstructuredSvcObj.Object, "status", "conditions")
 		require.NoError(t, err)
 		assert.False(t, found)
-		assert.Nil(t, conditions)
+		require.Nil(t, conditions)
 
 		// Status.LoadBalancer must be preserved
 		assert.Contains(t, result.Object["status"], "loadBalancer")
 		loadBalancerStatus, found, err := unstructured.NestedMap(unstructuredSvcObj.Object, "status", "loadBalancer")
 		require.NoError(t, err)
 		assert.True(t, found)
-		assert.NotNil(t, loadBalancerStatus)
+		require.NotNil(t, loadBalancerStatus)
 	})
 
 	t.Run("no-op when conditions are already empty", func(t *testing.T) {
@@ -214,7 +214,7 @@ func TestTransformKeepAnnotationPrefix(t *testing.T) {
 		transform := TransformerWithOptions[*corev1.Pod](TransformKeepAnnotationPrefix("external-dns.kubernetes.io/"))
 		got, err := transform(pod)
 		require.NoError(t, err)
-		assert.Nil(t, got.(*corev1.Pod).Annotations)
+		require.Nil(t, got.(*corev1.Pod).Annotations)
 	})
 }
 

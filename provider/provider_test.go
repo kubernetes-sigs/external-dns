@@ -67,14 +67,14 @@ func TestBaseProvider_AdjustEndpoints(t *testing.T) {
 	b := BaseProvider{}
 	eps := []*endpoint.Endpoint{{DNSName: "example.com"}}
 	got, err := b.AdjustEndpoints(eps)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, eps, got)
 }
 
 func TestBaseProvider_GetDomainFilter(t *testing.T) {
 	b := BaseProvider{}
 	f := b.GetDomainFilter()
-	assert.NotNil(t, f)
+	require.NotNil(t, f)
 	assert.True(t, f.Match("example.com"))
 }
 

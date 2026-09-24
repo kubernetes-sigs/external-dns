@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -73,10 +74,10 @@ func TestWaitForCacheSync(t *testing.T) {
 			err := WaitForCacheSync(ctx, factory)
 
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Errorf(t, err, tt.errorMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -115,10 +116,10 @@ func TestWaitForDynamicCacheSync(t *testing.T) {
 			err := WaitForDynamicCacheSync(ctx, factory)
 
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Errorf(t, err, tt.errorMsg)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

@@ -303,13 +303,13 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 		"foo.com 3600 IN A 1.1.1.1",
 		"foo.com 3600 IN A 2.2.2.2",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	provider, err := createRfc2136StubProvider(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	recs, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, recs, 1, "expected single record")
 	assert.Equal(t, "foo.com", recs[0].DNSName)
@@ -325,7 +325,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 func TestRfc2136PTRCreation(t *testing.T) {
 	stub := newStub()
 	p, err := createRfc2136StubProviderWithReverseZone(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Simulate what the PTR source wrapper produces: both A and PTR endpoints.
 	records := []*endpoint.Endpoint{
@@ -344,7 +344,7 @@ func TestRfc2136PTRCreation(t *testing.T) {
 	err = p.ApplyChanges(t.Context(), &plan.Changes{
 		Create: records,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, stub.createMsgs, 2, "expected two records, one A and one PTR")
 	createMsgs := getSortedChanges(stub.createMsgs)
 	assert.Contains(t, strings.Join(strings.Fields(createMsgs[0]), " "), "4.3.2.1.in-addr.arpa. 300 IN PTR demo.foo.com.", "expected a PTR record")
@@ -395,7 +395,7 @@ func TestRfc2136TLSConfigWithMultiHosts(t *testing.T) {
 	stub := newStub()
 
 	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
 		`-----BEGIN CERTIFICATE-----
@@ -417,13 +417,13 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	}
 
 	provider, err := createRfc2136TLSStubProviderWithHosts(stub, tlsConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rawProvider := provider.(*rfc2136Provider)
 
 	for _, ns := range rawProvider.nameservers {
 		client, err := makeClient(rawProvider, ns)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// strip port from ns
 		ns = strings.Split(ns, ":")[0]
@@ -440,7 +440,7 @@ func TestRfc2136TLSConfigNoVerify(t *testing.T) {
 	stub := newStub()
 
 	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
 		`-----BEGIN CERTIFICATE-----
@@ -462,12 +462,12 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	}
 
 	provider, err := createRfc2136TLSStubProvider(stub, tlsConfig)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rawProvider := provider.(*rfc2136Provider)
 
 	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
 	assert.True(t, client.TLSConfig.InsecureSkipVerify)
@@ -480,7 +480,7 @@ func TestRfc2136TLSConfigClientAuth(t *testing.T) {
 	stub := newStub()
 
 	caFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.Remove(caFile.Name())
 	_, err = caFile.Write([]byte(
 		`-----BEGIN CERTIFICATE-----
@@ -494,7 +494,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 `))
 
 	certFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.crt")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.Remove(certFile.Name())
 	_, err = certFile.Write([]byte(
 		`-----BEGIN CERTIFICATE-----
@@ -510,7 +510,7 @@ goRP/fRfTTTLwLg8UBpUAmALX8A8HBSBaUlTTQcaImbcwU4DRSbv5JEA8tM1mWrA
 `))
 
 	keyFile, err := os.CreateTemp(t.TempDir(), "rfc2136-test-XXXXXXXX-client.key")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer os.Remove(keyFile.Name())
 	_, err = keyFile.Write([]byte(
 		`-----BEGIN PRIVATE KEY-----
@@ -531,14 +531,14 @@ hl6aAPCe16pwvljB7yImxLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTM=
 
 	provider, err := createRfc2136TLSStubProvider(stub, tlsConfig)
 	log.Infof("provider, err is: %s", err)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rawProvider := provider.(*rfc2136Provider)
 
 	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	log.Infof("client, err is: %v", client)
 	log.Infof("client, err is: %s", err)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
 	assert.False(t, client.TLSConfig.InsecureSkipVerify)
@@ -558,13 +558,13 @@ func TestRfc2136GetRecords(t *testing.T) {
 		"v1.foobar.com 3600 TXT dddd",
 		"v5.foo.com 3600 DNAME target.example.com.",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	provider, err := createRfc2136StubProvider(stub, "barfoo.com", "foo.com", "bar.com", "foobar.com")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	recs, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, recs, 7)
 	assert.True(t, contains(recs, "v1.foo.com"))
@@ -596,24 +596,24 @@ func TestRfc2136SendMessage(t *testing.T) {
 	m.Insert([]dns.RR{rr})
 
 	err = stub.SendMessage(m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	rr, err = dns.NewRR(fmt.Sprintf("%s %d %s %s", "v1.bar.com.", 0, "A", "1.2.3.4"))
 	m.Insert([]dns.RR{rr})
 
 	err = stub.SendMessage(m)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	m.SetUpdate(".")
 	err = stub.SendMessage(m)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // These tests are use the . root zone with no filters
 func TestRfc2136ApplyChanges(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProvider(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	p := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -649,7 +649,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
 	assert.Contains(t, stub.createMsgs[0].String(), "v1.foo.com")
@@ -671,7 +671,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithZones(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	p := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -707,7 +707,7 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
 	createMsgs := getSortedChanges(stub.createMsgs)
@@ -735,7 +735,7 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithZonesFilters(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	p := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -777,7 +777,7 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 3)
 	createMsgs := getSortedChanges(stub.createMsgs)
@@ -809,7 +809,7 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	stub := newStub()
 
 	provider, err := createRfc2136StubProvider(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	p := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -834,7 +834,7 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	createRecords := extractUpdateSectionFromMessage(stub.createMsgs[0])
 	assert.Len(t, createRecords, 3)
@@ -853,7 +853,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	stub := newStub()
 
 	provider, err := createRfc2136StubProvider(stub)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	p := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -872,7 +872,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	p = &plan.Changes{
 		UpdateOld: []*endpoint.Endpoint{
@@ -904,7 +904,7 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, stub.createMsgs, 4)
 	assert.Len(t, stub.updateMsgs, 2)
@@ -981,7 +981,7 @@ func TestRoundRobinLoadBalancing(t *testing.T) {
 
 	for i := range 10 {
 		err := stub.SendMessage(m)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		expectedNameserver := "rfc2136-host" + strconv.Itoa((i%3)+1)
 		assert.Equal(t, expectedNameserver, stub.lastNameserver)
 	}
@@ -1002,7 +1002,7 @@ func TestRandomLoadBalancing(t *testing.T) {
 
 	for range 25 {
 		err := stub.SendMessage(m)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		nameserverCounts[stub.lastNameserver]++
 	}
 
@@ -1061,7 +1061,7 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	stub := newStub()
 
 	provider, err := createRfc2136StubProviderWithBatchChangeSize(stub, 2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	var oldRecords []*endpoint.Endpoint
 	var newRecords []*endpoint.Endpoint
@@ -1087,7 +1087,7 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	}
 
 	err = provider.ApplyChanges(t.Context(), p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, stub.updateMsgs, 4)
 
@@ -1152,12 +1152,12 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 		"round-robin",
 		failingStub,
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test that Records() returns a SoftError when nameserver fails
 	_, err = providerInstance.Records(t.Context())
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails")
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails")
 
 	// Test that ApplyChanges() returns a SoftError when nameserver fails
 	p := &plan.Changes{
@@ -1170,7 +1170,7 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 		},
 	}
 	err = providerInstance.ApplyChanges(t.Context(), p)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }
 
@@ -1243,11 +1243,9 @@ func TestRfc2136AxfrEnvelopeErrorReturnsSoftError(t *testing.T) {
 		"round-robin",
 		stub,
 	)
-	assert.NoError(t, err)
-
+	require.NoError(t, err)
 	records, err := providerInstance.Records(t.Context())
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when AXFR envelope carries an error")
+	require.ErrorIs(t, err, provider.SoftError, "Expected SoftError when AXFR envelope carries an error")
 	assert.Empty(t, records, "Expected no records returned when AXFR envelope carries an error")
 }
 
@@ -1332,7 +1330,7 @@ func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
 	require.NoError(t, err)
 
 	endpoints, err := providerInstance.Records(t.Context())
-	assert.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
+	require.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
 	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
 }
 

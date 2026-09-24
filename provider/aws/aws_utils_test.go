@@ -25,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/goccy/go-yaml"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
@@ -147,9 +147,9 @@ func unmarshalZonesFixture(obj any, t *testing.T) {
 	t.Helper()
 	path, _ := os.Getwd()
 	file, err := os.Open(path + "/fixtures/160-plus-zones.yaml")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer file.Close()
 	dec := yaml.NewDecoder(file)
 	err = dec.Decode(obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
