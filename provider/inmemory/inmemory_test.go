@@ -102,8 +102,8 @@ func testInMemoryRecords(t *testing.T) {
 			im.filter = &f
 			records, err := im.Records(t.Context())
 			if ti.expectError {
-				assert.Nil(t, records)
-				assert.EqualError(t, err, ErrZoneNotFound.Error())
+				require.Nil(t, records)
+				require.EqualError(t, err, ErrZoneNotFound.Error())
 			} else {
 				require.NoError(t, err)
 				assert.True(t, testutils.SameEndpoints(ti.expected, records), "Endpoints not the same: Expected: %+v Records: %+v", ti.expected, records)
@@ -409,9 +409,9 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			}
 			err := c.validateChangeBatch(ti.zone, ichanges)
 			if ti.expectError {
-				assert.EqualError(t, err, ti.errorType.Error())
+				require.EqualError(t, err, ti.errorType.Error())
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -552,7 +552,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 
 			err := im.ApplyChanges(t.Context(), ti.changes)
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, ti.expectedZonesState, c.zones)
@@ -566,7 +566,7 @@ func TestNew(t *testing.T) {
 	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 	p, err := New(t.Context(), cfg, domainFilter)
 	require.NoError(t, err)
-	assert.NotNil(t, p)
+	require.NotNil(t, p)
 	im, ok := p.(*InMemoryProvider)
 	require.True(t, ok)
 	assert.Equal(t, domainFilter, im.domain)
@@ -623,7 +623,7 @@ func TestApplyChanges_UnknownZoneSkipped(t *testing.T) {
 		UpdateOld: []*endpoint.Endpoint{outside},
 		Delete:    []*endpoint.Endpoint{outside},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestInMemoryClient_Records_ZoneNotFound(t *testing.T) {
@@ -634,7 +634,7 @@ func TestInMemoryClient_Records_ZoneNotFound(t *testing.T) {
 
 func testNewInMemoryProvider(t *testing.T) {
 	cfg := NewInMemoryProvider()
-	assert.NotNil(t, cfg.client)
+	require.NotNil(t, cfg.client)
 }
 
 func testInMemoryCreateZone(t *testing.T) {
