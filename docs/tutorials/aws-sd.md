@@ -359,11 +359,13 @@ spec:
 
 ### Dual-stack load balancer aliases
 
-When a Kubernetes `Ingress` or `Service` resolves to a recognized AWS
-ELB/NLB hostname, AWS-SD registers it in Cloud Map as an alias using the
-`AWS_ALIAS_DNS_NAME` instance attribute. By default this creates an
-`A`-only Cloud Map service. To also create an `AAAA` record for the same
-alias, set the standard ExternalDNS alias annotation on the resource:
+When a Kubernetes `Ingress` or `Service` resolves to a recognized AWS ELB/NLB
+hostname, AWS-SD registers it in Cloud Map as an alias using the
+`AWS_ALIAS_DNS_NAME` instance attribute.
+
+By default this creates an `A`-only Cloud Map service. To also create an `AAAA`
+record for the same alias, set the standard ExternalDNS alias annotation on the
+resource:
 
 ```text
 external-dns.kubernetes.io/alias: "true"
@@ -371,8 +373,7 @@ external-dns.kubernetes.io/alias: "true"
 
 The underlying load balancer must actually be provisioned as dual-stack
 (serving both IPv4 and IPv6) for the resulting `AAAA` alias to resolve
-correctly — see below for how that interacts with the provisioning
-mechanism you use.
+correctly.
 
 Configure ExternalDNS to use the AWS-SD provider and registry as usual, for
 example for an Ingress:
@@ -422,14 +423,6 @@ These two annotations are read by two different components:
   AWS-SD provider**. It is the only signal AWS-SD uses to decide whether to
   request an `AAAA` record alongside the `A` record in Cloud Map.
 
-If you provision the load balancer with Terraform, Crossplane, AWS
-Controllers for Kubernetes (ACK), or another mechanism instead of the AWS
-Load Balancer Controller, that tool's own provider-specific provisioning
-annotation is unnecessary here — AWS-SD does not read it. All that matters
-is that the underlying load balancer actually is dual-stack, and that the
-`Ingress` or `Service` ExternalDNS watches carries
-`external-dns.kubernetes.io/alias: "true"`.
-
 The same `external-dns.kubernetes.io/alias: "true"` annotation works
 identically on a `Service` of `type: LoadBalancer` backed by an AWS Network
 Load Balancer (NLB).
@@ -437,17 +430,18 @@ Load Balancer (NLB).
 Summary of behavior for a recognized AWS load-balancer hostname:
 
 * No `alias` annotation: AWS-SD creates an `A`-only Cloud Map service.
-* `alias: "true"`: AWS-SD creates a Cloud Map service with both `A` and
-  `AAAA` records.
+* `alias: "true"`: AWS-SD creates a Cloud Map service with both `A` and `AAAA` records.
 
-Cloud Map DNS record types cannot be changed on an existing service, so
+⚠️ Cloud Map DNS record types **cannot** be changed on an existing service, so
 ExternalDNS always preserves the existing record-type set when updating one
 (only the TTL can change in place). If the record types of an existing service
 differ from what the annotation asks for, ExternalDNS logs a warning when it
-detects the drift and leaves the service as it is. To change an existing load
-balancer's Cloud Map service between IPv4-only and dual-stack, deregister all
-instances from the Cloud Map service, delete the service, and allow ExternalDNS
-to recreate it on the next reconciliation with the new record-type set.
+detects the drift and leaves the service as it is.
+
+To change an existing load balancer's Cloud Map service between IPv4-only and
+dual-stack, deregister all instances from the Cloud Map service, delete the
+service, and allow ExternalDNS to recreate it on the next reconciliation with
+the new record-type set.
 
 AWS Cloud Map supports `A` and `AAAA` together for one service. Alias
 registrations using `AWS_ALIAS_DNS_NAME` require `WEIGHTED` routing. See the
