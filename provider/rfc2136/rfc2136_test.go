@@ -296,30 +296,45 @@ func extractZoneFromMessage(msg string) string {
 	return matches[re.SubexpIndex("ZONE")]
 }
 
-// TestRfc2136GetRecordsMultipleTargets simulates a single record with multiple targets.
+// TestRfc2136GetRecordsMultipleTargets verifies records with the same name and
+// type are merged with normalized targets.
 func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
-	stub := newStub()
-	err := stub.setOutput([]string{
-		"foo.com 3600 IN A 1.1.1.1",
-		"foo.com 3600 IN A 2.2.2.2",
-	})
-	require.NoError(t, err)
+	for _, tc := range []struct {
+		recordType  string
+		dnsName     string
+		axfrValues  []string
+		wantTargets []string
+	}{
+		{"A", "foo.com", []string{"1.1.1.1", "2.2.2.2"}, []string{"1.1.1.1", "2.2.2.2"}},
+		{"CNAME", "alias.foo.com", []string{"a.bar.com.", "b.bar.com."}, []string{"a.bar.com", "b.bar.com"}},
+		{"DNAME", "sub.foo.com", []string{"a.bar.com.", "b.bar.com."}, []string{"a.bar.com", "b.bar.com"}},
+		{"PTR", "4.3.2.1.in-addr.arpa", []string{"host1.foo.com.", "host2.foo.com."}, []string{"host1.foo.com", "host2.foo.com"}},
+		{"MX", "mxprobe.foo.com", []string{"10 mail1.foo.com.", "20 mail2.foo.com."}, []string{"10 mail1.foo.com", "20 mail2.foo.com"}},
+	} {
+		t.Run(tc.recordType, func(t *testing.T) {
+			zone := make([]string, 0, len(tc.axfrValues))
+			for _, value := range tc.axfrValues {
+				zone = append(zone, fmt.Sprintf("%s 3600 IN %s %s", tc.dnsName, tc.recordType, value))
+			}
 
-	provider, err := createRfc2136StubProvider(stub)
-	require.NoError(t, err)
+			stub := newStub()
+			require.NoError(t, stub.setOutput(zone))
 
-	recs, err := provider.Records(t.Context())
-	require.NoError(t, err)
+			provider, err := createRfc2136StubProvider(stub)
+			require.NoError(t, err)
 
-	assert.Len(t, recs, 1, "expected single record")
-	assert.Equal(t, "foo.com", recs[0].DNSName)
-	assert.Len(t, recs[0].Targets, 2, "expected two targets")
-	assert.True(t, recs[0].Targets[0] == "1.1.1.1" || recs[0].Targets[1] == "1.1.1.1") // ignore order
-	assert.True(t, recs[0].Targets[0] == "2.2.2.2" || recs[0].Targets[1] == "2.2.2.2") // ignore order
-	assert.Equal(t, "A", recs[0].RecordType)
-	assert.Equal(t, recs[0].RecordTTL, endpoint.TTL(3600))
-	assert.Empty(t, recs[0].Labels, "expected no labels")
-	assert.Empty(t, recs[0].ProviderSpecific, "expected no provider specific config")
+			recs, err := provider.Records(t.Context())
+			require.NoError(t, err)
+
+			require.Len(t, recs, 1, "expected single record")
+			assert.Equal(t, tc.dnsName, recs[0].DNSName)
+			assert.Equal(t, tc.recordType, recs[0].RecordType)
+			assert.Equal(t, endpoint.TTL(3600), recs[0].RecordTTL)
+			assert.ElementsMatch(t, tc.wantTargets, []string(recs[0].Targets))
+			assert.Empty(t, recs[0].Labels, "expected no labels")
+			assert.Empty(t, recs[0].ProviderSpecific, "expected no provider specific config")
+		})
+	}
 }
 
 func TestRfc2136PTRCreation(t *testing.T) {
