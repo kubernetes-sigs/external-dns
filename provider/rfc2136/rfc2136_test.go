@@ -1630,6 +1630,18 @@ func TestRfc2136AdjustEndpointsTXT(t *testing.T) {
 			want:       []string{"heritage=external-dns,external-dns/owner=default"},
 		},
 		{
+			name:       "quoted target with surrounding whitespace is parsed as zone syntax",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{" \t\"v=DKIM1; \" \"p=abc\"\n"},
+			want:       []string{"v=DKIM1; p=abc"},
+		},
+		{
+			name:       "bare target preserves surrounding whitespace",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{" v=DKIM1; p=abc\n"},
+			want:       []string{" v=DKIM1; p=abc\n"},
+		},
+		{
 			name:       "quoted target with decimal escapes decodes to raw bytes",
 			recordType: endpoint.RecordTypeTXT,
 			targets:    []string{`"caf\195\169"`},
@@ -1650,8 +1662,8 @@ func TestRfc2136AdjustEndpointsTXT(t *testing.T) {
 		{
 			name:       "non-TXT endpoints are left untouched",
 			recordType: endpoint.RecordTypeA,
-			targets:    []string{`"1.2.3.4"`},
-			want:       []string{`"1.2.3.4"`},
+			targets:    []string{`"192.0.2.1"`},
+			want:       []string{`"192.0.2.1"`},
 		},
 		{
 			name:       "literal quotes inside a zone-quoted target survive",
@@ -1742,7 +1754,7 @@ func TestRfc2136TXTConvergence(t *testing.T) {
 	ep := &endpoint.Endpoint{
 		DNSName:    "dkim.foo.com",
 		RecordType: endpoint.RecordTypeTXT,
-		Targets:    []string{fmt.Sprintf("%q %q", dkim[:200], dkim[200:])},
+		Targets:    []string{fmt.Sprintf("%q %q\n", dkim[:200], dkim[200:])},
 		RecordTTL:  endpoint.TTL(400),
 	}
 
@@ -2093,4 +2105,92 @@ func TestRfc2136TXTRotationDeletesWithZoneChunks(t *testing.T) {
 	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[1])
 	assert.Equal(t, []string{newKey[:255], newKey[255:]}, addTxt.Txt,
 		"the new value must be re-chunked at 255 bytes")
+}
+
+// Equivalent TXT values can coexist with different RDATA. Planning must see
+// one target, but deleting that target must remove every wire variant.
+func TestRfc2136RemoveRecordTXTDeletesAllWireVariants(t *testing.T) {
+	stub := newStub()
+	require.NoError(t, stub.setOutput([]string{
+		`txt.example.org. 300 IN TXT "v=spf1 " "-all"`,
+		`txt.example.org. 300 IN TXT "v=spf1 -all"`,
+	}))
+	p, err := createRfc2136StubProvider(stub, "example.org")
+	require.NoError(t, err)
+	rawProvider := p.(*rfc2136Provider)
+
+	recs, err := rawProvider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, recs, 1)
+	assert.Equal(t, endpoint.Targets{"v=spf1 -all"}, recs[0].Targets,
+		"equivalent wire variants must not cause a permanent target-count diff")
+
+	m := new(dns.Msg)
+	m.SetUpdate("example.org.")
+	require.NoError(t, rawProvider.RemoveRecord(m, recs[0]))
+	buf, err := m.Pack()
+	require.NoError(t, err)
+	back := new(dns.Msg)
+	require.NoError(t, back.Unpack(buf))
+	require.Len(t, back.Ns, 2)
+
+	var chunks [][]string
+	for _, rr := range back.Ns {
+		txt, ok := rr.(*dns.TXT)
+		require.True(t, ok, "expected a *dns.TXT, got %T", rr)
+		assert.Equal(t, "txt.example.org.", txt.Hdr.Name)
+		assert.Equal(t, uint16(dns.ClassNONE), txt.Hdr.Class)
+		assert.Zero(t, txt.Hdr.Ttl)
+		chunks = append(chunks, txt.Txt)
+	}
+	assert.ElementsMatch(t, [][]string{{"v=spf1 ", "-all"}, {"v=spf1 -all"}}, chunks,
+		"both distinct RDATA values must be deleted")
+}
+
+// An external writer may change only the chunk boundaries or remove a TXT
+// altogether. Each successful AXFR must replace the previous wire snapshot.
+func TestRfc2136TXTWireCacheFollowsLatestRecords(t *testing.T) {
+	stub := newStub()
+	p, err := createRfc2136StubProvider(stub, "example.org")
+	require.NoError(t, err)
+	rawProvider := p.(*rfc2136Provider)
+	ep := endpoint.NewEndpointWithTTL("TXT.example.org.", endpoint.RecordTypeTXT, 300, "v=spf1 -all")
+
+	steps := []struct {
+		name   string
+		record string
+		want   []string
+	}{
+		{"initial", `txt.example.org. 300 IN TXT "v=" "spf1 -all"`, []string{"v=", "spf1 -all"}},
+		{"rechunked", `txt.example.org. 300 IN TXT "v=spf1 " "-all"`, []string{"v=spf1 ", "-all"}},
+		{"removed", "", []string{"v=spf1 -all"}},
+	}
+	for _, step := range steps {
+		t.Run(step.name, func(t *testing.T) {
+			var records []string
+			if step.record != "" {
+				records = append(records, step.record)
+			}
+			require.NoError(t, stub.setOutput(records))
+			recs, err := rawProvider.Records(t.Context())
+			require.NoError(t, err)
+			require.Len(t, recs, len(records))
+
+			m := new(dns.Msg)
+			m.SetUpdate("example.org.")
+			if step.record == "" {
+				require.NoError(t, rawProvider.AddRecord(m, ep))
+			} else {
+				require.NoError(t, rawProvider.RemoveRecord(m, ep))
+			}
+			buf, err := m.Pack()
+			require.NoError(t, err)
+			back := new(dns.Msg)
+			require.NoError(t, back.Unpack(buf))
+			require.Len(t, back.Ns, 1)
+			txt, ok := back.Ns[0].(*dns.TXT)
+			require.True(t, ok, "expected a *dns.TXT, got %T", back.Ns[0])
+			assert.Equal(t, step.want, txt.Txt)
+		})
+	}
 }

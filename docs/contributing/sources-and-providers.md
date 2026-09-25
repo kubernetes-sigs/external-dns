@@ -434,7 +434,10 @@ target) would otherwise freeze all record management.
 
 Dropping the offending endpoint is not the fix either: under `policy: sync`
 its existing records would be deleted. Normalize what parses, keep the rest
-unchanged, and let the per-record write path fail that record only.
+unchanged, and handle failures in the per-record write path. Retaining the
+endpoint prevents a planned deletion due to omission; preserving existing
+data during an invalid update also requires validating the replacement
+before removing the old record.
 
 ## Provider Blueprints
 
