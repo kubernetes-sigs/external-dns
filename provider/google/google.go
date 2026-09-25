@@ -45,12 +45,17 @@ type managedZonesCreateCallInterface interface {
 	Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error)
 }
 
+type managedZonesGetCallInterface interface {
+	Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error)
+}
+
 type managedZonesListCallInterface interface {
 	Pages(ctx context.Context, f func(*dns.ManagedZonesListResponse) error) error
 }
 
 type managedZonesServiceInterface interface {
 	Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface
+	Get(project string, managedZone string) managedZonesGetCallInterface
 	List(project string) managedZonesListCallInterface
 }
 
@@ -84,6 +89,10 @@ type managedZonesService struct {
 
 func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
 	return m.service.Create(project, managedzone)
+}
+
+func (m managedZonesService) Get(project string, managedZone string) managedZonesGetCallInterface {
+	return m.service.Get(project, managedZone)
 }
 
 func (m managedZonesService) List(project string) managedZonesListCallInterface {
