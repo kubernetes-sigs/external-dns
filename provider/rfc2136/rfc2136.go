@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/bodgit/tsig"
 	"github.com/bodgit/tsig/gss"
@@ -258,7 +259,12 @@ OuterLoop:
 			rrValues = []string{rr.(*dns.AAAA).AAAA.String()}
 			rrType = "AAAA"
 		case dns.TypeTXT:
-			rrValues = (rr.(*dns.TXT).Txt)
+			// A TXT RR is one logical value: the concatenation of its
+			// character-strings (RFC 1035 §3.3.14). Reading it exploded or
+			// presentation-escaped never matches the canonical target
+			// produced by AdjustEndpoints, so every reconcile loops on
+			// no-op updates (#1596).
+			rrValues = []string{txtValue(rr.(*dns.TXT))}
 			rrType = "TXT"
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
@@ -288,6 +294,146 @@ OuterLoop:
 	}
 
 	return eps, nil
+}
+
+// AdjustEndpoints canonicalizes the targets of TXT endpoints into the form
+// Records() returns: the concatenation of the TXT character-strings (#1596).
+// Without it, quoted or chunked targets (e.g. DKIM keys) never compare equal
+// to the read-back records and every reconcile loops on no-op updates.
+func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if ep.RecordType != endpoint.RecordTypeTXT {
+			continue
+		}
+		for i, target := range ep.Targets {
+			canonical, err := canonicalTXTTarget(target)
+			if err != nil {
+				// Soft error: the controller logs it and retries next cycle.
+				// A hard error would abort the whole reconcile loop, and
+				// silently skipping the endpoint would make policy=sync
+				// delete the existing records.
+				return nil, provider.NewSoftErrorf("adjusting TXT target of %s: %v", ep.DNSName, err)
+			}
+			ep.Targets[i] = canonical
+		}
+	}
+	return endpoints, nil
+}
+
+// canonicalTXTTarget converts a TXT target to its canonical form: the
+// concatenation of its raw character-string bytes. A target without
+// zone-file quoting is already canonical and returned unchanged; a quoted
+// target is parsed as it would be on the wire, surfacing the same syntax
+// errors the write path used to. The parser yields the presentation form
+// (miekg/dns keeps \DDD and \X escapes in dns.TXT.Txt), so they are undone.
+func canonicalTXTTarget(target string) (string, error) {
+	if !strings.Contains(target, `"`) {
+		return target, nil
+	}
+	rr, err := dns.NewRR(fmt.Sprintf("external-dns.invalid. 60 IN TXT %s", target))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse TXT target %q: %w", target, err)
+	}
+	return unescapeTXT(strings.Join(rr.(*dns.TXT).Txt, "")), nil
+}
+
+// chunkTXT splits a canonical TXT target into character-strings of at most
+// 255 bytes, the DNS wire limit, never breaking a multi-byte UTF-8 rune.
+func chunkTXT(s string) []string {
+	chunks := []string{}
+	for len(s) > 255 {
+		end := 255
+		for end > 0 && !utf8.RuneStart(s[end]) {
+			end--
+		}
+		if end == 0 {
+			// No rune boundary in range: invalid UTF-8, split at the byte limit.
+			end = 255
+		}
+		chunks = append(chunks, s[:end])
+		s = s[end:]
+	}
+	return append(chunks, s)
+}
+
+// dns.TXT.Txt holds the zone-presentation form: packTxtString decodes \DDD
+// and \X escapes when packing to the wire, and unpackString encodes ", \ and
+// bytes outside 0x20-0x7E when unpacking. escapeTXT and unescapeTXT convert
+// between that form and the canonical raw bytes the provider compares.
+
+// escapeTXT renders raw canonical bytes in the presentation form, so that
+// packing puts the value on the wire verbatim.
+func escapeTXT(s string) string {
+	needsEscape := false
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; c == '"' || c == '\\' || c < ' ' || c > '~' {
+			needsEscape = true
+			break
+		}
+	}
+	if !needsEscape {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c == '"' || c == '\\':
+			b.WriteByte('\\')
+			b.WriteByte(c)
+		case c < ' ' || c > '~':
+			b.WriteByte('\\')
+			b.WriteByte('0' + c/100)
+			b.WriteByte('0' + (c/10)%10)
+			b.WriteByte('0' + c%10)
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
+}
+
+// unescapeTXT reverses the unpack escaping: \" and \\ collapse to the byte
+// they quote, \DDD decodes a byte by value. Input is unpackString's output,
+// which never emits other escapes; a malformed sequence is kept verbatim.
+func unescapeTXT(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 >= len(s) {
+			b.WriteByte(s[i])
+			continue
+		}
+		if i+3 < len(s) && isDigitByte(s[i+1]) && isDigitByte(s[i+2]) && isDigitByte(s[i+3]) {
+			v := int(s[i+1]-'0')*100 + int(s[i+2]-'0')*10 + int(s[i+3]-'0')
+			if v <= 255 {
+				b.WriteByte(byte(v))
+				i += 3
+				continue
+			}
+			b.WriteByte(s[i]) // out of range: not a valid escape, keep verbatim
+			continue
+		}
+		b.WriteByte(s[i+1])
+		i++
+	}
+	return b.String()
+}
+
+func isDigitByte(b byte) bool {
+	return b >= '0' && b <= '9'
+}
+
+// txtValue returns the canonical target form of a received TXT RR: the
+// concatenation of its character-strings (RFC 1035 §3.3.14), with the
+// presentation escaping undone.
+func txtValue(rr *dns.TXT) string {
+	return unescapeTXT(strings.Join(rr.Txt, ""))
 }
 
 // shouldSignAXFR reports whether TSIG should be attached to zone transfers.
@@ -517,13 +663,11 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	}
 
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target)
-		log.Infof("Adding RR: %s", newRR)
-
-		rr, err := dns.NewRR(newRR)
+		rr, err := buildRR(ep, uint32(ttl), target)
 		if err != nil {
-			return fmt.Errorf("failed to build RR: %w", err)
+			return err
 		}
+		log.Infof("Adding RR: %s", rr)
 
 		m.Insert([]dns.RR{rr})
 	}
@@ -534,18 +678,51 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
-		log.Infof("Removing RR: %s", newRR)
-
-		rr, err := dns.NewRR(newRR)
+		rr, err := buildRR(ep, uint32(ep.RecordTTL), target)
 		if err != nil {
-			return fmt.Errorf("failed to build RR: %w", err)
+			return err
 		}
+		log.Infof("Removing RR: %s", rr)
 
 		m.Remove([]dns.RR{rr})
 	}
 
 	return nil
+}
+
+// buildRR renders one target of ep as an RR. Two regimes coexist for TXT
+// (#1596): user targets arrive canonicalized by AdjustEndpoints (no quoting)
+// and are written verbatim, re-chunked to 255-byte character-strings, so ';'
+// is not mistaken for a zone-file comment; but the registry serializes
+// heritage labels with syntactic quotes (Labels.Serialize(true)) downstream of
+// AdjustEndpoints, and that quoting must be interpreted like the legacy
+// dns.NewRR path did, or literal quotes land on the wire and the read-back
+// heritage no longer parses. Other record types keep the string path.
+func buildRR(ep *endpoint.Endpoint, ttl uint32, target string) (dns.RR, error) {
+	if ep.RecordType == endpoint.RecordTypeTXT && !strings.Contains(target, `"`) {
+		// dns.TXT.Txt holds the zone-presentation form, which packing
+		// decodes: chunk the raw canonical value, then escape each chunk
+		// so the wire carries the target byte for byte.
+		chunks := chunkTXT(target)
+		for i := range chunks {
+			chunks[i] = escapeTXT(chunks[i])
+		}
+		return &dns.TXT{
+			Hdr: dns.RR_Header{
+				Name:   dns.Fqdn(ep.DNSName),
+				Rrtype: dns.TypeTXT,
+				Class:  dns.ClassINET,
+				Ttl:    ttl,
+			},
+			Txt: chunks,
+		}, nil
+	}
+
+	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target))
+	if err != nil {
+		return nil, fmt.Errorf("failed to build RR: %w", err)
+	}
+	return rr, nil
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given

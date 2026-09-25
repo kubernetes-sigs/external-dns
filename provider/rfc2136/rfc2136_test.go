@@ -29,6 +29,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -1596,6 +1597,380 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 				axfrInsecure: tt.axfrInsecure,
 			}
 			assert.Equal(t, tt.want, r.shouldSignAXFR())
+		})
+	}
+}
+
+// dkimLikeValue returns a DKIM-style TXT value: semicolons plus a key longer
+// than the 255-byte character-string limit. It is the canonical-form
+// regression case of https://github.com/kubernetes-sigs/external-dns/issues/1596.
+func dkimLikeValue() string {
+	return "v=DKIM1; k=rsa; p=" + strings.Repeat("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCg", 10)
+}
+
+func TestRfc2136AdjustEndpointsTXT(t *testing.T) {
+	dkim := dkimLikeValue()
+
+	tests := []struct {
+		name       string
+		recordType string
+		targets    []string
+		want       []string
+		wantErr    bool
+	}{
+		{
+			name:       "quoted and chunked target is joined into its canonical form",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{fmt.Sprintf("%q %q", dkim[:200], dkim[200:])},
+			want:       []string{dkim},
+		},
+		{
+			name:       "quoted short target is unquoted",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{`"heritage=external-dns,external-dns/owner=default"`},
+			want:       []string{"heritage=external-dns,external-dns/owner=default"},
+		},
+		{
+			name:       "quoted target with decimal escapes decodes to raw bytes",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{`"caf\195\169"`},
+			want:       []string{"café"},
+		},
+		{
+			name:       "bare target is already canonical",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{"heritage=external-dns,external-dns/owner=default"},
+			want:       []string{"heritage=external-dns,external-dns/owner=default"},
+		},
+		{
+			name:       "bare target with semicolons is already canonical",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{"v=DKIM1; p=abc"},
+			want:       []string{"v=DKIM1; p=abc"},
+		},
+		{
+			name:       "non-TXT endpoints are left untouched",
+			recordType: endpoint.RecordTypeA,
+			targets:    []string{`"1.2.3.4"`},
+			want:       []string{`"1.2.3.4"`},
+		},
+		{
+			name:       "invalid zone-file quoting is a soft error",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{`"unterminated`},
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &rfc2136Provider{}
+			ep := &endpoint.Endpoint{
+				DNSName:    "v1.foo.com",
+				RecordType: tt.recordType,
+				Targets:    tt.targets,
+			}
+
+			got, err := p.AdjustEndpoints([]*endpoint.Endpoint{ep})
+			if tt.wantErr {
+				assert.Error(t, err)
+				// A hard error would abort the whole reconcile loop
+				// (controller.Run treats SoftError as log-and-retry); a bad
+				// endpoint must neither crash the loop nor be silently
+				// skipped, which policy=sync would read as a delete.
+				assert.ErrorIs(t, err, provider.SoftError, "bad targets must surface as a soft error")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, []string(got[0].Targets))
+		})
+	}
+}
+
+func TestRfc2136AdjustEndpointsTXTIdempotent(t *testing.T) {
+	p := &rfc2136Provider{}
+	dkim := dkimLikeValue()
+	eps := []*endpoint.Endpoint{
+		{
+			DNSName:    "dkim.foo.com",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    []string{fmt.Sprintf("%q %q", dkim[:200], dkim[200:])},
+		},
+	}
+
+	once, err := p.AdjustEndpoints(eps)
+	require.NoError(t, err)
+	twice, err := p.AdjustEndpoints(once)
+	require.NoError(t, err)
+
+	assert.Equal(t, once, twice)
+	assert.Equal(t, []string{dkim}, []string(twice[0].Targets))
+}
+
+// TestRfc2136TXTConvergence proves that a quoted, chunked DKIM-style target
+// converges: the value AdjustEndpoints produces equals what Records() reads
+// back from the RR AddRecord writes, which is the equality plan's
+// Targets.Same needs to see no diff (#1596).
+func TestRfc2136TXTConvergence(t *testing.T) {
+	p := &rfc2136Provider{}
+	dkim := dkimLikeValue()
+
+	ep := &endpoint.Endpoint{
+		DNSName:    "dkim.foo.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{fmt.Sprintf("%q %q", dkim[:200], dkim[200:])},
+		RecordTTL:  endpoint.TTL(400),
+	}
+
+	adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{ep})
+	require.NoError(t, err)
+	canonical := adjusted[0].Targets[0]
+	require.Equal(t, dkim, canonical)
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	require.NoError(t, p.AddRecord(m, adjusted[0]))
+
+	require.Len(t, m.Ns, 1, "expected exactly one TXT RR in the update section")
+	txt, ok := m.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[0])
+	for _, chunk := range txt.Txt {
+		chunkLen := len(chunk)
+		assert.LessOrEqual(t, chunkLen, 255, "character-string exceeds the 255-byte limit")
+	}
+	assert.Contains(t, txtValue(txt), "; k=rsa; ", "semicolon content must survive the write path")
+
+	// Records() converts each TXT RR with txtValue; the result is the value
+	// Targets.Same compares against the adjusted target.
+	readBack := txtValue(txt)
+	assert.True(t, endpoint.Targets{canonical}.Same(endpoint.Targets{readBack}), "written and read-back targets must compare equal")
+}
+
+// A bare (unquoted) target is already canonical, so the write path must not
+// treat ';' as a zone-file comment.
+func TestRfc2136AddRecordTXTBareSemicolon(t *testing.T) {
+	p := &rfc2136Provider{}
+	ep := &endpoint.Endpoint{
+		DNSName:    "dkim.foo.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{"v=DKIM1; p=abc"},
+		RecordTTL:  endpoint.TTL(400),
+	}
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	require.NoError(t, p.AddRecord(m, ep))
+
+	require.Len(t, m.Ns, 1)
+	txt, ok := m.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[0])
+	assert.Equal(t, []string{"v=DKIM1; p=abc"}, txt.Txt)
+}
+
+func TestRfc2136AddRecordTXTChunking(t *testing.T) {
+	tests := []struct {
+		name       string
+		target     string
+		wantChunks int
+	}{
+		{
+			name:       "255 bytes stays a single character-string",
+			target:     strings.Repeat("a", 255),
+			wantChunks: 1,
+		},
+		{
+			name:       "256 bytes is split in two",
+			target:     strings.Repeat("a", 256),
+			wantChunks: 2,
+		},
+		{
+			name:       "multi-byte runes are never split",
+			target:     strings.Repeat("é", 200), // 400 bytes
+			wantChunks: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &rfc2136Provider{}
+			ep := &endpoint.Endpoint{
+				DNSName:    "v1.foo.com",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    []string{tt.target},
+				RecordTTL:  endpoint.TTL(400),
+			}
+
+			m := new(dns.Msg)
+			m.SetUpdate("foo.com.")
+			require.NoError(t, p.AddRecord(m, ep))
+
+			require.Len(t, m.Ns, 1)
+			txt, ok := m.Ns[0].(*dns.TXT)
+			require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[0])
+			assert.Len(t, txt.Txt, tt.wantChunks)
+			for _, chunk := range txt.Txt {
+				// Txt holds the zone-presentation form; the wire size is
+				// what it decodes to.
+				raw := unescapeTXT(chunk)
+				rawLen := len(raw)
+				assert.LessOrEqual(t, rawLen, 255, "character-string exceeds the 255-byte limit")
+				assert.True(t, utf8.ValidString(raw), "chunk must not split a multi-byte rune")
+			}
+			assert.Equal(t, tt.target, txtValue(txt))
+		})
+	}
+}
+
+// A delete must carry the exact rdata previously written, or the record is
+// orphaned on the server (#1596).
+func TestRfc2136RemoveRecordTXTMatchesAdd(t *testing.T) {
+	p := &rfc2136Provider{}
+	dkim := dkimLikeValue()
+	ep := &endpoint.Endpoint{
+		DNSName:    "dkim.foo.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{dkim},
+		RecordTTL:  endpoint.TTL(400),
+	}
+
+	add := new(dns.Msg)
+	add.SetUpdate("foo.com.")
+	require.NoError(t, p.AddRecord(add, ep))
+
+	remove := new(dns.Msg)
+	remove.SetUpdate("foo.com.")
+	require.NoError(t, p.RemoveRecord(remove, ep))
+
+	require.Len(t, add.Ns, 1)
+	require.Len(t, remove.Ns, 1)
+	addTxt, ok := add.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", add.Ns[0])
+	removeTxt, ok := remove.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", remove.Ns[0])
+
+	assert.Equal(t, addTxt.Txt, removeTxt.Txt)
+	assert.Equal(t, dkim, strings.Join(removeTxt.Txt, ""))
+}
+
+// One TXT RR is one logical value (RFC 1035 §3.3.14), so Records() must
+// return the concatenation of its character-strings as a single target,
+// while distinct TXT RRs on the same name still aggregate into one endpoint.
+func TestRfc2136RecordsJoinsTXTCharacterStrings(t *testing.T) {
+	stub := newStub()
+	err := stub.setOutput([]string{
+		`v1.foo.com 3600 TXT "v=DKIM1; k=rsa; p=MIIB" "IjANBgkqhkiG9w0BAQEFAAOCAQ8A"`,
+		"v1.foo.com 3600 TXT simple",
+	})
+	require.NoError(t, err)
+
+	provider, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+
+	recs, err := provider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, recs, 1, "same-name TXT records must aggregate into one endpoint")
+	assert.Equal(t, "v1.foo.com", recs[0].DNSName)
+	assert.ElementsMatch(t, []string{"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A", "simple"}, []string(recs[0].Targets))
+}
+
+// TestRfc2136TXTHeritageWireRoundTrip guards the registry contract: the TXT
+// registry serializes heritage labels with syntactic quotes
+// (Labels.Serialize(true)) and never passes them through AdjustEndpoints, so
+// the write path must interpret that quoting like the legacy dns.NewRR path
+// did. Writing the quotes literally would come back from the wire escaped
+// (miekg/dns unpackString), breaking heritage parsing and orphaning records.
+func TestRfc2136TXTHeritageWireRoundTrip(t *testing.T) {
+	p := &rfc2136Provider{}
+	ep := &endpoint.Endpoint{
+		DNSName:    "txt.foo.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{`"heritage=external-dns,external-dns/owner=default"`},
+		RecordTTL:  endpoint.TTL(400),
+	}
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	require.NoError(t, p.AddRecord(m, ep))
+	require.Len(t, m.Ns, 1)
+
+	// Byte-identical to what the legacy dns.NewRR write path produced.
+	legacy, err := dns.NewRR(`txt.foo.com. 400 IN TXT "heritage=external-dns,external-dns/owner=default"`)
+	require.NoError(t, err)
+	assert.Equal(t, legacy.(*dns.TXT).Txt, m.Ns[0].(*dns.TXT).Txt)
+
+	// Real wire round trip, as AXFR would deliver it.
+	buf, err := m.Pack()
+	require.NoError(t, err)
+	back := new(dns.Msg)
+	require.NoError(t, back.Unpack(buf))
+	require.Len(t, back.Ns, 1)
+	txt, ok := back.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", back.Ns[0])
+
+	readBack := txtValue(txt) // same conversion as Records()
+	assert.Equal(t, "heritage=external-dns,external-dns/owner=default", readBack)
+	_, err = endpoint.NewLabelsFromStringPlain(readBack)
+	require.NoError(t, err, "heritage must survive the wire round trip parseable as labels")
+}
+
+// TestRfc2136TXTWireRoundTripEscapes proves canonical targets containing
+// bytes miekg/dns escapes on unpack (\", \\, and \DDD for anything outside
+// 0x20-0x7E, i.e. every multi-byte UTF-8 sequence) survive a real wire
+// round trip: without undoing that escaping, Records() would return a value
+// that never matches the desired target.
+func TestRfc2136TXTWireRoundTripEscapes(t *testing.T) {
+	p := &rfc2136Provider{}
+
+	targets := []string{
+		`C:\path\to\file`,
+		"trailing\\",
+		"café ☕",
+		"with\ttab\nand newline",
+		dkimLikeValue(),
+	}
+
+	for _, target := range targets {
+		ep := &endpoint.Endpoint{
+			DNSName:    "v1.foo.com",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    []string{target},
+			RecordTTL:  endpoint.TTL(400),
+		}
+
+		m := new(dns.Msg)
+		m.SetUpdate("foo.com.")
+		require.NoError(t, p.AddRecord(m, ep))
+		require.Len(t, m.Ns, 1)
+
+		buf, err := m.Pack()
+		require.NoError(t, err)
+		back := new(dns.Msg)
+		require.NoError(t, back.Unpack(buf))
+		require.Len(t, back.Ns, 1)
+		txt, ok := back.Ns[0].(*dns.TXT)
+		require.True(t, ok, "expected a *dns.TXT, got %T", back.Ns[0])
+
+		readBack := txtValue(txt) // same conversion as Records()
+		assert.Equal(t, target, readBack)
+	}
+}
+
+func TestTxtValue(t *testing.T) {
+	tests := []struct {
+		name string
+		txt  []string
+		want string
+	}{
+		{"plain ASCII joins", []string{"v=DKIM1; k=rsa; ", "p=abc"}, "v=DKIM1; k=rsa; p=abc"},
+		{"escaped quotes and backslash collapse", []string{`say \"hi\" and \\ done`}, `say "hi" and \ done`},
+		{"escaped decimal bytes decode", []string{`caf\195\169 \226\152\149`}, "café ☕"},
+		{"lone trailing backslash is kept", []string{`end\`}, `end\`},
+		{"out-of-range decimal escape is kept verbatim", []string{`\999`}, `\999`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, txtValue(&dns.TXT{Txt: tt.txt}))
 		})
 	}
 }
