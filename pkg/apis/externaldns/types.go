@@ -180,6 +180,7 @@ type Config struct {
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
 	ExoscaleZoneCacheDuration                     time.Duration
+	ScalewayZonesCacheDuration                    time.Duration
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
@@ -371,6 +372,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecretAlg:             "",
 	RFC2136UseTLS:                    false,
 	RFC2136Zone:                      []string{},
+	ScalewayZonesCacheDuration:       0 * time.Second,
 	ServiceTypeFilter:                []string{},
 	Sources:                          nil,
 	TargetNetFilter:                  []string{},
@@ -523,7 +525,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
-	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled)", defaultConfig.PreferAlias, &cfg.PreferAlias)
+	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
 	b.StringsVar("exclude-target-net", "Exclude target nets (optional)", nil, &cfg.ExcludeTargetNets)
 	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
@@ -636,6 +638,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("exoscale-apikey", "Provide your API Key for the Exoscale provider", defaultConfig.ExoscaleAPIKey, &cfg.ExoscaleAPIKey)
 	b.StringVar("exoscale-apisecret", "Provide your API Secret for the Exoscale provider", defaultConfig.ExoscaleAPISecret, &cfg.ExoscaleAPISecret)
 	b.DurationVar("exoscale-zones-cache-duration", "When using Exoscale provider, set the zones list cache TTL (0s to disable)", defaultConfig.ExoscaleZoneCacheDuration, &cfg.ExoscaleZoneCacheDuration)
+	b.DurationVar("scaleway-zones-cache-duration", "When using the Scaleway provider, set the zones list cache TTL (0s to disable).", defaultConfig.ScalewayZonesCacheDuration, &cfg.ScalewayZonesCacheDuration)
 
 	// Flags related to RFC2136 provider
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)
