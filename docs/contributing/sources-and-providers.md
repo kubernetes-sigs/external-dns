@@ -424,6 +424,18 @@ this provider does not manage), log at `debug` or `info` and return `nil`.
 Returning an error for an expected no-op inflates the soft-error metric or, as a
 hard error, crashes the controller.
 
+### `AdjustEndpoints` errors abort the whole reconcile
+
+`Controller.RunOnce` calls `Registry.AdjustEndpoints` with every endpoint of
+every source, before planning. Any error returned there loses the entire
+reconcile — soft error or not, nothing is planned or applied — and a hard
+error exits the process. One malformed user object (say, a `DNSEndpoint`
+target) would otherwise freeze all record management.
+
+Dropping the offending endpoint is not the fix either: under `policy: sync`
+its existing records would be deleted. Normalize what parses, keep the rest
+unchanged, and let the per-record write path fail that record only.
+
 ## Provider Blueprints
 
 The `provider/blueprint` package contains reusable building blocks for provider
