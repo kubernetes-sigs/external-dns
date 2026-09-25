@@ -1616,7 +1616,6 @@ func TestRfc2136AdjustEndpointsTXT(t *testing.T) {
 		recordType string
 		targets    []string
 		want       []string
-		wantErr    bool
 	}{
 		{
 			name:       "quoted and chunked target is joined into its canonical form",
@@ -1655,10 +1654,22 @@ func TestRfc2136AdjustEndpointsTXT(t *testing.T) {
 			want:       []string{`"1.2.3.4"`},
 		},
 		{
-			name:       "invalid zone-file quoting is a soft error",
+			name:       "literal quotes inside a zone-quoted target survive",
 			recordType: endpoint.RecordTypeTXT,
-			targets:    []string{`"unterminated`},
-			wantErr:    true,
+			targets:    []string{`"say \"hi\" now"`},
+			want:       []string{`say "hi" now`},
+		},
+		{
+			name:       "bare target with inner quotes is already canonical",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{`say "hi" now`},
+			want:       []string{`say "hi" now`},
+		},
+		{
+			name:       "invalid zone-file quoting is left untouched",
+			recordType: endpoint.RecordTypeTXT,
+			targets:    []string{`"unterminated" "`},
+			want:       []string{`"unterminated" "`},
 		},
 	}
 
@@ -1672,15 +1683,6 @@ func TestRfc2136AdjustEndpointsTXT(t *testing.T) {
 			}
 
 			got, err := p.AdjustEndpoints([]*endpoint.Endpoint{ep})
-			if tt.wantErr {
-				assert.Error(t, err)
-				// A hard error would abort the whole reconcile loop
-				// (controller.Run treats SoftError as log-and-retry); a bad
-				// endpoint must neither crash the loop nor be silently
-				// skipped, which policy=sync would read as a delete.
-				assert.ErrorIs(t, err, provider.SoftError, "bad targets must surface as a soft error")
-				return
-			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, []string(got[0].Targets))
 		})
@@ -1696,6 +1698,11 @@ func TestRfc2136AdjustEndpointsTXTIdempotent(t *testing.T) {
 			RecordType: endpoint.RecordTypeTXT,
 			Targets:    []string{fmt.Sprintf("%q %q", dkim[:200], dkim[200:])},
 		},
+		{
+			DNSName:    "quote.foo.com",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    []string{`"say \"hi\" now"`},
+		},
 	}
 
 	once, err := p.AdjustEndpoints(eps)
@@ -1705,6 +1712,23 @@ func TestRfc2136AdjustEndpointsTXTIdempotent(t *testing.T) {
 
 	assert.Equal(t, once, twice)
 	assert.Equal(t, []string{dkim}, []string(twice[0].Targets))
+	assert.Equal(t, []string{`say "hi" now`}, []string(twice[1].Targets))
+}
+
+// A malformed target must not abort the reconcile: AdjustEndpoints errors stop
+// RunOnce before planning, which would freeze every other record of the zone.
+func TestRfc2136AdjustEndpointsTXTInvalidDoesNotBlock(t *testing.T) {
+	p := &rfc2136Provider{}
+	eps := []*endpoint.Endpoint{
+		{DNSName: "bad.foo.com", RecordType: endpoint.RecordTypeTXT, Targets: []string{`"unterminated" "`}},
+		{DNSName: "good.foo.com", RecordType: endpoint.RecordTypeTXT, Targets: []string{`"v=DKIM1; " "p=abc"`}},
+	}
+
+	got, err := p.AdjustEndpoints(eps)
+	require.NoError(t, err)
+	require.Len(t, got, 2, "the malformed endpoint must be kept, or policy=sync would delete its record")
+	assert.Equal(t, []string{`"unterminated" "`}, []string(got[0].Targets))
+	assert.Equal(t, []string{"v=DKIM1; p=abc"}, []string(got[1].Targets))
 }
 
 // TestRfc2136TXTConvergence proves that a quoted, chunked DKIM-style target
@@ -1852,9 +1876,10 @@ func TestRfc2136RemoveRecordTXTMatchesAdd(t *testing.T) {
 	assert.Equal(t, dkim, strings.Join(removeTxt.Txt, ""))
 }
 
-// One TXT RR is one logical value (RFC 1035 §3.3.14), so Records() must
-// return the concatenation of its character-strings as a single target,
-// while distinct TXT RRs on the same name still aggregate into one endpoint.
+// One TXT RR is one logical value (the SPF and DKIM convention, RFC 7208
+// §3.3 and RFC 6376 §3.6.2.2), so Records() must return the concatenation
+// of its character-strings as a single target, while distinct TXT RRs on
+// the same name still aggregate into one endpoint.
 func TestRfc2136RecordsJoinsTXTCharacterStrings(t *testing.T) {
 	stub := newStub()
 	err := stub.setOutput([]string{
@@ -1926,6 +1951,7 @@ func TestRfc2136TXTWireRoundTripEscapes(t *testing.T) {
 		"trailing\\",
 		"café ☕",
 		"with\ttab\nand newline",
+		`say "hi" now`,
 		dkimLikeValue(),
 	}
 
@@ -1973,4 +1999,98 @@ func TestTxtValue(t *testing.T) {
 			assert.Equal(t, tt.want, txtValue(&dns.TXT{Txt: tt.txt}))
 		})
 	}
+}
+
+// RFC 2136 deletes match rdata byte for byte, character-string boundaries
+// included. A record written with other boundaries than our 255-byte chunking
+// (by an older external-dns, or another tool) must be deleted with the
+// boundaries read from the zone, or it is orphaned.
+func TestRfc2136RemoveRecordTXTReusesWireChunks(t *testing.T) {
+	dkim := dkimLikeValue()
+	stub := newStub()
+	require.NoError(t, stub.setOutput([]string{
+		fmt.Sprintf("dkim.foo.com 3600 TXT %q %q", dkim[:200], dkim[200:]),
+	}))
+	p, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+	rawProvider := p.(*rfc2136Provider)
+
+	recs, err := rawProvider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, recs, 1)
+	require.Equal(t, []string{dkim}, []string(recs[0].Targets))
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	require.NoError(t, rawProvider.RemoveRecord(m, recs[0]))
+	require.Len(t, m.Ns, 1)
+	txt, ok := m.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[0])
+	assert.Equal(t, []string{dkim[:200], dkim[200:]}, txt.Txt)
+}
+
+// A canonical value with inner quotes is not zone syntax: it must be written
+// as a single character-string with the quotes escaped, and read back equal —
+// a zone-syntax re-parse would split it ("say" "hi" "now") and the record
+// would never converge.
+func TestRfc2136AddRecordTXTInnerQuotes(t *testing.T) {
+	p := &rfc2136Provider{}
+	ep := &endpoint.Endpoint{
+		DNSName:    "quote.foo.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{`say "hi" now`},
+	}
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	require.NoError(t, p.AddRecord(m, ep))
+	require.Len(t, m.Ns, 1)
+	txt, ok := m.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[0])
+	assert.Equal(t, []string{`say \"hi\" now`}, txt.Txt)
+	assert.True(t, endpoint.Targets{`say "hi" now`}.Same(endpoint.Targets{txtValue(txt)}),
+		"written and read-back targets must compare equal")
+}
+
+// A DKIM rotation removes the old RR with the character-string boundaries it
+// has in the zone (RFC 2136 deletes match rdata byte for byte) and writes the
+// new value re-chunked at 255 bytes.
+func TestRfc2136TXTRotationDeletesWithZoneChunks(t *testing.T) {
+	oldKey := dkimLikeValue()
+	newKey := "v=DKIM1; k=rsa; p=" + strings.Repeat("N", 400)
+
+	stub := newStub()
+	require.NoError(t, stub.setOutput([]string{
+		fmt.Sprintf("dkim.foo.com 3600 TXT %q %q", oldKey[:200], oldKey[200:]),
+	}))
+	p, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+	rawProvider := p.(*rfc2136Provider)
+
+	recs, err := rawProvider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, recs, 1)
+
+	m := new(dns.Msg)
+	m.SetUpdate("foo.com.")
+	require.NoError(t, rawProvider.RemoveRecord(m, recs[0]))
+
+	newEp := &endpoint.Endpoint{
+		DNSName:    "dkim.foo.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{newKey},
+		RecordTTL:  endpoint.TTL(300),
+	}
+	require.NoError(t, rawProvider.AddRecord(m, newEp))
+
+	require.Len(t, m.Ns, 2)
+	removeTxt, ok := m.Ns[0].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[0])
+	assert.Equal(t, []string{oldKey[:200], oldKey[200:]}, removeTxt.Txt,
+		"the delete must reuse the chunk boundaries read from the zone")
+
+	addTxt, ok := m.Ns[1].(*dns.TXT)
+	require.True(t, ok, "expected a *dns.TXT, got %T", m.Ns[1])
+	assert.Equal(t, []string{newKey[:255], newKey[255:]}, addTxt.Txt,
+		"the new value must be re-chunked at 255 bytes")
 }

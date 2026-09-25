@@ -90,6 +90,23 @@ type rfc2136Provider struct {
 
 	// Random number generator for random load balancing
 	randGen *rand.Rand
+
+	// txtWire holds the character-strings of each TXT RR seen by the last
+	// Records(), keyed by owner name and canonical value. RFC 2136 deletes
+	// match rdata byte for byte, so a record chunked differently from
+	// chunkTXT (older external-dns, other tools) can only be removed with
+	// the boundaries it has in the zone.
+	txtWire   map[txtWireKey][]string
+	txtWireMu sync.Mutex
+}
+
+type txtWireKey struct {
+	fqdn  string
+	value string
+}
+
+func newTXTWireKey(name, value string) txtWireKey {
+	return txtWireKey{fqdn: strings.ToLower(dns.Fqdn(name)), value: value}
 }
 
 // nameserverOp identifies which rotation - list (AXFR) or send (update) -
@@ -232,6 +249,7 @@ func (r *rfc2136Provider) Records(_ context.Context) ([]*endpoint.Endpoint, erro
 	}
 
 	var eps []*endpoint.Endpoint
+	txtWire := map[txtWireKey][]string{}
 
 OuterLoop:
 	for _, rr := range rrs {
@@ -259,12 +277,15 @@ OuterLoop:
 			rrValues = []string{rr.(*dns.AAAA).AAAA.String()}
 			rrType = "AAAA"
 		case dns.TypeTXT:
-			// A TXT RR is one logical value: the concatenation of its
-			// character-strings (RFC 1035 §3.3.14). Reading it exploded or
-			// presentation-escaped never matches the canonical target
-			// produced by AdjustEndpoints, so every reconcile loops on
-			// no-op updates (#1596).
-			rrValues = []string{txtValue(rr.(*dns.TXT))}
+			// Read as one value, the concatenation of the character-strings
+			// (the SPF and DKIM convention, RFC 7208 §3.3 and RFC 6376
+			// §3.6.2.2). Reading it exploded or presentation-escaped never
+			// matches the canonical target produced by AdjustEndpoints, so
+			// every reconcile loops on no-op updates (#1596).
+			txt := rr.(*dns.TXT)
+			value := txtValue(txt)
+			txtWire[newTXTWireKey(rrFqdn, value)] = txt.Txt
+			rrValues = []string{value}
 			rrType = "TXT"
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
@@ -293,6 +314,10 @@ OuterLoop:
 		eps = append(eps, ep)
 	}
 
+	r.txtWireMu.Lock()
+	r.txtWire = txtWire
+	r.txtWireMu.Unlock()
+
 	return eps, nil
 }
 
@@ -300,6 +325,8 @@ OuterLoop:
 // Records() returns: the concatenation of the TXT character-strings (#1596).
 // Without it, quoted or chunked targets (e.g. DKIM keys) never compare equal
 // to the read-back records and every reconcile loops on no-op updates.
+// Character-string boundaries given by the user are not preserved: the value
+// is re-chunked at 255 bytes on write.
 func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range endpoints {
 		if ep.RecordType != endpoint.RecordTypeTXT {
@@ -308,16 +335,26 @@ func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*en
 		for i, target := range ep.Targets {
 			canonical, err := canonicalTXTTarget(target)
 			if err != nil {
-				// Soft error: the controller logs it and retries next cycle.
-				// A hard error would abort the whole reconcile loop, and
-				// silently skipping the endpoint would make policy=sync
-				// delete the existing records.
-				return nil, provider.NewSoftErrorf("adjusting TXT target of %s: %v", ep.DNSName, err)
+				// Any error here stops RunOnce before planning, freezing the
+				// whole zone for one bad object; dropping the endpoint would
+				// make policy=sync delete its record. Keep the target as is:
+				// AddRecord fails to build it and only this record is skipped.
+				log.Warnf("Keeping TXT target of %s as is: %v", ep.DNSName, err)
+				continue
 			}
 			ep.Targets[i] = canonical
 		}
 	}
 	return endpoints, nil
+}
+
+// isZoneQuoted reports whether target is in zone-file quoted form, as written
+// by users for chunked values and by the TXT registry for heritage labels
+// (Labels.Serialize(true)). Anything else is a canonical value, inner quotes
+// included; a canonical value that both starts and ends with '"' is the one
+// ambiguous case.
+func isZoneQuoted(target string) bool {
+	return len(target) >= 2 && target[0] == '"' && target[len(target)-1] == '"'
 }
 
 // canonicalTXTTarget converts a TXT target to its canonical form: the
@@ -327,7 +364,7 @@ func (r *rfc2136Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*en
 // errors the write path used to. The parser yields the presentation form
 // (miekg/dns keeps \DDD and \X escapes in dns.TXT.Txt), so they are undone.
 func canonicalTXTTarget(target string) (string, error) {
-	if !strings.Contains(target, `"`) {
+	if !isZoneQuoted(target) {
 		return target, nil
 	}
 	rr, err := dns.NewRR(fmt.Sprintf("external-dns.invalid. 60 IN TXT %s", target))
@@ -430,8 +467,8 @@ func isDigitByte(b byte) bool {
 }
 
 // txtValue returns the canonical target form of a received TXT RR: the
-// concatenation of its character-strings (RFC 1035 §3.3.14), with the
-// presentation escaping undone.
+// concatenation of its character-strings, with the presentation escaping
+// undone.
 func txtValue(rr *dns.TXT) string {
 	return unescapeTXT(strings.Join(rr.Txt, ""))
 }
@@ -663,7 +700,7 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	}
 
 	for _, target := range ep.Targets {
-		rr, err := buildRR(ep, uint32(ttl), target)
+		rr, err := r.buildRR(ep, uint32(ttl), target)
 		if err != nil {
 			return err
 		}
@@ -678,7 +715,7 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
-		rr, err := buildRR(ep, uint32(ep.RecordTTL), target)
+		rr, err := r.buildRR(ep, uint32(ep.RecordTTL), target)
 		if err != nil {
 			return err
 		}
@@ -690,32 +727,29 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
-// buildRR renders one target of ep as an RR. Two regimes coexist for TXT
-// (#1596): user targets arrive canonicalized by AdjustEndpoints (no quoting)
-// and are written verbatim, re-chunked to 255-byte character-strings, so ';'
-// is not mistaken for a zone-file comment; but the registry serializes
-// heritage labels with syntactic quotes (Labels.Serialize(true)) downstream of
-// AdjustEndpoints, and that quoting must be interpreted like the legacy
-// dns.NewRR path did, or literal quotes land on the wire and the read-back
-// heritage no longer parses. Other record types keep the string path.
-func buildRR(ep *endpoint.Endpoint, ttl uint32, target string) (dns.RR, error) {
-	if ep.RecordType == endpoint.RecordTypeTXT && !strings.Contains(target, `"`) {
-		// dns.TXT.Txt holds the zone-presentation form, which packing
-		// decodes: chunk the raw canonical value, then escape each chunk
-		// so the wire carries the target byte for byte.
-		chunks := chunkTXT(target)
-		for i := range chunks {
-			chunks[i] = escapeTXT(chunks[i])
+// buildRR renders one target of ep as an RR. Three regimes coexist for TXT
+// (#1596): a value read by Records() reuses its character-strings from the
+// zone, so deletes match records chunked by someone else; user targets arrive
+// canonicalized by AdjustEndpoints (no quoting) and are written verbatim,
+// re-chunked to 255-byte character-strings, so ';' is not mistaken for a
+// zone-file comment; but the registry serializes heritage labels with
+// syntactic quotes (Labels.Serialize(true)) downstream of AdjustEndpoints,
+// and that quoting must be interpreted like the legacy dns.NewRR path did, or
+// literal quotes land on the wire and the read-back heritage no longer
+// parses. Other record types keep the string path.
+func (r *rfc2136Provider) buildRR(ep *endpoint.Endpoint, ttl uint32, target string) (dns.RR, error) {
+	if ep.RecordType == endpoint.RecordTypeTXT {
+		if chunks, ok := r.txtChunks(ep.DNSName, target); ok {
+			return &dns.TXT{
+				Hdr: dns.RR_Header{
+					Name:   dns.Fqdn(ep.DNSName),
+					Rrtype: dns.TypeTXT,
+					Class:  dns.ClassINET,
+					Ttl:    ttl,
+				},
+				Txt: chunks,
+			}, nil
 		}
-		return &dns.TXT{
-			Hdr: dns.RR_Header{
-				Name:   dns.Fqdn(ep.DNSName),
-				Rrtype: dns.TypeTXT,
-				Class:  dns.ClassINET,
-				Ttl:    ttl,
-			},
-			Txt: chunks,
-		}, nil
 	}
 
 	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target))
@@ -723,6 +757,28 @@ func buildRR(ep *endpoint.Endpoint, ttl uint32, target string) (dns.RR, error) {
 		return nil, fmt.Errorf("failed to build RR: %w", err)
 	}
 	return rr, nil
+}
+
+// txtChunks returns the character-strings to write for a TXT target, in the
+// zone-presentation form dns.TXT.Txt holds, or false when the target is
+// zone-quoted and must go through the zone parser.
+func (r *rfc2136Provider) txtChunks(name, target string) ([]string, bool) {
+	r.txtWireMu.Lock()
+	chunks, seen := r.txtWire[newTXTWireKey(name, target)]
+	r.txtWireMu.Unlock()
+	if seen {
+		return chunks, true
+	}
+	if isZoneQuoted(target) {
+		return nil, false
+	}
+	// Packing decodes the presentation form: chunk the raw canonical value,
+	// then escape each chunk so the wire carries the target byte for byte.
+	chunks = chunkTXT(target)
+	for i := range chunks {
+		chunks[i] = escapeTXT(chunks[i])
+	}
+	return chunks, true
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given
