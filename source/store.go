@@ -115,9 +115,8 @@ type Config struct {
 	clientGen     ClientGenerator
 	clientGenOnce sync.Once
 
-	// crdClients is populated by buildCRDSource when the crd source is built, so
-	// callers outside the source package can reuse its client instead of building
-	// a second, independent one.
+	// crdClients lets callers outside this package reuse the crd source's client
+	// instead of building a second one.
 	crdClients *crd.CRDClients
 }
 

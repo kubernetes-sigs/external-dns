@@ -92,7 +92,7 @@ func TestSyncStatus(t *testing.T) {
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{
 					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "example", "", "service")),
+						WithRefObject(serviceRef("default", "example")),
 				},
 			},
 			wantLogAbsent: []string{"DNSEndpoint"},
@@ -103,7 +103,7 @@ func TestSyncStatus(t *testing.T) {
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{
 					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "example", "", "service")).
+						WithRefObject(serviceRef("default", "example")).
 						WithRefObject(dnsEndpointRef("default", "example")),
 				},
 			},
@@ -321,6 +321,10 @@ func newTestScheme(t *testing.T) *runtime.Scheme {
 func dnsEndpointRef(namespace, name string) *events.ObjectReference {
 	return events.NewObjectReferenceFromParts(
 		dnsEndpointKind, apiv1alpha1.GroupVersion.String(), namespace, name, "", types.CRD)
+}
+
+func serviceRef(namespace, name string) *events.ObjectReference {
+	return events.NewObjectReferenceFromParts("Service", "v1", namespace, name, "", "service")
 }
 
 // forbidGet fails the test if cl.Get is ever called, for asserting a code path
