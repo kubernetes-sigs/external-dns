@@ -267,6 +267,18 @@ func (p *OVHProvider) handleSingleZoneUpdate(ctx context.Context, zoneName strin
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, records := p.lastRunZones, p.lastRunRecords
+
+	// Lazy initialization: when using the CRD registry, Records() is not called
+	// before ApplyChanges(), so lastRunZones/lastRunRecords are empty. Fetch them
+	// on demand to stay compatible with all registry implementations.
+	if len(zones) == 0 {
+		var err error
+		zones, records, err = p.zonesRecords(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	defer func() {
 		p.lastRunRecords = []ovhRecord{}
 		p.lastRunZones = []string{}
@@ -335,7 +347,20 @@ func (p *OVHProvider) change(ctx context.Context, change ovhChange) error {
 			log.Infof("OVH: Dry-run: Would have created a DNS record for zone %s", change.Zone)
 			return nil
 		}
-		return p.client.PostWithContext(ctx, fmt.Sprintf("/domain/zone/%s/record", url.PathEscape(change.Zone)), change.ovhRecordFields, nil)
+		err := p.client.PostWithContext(ctx, fmt.Sprintf("/domain/zone/%s/record", url.PathEscape(change.Zone)), change.ovhRecordFields, nil)
+		if err != nil {
+			log.Debugf("OVH: Create error type=%T for %s: %v", err, change.String(), err)
+			// Check if the error is an OVH API 400 (record already exists)
+			var apiErr *ovh.APIError
+			if errors.As(err, &apiErr) && apiErr.Code == 400 {
+				// Record already exists or conflicts with existing record type.
+				// Treat as idempotent success — the desired state is already achieved.
+				log.Infof("OVH: Skipping create for %s: record already exists (%s)", change.String(), apiErr.Message)
+				return nil
+			}
+			return err
+		}
+		return nil
 	case ovhDelete:
 		if change.ID == 0 {
 			return ErrRecordToMutateNotFound
