@@ -125,11 +125,9 @@ func (us *unstructuredSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint
 
 // endpointsFromInformer returns endpoints for a single resource type.
 func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.GenericInformer) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
 	// Get objects that match the indexer filter (annotation and label selectors)
 	objs := informers.ListIndexed[*unstructured.Unstructured](informer.Informer().GetIndexer())
-
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 	for _, obj := range objs {
 		el := newUnstructuredWrapper(obj)
 
