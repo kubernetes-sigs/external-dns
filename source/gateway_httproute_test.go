@@ -902,6 +902,111 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// A wildcard listener hostname must not become a record of its own when the route
+			// named a hostname through the annotation (#6596).
+			title:      "WildcardListenerWithHostnameAnnotation",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("*.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "service.example.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("service.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The FQDN template names the route, so the wildcard listener hostname must not become
+			// a record of its own either.
+			title: "WildcardListenerWithFQDNTemplate",
+			config: &Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.example.internal", "", "", false),
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("*.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "templated-route"),
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("templated-route.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// The annotation names a hostname the listener does not serve. Nothing is published:
+			// the annotation does not match the listener, and it also suppresses the fallback that
+			// used to publish the listener's own hostname.
+			title:      "HostnameAnnotationOutsideListenerDomain",
+			config:     &Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("*.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.HostnameKey: "service.other.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: nil,
+		},
+		{
 			// The annotation already named the record, so the template must not fire.
 			title: "AnnotationBeforeFQDNTemplate",
 			config: &Config{
