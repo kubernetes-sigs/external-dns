@@ -21,9 +21,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
-	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
+	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
@@ -31,11 +30,11 @@ import (
 // NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given config.
 func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
 	return newGatewayRouteSource(ctx, clients, config, "TCPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
-		return &gatewayTCPRouteInformer{factory.Gateway().V1alpha2().TCPRoutes()}
+		return &gatewayTCPRouteInformer{factory.Gateway().V1().TCPRoutes()}
 	})
 }
 
-type gatewayTCPRoute struct{ route v1alpha2.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+type gatewayTCPRoute struct{ route v1.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
 func (rt *gatewayTCPRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
@@ -45,17 +44,17 @@ func (rt *gatewayTCPRoute) Protocol() v1.ProtocolType        { return v1.TCPProt
 func (rt *gatewayTCPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
 
 type gatewayTCPRouteInformer struct {
-	informers_v1a2.TCPRouteInformer
+	informers_v1.TCPRouteInformer
 }
 
 func (inf gatewayTCPRouteInformer) List() []gatewayRoute {
-	list := extInformers.ListIndexed[*v1alpha2.TCPRoute](inf.TCPRouteInformer.Informer().GetIndexer())
+	list := extInformers.ListIndexed[*v1.TCPRoute](inf.TCPRouteInformer.Informer().GetIndexer())
 	routes := make([]gatewayRoute, len(list))
 	for i, rt := range list {
 		// We make a shallow copy since we're only interested in setting the TypeMeta.
 		clone := *rt
 		clone.TypeMeta = metav1.TypeMeta{
-			APIVersion: v1alpha2.GroupVersion.String(),
+			APIVersion: v1.GroupVersion.String(),
 			Kind:       "TCPRoute",
 		}
 		routes[i] = &gatewayTCPRoute{clone}

@@ -15,7 +15,7 @@ Experimental channels as summarized below:
 | GRPCRoute          | v1                                  | v1.1.0                               | v1.1.0                          |
 | ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
 | TLSRoute           | v1                                  | v1.5.0                               | v1.0.0                          |
-| TCPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
+| TCPRoute           | v1                                  | v1.6.0                               | v1.0.0                          |
 | UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
 
 Gateways and HTTPRoutes were promoted to the Standard channel in Gateway API v1.0.0 and use the
