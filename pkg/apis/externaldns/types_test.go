@@ -41,11 +41,11 @@ var (
 		KubeAPIQPS:                             int(rest.DefaultQPS),
 		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-system"},
-		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
 		Namespace:                              "",
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
 		AnnotationValidationMode:               "warn",
+		EnableLegacyAnnotationPrefix:           false,
 		FQDNTemplate:                           nil,
 		Compatibility:                          "",
 		Provider:                               ProviderGoogle,
@@ -143,11 +143,11 @@ var (
 		KubeAPIQPS:                             int(rest.DefaultQPS),
 		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-not-system", "gloo-second-system"},
-		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
 		Namespace:                              "namespace",
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
 		AnnotationValidationMode:               "warn",
+		EnableLegacyAnnotationPrefix:           true,
 		IgnoreHostnameAnnotation:               true,
 		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
@@ -306,7 +306,6 @@ func TestParseFlags(t *testing.T) {
 				"--request-timeout=77s",
 				"--gloo-namespace=gloo-not-system",
 				"--gloo-namespace=gloo-second-system",
-				"--skipper-routegroup-groupversion=zalando.org/v2",
 				"--source=service",
 				"--source=ingress",
 				"--source=connector",
@@ -394,6 +393,7 @@ func TestParseFlags(t *testing.T) {
 				"--once",
 				"--dry-run",
 				"--events",
+				"--enable-legacy-annotation-prefix",
 				"--log-format=json",
 				"--metrics-address=127.0.0.1:9099",
 				"--log-level=debug",
@@ -511,6 +511,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_ONCE":                                              "1",
 				"EXTERNAL_DNS_DRY_RUN":                                           "1",
 				"EXTERNAL_DNS_EVENTS":                                            "1",
+				"EXTERNAL_DNS_ENABLE_LEGACY_ANNOTATION_PREFIX":                   "1",
 				"EXTERNAL_DNS_LOG_FORMAT":                                        "json",
 				"EXTERNAL_DNS_METRICS_ADDRESS":                                   "127.0.0.1:9099",
 				"EXTERNAL_DNS_LOG_LEVEL":                                         "debug",
@@ -781,6 +782,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 		"--rfc2136-zone=example.org.",
 		"--rfc2136-zone=example.com.",
 		"--rfc2136-insecure",
+		"--rfc2136-axfr-insecure",
 		"--rfc2136-kerberos-realm=EXAMPLE.COM",
 		"--rfc2136-kerberos-username=svc-externaldns",
 		"--rfc2136-kerberos-password=secret",
@@ -796,6 +798,7 @@ func TestParseFlagsRFC2136(t *testing.T) {
 	assert.Equal(t, 5353, cfg.RFC2136Port)
 	assert.ElementsMatch(t, []string{"example.org.", "example.com."}, cfg.RFC2136Zone)
 	assert.True(t, cfg.RFC2136Insecure)
+	assert.True(t, cfg.RFC2136AXFRInsecure)
 	assert.Equal(t, "EXAMPLE.COM", cfg.RFC2136KerberosRealm)
 	assert.Equal(t, "svc-externaldns", cfg.RFC2136KerberosUsername)
 	assert.Equal(t, "secret", cfg.RFC2136KerberosPassword)

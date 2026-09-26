@@ -41,14 +41,10 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 	// The backing LoadBalancer service has no IP (simulating IPAM not yet populated).
 	makeProxy := func(name string) proxy {
 		return proxy{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: proxyGVR.GroupVersion().String(),
-				Kind:       "Proxy",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: ns,
-			},
+			APIVersion: proxyGVR.GroupVersion().String(),
+			Kind:       "Proxy",
+			Name:       name,
+			Namespace:  ns,
 			Spec: proxySpec{
 				Listeners: []proxySpecListener{
 					{
@@ -66,16 +62,16 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 	// Service with no LoadBalancer IP — simulates IPAM not yet populated.
 	makeEmptySvc := func(name string) corev1.Service {
 		return corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Spec:       corev1.ServiceSpec{Type: corev1.ServiceTypeLoadBalancer},
+			Name: name, Namespace: ns,
+			Spec: corev1.ServiceSpec{Type: corev1.ServiceTypeLoadBalancer},
 		}
 	}
 
 	// Service with a real LoadBalancer IP.
 	makeIPSvc := func(name, ip string) corev1.Service {
 		return corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
-			Spec:       corev1.ServiceSpec{Type: corev1.ServiceTypeLoadBalancer},
+			Name: name, Namespace: ns,
+			Spec: corev1.ServiceSpec{Type: corev1.ServiceTypeLoadBalancer},
 			Status: corev1.ServiceStatus{
 				LoadBalancer: corev1.LoadBalancerStatus{
 					Ingress: []corev1.LoadBalancerIngress{{IP: ip}},
@@ -216,14 +212,10 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 		{
 			title: "fqdn-template with combine alongside multiple virtual-host domains",
 			customProxy: &proxy{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: proxyGVR.GroupVersion().String(),
-					Kind:       "Proxy",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "multi-host-proxy",
-					Namespace: ns,
-				},
+				APIVersion: proxyGVR.GroupVersion().String(),
+				Kind:       "Proxy",
+				Name:       "multi-host-proxy",
+				Namespace:  ns,
 				Spec: proxySpec{
 					Listeners: []proxySpecListener{
 						{

@@ -43,47 +43,49 @@ import (
 const (
 	acceptHeader = "Accept"
 	maxRetries   = 5
+
+	webhookProviderSubsystem = "webhook_provider"
 )
 
 var (
 	recordsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "webhook_provider",
+			Subsystem: webhookProviderSubsystem,
 			Name:      "records_errors_total",
 			Help:      "Errors with Records method",
 		},
 	)
 	recordsRequestsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "webhook_provider",
+			Subsystem: webhookProviderSubsystem,
 			Name:      "records_requests_total",
 			Help:      "Requests with Records method",
 		},
 	)
 	applyChangesErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "webhook_provider",
+			Subsystem: webhookProviderSubsystem,
 			Name:      "applychanges_errors_total",
 			Help:      "Errors with ApplyChanges method",
 		},
 	)
 	applyChangesRequestsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "webhook_provider",
+			Subsystem: webhookProviderSubsystem,
 			Name:      "applychanges_requests_total",
 			Help:      "Requests with ApplyChanges method",
 		},
 	)
 	adjustEndpointsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "webhook_provider",
+			Subsystem: webhookProviderSubsystem,
 			Name:      "adjustendpoints_errors_total",
 			Help:      "Errors with AdjustEndpoints method",
 		},
 	)
 	adjustEndpointsRequestsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "webhook_provider",
+			Subsystem: webhookProviderSubsystem,
 			Name:      "adjustendpoints_requests_total",
 			Help:      "Requests with AdjustEndpoints method",
 		},

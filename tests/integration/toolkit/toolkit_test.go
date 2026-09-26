@@ -233,8 +233,8 @@ func TestLoadResources_Service(t *testing.T) {
 
 func TestLoadResources_ServiceWithLoadBalancerStatus(t *testing.T) {
 	svc := &corev1.Service{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
-		ObjectMeta: metav1.ObjectMeta{Name: "lb-svc", Namespace: "default"},
+		APIVersion: "v1", Kind: "Service",
+		Name: "lb-svc", Namespace: "default",
 		Status: corev1.ServiceStatus{
 			LoadBalancer: corev1.LoadBalancerStatus{
 				Ingress: []corev1.LoadBalancerIngress{{IP: "1.2.3.4"}},
@@ -257,8 +257,8 @@ func TestLoadResources_ServiceWithLoadBalancerStatus(t *testing.T) {
 
 func TestLoadResources_IngressWithLoadBalancerStatus(t *testing.T) {
 	ing := &networkingv1.Ingress{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "networking.k8s.io/v1", Kind: "Ingress"},
-		ObjectMeta: metav1.ObjectMeta{Name: "lb-ing", Namespace: "default"},
+		APIVersion: "networking.k8s.io/v1", Kind: "Ingress",
+		Name: "lb-ing", Namespace: "default",
 		Status: networkingv1.IngressStatus{
 			LoadBalancer: networkingv1.IngressLoadBalancerStatus{
 				Ingress: []networkingv1.IngressLoadBalancerIngress{{IP: "5.6.7.8"}},

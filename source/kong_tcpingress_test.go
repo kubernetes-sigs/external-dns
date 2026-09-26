@@ -536,16 +536,12 @@ func TestKongTCPIngressIndexer(t *testing.T) {
 			lbls = map[string]string{}
 		}
 		return &TCPIngress{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kongGroupdVersionResource.GroupVersion().String(),
-				Kind:       "TCPIngress",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
-				Namespace:   defaultKongNamespace,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			APIVersion:  kongGroupdVersionResource.GroupVersion().String(),
+			Kind:        "TCPIngress",
+			Name:        name,
+			Namespace:   defaultKongNamespace,
+			Annotations: ann,
+			Labels:      lbls,
 			Spec: tcpIngressSpec{
 				Rules: []tcpIngressRule{{Host: name + ".example.org", Port: 80}},
 			},

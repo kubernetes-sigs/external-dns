@@ -15,6 +15,9 @@ package annotations
 
 import (
 	"math"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -24,6 +27,9 @@ const (
 	// TTLMinimum and TTLMaximum bound the value accepted by the ttl annotation.
 	TTLMinimum = 1
 	TTLMaximum = math.MaxInt32
+
+	// LegacyAnnotationPrefix is the annotation prefix used by releases before v0.22.0.
+	LegacyAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 )
 
 var (
@@ -31,12 +37,8 @@ var (
 	// to provide easy filtering. Can be customized via SetAnnotationPrefix.
 	AnnotationKeyPrefix = DefaultAnnotationPrefix
 
-	// CloudflareProxiedKey The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey        = AnnotationKeyPrefix + "cloudflare-proxied"
-	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
-	CloudflareRegionKey         = AnnotationKeyPrefix + "cloudflare-region-key"
-	CloudflareRecordCommentKey  = AnnotationKeyPrefix + "cloudflare-record-comment"
-	CloudflareTagsKey           = AnnotationKeyPrefix + "cloudflare-tags"
+	// legacyAnnotationPrefix is an additional prefix accepted by ResolveLegacyAnnotations. Empty means disabled.
+	legacyAnnotationPrefix string
 
 	// AzureTagsKey The annotation used for Azure DNS record tags
 	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
@@ -79,13 +81,6 @@ var (
 func SetAnnotationPrefix(prefix string) {
 	AnnotationKeyPrefix = prefix
 
-	// Cloudflare annotations
-	CloudflareProxiedKey = AnnotationKeyPrefix + "cloudflare-proxied"
-	CloudflareCustomHostnameKey = AnnotationKeyPrefix + "cloudflare-custom-hostname"
-	CloudflareRegionKey = AnnotationKeyPrefix + "cloudflare-region-key"
-	CloudflareRecordCommentKey = AnnotationKeyPrefix + "cloudflare-record-comment"
-	CloudflareTagsKey = AnnotationKeyPrefix + "cloudflare-tags"
-
 	// Azure annotations
 	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
 
@@ -110,4 +105,50 @@ func SetAnnotationPrefix(prefix string) {
 	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
 	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+}
+
+// SetLegacyAnnotationPrefix makes ResolveLegacyAnnotations accept annotations carrying prefix in addition
+// to AnnotationKeyPrefix. An empty prefix disables the resolution, as does one that AnnotationKeyPrefix
+// itself starts with: rewriting would then be a no-op or would rewrite its own output.
+func SetLegacyAnnotationPrefix(prefix string) {
+	if strings.HasPrefix(AnnotationKeyPrefix, prefix) {
+		prefix = ""
+	}
+	legacyAnnotationPrefix = prefix
+}
+
+// LegacyAnnotationPrefixEnabled reports whether ResolveLegacyAnnotations has anything to do, so callers
+// on hot paths can skip fetching annotations when the migration aid is off (the default).
+func LegacyAnnotationPrefixEnabled() bool {
+	return legacyAnnotationPrefix != ""
+}
+
+// ResolveLegacyAnnotations adds, in place, an AnnotationKeyPrefix equivalent for every annotation carrying
+// the legacy prefix so that sources read the configured prefix, while the legacy key stays in the map so
+// that --annotation-filter and templates written against it keep matching. When both forms of a key are
+// present the value under AnnotationKeyPrefix wins and the conflict is logged.
+// It returns true when anns was modified and is a no-op unless a legacy prefix was enabled
+// with SetLegacyAnnotationPrefix.
+func ResolveLegacyAnnotations(kind, namespace, name string, anns map[string]string) bool {
+	if legacyAnnotationPrefix == "" {
+		return false
+	}
+	var legacyKeys []string
+	for key := range anns {
+		if strings.HasPrefix(key, legacyAnnotationPrefix) {
+			legacyKeys = append(legacyKeys, key)
+		}
+	}
+	modified := false
+	for _, key := range legacyKeys {
+		value := anns[key]
+		resolved := AnnotationKeyPrefix + strings.TrimPrefix(key, legacyAnnotationPrefix)
+		if existing, ok := anns[resolved]; !ok {
+			anns[resolved] = value
+			modified = true
+		} else if existing != value {
+			log.Warnf("%s %s/%s: ignoring annotation %s=%q because %s=%q is set", kind, namespace, name, key, value, resolved, existing)
+		}
+	}
+	return modified
 }

@@ -57,6 +57,7 @@ type rfc2136Provider struct {
 	tsigSecret      string
 	tsigSecretAlg   string
 	insecure        bool
+	axfrInsecure    bool
 	axfr            bool
 	minTTL          time.Duration
 	batchChangeSize int
@@ -139,11 +140,11 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		log.Warnf("--rfc2136-axfr is not set: ExternalDNS cannot list existing records, so --policy=%s will never update or delete them", cfg.Policy)
 	}
 
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136AXFRInsecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
-func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, axfrInsecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -169,6 +170,7 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		nameservers:           nameservers,
 		zoneNames:             zoneNames,
 		insecure:              insecure,
+		axfrInsecure:          axfrInsecure,
 		gssTsig:               gssTsig,
 		krb5Username:          krb5Username,
 		krb5Password:          krb5Password,
@@ -196,6 +198,10 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		r.tsigKeyName = dns.Fqdn(keyName)
 		r.tsigSecret = secret
 		r.tsigSecretAlg = secretAlgChecked
+	}
+
+	if axfrInsecure && axfr {
+		log.Warn("--rfc2136-axfr-insecure is set: zone transfers are unauthenticated")
 	}
 
 	log.Infof("Configured RFC2136 with zones '%v' and nameservers '%v'", r.zoneNames, hosts)
@@ -284,9 +290,15 @@ OuterLoop:
 	return eps, nil
 }
 
+// shouldSignAXFR reports whether TSIG should be attached to zone transfers.
+func (r *rfc2136Provider) shouldSignAXFR() bool {
+	return !r.insecure && !r.gssTsig && !r.axfrInsecure
+}
+
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
-	if !r.insecure && !r.gssTsig {
+
+	if r.shouldSignAXFR() {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 	}
 
@@ -312,24 +324,27 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 	for _, zone := range r.zoneNames {
 		log.Debugf("Fetching records for '%q'", zone)
 
-		m := new(dns.Msg)
-		m.SetAxfr(dns.Fqdn(zone))
-		if !r.insecure && !r.gssTsig {
-			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
-		}
-
 		var lastErr error
 		for i := 0; i < len(r.nameservers); i++ {
 			nameserver := r.getNextNameserverFor(nameserverOpList)
 			log.Debugf("Fetching records from nameserver: %s", nameserver)
 
+			// Signing strips the TSIG RR, so a reused message goes out unsigned.
+			m := new(dns.Msg)
+			m.SetAxfr(dns.Fqdn(zone))
+			if r.shouldSignAXFR() {
+				m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
+			}
+
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
-				lastErr = fmt.Errorf("failed to fetch records via AXFR: %w", err)
+				lastErr = fmt.Errorf("failed to fetch records via AXFR for zone %q from %s: %w", zone, nameserver, err)
 				r.listLastErr = lastErr
 				continue
 			}
 
+			var attempt []dns.RR
+			var attemptErr error
 			for e := range env {
 				if e.Error != nil {
 					if errors.Is(e.Error, dns.ErrSoa) {
@@ -337,10 +352,23 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 					} else {
 						log.Errorf("AXFR error: %v", e.Error)
 					}
-					continue
+					attemptErr = e.Error
+					// Producer closes the channel after a single error envelope.
+					break
 				}
-				records = append(records, e.RR...)
+				// Error envelopes can carry RRs; those must not be accumulated.
+				attempt = append(attempt, e.RR...)
 			}
+			if attemptErr != nil {
+				lastErr = fmt.Errorf("failed to read AXFR response for zone %q from %s: %w", zone, nameserver, attemptErr)
+				r.listLastErr = lastErr
+				continue
+			}
+			// Clear an earlier attempt's error so the post-loop guard does not report
+			// a failure that was already retried away. r.listLastErr is left alone:
+			// getNextNameserverFor reads and resets it to drive the "disabled" strategy.
+			lastErr = nil
+			records = append(records, attempt...)
 			// If records were fetched successfully, break out of the loop
 			if len(records) > 0 {
 				break

@@ -411,8 +411,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		for paginator.HasMorePages() {
 			resp, err := paginator.NextPage(ctx)
 			if err != nil {
-				var te *route53types.ThrottlingException
-				if errors.As(err, &te) {
+				if te, ok := errors.AsType[*route53types.ThrottlingException](err); ok {
 					log.Infof("Skipping AWS profile %q due to provider side throttling: %v", profile, te.ErrorMessage())
 					continue
 				}
@@ -425,7 +424,7 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 					continue
 				}
 
-				if !p.zoneTypeFilter.Match(zone) {
+				if !p.zoneTypeFilter.Match(zoneType(zone)) {
 					continue
 				}
 
@@ -947,11 +946,9 @@ func adjustGeoProximityLocationEndpoint(ep *endpoint.Endpoint) {
 // action=ChangeActionDelete returns a change for deletion of the record.
 func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.Endpoint) *Route53Change {
 	change := &Route53Change{
-		Change: route53types.Change{
-			Action: action,
-			ResourceRecordSet: &route53types.ResourceRecordSet{
-				Name: aws.String(ep.DNSName),
-			},
+		Action: action,
+		ResourceRecordSet: &route53types.ResourceRecordSet{
+			Name: aws.String(ep.DNSName),
 		},
 	}
 	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
@@ -1325,10 +1322,8 @@ func changesByZone(zones map[string]*profiledZone, changeSet Route53Changes) map
 				aliasTarget.HostedZoneId = aws.String(cleanZoneID(*z.zone.Id))
 				rrset.AliasTarget = &aliasTarget
 				c = &Route53Change{
-					Change: route53types.Change{
-						Action:            c.Action,
-						ResourceRecordSet: &rrset,
-					},
+					Action:            c.Action,
+					ResourceRecordSet: &rrset,
 				}
 			}
 			changes[*z.zone.Id] = append(changes[*z.zone.Id], c)
@@ -1455,4 +1450,13 @@ func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	default:
 		return provider.SupportedRecordType(string(recordType))
 	}
+}
+
+// zoneType maps a Route53 hosted zone to the zone type understood by provider.ZoneTypeFilter.
+// A zone without config is treated as public, matching the zero value of HostedZoneConfig.PrivateZone.
+func zoneType(zone route53types.HostedZone) string {
+	if zone.Config != nil && zone.Config.PrivateZone {
+		return provider.ZoneTypePrivate
+	}
+	return provider.ZoneTypePublic
 }

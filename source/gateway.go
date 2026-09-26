@@ -643,7 +643,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Lis
 
 func newObjectRef(group, kind, namespace, name string) objectRef {
 	return objectRef{
-		GroupKind:      schema.GroupKind{Group: group, Kind: kind},
+		Group: group, Kind: kind,
 		NamespacedName: namespacedName(namespace, name),
 	}
 }

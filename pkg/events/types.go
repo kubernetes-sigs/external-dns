@@ -209,10 +209,8 @@ func (e *Event) eventForRef(ref ObjectReference) *eventsv1.Event {
 	}
 
 	event := &eventsv1.Event{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      sanitize(ref.name, timestamp.Time),
-			Namespace: namespace,
-		},
+		Name:                sanitize(ref.name, timestamp.Time),
+		Namespace:           namespace,
 		EventTime:           timestamp,
 		ReportingInstance:   controllerName + "/source/" + ref.source,
 		ReportingController: controllerName,

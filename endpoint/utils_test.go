@@ -466,7 +466,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				return []*Endpoint{
 					NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithRefObject(
 						events.NewObjectReference(&v1.Service{
-							ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+							Name: "foo", Namespace: "default", UID: "123",
 						}, "service")),
 				}
 			},
@@ -485,11 +485,11 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
 						events.NewObjectReference(&v1.Service{
-							ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+							Name: "foo", Namespace: "default", UID: "123",
 						}, "service")),
 					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(
 						events.NewObjectReference(&v1.Service{
-							ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+							Name: "bar", Namespace: "ns", UID: "345",
 						}, "service")),
 				}
 			},
@@ -505,7 +505,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			name: "two endpoints merged with same ref — deduplication keeps one entry",
 			input: func() []*Endpoint {
 				ref := events.NewObjectReference(&v1.Service{
-					ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+					Name: "foo", Namespace: "default", UID: "123",
 				}, "service")
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(ref),
@@ -525,11 +525,11 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
 						events.NewObjectReference(&v1.Service{
-							ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default", UID: "123"},
+							Name: "foo", Namespace: "default", UID: "123",
 						}, "service")),
 					NewEndpoint("b.example.com", RecordTypeA, "1.1.1.2").WithRefObject(
 						events.NewObjectReference(&v1.Service{
-							ObjectMeta: metav1.ObjectMeta{Name: "bar", Namespace: "ns", UID: "345"},
+							Name: "bar", Namespace: "ns", UID: "345",
 						}, "service")),
 				}
 			},

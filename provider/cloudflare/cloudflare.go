@@ -67,6 +67,15 @@ const (
 	paidZoneMaxCommentLength = 500
 )
 
+const (
+	logFieldRecord  = "record"
+	logFieldType    = "type"
+	logFieldTTL     = "ttl"
+	logFieldContent = "content"
+	logFieldAction  = "action"
+	logFieldZone    = "zone"
+)
+
 var changeActionNames = map[changeAction]string{
 	cloudFlareCreate: "CREATE",
 	cloudFlareDelete: "DELETE",
@@ -92,6 +101,7 @@ var recordTypeProxyNotSupported = sets.New(
 	"SPF",
 	"TXT",
 	"SRV",
+	"TLSA",
 )
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -239,8 +249,7 @@ type cloudFlareChange struct {
 func convertCloudflareError(err error) error {
 	// Handle CloudFlare v5 SDK errors according to the documentation:
 	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
-	var apierr *cloudflare.Error
-	if errors.As(err, &apierr) {
+	if apierr, ok := errors.AsType[*cloudflare.Error](err); ok {
 		// Rate limit errors (429) and server errors (5xx) should be treated as soft errors
 		// so that external-dns will retry them later
 		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {
@@ -545,11 +554,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
-				"record": change.ResourceRecord.Name,
-				"type":   change.ResourceRecord.Type,
-				"ttl":    change.ResourceRecord.TTL,
-				"action": change.Action.String(),
-				"zone":   zoneID,
+				logFieldRecord: change.ResourceRecord.Name,
+				logFieldType:   change.ResourceRecord.Type,
+				logFieldTTL:    change.ResourceRecord.TTL,
+				logFieldAction: change.Action.String(),
+				logFieldZone:   zoneID,
 			}
 			log.WithFields(logFields).Info("Changing record.")
 		}
@@ -652,29 +661,29 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if proxied {
 			e.RecordTTL = 0
 		}
-		e.SetProviderSpecificProperty(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e.SetProviderSpecificProperty(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 
 		if p.CustomHostnamesConfig.Enabled {
 			// sort custom hostnames in annotation to properly detect changes
 			if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 1 {
 				sort.Strings(customHostnames)
-				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
 			}
 		} else {
 			// ignore custom hostnames annotations if not enabled
-			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
 		}
 
-		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsProperty); ok {
 			sortedTags := parseTagsAnnotation(val)
-			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
+			e.SetProviderSpecificProperty(annotations.CloudflareTagsProperty, strings.Join(sortedTags, ","))
 		}
 
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
-			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !found {
-				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
+			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty); !found {
+				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty, p.DNSRecordsConfig.Comment)
 			}
 		}
 
@@ -713,12 +722,17 @@ func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record dns.Recor
 }
 
 func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
-	if record.Type != dns.RecordResponseTypeSRV {
-		return record.Content
-	}
-
-	if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
-		return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+	switch record.Type {
+	case dns.RecordResponseTypeSRV:
+		if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
+			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+		}
+	case dns.RecordResponseTypeTLSA:
+		// Cloudflare returns the digest uppercase; normalise so it compares equal.
+		if tlsa, err := endpoint.NewTLSARecord(record.Content); err == nil {
+			return tlsa.String()
+		}
+		log.Warnf("could not parse TLSA content %q for %s, using it verbatim", record.Content, record.Name)
 	}
 
 	return record.Content
@@ -745,13 +759,13 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	// Load comment from program flag
 	comment := p.DNSRecordsConfig.Comment
-	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); ok {
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty); ok {
 		// Replace comment with Ingress annotation
 		comment = val
 	}
 
 	var tags []string
-	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsProperty); ok {
 		tags = parseTagsAnnotation(val)
 	}
 
@@ -819,10 +833,10 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareProxiedKey {
+		if v.Name == annotations.CloudflareProxiedProperty {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedProperty, err)
 			} else {
 				proxied = b
 			}
@@ -838,7 +852,7 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareCustomHostnameKey {
+		if v.Name == annotations.CloudflareCustomHostnameProperty {
 			customHostnames := strings.Split(v.Value, ",")
 			return customHostnames
 		}
@@ -894,21 +908,21 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 		if e == nil {
 			continue
 		}
-		e = e.WithProviderSpecific(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e = e.WithProviderSpecific(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 		// noop (customHostnames is empty) if custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
-			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
 		}
 
 		if records[0].Comment != "" {
-			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
+			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentProperty, records[0].Comment)
 		}
 
 		if records[0].Tags != nil {
 			if tags, ok := records[0].Tags.([]string); ok && len(tags) > 0 {
 				sort.Strings(tags)
-				e = e.WithProviderSpecific(annotations.CloudflareTagsKey, strings.Join(tags, ","))
+				e = e.WithProviderSpecific(annotations.CloudflareTagsProperty, strings.Join(tags, ","))
 			}
 		}
 
@@ -920,7 +934,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case endpoint.RecordTypeMX:
+	case endpoint.RecordTypeMX, endpoint.RecordTypeTLSA:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)

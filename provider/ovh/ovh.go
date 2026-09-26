@@ -529,18 +529,12 @@ func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint
 	for _, e := range endpoints {
 		for _, target := range e.Targets {
 			change := ovhChange{
-				Action: action,
-				ovhRecord: ovhRecord{
-					Zone: zone,
-					ovhRecordFields: ovhRecordFields{
-						FieldType: e.RecordType,
-						ovhRecordFieldUpdate: ovhRecordFieldUpdate{
-							SubDomain: convertDNSNameIntoSubDomain(e.DNSName, zone),
-							TTL:       defaultTTL,
-							Target:    target,
-						},
-					},
-				},
+				Action:    action,
+				Zone:      zone,
+				FieldType: e.RecordType,
+				SubDomain: convertDNSNameIntoSubDomain(e.DNSName, zone),
+				TTL:       defaultTTL,
+				Target:    target,
 			}
 			p.formatCNAMETarget(&change)
 			if e.RecordTTL.IsConfigured() {
@@ -692,18 +686,12 @@ func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endp
 				}
 
 				change := ovhChange{
-					Action: ovhCreate,
-					ovhRecord: ovhRecord{
-						Zone: zone,
-						ovhRecordFields: ovhRecordFields{
-							FieldType: endpointsNew.RecordType,
-							ovhRecordFieldUpdate: ovhRecordFieldUpdate{
-								SubDomain: convertDNSNameIntoSubDomain(endpointsNew.DNSName, zone),
-								TTL:       recordTTL,
-								Target:    target,
-							},
-						},
-					},
+					Action:    ovhCreate,
+					Zone:      zone,
+					FieldType: endpointsNew.RecordType,
+					SubDomain: convertDNSNameIntoSubDomain(endpointsNew.DNSName, zone),
+					TTL:       recordTTL,
+					Target:    target,
 				}
 				p.formatCNAMETarget(&change)
 				changes = append(changes, change)

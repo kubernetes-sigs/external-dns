@@ -24,27 +24,26 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+// defaultStrictMessage is the StrictMessage shared by specs with no record-shaping fallback.
+const defaultStrictMessage = "the resource will not receive a DNS record"
+
 // Registry is external-dns's contract for which annotations are supported by which
 // sources, along with their validation rules and warn/strict messages.
 var Registry = []AnnotationSpec{
 	{
 		Key:              annotations.AccessKey,
 		SupportedSources: []string{types.Service},
-		Config: Config{
-			Validators:    []Validator{ValidateOneOf("public", "private")},
-			WarnMessage:   "the service still gets a DNS record either way, just with a different IP source",
-			Documentation: `Specifies whether the public or private interface address is used for headless/NodePort services. Accepted values: "public", "private".`,
-		},
+		Validators:       []Validator{ValidateOneOf("public", "private")},
+		WarnMessage:      "the service still gets a DNS record either way, just with a different IP source",
+		Documentation:    `Specifies whether the public or private interface address is used for headless/NodePort services. Accepted values: "public", "private".`,
 	},
 	{
 		Key:              annotations.EndpointsTypeKey,
 		SupportedSources: []string{types.Service},
-		Config: Config{
-			Validators:    []Validator{ValidateOneOf("NodeExternalIP", "HostIP")},
-			WarnMessage:   "the service falls back to default headless endpoint publishing behavior (pod IPs unless --publish-host-ip is set)",
-			StrictMessage: "the service will not receive any DNS records",
-			Documentation: `Specifies the type of endpoints to use for headless services. Accepted values: "NodeExternalIP", "HostIP".`,
-		},
+		Validators:       []Validator{ValidateOneOf("NodeExternalIP", "HostIP")},
+		WarnMessage:      "the service falls back to default headless endpoint publishing behavior (pod IPs unless --publish-host-ip is set)",
+		StrictMessage:    "the service will not receive any DNS records",
+		Documentation:    `Specifies the type of endpoints to use for headless services. Accepted values: "NodeExternalIP", "HostIP".`,
 	},
 	{
 		Key: annotations.RecordTypeKey,
@@ -60,23 +59,21 @@ var Registry = []AnnotationSpec{
 			types.SkipperRouteGroup,
 			types.TraefikProxy,
 		},
-		Config: Config{
-			Validators: []Validator{ValidateOneOf(
-				endpoint.RecordTypeA,
-				endpoint.RecordTypeAAAA,
-				endpoint.RecordTypeCNAME,
-				endpoint.RecordTypeTXT,
-				endpoint.RecordTypeSRV,
-				endpoint.RecordTypeNS,
-				endpoint.RecordTypePTR,
-				endpoint.RecordTypeMX,
-				endpoint.RecordTypeNAPTR,
-				endpoint.RecordTypeDNAME,
-			)},
-			WarnMessage:   "the record-type provider-specific property is ignored for this resource",
-			StrictMessage: "the resource will not receive a DNS record",
-			Documentation: "Overrides the DNS record type for the resource's endpoints. Accepted values: A, AAAA, CNAME, TXT, SRV, NS, PTR, MX, NAPTR, DNAME.",
-		},
+		Validators: []Validator{ValidateOneOf(
+			endpoint.RecordTypeA,
+			endpoint.RecordTypeAAAA,
+			endpoint.RecordTypeCNAME,
+			endpoint.RecordTypeTXT,
+			endpoint.RecordTypeSRV,
+			endpoint.RecordTypeNS,
+			endpoint.RecordTypePTR,
+			endpoint.RecordTypeMX,
+			endpoint.RecordTypeNAPTR,
+			endpoint.RecordTypeDNAME,
+		)},
+		WarnMessage:   "the record-type provider-specific property is ignored for this resource",
+		StrictMessage: defaultStrictMessage,
+		Documentation: "Overrides the DNS record type for the resource's endpoints. Accepted values: A, AAAA, CNAME, TXT, SRV, NS, PTR, MX, NAPTR, DNAME.",
 	},
 	{
 		Key: annotations.SetIdentifierKey,
@@ -92,12 +89,10 @@ var Registry = []AnnotationSpec{
 			types.SkipperRouteGroup,
 			types.TraefikProxy,
 		},
-		Config: Config{
-			Validators:    []Validator{ValidateNonEmpty},
-			WarnMessage:   "the set-identifier provider-specific property is ignored for this resource",
-			StrictMessage: "the resource will not receive a DNS record",
-			Documentation: "Distinguishes between multiple records with the same DNS name in routing policies (e.g. weighted, latency, or failover routing).",
-		},
+		Validators:    []Validator{ValidateNonEmpty},
+		WarnMessage:   "the set-identifier provider-specific property is ignored for this resource",
+		StrictMessage: defaultStrictMessage,
+		Documentation: "Distinguishes between multiple records with the same DNS name in routing policies (e.g. weighted, latency, or failover routing).",
 	},
 	{
 		Key: annotations.TtlKey,
@@ -116,11 +111,9 @@ var Registry = []AnnotationSpec{
 			types.TraefikProxy,
 			types.Unstructured,
 		},
-		Config: Config{
-			Validators:    []Validator{ValidateTTL},
-			WarnMessage:   "the TTL falls back to the provider's default",
-			Documentation: `Specifies the TTL for the resource's DNS records, as an integer number of seconds or a Go duration string (e.g. "10m"). Must be between 1 and 2147483647 seconds.`,
-		},
+		Validators:    []Validator{ValidateTTL},
+		WarnMessage:   "the TTL falls back to the provider's default",
+		Documentation: `Specifies the TTL for the resource's DNS records, as an integer number of seconds or a Go duration string (e.g. "10m"). Must be between 1 and 2147483647 seconds.`,
 	},
 	{
 		Key: annotations.HostnameKey,
@@ -137,31 +130,25 @@ var Registry = []AnnotationSpec{
 			types.TraefikProxy,
 			types.Unstructured,
 		},
-		Config: Config{
-			Validators:    []Validator{ValidateHostnames},
-			WarnMessage:   "the malformed hostname list is skipped entirely",
-			StrictMessage: "the resource will not receive a DNS record",
-			Documentation: "Comma-separated list of desired hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
-		},
+		Validators:    []Validator{ValidateHostnames},
+		WarnMessage:   "the malformed hostname list is skipped entirely",
+		StrictMessage: defaultStrictMessage,
+		Documentation: "Comma-separated list of desired hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
 		Key:              annotations.InternalHostnameKey,
 		SupportedSources: []string{types.Pod, types.Service},
-		Config: Config{
-			Validators:    []Validator{ValidateHostnames},
-			WarnMessage:   "the malformed internal hostname list is skipped entirely",
-			StrictMessage: "the resource will not receive a DNS record",
-			Documentation: "Comma-separated list of desired internal hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
-		},
+		Validators:       []Validator{ValidateHostnames},
+		WarnMessage:      "the malformed internal hostname list is skipped entirely",
+		StrictMessage:    defaultStrictMessage,
+		Documentation:    "Comma-separated list of desired internal hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
 		Key:              annotations.IngressHostnameSourceKey,
 		SupportedSources: []string{types.Ingress},
-		Config: Config{
-			Validators:    []Validator{ValidateOneOfFold("defined-hosts-only", "annotation-only")},
-			StrictMessage: "the ingress will not receive any DNS records",
-			Documentation: `Controls which hostnames are used for the ingress: "defined-hosts-only" or "annotation-only" (case-insensitive).`,
-		},
+		Validators:       []Validator{ValidateOneOfFold("defined-hosts-only", "annotation-only")},
+		StrictMessage:    "the ingress will not receive any DNS records",
+		Documentation:    `Controls which hostnames are used for the ingress: "defined-hosts-only" or "annotation-only" (case-insensitive).`,
 	},
 }
 

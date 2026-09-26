@@ -453,7 +453,7 @@ kubectl patch serviceaccount "external-dns" --namespace ${EXTERNALDNS_NS:-"defau
  "{\"metadata\": { \"annotations\": { \"eks.amazonaws.com/role-arn\": \"$ROLE_ARN\" }}}"
 ```
 
-If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing the the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.
+If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing to the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.
 
 When the service account annotations are updated, then the current running pods will have to be terminated, so that new pod(s) with proper configuration (environment variables) will be created automatically.
 
@@ -676,7 +676,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.22.0
+          image: registry.k8s.io/external-dns/external-dns:v0.23.0
           args:
             - --source=service
             - --source=ingress
@@ -1178,6 +1178,9 @@ spec:
 
 > Route53 will direct each user to the region with the lowest latency.
 
+Routing policies also let several ExternalDNS instances — one per cluster — publish the same hostname, each
+owning its own record set. See [Multi-Cluster Shared DNS Records](../advanced/multi-cluster-shared-records.md).
+
 ### Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using
@@ -1328,7 +1331,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.22.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         command:
         - /bin/sh
         - -c

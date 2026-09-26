@@ -23,11 +23,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // Object is a composite interface that combines runtime.Object and metav1.Object.
@@ -41,11 +42,10 @@ type Object interface {
 // All options operate on the metav1.Object interface (or via reflection for Status
 // fields) and are therefore applicable to any Kubernetes resource type.
 type TransformOptions struct {
-	removeManagedFields       bool
-	removeLastAppliedConfig   bool
-	removeStatusConditions    bool
-	keepAnnotationPrefixes    []string
-	requireAnnotationSelector labels.Selector
+	removeManagedFields     bool
+	removeLastAppliedConfig bool
+	removeStatusConditions  bool
+	keepAnnotationPrefixes  []string
 }
 
 // TransformRemoveManagedFields strips managedFields from the object's metadata.
@@ -82,16 +82,6 @@ func TransformKeepAnnotationPrefix(prefixes ...string) func(*TransformOptions) {
 	}
 }
 
-// TransformRequireAnnotation is a local guard against annotation mutation:
-// the Kubernetes API does not support annotation selectors in List/Watch.
-// Do not use when an indexer handles annotation filtering.
-// A nil or empty selector is a no-op.
-func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions) {
-	return func(o *TransformOptions) {
-		o.requireAnnotationSelector = selector
-	}
-}
-
 // TransformerWithOptions returns a cache.TransformFunc that modifies objects of type T
 // in place to reduce the memory footprint of the informer cache. All options operate
 // on the metav1.Object interface or via reflection, making the transformer applicable
@@ -101,9 +91,16 @@ func TransformRequireAnnotation(selector labels.Selector) func(*TransformOptions
 // informers strip TypeMeta when returning objects because the client already knows the
 // type — populating it here makes cached objects self-describing for templates and logging.
 //
+// When a legacy annotation prefix is enabled (see annotations.SetLegacyAnnotationPrefix), the
+// transformer rewrites legacy-prefixed annotations to the configured prefix before anything else
+// looks at them, so annotation filters, indexers and sources all observe a single prefix.
+//
 // The transform is naturally idempotent: nil-ing an already-nil field and filtering an
 // already-filtered map are both no-ops, so calling it multiple times on the same object
 // is safe.
+//
+// It never returns nil: a nil discards the entire LIST batch it belongs to, leaving the
+// cache empty (#6728). Filter in an indexer or at read time, never here.
 //
 // Example:
 //
@@ -119,11 +116,13 @@ func TransformerWithOptions[T Object](optFns ...func(*TransformOptions)) cache.T
 	return func(obj any) (any, error) {
 		entity, ok := obj.(T)
 		if !ok {
-			return nil, nil
+			return obj, nil
 		}
-		if sel := options.requireAnnotationSelector; sel != nil && !sel.Empty() {
-			if !sel.Matches(labels.Set(entity.GetAnnotations())) {
-				return nil, nil
+		if annotations.LegacyAnnotationPrefixEnabled() {
+			// Kind is only needed for the conflict log line; populateGVK is idempotent and runs again below.
+			populateGVK(entity)
+			if anns := entity.GetAnnotations(); annotations.ResolveLegacyAnnotations(entity.GetObjectKind().GroupVersionKind().Kind, entity.GetNamespace(), entity.GetName(), anns) {
+				entity.SetAnnotations(anns)
 			}
 		}
 		populateGVK(entity)

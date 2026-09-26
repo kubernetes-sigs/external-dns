@@ -30,6 +30,18 @@ The following table documents which sources support which annotations:
 [^5]: The annotation must be on the listener's `VirtualService`.
 [^6]: Traefik CRDs require an explicit `external-dns.kubernetes.io/target` value. They do not expose a load balancer IP or hostname in status, so no endpoint is generated without it and `--default-targets` cannot apply.
 
+## Annotation prefix
+
+Annotations below use the prefix set by `--annotation-prefix`, default `external-dns.kubernetes.io/`. Releases before v0.22.0
+used `external-dns.alpha.kubernetes.io/`.
+
+`--enable-legacy-annotation-prefix` adds the configured-prefix equivalent of every legacy-prefixed annotation before any
+filter, indexer or source reads the resource, so resources can be migrated gradually. The legacy key is kept, so an
+`--annotation-filter` or template written against either prefix keeps matching. On conflict the configured prefix wins and
+the ignored value is logged with the resource. Nothing is written back to the cluster.
+
+The flag is a migration aid and will be removed in a future release; drop it once no resource uses the legacy prefix.
+
 ## external-dns.kubernetes.io/access
 
 Specifies which set of node IP addresses to use for a `Service` of type `NodePort`.
@@ -40,6 +52,11 @@ If the value is `private`, use the Nodes' addresses of type `InternalIP`.
 
 If the annotation is not present and there is at least one address of type `ExternalIP`,
 behave as if the value were `public`, otherwise behave as if the value were `private`.
+
+This annotation is read only by the Service source. Every other source ignores it, including the
+Ingress source — see
+[the FAQ](../faq.md#how-do-i-specify-that-i-want-the-dns-record-to-point-to-either-the-nodes-public-or-private-ip-when-it-has-both)
+for the alternatives available there.
 
 ## external-dns.kubernetes.io/controller
 
@@ -400,6 +417,8 @@ record types (e.g. MX, SRV, TXT) that have this annotation set will be rejected.
   This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses
   on the authoritative server side. Alternatively, use the `--prefer-alias` flag to convert all
   CNAME records to ALIAS globally.
+- **Scaleway**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
+  Alternatively, use the `--prefer-alias` flag to convert all CNAME records to ALIAS globally.
 
 ### external-dns.kubernetes.io/set-identifier
 

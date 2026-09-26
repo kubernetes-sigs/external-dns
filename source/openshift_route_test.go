@@ -61,11 +61,9 @@ func (suite *OCPRouteSuite) SetupTest() {
 		Spec: routev1.RouteSpec{
 			Host: "my-domain.com",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "default",
-			Name:        "route-with-targets",
-			Annotations: map[string]string{},
-		},
+		Namespace:   "default",
+		Name:        "route-with-targets",
+		Annotations: map[string]string{},
 		Status: routev1.RouteStatus{
 			Ingress: []routev1.RouteIngress{
 				{
@@ -114,11 +112,9 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname and route status target",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-					UID:       "openshift-route-uid",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
+				UID:       "openshift-route-uid",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -147,10 +143,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname, route status target and ocpRouterName defined",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -181,10 +175,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname, route status target, one ocpRouterName and two router canonical names",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -226,10 +218,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route not admitted by the given router",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -266,10 +256,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					Host: "my-domain.com",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -302,10 +290,8 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route admitted by first appropriate router",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-target",
-				},
+				Namespace: "default",
+				Name:      "route-with-target",
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
@@ -346,12 +332,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with incorrect externalDNS controller annotation",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-ignore-annotation",
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/controller": "foo",
-					},
+				Namespace: "default",
+				Name:      "route-with-ignore-annotation",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/controller": "foo",
 				},
 			},
 			expected: []*endpoint.Endpoint{},
@@ -359,12 +343,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with basic hostname and annotation target",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-annotation-target",
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/target": "my.site.foo.com",
-					},
+				Namespace: "default",
+				Name:      "route-with-annotation-target",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/target": "my.site.foo.com",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -396,16 +378,14 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			title:       "route with matching labels",
 			labelFilter: "app=web-external",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-matching-labels",
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/target": "my.site.foo.com",
-					},
-					Labels: map[string]string{
-						"app":  "web-external",
-						"name": "service-frontend",
-					},
+				Namespace: "default",
+				Name:      "route-with-matching-labels",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/target": "my.site.foo.com",
+				},
+				Labels: map[string]string{
+					"app":  "web-external",
+					"name": "service-frontend",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -440,16 +420,14 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				Spec: routev1.RouteSpec{
 					Host: "my-annotation-domain.com",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-without-matching-labels",
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/target": "my.site.foo.com",
-					},
-					Labels: map[string]string{
-						"app":  "web-internal",
-						"name": "service-frontend",
-					},
+				Namespace: "default",
+				Name:      "route-without-matching-labels",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/target": "my.site.foo.com",
+				},
+				Labels: map[string]string{
+					"app":  "web-internal",
+					"name": "service-frontend",
 				},
 			},
 			expected: []*endpoint.Endpoint{},
@@ -457,12 +435,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "route with provider-specific annotation",
 			ocpRoute: &routev1.Route{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default",
-					Name:      "route-with-provider-specific",
-					Annotations: map[string]string{
-						annotations.AWSPrefix + "weight": "10",
-					},
+				Namespace: "default",
+				Name:      "route-with-provider-specific",
+				Annotations: map[string]string{
+					annotations.AWSPrefix + "weight": "10",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
@@ -530,12 +506,10 @@ func TestOcpRouteIndexer(t *testing.T) {
 
 	makeRoute := func(namespace, name, host, target string, ann, lbls map[string]string) *routev1.Route {
 		return &routev1.Route{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:   namespace,
-				Name:        name,
-				Annotations: ann,
-				Labels:      lbls,
-			},
+			Namespace:   namespace,
+			Name:        name,
+			Annotations: ann,
+			Labels:      lbls,
 			Status: routev1.RouteStatus{
 				Ingress: []routev1.RouteIngress{
 					{

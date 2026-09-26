@@ -144,6 +144,7 @@ from the usage of any externally developed webhook.
 | --------------------- | -------------------------------------------------------------------- |
 | Abion                 | https://github.com/abiondevelopment/external-dns-webhook-abion       |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
+| Akamai Edge DNS       | https://github.com/PixiBixi/external-dns-akamai-webhook              |
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
@@ -156,7 +157,8 @@ from the usage of any externally developed webhook.
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
-| Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infoblox NIOS         | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infoblox UDDI         | https://github.com/wayvz-io/external-dns-uddi-webhook                |
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
@@ -233,7 +235,7 @@ See the [sources documentation](docs/sources/about.md) for the full list and con
 | [Kubernetes Pod](https://kubernetes.io/docs/concepts/workloads/pods/)                                 | [guide](docs/sources/pod.md)                                                                                                   |
 | [Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/)                | [guide](docs/sources/service.md), [ExternalName](docs/tutorials/externalname.md), [Headless](docs/tutorials/hostport.md)       |
 | [OpenShift Route](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html) | [guide](docs/sources/openshift.md)                                                                                 |
-| [Skipper RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroups/)                  | —                                                                                                                               |
+| [Skipper RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroups/)                  | [guide](docs/sources/skipper-routegroup.md)                                                                                 |
 | [Traefik IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/)              | [guide](docs/sources/traefik-proxy.md)                                                                                         |
 | [Unstructured (custom CRD)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) | [guide](docs/sources/unstructured.md)                                                                              |
 

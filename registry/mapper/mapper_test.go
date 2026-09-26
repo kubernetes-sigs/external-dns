@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
@@ -100,6 +101,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			input:            "dname-foo.example.com",
 			wantEndpointName: "foo.example.com",
 			wantRecordType:   endpoint.RecordTypeDNAME,
+		},
+		{
+			name:             "prefix with TLSA record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "tlsa-_443._tcp.example.com",
+			wantEndpointName: "_443._tcp.example.com",
+			wantRecordType:   endpoint.RecordTypeTLSA,
 		},
 		{
 			name:             "suffix with A record type in affix",
@@ -299,6 +307,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "foo.example.com",
 			recordType:  endpoint.RecordTypeDNAME,
 			wantTXTName: "dname-foo.example.com",
+		},
+		{
+			name:        "prefix with TLSA record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "_443._tcp.example.com",
+			recordType:  endpoint.RecordTypeTLSA,
+			wantTXTName: "tlsa-_443._tcp.example.com",
 		},
 		{
 			name:        "prefix with TXT record type in affix",
@@ -686,6 +701,36 @@ func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 			actualName, actualType := extractRecordTypeDefaultPosition(tc.input)
 			assert.Equal(t, tc.expectedName, actualName)
 			assert.Equal(t, tc.expectedType, actualType)
+		})
+	}
+}
+
+// A type missing from supportedRecords leaves its ownership TXT orphaned.
+func TestOwnershipRoundTripWithPlainPrefix(t *testing.T) {
+	mapper := NewAffixNameMapper("owned-by-", "", "")
+
+	tests := []struct {
+		recordType string
+		dnsName    string
+		wantTXT    string
+	}{
+		{endpoint.RecordTypeA, "foo.example.com", "owned-by-a-foo.example.com"},
+		{endpoint.RecordTypeCNAME, "foo.example.com", "owned-by-cname-foo.example.com"},
+		{endpoint.RecordTypeTXT, "foo.example.com", "owned-by-txt-foo.example.com"},
+		{endpoint.RecordTypeTLSA, "_443._tcp.example.com", "owned-by-tlsa-_443._tcp.example.com"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.recordType, func(t *testing.T) {
+			require.Contains(t, supportedRecords, tc.recordType,
+				"this case assumes the type is in supportedRecords; update both together")
+
+			txtName := mapper.ToTXTName(tc.dnsName, tc.recordType)
+			assert.Equal(t, tc.wantTXT, txtName)
+
+			gotName, gotType := mapper.ToEndpointName(txtName)
+			assert.Equal(t, tc.dnsName, gotName, "ownership TXT name must map back to the endpoint name")
+			assert.Equal(t, tc.recordType, gotType, "ownership TXT name must map back to the record type")
 		})
 	}
 }
