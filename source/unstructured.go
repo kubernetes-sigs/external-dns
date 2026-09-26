@@ -129,9 +129,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 	// Get objects that match the indexer filter (annotation and label selectors)
 	objs := informers.ListIndexed[*unstructured.Unstructured](informer.Informer().GetIndexer())
-	if len(objs) == 0 {
-		return nil, nil
-	}
+
 	for _, obj := range objs {
 		el := newUnstructuredWrapper(obj)
 
