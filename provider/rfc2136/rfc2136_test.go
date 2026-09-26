@@ -322,6 +322,27 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	assert.Empty(t, recs[0].ProviderSpecific, "expected no provider specific config")
 }
 
+func TestRfc2136GetRecordsMX(t *testing.T) {
+	stub := newStub()
+	err := stub.setOutput([]string{
+		"mxprobe.foo.com 3600 IN MX 10 mail1.foo.com.",
+		"mxprobe.foo.com 3600 IN MX 20 mail2.foo.com.",
+	})
+	require.NoError(t, err)
+
+	provider, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+
+	recs, err := provider.Records(t.Context())
+	require.NoError(t, err)
+
+	require.Len(t, recs, 1, "expected MX records for one name to merge into a single endpoint")
+	assert.Equal(t, "mxprobe.foo.com", recs[0].DNSName)
+	assert.Equal(t, endpoint.RecordTypeMX, recs[0].RecordType)
+	assert.Equal(t, endpoint.TTL(3600), recs[0].RecordTTL)
+	assert.ElementsMatch(t, []string{"10 mail1.foo.com", "20 mail2.foo.com"}, []string(recs[0].Targets))
+}
+
 func TestRfc2136PTRCreation(t *testing.T) {
 	stub := newStub()
 	p, err := createRfc2136StubProviderWithReverseZone(stub)

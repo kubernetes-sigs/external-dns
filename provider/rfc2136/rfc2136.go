@@ -260,6 +260,11 @@ OuterLoop:
 		case dns.TypeTXT:
 			rrValues = (rr.(*dns.TXT).Txt)
 			rrType = "TXT"
+		case dns.TypeMX:
+			mx := rr.(*dns.MX)
+			// Targets merged below bypass NewEndpointWithTTL, so normalize here.
+			rrValues = []string{endpoint.NormalizeMXTarget(fmt.Sprintf("%d %s", mx.Preference, mx.Mx))}
+			rrType = endpoint.RecordTypeMX
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
 			rrType = "NS"
