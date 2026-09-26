@@ -28,3 +28,9 @@ func informerFor[I informers.SharedInformer](t *testing.T, set *informers.Inform
 	require.True(t, ok, "no informer watching namespace %q", namespace)
 	return informer
 }
+
+// firstInformer returns the first informer of the collection, for sources built with a
+// single namespace.
+func firstInformer[I informers.SharedInformer](set *informers.Informers[I]) I {
+	return set.All()[0]
+}

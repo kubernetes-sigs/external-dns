@@ -770,7 +770,7 @@ func TestAmbassadorHostSource_InformerTransform(t *testing.T) {
 	testDynamicInformerTransformHelper(t,
 		ambHostGVR,
 		fakeDynamicClient,
-		source.(*ambassadorHostSource).ambassadorHostInformer,
+		informerFor(t, source.(*ambassadorHostSource).ambassadorHostInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
