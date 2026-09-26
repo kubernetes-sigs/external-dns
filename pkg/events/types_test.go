@@ -216,7 +216,6 @@ func TestWithEmitEvents(t *testing.T) {
 			},
 		},
 		{
-			// RecordDeleted is advertised by --events-emit, so it has to be accepted.
 			name:     "record deleted",
 			input:    []string{string(RecordDeleted)},
 			expected: sets.New(RecordDeleted),
