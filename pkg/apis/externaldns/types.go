@@ -443,13 +443,23 @@ func sortedAllowedSources() []string {
 // multiNamespaceSources watch every --namespace value.
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
+	"ambassador-host",
 	"connector",
+	"contour-httpproxy",
 	"crd",
 	"empty",
+	"f5-transportserver",
+	"f5-virtualserver",
 	"fake",
 	"gloo-proxy",
+	"ingress",
+	"kong-tcpingress",
 	"node",
+	"openshift-route",
 	"service",
+	"skipper-routegroup",
+	"traefik-proxy",
+	"unstructured",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.

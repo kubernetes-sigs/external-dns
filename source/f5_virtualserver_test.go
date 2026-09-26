@@ -718,7 +718,7 @@ func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
 	testDynamicInformerTransformHelper(t,
 		f5VirtualServerGVR,
 		fakeDynamicClient,
-		source.(*f5VirtualServerSource).virtualServerInformer,
+		informerFor(t, source.(*f5VirtualServerSource).virtualServerInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)

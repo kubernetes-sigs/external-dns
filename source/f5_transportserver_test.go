@@ -475,7 +475,7 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 	testDynamicInformerTransformHelper(t,
 		f5TransportServerGVR,
 		fakeDynamicClient,
-		source.(*f5TransportServerSource).transportServerInformer,
+		informerFor(t, source.(*f5TransportServerSource).transportServerInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)

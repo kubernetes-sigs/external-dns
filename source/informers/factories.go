@@ -53,6 +53,11 @@ func NewFactories[T Factory](namespaces []string, newFactory func(namespace stri
 	return &Factories[T]{namespaces: nss, factories: factories}
 }
 
+// Namespaces returns the watched namespaces, NamespaceAll when watching cluster-wide.
+func (f *Factories[T]) Namespaces() []string {
+	return f.namespaces
+}
+
 // All returns every factory, ordered by Namespaces.
 func (f *Factories[T]) All() []T {
 	all := make([]T, 0, len(f.namespaces))
