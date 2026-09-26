@@ -49,7 +49,7 @@ spec:
   endpoints:
     - dnsName: application.example.com
       recordType: CNAME
-      targets:
+      targets: []
       recordTTL: 300
 ```
 
