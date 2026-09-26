@@ -7,3 +7,20 @@ dependency:
   files:
     - go.mod
     - go.tool.mod
+  licenses:
+    # license-eye can't detect these because the module ships its license as
+    # LICENSE.md (or lowercase license.md) instead of a bare LICENSE file.
+    - name: github.com/google/s2a-go
+      license: Apache-2.0
+    - name: github.com/fatih/color
+      license: MIT
+    - name: github.com/josharian/intern
+      license: MIT
+    - name: github.com/magiconair/properties
+      license: BSD-2-Clause
+    - name: github.com/microcosm-cc/bluemonday
+      license: BSD-3-Clause
+    - name: github.com/mitchellh/go-wordwrap
+      license: MIT
+    - name: github.com/segmentio/ksuid
+      license: MIT
