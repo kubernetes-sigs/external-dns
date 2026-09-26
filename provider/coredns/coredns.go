@@ -537,6 +537,12 @@ func (p coreDNSProvider) updateTXTRecords(dnsName string, group []*endpoint.Endp
 
 func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
+		if p.needsStoredKeyLookup(ep) {
+			if err := p.deleteTXTServices(ctx, ep); err != nil {
+				return err
+			}
+			continue
+		}
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
@@ -550,8 +556,37 @@ func (p coreDNSProvider) deleteEndpoints(ctx context.Context, endpoints []*endpo
 	return nil
 }
 
+// Registry-built TXT endpoints lose the prefix label Records() attaches, so their
+// etcd key must be read back, not derived. Reverse zones store no prefix.
+func (p coreDNSProvider) needsStoredKeyLookup(ep *endpoint.Endpoint) bool {
+	return ep.RecordType == endpoint.RecordTypeTXT &&
+		ep.Labels[randomPrefixLabel] == "" &&
+		!isPTRDomain(ep.DNSName)
+}
+
+// An entry carrying a host is skipped: its text shares a key with an A or CNAME
+// record and goes away with it.
+func (p coreDNSProvider) deleteTXTServices(ctx context.Context, ep *endpoint.Endpoint) error {
+	services, err := p.client.GetServices(ctx, p.etcdKeyFor(ep.DNSName)+"/")
+	if err != nil {
+		return err
+	}
+	for _, service := range services {
+		if service.Host != "" || !slices.Contains(ep.Targets, service.Text) {
+			continue
+		}
+		if err := p.deleteKey(ctx, service.Key, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (p coreDNSProvider) deleteByDnsName(ctx context.Context, dnsName string, exact bool) error {
-	key := p.etcdKeyFor(dnsName)
+	return p.deleteKey(ctx, p.etcdKeyFor(dnsName), exact)
+}
+
+func (p coreDNSProvider) deleteKey(ctx context.Context, key string, exact bool) error {
 	log.Infof("Delete key %s (exact=%v)", key, exact)
 	if p.dryRun {
 		return nil

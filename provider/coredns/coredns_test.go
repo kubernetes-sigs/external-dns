@@ -1793,3 +1793,73 @@ func TestPTRRecords(t *testing.T) {
 		assert.Equal(t, "txt-value", services[0].Text)
 	})
 }
+
+// The registry rebuilds ownership endpoints without the "prefix" label, so a key
+// derived from the bare name never existed and left the entry in etcd.
+func TestDeleteRegistryTXTRecord(t *testing.T) {
+	const ownership = `"heritage=external-dns,external-dns/owner=cluster-a"`
+
+	client := &fakeETCDClient{services: map[string]Service{}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("app.example.com", endpoint.RecordTypeA, "198.51.100.10"),
+			endpoint.NewEndpoint("a-app.example.com", endpoint.RecordTypeTXT, ownership),
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, client.services, 2)
+
+	// The A record keeps its labels; the registry regenerates the TXT without any.
+	records, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+
+	var aRecord *endpoint.Endpoint
+	for _, ep := range records {
+		if ep.RecordType == endpoint.RecordTypeA {
+			aRecord = ep
+		}
+	}
+	require.NotNil(t, aRecord)
+
+	err = coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			aRecord,
+			endpoint.NewEndpoint("a-app.example.com", endpoint.RecordTypeTXT, ownership),
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Empty(t, client.services, "ownership TXT must not be left behind in etcd")
+}
+
+// Looking the key up must not widen the delete to entries under the same name.
+func TestDeleteRegistryTXTRecordKeepsOtherEntries(t *testing.T) {
+	const ownerA = `"heritage=external-dns,external-dns/owner=cluster-a"`
+	const ownerB = `"heritage=external-dns,external-dns/owner=cluster-b"`
+
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example/a-app/aaaaaaaa": {Text: ownerA, TargetStrip: 1},
+		"/skydns/com/example/a-app/bbbbbbbb": {Text: ownerB, TargetStrip: 1},
+		"/skydns/com/example/a-app/cccccccc": {Host: "198.51.100.10", Text: ownerA, TargetStrip: 1},
+	}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("a-app.example.com", endpoint.RecordTypeTXT, ownerA),
+		},
+	})
+	require.NoError(t, err)
+
+	assert.NotContains(t, client.services, "/skydns/com/example/a-app/aaaaaaaa")
+	assert.Contains(t, client.services, "/skydns/com/example/a-app/bbbbbbbb", "another owner's entry must survive")
+	assert.Contains(t, client.services, "/skydns/com/example/a-app/cccccccc", "text sharing a key with an address record goes away with that record")
+}
