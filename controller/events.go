@@ -59,7 +59,9 @@ var resourceKinds = map[string]string{
 // emitChangeEvent emits a Kubernetes event for each DNS record change.
 // Deletes use RecordDeleted on success and RecordError on failure.
 func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reason, crdKind string) {
-	if e == nil {
+	// events.Discard is the default (--events-emit selected nothing). Building an
+	// Event per change formats a message that is then thrown away.
+	if e == nil || e == events.Discard {
 		return
 	}
 	for _, ep := range ch.Create {
