@@ -71,7 +71,7 @@ func NewF5TransportServerSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, informers.SingleNamespace(cfg.Namespaces), nil)
 	transportServerInformer := informerFactory.ForResource(f5TransportServerGVR)
 
 	informers.MustSetTransform(transportServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](

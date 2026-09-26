@@ -88,7 +88,7 @@ func NewIngressSource(
 	}
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(informers.SingleNamespace(cfg.Namespaces)))
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](

@@ -69,9 +69,10 @@ func (w *routeGroupWrapper) Metadata() *metav1.ObjectMeta {
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
+	namespace := informers.SingleNamespace(cfg.Namespaces)
 	// The reflector retries a failing List until WaitForCacheSync gives up a minute later,
 	// so probe up front: a missing CRD should fail startup at once, and say so.
-	if _, err := client.ZalandoV1().RouteGroups(cfg.Namespace).List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
+	if _, err := client.ZalandoV1().RouteGroups(namespace).List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, fmt.Errorf("--source=skipper-routegroup requires the RouteGroup CRD (routegroups.zalando.org) to be installed: %w", err)
 		}
@@ -80,7 +81,7 @@ func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg 
 
 	informerFactory := rginformers.NewSharedInformerFactoryWithOptions(
 		client, 0,
-		rginformers.WithNamespace(cfg.Namespace),
+		rginformers.WithNamespace(namespace),
 	)
 	rgInformer := informerFactory.Zalando().V1().RouteGroups()
 

@@ -70,7 +70,7 @@ func NewF5VirtualServerSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, informers.SingleNamespace(cfg.Namespaces), nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
 
 	informers.MustSetTransform(virtualServerInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
