@@ -24,11 +24,12 @@ const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
 	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
 
+	// TTLMinimum and TTLMaximum bound the value accepted by the ttl annotation.
+	TTLMinimum = 1
+	TTLMaximum = math.MaxInt32
+
 	// LegacyAnnotationPrefix is the annotation prefix used by releases before v0.22.0.
 	LegacyAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
-
-	ttlMinimum = 1
-	ttlMaximum = math.MaxInt32
 )
 
 var (
