@@ -4,7 +4,7 @@ title: "Multiple Providers and Zones from a Single Deployment via CRDs"
 version: v1alpha1
 authors: "@mloiseleur"
 creation-date: 2026-06-21
-status: provisional
+status: rejected
 ---
 ```
 
@@ -13,6 +13,7 @@ status: provisional
 ## Table of Contents
 
 <!-- toc -->
+- [Decision](#decision)
 - [Summary](#summary)
 - [Motivation](#motivation)
   - [Goals](#goals)
@@ -30,9 +31,23 @@ status: provisional
     - [Status and Observability](#status-and-observability)
     - [Edge Cases](#edge-cases)
   - [Drawbacks](#drawbacks)
-- [Implementation Plan](#implementation-plan)
 - [Alternatives](#alternatives)
 <!-- /toc -->
+
+## Decision
+
+**Rejected** after review on [#6512](https://github.com/kubernetes-sigs/external-dns/pull/6512):
+
+- One deployment per configuration gets isolation, blast radius, credential separation and independent
+  upgrades from Kubernetes. One process would have to re-implement each in code, and turn ExternalDNS
+  into an operator.
+- Managing N configurations is a config-management problem: Helm / ArgoCD / generators, or a separate
+  operator such as [openshift/external-dns-operator](https://github.com/openshift/external-dns-operator).
+- Split-horizon already works with `--annotation-prefix` ([docs](../advanced/split-horizon.md)).
+- The remaining gains (resource savings, cross-provider conflict detection) do not justify a breaking
+  major version.
+
+The design below is kept for reference.
 
 ## Summary
 
@@ -63,7 +78,7 @@ features in the project. The recurring pain across the thread:
 - **Multiple accounts / subscriptions** — separate AWS accounts or Azure subscriptions, each needing
   its own role/credentials, force one deployment each.
 - **Split-horizon DNS** — the same records must be published to an internal zone (e.g. `rfc2136` /
-  Active Directory) and a public zone (e.g. Route53).
+  Active Directory) and a public zone (e.g. Route53). Already possible with `--annotation-prefix`.
 - **Multi-tenancy** — in shared clusters, each tenant runs its own deployment; there is no clean way
   to say "only namespace X may publish to zone Y".
 - **Per-zone credentials** — operators want to revoke a single zone's key without touching others.
@@ -220,21 +235,10 @@ flags, credential env, …) are removed; only genuinely global flags remain (`--
 
 #### Migration
 
-Each removed flag maps near-1:1 to a CRD field; an existing deployment becomes one `ClusterDNSProvider`
-plus the unchanged global flags. Breaking, gated on the next major version. An external
-`scripts/migrate-flags-to-crd.py` helper renders the CRD (+ Secret stub) from an existing flag set so
-migration is `run script → kubectl apply`.
-
-| Removed flag | CRD field |
-|---|---|
-| `--provider=aws` | `spec.type: aws` |
-| `--domain-filter=example.com` | `spec.domainFilter.include: [example.com]` |
-| `--exclude-domains=internal.example.com` | `spec.domainFilter.exclude: [internal.example.com]` |
-| `--registry=txt` | `spec.registry.type: txt` |
-| `--txt-owner-id=me` | `spec.registry.txtOwnerId: me` |
-| `--txt-prefix=edns-` | `spec.registry.txtPrefix: edns-` |
-| provider-specific flags (`--aws-zone-type`, …) | `spec.config` map entries |
-| credential env (`AWS_*`, API tokens) | `spec.credentialsRef` → Secret |
+Each removed flag maps near-1:1 to a CRD field (`--provider` → `spec.type`, `--domain-filter` →
+`spec.domainFilter.include`, `--txt-owner-id` → `spec.registry.txtOwnerId`, provider-specific flags →
+`spec.config`, credential env → `spec.credentialsRef`). An existing deployment becomes one
+`ClusterDNSProvider` plus the unchanged global flags. Breaking, gated on the next major version.
 
 ### Behavior
 
@@ -244,9 +248,9 @@ A **pipeline manager** watches both CRD kinds:
 
 - **Add** — synthesize a per-provider `externaldns.Config` plus a credential source from the spec
   (see [Credentials](#credentials)), build a `DomainFilter`, then call the **existing**
-  [`providerfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go#L110)
+  [`providerfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/provider/factory/provider.go)
   and
-  [`registryfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/controller/execute.go#L159),
+  [`registryfactory.Select`](https://github.com/kubernetes-sigs/external-dns/blob/master/registry/factory/registry.go),
   and construct a `Controller` bound to this pipeline's routed `Source` view (see
   [Routing](#routing-endpoints-to-a-provider)). Start its reconcile loop.
 - **Update** (`spec` changed, `observedGeneration < generation`) — rebuild the pipeline; swap atomically.
@@ -325,9 +329,7 @@ boundary** — never a mutated shared `os.Environ()`:
 - Ambient identity (IRSA, Workload Identity) still works when `credentialsRef` is omitted and the
   role/identity is set via `spec.config`.
 
-This is the main factory-layer change; per-provider logic is reused unchanged. **Phase 2 acceptance**:
-two same-type pipelines with distinct credentials run concurrently without interference, no global-env
-mutation.
+This is the main factory-layer change; per-provider logic is reused unchanged.
 
 #### Ownership Isolation
 
@@ -379,32 +381,7 @@ no winner. Rules:
   passthrough map, so misconfiguration surfaces at pipeline init, not at `kubectl apply` (mitigated by
   status conditions and the validating webhook).
 - **Breaking change.** Every deployment — including the common single-provider case — must install the
-  CRDs and apply one `ClusterDNSProvider` before publishing. Migration is mechanical but not zero-effort;
-  an external `scripts/migrate-flags-to-crd.py` helper renders the CRD (+ Secret stub) from an existing
-  flag set (cf. `scripts/aws-cleanup-legacy-txt-records.py`).
-
-## Implementation Plan
-
-Phased. Phases 1–5 land additively behind an alpha CRD path so the work is reviewable incrementally;
-phase 6 performs the breaking flag removal at the major-version boundary:
-
-1. **CRD types + scaffolding** — `DNSProvider` / `ClusterDNSProvider` types in `apis/v1alpha1`, `make crd`,
-   RBAC, deepcopy. No behavior yet.
-2. **Per-pipeline credential/config boundary** — add a per-pipeline credential source at the provider
-   factory boundary; synthesize the source from `spec`. *Acceptance*: two same-type pipelines with
-   distinct credentials run concurrently; no global-env mutation. Unit-tested without K8s.
-3. **Pipeline manager** — watch CRDs, build/teardown pipelines via existing factories, manager-owned source
-   store, and the shared routing pass (snapshot rebuilt on source/CRD events). Domain-match routing
-   only. *Acceptance*: a record matched by two providers' `domainFilter`s is published by neither and
-   raises a `Warning` + metric; pipelines on different tick schedules read the same snapshot.
-4. **Explicit reference annotations + split-horizon** — pre-merge two-tier routing, list references.
-   *Acceptance*: routing reads provenance from `RefObjects` before `MergeEndpoints`; conflicting refs on a
-   merged name are skipped + warned; namespaced references enforced against the referencing object.
-5. **Status, metrics labels, validating webhook** — conditions, duplicate-`txtOwnerId` rejection,
-   overlap warnings.
-6. **Flag removal + migration** — remove provider-selection flags; ship the flag→field migration guide
-   and an external `scripts/migrate-flags-to-crd.py` helper that renders a `ClusterDNSProvider` (+ Secret
-   stub) from existing args. Breaking; major version.
+  CRDs and apply one `ClusterDNSProvider` before publishing.
 
 ## Alternatives
 
@@ -423,7 +400,7 @@ phase 6 performs the breaking flag removal at the major-version boundary:
 - The exact overhead #1961 is about — N× RBAC, metrics, dashboards, upgrades
 - No clean multi-tenant story (no namespace-scoped authorization)
 
-**Recommendation**: ❌ Not recommended — this is the problem being solved.
+**Recommendation**: ✅ Retained — see [Decision](#decision).
 
 ### Alternative 2: Fully-typed per-provider CRD schema
 
@@ -498,4 +475,4 @@ model the issue references. Cluster scope alone cannot express per-namespace own
 - The dual path becomes the long-term shape, not a transition
 
 **Recommendation**: ❌ Not recommended — the mechanical near-1:1 migration is outweighed by collapsing to
-a single configuration mechanism. Retained as the fallback if the breaking change proves too disruptive.
+a single configuration mechanism.
