@@ -1,21 +1,12 @@
 name: Validate CRD Generation
 
-# This workflow validates that generated CRD files are up-to-date when tool
-# dependencies change. It ensures that if go.tool.mod or go.tool.sum are updated,
-# the corresponding generated files (CRDs and deepcopy code) are also regenerated
-# and committed in the same PR.
-#
-# Why this is needed:
-# - controller-gen (from go.tool.mod) generates CRD YAML and deepcopy Go code
-# - Different versions of controller-gen may produce different output
-# - When tool versions change, generated code must be regenerated
-# - This prevents CI failures and runtime issues from stale generated code
+# A controller-gen bump changes generated output, so it must land with the
+# regenerated files in the same PR.
 
 on:
   pull_request:
     paths:
-      - 'go.tool.mod'
-      - 'go.tool.sum'
+      - 'mise.toml'
       - 'scripts/generate-crd.sh'
       - '**/dnsendpoints.externaldns.k8s.io.yaml'
 
@@ -29,10 +20,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v6.2.0
+      - name: Set up dev environment
+        uses: ./.github/actions/dev-env
         with:
-          go-version-file: 'go.mod'
+          cache-scope: validate-crd
 
       - name: Regenerate CRDs
         run: ./scripts/generate-crd.sh
@@ -42,13 +33,13 @@ jobs:
         run: |
           # Check if there are any changes to generated files
           if ! git diff --quiet; then
-            echo "::error::Generated CRD files are out of sync with go.tool.mod"
+            echo "::error::Generated CRD files are out of sync with mise.toml"
             echo ""
             echo "The following files have uncommitted changes after running 'make crd':"
             git diff .
             echo ""
             echo "This usually means:"
-            echo "1. go.tool.mod or go.tool.sum was updated (new controller-gen version)"
+            echo "1. mise.toml was updated (new controller-gen version)"
             echo "2. The generated CRD files were not regenerated"
             echo ""
             echo "To fix this:"

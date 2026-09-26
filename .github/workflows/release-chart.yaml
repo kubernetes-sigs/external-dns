@@ -29,16 +29,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install YQ
-        uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
+      - name: Set up dev environment
+        uses: ./.github/actions/dev-env
         with:
-          github_token: ${{ github.token }}
-          owner: mikefarah
-          repository: yq
-          extract: false
-          filename_format: "{name}_{os}_{arch}"
-          check_command: yq --version
-          version: latest
+          cache-scope: release-chart
 
       - name: Install MDQ
         uses: action-stars/install-tool-from-github-release@1fa61c3bea52eca3bcdb1f5c961a3b113fe7fa54 # v0.2.6
@@ -143,11 +137,6 @@ jobs:
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Install Helm
-        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
-        with:
-          version: latest
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
