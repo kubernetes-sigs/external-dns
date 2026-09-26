@@ -24,8 +24,10 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -63,6 +65,8 @@ type Controller struct {
 	MinEventSyncInterval time.Duration
 	// Old txt-owner value we need to migrate from
 	TXTOwnerOld string
+	// CrdClient syncs DNSEndpoint status after a reconcile; nil unless the crd source is enabled.
+	CrdClient client.Client
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -118,6 +122,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	plan = plan.Calculate()
 
 	if plan.Changes.HasChanges() {
+		defer crd.SyncStatus(ctx, c.CrdClient, plan.Changes)
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()

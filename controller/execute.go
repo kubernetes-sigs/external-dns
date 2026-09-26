@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crlog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -190,6 +191,11 @@ func buildController(
 		eventEmitter = eventCtrl
 	}
 
+	var crdClient client.Client
+	if cc := sCfg.CRDClients(); cc != nil {
+		crdClient = cc.Writer
+	}
+
 	return &Controller{
 		Source:               src,
 		Registry:             reg,
@@ -201,6 +207,7 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
+		CrdClient:            crdClient,
 	}, nil
 }
 

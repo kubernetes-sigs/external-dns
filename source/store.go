@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -113,6 +114,17 @@ type Config struct {
 	// It may be overridden at construction time via WithClientGenerator.
 	clientGen     ClientGenerator
 	clientGenOnce sync.Once
+
+	// crdClients is populated by buildCRDSource when the crd source is built, so
+	// callers outside the source package can reuse its client instead of building
+	// a second, independent one.
+	crdClients *crd.CRDClients
+}
+
+// CRDClients returns the reader/writer built for the crd source, or nil if the
+// crd source was not built.
+func (cfg *Config) CRDClients() *crd.CRDClients {
+	return cfg.crdClients
 }
 
 // OverrideConfigOption configures a Config.
@@ -123,6 +135,13 @@ type OverrideConfigOption func(*Config)
 func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 	return func(cfg *Config) {
 		cfg.clientGen = gen
+	}
+}
+
+// WithCRDClients overrides the crd source's clients. Intended for testing.
+func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
+	return func(cfg *Config) {
+		cfg.crdClients = cc
 	}
 }
 
@@ -636,7 +655,20 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 	if err != nil {
 		return nil, err
 	}
-	return NewCRDSource(ctx, restConfig, cfg)
+	src, err := NewCRDSource(ctx, restConfig, cfg)
+	if err != nil {
+		return nil, err
+	}
+	stashCRDClients(cfg, src)
+	return src, nil
+}
+
+// stashCRDClients records src's client on cfg for reuse if src is a *crdSource,
+// so it can be exercised without needing a working REST config in tests.
+func stashCRDClients(cfg *Config, src Source) {
+	if cs, ok := src.(*crdSource); ok {
+		cfg.crdClients = &crd.CRDClients{Reader: cs.crReader, Writer: cs.crWriter}
+	}
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.
