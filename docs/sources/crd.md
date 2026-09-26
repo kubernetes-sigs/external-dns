@@ -160,7 +160,8 @@ writes, where a rejected write aborts the sync instead of teaching anyone anythi
 rule should not reject what external-dns can legitimately build.
 
 The rest is checked when external-dns reads the object, before anything is planned. A
-rejected endpoint is dropped from the plan and reported in the external-dns log:
+rejected endpoint gets an `Invalid` [status condition](#status) and, optionally, a
+`RecordInvalid` event:
 
 * `A`/`AAAA` targets must be addresses of the matching family, unless the endpoint sets
   the `alias` provider-specific property.
@@ -169,8 +170,42 @@ rejected endpoint is dropped from the plan and reported in the external-dns log:
 * `PTR` records need at least one non-empty target.
 * Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
   where both forms are valid (RFC 1035 §5.1).
+* `targets` may be empty only when `--default-targets` is configured.
 
-Leave `targets` empty only when `--default-targets` is configured.
+An `MX` target without a preference, or empty `targets` without `--default-targets`,
+used to be dropped later with only a log line. They now show up as `Accepted=False`;
+the provider sees no difference.
+
+### Status
+
+external-dns reports on each `DNSEndpoint` whether it understood the spec:
+
+```console
+$ kubectl get dnsendpoint
+NAME               ACCEPTED   AGE
+examplednsrecord   True       2m
+```
+
+| Condition  | Reason     | Meaning                                                                     |
+|------------|------------|-----------------------------------------------------------------------------|
+| `Accepted` | `Accepted` | external-dns understood every endpoint in `spec`.                           |
+| `Accepted` | `Invalid`  | At least one endpoint was refused; the message names the index and the fix. |
+
+`Accepted` is written before any provider call and refreshed on every sync, but only
+stored when it changes. `status.observedGeneration` tracks the last `spec` processed.
+
+Rejected endpoints can additionally raise a Kubernetes `Warning` event by starting
+external-dns with `--events-emit=RecordInvalid`. The event is emitted when the verdict
+first appears and again whenever it changes, not on every sync:
+
+```console
+$ kubectl describe dnsendpoint examplednsrecord
+...
+Events:
+  Type     Reason         Age   From          Message
+  ----     ------         ----  ----          -------
+  Warning  RecordInvalid  10s   external-dns  spec.endpoints[1] (A bad.example.com): target "1.2.3.4." must not end with a dot for a A record — use "1.2.3.4"
+```
 
 ### Using CRD source to manage DNS records in different DNS providers
 
@@ -277,4 +312,12 @@ If you use RBAC, extend the `external-dns` ClusterRole with:
 - apiGroups: ["externaldns.k8s.io"]
   resources: ["dnsendpoints/status"]
   verbs: ["*"]
+```
+
+To emit events on `DNSEndpoint` objects (`--events-emit=RecordInvalid`), also grant:
+
+```yaml
+- apiGroups: ["events.k8s.io"]
+  resources: ["events"]
+  verbs: ["create"]
 ```
