@@ -21,10 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # https://github.com/apache/skywalking-eyes
-      - name: Check dependency licenses
-        uses: apache/skywalking-eyes/dependency@a196742f472feaffafea537ce5a2a4c3c53a8de4 # v0.9.0
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          config: .licenserc.yaml
-          mode: check
-          flags: "-w"
+          go-version-file: go.mod
+
+      # https://github.com/apache/skywalking-eyes
+      - name: Install license-eye
+        run: go install github.com/apache/skywalking-eyes/cmd/license-eye@v0.9.0
+
+      - name: Check dependency licenses
+        run: license-eye -c .licenserc.yaml dependency check -w
