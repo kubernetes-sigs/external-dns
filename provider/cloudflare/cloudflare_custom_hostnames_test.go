@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -805,5 +806,171 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			},
 			"Custom hostname should be updated in mock client",
 		)
+	})
+}
+
+// hasCustomHostname reports whether ep carries the given custom hostname
+// value in its CloudflareCustomHostnameKey ProviderSpecific property.
+func hasCustomHostname(ep *endpoint.Endpoint, ch string) bool {
+	return slices.Contains(getEndpointCustomHostnames(ep), ch)
+}
+
+// countCustomHostnameCarriers returns the number of endpoints in the slice
+// that carry the given custom hostname value.
+func countCustomHostnameCarriers(eps []*endpoint.Endpoint, ch string) int {
+	n := 0
+	for _, ep := range eps {
+		if hasCustomHostname(ep, ch) {
+			n++
+		}
+	}
+	return n
+}
+
+func TestDeduplicateCustomHostnames(t *testing.T) {
+	t.Parallel()
+
+	t.Run("no-op when every endpoint has a distinct custom hostname", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			{DNSName: "a.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "ch-a.example.com"},
+			}},
+			{DNSName: "b.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "ch-b.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+		assert.Equal(t, 1, countCustomHostnameCarriers(eps, "ch-a.example.com"))
+		assert.Equal(t, 1, countCustomHostnameCarriers(eps, "ch-b.example.com"))
+	})
+
+	t.Run("keeps custom hostname only on the aggregate (shortest DNSName)", func(t *testing.T) {
+		t.Parallel()
+		// Reproduces #6698: headless Service fan-out produces one aggregate
+		// record and one per-pod record, all carrying the same custom hostname.
+		eps := []*endpoint.Endpoint{
+			{DNSName: "pod-0.app.internal.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "custom.example.com"},
+			}},
+			{DNSName: "app.internal.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "custom.example.com"},
+			}},
+			{DNSName: "pod-1.app.internal.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "custom.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+
+		// Exactly one endpoint — the aggregate — should keep the custom hostname.
+		assert.Equal(t, 1, countCustomHostnameCarriers(eps, "custom.example.com"))
+		for _, ep := range eps {
+			if ep.DNSName == "app.internal.example.com" {
+				assert.True(t, hasCustomHostname(ep, "custom.example.com"),
+					"aggregate record must keep the custom hostname")
+			} else {
+				assert.False(t, hasCustomHostname(ep, "custom.example.com"),
+					"per-pod record %s must not carry the custom hostname", ep.DNSName)
+			}
+		}
+	})
+
+	t.Run("ties broken by lexicographic DNSName", func(t *testing.T) {
+		t.Parallel()
+		// Same-length DNSNames — winner must be lexicographically first.
+		eps := []*endpoint.Endpoint{
+			{DNSName: "b.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "shared.example.com"},
+			}},
+			{DNSName: "a.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "shared.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+		assert.Equal(t, 1, countCustomHostnameCarriers(eps, "shared.example.com"))
+		for _, ep := range eps {
+			if ep.DNSName == "a.example.com" {
+				assert.True(t, hasCustomHostname(ep, "shared.example.com"))
+			} else {
+				assert.False(t, hasCustomHostname(ep, "shared.example.com"))
+			}
+		}
+	})
+
+	t.Run("handles multi-value annotation correctly", func(t *testing.T) {
+		t.Parallel()
+		// Two endpoints with overlapping multi-value custom hostname annotations.
+		// "shared.example.com" appears on both and must end up on exactly one.
+		eps := []*endpoint.Endpoint{
+			{DNSName: "a.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "shared.example.com,only-on-a.example.com"},
+			}},
+			{DNSName: "b.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "shared.example.com,only-on-b.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+
+		// shared.example.com: only on the winner (a.example.com, shorter-and-then-lex-first)
+		assert.Equal(t, 1, countCustomHostnameCarriers(eps, "shared.example.com"))
+		assert.True(t, hasCustomHostname(eps[0], "shared.example.com"))
+		assert.False(t, hasCustomHostname(eps[1], "shared.example.com"))
+
+		// Non-overlapping values stay where they were.
+		assert.True(t, hasCustomHostname(eps[0], "only-on-a.example.com"))
+		assert.True(t, hasCustomHostname(eps[1], "only-on-b.example.com"))
+	})
+
+	t.Run("cross-resource conflict: Service + Ingress share the same custom hostname", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			{DNSName: "svc.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "alias.example.com"},
+			}},
+			{DNSName: "ing.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "alias.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+		assert.Equal(t, 1, countCustomHostnameCarriers(eps, "alias.example.com"))
+	})
+
+	t.Run("strips entire property when it was the last value", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			{DNSName: "a.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "shared.example.com"},
+			}},
+			{DNSName: "b.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "shared.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+		// The loser must have the property fully deleted, not left with empty value.
+		for _, ep := range eps {
+			if ep.DNSName == "b.example.com" {
+				_, found := ep.GetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
+				assert.False(t, found, "property must be deleted, not left empty")
+			}
+		}
+	})
+
+	t.Run("empty input is a no-op", func(t *testing.T) {
+		t.Parallel()
+		deduplicateCustomHostnames(nil)
+		deduplicateCustomHostnames([]*endpoint.Endpoint{})
+	})
+
+	t.Run("endpoints without custom hostname are untouched", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			{DNSName: "a.example.com"},
+			{DNSName: "b.example.com", ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: "ch.example.com"},
+			}},
+		}
+		deduplicateCustomHostnames(eps)
+		assert.True(t, hasCustomHostname(eps[1], "ch.example.com"))
+		assert.Empty(t, eps[0].ProviderSpecific)
 	})
 }

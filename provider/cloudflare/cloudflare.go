@@ -655,6 +655,11 @@ func parseTagsAnnotation(tagString string) []string {
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Deduplicate custom hostnames: each value must appear on at most one endpoint.
+	if p.CustomHostnamesConfig.Enabled {
+		deduplicateCustomHostnames(endpoints)
+	}
+
 	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
