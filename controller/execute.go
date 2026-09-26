@@ -203,6 +203,7 @@ func buildController(
 		EventEmitter:         eventEmitter,
 		CrdClients:           sCfg.CRDClients(),
 		CRDSourceKind:        cfg.CRDSourceKind,
+		StatusReporters:      sCfg.StatusReporters(),
 	}, nil
 }
 

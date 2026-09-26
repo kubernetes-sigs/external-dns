@@ -111,6 +111,9 @@ type Config struct {
 
 	sources []string
 
+	// statusReporters is filled by ByNames and read by the controller.
+	statusReporters []StatusReporter
+
 	// clientGen is lazily initialized on first access for efficiency.
 	// It may be overridden at construction time via WithClientGenerator.
 	clientGen     ClientGenerator
@@ -403,12 +406,16 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
 	sources := make([]Source, 0, len(cfg.sources))
+	cfg.statusReporters = nil
 	for _, name := range cfg.sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err
 		}
 		sources = append(sources, source)
+		if reporter, ok := source.(StatusReporter); ok {
+			cfg.statusReporters = append(cfg.statusReporters, reporter)
+		}
 	}
 
 	return sources, nil
