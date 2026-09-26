@@ -51,6 +51,9 @@ type DNSEndpointList struct {
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
 type DNSEndpointSpec struct {
+	// Endpoints is the list of DNS records this resource declares.
+	// +optional
+	// +kubebuilder:validation:MaxItems=1000
 	Endpoints []*endpoint.Endpoint `json:"endpoints,omitempty"`
 }
 
