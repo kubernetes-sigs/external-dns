@@ -142,18 +142,11 @@ func NewIstioVirtualServiceSource(
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	indexer := sc.vServiceInformer.Informer().GetIndexer()
-	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
+	objs := informers.ListIndexed[*networkingv1.VirtualService](indexer)
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
-	log.Debugf("Found %d virtualservice in namespace %s", len(indexKeys), sc.namespace)
-
-	for _, key := range indexKeys {
-		vService, err := informers.GetByKey[*networkingv1.VirtualService](indexer, key)
-		if err != nil || vService == nil {
-			continue
-		}
-
+	for _, vService := range objs {
 		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, vService)
 		if err != nil {
 			return nil, err
