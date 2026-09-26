@@ -667,7 +667,7 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 // so it can be exercised without needing a working REST config in tests.
 func stashCRDClients(cfg *Config, src Source) {
 	if cs, ok := src.(*crdSource); ok {
-		cfg.crdClients = &crd.CRDClients{Reader: cs.crReader, Writer: cs.crWriter}
+		cfg.crdClients = crd.NewCRDClients(cs.crReader, cs.crWriter)
 	}
 }
 

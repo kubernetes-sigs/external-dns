@@ -24,7 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -42,8 +41,8 @@ type refCounts struct {
 //
 // changes.Delete carries no RefObjects (it comes from registry state, not source
 // state — see plan/plan.go's Delete construction) and is not attributed here.
-func SyncStatus(ctx context.Context, cl client.Client, changes *plan.Changes) {
-	if cl == nil || changes == nil {
+func SyncStatus(ctx context.Context, cl *CRDClients, changes *plan.Changes) {
+	if cl == nil || cl.reader == nil || changes == nil {
 		return
 	}
 	if len(changes.Create) == 0 && len(changes.UpdateNew) == 0 {
@@ -56,7 +55,7 @@ func SyncStatus(ctx context.Context, cl client.Client, changes *plan.Changes) {
 
 	for key, c := range counts {
 		var dnsEndpoint apiv1alpha1.DNSEndpoint
-		if err := cl.Get(ctx, key, &dnsEndpoint); err != nil {
+		if err := cl.reader.Get(ctx, key, &dnsEndpoint); err != nil {
 			if !apierrors.IsNotFound(err) {
 				log.Warnf("Could not get DNSEndpoint %s: %v", key, err)
 			}

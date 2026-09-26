@@ -18,10 +18,25 @@ package crd
 
 import "sigs.k8s.io/controller-runtime/pkg/client"
 
-// CRDClients bundles the reader (cache-backed, for bulk List) and writer (direct,
-// for targeted Get/status writes) built for the crd source, for reuse by other
-// components instead of building a second, independent client.
+// CRDClients bundles the clients built for the crd source.
 type CRDClients struct {
-	Reader client.Reader
-	Writer client.Client
+	// reader serves reads from the informer cache.
+	reader client.Reader
+	// writer bypasses the cache; every request goes straight to the API server.
+	writer client.Client
+}
+
+// NewCRDClients bundles reader and writer into a CRDClients.
+func NewCRDClients(reader client.Reader, writer client.Client) *CRDClients {
+	return &CRDClients{reader: reader, writer: writer}
+}
+
+// Reader returns the cache-backed client.
+func (c *CRDClients) Reader() client.Reader {
+	return c.reader
+}
+
+// Writer returns the client that bypasses the cache.
+func (c *CRDClients) Writer() client.Client {
+	return c.writer
 }

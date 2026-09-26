@@ -98,6 +98,18 @@ func TestSyncStatus(t *testing.T) {
 			wantLogAbsent: []string{"DNSEndpoint"},
 		},
 		{
+			title:  "endpoint with mixed refs: non-DNSEndpoint ref ignored, DNSEndpoint ref tallied",
+			seeded: []client.Object{seed.DeepCopy()},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
+						WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "example", "", "service")).
+						WithRefObject(dnsEndpointRef("default", "example")),
+				},
+			},
+			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)"},
+		},
+		{
 			title: "non-NotFound Get error logs a warning",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{
@@ -131,6 +143,20 @@ func TestSyncStatus(t *testing.T) {
 			},
 		},
 		{
+			title:  "one missing CR does not affect a sibling CR's lookup",
+			seeded: []client.Object{seed.DeepCopy()},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
+						WithRefObject(dnsEndpointRef("default", "example")),
+					endpoint.NewEndpoint("c.example.com", endpoint.RecordTypeA, "1.2.3.6").
+						WithRefObject(dnsEndpointRef("default", "missing")),
+				},
+			},
+			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)"},
+			wantLogAbsent:   []string{"DNSEndpoint default/missing"},
+		},
+		{
 			title:  "counts accumulate beyond one",
 			seeded: []client.Object{seed.DeepCopy()},
 			changes: &plan.Changes{
@@ -142,6 +168,17 @@ func TestSyncStatus(t *testing.T) {
 				},
 			},
 			wantLogContains: []string{"DNSEndpoint default/example: 2 created, 0 updated (generation=2, observedGeneration=1)"},
+		},
+		{
+			title:  "update-only changes are tallied (Create empty)",
+			seeded: []client.Object{seed.DeepCopy()},
+			changes: &plan.Changes{
+				UpdateNew: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
+						WithRefObject(dnsEndpointRef("default", "example")),
+				},
+			},
+			wantLogContains: []string{"DNSEndpoint default/example: 0 created, 1 updated (generation=2, observedGeneration=1)"},
 		},
 		{
 			title:  "one endpoint referencing two different CRs attributes both",
@@ -157,6 +194,21 @@ func TestSyncStatus(t *testing.T) {
 				"DNSEndpoint ns-a/a: 1 created, 0 updated (generation=1, observedGeneration=1)",
 				"DNSEndpoint ns-b/b: 1 created, 0 updated (generation=3, observedGeneration=2)",
 			},
+		},
+		{
+			title:  "create and delete for the same CR: delete does not affect its count",
+			seeded: []client.Object{seed.DeepCopy()},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
+						WithRefObject(dnsEndpointRef("default", "example")),
+				},
+				Delete: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "1.2.3.9").
+						WithRefObject(dnsEndpointRef("default", "example")),
+				},
+			},
+			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)"},
 		},
 		{
 			title:  "delete-only changes produce no lookups",
@@ -181,7 +233,7 @@ func TestSyncStatus(t *testing.T) {
 				Build()
 			wrapped := interceptor.NewClient(c, tt.interceptorFuncs)
 
-			SyncStatus(t.Context(), wrapped, tt.changes)
+			SyncStatus(t.Context(), NewCRDClients(wrapped, nil), tt.changes)
 
 			for _, want := range tt.wantLogContains {
 				logtest.TestHelperLogContains(want, hook, t)
@@ -208,7 +260,7 @@ func TestSyncStatus_MissingCRSuppressesWarning(t *testing.T) {
 	ep := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
 		WithRefObject(dnsEndpointRef("default", "missing"))
 
-	SyncStatus(t.Context(), c, &plan.Changes{Create: []*endpoint.Endpoint{ep}})
+	SyncStatus(t.Context(), NewCRDClients(c, nil), &plan.Changes{Create: []*endpoint.Endpoint{ep}})
 
 	assert.Equal(t, 1, getCalls, "Get should have been attempted for the missing CR")
 	for _, entry := range hook.AllEntries() {
@@ -217,7 +269,7 @@ func TestSyncStatus_MissingCRSuppressesWarning(t *testing.T) {
 }
 
 func TestSyncStatus_NilGuards(t *testing.T) {
-	t.Run("nil client", func(t *testing.T) {
+	t.Run("nil CRDClients", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 		ep := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
 			WithRefObject(dnsEndpointRef("default", "example"))
@@ -227,11 +279,21 @@ func TestSyncStatus_NilGuards(t *testing.T) {
 		assert.Empty(t, hook.AllEntries())
 	})
 
+	t.Run("non-nil CRDClients with nil Reader", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+		ep := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
+			WithRefObject(dnsEndpointRef("default", "example"))
+		require.NotPanics(t, func() {
+			SyncStatus(t.Context(), NewCRDClients(nil, nil), &plan.Changes{Create: []*endpoint.Endpoint{ep}})
+		})
+		assert.Empty(t, hook.AllEntries())
+	})
+
 	t.Run("nil changes", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 		c := fake.NewClientBuilder().WithScheme(newTestScheme(t)).Build()
 		require.NotPanics(t, func() {
-			SyncStatus(t.Context(), c, nil)
+			SyncStatus(t.Context(), NewCRDClients(c, nil), nil)
 		})
 		assert.Empty(t, hook.AllEntries())
 	})
@@ -243,7 +305,7 @@ func TestSyncStatus_NilGuards(t *testing.T) {
 			forbidGet(t),
 		)
 		require.NotPanics(t, func() {
-			SyncStatus(t.Context(), c, &plan.Changes{})
+			SyncStatus(t.Context(), NewCRDClients(c, nil), &plan.Changes{})
 		})
 		assert.Empty(t, hook.AllEntries())
 	})

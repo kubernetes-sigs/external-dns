@@ -530,8 +530,8 @@ func TestStashCRDClients(t *testing.T) {
 
 		cc := cfg.CRDClients()
 		require.NotNil(t, cc)
-		assert.Same(t, fakeCache, cc.Reader)
-		assert.Same(t, fakeCache.Client, cc.Writer)
+		assert.Same(t, fakeCache, cc.Reader())
+		assert.Same(t, fakeCache.Client, cc.Writer())
 	})
 
 	t.Run("non-crdSource leaves CRDClients nil", func(t *testing.T) {
