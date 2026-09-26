@@ -605,6 +605,12 @@ func (e *Endpoint) RequestedRecordType() (string, bool) {
 // TODO: rename to Validate
 // CheckEndpoint Check if endpoint is properly formatted according to RFC standards
 func (e *Endpoint) CheckEndpoint() bool {
+	// Several providers index Targets[0] and would panic.
+	if len(e.Targets) == 0 {
+		log.Debugf("Endpoint %s of type %s has no targets", e.DNSName, e.RecordType)
+		return false
+	}
+
 	if !e.supportsAlias() {
 		if _, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias); ok {
 			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
