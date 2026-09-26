@@ -518,3 +518,26 @@ func TestKubeAPIRateLimitPropagation(t *testing.T) {
 		assert.Equal(t, 30, scg.Burst)
 	})
 }
+
+func TestStashCRDClients(t *testing.T) {
+	t.Run("crdSource populates CRDClients", func(t *testing.T) {
+		fakeCache := newFakeCRDCache(t, nil)
+		cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
+		require.NoError(t, err)
+
+		cfg := &Config{}
+		stashCRDClients(cfg, cs)
+
+		cc := cfg.CRDClients()
+		require.NotNil(t, cc)
+		assert.Same(t, fakeCache, cc.Reader())
+		assert.Same(t, fakeCache.Client, cc.Writer())
+	})
+
+	t.Run("non-crdSource leaves CRDClients nil", func(t *testing.T) {
+		cfg := &Config{}
+		stashCRDClients(cfg, NewEmptySource())
+
+		assert.Nil(t, cfg.CRDClients())
+	})
+}
