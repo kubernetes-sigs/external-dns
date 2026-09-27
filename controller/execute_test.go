@@ -32,9 +32,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/wrappers"
@@ -322,6 +324,43 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("controller did not stop after context cancellation")
 	}
+}
+
+func buildTestController(t *testing.T, opts ...source.OverrideConfigOption) *Controller {
+	t.Helper()
+	cfg := &externaldns.Config{
+		Sources:    []string{"fake"},
+		Provider:   "inmemory",
+		LogLevel:   "error",
+		LogFormat:  "text",
+		Policy:     "sync",
+		Registry:   "txt",
+		TXTOwnerID: "test-owner",
+	}
+	sCfg, err := source.NewSourceConfig(cfg, opts...)
+	require.NoError(t, err)
+	ctx := t.Context()
+	src, err := wrappers.Build(ctx, sCfg)
+	require.NoError(t, err)
+	domainFilter := endpoint.NewDomainFilterWithOptions()
+	p, err := provider.Select(ctx, cfg, domainFilter)
+	require.NoError(t, err)
+	ctrl, err := buildController(ctx, cfg, sCfg, src, p, domainFilter)
+	require.NoError(t, err)
+	return ctrl
+}
+
+func TestBuildControllerWiresCRDClient(t *testing.T) {
+	cc := crd.NewCRDClients(fake.NewClientBuilder().Build(), fake.NewClientBuilder().Build())
+	ctrl := buildTestController(t, source.WithCRDClients(cc))
+
+	assert.Same(t, cc, ctrl.CrdClients)
+}
+
+func TestBuildControllerCRDClientNilWhenNotConfigured(t *testing.T) {
+	ctrl := buildTestController(t)
+
+	assert.Nil(t, ctrl.CrdClients)
 }
 
 // TestContextWithSigtermHandlerHelper is a helper process that sets up the SIGTERM handler

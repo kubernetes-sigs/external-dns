@@ -1500,6 +1500,49 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			description: "Invalid A record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid alias A record - no targets",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid TXT record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTXT,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1603,7 +1646,7 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 				RecordType: RecordTypePTR,
 				Targets:    Targets{},
 			},
-			wantLog: "at least one target is required",
+			wantLog: "has no targets",
 		},
 		{
 			name: "valid PTR does not log",
