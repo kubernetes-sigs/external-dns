@@ -15,6 +15,8 @@ package informers
 
 import (
 	"fmt"
+	"maps"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,11 +110,42 @@ func IndexSelectorWithLabelKey(key string) func(options *IndexSelectorOptions) {
 //
 // This function ensures type safety and simplifies the process of adding
 // custom indexers to informers.
+// schemaValidationCache dedupes schema.IsValid's logging against the immediately
+// preceding call: client-go's ThreadSafeStore.Update recomputes an object's index
+// twice per update (once for the old object, once for the new) under the store's
+// single write lock, so an object whose annotations didn't change would otherwise
+// log the same warning twice back-to-back. Caching only the single most recent call
+// is enough, since that lock also rules out any other object's call landing between
+// the old and new calls for this one.
+type schemaValidationCache struct {
+	mu          sync.Mutex
+	key         string
+	annotations map[string]string
+	valid       bool
+}
+
+func (c *schemaValidationCache) isValid(entity metav1.Object, source string, mode schema.Mode) bool {
+	key := entity.GetNamespace() + "/" + entity.GetName()
+	annots := entity.GetAnnotations()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.key == key && maps.Equal(c.annotations, annots) {
+		return c.valid
+	}
+
+	valid := schema.IsValid(entity, source, mode)
+	c.key, c.annotations, c.valid = key, annots, valid
+	return valid
+}
+
 func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOptions)) cache.Indexers {
 	options := IndexSelectorOptions{}
 	for _, fn := range optFns {
 		fn(&options)
 	}
+
+	var validation schemaValidationCache
 
 	return cache.Indexers{
 		IndexWithSelectors: func(obj any) ([]string, error) {
@@ -132,7 +165,7 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 					return nil, nil
 				}
 			}
-			if options.source != "" && !schema.IsValid(entity, options.source, options.mode) {
+			if options.source != "" && !validation.isValid(entity, options.source, options.mode) {
 				return nil, nil
 			}
 			if options.indexByLabelKey != "" {

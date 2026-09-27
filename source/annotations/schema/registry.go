@@ -27,18 +27,17 @@ import (
 // defaultStrictMessage is the StrictMessage shared by specs with no record-shaping fallback.
 const defaultStrictMessage = "the resource will not receive a DNS record"
 
-// Registry is external-dns's contract for which annotations are supported by which
-// sources, along with their validation rules and warn/strict messages.
+// Registry is external-dns's contract for which annotations are supported by which sources, and their validation rules and warn/strict messages.
 var Registry = []AnnotationSpec{
 	{
-		Key:              annotations.AccessKey,
+		KeySuffix:        annotations.AccessSuffix,
 		SupportedSources: []string{types.Service},
 		Validators:       []Validator{ValidateOneOf("public", "private")},
 		WarnMessage:      "the service still gets a DNS record either way, just with a different IP source",
 		Documentation:    `Specifies whether the public or private interface address is used for headless/NodePort services. Accepted values: "public", "private".`,
 	},
 	{
-		Key:              annotations.EndpointsTypeKey,
+		KeySuffix:        annotations.EndpointsTypeSuffix,
 		SupportedSources: []string{types.Service},
 		Validators:       []Validator{ValidateOneOf("NodeExternalIP", "HostIP")},
 		WarnMessage:      "the service falls back to default headless endpoint publishing behavior (pod IPs unless --publish-host-ip is set)",
@@ -46,7 +45,7 @@ var Registry = []AnnotationSpec{
 		Documentation:    `Specifies the type of endpoints to use for headless services. Accepted values: "NodeExternalIP", "HostIP".`,
 	},
 	{
-		Key: annotations.RecordTypeKey,
+		KeySuffix: annotations.RecordTypeSuffix,
 		SupportedSources: []string{
 			types.AmbassadorHost, types.ContourHTTPProxy,
 			types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute,
@@ -59,7 +58,7 @@ var Registry = []AnnotationSpec{
 			types.SkipperRouteGroup,
 			types.TraefikProxy,
 		},
-		Validators: []Validator{ValidateOneOf(
+		Validators: []Validator{ValidateOneOfFold(
 			endpoint.RecordTypeA,
 			endpoint.RecordTypeAAAA,
 			endpoint.RecordTypeCNAME,
@@ -73,10 +72,10 @@ var Registry = []AnnotationSpec{
 		)},
 		WarnMessage:   "the record-type provider-specific property is ignored for this resource",
 		StrictMessage: defaultStrictMessage,
-		Documentation: "Overrides the DNS record type for the resource's endpoints. Accepted values: A, AAAA, CNAME, TXT, SRV, NS, PTR, MX, NAPTR, DNAME.",
+		Documentation: "Overrides the DNS record type for the resource's endpoints. Accepted values: A, AAAA, CNAME, TXT, SRV, NS, PTR, MX, NAPTR, DNAME (case-insensitive).",
 	},
 	{
-		Key: annotations.SetIdentifierKey,
+		KeySuffix: annotations.SetIdentifierSuffix,
 		SupportedSources: []string{
 			types.AmbassadorHost, types.ContourHTTPProxy,
 			types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute,
@@ -95,7 +94,7 @@ var Registry = []AnnotationSpec{
 		Documentation: "Distinguishes between multiple records with the same DNS name in routing policies (e.g. weighted, latency, or failover routing).",
 	},
 	{
-		Key: annotations.TtlKey,
+		KeySuffix: annotations.TtlSuffix,
 		SupportedSources: []string{
 			types.AmbassadorHost, types.ContourHTTPProxy, types.F5TransportServer, types.F5VirtualServer,
 			types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute,
@@ -116,7 +115,7 @@ var Registry = []AnnotationSpec{
 		Documentation: `Specifies the TTL for the resource's DNS records, as an integer number of seconds or a Go duration string (e.g. "10m"). Must be between 1 and 2147483647 seconds.`,
 	},
 	{
-		Key: annotations.HostnameKey,
+		KeySuffix: annotations.HostnameSuffix,
 		SupportedSources: []string{
 			types.ContourHTTPProxy,
 			types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute,
@@ -136,7 +135,7 @@ var Registry = []AnnotationSpec{
 		Documentation: "Comma-separated list of desired hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
-		Key:              annotations.InternalHostnameKey,
+		KeySuffix:        annotations.InternalHostnameSuffix,
 		SupportedSources: []string{types.Pod, types.Service},
 		Validators:       []Validator{ValidateHostnames},
 		WarnMessage:      "the malformed internal hostname list is skipped entirely",
@@ -144,7 +143,7 @@ var Registry = []AnnotationSpec{
 		Documentation:    "Comma-separated list of desired internal hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
-		Key:              annotations.IngressHostnameSourceKey,
+		KeySuffix:        annotations.IngressHostnameSourceSuffix,
 		SupportedSources: []string{types.Ingress},
 		Validators:       []Validator{ValidateOneOfFold("defined-hosts-only", "annotation-only")},
 		StrictMessage:    "the ingress will not receive any DNS records",
@@ -160,16 +159,17 @@ func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
 	desc := describe(entity)
 	valid := true
 	for _, e := range Registry {
-		value, ok := annots[e.Key]
+		key := e.Key()
+		value, ok := annots[key]
 		if !ok {
 			continue
 		}
 		if len(e.SupportedSources) > 0 && !slices.Contains(e.SupportedSources, source) {
 			if e.IsStrict(mode) {
-				log.Warnf("Excluding %s: annotation %s is not supported for source %q. %s", desc, e.Key, source, e.StrictMessage)
+				log.Warnf("Excluding %s: annotation %s is not supported for source %q. %s", desc, key, source, e.StrictMessage)
 				valid = false
 			} else {
-				log.Debugf("%s: annotation %s is not supported for source %q", desc, e.Key, source)
+				log.Debugf("%s: annotation %s is not supported for source %q", desc, key, source)
 			}
 			continue
 		}
@@ -178,11 +178,11 @@ func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
 			continue
 		}
 		if e.IsStrict(mode) {
-			log.Warnf("Excluding %s: %q is not a valid %s value: %v. %s", desc, value, e.Key, err, e.StrictMessage)
+			log.Warnf("Excluding %s: %q is not a valid %s value: %v. %s", desc, value, key, err, e.StrictMessage)
 			valid = false
 			continue
 		}
-		log.Warnf("%s: %q is not a valid %s value: %v. %s", desc, value, e.Key, err, e.warnText())
+		log.Warnf("%s: %q is not a valid %s value: %v. %s", desc, value, key, err, e.warnText())
 	}
 	return valid
 }

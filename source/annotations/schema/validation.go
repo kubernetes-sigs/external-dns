@@ -70,14 +70,22 @@ func (c Config) warnText() string {
 	return c.StrictMessage
 }
 
-// AnnotationSpec pairs an annotation key with its Config.
+// AnnotationSpec pairs an annotation's key suffix with its Config.
 type AnnotationSpec struct {
-	// Key is the full annotation key, e.g. AccessKey.
-	Key string
+	// KeySuffix is the annotation's name without the configurable --annotation-prefix,
+	// e.g. "access" for the AccessKey annotation. Kept as a suffix, not the full key,
+	// so Key() can resolve it against whatever prefix is current rather than whatever
+	// prefix was in effect when Registry was built.
+	KeySuffix string
 	// SupportedSources lists the source names (e.g. "service") that consume this annotation.
 	// An empty slice means no restriction is enforced.
 	SupportedSources []string
 	Config
+}
+
+// Key returns the annotation's full key under the currently configured --annotation-prefix.
+func (a AnnotationSpec) Key() string {
+	return annotations.AnnotationKeyPrefix + a.KeySuffix
 }
 
 // Mode controls how invalid annotation values are handled globally.
@@ -133,16 +141,12 @@ func ValidateTTL(value string) error {
 	return nil
 }
 
-// ValidateHostnames validates a raw hostname/internal-hostname annotation value: a
-// comma-separated list of DNS names. Each name must satisfy both the total-length and
-// character-format rules in validation.IsDNS1123Subdomain (RFC 1123, max 253 characters),
-// and the per-label length rule (RFC 1035 section 2.3.4, max 63 characters), which
-// IsDNS1123Subdomain does not check. A name within the 253-character total but with a
-// single label over 63 characters is accepted by Kubernetes' own object-name validation,
-// yet rejected by endpoint.NewEndpointWithTTL — validating both here catches that case
-// before it reaches source extraction.
+// ValidateHostnames validates a comma-separated list of DNS names against what the sources actually accept, not Kubernetes' stricter object-name rules.
 func ValidateHostnames(value string) error {
 	for _, name := range annotations.SplitHostnameAnnotation(value) {
+		if name == "" {
+			continue
+		}
 		if err := validateDNSName(name); err != nil {
 			return err
 		}
@@ -151,10 +155,11 @@ func ValidateHostnames(value string) error {
 }
 
 func validateDNSName(name string) error {
-	if errs := validation.IsDNS1123Subdomain(name); len(errs) > 0 {
+	normalized := strings.TrimPrefix(strings.TrimSuffix(strings.ToLower(name), "."), "*.")
+	if errs := validation.IsDNS1123SubdomainWithUnderscore(normalized); len(errs) > 0 {
 		return fmt.Errorf("%q is not a valid DNS name: %s", name, strings.Join(errs, "; "))
 	}
-	if label := endpoint.OverlongDNSLabel(name); label != "" {
+	if label := endpoint.OverlongDNSLabel(normalized); label != "" {
 		return fmt.Errorf("%q is not a valid DNS name: label %q exceeds %d characters", name, label, validation.DNS1123LabelMaxLength)
 	}
 	return nil

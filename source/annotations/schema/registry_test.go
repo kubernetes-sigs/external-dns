@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func withRegistry(t *testing.T, entries ...AnnotationSpec) {
@@ -39,8 +40,10 @@ func makePod(annotations map[string]string) *corev1.Pod {
 }
 
 func TestIsValid(t *testing.T) {
-	const testKey = "external-dns.kubernetes.io/test-annotation"
-	const otherKey = "external-dns.kubernetes.io/other-annotation"
+	const testKeySuffix = "test-annotation"
+	const testKey = "external-dns.kubernetes.io/" + testKeySuffix
+	const otherKeySuffix = "other-annotation"
+	const otherKey = "external-dns.kubernetes.io/" + otherKeySuffix
 
 	strictCfg := Config{
 		Validators:    []Validator{ValidateOneOf("valid-value")},
@@ -64,7 +67,7 @@ func TestIsValid(t *testing.T) {
 	}{
 		{
 			name:               "annotation absent is valid with no logs",
-			registry:           []AnnotationSpec{{Key: testKey, Config: strictCfg}},
+			registry:           []AnnotationSpec{{KeySuffix: testKeySuffix, Config: strictCfg}},
 			source:             "pod",
 			mode:               ModeWarn,
 			wantValid:          true,
@@ -72,7 +75,7 @@ func TestIsValid(t *testing.T) {
 		},
 		{
 			name:               "valid value is valid with no logs",
-			registry:           []AnnotationSpec{{Key: testKey, Config: strictCfg}},
+			registry:           []AnnotationSpec{{KeySuffix: testKeySuffix, Config: strictCfg}},
 			podAnnotations:     map[string]string{testKey: "valid-value"},
 			source:             "pod",
 			mode:               ModeStrict,
@@ -81,7 +84,7 @@ func TestIsValid(t *testing.T) {
 		},
 		{
 			name:            "invalid value in warn mode is valid but warns",
-			registry:        []AnnotationSpec{{Key: testKey, Config: strictCfg}},
+			registry:        []AnnotationSpec{{KeySuffix: testKeySuffix, Config: strictCfg}},
 			podAnnotations:  map[string]string{testKey: "invalid-value"},
 			source:          "pod",
 			mode:            ModeWarn,
@@ -90,7 +93,7 @@ func TestIsValid(t *testing.T) {
 		},
 		{
 			name:            "invalid value in strict mode with StrictMessage is invalid and warns",
-			registry:        []AnnotationSpec{{Key: testKey, Config: strictCfg}},
+			registry:        []AnnotationSpec{{KeySuffix: testKeySuffix, Config: strictCfg}},
 			podAnnotations:  map[string]string{testKey: "invalid-value"},
 			source:          "pod",
 			mode:            ModeStrict,
@@ -99,7 +102,7 @@ func TestIsValid(t *testing.T) {
 		},
 		{
 			name:            "invalid value in strict mode without StrictMessage falls back to warn",
-			registry:        []AnnotationSpec{{Key: testKey, Config: warnOnlyCfg}},
+			registry:        []AnnotationSpec{{KeySuffix: testKeySuffix, Config: warnOnlyCfg}},
 			podAnnotations:  map[string]string{testKey: "invalid-value"},
 			source:          "pod",
 			mode:            ModeStrict,
@@ -109,7 +112,7 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "value present but source not supported logs debug without affecting validity",
 			registry: []AnnotationSpec{{
-				Key:              testKey,
+				KeySuffix:        testKeySuffix,
 				SupportedSources: []string{"service"},
 				Config:           strictCfg,
 			}},
@@ -122,7 +125,7 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "unsupported source in strict mode with StrictMessage excludes the object",
 			registry: []AnnotationSpec{{
-				Key:              testKey,
+				KeySuffix:        testKeySuffix,
 				SupportedSources: []string{"service"},
 				Config:           strictCfg,
 			}},
@@ -135,7 +138,7 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "unsupported source in strict mode without StrictMessage does not exclude",
 			registry: []AnnotationSpec{{
-				Key:              testKey,
+				KeySuffix:        testKeySuffix,
 				SupportedSources: []string{"service"},
 				Config:           warnOnlyCfg,
 			}},
@@ -148,7 +151,7 @@ func TestIsValid(t *testing.T) {
 		},
 		{
 			name:               "empty SupportedSources enforces no restriction",
-			registry:           []AnnotationSpec{{Key: testKey, Config: strictCfg}},
+			registry:           []AnnotationSpec{{KeySuffix: testKeySuffix, Config: strictCfg}},
 			podAnnotations:     map[string]string{testKey: "valid-value"},
 			source:             "any-source",
 			mode:               ModeWarn,
@@ -158,8 +161,8 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "multiple entries are all checked, not short-circuited",
 			registry: []AnnotationSpec{
-				{Key: testKey, Config: strictCfg},
-				{Key: otherKey, Config: strictCfg},
+				{KeySuffix: testKeySuffix, Config: strictCfg},
+				{KeySuffix: otherKeySuffix, Config: strictCfg},
 			},
 			podAnnotations: map[string]string{
 				testKey:  "invalid-value",
@@ -188,4 +191,12 @@ func TestIsValid(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRegistryFollowsCustomAnnotationPrefix(t *testing.T) {
+	annotations.SetAnnotationPrefix("custom.io/")
+	t.Cleanup(func() { annotations.SetAnnotationPrefix(annotations.DefaultAnnotationPrefix) })
+
+	assert.False(t, IsValid(makePod(map[string]string{annotations.HostnameKey: "bad..name"}), "pod", ModeStrict))
+	assert.True(t, IsValid(makePod(map[string]string{annotations.DefaultAnnotationPrefix + "hostname": "bad..name"}), "pod", ModeStrict))
 }
