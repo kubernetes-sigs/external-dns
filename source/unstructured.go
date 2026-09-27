@@ -125,19 +125,10 @@ func (us *unstructuredSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint
 
 // endpointsFromInformer returns endpoints for a single resource type.
 func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.GenericInformer) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
 	// Get objects that match the indexer filter (annotation and label selectors)
-	indexKeys := informer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
-	if len(indexKeys) == 0 {
-		return nil, nil
-	}
-	for _, key := range indexKeys {
-		obj, err := informers.GetByKey[*unstructured.Unstructured](informer.Informer().GetIndexer(), key)
-		if err != nil {
-			continue
-		}
-
+	objs := informers.ListIndexed[*unstructured.Unstructured](informer.Informer().GetIndexer())
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
+	for _, obj := range objs {
 		el := newUnstructuredWrapper(obj)
 
 		hosts := annotations.HostnamesFromAnnotations(el.GetAnnotations())

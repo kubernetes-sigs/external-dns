@@ -133,18 +133,11 @@ func NewIstioGatewaySource(
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexer := sc.gatewayInformer.Informer().GetIndexer()
-	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
+	objs := informers.ListIndexed[*networkingv1.Gateway](indexer)
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
-	log.Debugf("Found %d gateways in namespace %s", len(indexKeys), sc.namespace)
-
-	for _, key := range indexKeys {
-		gateway, err := informers.GetByKey[*networkingv1.Gateway](indexer, key)
-		if err != nil || gateway == nil {
-			continue
-		}
-
+	for _, gateway := range objs {
 		gwHostnames := sc.hostNamesFromGateway(gateway)
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))

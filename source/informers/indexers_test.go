@@ -189,7 +189,7 @@ func TestGetByKey_ObjectExists(t *testing.T) {
 	err := indexer.Add(pod)
 	assert.NoError(t, err)
 
-	result, err := GetByKey[*corev1.Pod](indexer, "default/test-pod")
+	result, err := getByKey[*corev1.Pod](indexer, "default/test-pod")
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "test-pod", result.GetName())
@@ -198,7 +198,7 @@ func TestGetByKey_ObjectExists(t *testing.T) {
 func TestGetByKey_ObjectDoesNotExist(t *testing.T) {
 	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 
-	result, err := GetByKey[*corev1.Pod](indexer, "default/non-existent-pod")
+	result, err := getByKey[*corev1.Pod](indexer, "default/non-existent-pod")
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -212,7 +212,7 @@ func TestGetByKey_TypeAssertionFailure(t *testing.T) {
 	err := indexer.Add(service)
 	assert.NoError(t, err)
 
-	result, err := GetByKey[*corev1.Pod](indexer, "default/test-service")
+	result, err := getByKey[*corev1.Pod](indexer, "default/test-service")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "object is not of type")
 	assert.Nil(t, result)
