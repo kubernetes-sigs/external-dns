@@ -666,7 +666,7 @@ func TestParseFlagsPublishingAndFilters(t *testing.T) {
 		"--service-type-filter=ClusterIP",
 		"--service-type-filter=NodePort",
 		"--events-emit=RecordReady",
-		"--events-emit=RecordError",
+		"--events-emit=RecordDeleted",
 	)
 	assert.True(t, cfg.AlwaysPublishNotReadyAddresses)
 	assert.Equal(t, "key=value", cfg.AnnotationFilter)
@@ -682,7 +682,7 @@ func TestParseFlagsPublishingAndFilters(t *testing.T) {
 	assert.True(t, cfg.PublishInternal)
 	assert.True(t, cfg.ResolveServiceLoadBalancerHostname)
 	assert.ElementsMatch(t, []string{"ClusterIP", "NodePort"}, cfg.ServiceTypeFilter)
-	assert.ElementsMatch(t, []string{"RecordReady", "RecordError"}, cfg.EmitEvents)
+	assert.ElementsMatch(t, []string{"RecordReady", "RecordDeleted"}, cfg.EmitEvents)
 }
 
 func TestParseFlagsGateway(t *testing.T) {
