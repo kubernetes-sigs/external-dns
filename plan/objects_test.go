@@ -73,4 +73,44 @@ func TestPlannedObjects(t *testing.T) {
 		assert.Equal(t, 1, countFor(objects, "first"))
 		assert.Equal(t, 0, countFor(objects, "second"))
 	})
+
+	t.Run("Calculate drops endpoints another owner holds", func(t *testing.T) {
+		owned := func(name, recordType, target, owner string) *endpoint.Endpoint {
+			return endpoint.NewEndpoint(name, recordType, target).WithLabel(endpoint.OwnerLabelKey, owner)
+		}
+		current := []*endpoint.Endpoint{
+			owned("mine.example.com", endpoint.RecordTypeA, "10.0.0.9", "me"),
+			owned("theirs.example.com", endpoint.RecordTypeA, "10.0.0.9", "them"),
+			owned("steady.example.com", endpoint.RecordTypeA, "10.0.0.5", "them"),
+			owned("shared.example.com", endpoint.RecordTypeA, "10.0.0.6", "them"),
+		}
+		ref := func(name string) *events.ObjectReference {
+			return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", name, "", "crd")
+		}
+		desired := []*endpoint.Endpoint{
+			endpoint.NewEndpoint("mine.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(ref("update-mine")),
+			endpoint.NewEndpoint("free.example.com", endpoint.RecordTypeA, "10.0.0.2").WithRefObject(ref("create-free")),
+			endpoint.NewEndpoint("theirs.example.com", endpoint.RecordTypeA, "10.0.0.3").WithRefObject(ref("update-theirs")),
+			endpoint.NewEndpoint("steady.example.com", endpoint.RecordTypeA, "10.0.0.5").WithRefObject(ref("in-sync-theirs")),
+			endpoint.NewEndpoint("shared.example.com", endpoint.RecordTypeAAAA, "::1").WithRefObject(ref("create-next-to-theirs")),
+		}
+
+		p := (&Plan{
+			Current:        current,
+			Desired:        desired,
+			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA},
+			OwnerID:        "me",
+		}).Calculate()
+
+		objects := p.PlannedObjects()
+		require.Len(t, objects, 5)
+		assert.Equal(t, 1, countFor(objects, "update-mine"))
+		assert.Equal(t, 1, countFor(objects, "create-free"))
+		assert.Equal(t, 0, countFor(objects, "update-theirs"))
+		assert.Equal(t, 0, countFor(objects, "in-sync-theirs"))
+		assert.Equal(t, 0, countFor(objects, "create-next-to-theirs"))
+		// Cross-check against what the planner actually does.
+		assert.Len(t, p.Changes.Create, 1)
+		assert.Len(t, p.Changes.UpdateNew, 1)
+	})
 }

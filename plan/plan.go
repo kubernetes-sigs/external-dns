@@ -41,7 +41,7 @@ type Plan struct {
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
-	// Desired records left after the domain and record-type filters.
+	// Desired records left after the domain, record-type and ownership filters.
 	// Populated after calling Calculate()
 	Planned []*endpoint.Endpoint
 	// DomainFilter matches DNS names
@@ -195,7 +195,7 @@ func (p *Plan) Calculate() *Plan {
 	plan := &Plan{
 		Current:        p.Current,
 		Desired:        p.Desired,
-		Planned:        planned,
+		Planned:        p.ownedCandidates(t, planned),
 		Changes:        changes,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	}

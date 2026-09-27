@@ -16,12 +16,16 @@ limitations under the License.
 
 package plan
 
-import "sigs.k8s.io/external-dns/pkg/events"
+import (
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/pkg/events"
+)
 
 // PlannedObject is a Kubernetes object that contributed desired endpoints to a plan.
 type PlannedObject struct {
 	Ref *events.ObjectReference
-	// Endpoints left after the domain and record-type filters; 0 if none.
+	// Endpoints left after the domain, record-type and ownership filters; 0 if none.
 	Endpoints int
 }
 
@@ -58,4 +62,43 @@ func (p *Plan) PlannedObjects() []PlannedObject {
 		objects = append(objects, *byKey[key])
 	}
 	return objects
+}
+
+// ownedCandidates drops candidates calculateChanges skips because another owner
+// holds the record (update) or any record of the name (create).
+func (p *Plan) ownedCandidates(t planTable, candidates []*endpoint.Endpoint) []*endpoint.Endpoint {
+	if p.OwnerID == "" {
+		return candidates
+	}
+
+	foreign := sets.New[*endpoint.Endpoint]()
+	for _, row := range t.rows {
+		nameOwned := true
+		for _, current := range row.current {
+			if !current.IsOwnedBy(p.OwnerID) {
+				nameOwned = false
+				break
+			}
+		}
+		for _, recs := range row.records {
+			owned := nameOwned
+			if recs.current != nil {
+				owned = recs.current.IsOwnedBy(p.OwnerID)
+			}
+			if owned {
+				continue
+			}
+			for _, c := range recs.candidates {
+				foreign.Insert(c)
+			}
+		}
+	}
+
+	owned := make([]*endpoint.Endpoint, 0, len(candidates))
+	for _, ep := range candidates {
+		if !foreign.Has(ep) {
+			owned = append(owned, ep)
+		}
+	}
+	return owned
 }
