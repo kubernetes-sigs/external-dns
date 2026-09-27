@@ -3083,14 +3083,14 @@ func TestGeoProximityWithBias(t *testing.T) {
 			bias:         "100",
 			hasBias:      true,
 			expectedSet:  true,
-			expectedBias: 0, // defaults to 0 when outside [-99, 99]
+			expectedBias: 99, // clamped to max when above [-99, 99]
 		},
 		{
 			name:         "out-of-range negative bias",
 			bias:         "-100",
 			hasBias:      true,
 			expectedSet:  true,
-			expectedBias: 0, // defaults to 0 when outside [-99, 99]
+			expectedBias: -99, // clamped to min when below [-99, 99]
 		},
 		{
 			name:         "invalid bias - non-numeric",

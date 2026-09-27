@@ -1079,9 +1079,12 @@ func (gp *geoProximity) withBias() *geoProximity {
 		if err != nil {
 			log.Warnf("Failed parsing value of %s: %s: %v; using bias of 0", providerSpecificGeoProximityLocationBias, prop, err)
 			bias = 0
-		} else if bias < minBias || bias > maxBias {
-			log.Warnf("Value of %s: %s is outside the valid range [%d, %d]; using bias of 0", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias)
-			bias = 0
+		} else if bias < minBias {
+			log.Warnf("Value of %s: %s is below the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, minBias)
+			bias = minBias
+		} else if bias > maxBias {
+			log.Warnf("Value of %s: %s is above the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, maxBias)
+			bias = maxBias
 		}
 		gp.location.Bias = aws.Int32(int32(bias))
 		gp.isSet = true
