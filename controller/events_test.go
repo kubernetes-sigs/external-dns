@@ -17,6 +17,10 @@ limitations under the License.
 package controller
 
 import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -170,5 +174,41 @@ func TestRefFromResourceLabel(t *testing.T) {
 		t.Run("invalid "+resource, func(t *testing.T) {
 			assert.Nil(t, refFromResourceLabel(resource, "DNSEndpoint"))
 		})
+	}
+}
+
+// Fails when a source's label prefix or Kind is missing from resourceKinds.
+func TestResourceKinds_CoverSources(t *testing.T) {
+	files, err := filepath.Glob("../source/*.go")
+	require.NoError(t, err)
+	require.NotEmpty(t, files)
+
+	markerRe := regexp.MustCompile(`\+externaldns:source:resources=(.+)`)
+	prefixRe := regexp.MustCompile(`"([A-Za-z0-9-]+)/%s(?:/%s)?"`)
+	kinds := make(map[string]bool, len(resourceKinds))
+	for _, k := range resourceKinds {
+		kinds[k] = true
+	}
+
+	for _, f := range files {
+		if strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		b, err := os.ReadFile(f)
+		require.NoError(t, err)
+
+		for _, m := range markerRe.FindAllStringSubmatch(string(b), -1) {
+			for res := range strings.SplitSeq(m[1], ",") {
+				kind, _, _ := strings.Cut(strings.TrimSpace(res), ".")
+				// Placeholders for sources without a fixed Kind.
+				if strings.Contains(kind, " ") || kind == "None" || kind == "Unstructured" {
+					continue
+				}
+				assert.True(t, kinds[kind], "%s: Kind %q missing from resourceKinds values", f, kind)
+			}
+		}
+		for _, m := range prefixRe.FindAllStringSubmatch(string(b), -1) {
+			assert.Contains(t, resourceKinds, strings.ToLower(m[1]), "%s: label prefix %q missing from resourceKinds", f, m[1])
+		}
 	}
 }
