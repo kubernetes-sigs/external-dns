@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -189,6 +190,11 @@ func buildController(
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
 	}
+	// A typed-nil *StatusWriter would make the interface non-nil.
+	var statusReporter StatusReporter
+	if cc := sCfg.CRDClients(); cc != nil {
+		statusReporter = crd.NewStatusWriter(cc)
+	}
 
 	return &Controller{
 		Source:               src,
@@ -201,9 +207,8 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
-		CrdClients:           sCfg.CRDClients(),
 		CRDSourceKind:        cfg.CRDSourceKind,
-		StatusReporters:      sCfg.StatusReporters(),
+		StatusReporter:       statusReporter,
 	}, nil
 }
 

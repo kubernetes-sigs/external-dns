@@ -29,30 +29,18 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 	registryfactory "sigs.k8s.io/external-dns/registry/factory"
-	"sigs.k8s.io/external-dns/source"
 )
 
-// fakeStatusReporter records what reportSyncStatus handed it.
 type fakeStatusReporter struct {
 	calls    int
-	objects  []source.PlannedObject
+	objects  []plan.PlannedObject
 	applyErr error
 }
 
-func (f *fakeStatusReporter) ReportStatus(_ context.Context, objects []source.PlannedObject, applyErr error) {
+func (f *fakeStatusReporter) ReportStatus(_ context.Context, objects []plan.PlannedObject, applyErr error) {
 	f.calls++
 	f.objects = objects
 	f.applyErr = applyErr
-}
-
-// plannedFor returns the endpoint count reported for the object named name.
-func plannedFor(objects []source.PlannedObject, name string) int {
-	for _, obj := range objects {
-		if obj.Ref.Name() == name {
-			return obj.Endpoints
-		}
-	}
-	return -1
 }
 
 // An in-sync object produces no changes but must still be reported.
@@ -64,7 +52,6 @@ func TestRunOnceReportsStatusWhenPlanHasNoChanges(t *testing.T) {
 		endpoint.NewEndpoint("steady.example.com", endpoint.RecordTypeA, "1.2.3.4").WithRefObject(ref),
 	}, nil)
 
-	// The provider already holds exactly the desired record.
 	prov := newMockProvider(
 		[]*endpoint.Endpoint{{DNSName: "steady.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}}},
 		&plan.Changes{},
@@ -80,85 +67,47 @@ func TestRunOnceReportsStatusWhenPlanHasNoChanges(t *testing.T) {
 		Registry:           reg,
 		Policy:             &plan.SyncPolicy{},
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
-		StatusReporters:    []source.StatusReporter{reporter},
+		StatusReporter:     reporter,
 	}
 
 	require.NoError(t, ctrl.RunOnce(t.Context()))
 
 	require.Equal(t, 1, reporter.calls)
-	assert.NoError(t, reporter.applyErr)
-	assert.Equal(t, 1, plannedFor(reporter.objects, "steady"))
+	require.NoError(t, reporter.applyErr)
+	require.Len(t, reporter.objects, 1)
+	assert.Equal(t, 1, reporter.objects[0].Endpoints)
 }
 
 func TestReportSyncStatus(t *testing.T) {
-	// Reported once per object, not once per endpoint.
-	first := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "first", "", "crd")
-	second := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "second", "", "crd")
-
+	ref := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "first", "", "crd")
 	desired := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(first),
-		endpoint.NewEndpoint("b.example.com", endpoint.RecordTypeA, "10.0.0.2").WithRefObject(first),
-		endpoint.NewEndpoint("c.example.com", endpoint.RecordTypeA, "10.0.0.3").WithRefObject(second),
+		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(ref),
 	}
 	p := &plan.Plan{Desired: desired, Planned: desired}
 
-	t.Run("dedupes objects and forwards the apply error", func(t *testing.T) {
+	t.Run("forwards the apply error", func(t *testing.T) {
 		reporter := &fakeStatusReporter{}
 		applyErr := errors.New("provider unavailable")
 
-		reportSyncStatus(t.Context(), []source.StatusReporter{reporter}, p, applyErr)
+		reportSyncStatus(t.Context(), reporter, p, applyErr)
 
 		assert.Equal(t, 1, reporter.calls)
-		assert.Len(t, reporter.objects, 2)
 		assert.Equal(t, applyErr, reporter.applyErr)
 	})
 
-	t.Run("counts the planned endpoints each object contributed", func(t *testing.T) {
-		reporter := &fakeStatusReporter{}
-
-		reportSyncStatus(t.Context(), []source.StatusReporter{reporter}, p, nil)
-
-		assert.Equal(t, 2, plannedFor(reporter.objects, "first"))
-		assert.Equal(t, 1, plannedFor(reporter.objects, "second"))
-	})
-
-	// Fully filtered objects are still reported, at zero.
-	t.Run("reports filtered-out objects at zero", func(t *testing.T) {
-		reporter := &fakeStatusReporter{}
-		filtered := &plan.Plan{
-			Desired: desired,
-			Planned: []*endpoint.Endpoint{desired[0], desired[1]},
-		}
-
-		reportSyncStatus(t.Context(), []source.StatusReporter{reporter}, filtered, nil)
-
-		assert.Len(t, reporter.objects, 2)
-		assert.Equal(t, 2, plannedFor(reporter.objects, "first"))
-		assert.Equal(t, 0, plannedFor(reporter.objects, "second"))
-	})
-
-	t.Run("every reporter is called", func(t *testing.T) {
-		first, second := &fakeStatusReporter{}, &fakeStatusReporter{}
-
-		reportSyncStatus(t.Context(), []source.StatusReporter{first, second}, p, nil)
-
-		assert.Equal(t, 1, first.calls)
-		assert.Equal(t, 1, second.calls)
-	})
-
-	t.Run("no reporters is a no-op", func(t *testing.T) {
+	t.Run("nil reporter is a no-op", func(t *testing.T) {
 		assert.NotPanics(t, func() {
 			reportSyncStatus(t.Context(), nil, p, nil)
 		})
 	})
 
-	t.Run("endpoints without ref objects skip the reporters", func(t *testing.T) {
+	t.Run("endpoints without ref objects skip the reporter", func(t *testing.T) {
 		reporter := &fakeStatusReporter{}
 		refless := &plan.Plan{
 			Desired: []*endpoint.Endpoint{endpoint.NewEndpoint("d.example.com", endpoint.RecordTypeA, "10.0.0.4")},
 		}
 
-		reportSyncStatus(t.Context(), []source.StatusReporter{reporter}, refless, nil)
+		reportSyncStatus(t.Context(), reporter, refless, nil)
 
 		assert.Equal(t, 0, reporter.calls)
 	})

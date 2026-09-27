@@ -187,17 +187,6 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-// ReportStatus implements StatusReporter. It only logs until DNSEndpoint has status fields.
-func (cs *crdSource) ReportStatus(_ context.Context, objects []PlannedObject, applyErr error) {
-	for _, obj := range objects {
-		if obj.Ref == nil || obj.Ref.Source() != types.CRD {
-			continue
-		}
-		log.Debugf("dnsendpoint %s/%s: %d endpoint(s) planned, apply error: %v",
-			obj.Ref.Namespace(), obj.Ref.Name(), obj.Endpoints, applyErr)
-	}
-}
-
 // newCrdSource wires a cache and writer into a running crdSource.
 func newCrdSource(
 	ctx context.Context,
