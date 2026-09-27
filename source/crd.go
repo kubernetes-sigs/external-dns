@@ -275,7 +275,6 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 			return
 		}
 		// The status writer never sees this object; don't leave a stale Ready.
-		status.Endpoints = 0
 		if len(rejections) == 0 {
 			meta.RemoveStatusCondition(&status.Conditions, apiv1alpha1.ReadyCondition)
 			return

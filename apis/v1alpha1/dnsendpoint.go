@@ -51,7 +51,6 @@ const (
 // +kubebuilder:resource:path=dnsendpoints
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/2007"
-// +kubebuilder:printcolumn:name="Endpoints",type=integer,JSONPath=`.status.endpoints`
 // +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=`.status.conditions[?(@.type=="Accepted")].status`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
@@ -85,11 +84,6 @@ type DNSEndpointStatus struct {
 	// The generation observed by the external-dns controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	// Endpoints is how many endpoints from spec entered the plan on the last
-	// reconcile. Those dropped by validation or the filters are not counted.
-	// +optional
-	Endpoints int32 `json:"endpoints"`
 
 	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
 	// and Ready (the provider applied it).

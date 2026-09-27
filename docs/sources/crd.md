@@ -182,9 +182,9 @@ external-dns reports what it did with each `DNSEndpoint` on the object itself:
 
 ```console
 $ kubectl get dnsendpoint
-NAME               ENDPOINTS   ACCEPTED   READY        AGE
-examplednsrecord   1           True       Programmed   2m
-otherdnsrecord     0           True       Filtered     2m
+NAME               ACCEPTED   READY        AGE
+examplednsrecord   True       Programmed   2m
+otherdnsrecord     True       Filtered     2m
 ```
 
 Two conditions are set. `Accepted` is the source-level verdict, written before any
@@ -200,29 +200,19 @@ provider call; `Ready` reports what became of the records afterwards:
 | `Ready`    | `DryRun`     | The endpoints were planned, but `--dry-run` kept them from the provider (status `Unknown`). |
 | `Ready`    | `Invalid`    | No endpoint reached the provider because every one of them was refused.            |
 
-`status.observedGeneration` tracks the last `spec` external-dns processed.
-`status.endpoints` counts the endpoints that entered the plan — those left after
-validation, `--domain-filter`, `--managed-record-types` and names held by another
-owner. On an empty `spec`, `Ready`
-is removed rather than left with a stale verdict.
+`status.observedGeneration` tracks the last `spec` external-dns processed. Both
+conditions are refreshed on every sync but only written when they change, so a
+steady-state `DNSEndpoint` costs no API writes. On an empty `spec`, `Ready` is removed.
 
-Both conditions are refreshed on every sync, including syncs where nothing changed,
-so a resource already in sync still reports `Programmed`. A write only happens when
-the computed status differs from what is stored, so a steady-state `DNSEndpoint`
-costs no API writes per sync interval.
+Limits:
 
-`Ready` describes the sync, not the individual resource: providers apply changes as
-a batch, so a failed batch marks every `DNSEndpoint` that contributed to it `Failed`,
-including resources whose own records were fine. The `Failed` message carries the
-provider's error verbatim, and that error may name records from other `DNSEndpoint`
-objects in the batch. Anyone allowed to read a `DNSEndpoint` can see it, so in a
-multi-tenant cluster treat status messages as visible across namespaces.
-
-Status assumes a single external-dns instance per `DNSEndpoint`. Instances that see
-the same object (for example one per zone, split only by `--domain-filter`) overwrite
-each other's conditions on every sync: one reports `Programmed`, the next `Filtered`.
-Give each instance a disjoint set of objects with `--namespace`, `--label-filter` or
-`--annotation-filter`.
+* `Ready` is per sync, not per resource: a failed batch marks every contributing
+  `DNSEndpoint` `Failed`. The message carries the provider's error verbatim, which may
+  name records from other namespaces, so treat it as visible to anyone who can read
+  a `DNSEndpoint`.
+* One external-dns instance per `DNSEndpoint`. Instances sharing an object (e.g. split
+  only by `--domain-filter`) overwrite each other's conditions; separate them with
+  `--namespace`, `--label-filter` or `--annotation-filter`.
 
 Rejected endpoints can additionally raise a Kubernetes `Warning` event by starting
 external-dns with `--events-emit=RecordInvalid`. The event is emitted when the verdict

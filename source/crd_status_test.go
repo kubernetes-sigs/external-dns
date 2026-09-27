@@ -335,11 +335,9 @@ func TestCRDSourceClearsReadyWhenEveryEndpointIsRejected(t *testing.T) {
 	reportProgrammed(t, fakeCache, obj)
 
 	programmed := readDNSEndpoint(t, fakeCache.Client)
-	require.Equal(t, int32(1), programmed.Status.Endpoints)
 	require.Equal(t, apiv1alpha1.ProgrammedReason,
 		meta.FindStatusCondition(programmed.Status.Conditions, apiv1alpha1.ReadyCondition).Reason)
 
-	// The user breaks the only endpoint.
 	programmed.Spec.Endpoints[0].Targets = endpoint.Targets{"1.2.3.4."}
 	require.NoError(t, fakeCache.Client.Update(t.Context(), programmed))
 
@@ -354,7 +352,6 @@ func TestCRDSourceClearsReadyWhenEveryEndpointIsRejected(t *testing.T) {
 	require.NotNil(t, ready)
 	assert.Equal(t, metav1.ConditionFalse, ready.Status)
 	assert.Equal(t, apiv1alpha1.InvalidReason, ready.Reason, "Ready must not still claim Programmed")
-	assert.Zero(t, got.Status.Endpoints, "the endpoint count must not survive the rejection")
 }
 
 // An emptied spec has nothing to be ready about, so the condition goes away.
@@ -383,7 +380,6 @@ func TestCRDSourceRemovesReadyWhenSpecBecomesEmpty(t *testing.T) {
 
 	got := readDNSEndpoint(t, fakeCache.Client)
 	assert.Nil(t, meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition))
-	assert.Zero(t, got.Status.Endpoints)
 	assert.Equal(t, apiv1alpha1.AcceptedReason,
 		meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.AcceptedCondition).Reason)
 }

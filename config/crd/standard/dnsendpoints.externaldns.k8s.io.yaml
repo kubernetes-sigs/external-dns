@@ -15,9 +15,6 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-        - jsonPath: .status.endpoints
-          name: Endpoints
-          type: integer
         - jsonPath: .status.conditions[?(@.type=="Accepted")].status
           name: Accepted
           type: string
@@ -213,12 +210,6 @@ spec:
                   x-kubernetes-list-map-keys:
                     - type
                   x-kubernetes-list-type: map
-                endpoints:
-                  description: |-
-                    Endpoints is how many endpoints from spec entered the plan on the last
-                    reconcile. Those dropped by validation or the filters are not counted.
-                  format: int32
-                  type: integer
                 observedGeneration:
                   description: The generation observed by the external-dns controller.
                   format: int64
