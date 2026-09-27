@@ -74,12 +74,10 @@ func (w *StatusWriter) ReportStatus(ctx context.Context, objects []plan.PlannedO
 
 		condition := readyCondition(obj.Endpoints, err, w.dryRun)
 		condition.ObservedGeneration = dnsEndpoint.Generation
-		planned := int32(obj.Endpoints) // #nosec G115 -- bounded by spec.endpoints MaxItems=1000
 
 		// The crd source returns the same error on its next read and stops
 		// the controller there.
 		if err := UpdateStatus(ctx, w.clients.Writer(), dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
-			status.Endpoints = planned
 			meta.SetStatusCondition(&status.Conditions, condition)
 		}); err != nil {
 			log.Error(err)
