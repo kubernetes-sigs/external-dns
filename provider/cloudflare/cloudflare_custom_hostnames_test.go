@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -806,4 +807,263 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 			"Custom hostname should be updated in mock client",
 		)
 	})
+}
+
+// customHostnameOrigin returns the origin of a custom hostname in the mock
+// client's store, or ("", false) if not found.
+func customHostnameOrigin(client *mockCloudFlareClient, hostname string) (string, bool) {
+	for _, ch := range client.customHostnames["001"] {
+		if ch.hostname == hostname {
+			return ch.customOriginServer, true
+		}
+	}
+	return "", false
+}
+
+// reconcileCustomHostnames runs one controller loop against the mock client.
+func reconcileCustomHostnames(t *testing.T, p *CloudFlareProvider, desired []*endpoint.Endpoint) *plan.Changes {
+	t.Helper()
+	ctx := t.Context()
+	records, err := p.Records(ctx)
+	assert.NoError(t, err)
+	adjusted, err := p.AdjustEndpoints(desired)
+	assert.NoError(t, err)
+	pl := &plan.Plan{
+		Current:        records,
+		Desired:        adjusted,
+		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"bar.com"})},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+	}
+	changes := pl.Calculate().Changes
+	_ = p.ApplyChanges(ctx, changes)
+	return changes
+}
+
+// epWithCH builds an endpoint carrying the given custom hostname value.
+func epWithCH(dnsName, recordType, ch string) *endpoint.Endpoint {
+	return &endpoint.Endpoint{
+		DNSName:    dnsName,
+		RecordType: recordType,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			{Name: annotations.CloudflareCustomHostnameProperty, Value: ch},
+		},
+	}
+}
+
+// hasEndpointCH reports whether an endpoint carries the given custom hostname value.
+func hasEndpointCH(ep *endpoint.Endpoint, ch string) bool {
+	return slices.Contains(getEndpointCustomHostnames(ep), ch)
+}
+
+func TestDeduplicateCustomHostnames(t *testing.T) {
+	t.Parallel()
+
+	newProvider := func(chs map[string]customHostnamesMap) *CloudFlareProvider {
+		return &CloudFlareProvider{
+			CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+			cachedCustomHostnames: chs,
+		}
+	}
+
+	t.Run("no-op when every endpoint has a distinct custom hostname", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			epWithCH("a.example.com", endpoint.RecordTypeA, "ch-a.example.com"),
+			epWithCH("b.example.com", endpoint.RecordTypeA, "ch-b.example.com"),
+		}
+		newProvider(nil).deduplicateCustomHostnames(eps)
+		assert.True(t, hasEndpointCH(eps[0], "ch-a.example.com"))
+		assert.True(t, hasEndpointCH(eps[1], "ch-b.example.com"))
+	})
+
+	t.Run("dual-stack A+AAAA share DNSName: both keep the custom hostname", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			epWithCH("app.bar.com", endpoint.RecordTypeA, "custom.fancybar.com"),
+			epWithCH("app.bar.com", endpoint.RecordTypeAAAA, "custom.fancybar.com"),
+		}
+		newProvider(nil).deduplicateCustomHostnames(eps)
+		assert.True(t, hasEndpointCH(eps[0], "custom.fancybar.com"), "A must keep CH")
+		assert.True(t, hasEndpointCH(eps[1], "custom.fancybar.com"), "AAAA must keep CH")
+	})
+
+	t.Run("headless fan-out: aggregate wins over per-pod", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			epWithCH("pod-0.app.internal.example.com", endpoint.RecordTypeA, "custom.example.com"),
+			epWithCH("app.internal.example.com", endpoint.RecordTypeA, "custom.example.com"),
+			epWithCH("pod-1.app.internal.example.com", endpoint.RecordTypeA, "custom.example.com"),
+		}
+		newProvider(nil).deduplicateCustomHostnames(eps)
+
+		winners, losers := 0, 0
+		for _, ep := range eps {
+			if hasEndpointCH(ep, "custom.example.com") {
+				winners++
+				assert.Equal(t, "app.internal.example.com", ep.DNSName, "aggregate must win")
+			} else {
+				losers++
+			}
+		}
+		assert.Equal(t, 1, winners)
+		assert.Equal(t, 2, losers)
+	})
+
+	t.Run("existing owner keeps custom hostname when shorter-named resource claims it", func(t *testing.T) {
+		t.Parallel()
+		chs := map[string]customHostnamesMap{
+			"001": {
+				{hostname: "alias.fancybar.com"}: {
+					id:                 "ID-alias",
+					hostname:           "alias.fancybar.com",
+					customOriginServer: "longer-svc.bar.com",
+				},
+			},
+		}
+		eps := []*endpoint.Endpoint{
+			epWithCH("longer-svc.bar.com", endpoint.RecordTypeA, "alias.fancybar.com"),
+			epWithCH("ing.bar.com", endpoint.RecordTypeA, "alias.fancybar.com"),
+		}
+		newProvider(chs).deduplicateCustomHostnames(eps)
+
+		assert.True(t, hasEndpointCH(eps[0], "alias.fancybar.com"), "existing owner must keep CH")
+		assert.False(t, hasEndpointCH(eps[1], "alias.fancybar.com"), "new claimant must be stripped")
+	})
+
+	t.Run("without existing owner, shortest DNSName wins", func(t *testing.T) {
+		t.Parallel()
+		eps := []*endpoint.Endpoint{
+			epWithCH("longer-svc.bar.com", endpoint.RecordTypeA, "alias.fancybar.com"),
+			epWithCH("ing.bar.com", endpoint.RecordTypeA, "alias.fancybar.com"),
+		}
+		newProvider(nil).deduplicateCustomHostnames(eps)
+
+		assert.False(t, hasEndpointCH(eps[0], "alias.fancybar.com"), "longer DNSName must lose")
+		assert.True(t, hasEndpointCH(eps[1], "alias.fancybar.com"), "shorter DNSName must win")
+	})
+
+	t.Run("multi-value annotation: shared value deduped, unique values kept", func(t *testing.T) {
+		t.Parallel()
+		a := epWithCH("a.example.com", endpoint.RecordTypeA, "shared.example.com,only-on-a.example.com")
+		b := epWithCH("b.example.com", endpoint.RecordTypeA, "shared.example.com,only-on-b.example.com")
+		eps := []*endpoint.Endpoint{a, b}
+		newProvider(nil).deduplicateCustomHostnames(eps)
+
+		assert.True(t, hasEndpointCH(a, "shared.example.com"))
+		assert.False(t, hasEndpointCH(b, "shared.example.com"))
+		assert.True(t, hasEndpointCH(a, "only-on-a.example.com"))
+		assert.True(t, hasEndpointCH(b, "only-on-b.example.com"))
+	})
+
+	t.Run("empty input is a no-op", func(t *testing.T) {
+		t.Parallel()
+		newProvider(nil).deduplicateCustomHostnames(nil)
+		newProvider(nil).deduplicateCustomHostnames([]*endpoint.Endpoint{})
+	})
+}
+
+func TestDeduplicateCustomHostnamesReconcile(t *testing.T) {
+	withCH := func(name, recordType, target, chValue string) *endpoint.Endpoint {
+		return &endpoint.Endpoint{
+			DNSName:    name,
+			RecordType: recordType,
+			Targets:    endpoint.Targets{target},
+			RecordTTL:  endpoint.TTL(defaultTTL),
+			Labels:     endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{Name: annotations.CloudflareCustomHostnameProperty, Value: chValue},
+			},
+		}
+	}
+
+	// Fix #1: A and AAAA share a DNSName, so the name-based tie-break must
+	// not strip one of them.
+	for _, order := range []string{"A-first", "AAAA-first"} {
+		t.Run("dual-stack A+AAAA keeps custom hostname, "+order, func(t *testing.T) {
+			client := NewMockCloudFlareClient()
+			p := &CloudFlareProvider{Client: client, CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true}}
+			desired := func() []*endpoint.Endpoint {
+				a := withCH("app.bar.com", endpoint.RecordTypeA, "1.2.3.4", "custom.fancybar.com")
+				aaaa := withCH("app.bar.com", endpoint.RecordTypeAAAA, "2001:db8::1", "custom.fancybar.com")
+				if order == "A-first" {
+					return []*endpoint.Endpoint{a, aaaa}
+				}
+				return []*endpoint.Endpoint{aaaa, a}
+			}
+
+			for loop := 1; loop <= 3; loop++ {
+				changes := reconcileCustomHostnames(t, p, desired())
+				origin, ok := customHostnameOrigin(client, "custom.fancybar.com")
+				assert.True(t, ok, "loop %d: custom hostname must exist", loop)
+				assert.Equal(t, "app.bar.com", origin, "loop %d", loop)
+				if loop > 1 {
+					assert.False(t, changes.HasChanges(), "loop %d: must converge, got update old=%v new=%v", loop, changes.UpdateOld, changes.UpdateNew)
+				}
+			}
+		})
+	}
+
+	// Fix #2: existing owner keeps custom hostname when a shorter-named
+	// resource claims it.
+	t.Run("existing owner keeps custom hostname when shorter-named resource claims it", func(t *testing.T) {
+		client := NewMockCloudFlareClient()
+		p := &CloudFlareProvider{Client: client, CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true}}
+
+		reconcileCustomHostnames(t, p, []*endpoint.Endpoint{
+			withCH("longer-svc.bar.com", endpoint.RecordTypeA, "1.2.3.4", "alias.fancybar.com"),
+		})
+		origin, ok := customHostnameOrigin(client, "alias.fancybar.com")
+		assert.True(t, ok)
+		assert.Equal(t, "longer-svc.bar.com", origin)
+
+		for loop := 1; loop <= 2; loop++ {
+			reconcileCustomHostnames(t, p, []*endpoint.Endpoint{
+				withCH("longer-svc.bar.com", endpoint.RecordTypeA, "1.2.3.4", "alias.fancybar.com"),
+				withCH("ing.bar.com", endpoint.RecordTypeA, "5.6.7.8", "alias.fancybar.com"),
+			})
+			origin, ok = customHostnameOrigin(client, "alias.fancybar.com")
+			assert.True(t, ok, "loop %d: custom hostname must exist", loop)
+			assert.Equal(t, "longer-svc.bar.com", origin, "loop %d: custom hostname was taken over", loop)
+		}
+	})
+}
+
+// TestCustomHostnameFanOutSteadyState verifies that after the first reconcile,
+// subsequent loops converge: the aggregate keeps the custom hostname, per-pod
+// records never cause a duplicate CreateCustomHostname, and the plan reports
+// no changes. This catches the regression where dedup ran only on the change
+// set (so on loop 2+ the unchanged aggregate was missing and a per-pod record
+// was wrongly chosen as winner, re-triggering #6698).
+func TestCustomHostnameFanOutSteadyState(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client, CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true}}
+	ep := func(name, target string) *endpoint.Endpoint {
+		return &endpoint.Endpoint{
+			DNSName: name, RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{target},
+			RecordTTL: endpoint.TTL(defaultTTL), Labels: endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{{Name: annotations.CloudflareCustomHostnameProperty, Value: "custom.fancybar.com"}},
+		}
+	}
+	desired := func() []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			ep("app.bar.com", "10.0.0.1"),
+			ep("pod-0.app.bar.com", "10.0.0.1"),
+			ep("pod-1.app.bar.com", "10.0.0.2"),
+		}
+	}
+	for loop := 1; loop <= 3; loop++ {
+		changes := reconcileCustomHostnames(t, p, desired())
+		var origins []string
+		for _, ch := range client.customHostnames["001"] {
+			if ch.hostname == "custom.fancybar.com" {
+				origins = append(origins, ch.customOriginServer)
+			}
+		}
+		// The mock accepts duplicate creates; real Cloudflare returns 409.
+		assert.Equal(t, []string{"app.bar.com"}, origins, "loop %d", loop)
+		if loop > 1 {
+			assert.False(t, changes.HasChanges(), "loop %d: must converge", loop)
+		}
+	}
 }

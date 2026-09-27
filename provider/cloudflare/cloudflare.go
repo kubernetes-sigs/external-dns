@@ -235,6 +235,9 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig  CustomHostnamesConfig
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
+	// cachedCustomHostnames stores custom hostnames loaded during Records(),
+	// keyed by zone ID. Used by AdjustEndpoints for dedup tie-break.
+	cachedCustomHostnames map[string]customHostnamesMap
 }
 
 // cloudFlareChange differentiates between ChangeActions
@@ -426,6 +429,11 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
+	// Reset the custom hostnames cache; it will be repopulated below.
+	if p.CustomHostnamesConfig.Enabled {
+		p.cachedCustomHostnames = map[string]customHostnamesMap{}
+	}
+
 	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		records, err := p.getDNSRecordsMap(ctx, zone.ID)
@@ -437,6 +445,11 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zone.ID)
 		if chErr != nil {
 			return nil, chErr
+		}
+
+		// Cache custom hostnames for use by AdjustEndpoints dedup.
+		if p.CustomHostnamesConfig.Enabled {
+			p.cachedCustomHostnames[zone.ID] = chs
 		}
 
 		// As CloudFlare does not support "sets" of targets, but instead returns
@@ -655,6 +668,13 @@ func parseTagsAnnotation(tagString string) []string {
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Deduplicate custom hostnames across the full desired set so that the
+	// plan converges: same dedup runs every loop, regardless of which
+	// endpoints happen to be in the plan's change set.
+	if p.CustomHostnamesConfig.Enabled {
+		p.deduplicateCustomHostnames(endpoints)
+	}
+
 	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
