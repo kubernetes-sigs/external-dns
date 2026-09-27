@@ -216,15 +216,6 @@ func TestWithEmitEvents(t *testing.T) {
 			},
 		},
 		{
-			name:     "record deleted",
-			input:    []string{string(RecordDeleted)},
-			expected: sets.New(RecordDeleted),
-			assert: func(c *Config) {
-				require.Equal(t, sets.New(RecordDeleted), c.emitEvents)
-				require.True(t, c.IsEnabled())
-			},
-		},
-		{
 			name:     "invalid event",
 			input:    []string{"InvalidEvent"},
 			expected: sets.New[Reason](),

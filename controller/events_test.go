@@ -37,7 +37,7 @@ func TestEmit_RecordReady(t *testing.T) {
 		asserts func(em *fake.EventEmitter, ch plan.Changes)
 	}{
 		{
-			name: "create, update and delete endpoints",
+			name: "create and update emit events, delete does not",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
 					endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
@@ -55,35 +55,13 @@ func TestEmit_RecordReady(t *testing.T) {
 				for _, ep := range ch.Create {
 					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionCreate, events.RecordReady))
 				}
-				for _, ep := range ch.Delete {
-					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
+				for _, ep := range ch.UpdateNew {
+					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionUpdate, events.RecordReady))
 				}
 				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.EventType() == events.EventTypeWarning
 				}))
-				em.AssertNumberOfCalls(t, "Add", 5)
-			},
-		},
-		{
-			name: "delete endpoints",
-			changes: plan.Changes{
-				Create:    []*endpoint.Endpoint{},
-				UpdateNew: []*endpoint.Endpoint{},
-				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
-				},
-			},
-			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
-				for _, ep := range ch.Delete {
-					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
-				}
-				em.AssertCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
-					return e.EventType() == events.EventTypeNormal &&
-						e.Action() == events.ActionDelete &&
-						e.Reason() == events.RecordDeleted
-				}))
-
-				em.AssertNumberOfCalls(t, "Add", 1)
+				em.AssertNumberOfCalls(t, "Add", 4)
 			},
 		},
 	}
@@ -115,7 +93,7 @@ func TestEmit_RecordError(t *testing.T) {
 		asserts func(em *fake.EventEmitter, ch plan.Changes)
 	}{
 		{
-			name: "create, update and delete endpoints",
+			name: "create and update emit events, delete does not",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
 					endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
@@ -130,25 +108,7 @@ func TestEmit_RecordError(t *testing.T) {
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Create[0], events.ActionCreate, events.RecordError))
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.UpdateNew[0], events.ActionUpdate, events.RecordError))
-				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Delete[0], events.ActionDelete, events.RecordError))
-				em.AssertNumberOfCalls(t, "Add", 3)
-			},
-		},
-		{
-			name: "delete endpoints emit RecordError not RecordDeleted",
-			changes: plan.Changes{
-				Create:    []*endpoint.Endpoint{},
-				UpdateNew: []*endpoint.Endpoint{},
-				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
-				},
-			},
-			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
-				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Delete[0], events.ActionDelete, events.RecordError))
-				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
-					return e.Reason() == events.RecordDeleted
-				}))
-				em.AssertNumberOfCalls(t, "Add", 1)
+				em.AssertNumberOfCalls(t, "Add", 2)
 			},
 		},
 	}
