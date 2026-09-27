@@ -192,7 +192,7 @@ func buildController(
 	// A typed-nil *StatusWriter would make the interface non-nil.
 	var statusReporter StatusReporter
 	if cc := sCfg.CRDClients(); cc != nil {
-		statusReporter = crd.NewStatusWriter(cc)
+		statusReporter = crd.NewStatusWriter(cc, cfg.DryRun)
 	}
 
 	return &Controller{

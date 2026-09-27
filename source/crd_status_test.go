@@ -18,10 +18,7 @@ package source
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +29,11 @@ import (
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	eventsfake "sigs.k8s.io/external-dns/pkg/events/fake"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // Every DNSEndpoint in this file uses the same name and namespace.
@@ -316,6 +316,78 @@ func TestCRDSourceEmitsRejectionEventOnlyWhenTheVerdictChanges(t *testing.T) {
 	emitter.AssertNumberOfCalls(t, "Add", 2)
 }
 
+// An object whose endpoints were all rejected contributes nothing to the plan, so
+// the status writer never sees it and the previous verdict would linger.
+func TestCRDSourceClearsReadyWhenEveryEndpointIsRejected(t *testing.T) {
+	obj := &apiv1alpha1.DNSEndpoint{
+		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
+		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
+			{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+		}},
+	}
+
+	fakeCache := newFakeCRDCache(t, nil, obj)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil, nil)
+	require.NoError(t, err)
+
+	_, err = cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	reportProgrammed(t, fakeCache, obj)
+
+	programmed := readDNSEndpoint(t, fakeCache.Client)
+	require.Equal(t, int32(1), programmed.Status.Endpoints)
+	require.Equal(t, apiv1alpha1.ProgrammedReason,
+		meta.FindStatusCondition(programmed.Status.Conditions, apiv1alpha1.ReadyCondition).Reason)
+
+	// The user breaks the only endpoint.
+	programmed.Spec.Endpoints[0].Targets = endpoint.Targets{"1.2.3.4."}
+	require.NoError(t, fakeCache.Client.Update(t.Context(), programmed))
+
+	_, err = cs.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	got := readDNSEndpoint(t, fakeCache.Client)
+	assert.Equal(t, apiv1alpha1.InvalidReason,
+		meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.AcceptedCondition).Reason)
+
+	ready := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
+	require.NotNil(t, ready)
+	assert.Equal(t, metav1.ConditionFalse, ready.Status)
+	assert.Equal(t, apiv1alpha1.InvalidReason, ready.Reason, "Ready must not still claim Programmed")
+	assert.Zero(t, got.Status.Endpoints, "the endpoint count must not survive the rejection")
+}
+
+// An emptied spec has nothing to be ready about, so the condition goes away.
+func TestCRDSourceRemovesReadyWhenSpecBecomesEmpty(t *testing.T) {
+	obj := &apiv1alpha1.DNSEndpoint{
+		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
+		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
+			{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+		}},
+	}
+
+	fakeCache := newFakeCRDCache(t, nil, obj)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil, nil)
+	require.NoError(t, err)
+
+	_, err = cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	reportProgrammed(t, fakeCache, obj)
+
+	emptied := readDNSEndpoint(t, fakeCache.Client)
+	emptied.Spec.Endpoints = nil
+	require.NoError(t, fakeCache.Client.Update(t.Context(), emptied))
+
+	_, err = cs.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	got := readDNSEndpoint(t, fakeCache.Client)
+	assert.Nil(t, meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition))
+	assert.Zero(t, got.Status.Endpoints)
+	assert.Equal(t, apiv1alpha1.AcceptedReason,
+		meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.AcceptedCondition).Reason)
+}
+
 func TestCRDSourceEmitsNoEventWhenAllEndpointsValid(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
@@ -336,16 +408,12 @@ func TestCRDSourceEmitsNoEventWhenAllEndpointsValid(t *testing.T) {
 	emitter.AssertNumberOfCalls(t, "Add", 0)
 }
 
-func TestTruncateConditionMessage(t *testing.T) {
-	short := "all good"
-	assert.Equal(t, short, truncateConditionMessage(short))
-
-	long := truncateConditionMessage(fmt.Sprintf("%0*d", 40000, 0))
-	assert.Len(t, long, 32768)
-	assert.True(t, len(long) > 3 && long[len(long)-3:] == "...")
-
-	// User-supplied names may be UTF-8; cutting bytes would split a rune.
-	multibyte := truncateConditionMessage(strings.Repeat("é", 40000))
-	assert.Equal(t, 32768, utf8.RuneCountInString(multibyte))
-	assert.True(t, utf8.ValidString(multibyte), "truncation must not split a rune")
+// reportProgrammed stands in for the controller's status writer after a
+// successful sync of obj's endpoints.
+func reportProgrammed(t *testing.T, fakeCache *fakeCRDCache, obj *apiv1alpha1.DNSEndpoint) {
+	t.Helper()
+	w := crd.NewStatusWriter(crd.NewCRDClients(fakeCache, fakeCache.Client), false)
+	w.ReportStatus(t.Context(), []plan.PlannedObject{
+		{Ref: events.NewObjectReference(obj, types.CRD), Endpoints: 1},
+	}, nil)
 }

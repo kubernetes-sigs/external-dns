@@ -20,22 +20,19 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
-	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/retry"
 	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -262,7 +259,7 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 	if len(rejections) > 0 {
 		condition.Status = metav1.ConditionFalse
 		condition.Reason = apiv1alpha1.InvalidReason
-		condition.Message = truncateConditionMessage(strings.Join(rejections, "; "))
+		condition.Message = crd.TruncateConditionMessage(strings.Join(rejections, "; "))
 		// Events are never collapsed into a series: emitting on every sync would
 		// create one Event per interval, forever, for an untouched spec.
 		if verdictChanged(dnsEndpoint.Status.Conditions, condition) {
@@ -270,9 +267,26 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 		}
 	}
 
-	cs.updateStatus(ctx, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
+	crd.UpdateStatus(ctx, cs.crWriter, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
 		status.ObservedGeneration = dnsEndpoint.Generation
 		meta.SetStatusCondition(&status.Conditions, condition)
+
+		if accepted > 0 {
+			return
+		}
+		// The status writer never sees this object; don't leave a stale Ready.
+		status.Endpoints = 0
+		if len(rejections) == 0 {
+			meta.RemoveStatusCondition(&status.Conditions, apiv1alpha1.ReadyCondition)
+			return
+		}
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               apiv1alpha1.ReadyCondition,
+			Status:             metav1.ConditionFalse,
+			Reason:             apiv1alpha1.InvalidReason,
+			Message:            "No endpoint reached the DNS provider: every endpoint in spec was rejected",
+			ObservedGeneration: dnsEndpoint.Generation,
+		})
 	})
 }
 
@@ -283,33 +297,6 @@ func verdictChanged(stored []metav1.Condition, condition metav1.Condition) bool 
 	return current == nil || current.Status != condition.Status || current.Reason != condition.Reason || current.Message != condition.Message
 }
 
-// updateStatus writes the mutated status only if it changed. The cached copy may
-// be stale; its resourceVersion then gets it rejected, and only then do we re-read.
-func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, mutate func(*apiv1alpha1.DNSEndpointStatus)) {
-	updated := dnsEndpoint.DeepCopy()
-	mutate(&updated.Status)
-	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, &updated.Status) {
-		return
-	}
-
-	err := cs.crWriter.Status().Update(ctx, updated)
-	if apierrors.IsConflict(err) {
-		key := client.ObjectKeyFromObject(dnsEndpoint)
-		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			latest := &apiv1alpha1.DNSEndpoint{}
-			if err := cs.crWriter.Get(ctx, key, latest); err != nil {
-				return err
-			}
-			mutate(&latest.Status)
-			return cs.crWriter.Status().Update(ctx, latest)
-		})
-	}
-	if err != nil {
-		log.Warnf("Could not update status of [%s/%s/%s]: %v",
-			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)
-	}
-}
-
 // emit sends a Kubernetes event on the DNSEndpoint. It is a no-op unless the
 // matching reason was enabled with --events-emit.
 func (cs *crdSource) emit(dnsEndpoint *apiv1alpha1.DNSEndpoint, msg string, action events.Action, reason events.Reason) {
@@ -318,19 +305,6 @@ func (cs *crdSource) emit(dnsEndpoint *apiv1alpha1.DNSEndpoint, msg string, acti
 	}
 	ref := events.NewObjectReference(dnsEndpoint, types.CRD)
 	cs.emitter.Add(events.NewWarningEvent(ref, msg, action, reason))
-}
-
-// truncateConditionMessage fits the API server's 32768-character limit on
-// Condition.Message, cutting on a rune boundary since it quotes user input.
-func truncateConditionMessage(msg string) string {
-	const maxConditionMessageLength = 32768
-	if utf8.RuneCountInString(msg) <= maxConditionMessageLength {
-		return msg
-	}
-
-	runes := []rune(msg)
-
-	return string(runes[:maxConditionMessageLength-3]) + "..."
 }
 
 // newCrdSource wires a cache and writer into a running crdSource.
