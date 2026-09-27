@@ -27,6 +27,8 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func TestMultiSource(t *testing.T) {
@@ -268,6 +270,22 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 
 		src.AssertExpectations(t)
 	})
+}
+
+func TestMultiSourceDefaultTargetsKeepRefObjects(t *testing.T) {
+	ref := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "default", "example", "", types.CRD)
+	src := new(testutils.MockSource)
+	src.On("Endpoints").Return([]*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA).WithRefObject(ref),
+	}, nil)
+
+	endpoints, err := NewMultiSource([]source.Source{src}, []string{"192.0.2.1", "2001:db8::1"}, false).Endpoints(t.Context())
+	require.NoError(t, err)
+
+	require.Len(t, endpoints, 2)
+	for _, ep := range endpoints {
+		assert.Equal(t, []*events.ObjectReference{ref}, ep.RefObjects(), "%s %s", ep.DNSName, ep.RecordType)
+	}
 }
 
 func TestMultiSource_AddEventHandler(t *testing.T) {
