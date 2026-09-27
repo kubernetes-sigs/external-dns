@@ -168,7 +168,6 @@ func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
 		}
 		result = append(result, obj)
 	}
-	log.Debugf("Found %d indexed objects", len(result))
 	return result
 }
 
