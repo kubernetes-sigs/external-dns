@@ -110,6 +110,7 @@ sequenceDiagram
 - They are best-effort and not guaranteed to be delivered or stored long-term.
 - Not a substitute for logging or metrics, but complementary.
 - `RecordDeleted` events carry no UID, so `kubectl describe` misses them; use `kubectl get events -n <namespace>`.
+  `unstructured` source kinds are lowercase (e.g. `virtualmachineinstance`).
   Records without a registry `resource` label (e.g. `--registry=noop`) emit none.
 
 ## Supported Sources

@@ -28,28 +28,36 @@ import (
 const registrySource = "registry"
 
 // resourceKinds maps resource label prefixes to Kinds, for `involvedObject.kind=` selectors.
+// Unstructured-source kinds are lowercased in the label and stay so.
 var resourceKinds = map[string]string{
-	"service":         "Service",
-	"ingress":         "Ingress",
-	"pod":             "Pod",
-	"node":            "Node",
-	"crd":             "DNSEndpoint",
-	"httproute":       "HTTPRoute",
-	"grpcroute":       "GRPCRoute",
-	"tcproute":        "TCPRoute",
-	"udproute":        "UDPRoute",
-	"tlsroute":        "TLSRoute",
-	"gateway":         "Gateway",
-	"virtualservice":  "VirtualService",
-	"route":           "Route",
-	"ingressroute":    "IngressRoute",
-	"ingressroutetcp": "IngressRouteTCP",
-	"ingressrouteudp": "IngressRouteUDP",
+	"service":            "Service",
+	"ingress":            "Ingress",
+	"pod":                "Pod",
+	"node":               "Node",
+	"crd":                "DNSEndpoint",
+	"httproute":          "HTTPRoute",
+	"grpcroute":          "GRPCRoute",
+	"tcproute":           "TCPRoute",
+	"udproute":           "UDPRoute",
+	"tlsroute":           "TLSRoute",
+	"gateway":            "Gateway",
+	"virtualservice":     "VirtualService",
+	"route":              "Route",
+	"ingressroute":       "IngressRoute",
+	"ingressroutetcp":    "IngressRouteTCP",
+	"ingressrouteudp":    "IngressRouteUDP",
+	"httpproxy":          "HTTPProxy",
+	"tcpingress":         "TCPIngress",
+	"routegroup":         "RouteGroup",
+	"proxy":              "Proxy",
+	"host":               "Host",
+	"f5-virtualserver":   "VirtualServer",
+	"f5-transportserver": "TransportServer",
 }
 
 // emitChangeEvent emits a Kubernetes event for each DNS record change.
 // Deletes use RecordDeleted on success and RecordError on failure.
-func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reason) {
+func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reason, crdKind string) {
 	if e == nil {
 		return
 	}
@@ -64,7 +72,7 @@ func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reas
 		deleteReason = events.RecordError
 	}
 	for _, ep := range ch.Delete {
-		ref := refFromResourceLabel(ep.Labels[endpoint.ResourceLabelKey])
+		ref := refFromResourceLabel(ep.Labels[endpoint.ResourceLabelKey], crdKind)
 		if ref == nil {
 			continue
 		}
@@ -83,7 +91,7 @@ func (d deletedEndpoint) RefObjects() []*events.ObjectReference {
 }
 
 // refFromResourceLabel parses "kind/namespace/name" or "kind/name". No UID: the object may be gone.
-func refFromResourceLabel(resource string) *events.ObjectReference {
+func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 	parts := strings.Split(resource, "/")
 	var kind, namespace, name string
 	switch len(parts) {
@@ -97,7 +105,9 @@ func refFromResourceLabel(resource string) *events.ObjectReference {
 	if kind == "" || name == "" {
 		return nil
 	}
-	if k, ok := resourceKinds[strings.ToLower(kind)]; ok {
+	if kind == "crd" && crdKind != "" {
+		kind = crdKind
+	} else if k, ok := resourceKinds[strings.ToLower(kind)]; ok {
 		kind = k
 	}
 	return events.NewObjectReferenceFromParts(kind, "", namespace, name, "", registrySource)

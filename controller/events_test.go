@@ -61,7 +61,7 @@ func TestEmit_RecordReady(t *testing.T) {
 				for _, ep := range ch.UpdateNew {
 					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionUpdate, events.RecordReady))
 				}
-				deleted := deletedEndpoint{Endpoint: ch.Delete[0], ref: refFromResourceLabel("ingress/default/five")}
+				deleted := deletedEndpoint{Endpoint: ch.Delete[0], ref: refFromResourceLabel("ingress/default/five", "")}
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(deleted, events.ActionDelete, events.RecordDeleted))
 				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.EventType() == events.EventTypeWarning
@@ -75,7 +75,7 @@ func TestEmit_RecordReady(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			emitter := fake.NewFakeEventEmitter()
 
-			emitChangeEvent(emitter, &tt.changes, events.RecordReady)
+			emitChangeEvent(emitter, &tt.changes, events.RecordReady, "")
 
 			tt.asserts(emitter, tt.changes)
 			mock.AssertExpectationsForObjects(t, emitter)
@@ -85,7 +85,7 @@ func TestEmit_RecordReady(t *testing.T) {
 
 func TestEmit_NilEmitter(t *testing.T) {
 	assert.NotPanics(t, func() {
-		emitChangeEvent(nil, &plan.Changes{}, events.RecordError)
+		emitChangeEvent(nil, &plan.Changes{}, events.RecordError, "")
 	})
 }
 
@@ -114,7 +114,7 @@ func TestEmit_RecordError(t *testing.T) {
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Create[0], events.ActionCreate, events.RecordError))
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.UpdateNew[0], events.ActionUpdate, events.RecordError))
-				deleted := deletedEndpoint{Endpoint: ch.Delete[0], ref: refFromResourceLabel("service/default/three")}
+				deleted := deletedEndpoint{Endpoint: ch.Delete[0], ref: refFromResourceLabel("service/default/three", "")}
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(deleted, events.ActionDelete, events.RecordError))
 				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.Reason() == events.RecordDeleted
@@ -128,7 +128,7 @@ func TestEmit_RecordError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			emitter := fake.NewFakeEventEmitter()
 
-			emitChangeEvent(emitter, &tt.changes, events.RecordError)
+			emitChangeEvent(emitter, &tt.changes, events.RecordError, "")
 
 			tt.asserts(emitter, tt.changes)
 			mock.AssertExpectationsForObjects(t, emitter)
@@ -139,12 +139,16 @@ func TestEmit_RecordError(t *testing.T) {
 func TestRefFromResourceLabel(t *testing.T) {
 	tests := []struct {
 		resource  string
+		crdKind   string
 		kind      string
 		namespace string
 		name      string
 	}{
 		{resource: "ingress/default/web", kind: "Ingress", namespace: "default", name: "web"},
 		{resource: "crd/team-a/records", kind: "DNSEndpoint", namespace: "team-a", name: "records"},
+		{resource: "crd/team-a/custom", crdKind: "MyDNSRecord", kind: "MyDNSRecord", namespace: "team-a", name: "custom"},
+		{resource: "tcpingress/kong/tcp", kind: "TCPIngress", namespace: "kong", name: "tcp"},
+		{resource: "f5-virtualserver/f5/vs", kind: "VirtualServer", namespace: "f5", name: "vs"},
 		{resource: "httproute/gw/api", kind: "HTTPRoute", namespace: "gw", name: "api"},
 		{resource: "node/worker-1", kind: "Node", name: "worker-1"},
 		{resource: "HTTPProxy/default/proxy", kind: "HTTPProxy", namespace: "default", name: "proxy"},
@@ -152,7 +156,7 @@ func TestRefFromResourceLabel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.resource, func(t *testing.T) {
-			ref := refFromResourceLabel(tt.resource)
+			ref := refFromResourceLabel(tt.resource, tt.crdKind)
 			require.NotNil(t, ref)
 			assert.Equal(t, tt.kind, ref.Kind())
 			assert.Equal(t, tt.namespace, ref.Namespace())
@@ -164,7 +168,7 @@ func TestRefFromResourceLabel(t *testing.T) {
 
 	for _, resource := range []string{"", "ingress", "ingress/", "/default/web", "a/b/c/d"} {
 		t.Run("invalid "+resource, func(t *testing.T) {
-			assert.Nil(t, refFromResourceLabel(resource))
+			assert.Nil(t, refFromResourceLabel(resource, "DNSEndpoint"))
 		})
 	}
 }
