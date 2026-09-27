@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestZoneCache_SliceCache(t *testing.T) {
@@ -69,7 +70,7 @@ func TestZoneCache_CachingDisabled(t *testing.T) {
 	// Should still be expired because caching is disabled
 	assert.True(t, cache.Expired())
 	// Data should not be stored
-	assert.Nil(t, cache.Get())
+	require.Nil(t, cache.Get())
 }
 
 func TestZoneCache_Expiration_Synctest(t *testing.T) {
@@ -146,7 +147,7 @@ func TestZoneCache_ThreadSafety(t *testing.T) {
 
 	// After all writes complete, cache should have valid final state
 	finalData := cache.Get()
-	assert.NotNil(t, finalData, "cache should have data after writes")
+	require.NotNil(t, finalData, "cache should have data after writes")
 	assert.Len(t, finalData, 2, "final data should have 2 elements")
 	assert.False(t, cache.Expired(), "cache should not be expired")
 }

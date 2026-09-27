@@ -102,7 +102,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
-	suite.NoError(err, "should initialize httpproxy source")
+	suite.Require().NoError(err, "should initialize httpproxy source")
 
 	suite.httpProxy = (fakeHTTPProxy{
 		name:      "foo-httpproxy-with-targets",
@@ -112,12 +112,10 @@ func (suite *HTTPProxySuite) SetupTest() {
 
 	// Convert to unstructured
 	unstructuredHTTPProxy, err := convertHTTPProxyToUnstructured(suite.httpProxy, s)
-	if err != nil {
-		suite.Error(err)
-	}
+	suite.Require().NoError(err)
 
 	_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(suite.httpProxy.Namespace).Create(context.Background(), unstructuredHTTPProxy, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 }
 
 func (suite *HTTPProxySuite) TestResourceLabelIsSet() {
@@ -1039,9 +1037,9 @@ func testHTTPProxyEndpoints(t *testing.T) {
 
 			res, err := httpProxySource.Endpoints(t.Context())
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			testutils.ValidateEndpoints(t, res, ti.expected)

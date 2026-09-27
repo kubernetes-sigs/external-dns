@@ -19,7 +19,6 @@ package source
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -235,7 +234,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
@@ -410,7 +409,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
@@ -581,7 +580,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
