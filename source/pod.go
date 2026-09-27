@@ -67,7 +67,7 @@ func NewPodSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	namespace := informers.SingleNamespace(cfg.Namespaces)
+	namespace := cfg.Namespace()
 	annotationFilter := cfg.AnnotationFilter
 	labelSelector := cfg.LabelFilter
 

@@ -60,7 +60,7 @@ type crdSource struct {
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
 // It builds the scheme, cache, and status-write client from restConfig and cfg.
 func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (Source, error) {
-	namespace := informers.SingleNamespace(cfg.Namespaces)
+	namespace := cfg.Namespace()
 	opts, err := buildCacheOptions(namespace, cfg.LabelFilter)
 	if err != nil {
 		return nil, err

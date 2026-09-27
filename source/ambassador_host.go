@@ -88,7 +88,7 @@ func NewAmbassadorHostSource(
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	namespace := informers.SingleNamespace(cfg.Namespaces)
+	namespace := cfg.Namespace()
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
 

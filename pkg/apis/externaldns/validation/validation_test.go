@@ -527,6 +527,16 @@ func TestValidateNamespaces(t *testing.T) {
 			namespaces: []string{"team-a", "team-b"},
 		},
 		{
+			name:       "duplicated namespace with a source watching one",
+			sources:    []string{"istio-gateway"},
+			namespaces: []string{"team-a", "team-a"},
+		},
+		{
+			name:       "all namespaces subsuming another with a source watching one",
+			sources:    []string{"istio-gateway"},
+			namespaces: []string{"team-a", ""},
+		},
+		{
 			name:        "several namespaces with a source watching one",
 			sources:     []string{"istio-gateway"},
 			namespaces:  []string{"team-a", "team-b"},

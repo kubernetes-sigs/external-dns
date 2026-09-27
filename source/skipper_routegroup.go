@@ -69,7 +69,7 @@ func (w *routeGroupWrapper) Metadata() *metav1.ObjectMeta {
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
-	namespace := informers.SingleNamespace(cfg.Namespaces)
+	namespace := cfg.Namespace()
 	// The reflector retries a failing List until WaitForCacheSync gives up a minute later,
 	// so probe up front: a missing CRD should fail startup at once, and say so.
 	if _, err := client.ZalandoV1().RouteGroups(namespace).List(ctx, metav1.ListOptions{Limit: 1}); err != nil {

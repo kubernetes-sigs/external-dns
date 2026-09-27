@@ -90,7 +90,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 // validateNamespaces rejects several --namespace values for sources watching a single one,
 // which would otherwise silently watch only the first.
 func validateNamespaces(cfg *externaldns.Config) error {
-	if len(cfg.Namespaces) < 2 {
+	if len(externaldns.NormalizeNamespaces(cfg.Namespaces)) < 2 {
 		return nil
 	}
 	var unsupported []string

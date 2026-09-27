@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -158,7 +159,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		return nil, err
 	}
 	c := &Config{
-		Namespaces:                     cfg.Namespaces,
+		Namespaces:                     externaldns.NormalizeNamespaces(cfg.Namespaces),
 		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
@@ -211,6 +212,15 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		opt(c)
 	}
 	return c, nil
+}
+
+// Namespace returns the namespace watched by sources supporting a single one,
+// which ValidateConfig guarantees. Empty means all namespaces.
+func (cfg *Config) Namespace() string {
+	if len(cfg.Namespaces) == 0 {
+		return v1.NamespaceAll
+	}
+	return cfg.Namespaces[0]
 }
 
 // ClientGenerator returns the ClientGenerator for this Config.

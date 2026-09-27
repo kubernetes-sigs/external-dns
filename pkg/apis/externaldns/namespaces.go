@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package informers
+package externaldns
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -38,10 +38,4 @@ func NormalizeNamespaces(namespaces []string) []string {
 		return []string{v1.NamespaceAll}
 	}
 	return result
-}
-
-// SingleNamespace returns the only namespace to watch, NamespaceAll when there is none.
-// Used by sources watching a single namespace, which ValidateConfig guarantees.
-func SingleNamespace(namespaces []string) string {
-	return NormalizeNamespaces(namespaces)[0]
 }

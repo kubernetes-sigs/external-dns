@@ -202,7 +202,7 @@ func newGatewayRouteSource(
 		))
 	}
 
-	rtNamespace := informers.SingleNamespace(config.Namespaces)
+	rtNamespace := config.Namespace()
 	rtInformerFactory := gwInformerFactory
 	if rtNamespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
 		rtInformerFactory = newGatewayInformerFactory(client, rtNamespace, rtLabels)

@@ -440,8 +440,8 @@ func sortedAllowedSources() []string {
 	return s
 }
 
-// multiNamespaceSources watch every namespace given to --namespace. The others watch at
-// most one, either because they ignore the flag or because they are not migrated yet.
+// multiNamespaceSources watch every --namespace value.
+// Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
 	"connector",
 	"empty",
@@ -501,8 +501,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 }
 
 // uniqueCommaSeparated expands the comma-separated values of a repeatable flag, dropping
-// blanks and duplicates. Kingpin never splits on commas: it only splits env var values
-// on newlines.
+// blanks and duplicates.
+// Kingpin never splits on commas, only env vars on newlines.
 func uniqueCommaSeparated(values []string) []string {
 	seen := sets.New[string]()
 	var result []string
