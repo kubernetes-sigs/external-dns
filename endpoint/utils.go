@@ -22,14 +22,8 @@ import (
 	"slices"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	"sigs.k8s.io/external-dns/pkg/events"
-)
-
-const (
-	msg = "No endpoints could be generated from '%s/%s/%s'"
 )
 
 // SuitableType returns the DNS record type for the given target:
@@ -56,19 +50,6 @@ func RequiresTrailingDot(recordType string) bool {
 	default:
 		return false
 	}
-}
-
-// HasNoEmptyEndpoints checks if the endpoint list is empty and logs
-// a debug message if so. Returns true if empty, false otherwise.
-func HasNoEmptyEndpoints(
-	endpoints []*Endpoint,
-	rType string, entity metav1.ObjectMetaAccessor,
-) bool {
-	if len(endpoints) == 0 {
-		log.Debugf(msg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName())
-		return true
-	}
-	return false
 }
 
 // EndpointsForHostname returns endpoint objects for each host-target combination,
@@ -102,7 +83,7 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 // AttachRefObject sets the same ObjectReference on every endpoint in eps.
 // The reference is shared across all endpoints, so callers should create it once
 // per source object rather than once per endpoint.
-func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
+func AttachRefObject(eps []*Endpoint, ref *ObjectRef) {
 	for _, ep := range eps {
 		ep.WithRefObject(ref)
 	}

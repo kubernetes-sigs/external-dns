@@ -163,7 +163,7 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			return nil, err
 		}
 
-		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
+		if hasNoEmptyEndpoints(gwEndpoints, types.IstioGateway, gateway) {
 			continue
 		}
 
