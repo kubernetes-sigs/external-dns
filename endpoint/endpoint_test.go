@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -1675,38 +1674,38 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 }
 
 func TestEndpoint_WithRefObject(t *testing.T) {
-	ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
-	ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
+	ref1 := NewObjectRef("Service", "v1", "default", "svc-a", "uid-1", "service")
+	ref2 := NewObjectRef("Service", "v1", "default", "svc-b", "uid-2", "service")
 
 	tests := []struct {
 		name     string
-		add      []*events.ObjectReference
+		add      []*ObjectRef
 		wantLen  int
-		wantRefs []*events.ObjectReference
+		wantRefs []*ObjectRef
 	}{
 		{
 			name:     "nil ref is a no-op",
-			add:      []*events.ObjectReference{nil},
+			add:      []*ObjectRef{nil},
 			wantLen:  0,
 			wantRefs: nil,
 		},
 		{
 			name:     "single ref is stored",
-			add:      []*events.ObjectReference{ref1},
+			add:      []*ObjectRef{ref1},
 			wantLen:  1,
-			wantRefs: []*events.ObjectReference{ref1},
+			wantRefs: []*ObjectRef{ref1},
 		},
 		{
 			name:     "same ref added twice is deduplicated",
-			add:      []*events.ObjectReference{ref1, ref1},
+			add:      []*ObjectRef{ref1, ref1},
 			wantLen:  1,
-			wantRefs: []*events.ObjectReference{ref1},
+			wantRefs: []*ObjectRef{ref1},
 		},
 		{
 			name:     "distinct refs are added in insertion order",
-			add:      []*events.ObjectReference{ref1, ref2},
+			add:      []*ObjectRef{ref1, ref2},
 			wantLen:  2,
-			wantRefs: []*events.ObjectReference{ref1, ref2},
+			wantRefs: []*ObjectRef{ref1, ref2},
 		},
 	}
 

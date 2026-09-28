@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	runtime "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
@@ -73,14 +74,7 @@ type (
 	}
 
 	// ObjectReference holds metadata about a Kubernetes object for event correlation.
-	ObjectReference struct {
-		kind       string
-		apiVersion string
-		namespace  string
-		name       string
-		uid        types.UID
-		source     string
-	}
+	ObjectReference = endpoint.ObjectRef
 
 	Config struct {
 		emitEvents sets.Set[Reason]
@@ -111,14 +105,7 @@ func NewObjectReference(obj runtime.Object, source string) *ObjectReference {
 			gvk = schema.GroupVersionKind{Kind: reflect.TypeOf(obj).Elem().Name()}
 		}
 	}
-	return &ObjectReference{
-		kind:       gvk.Kind,
-		apiVersion: gvk.GroupVersion().String(),
-		namespace:  obj.GetNamespace(),
-		name:       obj.GetName(),
-		uid:        obj.GetUID(),
-		source:     source,
-	}
+	return endpoint.NewObjectRef(gvk.Kind, gvk.GroupVersion().String(), obj.GetNamespace(), obj.GetName(), obj.GetUID(), source)
 }
 
 func NewEvent(obj *ObjectReference, msg string, a Action, r Reason) Event {
@@ -189,7 +176,7 @@ func (e *Event) events() []*eventsv1.Event {
 }
 
 func (e *Event) eventForRef(ref ObjectReference) *eventsv1.Event {
-	if ref.name == "" {
+	if ref.Name() == "" {
 		log.Debug("skipping event for resources as the name is not generated yet")
 		return nil
 	}
@@ -203,25 +190,25 @@ func (e *Event) eventForRef(ref ObjectReference) *eventsv1.Event {
 
 	// Events are namespaced resources. For cluster-scoped objects like Nodes,
 	// the namespace is empty, so we default to "default" namespace.
-	namespace := ref.namespace
+	namespace := ref.Namespace()
 	if namespace == "" {
 		namespace = "default"
 	}
 
 	event := &eventsv1.Event{
-		Name:                sanitize(ref.name, timestamp.Time),
+		Name:                sanitize(ref.Name(), timestamp.Time),
 		Namespace:           namespace,
 		EventTime:           timestamp,
-		ReportingInstance:   controllerName + "/source/" + ref.source,
+		ReportingInstance:   controllerName + "/source/" + ref.Source(),
 		ReportingController: controllerName,
 		Action:              string(e.action),
 		Reason:              string(e.reason),
 		Note:                message,
 		Type:                string(e.eType),
 	}
-	objRef := ref.objectRef()
+	objRef := objectRef(&ref)
 	event.Regarding = *objRef
-	if ref.uid != "" {
+	if ref.UID() != "" {
 		event.Related = objRef
 	}
 	return event
@@ -285,51 +272,20 @@ func (c *Config) IsEnabled() bool {
 
 // description returns a human-readable summary of the reference.
 // Namespaced resources use "kind/namespace/name"; cluster-scoped resources omit the namespace: "kind/name".
-func (r *ObjectReference) description() string {
-	if r.namespace == "" {
-		return fmt.Sprintf("%s/%s", r.kind, r.name)
+func description(r *ObjectReference) string {
+	if r.Namespace() == "" {
+		return fmt.Sprintf("%s/%s", r.Kind(), r.Name())
 	}
-	return fmt.Sprintf("%s/%s/%s", r.kind, r.namespace, r.name)
+	return fmt.Sprintf("%s/%s/%s", r.Kind(), r.Namespace(), r.Name())
 }
 
-// Key returns a stable string that uniquely identifies this object reference
-// in the form "source/namespace/name".
-func (r *ObjectReference) Key() string {
-	return r.source + "/" + r.namespace + "/" + r.name
-}
-
-// Kind returns the Kubernetes kind of the referenced object (e.g. "Service", "Ingress").
-func (r *ObjectReference) Kind() string {
-	return r.kind
-}
-
-// Namespace returns the namespace of the referenced Kubernetes object.
-func (r *ObjectReference) Namespace() string {
-	return r.namespace
-}
-
-// Name returns the name of the referenced Kubernetes object.
-func (r *ObjectReference) Name() string {
-	return r.name
-}
-
-// Source returns the source identifier of the ObjectReference (e.g. "ingress", "service").
-func (r *ObjectReference) Source() string {
-	return r.source
-}
-
-// UID returns the UID of the referenced Kubernetes object.
-func (r *ObjectReference) UID() types.UID {
-	return r.uid
-}
-
-func (r *ObjectReference) objectRef() *apiv1.ObjectReference {
+func objectRef(r *ObjectReference) *apiv1.ObjectReference {
 	return &apiv1.ObjectReference{
-		Kind:       r.kind,
-		Namespace:  r.namespace,
-		Name:       r.name,
-		UID:        r.uid,
-		APIVersion: r.apiVersion,
+		Kind:       r.Kind(),
+		Namespace:  r.Namespace(),
+		Name:       r.Name(),
+		UID:        r.UID(),
+		APIVersion: r.APIVersion(),
 	}
 }
 
@@ -337,12 +293,5 @@ func (r *ObjectReference) objectRef() *apiv1.ObjectReference {
 // Use this when you don't have a runtime.Object (e.g., in tests or when constructing
 // references from non-Kubernetes data sources).
 func NewObjectReferenceFromParts(kind, apiVersion, namespace, name string, uid types.UID, source string) *ObjectReference {
-	return &ObjectReference{
-		kind:       kind,
-		apiVersion: apiVersion,
-		namespace:  namespace,
-		name:       name,
-		uid:        uid,
-		source:     source,
-	}
+	return endpoint.NewObjectRef(kind, apiVersion, namespace, name, uid, source)
 }

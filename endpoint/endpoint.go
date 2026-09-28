@@ -29,7 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -259,8 +258,6 @@ func (ep EndpointKey) String() string {
 	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
 }
 
-type ObjectRef = events.ObjectReference
-
 // Endpoint is a high-level way of a connection between a service and an IP
 // +kubebuilder:object:generate=true
 type Endpoint struct {
@@ -487,12 +484,12 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 
 // WithRefObject adds obj to the endpoint's set of reference objects, deduplicating by Key().
 // Calling it multiple times with the same object is safe — it is added at most once.
-func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+func (e *Endpoint) WithRefObject(obj *ObjectRef) *Endpoint {
 	if obj == nil {
 		return e
 	}
 	key := obj.Key()
-	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+	if slices.ContainsFunc(e.refObjects, func(r *ObjectRef) bool {
 		return r.Key() == key
 	}) {
 		return e
@@ -502,7 +499,7 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 }
 
 // RefObjects returns all Kubernetes object references associated with this endpoint.
-func (e *Endpoint) RefObjects() []*events.ObjectReference {
+func (e *Endpoint) RefObjects() []*ObjectRef {
 	return e.refObjects
 }
 
