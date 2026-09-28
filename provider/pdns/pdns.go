@@ -533,14 +533,35 @@ func (p *PDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 // AdjustEndpoints performs checks on the provided endpoints and will skip any potentially failing changes.
+//
+// It also marks CNAME endpoints at a zone apex with alias=true. PowerDNS cannot
+// hold a CNAME at the apex, so ApplyChanges always stores those as ALIAS and
+// Records reports ALIAS rrsets with alias=true; without this the planner would
+// see a provider-specific diff on every reconcile.
 func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	zones, _, err := p.filteredZones(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	apexes := make(map[string]struct{}, len(zones))
+	for _, zone := range zones {
+		apexes[pgo.StringValue(zone.Name)] = struct{}{}
+	}
+
 	var validEndpoints []*endpoint.Endpoint
 	for i := range endpoints {
-		if !endpoints[i].CheckEndpoint() {
-			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
+		ep := endpoints[i]
+		if !ep.CheckEndpoint() {
+			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", ep.RecordType, ep.Targets)
 			continue
 		}
-		validEndpoints = append(validEndpoints, endpoints[i])
+		if ep.RecordType == endpoint.RecordTypeCNAME && !p.hasAliasAnnotation(ep) {
+			if _, apex := apexes[provider.EnsureTrailingDot(ep.DNSName)]; apex {
+				log.Debugf("Marking apex CNAME record %q as ALIAS", ep.DNSName)
+				ep = ep.WithAliasProperty(endpoint.AliasTrue)
+			}
+		}
+		validEndpoints = append(validEndpoints, ep)
 	}
 	return validEndpoints, nil
 }
