@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/flags"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -721,7 +722,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 func App(cfg *Config) *kingpin.Application {
 	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.\n\nNote that all flags may be replaced with env vars - `--flag` -> `EXTERNAL_DNS_FLAG=1` or `--flag value` -> `EXTERNAL_DNS_FLAG=value`")
-	app.Version(Version)
+	app.Version(version.Version)
 	app.DefaultEnvars()
 
 	bindFlags(flags.NewKingpinBinder(app), cfg)
