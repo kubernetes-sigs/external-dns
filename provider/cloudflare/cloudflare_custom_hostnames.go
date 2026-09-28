@@ -324,30 +324,17 @@ func listAllCustomHostnames(iter autoPager[custom_hostnames.CustomHostnameListRe
 	return customHostnames, nil
 }
 
-// deduplicateCustomHostnames ensures each custom hostname value is kept on at
-// most one origin DNSName within the desired endpoint set. Two scenarios are
-// handled:
-//
-//  1. Dual-stack: A and AAAA records for the same DNSName both keep the
-//     custom hostname — they share the same origin, so Cloudflare's 1:1
-//     constraint is not violated.
-//  2. Takeover prevention: if the custom hostname already exists in
-//     Cloudflare (from the cached state populated by Records()) with origin
-//     X and X is among the claimants, X wins. Otherwise the shortest DNSName
-//     wins (typically the aggregate record from a headless/NodePort fan-out).
-//
-// Running in AdjustEndpoints (rather than ApplyChanges) ensures the same
-// dedup runs on every loop, so the plan converges: when the aggregate is
-// unchanged and only per-pod records appear in the change set, the
-// aggregate is still correctly identified as the winner.
+// deduplicateCustomHostnames keeps each custom hostname on a single DNSName,
+// since Cloudflare maps a custom hostname to one origin.
+// All record types of the winning DNSName keep it (dual-stack).
+// The current Cloudflare origin wins if it is still a claimant, so a new resource cannot
+// take it over; otherwise the shortest DNSName wins (the aggregate over per-pod records).
 func (p *CloudFlareProvider) deduplicateCustomHostnames(endpoints []*endpoint.Endpoint) {
-	// Merge cached custom hostnames across all zones.
 	merged := customHostnamesMap{}
 	for _, chs := range p.cachedCustomHostnames {
 		maps.Copy(merged, chs)
 	}
 
-	// Group: custom hostname value → endpoint indices that carry it.
 	carriers := map[string][]int{}
 	for i, ep := range endpoints {
 		for _, ch := range getEndpointCustomHostnames(ep) {
@@ -360,19 +347,16 @@ func (p *CloudFlareProvider) deduplicateCustomHostnames(endpoints []*endpoint.En
 			continue
 		}
 
-		// Collect unique DNSNames among claimants.
 		dnsNames := map[string][]int{}
 		for _, idx := range idxs {
 			dn := endpoints[idx].DNSName
 			dnsNames[dn] = append(dnsNames[dn], idx)
 		}
 
-		// If only one DNSName (possibly across A + AAAA + ...), nothing to dedup.
 		if len(dnsNames) < 2 {
 			continue
 		}
 
-		// Pick winning DNSName.
 		var winner string
 		if current, err := getCustomHostname(merged, ch); err == nil {
 			if _, ok := dnsNames[current.customOriginServer]; ok {
@@ -393,7 +377,6 @@ func (p *CloudFlareProvider) deduplicateCustomHostnames(endpoints []*endpoint.En
 			winner = names[0]
 		}
 
-		// Strip CH from losers.
 		for dn, dnsIdxs := range dnsNames {
 			if dn == winner {
 				continue
@@ -406,8 +389,7 @@ func (p *CloudFlareProvider) deduplicateCustomHostnames(endpoints []*endpoint.En
 	}
 }
 
-// removeSpecificCustomHostname removes a single custom hostname value from an
-// endpoint's ProviderSpecific. Deletes the entire property if it was the last.
+// removeSpecificCustomHostname removes one custom hostname value, dropping the property when none remain.
 func removeSpecificCustomHostname(ep *endpoint.Endpoint, ch string) {
 	current := getEndpointCustomHostnames(ep)
 	remaining := make([]string, 0, len(current))
