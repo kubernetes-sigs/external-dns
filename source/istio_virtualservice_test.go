@@ -2080,7 +2080,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				fakeKubernetesClient,
 				fakeIstioClient,
 				&Config{
-					Namespace:                ti.targetNamespace,
+					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              ti.labelFilter,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),

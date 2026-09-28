@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/informers"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/stretchr/testify/assert"
@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -451,7 +452,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			}
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					LabelFilter:              labelFilter,
@@ -749,7 +750,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -895,7 +896,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1229,7 +1230,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1528,7 +1529,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1675,7 +1676,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1843,7 +1844,7 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1881,20 +1882,20 @@ func TestAddEventHandler_AllBranches(t *testing.T) {
 	}{
 		{"all nil", &traefikSource{}, 0},
 		{"all set", &traefikSource{
-			ingressRouteInformer:       fakeInformer,
-			oldIngressRouteInformer:    fakeInformer,
-			ingressRouteTcpInformer:    fakeInformer,
-			oldIngressRouteTcpInformer: fakeInformer,
-			ingressRouteUdpInformer:    fakeInformer,
-			oldIngressRouteUdpInformer: fakeInformer,
+			ingressRouteInformers:       informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			oldIngressRouteInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			ingressRouteTcpInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			oldIngressRouteTcpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			ingressRouteUdpInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			oldIngressRouteUdpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
 		}, 6},
 		{"some set", &traefikSource{
-			ingressRouteInformer:       fakeInformer,
-			oldIngressRouteInformer:    fakeInformer,
-			ingressRouteTcpInformer:    nil,
-			oldIngressRouteTcpInformer: fakeInformer,
-			ingressRouteUdpInformer:    nil,
-			oldIngressRouteUdpInformer: nil,
+			ingressRouteInformers:       informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			oldIngressRouteInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			ingressRouteTcpInformers:    nil,
+			oldIngressRouteTcpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
+			ingressRouteUdpInformers:    nil,
+			oldIngressRouteUdpInformers: nil,
 		}, 3},
 	}
 
@@ -1950,54 +1951,54 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 	tests := []struct {
 		name          string
 		gvr           schema.GroupVersionResource
-		getSource     func(source *traefikSource) informers.GenericInformer
+		getSource     func(source *traefikSource) kubeinformers.GenericInformer
 		enabledLegacy bool
 	}{
 		{
 			name: "IngressRoute",
 			gvr:  ingressRouteGVR,
-			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.ingressRouteInformer
+			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
+				return firstInformer(source.ingressRouteInformers)
 			},
 			enabledLegacy: false,
 		},
 		{
 			name: "IngressRouteTCP",
 			gvr:  ingressRouteTCPGVR,
-			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.ingressRouteTcpInformer
+			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
+				return firstInformer(source.ingressRouteTcpInformers)
 			},
 			enabledLegacy: false,
 		},
 		{
 			name: "IngressRouteUDP",
 			gvr:  ingressRouteUDPGVR,
-			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.ingressRouteUdpInformer
+			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
+				return firstInformer(source.ingressRouteUdpInformers)
 			},
 			enabledLegacy: false,
 		},
 		{
 			name: "IngressRoute with legacy API group",
 			gvr:  oldIngressRouteGVR,
-			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.oldIngressRouteInformer
+			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
+				return firstInformer(source.oldIngressRouteInformers)
 			},
 			enabledLegacy: true,
 		},
 		{
 			name: "IngressRouteTCP with legacy API group",
 			gvr:  oldIngressRouteTCPGVR,
-			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.oldIngressRouteTcpInformer
+			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
+				return firstInformer(source.oldIngressRouteTcpInformers)
 			},
 			enabledLegacy: true,
 		},
 		{
 			name: "IngressRouteUDP with legacy API group",
 			gvr:  oldIngressRouteUDPGVR,
-			getSource: func(source *traefikSource) informers.GenericInformer {
-				return source.oldIngressRouteUdpInformer
+			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
+				return firstInformer(source.oldIngressRouteUdpInformers)
 			},
 			enabledLegacy: true,
 		},
@@ -2145,7 +2146,7 @@ func TestTraefikIndexer(t *testing.T) {
 			}
 
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultTraefikNamespace,
+				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
@@ -2266,7 +2267,7 @@ func TestTraefikLegacyIndexer(t *testing.T) {
 			}
 
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:           defaultTraefikNamespace,
+				Namespaces:          []string{defaultTraefikNamespace},
 				AnnotationFilter:    parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:         parseLabelSelectorOrEverything(t, tt.labelFilter),
 				TraefikDisableNew:   true,

@@ -41,14 +41,14 @@ import (
 // +externaldns:source:description=Creates DNS entries from Skipper RouteGroup resources
 // +externaldns:source:resources=RouteGroup.zalando.org
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
 type routeGroupSource struct {
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	rgInformer               rginformersv1.RouteGroupInformer
+	rgInformers              *informers.Informers[rginformersv1.RouteGroupInformer]
 }
 
 // routeGroupWrapper adds a Metadata() accessor to *rgv1.RouteGroup so that
@@ -69,60 +69,63 @@ func (w *routeGroupWrapper) Metadata() *metav1.ObjectMeta {
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) rginformers.SharedInformerFactory {
+		return rginformers.NewSharedInformerFactoryWithOptions(client, 0, rginformers.WithNamespace(namespace))
+	})
 	// The reflector retries a failing List until WaitForCacheSync gives up a minute later,
 	// so probe up front: a missing CRD should fail startup at once, and say so.
-	if _, err := client.ZalandoV1().RouteGroups(cfg.Namespace).List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, fmt.Errorf("--source=skipper-routegroup requires the RouteGroup CRD (routegroups.zalando.org) to be installed: %w", err)
+	for _, namespace := range factories.Namespaces() {
+		if _, err := client.ZalandoV1().RouteGroups(namespace).List(ctx, metav1.ListOptions{Limit: 1}); err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("--source=skipper-routegroup requires the RouteGroup CRD (routegroups.zalando.org) to be installed: %w", err)
+			}
+			return nil, fmt.Errorf("failed to list RouteGroups: %w", err)
 		}
-		return nil, fmt.Errorf("failed to list RouteGroups: %w", err)
 	}
 
-	informerFactory := rginformers.NewSharedInformerFactoryWithOptions(
-		client, 0,
-		rginformers.WithNamespace(cfg.Namespace),
-	)
-	rgInformer := informerFactory.Zalando().V1().RouteGroups()
+	rgInformers := informers.Map(factories, func(_ string, factory rginformers.SharedInformerFactory) rginformersv1.RouteGroupInformer {
+		return factory.Zalando().V1().RouteGroups()
+	})
 
-	informers.MustAddIndexers(rgInformer.Informer(), informers.IndexerWithOptions[*rgv1.RouteGroup](
+	rgInformers.MustAddIndexers(informers.IndexerWithOptions[*rgv1.RouteGroup](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*rgv1.RouteGroup]),
 	))
 
-	informers.MustSetTransform(rgInformer.Informer(), informers.TransformerWithOptions[*rgv1.RouteGroup](
+	rgInformers.MustSetTransform(informers.TransformerWithOptions[*rgv1.RouteGroup](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(rgInformer.Informer(), informers.DefaultEventHandler())
+	rgInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
 	return &routeGroupSource{
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		rgInformer:               rgInformer,
+		rgInformers:              rgInformers,
 	}, nil
 }
 
 // AddEventHandler adds an event handler that can be triggered on RouteGroup changes.
 func (sc *routeGroupSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for routegroup")
-	informers.MustAddEventHandler(sc.rgInformer.Informer(), eventHandlerFunc(handler))
+	sc.rgInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all routeGroup resources on all namespaces.
 // Logic is ported from ingress without fqdnTemplate
 func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	routeGroups := informers.ListIndexed[*rgv1.RouteGroup](sc.rgInformer.Informer().GetIndexer())
+	routeGroups := informers.ListIndexedAll[*rgv1.RouteGroup](sc.rgInformers.Indexers()...)
 
 	var endpoints []*endpoint.Endpoint
 	for _, rg := range routeGroups {

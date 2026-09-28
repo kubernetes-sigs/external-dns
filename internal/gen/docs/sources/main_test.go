@@ -21,10 +21,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 const (
@@ -421,5 +425,26 @@ func TestExtractSourcesFromComments(t *testing.T) {
 				assert.Equal(t, tt.filePath, source.File)
 			}
 		})
+	}
+}
+
+// TestMultiNamespaceSourcesMatchMarkers keeps the runtime list behind the --namespace
+// validation in sync with the namespace markers the docs are generated from.
+func TestMultiNamespaceSourcesMatchMarkers(t *testing.T) {
+	testPath, _ := os.Getwd()
+	sources, err := discoverSources(fmt.Sprintf("%s/../../../../source", testPath))
+	require.NoError(t, err)
+
+	// gloo-proxy scopes on --gloo-namespace, already repeatable: its marker describes that
+	// flag, while --namespace is ignored.
+	ignoresNamespaceFlag := []string{"gloo-proxy"}
+
+	for _, source := range sources {
+		modes := strings.Split(source.Namespace, ",")
+		// Sources without "single" ignore --namespace, so several values are harmless.
+		want := slices.Contains(modes, "multiple") || !slices.Contains(modes, "single") ||
+			slices.Contains(ignoresNamespaceFlag, source.Name)
+		assert.Equal(t, want, externaldns.SourceSupportsMultipleNamespaces(source.Name),
+			"source %q has namespace marker %q (%s)", source.Name, source.Namespace, source.File)
 	}
 }

@@ -102,7 +102,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 	t.Run("respects namespace", func(t *testing.T) {
 		t.Parallel()
 		fakeClient := rgfake.NewSimpleClientset()
-		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{Namespace: "test-ns"})
+		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{Namespaces: []string{"test-ns"}})
 		require.NoError(t, err)
 		require.NotNil(t, src)
 	})
@@ -976,6 +976,29 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			testutils.ValidateEndpoints(t, got, tt.want)
 		})
 	}
+}
+
+func TestRouteGroupSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	var rgs []*rgv1.RouteGroup
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		rgs = append(rgs, createTestRouteGroup(namespace, "rg", nil,
+			[]string{namespace + ".example.org"},
+			[]rgv1.RouteGroupLoadBalancer{{Hostname: "lb.example.org"}},
+		))
+	}
+	src := newTestRouteGroupSource(t, &Config{Namespaces: []string{"team-a", "team-b"}}, rgs...)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "routegroup/team-a/rg"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "routegroup/team-b/rg"),
+	})
 }
 
 func TestResourceLabelIsSet(t *testing.T) {

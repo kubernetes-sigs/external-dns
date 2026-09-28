@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -50,7 +51,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // config object is passed rather than individual parameters.
 //
 // Common Configuration Fields:
-// - Namespace: Target namespace for source operations
+// - Namespaces: Target namespaces for source operations, empty for all of them
 // - AnnotationFilter: Filter sources by annotation selector
 // - LabelFilter: Filter sources by label selectors
 // - FQDNTemplate: Template for generating fully qualified domain names
@@ -60,7 +61,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // The config is created from externaldns.Config via NewSourceConfig() which handles
 // type conversions and validation.
 type Config struct {
-	Namespace                      string
+	Namespaces                     []string
 	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
@@ -158,7 +159,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		return nil, err
 	}
 	c := &Config{
-		Namespace:                      cfg.Namespace,
+		Namespaces:                     externaldns.NormalizeNamespaces(cfg.Namespaces),
 		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
@@ -211,6 +212,15 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		opt(c)
 	}
 	return c, nil
+}
+
+// Namespace returns the namespace watched by sources supporting a single one,
+// which ValidateConfig guarantees. Empty means all namespaces.
+func (cfg *Config) Namespace() string {
+	if len(cfg.Namespaces) == 0 {
+		return v1.NamespaceAll
+	}
+	return cfg.Namespaces[0]
 }
 
 // ClientGenerator returns the ClientGenerator for this Config.

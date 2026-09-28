@@ -351,7 +351,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:      defaultF5VirtualServerNamespace,
+				Namespaces:     []string{defaultF5VirtualServerNamespace},
 				LabelFilter:    labels.Everything(),
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 			})
