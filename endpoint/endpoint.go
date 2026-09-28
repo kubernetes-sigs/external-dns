@@ -291,6 +291,17 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
+// OverlongDNSLabel returns the first label in dnsName exceeding the RFC 1035 63-character
+// limit, or "" if none do.
+func OverlongDNSLabel(dnsName string) string {
+	for label := range strings.SplitSeq(dnsName, ".") {
+		if len(label) > 63 {
+			return label
+		}
+	}
+	return ""
+}
+
 // NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
 // Unparseable targets pass through; the null MX "0 ." (RFC 7505) keeps its dot, which is the host.
 func NormalizeMXTarget(target string) string {
@@ -322,11 +333,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		}
 	}
 
-	for label := range strings.SplitSeq(dnsName, ".") {
-		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
-		}
+	if label := OverlongDNSLabel(dnsName); label != "" {
+		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		return nil
 	}
 
 	return &Endpoint{

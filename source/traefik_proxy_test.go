@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	annotationschema "sigs.k8s.io/external-dns/source/annotations/schema"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -2064,11 +2065,12 @@ func TestTraefikIndexer(t *testing.T) {
 	}
 
 	tests := []struct {
-		name             string
-		annotationFilter string
-		labelFilter      string
-		routes           []*IngressRoute
-		expectedCount    int
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		annotationValidationMode annotationschema.Mode
+		routes                   []*IngressRoute
+		expectedCount            int
 	}{
 		{
 			name:          "no filters returns all routes",
