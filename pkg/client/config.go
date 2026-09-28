@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/flowcontrol"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
@@ -47,7 +47,7 @@ func InstrumentedRESTConfig(
 		return nil, err
 	}
 
-	config.UserAgent = externaldns.UserAgent()
+	config.UserAgent = version.UserAgent()
 	config.WrapTransport = extdnshttp.NewInstrumentedTransport
 	config.Timeout = requestTimeout
 

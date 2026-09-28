@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package externaldns
+package version
 
 import (
 	"fmt"
@@ -26,8 +26,8 @@ const (
 )
 
 var (
-	Version          = "unknown" // Set at the build time via `-ldflags "-X main.Version=<value>"`
-	GitCommit        = "unknown" // Set at the build time via `-ldflags "-X main.GitCommitSHA=<value>"`
+	Version          = "unknown" // Set at build time via `-ldflags "-X sigs.k8s.io/external-dns/pkg/version.Version=<value>"`
+	GitCommit        = "unknown" // Set at build time via `-ldflags "-X sigs.k8s.io/external-dns/pkg/version.GitCommit=<value>"`
 	UserAgentProduct = "ExternalDNS"
 	goVersion        = runtime.Version()
 )

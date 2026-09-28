@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -238,7 +238,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 				client, ok := provider.client.(dns.DnsClient)
 				require.True(t, ok)
 				require.Contains(t, client.UserAgent, "Oracle-GoSDK/")
-				require.True(t, strings.HasSuffix(client.UserAgent, externaldns.UserAgent()))
+				require.True(t, strings.HasSuffix(client.UserAgent, version.UserAgent()))
 			} else {
 				// have to use prefix testing because the expected instance-principal error strings vary after a known prefix
 				require.Truef(t, strings.HasPrefix(err.Error(), tc.err.Error()), "observed: %s", err.Error())
