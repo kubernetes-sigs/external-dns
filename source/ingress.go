@@ -145,7 +145,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			return nil, err
 		}
 
-		if endpoint.HasNoEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
+		if hasNoEmptyEndpoints(ingEndpoints, types.Ingress, ing) {
 			continue
 		}
 
