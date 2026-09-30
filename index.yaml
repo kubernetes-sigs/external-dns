@@ -3,6 +3,37 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |-
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.23.0."
+    apiVersion: v2
+    appVersion: 0.23.0
+    created: "2026-09-30T23:19:27.019277671Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 6d149b9b04db1dc9e46b3693a4eca4ac90d6bba5e3b2a0fdd067ce3f7bfbc31e
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.23.0/external-dns-1.23.0.tgz
+    version: 1.23.0
+  - annotations:
+      artifacthub.io/changes: |-
         - kind: added
           description: "Add value .service.enabled to enable the creation of the Kubernetes service."
         - kind: added
@@ -1230,4 +1261,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2026-09-11T08:59:07.293325836Z"
+generated: "2026-09-30T23:19:27.019461926Z"
