@@ -92,7 +92,7 @@ func (m *mockManagedZonesGetCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZon
 		return nil, m.zonesErr
 	}
 	// Try lookup by zone name first (GCP API accepts both name and numeric ID)
-	if zone, ok := testZones[m.project+"/"+m.managedZone]; ok {
+	if zone, ok := testZones[zoneKey(m.project, m.managedZone)]; ok {
 		return zone, nil
 	}
 	// Fall back to lookup by numeric ID string (GCP API also accepts numeric IDs)
@@ -280,8 +280,9 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 	})
 }
 
-// TestGoogleZonesMultipleIDFilter verifies that multiple zone ID filters all match correctly.
-func TestGoogleZonesMultipleIDFilter(t *testing.T) {
+// TestGoogleZonesMultipleIDFilterGet verifies that multiple exact zone IDs are each
+// resolved via Get, avoiding the need for dns.managedZones.list.
+func TestGoogleZonesMultipleIDFilterGet(t *testing.T) {
 	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2", "internal-3"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(t.Context())
@@ -293,9 +294,11 @@ func TestGoogleZonesMultipleIDFilter(t *testing.T) {
 	})
 }
 
-// TestGoogleZonesIDFilterSuffixMatch verifies that ZoneIDFilter is a suffix match:
-// "ernal-1" matches "internal-1" because "internal-1" ends with "ernal-1".
-func TestGoogleZonesIDFilterSuffixMatch(t *testing.T) {
+// TestGoogleZonesIDFilterGetFallbackToList verifies that a zone ID suffix pattern that
+// does not resolve via Get (404) falls back to List for backward compatibility.
+// "ernal-1" is a suffix of "internal-1" but not an exact zone name, so Get 404s
+// and we fall back to List which applies the suffix filter as before.
+func TestGoogleZonesIDFilterGetFallbackToList(t *testing.T) {
 	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"ernal-1"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(t.Context())
@@ -306,9 +309,9 @@ func TestGoogleZonesIDFilterSuffixMatch(t *testing.T) {
 	})
 }
 
-// TestGoogleZonesListError verifies that a List error is surfaced correctly.
-func TestGoogleZonesListError(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"some-zone"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to list zones"), nil)
+// TestGoogleZonesGetError verifies that a non-404 error from Get is surfaced as an error.
+func TestGoogleZonesGetError(t *testing.T) {
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"some-zone"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to get zone"), nil)
 
 	zones, err := p.Zones(t.Context())
 	require.Error(t, err)
@@ -316,14 +319,10 @@ func TestGoogleZonesListError(t *testing.T) {
 	require.Empty(t, zones)
 }
 
-// TestGoogleZonesIDFilterGetDropsSuffixSiblings: ZoneIDFilter.Match is a suffix match,
-// so List matches every zone whose name ends with the filter. When the filter is also an
-// exact zone name, the Get fast-path resolves it (no 404, no List fallback) and silently
-// drops the suffix-matched siblings. Filter "public" should match both "public" and
-// "prod-public", but Get("public") returns only "public".
-// This test also asserts that List is called exactly once, confirming suffix-match behavior
-// is preserved via the List path and not short-circuited by a Get fast-path.
-func TestGoogleZonesIDFilterGetDropsSuffixSiblings(t *testing.T) {
+// TestGoogleZonesIDFilterExactNameSkipsSuffixSiblings pins the breaking change: a zone ID
+// that is an exact zone name resolves via Get alone, so "public" returns only "public" and
+// no longer also matches "prod-public" through List's suffix matching.
+func TestGoogleZonesIDFilterExactNameSkipsSuffixSiblings(t *testing.T) {
 	// createZone hardcodes this project, so the provider must use it too.
 	const project = "zalando-external-dns-test"
 	mock := &mockManagedZonesClient{}
@@ -354,10 +353,9 @@ func TestGoogleZonesIDFilterGetDropsSuffixSiblings(t *testing.T) {
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
-		"public":      {Name: "public", DnsName: "example.com.", Id: 20001, Visibility: "public"},
-		"prod-public": {Name: "prod-public", DnsName: "prod.example.com.", Id: 20002, Visibility: "public"},
+		"public": {Name: "public", DnsName: "example.com.", Id: 20001, Visibility: "public"},
 	})
-	assert.Equal(t, 1, mock.listCallCount, "Zones must be resolved via List, not a Get fast-path")
+	assert.Equal(t, 0, mock.listCallCount, "an exact zone name must not require dns.managedZones.list")
 }
 
 func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
