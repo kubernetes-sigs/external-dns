@@ -1423,7 +1423,7 @@ func testIngressEndpoints(t *testing.T) {
 				t.Context(),
 				fakeClient,
 				&Config{
-					Namespace:                ti.targetNamespace,
+					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
