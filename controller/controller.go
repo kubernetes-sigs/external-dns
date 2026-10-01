@@ -66,6 +66,8 @@ type Controller struct {
 	TXTOwnerOld string
 	// CrdClients syncs DNSEndpoint status after a reconcile; nil unless the crd source is enabled.
 	CrdClients *crd.CRDClients
+	// CRDSourceKind is the Kind reported for "crd/" deletes.
+	CRDSourceKind string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -126,10 +128,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
-			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError)
+			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError, c.CRDSourceKind)
 			return err
 		}
-		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady)
+		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady, c.CRDSourceKind)
 	} else {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")
