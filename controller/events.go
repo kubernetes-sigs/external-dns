@@ -117,8 +117,8 @@ func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 // StatusReporter receives each sync's outcome, which only exists after
 // ApplyChanges, e.g. to set DNSEndpoint conditions.
 type StatusReporter interface {
-	// ReportStatus gets every object behind a desired endpoint, changed or not and
-	// from any source. applyErr is nil on success.
+	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
+	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
 	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
 }
 

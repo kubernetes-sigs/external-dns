@@ -31,7 +31,7 @@ import (
 
 const dnsEndpointKind = "DNSEndpoint"
 
-// StatusWriter reports each sync's outcome on the DNSEndpoint objects behind it.
+// StatusWriter reports each sync's outcome on the DNSEndpoints behind it.
 type StatusWriter struct {
 	clients *CRDClients
 }
@@ -58,7 +58,13 @@ func (w *StatusWriter) ReportStatus(ctx context.Context, objects []plan.PlannedO
 			continue
 		}
 
+		err := applyErr
+		if !obj.Changed {
+			// Not in the failed batch: its records are already in place.
+			err = nil
+		}
+
 		log.Debugf("DNSEndpoint %s: %d endpoint(s) planned, apply error: %v (generation=%d, observedGeneration=%d)",
-			key, obj.Endpoints, applyErr, dnsEndpoint.Generation, dnsEndpoint.Status.ObservedGeneration)
+			key, obj.Endpoints, err, dnsEndpoint.Generation, dnsEndpoint.Status.ObservedGeneration)
 	}
 }

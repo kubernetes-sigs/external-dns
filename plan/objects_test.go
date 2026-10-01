@@ -35,6 +35,23 @@ func countFor(objects []PlannedObject, name string) int {
 	return -1
 }
 
+func find(objects []PlannedObject, name string) PlannedObject {
+	for _, obj := range objects {
+		if obj.Ref.Name() == name {
+			return obj
+		}
+	}
+	return PlannedObject{Endpoints: -1}
+}
+
+func crdRef(name string) *events.ObjectReference {
+	return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", name, "", "crd")
+}
+
+func ownedA(name, target, owner string) *endpoint.Endpoint {
+	return endpoint.NewEndpoint(name, endpoint.RecordTypeA, target).WithLabel(endpoint.OwnerLabelKey, owner)
+}
+
 func TestPlannedObjects(t *testing.T) {
 	first := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "first", "", "crd")
 	second := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "second", "", "crd")
@@ -75,24 +92,20 @@ func TestPlannedObjects(t *testing.T) {
 	})
 
 	t.Run("Calculate drops endpoints another owner holds", func(t *testing.T) {
-		owned := func(name, recordType, target, owner string) *endpoint.Endpoint {
-			return endpoint.NewEndpoint(name, recordType, target).WithLabel(endpoint.OwnerLabelKey, owner)
-		}
 		current := []*endpoint.Endpoint{
-			owned("mine.example.com", endpoint.RecordTypeA, "10.0.0.9", "me"),
-			owned("theirs.example.com", endpoint.RecordTypeA, "10.0.0.9", "them"),
-			owned("steady.example.com", endpoint.RecordTypeA, "10.0.0.5", "them"),
-			owned("shared.example.com", endpoint.RecordTypeA, "10.0.0.6", "them"),
-		}
-		ref := func(name string) *events.ObjectReference {
-			return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", name, "", "crd")
+			ownedA("mine.example.com", "10.0.0.9", "me"),
+			ownedA("calm.example.com", "10.0.0.4", "me"),
+			ownedA("theirs.example.com", "10.0.0.9", "them"),
+			ownedA("steady.example.com", "10.0.0.5", "them"),
+			ownedA("shared.example.com", "10.0.0.6", "them"),
 		}
 		desired := []*endpoint.Endpoint{
-			endpoint.NewEndpoint("mine.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(ref("update-mine")),
-			endpoint.NewEndpoint("free.example.com", endpoint.RecordTypeA, "10.0.0.2").WithRefObject(ref("create-free")),
-			endpoint.NewEndpoint("theirs.example.com", endpoint.RecordTypeA, "10.0.0.3").WithRefObject(ref("update-theirs")),
-			endpoint.NewEndpoint("steady.example.com", endpoint.RecordTypeA, "10.0.0.5").WithRefObject(ref("in-sync-theirs")),
-			endpoint.NewEndpoint("shared.example.com", endpoint.RecordTypeAAAA, "::1").WithRefObject(ref("create-next-to-theirs")),
+			endpoint.NewEndpoint("mine.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(crdRef("update-mine")),
+			endpoint.NewEndpoint("calm.example.com", endpoint.RecordTypeA, "10.0.0.4").WithRefObject(crdRef("in-sync-mine")),
+			endpoint.NewEndpoint("free.example.com", endpoint.RecordTypeA, "10.0.0.2").WithRefObject(crdRef("create-free")),
+			endpoint.NewEndpoint("theirs.example.com", endpoint.RecordTypeA, "10.0.0.3").WithRefObject(crdRef("update-theirs")),
+			endpoint.NewEndpoint("steady.example.com", endpoint.RecordTypeA, "10.0.0.5").WithRefObject(crdRef("in-sync-theirs")),
+			endpoint.NewEndpoint("shared.example.com", endpoint.RecordTypeAAAA, "::1").WithRefObject(crdRef("create-next-to-theirs")),
 		}
 
 		p := (&Plan{
@@ -103,14 +116,58 @@ func TestPlannedObjects(t *testing.T) {
 		}).Calculate()
 
 		objects := p.PlannedObjects()
-		require.Len(t, objects, 5)
-		assert.Equal(t, 1, countFor(objects, "update-mine"))
-		assert.Equal(t, 1, countFor(objects, "create-free"))
+		require.Len(t, objects, 6)
+		assert.Equal(t, PlannedObject{Ref: crdRef("update-mine"), Endpoints: 1, Changed: true}, find(objects, "update-mine"))
+		assert.Equal(t, PlannedObject{Ref: crdRef("create-free"), Endpoints: 1, Changed: true}, find(objects, "create-free"))
+		assert.Equal(t, PlannedObject{Ref: crdRef("in-sync-mine"), Endpoints: 1}, find(objects, "in-sync-mine"))
 		assert.Equal(t, 0, countFor(objects, "update-theirs"))
 		assert.Equal(t, 0, countFor(objects, "in-sync-theirs"))
 		assert.Equal(t, 0, countFor(objects, "create-next-to-theirs"))
 		// Cross-check against what the planner actually does.
 		assert.Len(t, p.Changes.Create, 1)
 		assert.Len(t, p.Changes.UpdateNew, 1)
+	})
+
+	t.Run("Calculate drops candidates that lose a conflict", func(t *testing.T) {
+		desired := []*endpoint.Endpoint{
+			endpoint.NewEndpoint("mixed.example.com", endpoint.RecordTypeCNAME, "target.example.com").WithRefObject(crdRef("cname-loser")),
+			endpoint.NewEndpoint("mixed.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(crdRef("a-winner")),
+			endpoint.NewEndpoint("dup.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(crdRef("dup-winner")),
+			endpoint.NewEndpoint("dup.example.com", endpoint.RecordTypeA, "10.0.0.2").WithRefObject(crdRef("dup-loser")),
+		}
+
+		p := (&Plan{
+			Desired:        desired,
+			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		}).Calculate()
+
+		objects := p.PlannedObjects()
+		assert.Equal(t, 0, countFor(objects, "cname-loser"))
+		assert.Equal(t, 1, countFor(objects, "a-winner"))
+		assert.Equal(t, 1, countFor(objects, "dup-winner"))
+		assert.Equal(t, 0, countFor(objects, "dup-loser"))
+	})
+
+	t.Run("Calculate drops updates the policy forbids", func(t *testing.T) {
+		current := []*endpoint.Endpoint{
+			ownedA("stale.example.com", "10.0.0.9", "me"),
+			ownedA("calm.example.com", "10.0.0.4", "me"),
+		}
+		desired := []*endpoint.Endpoint{
+			endpoint.NewEndpoint("stale.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(crdRef("update-blocked")),
+			endpoint.NewEndpoint("calm.example.com", endpoint.RecordTypeA, "10.0.0.4").WithRefObject(crdRef("in-sync")),
+		}
+
+		p := (&Plan{
+			Policies:       []Policy{&CreateOnlyPolicy{}},
+			Current:        current,
+			Desired:        desired,
+			ManagedRecords: []string{endpoint.RecordTypeA},
+			OwnerID:        "me",
+		}).Calculate()
+
+		objects := p.PlannedObjects()
+		assert.Equal(t, PlannedObject{Ref: crdRef("update-blocked")}, find(objects, "update-blocked"))
+		assert.Equal(t, PlannedObject{Ref: crdRef("in-sync"), Endpoints: 1}, find(objects, "in-sync"))
 	})
 }

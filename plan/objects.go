@@ -18,19 +18,21 @@ package plan
 
 import (
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 )
 
-// PlannedObject is a Kubernetes object that contributed desired endpoints to a plan.
+// PlannedObject is a Kubernetes object behind desired endpoints of a plan.
 type PlannedObject struct {
 	Ref *events.ObjectReference
-	// Endpoints left after the domain, record-type and ownership filters; 0 if none.
+	// Endpoints is how many of its endpoints are in Plan.Planned.
 	Endpoints int
+	// Changed is set when one of its endpoints is in the batch sent to the
+	// provider.
+	Changed bool
 }
 
-// PlannedObjects returns every object behind a desired endpoint, changed or not,
-// once each in first-seen order. Call it on the result of Calculate.
+// PlannedObjects returns every object behind a desired endpoint, changed or
+// not, once each in first-seen order. Call it on the result of Calculate.
 func (p *Plan) PlannedObjects() []PlannedObject {
 	byKey := map[string]*PlannedObject{}
 	var keys []string
@@ -57,6 +59,11 @@ func (p *Plan) PlannedObjects() []PlannedObject {
 		}
 	}
 
+	if p.Changes != nil {
+		markChanged(byKey, p.Changes.Create)
+		markChanged(byKey, p.Changes.UpdateNew)
+	}
+
 	objects := make([]PlannedObject, 0, len(keys))
 	for _, key := range keys {
 		objects = append(objects, *byKey[key])
@@ -64,41 +71,15 @@ func (p *Plan) PlannedObjects() []PlannedObject {
 	return objects
 }
 
-// ownedCandidates drops candidates calculateChanges skips because another owner
-// holds the record (update) or any record of the name (create).
-func (p *Plan) ownedCandidates(t planTable, candidates []*endpoint.Endpoint) []*endpoint.Endpoint {
-	if p.OwnerID == "" {
-		return candidates
-	}
-
-	foreign := sets.New[*endpoint.Endpoint]()
-	for _, row := range t.rows {
-		nameOwned := true
-		for _, current := range row.current {
-			if !current.IsOwnedBy(p.OwnerID) {
-				nameOwned = false
-				break
-			}
-		}
-		for _, recs := range row.records {
-			owned := nameOwned
-			if recs.current != nil {
-				owned = recs.current.IsOwnedBy(p.OwnerID)
-			}
-			if owned {
+func markChanged(byKey map[string]*PlannedObject, eps []*endpoint.Endpoint) {
+	for _, ep := range eps {
+		for _, ref := range ep.RefObjects() {
+			if ref == nil {
 				continue
 			}
-			for _, c := range recs.candidates {
-				foreign.Insert(c)
+			if obj, ok := byKey[ref.Key()]; ok {
+				obj.Changed = true
 			}
 		}
 	}
-
-	owned := make([]*endpoint.Endpoint, 0, len(candidates))
-	for _, ep := range candidates {
-		if !foreign.Has(ep) {
-			owned = append(owned, ep)
-		}
-	}
-	return owned
 }

@@ -41,7 +41,8 @@ type Plan struct {
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
-	// Desired records left after the domain, record-type and ownership filters.
+	// Desired records this sync creates, updates or finds in sync, after
+	// filters, conflict resolution, ownership and policies.
 	// Populated after calling Calculate()
 	Planned []*endpoint.Endpoint
 	// DomainFilter matches DNS names
@@ -176,15 +177,14 @@ func (p *Plan) Calculate() *Plan {
 	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter, p.ManagedRecords, p.ExcludeRecords) {
 		t.addCurrent(current)
 	}
-	planned := filterRecordsForPlan(p.Desired, p.DomainFilter, p.ManagedRecords, p.ExcludeRecords)
-	for _, desired := range planned {
+	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter, p.ManagedRecords, p.ExcludeRecords) {
 		t.addCandidate(desired)
 	}
 
 	if p.OwnerID != "" {
 		registryOwnerMismatchPerSync.Gauge.Reset()
 	}
-	changes := p.calculateChanges(t)
+	changes, inSync := p.calculateChanges(t)
 
 	// Return a minimal plan with only the fields relevant to callers.
 	// ManagedRecords is reset to the canonical defaults (A/AAAA/CNAME) —
@@ -195,7 +195,7 @@ func (p *Plan) Calculate() *Plan {
 	plan := &Plan{
 		Current:        p.Current,
 		Desired:        p.Desired,
-		Planned:        p.ownedCandidates(t, planned),
+		Planned:        slices.Concat(changes.Create, changes.UpdateNew, inSync),
 		Changes:        changes,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	}
@@ -203,8 +203,12 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func (p *Plan) calculateChanges(t planTable) *Changes {
+// calculateChanges also returns the desired records that already match the provider.
+// Changes leaves them out, but Planned needs them: otherwise an object
+// whose records are all in sync would count zero planned endpoints.
+func (p *Plan) calculateChanges(t planTable) (*Changes, []*endpoint.Endpoint) {
 	changes := &Changes{}
+	var inSync []*endpoint.Endpoint
 
 	for key, row := range t.rows {
 		switch {
@@ -223,7 +227,7 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 
 		// dns name is taken
 		case len(row.candidates) > 0:
-			p.appendTakenDNSNameChanges(t, changes, key, row)
+			p.appendTakenDNSNameChanges(t, changes, key, row, &inSync)
 		}
 	}
 
@@ -239,16 +243,17 @@ func (p *Plan) calculateChanges(t planTable) *Changes {
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
-	return changes
+	return changes, inSync
 }
 
 func (p *Plan) appendTakenDNSNameChanges(
 	t planTable,
 	changes *Changes,
 	key planKey,
-	row *planTableRow) {
+	row *planTableRow,
+	inSync *[]*endpoint.Endpoint) {
 	// apply changes for each record type
-	rowChanges := p.calculatePlanTableRowChanges(t, key, row)
+	rowChanges := p.calculatePlanTableRowChanges(t, key, row, inSync)
 	changes.Delete = append(changes.Delete, rowChanges.Delete...)
 	changes.UpdateNew = append(changes.UpdateNew, rowChanges.UpdateNew...)
 	changes.UpdateOld = append(changes.UpdateOld, rowChanges.UpdateOld...)
@@ -275,7 +280,7 @@ func (p *Plan) appendTakenDNSNameChanges(
 	}
 }
 
-func (p *Plan) calculatePlanTableRowChanges(t planTable, key planKey, row *planTableRow) *Changes {
+func (p *Plan) calculatePlanTableRowChanges(t planTable, key planKey, row *planTableRow, inSync *[]*endpoint.Endpoint) *Changes {
 	changes := &Changes{}
 
 	recordsByType := t.resolver.ResolveRecordTypes(key, row)
@@ -295,14 +300,14 @@ func (p *Plan) calculatePlanTableRowChanges(t planTable, key planKey, row *planT
 
 		// update existing record
 		case records.current != nil && len(records.candidates) > 0:
-			p.appendEndpointUpdates(t, changes, records.current, records.candidates)
+			p.appendEndpointUpdates(t, changes, records.current, records.candidates, inSync)
 		}
 	}
 
 	return changes
 }
 
-func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *endpoint.Endpoint, candidates []*endpoint.Endpoint) {
+func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *endpoint.Endpoint, candidates []*endpoint.Endpoint, inSync *[]*endpoint.Endpoint) {
 	update := t.resolver.ResolveUpdate(current, candidates)
 
 	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
@@ -310,6 +315,10 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 		inheritOwner(current, update)
 		changes.UpdateNew = append(changes.UpdateNew, update)
 		changes.UpdateOld = append(changes.UpdateOld, current)
+		return
+	}
+	if p.OwnerID == "" || current.IsOwnedBy(p.OwnerID) {
+		*inSync = append(*inSync, update)
 	}
 }
 

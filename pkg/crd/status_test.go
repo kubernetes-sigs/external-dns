@@ -47,8 +47,8 @@ func newStatusWriter(t *testing.T, funcs interceptor.Funcs, objs ...client.Objec
 	return NewStatusWriter(NewCRDClients(c, c))
 }
 
-func dnsEndpointRef(namespace, name string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", namespace, name, "", types.CRD)
+func dnsEndpointRef(name string) *events.ObjectReference {
+	return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "foo", name, "", types.CRD)
 }
 
 func TestStatusWriterReportStatus(t *testing.T) {
@@ -61,7 +61,7 @@ func TestStatusWriterReportStatus(t *testing.T) {
 
 		w.ReportStatus(t.Context(), []plan.PlannedObject{
 			{Ref: nil, Endpoints: 1},
-			{Ref: dnsEndpointRef("foo", "mine"), Endpoints: 2},
+			{Ref: dnsEndpointRef("mine"), Endpoints: 2, Changed: true},
 			{Ref: foreign, Endpoints: 1},
 		}, errors.New("provider down"))
 
@@ -69,12 +69,23 @@ func TestStatusWriterReportStatus(t *testing.T) {
 		logtest.TestHelperLogNotContains("foo/theirs", hook, t)
 	})
 
+	t.Run("an apply error skips objects outside the batch", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+		w := newStatusWriter(t, interceptor.Funcs{}, mine)
+
+		w.ReportStatus(t.Context(), []plan.PlannedObject{
+			{Ref: dnsEndpointRef("mine"), Endpoints: 1},
+		}, errors.New("provider down"))
+
+		logtest.TestHelperLogContains("DNSEndpoint foo/mine: 1 endpoint(s) planned, apply error: <nil>", hook, t)
+	})
+
 	// Deleted between the plan and the apply.
 	t.Run("skips missing objects silently", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 		w := newStatusWriter(t, interceptor.Funcs{})
 
-		w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("foo", "gone"), Endpoints: 1}}, nil)
+		w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("gone"), Endpoints: 1}}, nil)
 
 		logtest.TestHelperLogNotContains("foo/gone", hook, t)
 	})
@@ -87,7 +98,7 @@ func TestStatusWriterReportStatus(t *testing.T) {
 			},
 		}, mine)
 
-		w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("foo", "mine"), Endpoints: 1}}, nil)
+		w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("mine"), Endpoints: 1}}, nil)
 
 		logtest.TestHelperLogContainsWithLogLevel("Could not get DNSEndpoint foo/mine: apiserver unavailable", log.WarnLevel, hook, t)
 	})
