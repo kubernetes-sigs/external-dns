@@ -18,322 +18,214 @@ package crd
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
-	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-func TestSyncStatus(t *testing.T) {
-	seed := &apiv1alpha1.DNSEndpoint{
-		Namespace: "default", Name: "example", Generation: 2,
-		Status: apiv1alpha1.DNSEndpointStatus{ObservedGeneration: 1},
-	}
-	seed2 := &apiv1alpha1.DNSEndpoint{
-		Namespace: "other-ns", Name: "other", Generation: 5,
-		Status: apiv1alpha1.DNSEndpointStatus{ObservedGeneration: 4},
-	}
-	seedMultiA := &apiv1alpha1.DNSEndpoint{
-		Namespace: "ns-a", Name: "a", Generation: 1,
-		Status: apiv1alpha1.DNSEndpointStatus{ObservedGeneration: 1},
-	}
-	seedMultiB := &apiv1alpha1.DNSEndpoint{
-		Namespace: "ns-b", Name: "b", Generation: 3,
-		Status: apiv1alpha1.DNSEndpointStatus{ObservedGeneration: 2},
-	}
+func newStatusWriter(t *testing.T, funcs interceptor.Funcs, objs ...client.Object) *StatusWriter {
+	t.Helper()
+	scheme := runtime.NewScheme()
+	require.NoError(t, apiv1alpha1.AddToScheme(scheme))
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(objs...).
+		WithStatusSubresource(&apiv1alpha1.DNSEndpoint{}).
+		WithInterceptorFuncs(funcs).
+		Build()
+	return NewStatusWriter(NewCRDClients(c, c), false)
+}
 
-	tests := []struct {
-		title string
-		// seeded are the DNSEndpoint objects pre-populated in the fake client, as if already in the cluster.
-		seeded           []client.Object
-		changes          *plan.Changes
-		interceptorFuncs interceptor.Funcs
-		wantLogContains  []string
-		wantLogAbsent    []string
+// Every DNSEndpoint in this file lives in the same namespace.
+const testNamespace = "foo"
+
+func dnsEndpointRef(name string) *events.ObjectReference {
+	return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", testNamespace, name, "", types.CRD)
+}
+
+// readDNSEndpoint fetches the stored copy, so assertions run against what the
+// API server would hold rather than the object handed to the writer.
+func readDNSEndpoint(t *testing.T, c client.Client, name string) *apiv1alpha1.DNSEndpoint {
+	t.Helper()
+	got := &apiv1alpha1.DNSEndpoint{}
+	require.NoError(t, c.Get(t.Context(), client.ObjectKey{Namespace: testNamespace, Name: name}, got))
+	return got
+}
+
+func TestStatusWriterReportStatus(t *testing.T) {
+	for _, ti := range []struct {
+		title           string
+		planned         int
+		unchanged       bool
+		applyErr        error
+		dryRun          bool
+		wantStatus      metav1.ConditionStatus
+		wantReason      string
+		wantMessagePart string
 	}{
 		{
-			title:  "groups create/update per referenced CR",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("b.example.com", endpoint.RecordTypeA, "1.2.3.5").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 1 updated (generation=2, observedGeneration=1)"},
+			title:           "provider applied the batch",
+			planned:         1,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      apiv1alpha1.ProgrammedReason,
+			wantMessagePart: "1 endpoint(s) applied to the DNS provider",
 		},
 		{
-			title:  "ignores endpoints without a DNSEndpoint reference",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4")},
-			},
-			wantLogAbsent: []string{"DNSEndpoint default/example"},
+			title:           "provider rejected the batch",
+			planned:         1,
+			applyErr:        errors.New("route53: throttled"),
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      apiv1alpha1.FailedReason,
+			wantMessagePart: "route53: throttled",
 		},
 		{
-			title:  "ignores refs with a non-DNSEndpoint kind",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(serviceRef("default", "example")),
-				},
-			},
-			wantLogAbsent: []string{"DNSEndpoint"},
+			// Its records were already in place, so the failed batch is not its own.
+			title:           "provider rejected a batch the object was not in",
+			planned:         1,
+			unchanged:       true,
+			applyErr:        errors.New("route53: throttled"),
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      apiv1alpha1.ProgrammedReason,
+			wantMessagePart: "1 endpoint(s) applied to the DNS provider",
 		},
 		{
-			title:  "endpoint with mixed refs: non-DNSEndpoint ref ignored, DNSEndpoint ref tallied",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(serviceRef("default", "example")).
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)"},
+			// Nothing was offered to the provider, so Programmed would be a lie.
+			title:           "every endpoint excluded by the filters",
+			planned:         0,
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      apiv1alpha1.FilteredReason,
+			wantMessagePart: "No endpoint reached the DNS provider",
 		},
 		{
-			title: "non-NotFound Get error logs a warning",
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			interceptorFuncs: interceptor.Funcs{
-				Get: func(context.Context, client.WithWatch, client.ObjectKey, client.Object, ...client.GetOption) error {
-					return assert.AnError
-				},
-			},
-			wantLogContains: []string{"Could not get DNSEndpoint default/example"},
+			// --dry-run sends nothing, so Programmed would be a lie.
+			title:           "dry run",
+			planned:         1,
+			dryRun:          true,
+			wantStatus:      metav1.ConditionUnknown,
+			wantReason:      apiv1alpha1.DryRunReason,
+			wantMessagePart: "--dry-run kept them from the DNS provider",
 		},
 		{
-			title:  "two different CRs get separate counts",
-			seeded: []client.Object{seed.DeepCopy(), seed2.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("b.example.com", endpoint.RecordTypeA, "1.2.3.5").
-						WithRefObject(dnsEndpointRef("other-ns", "other")),
-				},
-			},
-			wantLogContains: []string{
-				"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)",
-				"DNSEndpoint other-ns/other: 0 created, 1 updated (generation=5, observedGeneration=4)",
-			},
+			title:           "dry run with every endpoint filtered still reports the filter",
+			planned:         0,
+			dryRun:          true,
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      apiv1alpha1.FilteredReason,
+			wantMessagePart: "No endpoint reached the DNS provider",
 		},
-		{
-			title:  "one missing CR does not affect a sibling CR's lookup",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-					endpoint.NewEndpoint("c.example.com", endpoint.RecordTypeA, "1.2.3.6").
-						WithRefObject(dnsEndpointRef("default", "missing")),
-				},
-			},
-			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)"},
-			wantLogAbsent:   []string{"DNSEndpoint default/missing"},
-		},
-		{
-			title:  "counts accumulate beyond one",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-					endpoint.NewEndpoint("b.example.com", endpoint.RecordTypeA, "1.2.3.5").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			wantLogContains: []string{"DNSEndpoint default/example: 2 created, 0 updated (generation=2, observedGeneration=1)"},
-		},
-		{
-			title:  "update-only changes are tallied (Create empty)",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				UpdateNew: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			wantLogContains: []string{"DNSEndpoint default/example: 0 created, 1 updated (generation=2, observedGeneration=1)"},
-		},
-		{
-			title:  "one endpoint referencing two different CRs attributes both",
-			seeded: []client.Object{seedMultiA.DeepCopy(), seedMultiB.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("ns-a", "a")).
-						WithRefObject(dnsEndpointRef("ns-b", "b")),
-				},
-			},
-			wantLogContains: []string{
-				"DNSEndpoint ns-a/a: 1 created, 0 updated (generation=1, observedGeneration=1)",
-				"DNSEndpoint ns-b/b: 1 created, 0 updated (generation=3, observedGeneration=2)",
-			},
-		},
-		{
-			title:  "create and delete for the same CR: delete does not affect its count",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Create: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "1.2.3.9").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			wantLogContains: []string{"DNSEndpoint default/example: 1 created, 0 updated (generation=2, observedGeneration=1)"},
-		},
-		{
-			title:  "delete-only changes produce no lookups",
-			seeded: []client.Object{seed.DeepCopy()},
-			changes: &plan.Changes{
-				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-						WithRefObject(dnsEndpointRef("default", "example")),
-				},
-			},
-			interceptorFuncs: forbidGet(t),
-		},
-	}
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			obj := &apiv1alpha1.DNSEndpoint{Namespace: testNamespace, Name: "test", Generation: 7}
+			w := newStatusWriter(t, interceptor.Funcs{}, obj)
+			w.dryRun = ti.dryRun
 
-	for _, tt := range tests {
-		t.Run(tt.title, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-			c := fake.NewClientBuilder().
-				WithScheme(newTestScheme(t)).
-				WithStatusSubresource(&apiv1alpha1.DNSEndpoint{}).
-				WithObjects(tt.seeded...).
-				Build()
-			wrapped := interceptor.NewClient(c, tt.interceptorFuncs)
+			w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("test"), Endpoints: ti.planned, Changed: !ti.unchanged}}, ti.applyErr)
 
-			SyncStatus(t.Context(), NewCRDClients(wrapped, nil), tt.changes)
-
-			for _, want := range tt.wantLogContains {
-				logtest.TestHelperLogContains(want, hook, t)
-			}
-			for _, absent := range tt.wantLogAbsent {
-				logtest.TestHelperLogNotContains(absent, hook, t)
-			}
+			got := readDNSEndpoint(t, w.clients.Writer(), "test")
+			cond := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
+			require.NotNil(t, cond, "Ready condition must be set")
+			assert.Equal(t, ti.wantStatus, cond.Status)
+			assert.Equal(t, ti.wantReason, cond.Reason)
+			assert.Equal(t, int64(7), cond.ObservedGeneration)
+			assert.Contains(t, cond.Message, ti.wantMessagePart)
 		})
 	}
 }
 
-func TestSyncStatus_MissingCRSuppressesWarning(t *testing.T) {
-	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-	var getCalls int
-	c := interceptor.NewClient(
-		fake.NewClientBuilder().WithScheme(newTestScheme(t)).WithStatusSubresource(&apiv1alpha1.DNSEndpoint{}).Build(),
-		interceptor.Funcs{
-			Get: func(ctx context.Context, cli client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-				getCalls++
-				return cli.Get(ctx, key, obj, opts...)
+func TestStatusWriterSkipsWhatItCannotWrite(t *testing.T) {
+	mine := &apiv1alpha1.DNSEndpoint{Namespace: testNamespace, Name: "mine", Generation: 3}
+
+	t.Run("ignores foreign refs and deleted objects", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+		w := newStatusWriter(t, interceptor.Funcs{}, mine)
+		foreign := events.NewObjectReferenceFromParts("Ingress", "networking.k8s.io/v1", "foo", "mine", "", types.Ingress)
+
+		w.ReportStatus(t.Context(), []plan.PlannedObject{
+			{Ref: nil, Endpoints: 1},
+			{Ref: foreign, Endpoints: 1},
+			{Ref: dnsEndpointRef("gone"), Endpoints: 1},
+		}, nil)
+
+		got := readDNSEndpoint(t, w.clients.Writer(), "mine")
+		assert.Empty(t, got.Status.Conditions, "no condition must be written for foreign or missing refs")
+		logtest.TestHelperLogNotContains("foo/gone", hook, t)
+	})
+
+	t.Run("warns on read errors", func(t *testing.T) {
+		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+		w := newStatusWriter(t, interceptor.Funcs{
+			Get: func(context.Context, client.WithWatch, client.ObjectKey, client.Object, ...client.GetOption) error {
+				return errors.New("apiserver unavailable")
 			},
-		},
-	)
-	ep := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-		WithRefObject(dnsEndpointRef("default", "missing"))
+		}, mine)
 
-	SyncStatus(t.Context(), NewCRDClients(c, nil), &plan.Changes{Create: []*endpoint.Endpoint{ep}})
+		w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("mine"), Endpoints: 1}}, nil)
 
-	assert.Equal(t, 1, getCalls, "Get should have been attempted for the missing CR")
-	for _, entry := range hook.AllEntries() {
-		assert.NotEqual(t, log.WarnLevel, entry.Level, "unexpected warning logged: %s", entry.Message)
-	}
-}
-
-func TestSyncStatus_NilGuards(t *testing.T) {
-	t.Run("nil CRDClients", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-		ep := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-			WithRefObject(dnsEndpointRef("default", "example"))
-		require.NotPanics(t, func() {
-			SyncStatus(t.Context(), nil, &plan.Changes{Create: []*endpoint.Endpoint{ep}})
-		})
-		assert.Empty(t, hook.AllEntries())
-	})
-
-	t.Run("non-nil CRDClients with nil Reader", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-		ep := endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "1.2.3.4").
-			WithRefObject(dnsEndpointRef("default", "example"))
-		require.NotPanics(t, func() {
-			SyncStatus(t.Context(), NewCRDClients(nil, nil), &plan.Changes{Create: []*endpoint.Endpoint{ep}})
-		})
-		assert.Empty(t, hook.AllEntries())
-	})
-
-	t.Run("nil changes", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-		c := fake.NewClientBuilder().WithScheme(newTestScheme(t)).Build()
-		require.NotPanics(t, func() {
-			SyncStatus(t.Context(), NewCRDClients(c, nil), nil)
-		})
-		assert.Empty(t, hook.AllEntries())
-	})
-
-	t.Run("empty but non-nil changes", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-		c := interceptor.NewClient(
-			fake.NewClientBuilder().WithScheme(newTestScheme(t)).Build(),
-			forbidGet(t),
-		)
-		require.NotPanics(t, func() {
-			SyncStatus(t.Context(), NewCRDClients(c, nil), &plan.Changes{})
-		})
-		assert.Empty(t, hook.AllEntries())
+		logtest.TestHelperLogContainsWithLogLevel("Could not get DNSEndpoint foo/mine: apiserver unavailable", log.WarnLevel, hook, t)
 	})
 }
 
-func newTestScheme(t *testing.T) *runtime.Scheme {
-	t.Helper()
-	s := runtime.NewScheme()
-	require.NoError(t, apiv1alpha1.AddToScheme(s))
-	return s
+// Accepted is written by the crd source from its listed (cache-backed) copy while
+// Ready is written after the apply. The read path can lag the last write, so
+// pushing the stale copy would drop the condition the other writer had just set.
+// Its stale resourceVersion makes the API server reject it, and UpdateStatus
+// then re-reads.
+func TestUpdateStatusDoesNotClobberAStaleCondition(t *testing.T) {
+	obj := &apiv1alpha1.DNSEndpoint{Namespace: testNamespace, Name: "test", Generation: 1}
+	w := newStatusWriter(t, interceptor.Funcs{}, obj)
+	c := w.clients.Writer()
+
+	stale := readDNSEndpoint(t, c, "test")
+
+	w.ReportStatus(t.Context(), []plan.PlannedObject{{Ref: dnsEndpointRef("test"), Endpoints: 1}}, nil)
+
+	UpdateStatus(t.Context(), c, stale, func(status *apiv1alpha1.DNSEndpointStatus) {
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:    apiv1alpha1.AcceptedCondition,
+			Status:  metav1.ConditionFalse,
+			Reason:  apiv1alpha1.InvalidReason,
+			Message: "spec.endpoints[0]: something changed",
+		})
+	})
+
+	got := readDNSEndpoint(t, c, "test")
+	accepted := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.AcceptedCondition)
+	require.NotNil(t, accepted)
+	assert.Equal(t, apiv1alpha1.InvalidReason, accepted.Reason, "the new Accepted must be stored")
+
+	ready := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
+	require.NotNil(t, ready, "Ready must survive a write driven from a stale copy")
+	assert.Equal(t, apiv1alpha1.ProgrammedReason, ready.Reason)
 }
 
-func dnsEndpointRef(namespace, name string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts(
-		dnsEndpointKind, apiv1alpha1.GroupVersion.String(), namespace, name, "", types.CRD)
-}
+func TestTruncateConditionMessage(t *testing.T) {
+	short := "all good"
+	assert.Equal(t, short, TruncateConditionMessage(short))
 
-func serviceRef(namespace, name string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts("Service", "v1", namespace, name, "", "service")
-}
+	long := TruncateConditionMessage(fmt.Sprintf("%0*d", 40000, 0))
+	assert.Len(t, long, 32768)
+	assert.True(t, len(long) > 3 && long[len(long)-3:] == "...")
 
-// forbidGet fails the test if cl.Get is ever called, for asserting a code path
-// that must not look anything up.
-func forbidGet(t *testing.T) interceptor.Funcs {
-	return interceptor.Funcs{
-		Get: func(_ context.Context, _ client.WithWatch, key client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
-			t.Errorf("unexpected Get call for %v", key)
-			return assert.AnError
-		},
-	}
+	// User-supplied names may be UTF-8; cutting bytes would split a rune.
+	multibyte := TruncateConditionMessage(strings.Repeat("é", 40000))
+	assert.Equal(t, 32768, utf8.RuneCountInString(multibyte))
+	assert.True(t, utf8.ValidString(multibyte), "truncation must not split a rune")
 }
