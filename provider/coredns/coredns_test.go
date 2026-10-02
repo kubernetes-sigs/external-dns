@@ -155,8 +155,8 @@ func TestEtcdHttpsProtocol(t *testing.T) {
 	testutils.TestHelperEnvSetter(t, envs)
 
 	cfg, err := getETCDConfig()
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
 }
 
 func TestEtcdHttpsIncorrectConfigError(t *testing.T) {
@@ -648,7 +648,7 @@ func TestGetServices_Success(t *testing.T) {
 	}
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "example.com", result[0].Host)
 }
@@ -680,7 +680,7 @@ func TestGetServices_Duplicate(t *testing.T) {
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 1)
 }
 
@@ -714,7 +714,7 @@ func TestGetServices_Multiple(t *testing.T) {
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, priority, result[1].Priority)
 }
@@ -758,7 +758,7 @@ func TestGetServices_FilterOutOtherServicesOwnerSetButNothingChanged(t *testing.
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 3)
 }
 
@@ -801,7 +801,7 @@ func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "owner", result[0].Owner)
 }
@@ -829,7 +829,7 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 		}, nil)
 
 	_, err := c.GetServices(t.Context(), "/prefix")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "/prefix/1")
 }
 
@@ -845,8 +845,8 @@ func TestGetServices_GetError(t *testing.T) {
 		Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
 
 	_, err := c.GetServices(t.Context(), "/prefix")
-	assert.Error(t, err)
-	assert.EqualError(t, err, "etcd failure")
+	require.Error(t, err)
+	require.EqualError(t, err, "etcd failure")
 }
 
 func TestDeleteService(t *testing.T) {
@@ -1279,9 +1279,9 @@ func TestSaveService(t *testing.T) {
 
 			err = c.SaveService(t.Context(), tt.service)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			mockKV.AssertExpectations(t)
 		})
@@ -1318,7 +1318,7 @@ func TestNewProvider(t *testing.T) {
 			provider, err := newProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.EqualError(t, err, tt.errMsg)
+				require.EqualError(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, provider)
@@ -1370,7 +1370,7 @@ func TestFindEp(t *testing.T) {
 			if ok {
 				assert.Equal(t, tt.dnsName, got.DNSName)
 			} else {
-				assert.Nil(t, got)
+				require.Nil(t, got)
 			}
 		})
 	}

@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -134,9 +135,9 @@ func testConnectorSourceEndpoints(t *testing.T) {
 
 			endpoints, err := cs.Endpoints(t.Context())
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			// Validate returned endpoints against expected endpoints.

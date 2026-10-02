@@ -19,6 +19,7 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,6 +80,28 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("--create-ptr requires PTR in --managed-record-types")
 	}
 
+	if err := validateNamespaces(cfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateNamespaces rejects several --namespace values for sources watching a single one,
+// which would otherwise silently watch only the first.
+func validateNamespaces(cfg *externaldns.Config) error {
+	if len(externaldns.NormalizeNamespaces(cfg.Namespaces)) < 2 {
+		return nil
+	}
+	var unsupported []string
+	for _, source := range cfg.Sources {
+		if !externaldns.SourceSupportsMultipleNamespaces(source) && !slices.Contains(unsupported, source) {
+			unsupported = append(unsupported, source)
+		}
+	}
+	if len(unsupported) > 0 {
+		return fmt.Errorf("--namespace accepts a single value with the following sources: %s", strings.Join(unsupported, ", "))
+	}
 	return nil
 }
 
@@ -122,6 +145,9 @@ func validateConfigForRfc2136(cfg *externaldns.Config) error {
 	}
 	if cfg.RFC2136Insecure && cfg.RFC2136GSSTSIG {
 		return errors.New("--rfc2136-insecure and --rfc2136-gss-tsig are mutually exclusive arguments")
+	}
+	if cfg.RFC2136AXFRInsecure && !cfg.RFC2136AXFR {
+		return errors.New("--rfc2136-axfr-insecure requires --rfc2136-axfr")
 	}
 	if cfg.RFC2136GSSTSIG {
 		if cfg.RFC2136KerberosPassword == "" || cfg.RFC2136KerberosUsername == "" || cfg.RFC2136KerberosRealm == "" {

@@ -1125,9 +1125,9 @@ func TestNewMXTarget(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual, err := NewMXRecord(tt.target)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
 			}
 		})
@@ -1189,9 +1189,9 @@ func TestNewSRVRecord(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual, err := NewSRVRecord(tt.target)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
 			}
 		})
@@ -1500,6 +1500,49 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			description: "Invalid A record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid alias A record - no targets",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid TXT record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTXT,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1603,7 +1646,7 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 				RecordType: RecordTypePTR,
 				Targets:    Targets{},
 			},
-			wantLog: "at least one target is required",
+			wantLog: "has no targets",
 		},
 		{
 			name: "valid PTR does not log",
@@ -2209,7 +2252,7 @@ func TestNewPTREndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ep, err := NewPTREndpoint(tt.target, tt.ttl, tt.hostnames...)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
