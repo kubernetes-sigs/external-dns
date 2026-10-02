@@ -160,7 +160,7 @@ func TestCivoProviderRecordsApexAt(t *testing.T) {
 	}
 
 	records, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, records, 2)
 
 	// The "@" apex record should be translated to the zone name.
