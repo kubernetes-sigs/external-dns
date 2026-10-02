@@ -77,6 +77,22 @@ So:
 - Do **not** treat the kustomize tree _on the git tag_ as the source of truth for that version’s image.
 - Prefer the Helm chart, or the post-release version-updater commit on `master`, for install manifests that pin the new tag.
 
+## How to promote a Helm OCI chart
+
+The project Cloud Build publishes the Helm chart to the staging OCI registry on release tags. The chart is pushed to `gcr.io/k8s-staging-external-dns/charts/external-dns:<chart-version>`.
+
+Promotion to `registry.k8s.io` is handled by the same `kubernetes/k8s.io` promotion flow used for container images:
+
+- Find the digest for the staged chart after Cloud Build completes.
+- Open a PR against the [k8s.io repo](https://github.com/kubernetes/k8s.io) adding the digest and chart version under a `charts/external-dns` entry in `registry.k8s.io/images/k8s-staging-external-dns/images.yaml`.
+- Once the PR merges, the promoter copies the OCI chart from `gcr.io/k8s-staging-external-dns/charts/external-dns` to the production replicas served by `registry.k8s.io/external-dns/charts/external-dns`.
+
+After promotion, users can install the chart with:
+
+```sh
+helm install external-dns oci://registry.k8s.io/external-dns/charts/external-dns --version <chart-version>
+```
+
 ## How to release a new chart version
 
 The chart needs to be released in response to an ExternalDNS image release or on an as-needed basis; this should be triggered by an issue to release the chart.
