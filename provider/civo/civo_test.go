@@ -139,7 +139,8 @@ func TestCivoProviderRecordsApexAt(t *testing.T) {
 					URL:         "/v2/dns/12345/records",
 					ResponseBody: `[
 						{"id": "1", "domain_id":"12345", "account_id": "1", "name": "@", "type": "A", "value": "10.0.0.0", "ttl": 600},
-						{"id": "2", "account_id": "1", "domain_id":"12345", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600}
+						{"id": "2", "account_id": "1", "domain_id":"12345", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600},
+						{"id": "3", "account_id": "1", "domain_id":"12345", "name": "@", "type": "txt", "value": "\"heritage=external-dns\"", "ttl": 600}
 						]`,
 				},
 				{
@@ -161,7 +162,7 @@ func TestCivoProviderRecordsApexAt(t *testing.T) {
 
 	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
-	assert.Len(t, records, 2)
+	assert.Len(t, records, 3)
 
 	// The "@" apex record should be translated to the zone name.
 	assert.Equal(t, "example.com", records[0].DNSName)
@@ -170,6 +171,10 @@ func TestCivoProviderRecordsApexAt(t *testing.T) {
 
 	// Regular subdomain records should work as before.
 	assert.Equal(t, "www.example.com", records[1].DNSName)
+
+	// Civo uses "@" for apex records of every type, not only address records.
+	assert.Equal(t, "example.com", records[2].DNSName)
+	assert.Equal(t, "TXT", records[2].RecordType)
 }
 
 func TestCivoProviderRecordsWithError(t *testing.T) {
@@ -922,6 +927,13 @@ func TestCivoProviderGetRecordIDApexAt(t *testing.T) {
 		Value:       "10.0.0.0",
 		DNSDomainID: "12345",
 		TTL:         600,
+	}, {
+		ID:          "2",
+		Type:        "CNAME",
+		Name:        "@",
+		Value:       "lb.example.com",
+		DNSDomainID: "12345",
+		TTL:         600,
 	}}
 
 	// Apex endpoint: DNSName == zone name, so getStrippedRecordName returns "".
@@ -930,36 +942,32 @@ func TestCivoProviderGetRecordIDApexAt(t *testing.T) {
 
 	assert.Len(t, matched, 1)
 	assert.Equal(t, "1", matched[0].ID)
+
+	ep = endpoint.Endpoint{DNSName: "test.com", Targets: endpoint.Targets{"lb.example.com"}, RecordType: "CNAME"}
+	matched = getRecordID(records, zone, ep)
+
+	assert.Len(t, matched, 1)
+	assert.Equal(t, "2", matched[0].ID)
 }
 
 func TestNormalizeCivoRecordName(t *testing.T) {
 	testCases := []struct {
 		name       string
-		recordType string
 		recordName string
 		expected   string
 	}{
 		{
-			name:       "A apex",
-			recordType: endpoint.RecordTypeA,
+			name:       "apex marker",
 			recordName: "@",
 			expected:   "",
 		},
 		{
-			name:       "AAAA apex",
-			recordType: endpoint.RecordTypeAAAA,
-			recordName: "@",
+			name:       "empty apex",
+			recordName: "",
 			expected:   "",
-		},
-		{
-			name:       "CNAME apex marker is unchanged",
-			recordType: endpoint.RecordTypeCNAME,
-			recordName: "@",
-			expected:   "@",
 		},
 		{
 			name:       "subdomain",
-			recordType: endpoint.RecordTypeA,
 			recordName: "www",
 			expected:   "www",
 		},
@@ -967,7 +975,7 @@ func TestNormalizeCivoRecordName(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.expected, normalizeCivoRecordName(testCase.recordType, testCase.recordName))
+			assert.Equal(t, testCase.expected, normalizeCivoRecordName(testCase.recordName))
 		})
 	}
 }

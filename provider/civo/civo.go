@@ -147,7 +147,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		for _, r := range records {
 			toUpper := strings.ToUpper(string(r.Type))
 			if provider.SupportedRecordType(toUpper) {
-				recordName := normalizeCivoRecordName(toUpper, r.Name)
+				recordName := normalizeCivoRecordName(r.Name)
 				name := fmt.Sprintf("%s.%s", recordName, zone.Name)
 
 				if recordName == "" {
@@ -557,7 +557,7 @@ func getRecordID(records []civogo.DNSRecord, zone civogo.DNSDomain, ep endpoint.
 	for _, record := range records {
 		stripedName := getStrippedRecordName(zone, ep)
 		toUpper := strings.ToUpper(string(record.Type))
-		recordName := normalizeCivoRecordName(toUpper, record.Name)
+		recordName := normalizeCivoRecordName(record.Name)
 		if recordName == stripedName && toUpper == ep.RecordType {
 			matchedRecords = append(matchedRecords, record)
 		}
@@ -566,9 +566,9 @@ func getRecordID(records []civogo.DNSRecord, zone civogo.DNSDomain, ep endpoint.
 	return matchedRecords
 }
 
-// normalizeCivoRecordName converts Civo's @ apex marker for address records to the internal empty-name convention.
-func normalizeCivoRecordName(recordType, name string) string {
-	if name == "@" && (recordType == endpoint.RecordTypeA || recordType == endpoint.RecordTypeAAAA) {
+// normalizeCivoRecordName converts Civo's @ apex marker, which it returns for every record type, to the internal empty-name convention.
+func normalizeCivoRecordName(name string) string {
+	if name == "@" {
 		return ""
 	}
 
