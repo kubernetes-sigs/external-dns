@@ -429,6 +429,33 @@ func TestOvhNewChange(t *testing.T) {
 	})
 }
 
+func TestOvhNewChangeSRV(t *testing.T) {
+	provider := &OVHProvider{client: nil, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+
+	// OVHcloud requires SRV targets to be fully-qualified (trailing dot, RFC 2782).
+	// A target supplied without the trailing dot must have one appended, and a
+	// target that already ends with a dot must be left unchanged. The CNAME
+	// relative-target option must not affect SRV records.
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "_sip._tcp.example.net", RecordType: "SRV", RecordTTL: 600, Targets: []string{"10 10 443 sip.example.net"}},
+		{DNSName: "_sip._tcp.example.net", RecordType: "SRV", RecordTTL: 600, Targets: []string{"20 10 443 sip2.example.net."}},
+	}
+
+	changes, _ := provider.newOvhChangeCreateDelete(ovhCreate, endpoints, "example.net", []ovhRecord{})
+	td.Cmp(t, changes, []ovhChange{
+		{Action: ovhCreate, Zone: "example.net", FieldType: "SRV", SubDomain: "_sip._tcp", TTL: 600, Target: "10 10 443 sip.example.net."},
+		{Action: ovhCreate, Zone: "example.net", FieldType: "SRV", SubDomain: "_sip._tcp", TTL: 600, Target: "20 10 443 sip2.example.net."},
+	})
+
+	// EnableCNAMERelativeTarget only governs CNAME; SRV targets are still made absolute.
+	provider = &OVHProvider{client: nil, EnableCNAMERelativeTarget: true, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+	changes, _ = provider.newOvhChangeCreateDelete(ovhCreate, endpoints, "example.net", []ovhRecord{})
+	td.Cmp(t, changes, []ovhChange{
+		{Action: ovhCreate, Zone: "example.net", FieldType: "SRV", SubDomain: "_sip._tcp", TTL: 600, Target: "10 10 443 sip.example.net."},
+		{Action: ovhCreate, Zone: "example.net", FieldType: "SRV", SubDomain: "_sip._tcp", TTL: 600, Target: "20 10 443 sip2.example.net."},
+	})
+}
+
 func TestOvhApplyChanges(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}

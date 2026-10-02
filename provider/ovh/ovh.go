@@ -536,7 +536,7 @@ func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint
 				TTL:       defaultTTL,
 				Target:    target,
 			}
-			p.formatCNAMETarget(&change)
+			p.formatTarget(&change)
 			if e.RecordTTL.IsConfigured() {
 				change.TTL = int64(e.RecordTTL)
 			}
@@ -664,7 +664,7 @@ func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endp
 				Action:    ovhUpdate,
 				ovhRecord: record,
 			}
-			p.formatCNAMETarget(&change)
+			p.formatTarget(&change)
 			changes = append(changes, change)
 			createChangeConvertedToUpdateChange = append(createChangeConvertedToUpdateChange, i)
 		}
@@ -693,7 +693,7 @@ func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endp
 					TTL:       recordTTL,
 					Target:    target,
 				}
-				p.formatCNAMETarget(&change)
+				p.formatTarget(&change)
 				changes = append(changes, change)
 			}
 		}
@@ -730,12 +730,24 @@ func (c *ovhChange) String() string {
 	return fmt.Sprintf("%s zone action(%s) : %s %d IN %s %s", c.Zone, action, c.SubDomain, c.TTL, c.FieldType, c.Target)
 }
 
-func (p *OVHProvider) formatCNAMETarget(change *ovhChange) {
-	if change.FieldType != endpoint.RecordTypeCNAME {
-		return
-	}
-
-	if p.EnableCNAMERelativeTarget {
+// formatTarget normalizes a change's target before it is sent to the OVH API.
+//
+// For CNAME records the target is turned into an absolute name (trailing dot)
+// unless EnableCNAMERelativeTarget is set. For SRV records OVHcloud requires the
+// target host to be a fully-qualified name ending in a trailing dot (RFC 2782);
+// the user cannot supply the dot themselves (upstream validation rejects it), so
+// the provider adds it here. The SRV target has the form
+// "priority weight port host", so the trailing dot is appended after the host,
+// which is the final field.
+func (p *OVHProvider) formatTarget(change *ovhChange) {
+	switch change.FieldType {
+	case endpoint.RecordTypeCNAME:
+		if p.EnableCNAMERelativeTarget {
+			return
+		}
+	case endpoint.RecordTypeSRV:
+		// always normalize SRV targets to an absolute name
+	default:
 		return
 	}
 
