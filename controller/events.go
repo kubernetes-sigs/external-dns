@@ -17,6 +17,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -58,7 +59,9 @@ var resourceKinds = map[string]string{
 // emitChangeEvent emits a Kubernetes event for each DNS record change.
 // Deletes use RecordDeleted on success and RecordError on failure.
 func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reason, crdKind string) {
-	if e == nil {
+	// events.Discard is the default (--events-emit selected nothing). Building an
+	// Event per change formats a message that is then thrown away.
+	if e == nil || e == events.Discard {
 		return
 	}
 	for _, ep := range ch.Create {
@@ -111,4 +114,21 @@ func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 		kind = k
 	}
 	return events.NewObjectReferenceFromParts(kind, "", namespace, name, "", registrySource)
+}
+
+// StatusReporter receives each sync's outcome, which only exists after
+// ApplyChanges, e.g. to set DNSEndpoint conditions.
+type StatusReporter interface {
+	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
+	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
+	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
+}
+
+func reportSyncStatus(ctx context.Context, r StatusReporter, p *plan.Plan, applyErr error) {
+	if r == nil {
+		return
+	}
+	if objects := p.PlannedObjects(); len(objects) > 0 {
+		r.ReportStatus(ctx, objects, applyErr)
+	}
 }

@@ -522,7 +522,7 @@ func TestKubeAPIRateLimitPropagation(t *testing.T) {
 func TestStashCRDClients(t *testing.T) {
 	t.Run("crdSource populates CRDClients", func(t *testing.T) {
 		fakeCache := newFakeCRDCache(t, nil)
-		cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil)
+		cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, "", nil, nil, nil)
 		require.NoError(t, err)
 
 		cfg := &Config{}
