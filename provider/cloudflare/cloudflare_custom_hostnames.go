@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"sort"
+	"strings"
 
 	"github.com/cloudflare/cloudflare-go/v7"
 	"github.com/cloudflare/cloudflare-go/v7/custom_hostnames"
@@ -29,8 +31,10 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7/option"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 // customHostname represents a Cloudflare custom hostname (v5 API compatible wrapper)
@@ -318,4 +322,85 @@ func listAllCustomHostnames(iter autoPager[custom_hostnames.CustomHostnameListRe
 		return nil, iter.Err()
 	}
 	return customHostnames, nil
+}
+
+// deduplicateCustomHostnames keeps each custom hostname on a single DNSName,
+// since Cloudflare maps a custom hostname to one origin.
+// All record types of the winning DNSName keep it (dual-stack).
+// The current Cloudflare origin wins if it is still a claimant, so a new resource cannot
+// take it over; otherwise the shortest DNSName wins (the aggregate over per-pod records).
+func (p *CloudFlareProvider) deduplicateCustomHostnames(endpoints []*endpoint.Endpoint) {
+	merged := customHostnamesMap{}
+	for _, chs := range p.cachedCustomHostnames {
+		maps.Copy(merged, chs)
+	}
+
+	carriers := map[string][]int{}
+	for i, ep := range endpoints {
+		for _, ch := range getEndpointCustomHostnames(ep) {
+			carriers[ch] = append(carriers[ch], i)
+		}
+	}
+
+	for ch, idxs := range carriers {
+		if len(idxs) < 2 {
+			continue
+		}
+
+		dnsNames := map[string][]int{}
+		for _, idx := range idxs {
+			dn := endpoints[idx].DNSName
+			dnsNames[dn] = append(dnsNames[dn], idx)
+		}
+
+		if len(dnsNames) < 2 {
+			continue
+		}
+
+		var winner string
+		if current, err := getCustomHostname(merged, ch); err == nil {
+			if _, ok := dnsNames[current.customOriginServer]; ok {
+				winner = current.customOriginServer
+			}
+		}
+		if winner == "" {
+			names := make([]string, 0, len(dnsNames))
+			for dn := range dnsNames {
+				names = append(names, dn)
+			}
+			sort.Slice(names, func(i, j int) bool {
+				if len(names[i]) != len(names[j]) {
+					return len(names[i]) < len(names[j])
+				}
+				return names[i] < names[j]
+			})
+			winner = names[0]
+		}
+
+		for dn, dnsIdxs := range dnsNames {
+			if dn == winner {
+				continue
+			}
+			for _, idx := range dnsIdxs {
+				removeSpecificCustomHostname(endpoints[idx], ch)
+				log.Debugf("Cloudflare: stripped custom hostname %q from endpoint %q (kept on %q)", ch, dn, winner)
+			}
+		}
+	}
+}
+
+// removeSpecificCustomHostname removes one custom hostname value, dropping the property when none remain.
+func removeSpecificCustomHostname(ep *endpoint.Endpoint, ch string) {
+	current := getEndpointCustomHostnames(ep)
+	remaining := make([]string, 0, len(current))
+	for _, v := range current {
+		if v != ch {
+			remaining = append(remaining, v)
+		}
+	}
+	if len(remaining) == 0 {
+		ep.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
+		return
+	}
+	ep.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty, strings.Join(remaining, ","))
 }
