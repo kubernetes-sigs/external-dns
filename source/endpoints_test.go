@@ -255,6 +255,118 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			expected:  endpoint.Targets{"10.0.0.1"},
 		},
 		{
+			name: "matching service with cluster IP",
+			services: []*corev1.Service{
+				{
+					Name: "svc5", Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:       corev1.ServiceTypeClusterIP,
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIP:  "10.0.0.10",
+						ClusterIPs: []string{"10.0.0.10"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"10.0.0.10"},
+		},
+		{
+			name: "matching service with dual-stack cluster IPs",
+			services: []*corev1.Service{
+				{
+					Name: "svc6", Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:       corev1.ServiceTypeClusterIP,
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIP:  "10.0.0.10",
+						ClusterIPs: []string{"10.0.0.10", "fd00::10"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"10.0.0.10", "fd00::10"},
+		},
+		{
+			name: "headless service yields no targets",
+			services: []*corev1.Service{
+				{
+					Name: "svc7", Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:       corev1.ServiceTypeClusterIP,
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIP:  corev1.ClusterIPNone,
+						ClusterIPs: []string{corev1.ClusterIPNone},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{},
+		},
+		{
+			name: "external IPs win over cluster IP",
+			services: []*corev1.Service{
+				{
+					Name: "svc8", Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Selector:    map[string]string{"app": "nginx"},
+						ExternalIPs: []string{"192.0.2.1"},
+						ClusterIP:   "10.0.0.10",
+						ClusterIPs:  []string{"10.0.0.10"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"192.0.2.1"},
+		},
+		{
+			name: "load balancer ingress wins over cluster IP",
+			services: []*corev1.Service{
+				{
+					Name: "svc9", Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:       corev1.ServiceTypeLoadBalancer,
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIP:  "10.0.0.10",
+						ClusterIPs: []string{"10.0.0.10"},
+					},
+					Status: corev1.ServiceStatus{
+						LoadBalancer: corev1.LoadBalancerStatus{
+							Ingress: []corev1.LoadBalancerIngress{
+								{IP: "192.0.2.2"},
+							},
+						},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"192.0.2.2"},
+		},
+		{
+			name: "nodeport service resolves via its cluster IP",
+			services: []*corev1.Service{
+				{
+					Name: "svc10", Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:     corev1.ServiceTypeNodePort,
+						Selector: map[string]string{"app": "nginx"},
+						Ports: []corev1.ServicePort{
+							{Port: 80, NodePort: 30080},
+						},
+						ClusterIP:  "10.0.0.10",
+						ClusterIPs: []string{"10.0.0.10"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"10.0.0.10"},
+		},
+		{
 			// Empty gateway selector takes the lister path (no index key to query) and
 			// returns all services in the namespace — same behaviour as an empty label selector matching everything.
 			name: "empty selector returns all services",
