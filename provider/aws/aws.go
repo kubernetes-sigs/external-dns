@@ -557,6 +557,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
 					ep := endpoint.
 						NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
+						WithProviderSpecific(providerSpecificTargetHostedZone, cleanZoneID(aws.ToString(r.AliasTarget.HostedZoneId))).
 						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 						WithAliasProperty(endpoint.AliasTrue)
 					newEndpoints = append(newEndpoints, ep)
@@ -871,6 +872,9 @@ func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
 	if ep.RecordTTL.IsConfigured() {
 		log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
 		ep.RecordTTL = defaultTTL
+	}
+	if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+		ep.SetProviderSpecificProperty(providerSpecificTargetHostedZone, cleanZoneID(hostedZoneID))
 	}
 
 	if enable, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {

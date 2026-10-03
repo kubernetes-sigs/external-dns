@@ -653,6 +653,31 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 	}
 }
 
+func TestReconcileLoopSettlesAnnotatedAliasTargetHostedZone(t *testing.T) {
+	h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+	host := "app." + reconcileZone
+	desired := func(zoneID string) []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			cnameTo("app", "target.external.example.net").
+				WithAliasProperty(endpoint.AliasTrue).
+				WithProviderSpecific(providerSpecificTargetHostedZone, zoneID),
+		}
+	}
+
+	h.mustSettle(desired("ZEXAMPLE123"))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZEXAMPLE123", h.aliasHostedZone(host, recordType))
+		require.True(t, h.ownsRecord(host, recordType))
+	}
+
+	h.mustSettle(desired("ZOTHER456"))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZOTHER456", h.aliasHostedZone(host, recordType))
+		require.True(t, h.ownsRecord(host, recordType))
+	}
+	h.mustSettle(desired("/hostedzone/ZOTHER456"))
+}
+
 // TestReconcileLoopKeepsOwnershipWhenPreferCNAMEIsDropped covers an operator removing
 // --aws-prefer-cname, which turns a hostname that was a plain CNAME into an A ALIAS
 // without anything in Kubernetes changing. That rewrites the record type, and with it
