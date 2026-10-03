@@ -1793,3 +1793,119 @@ func TestPTRRecords(t *testing.T) {
 		assert.Equal(t, "txt-value", services[0].Text)
 	})
 }
+
+// TestCNAMEWithTXTSeparateKeys verifies that when a CNAME record and a TXT
+// record share the same dnsName, they are stored in separate etcd keys.
+// CoreDNS's etcd plugin cannot resolve CNAME when the JSON object also
+// carries a "text" field (see issue #4953).
+func TestCNAMEWithTXTSeparateKeys(t *testing.T) {
+	client := &fakeETCDClient{services: map[string]Service{}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	// Apply CNAME + TXT for the same dnsName
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "example.net"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "owner-marker"),
+		},
+	})
+	require.NoError(t, err)
+
+	// The CNAME service must NOT have a text field
+	cnameFound := false
+	txtFound := false
+	for key, svc := range client.services {
+		// Skip the TXT-only key
+		if svc.Host == "" && svc.Text != "" {
+			txtFound = true
+			continue
+		}
+		if svc.Host == "example.net" {
+			cnameFound = true
+			assert.Empty(t, svc.Text,
+				"CNAME service at key %s must not have text field (issue #4953)", key)
+		}
+	}
+	assert.True(t, cnameFound, "CNAME service must exist")
+	assert.True(t, txtFound, "TXT service must exist in a separate key")
+
+	// Verify that Records() can still read both endpoints
+	records, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+
+	var cnameEP, txtEP *endpoint.Endpoint
+	for _, ep := range records {
+		switch ep.RecordType {
+		case endpoint.RecordTypeCNAME:
+			cnameEP = ep
+		case endpoint.RecordTypeTXT:
+			txtEP = ep
+		}
+	}
+	require.NotNil(t, cnameEP, "CNAME endpoint must be read back")
+	require.NotNil(t, txtEP, "TXT endpoint must be read back")
+	assert.Equal(t, "example.net", cnameEP.Targets[0])
+	assert.Equal(t, "owner-marker", txtEP.Targets[0])
+}
+
+// TestCNAMEWithTXTUpdatePreservesSeparation verifies that after updating
+// the CNAME target, the TXT record remains in a separate key and the
+// CNAME service still has no text field.
+func TestCNAMEWithTXTUpdatePreservesSeparation(t *testing.T) {
+	client := &fakeETCDClient{services: map[string]Service{}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	// Initial creation of CNAME + TXT
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "example.net"),
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "owner-marker"),
+		},
+	})
+	require.NoError(t, err)
+
+	// Read back records and update CNAME target
+	records, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+
+	var oldCNAME *endpoint.Endpoint
+	for _, ep := range records {
+		if ep.RecordType == endpoint.RecordTypeCNAME {
+			oldCNAME = ep
+			break
+		}
+	}
+	require.NotNil(t, oldCNAME, "CNAME endpoint must exist after creation")
+
+	changes := &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{oldCNAME},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("example.com", endpoint.RecordTypeCNAME, "newtarget.net"),
+		},
+	}
+	// Merge labels from old record to new
+	for _, col := range [][]*endpoint.Endpoint{changes.UpdateNew, changes.Delete} {
+		for _, record := range col {
+			mergeLabels(record, oldCNAME.Labels)
+		}
+	}
+	err = coredns.ApplyChanges(t.Context(), changes)
+	require.NoError(t, err)
+
+	// Verify: CNAME should point to new target, no text field
+	cnameFound := false
+	for _, svc := range client.services {
+		if svc.Host == "newtarget.net" {
+			cnameFound = true
+			assert.Empty(t, svc.Text,
+				"CNAME service must not have text field after update (issue #4953)")
+		}
+	}
+	assert.True(t, cnameFound, "Updated CNAME service must exist")
+}
