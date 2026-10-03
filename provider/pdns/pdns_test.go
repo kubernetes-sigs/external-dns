@@ -32,6 +32,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
 
@@ -207,7 +208,7 @@ var (
 		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
-		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com").WithAliasProperty(endpoint.AliasTrue),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeMX, endpoint.TTL(300), "10 mailhost1.example.com", "10 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("_service._tls.example.com", endpoint.RecordTypeSRV, endpoint.TTL(300), "100 1 443 service.example.com"),
 		endpoint.NewEndpointWithTTL("sub.example.com", endpoint.RecordTypeNS, endpoint.TTL(300), "ns1.example.com", "ns2.example.com"),
@@ -850,6 +851,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	*/
 	eps = p.convertRRSetToEndpoints(RRSetDisabledRecord)
 	suite.Equal(endpointsDisabledRecord, eps)
+
+	eps = p.convertRRSetToEndpoints(RRSetALIASRecord)
+	suite.Equal([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com").WithAliasProperty(endpoint.AliasTrue),
+	}, eps)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
@@ -1101,13 +1107,40 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 	// Function definition: AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
 
 	// Create a new provider to run tests against
-	p := &PDNSProvider{}
+	p := &PDNSProvider{client: &PDNSAPIClientStub{}}
 
 	tests := []struct {
 		description string
 		endpoints   []*endpoint.Endpoint
 		expected    []*endpoint.Endpoint
 	}{
+		{
+			description: "CNAME at the zone apex is marked as alias",
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net").WithAliasProperty(endpoint.AliasTrue),
+			},
+		},
+		{
+			description: "CNAME below the zone apex is left untouched",
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("www.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net"),
+			},
+		},
+		{
+			description: "CNAME at the zone apex with alias=false is stored as ALIAS regardless, so it is marked as alias",
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net").WithAliasProperty(endpoint.AliasFalse),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net").WithAliasProperty(endpoint.AliasTrue),
+			},
+		},
 		{
 			description: "Valid MX endpoint is not removed",
 			endpoints:   endpointsMXRecord,
@@ -1139,6 +1172,72 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSAdjustEndpoints() {
 		suite.Require().NoError(err)
 		suite.Equal(tt.expected, actual)
 	}
+}
+
+// planChanges runs desired through AdjustEndpoints, as the controller does,
+// and plans it against the endpoints read back from the stored rrsets.
+func planChanges(suite *NewPDNSProviderTestSuite, p *PDNSProvider, stored pgo.RRset, desired ...*endpoint.Endpoint) *plan.Changes {
+	adjusted, err := p.AdjustEndpoints(desired)
+	suite.Require().NoError(err)
+
+	return (&plan.Plan{
+		Current:        p.convertRRSetToEndpoints(stored),
+		Desired:        adjusted,
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}).Calculate().Changes
+}
+
+// An apex CNAME is always written as ALIAS (see ConvertEndpointsToZones), even
+// without the alias annotation. Reading it back must not make the planner see
+// a diff.
+func (suite *NewPDNSProviderTestSuite) TestPDNSApexAliasNoChurnWithoutPreferAlias() {
+	p := &PDNSProvider{client: &PDNSAPIClientStub{}}
+
+	stored := pgo.RRset{
+		Name:    new("example.com."),
+		Type:    pgo.RRTypePtr(pgo.RRTypeALIAS),
+		TTL:     pgo.Uint32(300),
+		Records: []pgo.Record{{Content: new("lb.example.net."), Disabled: new(false)}},
+	}
+	desired := endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net")
+
+	changes := planChanges(suite, p, stored, desired)
+	suite.False(changes.HasChanges(), "apex ALIAS must be stable, got updates: %v", changes.UpdateNew)
+}
+
+// A CNAME below the apex written as ALIAS because of --prefer-alias or the
+// alias annotation must read back as the same endpoint.
+func (suite *NewPDNSProviderTestSuite) TestPDNSAliasNoChurnWithPreferAlias() {
+	p := &PDNSProvider{client: &PDNSAPIClientStub{}}
+
+	stored := pgo.RRset{
+		Name:    new("svc.example.com."),
+		Type:    pgo.RRTypePtr(pgo.RRTypeALIAS),
+		TTL:     pgo.Uint32(300),
+		Records: []pgo.Record{{Content: new("lb.example.net."), Disabled: new(false)}},
+	}
+	desired := endpoint.NewEndpointWithTTL("svc.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net").WithAliasProperty(endpoint.AliasTrue)
+
+	changes := planChanges(suite, p, stored, desired)
+	suite.False(changes.HasChanges(), "ALIAS written with alias=true must be stable, got updates: %v", changes.UpdateNew)
+}
+
+// A plain CNAME below the apex stays a CNAME and must not pick up the alias
+// property on read-back.
+func (suite *NewPDNSProviderTestSuite) TestPDNSCNAMENoChurnWithoutPreferAlias() {
+	p := &PDNSProvider{client: &PDNSAPIClientStub{}}
+
+	stored := pgo.RRset{
+		Name:    new("svc.example.com."),
+		Type:    pgo.RRTypePtr(pgo.RRTypeCNAME),
+		TTL:     pgo.Uint32(300),
+		Records: []pgo.Record{{Content: new("lb.example.net."), Disabled: new(false)}},
+	}
+	desired := endpoint.NewEndpointWithTTL("svc.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "lb.example.net")
+
+	changes := planChanges(suite, p, stored, desired)
+	suite.False(changes.HasChanges(), "plain CNAME must be stable, got updates: %v", changes.UpdateNew)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSGetDomainFilter() {
