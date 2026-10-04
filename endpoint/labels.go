@@ -41,6 +41,9 @@ const (
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
 	AWSSDDescriptionLabel = "aws-sd-description"
 
+	// AWSSDDualstackLabelKey is transient AWS-SD metadata, excluded from serialization.
+	AWSSDDualstackLabelKey = "aws-sd-dualstack"
+
 	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
 	txtEncryptionNonce = "txt-encryption-nonce"
 )
@@ -115,7 +118,7 @@ func (l Labels) SerializePlain(withQuotes bool) string {
 	sort.Strings(keys) // sort for consistency
 
 	for _, key := range keys {
-		if key == txtEncryptionNonce {
+		if key == txtEncryptionNonce || key == AWSSDDualstackLabelKey {
 			continue
 		}
 		tokens = append(tokens, fmt.Sprintf("%s/%s=%s", heritage, key, l[key]))

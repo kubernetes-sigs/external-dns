@@ -201,6 +201,8 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
+		CrdClients:           sCfg.CRDClients(),
+		CRDSourceKind:        cfg.CRDSourceKind,
 	}, nil
 }
 

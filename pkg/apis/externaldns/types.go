@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/external-dns/internal/flags"
+	"sigs.k8s.io/external-dns/internal/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -57,9 +58,8 @@ type Config struct {
 	KubeAPIBurst                                  int
 	DefaultTargets                                []string
 	GlooNamespaces                                []string
-	SkipperRouteGroupVersion                      string
 	Sources                                       []string
-	Namespace                                     string
+	Namespaces                                    []string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
 	EnableLegacyAnnotationPrefix                  bool
@@ -181,6 +181,7 @@ type Config struct {
 	ExoscaleAPIEnvironment                        string
 	ExoscaleAPIZone                               string
 	ExoscaleZoneCacheDuration                     time.Duration
+	ScalewayZonesCacheDuration                    time.Duration
 	CRDSourceAPIVersion                           string
 	CRDSourceKind                                 string
 	ServiceTypeFilter                             []string
@@ -189,6 +190,7 @@ type Config struct {
 	RFC2136Port                                   int
 	RFC2136Zone                                   []string
 	RFC2136Insecure                               bool
+	RFC2136AXFRInsecure                           bool
 	RFC2136GSSTSIG                                bool
 	RFC2136KerberosRealm                          string
 	RFC2136KerberosUsername                       string
@@ -320,7 +322,7 @@ var defaultConfig = &Config{
 	MetricsAddress:                   ":7979",
 	MinEventSyncInterval:             5 * time.Second,
 	MinTTL:                           0,
-	Namespace:                        "",
+	Namespaces:                       []string{},
 	NAT64Networks:                    []string{},
 	NS1Endpoint:                      "",
 	NS1IgnoreSSL:                     false,
@@ -357,6 +359,7 @@ var defaultConfig = &Config{
 	RFC2136GSSTSIG:                   false,
 	RFC2136Host:                      []string{""},
 	RFC2136Insecure:                  false,
+	RFC2136AXFRInsecure:              false,
 	RFC2136KerberosPassword:          "",
 	RFC2136KerberosRealm:             "",
 	RFC2136KerberosUsername:          "",
@@ -370,8 +373,8 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecretAlg:             "",
 	RFC2136UseTLS:                    false,
 	RFC2136Zone:                      []string{},
+	ScalewayZonesCacheDuration:       0 * time.Second,
 	ServiceTypeFilter:                []string{},
-	SkipperRouteGroupVersion:         "zalando.org/v1",
 	Sources:                          nil,
 	TargetNetFilter:                  []string{},
 	TLSCA:                            "",
@@ -437,6 +440,21 @@ func sortedAllowedSources() []string {
 	return s
 }
 
+// multiNamespaceSources watch every --namespace value.
+// Others ignore the flag or aren't migrated yet, so watch at most one.
+var multiNamespaceSources = []string{
+	"connector",
+	"empty",
+	"fake",
+	"gloo-proxy",
+	"node",
+}
+
+// SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
+func SourceSupportsMultipleNamespaces(source string) bool {
+	return slices.Contains(multiNamespaceSources, source)
+}
+
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{
@@ -478,7 +496,27 @@ func (cfg *Config) ParseFlags(args []string) error {
 		return err
 	}
 	cfg.resolveDeprecatedFlags()
+	cfg.Namespaces = uniqueCommaSeparated(cfg.Namespaces)
 	return nil
+}
+
+// uniqueCommaSeparated expands the comma-separated values of a repeatable flag, dropping
+// blanks and duplicates.
+// Kingpin never splits on commas, only env vars on newlines.
+func uniqueCommaSeparated(values []string) []string {
+	seen := sets.New[string]()
+	var result []string
+	for _, value := range values {
+		for item := range strings.SplitSeq(value, ",") {
+			item = strings.TrimSpace(item)
+			if item == "" || seen.Has(item) {
+				continue
+			}
+			seen.Insert(item)
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
@@ -512,9 +550,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Gloo
 	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
 
-	// Flags related to Skipper RouteGroup
-	b.StringVar("skipper-routegroup-groupversion", "The resource version for skipper routegroup", defaultConfig.SkipperRouteGroupVersion, &cfg.SkipperRouteGroupVersion)
-
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
@@ -526,7 +561,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
-	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled)", defaultConfig.PreferAlias, &cfg.PreferAlias)
+	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
 	b.StringsVar("exclude-target-net", "Exclude target nets (optional)", nil, &cfg.ExcludeTargetNets)
 	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
@@ -543,7 +578,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector (default: all resources)", defaultConfig.LabelFilter, &cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, DNAME, NS, SRV, TLSA, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)
-	b.StringVar("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)", defaultConfig.Namespace, &cfg.Namespace)
+	b.StringsVar("namespace", "Limit resources queried for endpoints to specific namespaces; specify multiple times or as a comma-separated list (default: all namespaces)", defaultConfig.Namespaces, &cfg.Namespaces)
 	b.StringsVar("nat64-networks", "Adding an A record for each AAAA record in NAT64-enabled networks; specify multiple times for multiple possible nets (optional)", nil, &cfg.NAT64Networks)
 	b.StringVar("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.", defaultConfig.OCPRouterName, &cfg.OCPRouterName)
 	b.StringVar("pod-source-domain", "Domain to use for pods records (optional)", defaultConfig.PodSourceDomain, &cfg.PodSourceDomain)
@@ -639,6 +674,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("exoscale-apikey", "Provide your API Key for the Exoscale provider", defaultConfig.ExoscaleAPIKey, &cfg.ExoscaleAPIKey)
 	b.StringVar("exoscale-apisecret", "Provide your API Secret for the Exoscale provider", defaultConfig.ExoscaleAPISecret, &cfg.ExoscaleAPISecret)
 	b.DurationVar("exoscale-zones-cache-duration", "When using Exoscale provider, set the zones list cache TTL (0s to disable)", defaultConfig.ExoscaleZoneCacheDuration, &cfg.ExoscaleZoneCacheDuration)
+	b.DurationVar("scaleway-zones-cache-duration", "When using the Scaleway provider, set the zones list cache TTL (0s to disable).", defaultConfig.ScalewayZonesCacheDuration, &cfg.ScalewayZonesCacheDuration)
 
 	// Flags related to RFC2136 provider
 	b.StringsVar("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server (optionally specify multiple times when using --rfc2136-load-balancing-strategy)", []string{defaultConfig.RFC2136Host[0]}, &cfg.RFC2136Host)
@@ -649,6 +685,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecret, &cfg.RFC2136TSIGSecret)
 	b.StringVar("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)", defaultConfig.RFC2136TSIGSecretAlg, &cfg.RFC2136TSIGSecretAlg)
 	b.BoolVar("rfc2136-axfr", "When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records (without it ExternalDNS cannot read records and behaves as if --policy=create-only)", defaultConfig.RFC2136AXFR, &cfg.RFC2136AXFR)
+	b.BoolVar("rfc2136-axfr-insecure", "When using the RFC2136 provider, do not attach TSIG to AXFR/zone-transfer requests. Requires --rfc2136-axfr. UPDATE requests are still signed unless --rfc2136-insecure is set. Useful for split-role deployments where zone transfers are served unsigned from a separate endpoint while updates remain TSIG-gated.", defaultConfig.RFC2136AXFRInsecure, &cfg.RFC2136AXFRInsecure)
 	b.BoolVar("rfc2136-tsig-axfr", "[DEPRECATED: use --rfc2136-axfr] When using the RFC2136 provider, enable zone transfers (AXFR) to list existing records", defaultConfig.RFC2136TAXFR, &cfg.RFC2136TAXFR)
 	b.DurationVar("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this", defaultConfig.RFC2136MinTTL, &cfg.RFC2136MinTTL)
 	b.BoolVar("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)", defaultConfig.RFC2136GSSTSIG, &cfg.RFC2136GSSTSIG)

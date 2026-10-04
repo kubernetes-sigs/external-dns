@@ -670,11 +670,11 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 
 			virtualServerJSON, err := json.Marshal(tc.virtualServer)
 			require.NoError(t, err)
-			assert.NoError(t, virtualServer.UnmarshalJSON(virtualServerJSON))
+			require.NoError(t, virtualServer.UnmarshalJSON(virtualServerJSON))
 
 			// Create VirtualServer resources
 			_, err = fakeDynamicClient.Resource(f5VirtualServerGVR).Namespace(defaultF5VirtualServerNamespace).Create(t.Context(), &virtualServer, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			labelFilter := tc.labelFilter
 			if labelFilter == nil {
@@ -682,12 +682,12 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			}
 			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        defaultF5VirtualServerNamespace,
+					Namespaces:       []string{defaultF5VirtualServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
 				})
 			require.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -838,7 +838,7 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 			}
 
 			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultF5VirtualServerNamespace,
+				Namespaces:       []string{defaultF5VirtualServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})

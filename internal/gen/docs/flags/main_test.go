@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const pathToDocs = "%s/../../../../docs"
@@ -48,7 +49,7 @@ func TestGenerateMarkdownTableRenderer(t *testing.T) {
 	}
 
 	got, err := flags.generateMarkdownTable()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Contains(t, got, "<!-- THIS FILE MUST NOT BE EDITED BY HAND -->")
 	assert.Contains(t, got, "| flag1 | description1 |")
@@ -59,7 +60,7 @@ func TestFlagsMdExists(t *testing.T) {
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	fileName := "flags.md"
 	st, err := fs.Stat(fsys, fileName)
-	assert.NoError(t, err, "expected file %s to exist", fileName)
+	require.NoError(t, err, "expected file %s to exist", fileName)
 	assert.Equal(t, fileName, st.Name())
 }
 
@@ -68,11 +69,11 @@ func TestFlagsMdUpToDate(t *testing.T) {
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	fileName := "flags.md"
 	expected, err := fs.ReadFile(fsys, fileName)
-	assert.NoError(t, err, "expected file %s to exist", fileName)
+	require.NoError(t, err, "expected file %s to exist", fileName)
 
 	flags := computeFlags()
 	actual, err := flags.generateMarkdownTable()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	actual += "\n"
 	assert.Equal(t, string(expected), actual, "expected file '%s' to be up to date. execute 'make generate-flags-documentation'", fileName)
 }
@@ -82,12 +83,12 @@ func TestFlagsMdExtraFlagAdded(t *testing.T) {
 	fsys := os.DirFS(fmt.Sprintf(pathToDocs, testPath))
 	filePath := "flags.md"
 	expected, err := fs.ReadFile(fsys, filePath)
-	assert.NoError(t, err, "expected file %s to exist", filePath)
+	require.NoError(t, err, "expected file %s to exist", filePath)
 
 	flags := computeFlags()
 	flags.addFlag("new-flag", "description2")
 	actual, err := flags.generateMarkdownTable()
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, string(expected), actual)
 }

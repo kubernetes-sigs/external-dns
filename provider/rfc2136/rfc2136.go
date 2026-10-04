@@ -57,6 +57,7 @@ type rfc2136Provider struct {
 	tsigSecret      string
 	tsigSecretAlg   string
 	insecure        bool
+	axfrInsecure    bool
 	axfr            bool
 	minTTL          time.Duration
 	batchChangeSize int
@@ -139,11 +140,11 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 		log.Warnf("--rfc2136-axfr is not set: ExternalDNS cannot list existing records, so --policy=%s will never update or delete them", cfg.Policy)
 	}
 
-	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
+	return newProvider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136AXFRInsecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136AXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, tlsConfig, cfg.RFC2136LoadBalancingStrategy, nil)
 }
 
 // newProvider is a factory function for OpenStack rfc2136 providers
-func newProvider(hosts []string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
+func newProvider(hosts []string, port int, zoneNames []string, insecure bool, axfrInsecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter *endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, loadBalancingStrategy string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -169,6 +170,7 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		nameservers:           nameservers,
 		zoneNames:             zoneNames,
 		insecure:              insecure,
+		axfrInsecure:          axfrInsecure,
 		gssTsig:               gssTsig,
 		krb5Username:          krb5Username,
 		krb5Password:          krb5Password,
@@ -196,6 +198,10 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ke
 		r.tsigKeyName = dns.Fqdn(keyName)
 		r.tsigSecret = secret
 		r.tsigSecretAlg = secretAlgChecked
+	}
+
+	if axfrInsecure && axfr {
+		log.Warn("--rfc2136-axfr-insecure is set: zone transfers are unauthenticated")
 	}
 
 	log.Infof("Configured RFC2136 with zones '%v' and nameservers '%v'", r.zoneNames, hosts)
@@ -260,6 +266,9 @@ OuterLoop:
 		case dns.TypePTR:
 			rrValues = []string{rr.(*dns.PTR).Ptr}
 			rrType = "PTR"
+		case dns.TypeTLSA:
+			rrValues = []string{tlsaTarget(rr.(*dns.TLSA))}
+			rrType = "TLSA"
 		default:
 			continue // Unhandled record type
 		}
@@ -284,9 +293,47 @@ OuterLoop:
 	return eps, nil
 }
 
+// shouldSignAXFR reports whether TSIG should be attached to zone transfers.
+func (r *rfc2136Provider) shouldSignAXFR() bool {
+	return !r.insecure && !r.gssTsig && !r.axfrInsecure
+}
+
+// Canonicalize a TLSA RR. Per RFC 6698, those are case-insensitive, which can
+// cause re-synchronizing for records even if not needed.
+func tlsaTarget(rr *dns.TLSA) string {
+	target := fmt.Sprintf("%d %d %d %s", rr.Usage, rr.Selector, rr.MatchingType, rr.Certificate)
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		log.Warnf("could not parse TLSA record %q for %s, using it verbatim: %v", target, rr.Header().Name, err)
+		return target
+	}
+	return tlsa.String()
+}
+
+// Canonicalize targets to avoid reconciliation when not needed.
+func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range eps {
+		if ep.RecordType != endpoint.RecordTypeTLSA {
+			continue
+		}
+		for i, target := range ep.Targets {
+			tlsa, err := endpoint.NewTLSARecord(target)
+			if err != nil {
+				// AddRecord reports this as a hard error when the change is applied.
+				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+				continue
+			}
+			ep.Targets[i] = tlsa.String()
+		}
+	}
+
+	return eps, nil
+}
+
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
 	t := new(dns.Transfer)
-	if !r.insecure && !r.gssTsig {
+
+	if r.shouldSignAXFR() {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 	}
 
@@ -320,7 +367,7 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 			// Signing strips the TSIG RR, so a reused message goes out unsigned.
 			m := new(dns.Msg)
 			m.SetAxfr(dns.Fqdn(zone))
-			if !r.insecure && !r.gssTsig {
+			if r.shouldSignAXFR() {
 				m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 			}
 
@@ -505,7 +552,12 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	}
 
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target)
+		rrTarget, err := rrTargetFor(ep.RecordType, target)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %w", err)
+		}
+
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, rrTarget)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -522,7 +574,12 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		rrTarget, err := rrTargetFor(ep.RecordType, target)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %w", err)
+		}
+
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, rrTarget)
 		log.Infof("Removing RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -534,6 +591,21 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	}
 
 	return nil
+}
+
+// rrTargetFor renders an endpoint target for the RR text that is handed to
+// dns.NewRR. Handles validation and canonicalisation.
+func rrTargetFor(recordType, target string) (string, error) {
+	if recordType != endpoint.RecordTypeTLSA {
+		return target, nil
+	}
+
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		return "", err
+	}
+
+	return tlsa.String(), nil
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given

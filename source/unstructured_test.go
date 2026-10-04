@@ -715,7 +715,7 @@ func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
 }
 
 // fakeTestIndexer is a minimal cache.Indexer that returns a wrong-type object,
-// causing GetByKey[*unstructured.Unstructured] to fail the type assertion.
+// causing ListIndexed[*unstructured.Unstructured]'s internal type assertion to fail.
 type fakeTestIndexer struct {
 	cache.Indexer // nil embed; only overridden methods are called in tests
 }

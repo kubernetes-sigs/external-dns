@@ -186,7 +186,7 @@ func (p *CloudFlareProvider) regionalHostname(ep *endpoint.Endpoint) regionalHos
 		return regionalHostname{}
 	}
 	regionKey := p.RegionalServicesConfig.RegionKey
-	if epRegionKey, exists := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); exists {
+	if epRegionKey, exists := ep.GetProviderSpecificProperty(annotations.CloudflareRegionProperty); exists {
 		regionKey = epRegionKey
 	}
 	return regionalHostname{
@@ -227,7 +227,7 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 		if rh, found := regionalHostnames[ep.DNSName]; found {
 			regionKey = rh.regionKey
 		}
-		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, regionKey)
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionProperty, regionKey)
 	}
 	return nil
 }
@@ -242,12 +242,12 @@ func (p *CloudFlareProvider) addEnpointsProviderSpecificRegionKeyProperty(ctx co
 // The endpoint is modified in place and any explicitly set region key is left unchanged.
 func (p *CloudFlareProvider) adjustEndpointProviderSpecificRegionKeyProperty(ep *endpoint.Endpoint) {
 	if !p.RegionalServicesConfig.Enabled || !recordTypeRegionalHostnameSupported.Has(ep.RecordType) {
-		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionKey)
+		ep.DeleteProviderSpecificProperty(annotations.CloudflareRegionProperty)
 		return
 	}
 	// Add default region key if not set
-	if _, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRegionKey); !ok {
-		ep.SetProviderSpecificProperty(annotations.CloudflareRegionKey, p.RegionalServicesConfig.RegionKey)
+	if _, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRegionProperty); !ok {
+		ep.SetProviderSpecificProperty(annotations.CloudflareRegionProperty, p.RegionalServicesConfig.RegionKey)
 	}
 }
 

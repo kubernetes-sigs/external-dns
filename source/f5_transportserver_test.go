@@ -427,11 +427,11 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 
 			transportServerJSON, err := json.Marshal(tc.transportServer)
 			require.NoError(t, err)
-			assert.NoError(t, transportServer.UnmarshalJSON(transportServerJSON))
+			require.NoError(t, transportServer.UnmarshalJSON(transportServerJSON))
 
 			// Create TransportServer resources
 			_, err = fakeDynamicClient.Resource(f5TransportServerGVR).Namespace(defaultF5TransportServerNamespace).Create(t.Context(), &transportServer, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			labelFilter := tc.labelFilter
 			if labelFilter == nil {
@@ -439,12 +439,12 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 			}
 			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        defaultF5TransportServerNamespace,
+					Namespaces:       []string{defaultF5TransportServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
 				})
 			require.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -594,7 +594,7 @@ func TestF5TransportServerIndexer(t *testing.T) {
 			}
 
 			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:        defaultF5TransportServerNamespace,
+				Namespaces:       []string{defaultF5TransportServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})
