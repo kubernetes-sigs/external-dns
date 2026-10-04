@@ -339,15 +339,13 @@ func (p *Plan) providerSpecificChanged(desired, current *endpoint.Endpoint) bool
 	for _, d := range desired.ProviderSpecific {
 		desiredProperties[d.Name] = d
 	}
-	// Route 53 reports the alias target zone even when the source omits
-	// the optional aws/target-hosted-zone annotation.
 	for _, c := range current.ProviderSpecific {
 		if d, ok := desiredProperties[c.Name]; ok {
 			if c.Value != d.Value {
 				return true
 			}
 			delete(desiredProperties, c.Name)
-		} else if c.Name != "aws/target-hosted-zone" {
+		} else {
 			return true
 		}
 	}

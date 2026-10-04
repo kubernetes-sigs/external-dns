@@ -1108,12 +1108,12 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 			shouldUpdate: false,
 		},
 		{
-			name: "AWS target hosted zone not explicitly desired",
+			name: "current-only AWS target hosted zone changes",
 			current: &endpoint.Endpoint{ProviderSpecific: []endpoint.ProviderSpecificProperty{
 				{Name: "aws/target-hosted-zone", Value: "ZEXAMPLE123"},
 			}},
 			desired:      &endpoint.Endpoint{},
-			shouldUpdate: false,
+			shouldUpdate: true,
 		},
 		{
 			name: "AWS target hosted zone changed",

@@ -2658,6 +2658,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter *endpoint.DomainFilt
 		dryRun:                false,
 		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute),
 		failedChangesQueue:    make(map[string]Route53Changes),
+		aliasZones:            &aliasTargetZones{},
 	}
 
 	createAWSZone(t, provider, &route53types.HostedZone{

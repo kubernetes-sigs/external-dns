@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/blueprint"
@@ -238,10 +240,11 @@ type Route53API interface {
 // Route53Change wrapper to handle ownership relation throughout the provider implementation
 type Route53Change struct {
 	route53types.Change
-	OwnedRecord  string
-	hostedZoneID string
-	sizeBytes    int
-	sizeValues   int
+	OwnedRecord      string
+	hostedZoneID     string
+	aliasTargetZones map[string]string
+	sizeBytes        int
+	sizeValues       int
 }
 
 type Route53Changes []*Route53Change
@@ -310,8 +313,102 @@ type AWSProvider struct {
 	zoneMatchParent bool
 	preferCNAME     bool
 	zonesCache      *blueprint.ZoneCache[map[string]*profiledZone]
+	aliasZones      *aliasTargetZones
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
+}
+
+type aliasTargetKey struct {
+	dnsName       string
+	recordType    string
+	setIdentifier string
+	target        string
+}
+
+func aliasKey(ep *endpoint.Endpoint) (aliasTargetKey, bool) {
+	if len(ep.Targets) != 1 {
+		return aliasTargetKey{}, false
+	}
+	return aliasTargetKey{
+		dnsName:       strings.ToLower(ep.DNSName),
+		recordType:    ep.RecordType,
+		setIdentifier: ep.SetIdentifier,
+		target:        strings.ToLower(ep.Targets[0]),
+	}, true
+}
+
+type aliasTargetZones struct {
+	mu        sync.RWMutex
+	current   map[aliasTargetKey]string
+	ambiguous map[aliasTargetKey]map[string]string
+}
+
+func (z *aliasTargetZones) replace(current map[aliasTargetKey]string, ambiguous map[aliasTargetKey]map[string]string) {
+	z.mu.Lock()
+	z.current = current
+	z.ambiguous = ambiguous
+	z.mu.Unlock()
+}
+
+func (z *aliasTargetZones) get(ep *endpoint.Endpoint) string {
+	key, ok := aliasKey(ep)
+	if !ok {
+		return ""
+	}
+	z.mu.RLock()
+	defer z.mu.RUnlock()
+	return z.current[key]
+}
+
+func (z *aliasTargetZones) targetZones(ep *endpoint.Endpoint) map[string]string {
+	key, ok := aliasKey(ep)
+	if !ok {
+		return nil
+	}
+	z.mu.RLock()
+	defer z.mu.RUnlock()
+	return z.ambiguous[key]
+}
+
+func (z *aliasTargetZones) apply(changes *plan.Changes) {
+	z.mu.Lock()
+	defer z.mu.Unlock()
+	// The TXT registry can retain the new endpoints in its cache after an apply.
+	updated := sets.New[aliasTargetKey]()
+	for _, ep := range changes.UpdateNew {
+		if key, ok := aliasKey(ep); ok {
+			updated.Insert(key)
+		}
+	}
+	for _, group := range [][]*endpoint.Endpoint{changes.Delete, changes.UpdateOld, changes.Create, changes.UpdateNew} {
+		for _, ep := range group {
+			if key, ok := aliasKey(ep); ok {
+				delete(z.current, key)
+			}
+		}
+	}
+	for _, group := range [][]*endpoint.Endpoint{changes.Delete, changes.Create} {
+		for _, ep := range group {
+			if key, ok := aliasKey(ep); ok {
+				delete(z.ambiguous, key)
+			}
+		}
+	}
+	for _, ep := range changes.UpdateOld {
+		if key, ok := aliasKey(ep); ok && !updated.Has(key) {
+			delete(z.ambiguous, key)
+		}
+	}
+	for _, group := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew} {
+		for _, ep := range group {
+			if key, ok := aliasKey(ep); ok {
+				if zone, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+					z.current[key] = cleanZoneID(zone)
+					delete(z.ambiguous, key)
+				}
+			}
+		}
+	}
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -375,6 +472,7 @@ func newProvider(cfg AWSConfig, clients map[string]Route53API) *AWSProvider {
 		preferCNAME:           cfg.PreferCNAME,
 		dryRun:                cfg.DryRun,
 		zonesCache:            blueprint.NewZoneCache[map[string]*profiledZone](cfg.ZoneCacheDuration),
+		aliasZones:            &aliasTargetZones{},
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 	return pr
@@ -507,6 +605,9 @@ func (p *AWSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 
 func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZone) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
+	aliasZones := make(map[aliasTargetKey]string)
+	aliasRecords := make(map[aliasTargetKey][]*endpoint.Endpoint)
+	aliasZonesBySource := make(map[aliasTargetKey]map[string]string)
 
 	for _, z := range zones {
 		client := p.clients[z.profile]
@@ -598,9 +699,37 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					}
 
 					endpoints = append(endpoints, ep)
+					if zone, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+						if key, ok := aliasKey(ep); ok {
+							aliasRecords[key] = append(aliasRecords[key], ep)
+							if aliasZonesBySource[key] == nil {
+								aliasZonesBySource[key] = make(map[string]string)
+							}
+							aliasZonesBySource[key][cleanZoneID(aws.ToString(z.zone.Id))] = zone
+							if previous, exists := aliasZones[key]; !exists {
+								aliasZones[key] = zone
+							} else if previous != zone {
+								aliasZones[key] = ""
+							}
+						}
+					}
 				}
 			}
 		}
+	}
+	if p.aliasZones != nil {
+		ambiguous := make(map[aliasTargetKey]map[string]string)
+		for key, records := range aliasRecords {
+			if aliasZones[key] == "" && len(records) > 1 {
+				// A single desired endpoint cannot express a different target zone
+				// per hosted zone. Keep the originals for Route 53 writes.
+				for _, record := range records {
+					record.DeleteProviderSpecificProperty(providerSpecificTargetHostedZone)
+				}
+				ambiguous[key] = aliasZonesBySource[key]
+			}
+		}
+		p.aliasZones.replace(aliasZones, ambiguous)
 	}
 
 	return endpoints, nil
@@ -717,7 +846,13 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	combinedChanges = append(combinedChanges, p.newChanges(route53types.ChangeActionDelete, changes.Delete)...)
 	combinedChanges = append(combinedChanges, updateChanges...)
 
-	return p.submitChanges(ctx, combinedChanges, zones)
+	if err := p.submitChanges(ctx, combinedChanges, zones); err != nil {
+		return err
+	}
+	if p.aliasZones != nil {
+		p.aliasZones.apply(changes)
+	}
+	return nil
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
@@ -875,6 +1010,10 @@ func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
 	}
 	if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
 		ep.SetProviderSpecificProperty(providerSpecificTargetHostedZone, cleanZoneID(hostedZoneID))
+	} else if p.aliasZones != nil {
+		if hostedZoneID := p.aliasZones.get(ep); hostedZoneID != "" {
+			ep.SetProviderSpecificProperty(providerSpecificTargetHostedZone, hostedZoneID)
+		}
 	}
 
 	if enable, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
@@ -960,6 +1099,9 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.hostedZoneID = cleanZoneID(prop)
 	}
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
+		if _, explicit := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); !explicit && p.aliasZones != nil {
+			change.aliasTargetZones = p.aliasZones.targetZones(ep)
+		}
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
 			evalTargetHealth = prop
@@ -1318,19 +1460,23 @@ func changesByZone(zones map[string]*profiledZone, changeSet Route53Changes) map
 			continue
 		}
 		for _, z := range zones {
-			if c.ResourceRecordSet.AliasTarget != nil && *c.ResourceRecordSet.AliasTarget.HostedZoneId == sameZoneAlias {
-				// alias record is to be created; target needs to be in the same zone as endpoint
-				// if it's not, this will fail
-				rrset := *c.ResourceRecordSet
-				aliasTarget := *rrset.AliasTarget
-				aliasTarget.HostedZoneId = aws.String(cleanZoneID(*z.zone.Id))
-				rrset.AliasTarget = &aliasTarget
-				c = &Route53Change{
-					Action:            c.Action,
-					ResourceRecordSet: &rrset,
+			change := c
+			if c.ResourceRecordSet.AliasTarget != nil {
+				targetZone := c.aliasTargetZones[cleanZoneID(aws.ToString(z.zone.Id))]
+				if targetZone == "" && aws.ToString(c.ResourceRecordSet.AliasTarget.HostedZoneId) == sameZoneAlias {
+					targetZone = cleanZoneID(aws.ToString(z.zone.Id))
+				}
+				if targetZone != "" {
+					rrset := *c.ResourceRecordSet
+					aliasTarget := *rrset.AliasTarget
+					aliasTarget.HostedZoneId = aws.String(targetZone)
+					rrset.AliasTarget = &aliasTarget
+					copy := *c
+					copy.ResourceRecordSet = &rrset
+					change = &copy
 				}
 			}
-			changes[*z.zone.Id] = append(changes[*z.zone.Id], c)
+			changes[*z.zone.Id] = append(changes[*z.zone.Id], change)
 			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, *z.zone.Name, *z.zone.Id)
 		}
 	}
