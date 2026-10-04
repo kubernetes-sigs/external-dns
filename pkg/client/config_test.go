@@ -106,6 +106,55 @@ func TestGetRestConfig_RecommendedConfigPathEnvVar(t *testing.T) {
 	assert.Equal(t, svr.URL, config.Host)
 }
 
+func TestGetRestConfig_ServerOverridesKubeConfig(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t, "https://from-kubeconfig:6443")
+
+	config, err := buildRestConfig(kubeCfgPath, "https://override:6443")
+	require.NoError(t, err)
+	assert.Equal(t, "https://override:6443", config.Host)
+}
+
+func TestGetRestConfig_WithoutKubeConfig(t *testing.T) {
+	inCluster := func() (*rest.Config, error) {
+		return &rest.Config{Host: "https://10.0.0.1:443", BearerTokenFile: "/token"}, nil
+	}
+	notInCluster := func() (*rest.Config, error) { return nil, rest.ErrNotInCluster }
+
+	tests := []struct {
+		name         string
+		inCluster    func() (*rest.Config, error)
+		apiServerURL string
+		wantHost     string
+		wantToken    string
+		wantErr      error
+	}{
+		{name: "in-cluster", inCluster: inCluster, wantHost: "https://10.0.0.1:443", wantToken: "/token"},
+		{name: "in-cluster with server override keeps credentials", inCluster: inCluster, apiServerURL: "https://override:6443", wantHost: "https://override:6443", wantToken: "/token"},
+		{name: "out of cluster with server only", inCluster: notInCluster, apiServerURL: "http://127.0.0.1:8001", wantHost: "http://127.0.0.1:8001"},
+		{name: "out of cluster without server", inCluster: notInCluster, wantErr: rest.ErrNotInCluster},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
+			prevRecommendedHomeFile, prevInClusterConfig := clientcmd.RecommendedHomeFile, inClusterConfig
+			t.Cleanup(func() {
+				clientcmd.RecommendedHomeFile, inClusterConfig = prevRecommendedHomeFile, prevInClusterConfig
+			})
+			clientcmd.RecommendedHomeFile = filepath.Join(t.TempDir(), "missing")
+			inClusterConfig = tt.inCluster
+
+			config, err := buildRestConfig("", tt.apiServerURL)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantHost, config.Host)
+			assert.Equal(t, tt.wantToken, config.BearerTokenFile)
+		})
+	}
+}
+
 func TestInstrumentedRESTConfig_QPSAndBurstApplied(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer svr.Close()
