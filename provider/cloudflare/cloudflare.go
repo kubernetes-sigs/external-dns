@@ -235,6 +235,8 @@ type CloudFlareProvider struct {
 	CustomHostnamesConfig  CustomHostnamesConfig
 	DNSRecordsConfig       DNSRecordsConfig
 	RegionalServicesConfig RegionalServicesConfig
+	// cachedCustomHostnames is filled by Records() for the AdjustEndpoints tie-break, keyed by zone ID.
+	cachedCustomHostnames map[string]customHostnamesMap
 }
 
 // cloudFlareChange differentiates between ChangeActions
@@ -426,6 +428,10 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		return nil, err
 	}
 
+	if p.CustomHostnamesConfig.Enabled {
+		p.cachedCustomHostnames = map[string]customHostnamesMap{}
+	}
+
 	var endpoints []*endpoint.Endpoint
 	for _, zone := range zones {
 		records, err := p.getDNSRecordsMap(ctx, zone.ID)
@@ -437,6 +443,10 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zone.ID)
 		if chErr != nil {
 			return nil, chErr
+		}
+
+		if p.CustomHostnamesConfig.Enabled {
+			p.cachedCustomHostnames[zone.ID] = chs
 		}
 
 		// As CloudFlare does not support "sets" of targets, but instead returns
@@ -655,6 +665,11 @@ func parseTagsAnnotation(tagString string) []string {
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// Needs the full desired set: the plan's change set may omit the winner.
+	if p.CustomHostnamesConfig.Enabled {
+		p.deduplicateCustomHostnames(endpoints)
+	}
+
 	var adjustedEndpoints []*endpoint.Endpoint
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
