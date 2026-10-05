@@ -134,6 +134,41 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			expected:  endpoint.Targets{"lb.example.com"},
 		},
 		{
+			name: "matching ClusterIP service with cluster IPs",
+			services: []*corev1.Service{
+				{
+					Name:      "svc4",
+					Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:       corev1.ServiceTypeClusterIP,
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIPs: []string{"192.0.2.3", "2001:db8::3"},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"192.0.2.3", "2001:db8::3"},
+		},
+		{
+			name: "matching NodePort service with cluster IP",
+			services: []*corev1.Service{
+				{
+					Name:      "svc5",
+					Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Type:       corev1.ServiceTypeNodePort,
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIPs: []string{"192.0.2.4"},
+						Ports:      []corev1.ServicePort{{Port: 80, NodePort: 30080}},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{"192.0.2.4"},
+		},
+		{
 			name: "no matching services",
 			services: []*corev1.Service{
 				{
