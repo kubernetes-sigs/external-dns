@@ -128,6 +128,7 @@ func (h *reconcileLoop) restart(preferCNAME bool) {
 	restarted := *h.prov
 	restarted.preferCNAME = preferCNAME
 	restarted.zonesCache = blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute)
+	restarted.aliasZones = &aliasTargetZones{}
 	restarted.failedChangesQueue = make(map[string]Route53Changes)
 	h.prov = &restarted
 
@@ -156,7 +157,6 @@ func (h *reconcileLoop) runOnce(desired []*endpoint.Endpoint) (*plan.Changes, er
 	if err != nil {
 		return nil, fmt.Errorf("registry.AdjustEndpoints: %w", err)
 	}
-
 	p := &plan.Plan{
 		Policies:       []plan.Policy{h.policy},
 		Current:        current,
@@ -650,6 +650,125 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestReconcileLoopSettlesAnnotatedAliasTargetHostedZone(t *testing.T) {
+	h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+	host := "app." + reconcileZone
+	desired := func(zoneID string) []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			cnameTo("app", "target.external.example.net").
+				WithAliasProperty(endpoint.AliasTrue).
+				WithProviderSpecific(providerSpecificTargetHostedZone, zoneID),
+		}
+	}
+
+	h.mustSettle(desired("ZEXAMPLE123"))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZEXAMPLE123", h.aliasHostedZone(host, recordType))
+		require.True(t, h.ownsRecord(host, recordType))
+	}
+
+	h.mustSettle(desired("ZOTHER456"))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZOTHER456", h.aliasHostedZone(host, recordType))
+		require.True(t, h.ownsRecord(host, recordType))
+	}
+	h.mustSettle(desired("/hostedzone/ZOTHER456"))
+}
+
+func TestReconcileLoopSettlesUnannotatedAliasWithCachedRecords(t *testing.T) {
+	cfg := reconcileConfig("", "")
+	cfg.TXTCacheInterval = time.Hour
+	h := newReconcileLoop(t, cfg, "upsert-only", false)
+	host := "app." + reconcileZone
+
+	h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbOld)})
+	h.restart(false)
+	h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbOld)})
+	h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbNewOtherReg)})
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, canonicalHostedZone(lbNewOtherReg), h.aliasHostedZone(host, recordType))
+	}
+}
+
+func TestReconcileLoopKeepsTargetZoneOnCachedAliasUpdate(t *testing.T) {
+	cfg := reconcileConfig("", "")
+	cfg.TXTCacheInterval = time.Hour
+	h := newReconcileLoop(t, cfg, "upsert-only", false)
+	host := "app." + reconcileZone
+	alias := func(health bool, zone string) []*endpoint.Endpoint {
+		ep := cnameTo("app", "target.external.example.net").
+			WithAliasProperty(endpoint.AliasTrue).
+			WithProviderSpecific(providerSpecificEvaluateTargetHealth, strconv.FormatBool(health))
+		if zone != "" {
+			ep.WithProviderSpecific(providerSpecificTargetHostedZone, zone)
+		}
+		return []*endpoint.Endpoint{ep}
+	}
+
+	h.mustSettle(alias(false, "ZEXAMPLE123"))
+	h.restart(false)
+	h.mustSettle(alias(false, ""))
+	h.mustSettle(alias(true, ""))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZEXAMPLE123", h.aliasHostedZone(host, recordType))
+	}
+}
+
+func TestReconcileLoopSettlesSameZoneAliasesInMultipleZones(t *testing.T) {
+	cfg := reconcileConfig("", "")
+	cfg.TXTCacheInterval = time.Hour
+	h := newReconcileLoop(t, cfg, "sync", false)
+	privateZoneID := "/hostedzone/private-" + reconcileZone
+	h.client.zones[privateZoneID] = &route53types.HostedZone{
+		Id:     aws.String(privateZoneID),
+		Name:   aws.String(reconcileZone + "."),
+		Config: &route53types.HostedZoneConfig{PrivateZone: true},
+	}
+	h.restart(false)
+	alias := func(health bool) []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			cnameTo("app", "target."+reconcileZone).
+				WithAliasProperty(endpoint.AliasTrue).
+				WithProviderSpecific(providerSpecificEvaluateTargetHealth, strconv.FormatBool(health)),
+		}
+	}
+
+	h.mustSettle(alias(false))
+	h.restart(false)
+	changes, err := h.runOnce(alias(false))
+	require.NoError(t, err)
+	require.False(t, changes.HasChanges(), "a steady alias in two hosted zones must not be updated")
+	h.mustSettle(alias(true))
+	for _, zoneID := range []string{reconcileZoneID, privateZoneID} {
+		for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+			key := "app." + reconcileZone + ".::" + recordType + "::"
+			records := h.client.recordSets[zoneID][key]
+			require.Len(t, records, 1)
+			require.Equal(t, cleanZoneID(zoneID), aws.ToString(records[0].AliasTarget.HostedZoneId))
+			require.True(t, records[0].AliasTarget.EvaluateTargetHealth)
+		}
+	}
+	cached, err := h.reg.Records(t.Context())
+	require.NoError(t, err)
+	var currentA *endpoint.Endpoint
+	for _, ep := range cached {
+		if ep.DNSName == "app."+reconcileZone && ep.RecordType == endpoint.RecordTypeA {
+			currentA = ep
+			break
+		}
+	}
+	require.NotNil(t, currentA)
+	_, hasZone := currentA.GetProviderSpecificProperty(providerSpecificTargetHostedZone)
+	require.False(t, hasZone)
+	zones, err := h.prov.zones(t.Context())
+	require.NoError(t, err)
+	deletes := changesByZone(zones, Route53Changes{h.prov.newChange(route53types.ChangeActionDelete, currentA)})
+	for _, zoneID := range []string{reconcileZoneID, privateZoneID} {
+		require.Len(t, deletes[zoneID], 1)
+		require.Equal(t, cleanZoneID(zoneID), aws.ToString(deletes[zoneID][0].ResourceRecordSet.AliasTarget.HostedZoneId))
 	}
 }
 
