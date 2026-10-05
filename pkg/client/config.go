@@ -20,8 +20,8 @@ package kubeclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -29,12 +29,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/flowcontrol"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
+
+// Overridable in tests: rest.InClusterConfig reads fixed service account paths.
+var inClusterConfig = rest.InClusterConfig
 
 // InstrumentedRESTConfig builds a REST config with Prometheus transport metrics, request timeout,
 // and a token-bucket rate limiter. When qps > 0, it overrides the client-go defaults (5 QPS / 10 burst).
@@ -96,34 +100,47 @@ func CurrentNamespace(kubeConfig string) string {
 //
 // Configuration Priority:
 // 1. KubeConfig file if specified
-// 2. Recommended home file (~/.kube/config)
-// 3. In-cluster config
-// TODO: consider clientcmd.NewDefaultClientConfigLoadingRules() with clientcmd.NewNonInteractiveDeferredLoadingClientConfig
+// 2. Files listed in $KUBECONFIG, merged
+// 3. Recommended home file (~/.kube/config)
+// 4. In-cluster config
+//
+// apiServerURL, when set, overrides the server of whichever config is used.
 func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-	log.Debugf("apiServerURL: %s", apiServerURL)
-	log.Debugf("kubeConfig: %s", kubeConfig)
-
-	// evaluate whether to use kubeConfig-file or serviceaccount-token
-	var (
-		config *rest.Config
-		err    error
-	)
-	if kubeConfig == "" {
-		log.Debug("Using inCluster-config based on serviceaccount-token")
-		config, err = rest.InClusterConfig()
-	} else {
-		log.Debug("Using kubeConfig")
-		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
-	}
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.ExplicitPath = kubeConfig
+	raw, err := rules.Load()
 	if err != nil {
 		return nil, err
 	}
 
+	// Deferred loading skips in-cluster once a server override is set, dropping credentials.
+	if clientcmdapi.IsConfigEmpty(raw) {
+		config, err := inClusterConfig()
+		switch {
+		case err == nil:
+			log.Debug("Using in-cluster config based on service account token")
+			if apiServerURL != "" {
+				config.Host = apiServerURL
+			}
+			log.Debugf("apiServerURL: %s", config.Host)
+			return config, nil
+		case apiServerURL == "" || !errors.Is(err, rest.ErrNotInCluster):
+			return nil, err
+		}
+		// Out of cluster with only --server set, e.g. behind `kubectl proxy`.
+	}
+
+	log.Debugf("Using kubeconfig from %v", rules.GetLoadingPrecedence())
+	overrides := &clientcmd.ConfigOverrides{
+		ClusterInfo: clientcmdapi.Cluster{
+			Server: apiServerURL,
+		},
+	}
+	config, err := clientcmd.NewNonInteractiveClientConfig(*raw, "", overrides, rules).ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("apiServerURL: %s", config.Host)
 	return config, nil
 }
 
