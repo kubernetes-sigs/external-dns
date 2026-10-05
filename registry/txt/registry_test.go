@@ -2431,3 +2431,71 @@ func TestTXTRegistryDeleteFallsBackToGeneratedValue(t *testing.T) {
 	require.NotNil(t, txt)
 	assert.Equal(t, stored, txt.Targets[0])
 }
+
+// TestOwnerIDMigration_IdenticalDataRecord is a regression test for issue #6671.
+//
+// When --migrate-from-txt-owner is set and the data record (A/CNAME) is
+// otherwise identical (same name, same target, same TTL), the plan must still
+// emit an update so that the companion TXT record is rewritten from the old
+// owner ID to the new one. Before the fix, Records() mutated the owner label
+// in place but did not set providerSpecificForceUpdate, so providerSpecificChanged
+// returned false, and the plan silently dropped the update — leaving the TXT
+// record permanently stale.
+func TestOwnerIDMigration_IdenticalDataRecord(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+
+	// Seed the zone: one A record owned by "old-owner".
+	oldOwnerRegistry, err := newRegistry(p, "%{record_type}-", "", "old-owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	require.NoError(t, oldOwnerRegistry.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "old-owner"),
+		},
+	}))
+
+	// Capture what ApplyChanges receives so we can inspect the TXT companion.
+	var appliedChanges *plan.Changes
+	p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
+		appliedChanges = changes
+	}
+
+	// Create a registry with new-owner migrating from old-owner.
+	newOwnerRegistry, err := newRegistry(p, "%{record_type}-", "", "new-owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "old-owner")
+	require.NoError(t, err)
+
+	// Records() should re-label the endpoint with new-owner and set forceUpdate.
+	current, err := newOwnerRegistry.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1, "Records should return the one A record")
+
+	// The desired state is identical to current (same name, same target) —
+	// this is the exact scenario from issue #6671.
+	desired := []*endpoint.Endpoint{
+		newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "new-owner"),
+	}
+
+	managedRecords := []string{endpoint.RecordTypeA}
+	pl := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: managedRecords,
+		OwnerID:        "new-owner",
+		OldOwnerID:     "old-owner",
+	}
+	pln := pl.Calculate()
+
+	// The plan must emit an update even though the data record is identical.
+	require.NotEmpty(t, pln.Changes.UpdateNew, "plan must emit an update to migrate the TXT owner")
+
+	require.NoError(t, newOwnerRegistry.ApplyChanges(ctx, pln.Changes))
+
+	// After ApplyChanges, the TXT companion in UpdateNew must carry new-owner.
+	require.NotNil(t, appliedChanges, "ApplyChanges must have been called")
+	newTXT := findEndpoint(appliedChanges.UpdateNew, "a-bar.test-zone.example.org", endpoint.RecordTypeTXT)
+	require.NotNil(t, newTXT, "TXT companion must appear in UpdateNew")
+	assert.Contains(t, newTXT.Targets[0], "new-owner", "TXT must carry new-owner after migration")
+	assert.NotContains(t, newTXT.Targets[0], "old-owner", "TXT must not retain old-owner after migration")
+}
