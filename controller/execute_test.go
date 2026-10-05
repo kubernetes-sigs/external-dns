@@ -350,17 +350,17 @@ func buildTestController(t *testing.T, opts ...source.OverrideConfigOption) *Con
 	return ctrl
 }
 
-func TestBuildControllerWiresCRDClient(t *testing.T) {
+func TestBuildControllerWiresStatusWriter(t *testing.T) {
 	cc := crd.NewCRDClients(fake.NewClientBuilder().Build(), fake.NewClientBuilder().Build())
 	ctrl := buildTestController(t, source.WithCRDClients(cc))
 
-	assert.Same(t, cc, ctrl.CrdClients)
+	assert.IsType(t, &crd.StatusWriter{}, ctrl.StatusReporter)
 }
 
-func TestBuildControllerCRDClientNilWhenNotConfigured(t *testing.T) {
+func TestBuildControllerStatusReporterNilWithoutCRDSource(t *testing.T) {
 	ctrl := buildTestController(t)
 
-	assert.Nil(t, ctrl.CrdClients)
+	assert.Nil(t, ctrl.StatusReporter)
 }
 
 // TestContextWithSigtermHandlerHelper is a helper process that sets up the SIGTERM handler
