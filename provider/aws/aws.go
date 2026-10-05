@@ -79,6 +79,10 @@ const (
 	maxLatitude  = 90.0
 	minLongitude = -180.0
 	maxLongitude = 180.0
+	// Route53 geoproximity bias valid range.
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_GeoProximityLocation.html
+	minBias = -99
+	maxBias = 99
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -1075,6 +1079,12 @@ func (gp *geoProximity) withBias() *geoProximity {
 		if err != nil {
 			log.Warnf("Failed parsing value of %s: %s: %v; using bias of 0", providerSpecificGeoProximityLocationBias, prop, err)
 			bias = 0
+		} else if bias < minBias {
+			log.Warnf("Value of %s: %s is below the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, minBias)
+			bias = minBias
+		} else if bias > maxBias {
+			log.Warnf("Value of %s: %s is above the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, maxBias)
+			bias = maxBias
 		}
 		gp.location.Bias = aws.Int32(int32(bias))
 		gp.isSet = true
