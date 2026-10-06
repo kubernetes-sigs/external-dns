@@ -268,13 +268,11 @@ func gatewayStatusHostname(hostnames ...string) v1.GatewayStatus {
 
 func makeGateway(namespace, name string, annots map[string]string, status v1.GatewayStatus, labels map[string]string) *v1.Gateway {
 	return &v1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Annotations: annots,
-			Labels:      labels,
-		},
-		Status: status,
+		Name:        name,
+		Namespace:   namespace,
+		Annotations: annots,
+		Labels:      labels,
+		Status:      status,
 	}
 }
 

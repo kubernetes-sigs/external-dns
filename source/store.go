@@ -408,7 +408,7 @@ func warnOnDualGatewayOwnership(sources []string) {
 	hasGateway := false
 	var routeSources []string
 	for _, name := range sources {
-		switch types.Type(name) {
+		switch name {
 		case types.Gateway:
 			hasGateway = true
 		case types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute:
