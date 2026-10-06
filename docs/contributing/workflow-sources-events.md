@@ -26,7 +26,7 @@ events back against the originating resources when DNS changes are applied).
 
 ## Startup: Informer & Source Construction
 
-```
+```text
 main.go
   └─► source.BuildWithConfig(cfg)
         └─► for each --source flag:
@@ -44,7 +44,7 @@ main.go
 
 ## Runtime: Watch Loop (Informers → Controller)
 
-```
+```text
 k8s API Server
   │  (watch stream: add/update/delete)
   ▼
@@ -64,7 +64,7 @@ Controller.RunOnce()
 
 ## RunOnce: Reconciliation Loop
 
-```
+```text
 Controller.RunOnce(ctx)
   │
   ├─1─ Registry.Records()
@@ -95,7 +95,7 @@ Controller.RunOnce(ctx)
 
 ## Events: Emission After DNS Change
 
-```
+```text
 emitChangeEvent(EventEmitter, plan.Changes, reason)
   │
   ├─ for ep in Changes.Create   → NewEventFromEndpoint(ep, ActionCreate,  reason)
@@ -146,7 +146,7 @@ no feedback in `kubectl describe <resource>`.
 
 ## Full Data Flow (single resource change)
 
-```
+```text
 Gateway resource updated in k8s
         │
         ▼
