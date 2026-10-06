@@ -19,8 +19,6 @@ package plan
 import (
 	"slices"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -157,7 +155,7 @@ func (c *Changes) HasChanges() bool {
 	if len(c.Create) > 0 || len(c.Delete) > 0 {
 		return true
 	}
-	return !cmp.Equal(c.UpdateNew, c.UpdateOld, cmpopts.IgnoreUnexported(endpoint.Endpoint{}))
+	return !slices.EqualFunc(c.UpdateNew, c.UpdateOld, endpoint.Equal)
 }
 
 // Calculate computes the actions needed to move current state towards desired
