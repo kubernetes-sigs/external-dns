@@ -583,19 +583,19 @@ func (e *Endpoint) Key() EndpointKey {
 	}
 }
 
-// Equal reports whether e and o describe the same DNS record. refObjects is
+// Equal reports whether a and b describe the same DNS record. refObjects is
 // ignored because it only tracks provenance. Nil and empty collections are equal.
-func (e *Endpoint) Equal(o *Endpoint) bool {
-	if e == nil || o == nil {
-		return e == o
+func Equal(a, b *Endpoint) bool {
+	if a == nil || b == nil {
+		return a == b
 	}
-	return e.DNSName == o.DNSName &&
-		e.RecordType == o.RecordType &&
-		e.SetIdentifier == o.SetIdentifier &&
-		e.RecordTTL == o.RecordTTL &&
-		slices.Equal(e.Targets, o.Targets) &&
-		maps.Equal(e.Labels, o.Labels) &&
-		slices.Equal(e.ProviderSpecific, o.ProviderSpecific)
+	return a.DNSName == b.DNSName &&
+		a.RecordType == b.RecordType &&
+		a.SetIdentifier == b.SetIdentifier &&
+		a.RecordTTL == b.RecordTTL &&
+		slices.Equal(a.Targets, b.Targets) &&
+		maps.Equal(a.Labels, b.Labels) &&
+		slices.Equal(a.ProviderSpecific, b.ProviderSpecific)
 }
 
 // IsOwnedBy returns true if the endpoint owner label matches the given ownerID, false otherwise

@@ -2334,8 +2334,8 @@ func TestEndpointEqual(t *testing.T) {
 			if tt.modify != nil {
 				tt.modify(tt.b)
 			}
-			assert.Equal(t, tt.want, tt.a.Equal(tt.b))
-			assert.Equal(t, tt.want, tt.b.Equal(tt.a))
+			assert.Equal(t, tt.want, Equal(tt.a, tt.b))
+			assert.Equal(t, tt.want, Equal(tt.b, tt.a))
 		})
 	}
 }
@@ -2353,5 +2353,5 @@ func TestEndpointEqualCoversAllFields(t *testing.T) {
 	for f := range reflect.TypeFor[Endpoint]().Fields() {
 		fields = append(fields, f.Name)
 	}
-	assert.ElementsMatch(t, handled, fields, "update Endpoint.Equal and this list")
+	assert.ElementsMatch(t, handled, fields, "update Equal and this list")
 }

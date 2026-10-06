@@ -155,7 +155,7 @@ func (c *Changes) HasChanges() bool {
 	if len(c.Create) > 0 || len(c.Delete) > 0 {
 		return true
 	}
-	return !slices.EqualFunc(c.UpdateNew, c.UpdateOld, (*endpoint.Endpoint).Equal)
+	return !slices.EqualFunc(c.UpdateNew, c.UpdateOld, endpoint.Equal)
 }
 
 // Calculate computes the actions needed to move current state towards desired
