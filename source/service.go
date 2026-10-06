@@ -223,7 +223,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			return nil, err
 		}
 
-		if endpoint.HasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
+		if hasNoEmptyEndpoints(svcEndpoints, types.Service, svc) {
 			continue
 		}
 

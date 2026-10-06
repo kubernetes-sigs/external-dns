@@ -22,24 +22,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
-
-type mockObjectMetaAccessor struct {
-	namespace string
-	name      string
-}
-
-func (m *mockObjectMetaAccessor) GetObjectMeta() metav1.Object {
-	return &metav1.ObjectMeta{
-		Namespace: m.namespace,
-		Name:      m.name,
-	}
-}
 
 func TestSuitableType(t *testing.T) {
 	tests := []struct {
@@ -68,58 +53,6 @@ func TestSuitableType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.target, func(t *testing.T) {
 			assert.Equal(t, tt.expected, SuitableType(tt.target))
-		})
-	}
-}
-
-func TestHasEmptyEndpoints(t *testing.T) {
-	tests := []struct {
-		name      string
-		endpoints []*Endpoint
-		rType     string
-		entity    metav1.ObjectMetaAccessor
-		expected  bool
-	}{
-		{
-			name:      "nil endpoints returns true",
-			endpoints: nil,
-			rType:     "Service",
-			entity:    &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected:  true,
-		},
-		{
-			name:      "empty slice returns true",
-			endpoints: []*Endpoint{},
-			rType:     "Ingress",
-			entity:    &mockObjectMetaAccessor{namespace: "kube-system", name: "my-ingress"},
-			expected:  true,
-		},
-		{
-			name: "single endpoint returns false",
-			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-			},
-			rType:    "Service",
-			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected: false,
-		},
-		{
-			name: "multiple endpoints returns false",
-			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-				NewEndpoint("test.example.org", "CNAME", "example.org"),
-			},
-			rType:    "Ingress",
-			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
-			expected: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := HasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
-			assert.Equal(t, tc.expected, result)
-			// TODO: Add log capture and verification
 		})
 	}
 }
@@ -229,7 +162,7 @@ func TestEndpointsForHostname(t *testing.T) {
 }
 
 func TestAttachRefObject(t *testing.T) {
-	ref := events.NewObjectReferenceFromParts("Service", "", "default", "svc", "", "")
+	ref := NewObjectRef("Service", "", "default", "svc", "", "")
 	eps := []*Endpoint{
 		NewEndpoint("a.example.com", RecordTypeA, "1.2.3.4"),
 		NewEndpoint("b.example.com", RecordTypeA, "5.6.7.8"),
@@ -465,9 +398,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "foo", Namespace: "default", UID: "123",
-						}, "service")),
+						NewObjectRef("Service", "v1", "default", "foo", "123", "service")),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
@@ -484,13 +415,9 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "foo", Namespace: "default", UID: "123",
-						}, "service")),
+						NewObjectRef("Service", "v1", "default", "foo", "123", "service")),
 					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "bar", Namespace: "ns", UID: "345",
-						}, "service")),
+						NewObjectRef("Service", "v1", "ns", "bar", "345", "service")),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
@@ -504,9 +431,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 		{
 			name: "two endpoints merged with same ref — deduplication keeps one entry",
 			input: func() []*Endpoint {
-				ref := events.NewObjectReference(&v1.Service{
-					Name: "foo", Namespace: "default", UID: "123",
-				}, "service")
+				ref := NewObjectRef("Service", "v1", "default", "foo", "123", "service")
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(ref),
 					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(ref),
@@ -524,13 +449,9 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "foo", Namespace: "default", UID: "123",
-						}, "service")),
+						NewObjectRef("Service", "v1", "default", "foo", "123", "service")),
 					NewEndpoint("b.example.com", RecordTypeA, "1.1.1.2").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "bar", Namespace: "ns", UID: "345",
-						}, "service")),
+						NewObjectRef("Service", "v1", "ns", "bar", "345", "service")),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {

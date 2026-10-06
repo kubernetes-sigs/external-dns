@@ -124,7 +124,7 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		if endpoint.HasNoEmptyEndpoints(orEndpoints, types.OpenShiftRoute, ocpRoute) {
+		if hasNoEmptyEndpoints(orEndpoints, types.OpenShiftRoute, ocpRoute) {
 			continue
 		}
 

@@ -28,6 +28,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestParseIngress(t *testing.T) {
@@ -239,5 +241,69 @@ func assertObjectTransformedHelper(t *testing.T, obj metav1.Object, cfg *informe
 			require.IsType(t, reflect.Slice, condField.Kind())
 			assert.NotZero(t, condField.Len())
 		}
+	}
+}
+
+type mockObjectMetaAccessor struct {
+	namespace string
+	name      string
+}
+
+func (m *mockObjectMetaAccessor) GetObjectMeta() metav1.Object {
+	return &metav1.ObjectMeta{
+		Namespace: m.namespace,
+		Name:      m.name,
+	}
+}
+
+func TestHasEmptyEndpoints(t *testing.T) {
+	tests := []struct {
+		name      string
+		endpoints []*endpoint.Endpoint
+		rType     string
+		entity    metav1.ObjectMetaAccessor
+		expected  bool
+	}{
+		{
+			name:      "nil endpoints returns true",
+			endpoints: nil,
+			rType:     "Service",
+			entity:    &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
+			expected:  true,
+		},
+		{
+			name:      "empty slice returns true",
+			endpoints: []*endpoint.Endpoint{},
+			rType:     "Ingress",
+			entity:    &mockObjectMetaAccessor{namespace: "kube-system", name: "my-ingress"},
+			expected:  true,
+		},
+		{
+			name: "single endpoint returns false",
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", "A", "1.2.3.4"),
+			},
+			rType:    "Service",
+			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
+			expected: false,
+		},
+		{
+			name: "multiple endpoints returns false",
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.org", "A", "1.2.3.4"),
+				endpoint.NewEndpoint("test.example.org", "CNAME", "example.org"),
+			},
+			rType:    "Ingress",
+			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := hasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
+			assert.Equal(t, tc.expected, result)
+			// TODO: Add log capture and verification
+		})
 	}
 }
