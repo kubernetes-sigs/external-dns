@@ -357,7 +357,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "Namespace filter limits to configured namespace",
-			config: &Config{Namespace: "ns1"},
+			config: &Config{Namespaces: []string{"ns1"}},
 			gateways: []*v1.Gateway{
 				makeGateway("ns1", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
 				makeGateway("ns2", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
