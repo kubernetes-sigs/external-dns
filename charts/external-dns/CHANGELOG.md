@@ -18,14 +18,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-- Add value `.service.enabled` to enable the creation of the Kubernetes service.
-- Add value `replicaCount` to set the number of `external-dns` replicas (bounded to `0` or `1`, since external-dns does not support leader election). [#6503](https://github.com/kubernetes-sigs/external-dns/pull/6503) _@yugstar_
+## [v1.23.0] - 2026-10-01
+
+### Changed
+
+- Update _ExternalDNS_ OCI image version to [`v0.23.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.23.0). [#6772](https://github.com/kubernetes-sigs/external-dns/pull/6772) @stevehipwell
+
+## [v1.22.0] - 2026-09-11
+
+### Added
+
+- Add value `.service.enabled` to enable the creation of the Kubernetes service. [#6400](https://github.com/kubernetes-sigs/external-dns/pull/6400) @jullianow
+- Add value `replicaCount` to set the number of `external-dns` replicas (bounded to `0` or `1`, since external-dns does not support leader election). [#6503](https://github.com/kubernetes-sigs/external-dns/pull/6503) @yugstar
+- Add `crd` as a valid `registry` value and grant the matching RBAC on `dnsrecords` for the CRD registry. [#6513](https://github.com/kubernetes-sigs/external-dns/pull/6513) @mloiseleur
+- Add value `hostAliases` to inject entries into the `Pod`'s `/etc/hosts`, for reaching a provider or webhook by a hostname that cluster DNS cannot resolve. [#6588](https://github.com/kubernetes-sigs/external-dns/pull/6588) @jetersen
+
+### Changed
+
+- **Breaking:** `policy` no longer defaults to `upsert-only` and is now required. You must set `policy` explicitly to one of `create-only`, `sync`, or `upsert-only`. [#6508](https://github.com/kubernetes-sigs/external-dns/pull/6508) @mloiseleur
+- Update _ExternalDNS_ OCI image version to [`v0.22.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.22.0). [#6650](https://github.com/kubernetes-sigs/external-dns/pull/6650) @stevehipwell
 
 ### Fixed
 
-- RBAC compliance checkbox for dnsendpoints/status [#6442](https://github.com/kubernetes-sigs/external-dns/pull/6442) _@vflaux_
+- RBAC compliance checkbox for dnsendpoints/status [#6442](https://github.com/kubernetes-sigs/external-dns/pull/6442) @vflaux
 
-## [v1.21.1]
+## [v1.21.1] - 2026-04-30
 
 ### Added
 
@@ -44,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensure container arguments are passed in as strings ([#6264](https://github.com/kubernetes-sigs/external-dns/pull/6264)) _@KhooHaoYit_
 - Ensure container arguments are passed in as strings when extraArgs is a map ([#6284](https://github.com/kubernetes-sigs/external-dns/pull/6284)) _@vflaux_
 
-## [v1.20.0]
+## [v1.20.0] - 2026-01-02
 
 ### Added
 
@@ -168,7 +185,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added support for `extraContainers` argument. ([#4432](https://github.com/kubernetes-sigs/external-dns/pull/4432)) _@omerap12_
-- Added support for setting `excludeDomains` argument.  ([#4380](https://github.com/kubernetes-sigs/external-dns/pull/4380)) _@bford-evs_
+- Added support for setting `excludeDomains` argument. ([#4380](https://github.com/kubernetes-sigs/external-dns/pull/4380)) _@bford-evs_
 
 ### Changed
 
@@ -218,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the option to explicitly enable or disable service account token automounting. ([#3983](https://github.com/kubernetes-sigs/external-dns/pull/3983)) [@gilles-gosuin](https://github.com/gilles-gosuin)
 - Added the option to configure revisionHistoryLimit on the K8s Deployment resource. ([#4008](https://github.com/kubernetes-sigs/external-dns/pull/4008)) [@arnisoph](https://github.com/arnisoph)
 - Added support for webhook providers, as a sidecar. ([#4032](https://github.com/kubernetes-sigs/external-dns/pull/4032) [@mloiseleur](https://github.com/mloiseleur)
-- Added the option to configure ipFamilyPolicy and ipFamilies of external-dns Service.  ([#4153](https://github.com/kubernetes-sigs/external-dns/pull/4153)) [@dongjiang1989](https://github.com/dongjiang1989)
+- Added the option to configure ipFamilyPolicy and ipFamilies of external-dns Service. ([#4153](https://github.com/kubernetes-sigs/external-dns/pull/4153)) [@dongjiang1989](https://github.com/dongjiang1989)
 
 ### Changed
 
@@ -332,6 +349,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.23.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.23.0
+[v1.22.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.22.0
 [v1.21.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.21.1
 [v1.20.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.20.0
 [v1.19.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.19.0

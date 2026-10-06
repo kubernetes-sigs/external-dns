@@ -18,11 +18,13 @@ package source
 
 import (
 	"context"
+	"maps"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,19 +50,15 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 	clients.On("KubeClient").Return(kubeClient, nil)
 
 	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "default",
-		},
+		Name: "default",
 	}
 	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create Namespace")
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
 	gw := &v1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "internal",
-			Namespace: "default",
-		},
+		Name:      "internal",
+		Namespace: "default",
 		Spec: v1.GatewaySpec{
 			Listeners: []v1.Listener{{
 				Protocol: v1.TLSProtocolType,
@@ -72,12 +70,10 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create Gateway")
 
 	rt := &v1.TLSRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "api",
-			Namespace: "default",
-			Annotations: map[string]string{
-				annotations.HostnameKey: "api-annotation.foobar.internal",
-			},
+		Name:      "api",
+		Namespace: "default",
+		Annotations: map[string]string{
+			annotations.HostnameKey: "api-annotation.foobar.internal",
 		},
 		Spec: v1.TLSRouteSpec{
 			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
@@ -135,4 +131,141 @@ func TestGatewayTLSRouteSource_InformerTransform(t *testing.T) {
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
+}
+
+func TestGatewayTLSRouteIndexer(t *testing.T) {
+	t.Parallel()
+
+	fromAll := v1.NamespacesFromAll
+
+	makeRoute := func(namespace, name string, ann, lbls map[string]string) *v1.TLSRoute {
+		allAnn := map[string]string{annotations.HostnameKey: name + ".example.com"}
+		maps.Copy(allAnn, ann)
+		return &v1.TLSRoute{
+			Namespace:   namespace,
+			Name:        name,
+			Annotations: allAnn,
+			Labels:      lbls,
+			Spec: v1.TLSRouteSpec{
+				CommonRouteSpec: v1.CommonRouteSpec{
+					ParentRefs: []v1.ParentReference{gwParentRef("default", "gw")},
+				},
+			},
+			Status: v1.TLSRouteStatus{
+				RouteStatus: gwRouteStatus(gwParentRef("default", "gw")),
+			},
+		}
+	}
+
+	for _, tc := range []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*v1.TLSRoute
+		wantCount        int
+	}{
+		{
+			name: "no filters — all namespaces included",
+			routes: []*v1.TLSRoute{
+				makeRoute("default", "r1", nil, nil),
+				makeRoute("staging", "r2", nil, nil),
+				makeRoute("production", "r3", nil, nil),
+			},
+			wantCount: 3,
+		},
+		{
+			name:             "annotation filter matches",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*v1.TLSRoute{
+				makeRoute("default", "r1", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
+				makeRoute("default", "r2", nil, nil),
+			},
+			wantCount: 1,
+		},
+		{
+			name:        "label filter matches",
+			labelFilter: "tier=external",
+			routes: []*v1.TLSRoute{
+				makeRoute("default", "r1", nil, map[string]string{"tier": "external"}),
+				makeRoute("default", "r2", nil, map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			labelFilter:      "tier=external",
+			routes: []*v1.TLSRoute{
+				makeRoute("default", "r1",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "external"}),
+				makeRoute("default", "r2",
+					map[string]string{"external-dns.kubernetes.io/managed": "true"},
+					map[string]string{"tier": "internal"}),
+			},
+			wantCount: 1,
+		},
+		{
+			name:             "no-match annotation filter",
+			annotationFilter: "external-dns.kubernetes.io/managed=true",
+			routes: []*v1.TLSRoute{
+				makeRoute("default", "r1", nil, nil),
+				makeRoute("default", "r2", nil, nil),
+			},
+			wantCount: 0,
+		},
+		{
+			name: "controller mismatch is excluded",
+			routes: []*v1.TLSRoute{
+				makeRoute("default", "r1",
+					map[string]string{annotations.ControllerKey: "other-controller"},
+					nil),
+			},
+			wantCount: 0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			gwClient := gatewayfake.NewSimpleClientset()
+			kubeClient := kubefake.NewClientset()
+
+			gw := &v1.Gateway{
+				Namespace: "default", Name: "gw",
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.TLSProtocolType,
+						AllowedRoutes: &v1.AllowedRoutes{
+							Namespaces: &v1.RouteNamespaces{From: &fromAll},
+						},
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}
+			_, err := gwClient.GatewayV1().Gateways("default").Create(ctx, gw, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			for _, rt := range tc.routes {
+				_, err := gwClient.GatewayV1().TLSRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			clients := new(testutils.MockClientGenerator)
+			clients.On("GatewayClient").Return(gwClient, nil)
+			clients.On("KubeClient").Return(kubeClient, nil)
+
+			src, err := NewGatewayTLSRouteSource(ctx, clients, &Config{
+				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(ctx)
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tc.wantCount)
+		})
+	}
 }

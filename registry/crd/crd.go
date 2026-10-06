@@ -60,7 +60,12 @@ type CRDRegistry struct {
 }
 
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
-	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, cfg.Namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
+	namespace := cfg.CRDRegistryNamespace
+	if namespace == "" {
+		namespace = kubeclient.CurrentNamespace(cfg.KubeConfig)
+		log.Infof("Registry: --crd-registry-namespace not specified, using `%s`", namespace)
+	}
+	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
 }
 
 // NewCRDRegistry returns new CRDRegistry object backed by a controller-runtime
@@ -72,7 +77,7 @@ func NewCRDRegistry(provider provider.Provider, kubeConfig, apiServerURL, namesp
 
 	if namespace == "" {
 		log.Info("Registry: namespace not specified, using `default`")
-		namespace = "default"
+		namespace = metav1.NamespaceDefault
 	}
 
 	// Build the REST config from the shared client package: this registry may run
@@ -321,12 +326,10 @@ func recordObjectName(record *endpoint.Endpoint) string {
 // Programmed). The returned object always reflects the desired endpoint.
 func (cr *CRDRegistry) ensureDNSRecord(ctx context.Context, record *endpoint.Endpoint) (*apiv1alpha1.DNSRecord, error) {
 	dnsrecord := &apiv1alpha1.DNSRecord{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      recordObjectName(record),
-			Namespace: cr.namespace,
-			Labels: map[string]string{
-				apiv1alpha1.RecordOwnerLabel: cr.OwnerID(),
-			},
+		Name:      recordObjectName(record),
+		Namespace: cr.namespace,
+		Labels: map[string]string{
+			apiv1alpha1.RecordOwnerLabel: cr.OwnerID(),
 		},
 		Spec: apiv1alpha1.DNSRecordSpec{
 			Endpoint: *record,

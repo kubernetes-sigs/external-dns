@@ -25,7 +25,9 @@ import (
 
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -34,6 +36,7 @@ import (
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -48,7 +51,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // config object is passed rather than individual parameters.
 //
 // Common Configuration Fields:
-// - Namespace: Target namespace for source operations
+// - Namespaces: Target namespaces for source operations, empty for all of them
 // - AnnotationFilter: Filter sources by annotation selector
 // - LabelFilter: Filter sources by label selectors
 // - FQDNTemplate: Template for generating fully qualified domain names
@@ -58,7 +61,7 @@ var ErrSourceNotFound = errors.New("source not found")
 // The config is created from externaldns.Config via NewSourceConfig() which handles
 // type conversions and validation.
 type Config struct {
-	Namespace                      string
+	Namespaces                     []string
 	AnnotationFilter               labels.Selector
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
@@ -85,7 +88,6 @@ type Config struct {
 	APIServerURL                   string
 	ServiceTypeFilter              []string
 	GlooNamespaces                 []string
-	SkipperRouteGroupVersion       string
 	KubeAPIRequestTimeout          time.Duration
 	KubeAPIQPS                     int
 	KubeAPIBurst                   int
@@ -113,6 +115,16 @@ type Config struct {
 	// It may be overridden at construction time via WithClientGenerator.
 	clientGen     ClientGenerator
 	clientGenOnce sync.Once
+
+	// crdClients lets callers outside this package reuse the crd source's client
+	// instead of building a second one.
+	crdClients *crd.CRDClients
+}
+
+// CRDClients returns the reader/writer built for the crd source, or nil if the
+// crd source was not built.
+func (cfg *Config) CRDClients() *crd.CRDClients {
+	return cfg.crdClients
 }
 
 // OverrideConfigOption configures a Config.
@@ -126,16 +138,28 @@ func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
 	}
 }
 
+// WithCRDClients overrides the crd source's clients. Intended for testing.
+func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
+	return func(cfg *Config) {
+		cfg.crdClients = cc
+	}
+}
+
 func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
-	// errors are explicitly ignored because the filters are already validated in validation.ValidateConfig
-	labelSelector, _ := labels.Parse(cfg.LabelFilter)
-	annotationSelector, _ := annotations.ParseFilter(cfg.AnnotationFilter)
+	labelSelector, err := labels.Parse(cfg.LabelFilter)
+	if err != nil {
+		return nil, fmt.Errorf("label filter: %w", err)
+	}
+	annotationSelector, err := annotations.ParseFilter(cfg.AnnotationFilter)
+	if err != nil {
+		return nil, fmt.Errorf("annotation filter: %w", err)
+	}
 	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
 	if err != nil {
 		return nil, err
 	}
 	c := &Config{
-		Namespace:                      cfg.Namespace,
+		Namespaces:                     externaldns.NormalizeNamespaces(cfg.Namespaces),
 		AnnotationFilter:               annotationSelector,
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
@@ -161,7 +185,6 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		APIServerURL:                   cfg.APIServerURL,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
 		GlooNamespaces:                 cfg.GlooNamespaces,
-		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		KubeAPIRequestTimeout:          cfg.KubeAPIRequestTimeout,
 		KubeAPIQPS:                     cfg.KubeAPIQPS,
 		KubeAPIBurst:                   cfg.KubeAPIBurst,
@@ -189,6 +212,15 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		opt(c)
 	}
 	return c, nil
+}
+
+// Namespace returns the namespace watched by sources supporting a single one,
+// which ValidateConfig guarantees. Empty means all namespaces.
+func (cfg *Config) Namespace() string {
+	if len(cfg.Namespaces) == 0 {
+		return v1.NamespaceAll
+	}
+	return cfg.Namespaces[0]
 }
 
 // ClientGenerator returns the ClientGenerator for this Config.
@@ -429,11 +461,18 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 // - "kong-tcpingress": Kong TCP Ingress resources
 // - "f5-*": F5 resources (virtualserver, transportserver)
 // - "fake": Fake source for testing
+// - "empty": Returns no endpoints, for testing or as a placeholder
 // - "connector": Connector source for external systems
 //
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
 // because they have simpler initialization requirements.
 func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
+	// Scope the template engine to this source so templates can use isSource "name".
+	var err error
+	if cfg.TemplateEngine, err = cfg.TemplateEngine.WithSource(source); err != nil {
+		return nil, err
+	}
+
 	switch source {
 	case types.Node:
 		return buildNodeSource(ctx, p, cfg)
@@ -471,6 +510,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return buildOpenShiftRouteSource(ctx, p, cfg)
 	case types.Fake:
 		return NewFakeSource(cfg)
+	case types.Empty:
+		return NewEmptySource(), nil
 	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
 	case types.CRD:
@@ -646,23 +687,33 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 	if err != nil {
 		return nil, err
 	}
-	return NewCRDSource(ctx, restConfig, cfg)
+	src, err := NewCRDSource(ctx, restConfig, cfg)
+	if err != nil {
+		return nil, err
+	}
+	stashCRDClients(cfg, src)
+	return src, nil
+}
+
+// stashCRDClients records src's client on cfg for reuse if src is a *crdSource,
+// so it can be exercised without needing a working REST config in tests.
+func stashCRDClients(cfg *Config, src Source) {
+	if cs, ok := src.(*crdSource); ok {
+		cfg.crdClients = crd.NewCRDClients(cs.crReader, cs.crWriter)
+	}
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.
-// Special case: Does not use ClientGenerator pattern, instead manages its own authentication.
-// Retrieves bearer token from REST config for API server authentication.
-func buildSkipperRouteGroupSource(_ context.Context, p ClientGenerator, cfg *Config) (Source, error) {
-	apiServerURL := cfg.APIServerURL
-	tokenPath := ""
-	token := ""
+func buildSkipperRouteGroupSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
 	restConfig, err := p.RESTConfig()
-	if err == nil {
-		apiServerURL = restConfig.Host
-		tokenPath = restConfig.BearerTokenFile
-		token = restConfig.BearerToken
+	if err != nil {
+		return nil, err
 	}
-	return NewRouteGroupSource(cfg, token, tokenPath, apiServerURL)
+	rgClient, err := rgversioned.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+	return NewRouteGroupSource(ctx, rgClient, cfg)
 }
 
 func buildKongTCPIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {

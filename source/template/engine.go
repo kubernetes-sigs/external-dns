@@ -71,6 +71,36 @@ func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, com
 	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
 }
 
+// WithSource returns a copy of the Engine scoped to the given source name, so its
+// templates can use isSource "name" (see source/types.Type).
+func (e Engine) WithSource(name string) (Engine, error) {
+	var err error
+	if e.fqdn, err = bindSource(e.fqdn, name); err != nil {
+		return Engine{}, err
+	}
+	if e.target, err = bindSource(e.target, name); err != nil {
+		return Engine{}, err
+	}
+	if e.fqdnTarget, err = bindSource(e.fqdnTarget, name); err != nil {
+		return Engine{}, err
+	}
+	return e, nil
+}
+
+// bindSource clones tmpl and rebinds isSource to name.
+func bindSource(tmpl *template.Template, name string) (*template.Template, error) {
+	if tmpl == nil {
+		return nil, nil //nolint:nilnil // nil signals "not configured"; matches tmpl's own nil-ness
+	}
+	clone, err := tmpl.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("template: clone for source %q: %w", name, err)
+	}
+	return clone.Funcs(template.FuncMap{
+		"isSource": func(want string) (bool, error) { return isSource(name, want) },
+	}), nil
+}
+
 // IsConfigured reports whether the FQDN template is set and ready to use.
 func (e Engine) IsConfigured() bool {
 	return e.fqdn != nil
@@ -269,8 +299,24 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, obj); err != nil {
-		kind := obj.GetObjectKind().GroupVersionKind().Kind
-		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+		// Retry against the unstructured data shape, so JSON-keyed Spec paths work on typed objects too.
+		data, convErr := toTemplateData(obj)
+		if convErr != nil {
+			return nil, wrapTemplateErr(obj, err)
+		}
+		// Clone before setting the option: Option mutates the template in place,
+		// and tmpl is the shared, cached parse reused by every call. Left
+		// unguarded, a missing map key silently renders as "<no value>" instead
+		// of failing the retry, masking template typos that should be errors.
+		strict, cloneErr := tmpl.Clone()
+		if cloneErr != nil {
+			return nil, wrapTemplateErr(obj, err)
+		}
+		strict = strict.Option("missingkey=error")
+		buf.Reset()
+		if err2 := strict.Execute(&buf, data); err2 != nil {
+			return nil, fmt.Errorf("%w (unstructured retry also failed: %w)", wrapTemplateErr(obj, err), err2)
+		}
 	}
 	hosts := strings.Split(buf.String(), ",")
 	hostnames := make(sets.Set[string], len(hosts))
@@ -282,4 +328,52 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 		}
 	}
 	return sets.Sorted(hostnames), nil
+}
+
+func wrapTemplateErr(obj kubeObject, err error) error {
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
+	return fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+}
+
+// fqdnTemplateData mirrors source.unstructuredWrapper so typed objects can
+// evaluate the same --fqdn-template as the unstructured source.
+type fqdnTemplateData struct {
+	Name        string
+	Namespace   string
+	Kind        string
+	APIVersion  string
+	Labels      map[string]string
+	Annotations map[string]string
+	Metadata    map[string]any
+	Spec        map[string]any
+	Status      map[string]any
+	Object      map[string]any
+}
+
+// toTemplateData converts a Kubernetes object into the unstructured-style
+// template data shape (JSON keys under Spec/Status, plus Name/Namespace/...).
+func toTemplateData(obj kubeObject) (*fqdnTemplateData, error) {
+	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return nil, err
+	}
+	data := &fqdnTemplateData{
+		Name:        obj.GetName(),
+		Namespace:   obj.GetNamespace(),
+		Kind:        obj.GetObjectKind().GroupVersionKind().Kind,
+		APIVersion:  obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		Labels:      obj.GetLabels(),
+		Annotations: obj.GetAnnotations(),
+		Object:      raw,
+	}
+	if metadata, ok := raw["metadata"].(map[string]any); ok {
+		data.Metadata = metadata
+	}
+	if spec, ok := raw["spec"].(map[string]any); ok {
+		data.Spec = spec
+	}
+	if status, ok := raw["status"].(map[string]any); ok {
+		data.Status = status
+	}
+	return data, nil
 }

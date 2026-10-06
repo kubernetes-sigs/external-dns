@@ -60,7 +60,7 @@ func FuzzNewMXRecord(f *testing.F) {
 				t.Error("priority should not be nil on success")
 			}
 			h := mx.GetHost()
-			if h == nil || *h == "" {
+			if h == "" {
 				t.Error("host should not be empty on success")
 			}
 		}
@@ -80,6 +80,28 @@ func FuzzValidateSRVRecord(f *testing.F) {
 			t.Skip()
 		}
 		Targets{input}.ValidateSRVRecord()
+	})
+}
+
+func FuzzNewSRVRecord(f *testing.F) {
+	f.Add("10 5 5060 example.com.")
+	f.Add("0 0 0 .")
+	f.Add("")
+	f.Add("10 5 5060 example.com")
+	f.Add("notanum 5 5060 example.com.")
+	f.Add("10 5 99999 example.com.")
+
+	f.Fuzz(func(t *testing.T, input string) {
+		if len(input) > 1024 {
+			t.Skip()
+		}
+		srv, err := NewSRVRecord(input)
+		if err == nil {
+			h := srv.GetHost()
+			if h == "" {
+				t.Error("host should not be empty on success")
+			}
+		}
 	})
 }
 

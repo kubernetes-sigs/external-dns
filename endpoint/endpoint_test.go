@@ -600,13 +600,11 @@ func TestRetainProviderProperties(t *testing.T) {
 				{Name: "aws/weight", Value: "10"},
 			},
 		},
-		// cloudflare uses annotation-style names (e.g. "external-dns.kubernetes.io/cloudflare-*")
-		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
 		{
-			name: "cloudflare retains all properties",
+			name: "cloudflare drops other providers' properties",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "cloudflare/tags", Value: "tag1"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
 					{Name: ProviderSpecificAlias, Value: "false"},
 				},
@@ -614,22 +612,21 @@ func TestRetainProviderProperties(t *testing.T) {
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
 				{Name: ProviderSpecificAlias, Value: "false"},
-				{Name: "aws/evaluate-target-health", Value: "true"},
-				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "cloudflare/tags", Value: "tag1"},
 			},
 		},
 		{
 			name: "cloudflare properties are sorted",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
-					{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "cloudflare/tags", Value: "tag1"},
+					{Name: "cloudflare/proxied", Value: "true"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "external-dns.kubernetes.io/cloudflare-proxied", Value: "true"},
-				{Name: "external-dns.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "cloudflare/proxied", Value: "true"},
+				{Name: "cloudflare/tags", Value: "tag1"},
 			},
 		},
 	}
@@ -1128,9 +1125,9 @@ func TestNewMXTarget(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual, err := NewMXRecord(tt.target)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
 			}
 		})
@@ -1141,7 +1138,73 @@ func TestMXTarget_Getters(t *testing.T) {
 	m, err := NewMXRecord("10 mail.example.com")
 	require.NoError(t, err)
 	assert.Equal(t, uint16(10), *m.GetPriority())
-	assert.Equal(t, "mail.example.com", *m.GetHost())
+	assert.Equal(t, "mail.example.com", m.GetHost())
+}
+
+func TestNewSRVRecord(t *testing.T) {
+	tests := []struct {
+		description string
+		target      string
+		expected    *SRVTarget
+		expectError bool
+	}{
+		{
+			description: "Valid SRV record",
+			target:      "10 20 5060 service.example.com.",
+			expected:    &SRVTarget{priority: 10, weight: 20, port: 5060, host: "service.example.com."},
+		},
+		{
+			description: "Valid root target",
+			target:      "0 0 0 .",
+			expected:    &SRVTarget{priority: 0, weight: 0, port: 0, host: "."},
+		},
+		{
+			description: "Invalid SRV record with missing part",
+			target:      "10 20 5060",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer priority",
+			target:      "abc 20 5060 service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer weight",
+			target:      "10 abc 5060 service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer port",
+			target:      "10 20 abc service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with missing dot for target host",
+			target:      "10 20 5060 service.example.com",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := NewSRVRecord(tt.target)
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestSRVTarget_Getters(t *testing.T) {
+	s, err := NewSRVRecord("10 20 5060 service.example.com.")
+	require.NoError(t, err)
+	assert.Equal(t, uint16(10), s.GetPriority())
+	assert.Equal(t, uint16(20), s.GetWeight())
+	assert.Equal(t, uint16(5060), s.GetPort())
+	assert.Equal(t, "service.example.com.", s.GetHost())
 }
 
 func TestCheckEndpoint(t *testing.T) {
@@ -1437,6 +1500,49 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			description: "Invalid A record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid alias A record - no targets",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid TXT record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTXT,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1540,7 +1646,7 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 				RecordType: RecordTypePTR,
 				Targets:    Targets{},
 			},
-			wantLog: "at least one target is required",
+			wantLog: "has no targets",
 		},
 		{
 			name: "valid PTR does not log",
@@ -1739,6 +1845,32 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
+}
+
+func TestNewEndpointWithTTLMXTargets(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		expected string
+	}{
+		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
+		{"already canonical", "10 mail.example.com", "10 mail.example.com"},
+		// RFC 7505: the dot is the host
+		{"null MX preserved", "0 .", "0 ."},
+		{"malformed left alone", "mail.example.com.", "mail.example.com."},
+		{"whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
+		{"leading zero dropped", "010 mail.example.com", "10 mail.example.com"},
+		{"surrounding space trimmed", "  10 mail.example.com  ", "10 mail.example.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := NewEndpointWithTTL("example.com", RecordTypeMX, TTL(300), tt.target)
+			require.NotNil(t, ep)
+			assert.Equal(t, tt.expected, ep.Targets[0])
+		})
+	}
+
+	assert.True(t, Targets{"0 ."}.ValidateMXRecord(), "null MX must stay a valid MX target")
 }
 
 func TestGetAliasProperty(t *testing.T) {
@@ -2120,7 +2252,7 @@ func TestNewPTREndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ep, err := NewPTREndpoint(tt.target, tt.ttl, tt.hostnames...)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)

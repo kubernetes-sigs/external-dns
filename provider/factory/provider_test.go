@@ -53,13 +53,6 @@ func TestSelectProvider(t *testing.T) {
 			expectedType: "*rfc2136.rfc2136Provider",
 		},
 		{
-			name: "gandi provider",
-			cfg: &externaldns.Config{
-				Provider: externaldns.ProviderGandi,
-			},
-			expectedError: "no environment variable GANDI_KEY or GANDI_PAT provided",
-		},
-		{
 			name: "inmemory provider",
 			cfg: &externaldns.Config{
 				Provider: externaldns.ProviderInMemory,
@@ -129,8 +122,8 @@ func TestSelectProvider(t *testing.T) {
 			p, err := Select(t.Context(), tt.cfg, domainFilter)
 
 			if tt.expectedError != "" {
-				assert.Error(t, err)
-				assert.ErrorContains(t, err, tt.expectedError)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.expectedError)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, p)

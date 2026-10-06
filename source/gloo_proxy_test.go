@@ -48,15 +48,11 @@ const defaultGlooNamespace = "gloo-system"
 var (
 	// Internal proxy test
 	internalProxy = proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "internal",
-			Namespace: defaultGlooNamespace,
-			UID:       "gloo-proxy-uid",
-		},
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       "internal",
+		Namespace:  defaultGlooNamespace,
+		UID:        "gloo-proxy-uid",
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
 				{
@@ -93,10 +89,8 @@ var (
 		},
 	}
 	internalProxySvc = corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      internalProxy.Name,
-			Namespace: internalProxy.Namespace,
-		},
+		Name:      internalProxy.Name,
+		Namespace: internalProxy.Namespace,
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
 		},
@@ -111,31 +105,23 @@ var (
 		},
 	}
 	internalProxySource = metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: virtualServiceGVR.GroupVersion().String(),
-			Kind:       "VirtualService",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      internalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
-			Namespace: internalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
-			Annotations: map[string]string{
-				"external-dns.kubernetes.io/ttl":                          "42",
-				"external-dns.kubernetes.io/aws-geolocation-country-code": "LU",
-				"external-dns.kubernetes.io/set-identifier":               "identifier",
-			},
+		APIVersion: virtualServiceGVR.GroupVersion().String(),
+		Kind:       "VirtualService",
+		Name:       internalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
+		Namespace:  internalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/ttl":                          "42",
+			"external-dns.kubernetes.io/aws-geolocation-country-code": "LU",
+			"external-dns.kubernetes.io/set-identifier":               "identifier",
 		},
 	}
 
 	// External proxy test
 	externalProxy = proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "external",
-			Namespace: defaultGlooNamespace,
-		},
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       "external",
+		Namespace:  defaultGlooNamespace,
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
 				{
@@ -172,10 +158,8 @@ var (
 		},
 	}
 	externalProxySvc = corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      externalProxy.Name,
-			Namespace: externalProxy.Namespace,
-		},
+		Name:      externalProxy.Name,
+		Namespace: externalProxy.Namespace,
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
 		},
@@ -190,31 +174,23 @@ var (
 		},
 	}
 	externalProxySource = metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: virtualServiceGVR.GroupVersion().String(),
-			Kind:       "VirtualService",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      externalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
-			Namespace: externalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
-			Annotations: map[string]string{
-				"external-dns.kubernetes.io/ttl":                          "24",
-				"external-dns.kubernetes.io/aws-geolocation-country-code": "JP",
-				"external-dns.kubernetes.io/set-identifier":               "identifier-external",
-			},
+		APIVersion: virtualServiceGVR.GroupVersion().String(),
+		Kind:       "VirtualService",
+		Name:       externalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
+		Namespace:  externalProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/ttl":                          "24",
+			"external-dns.kubernetes.io/aws-geolocation-country-code": "JP",
+			"external-dns.kubernetes.io/set-identifier":               "identifier-external",
 		},
 	}
 
 	// Proxy with metadata static test
 	proxyWithMetadataStatic = proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "internal-static",
-			Namespace: defaultGlooNamespace,
-		},
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       "internal-static",
+		Namespace:  defaultGlooNamespace,
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
 				{
@@ -255,10 +231,8 @@ var (
 		},
 	}
 	proxyWithMetadataStaticSvc = corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      proxyWithMetadataStatic.Name,
-			Namespace: proxyWithMetadataStatic.Namespace,
-		},
+		Name:      proxyWithMetadataStatic.Name,
+		Namespace: proxyWithMetadataStatic.Namespace,
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
 		},
@@ -273,33 +247,25 @@ var (
 		},
 	}
 	proxyWithMetadataStaticSource = metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: virtualServiceGVR.GroupVersion().String(),
-			Kind:       "VirtualService",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      proxyWithMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Name,
-			Namespace: proxyWithMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Namespace,
-			Annotations: map[string]string{
-				"external-dns.kubernetes.io/ttl":                          "420",
-				"external-dns.kubernetes.io/aws-geolocation-country-code": "ES",
-				"external-dns.kubernetes.io/set-identifier":               "identifier",
-			},
+		APIVersion: virtualServiceGVR.GroupVersion().String(),
+		Kind:       "VirtualService",
+		Name:       proxyWithMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Name,
+		Namespace:  proxyWithMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Namespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/ttl":                          "420",
+			"external-dns.kubernetes.io/aws-geolocation-country-code": "ES",
+			"external-dns.kubernetes.io/set-identifier":               "identifier",
 		},
 	}
 
 	// Proxy with target annotation test
 	targetAnnotatedProxy = proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "target-ann",
-			Namespace: defaultGlooNamespace,
-			Annotations: map[string]string{
-				"external-dns.kubernetes.io/target": "203.2.45.7",
-			},
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       "target-ann",
+		Namespace:  defaultGlooNamespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/target": "203.2.45.7",
 		},
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
@@ -337,10 +303,8 @@ var (
 		},
 	}
 	targetAnnotatedProxySvc = corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      targetAnnotatedProxy.Name,
-			Namespace: targetAnnotatedProxy.Namespace,
-		},
+		Name:      targetAnnotatedProxy.Name,
+		Namespace: targetAnnotatedProxy.Namespace,
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
 		},
@@ -355,31 +319,23 @@ var (
 		},
 	}
 	targetAnnotatedProxySource = metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: virtualServiceGVR.GroupVersion().String(),
-			Kind:       "VirtualService",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      targetAnnotatedProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
-			Namespace: targetAnnotatedProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
-			Annotations: map[string]string{
-				"external-dns.kubernetes.io/ttl":                          "460",
-				"external-dns.kubernetes.io/aws-geolocation-country-code": "IT",
-				"external-dns.kubernetes.io/set-identifier":               "identifier-annotated",
-			},
+		APIVersion: virtualServiceGVR.GroupVersion().String(),
+		Kind:       "VirtualService",
+		Name:       targetAnnotatedProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Name,
+		Namespace:  targetAnnotatedProxy.Spec.Listeners[0].HTTPListener.VirtualHosts[1].Metadata.Source[0].Namespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/ttl":                          "460",
+			"external-dns.kubernetes.io/aws-geolocation-country-code": "IT",
+			"external-dns.kubernetes.io/set-identifier":               "identifier-annotated",
 		},
 	}
 
 	// Proxy backed by Ingress
 	gatewayIngressAnnotatedProxy = proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gateway-ingress-annotated",
-			Namespace: defaultGlooNamespace,
-		},
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       "gateway-ingress-annotated",
+		Namespace:  defaultGlooNamespace,
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{
 				{
@@ -417,23 +373,49 @@ var (
 		},
 	}
 	gatewayIngressAnnotatedProxyGateway = metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: gatewayGVR.GroupVersion().String(),
-			Kind:       "Gateway",
+		APIVersion: gatewayGVR.GroupVersion().String(),
+		Kind:       "Gateway",
+		Name:       gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name,
+		Namespace:  gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/ingress": fmt.Sprintf("%s/%s", gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace, gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name),
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name,
-			Namespace: gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace,
-			Annotations: map[string]string{
-				"external-dns.kubernetes.io/ingress": fmt.Sprintf("%s/%s", gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace, gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name),
+	}
+	// Proxy using aggregateListener, produced by Gloo when a Gateway has
+	// isolateVirtualHostsBySslConfig: true.
+	aggregateListenerProxy = proxy{
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       "aggregate-listener",
+		Namespace:  defaultGlooNamespace,
+		Annotations: map[string]string{
+			"external-dns.kubernetes.io/target": "203.3.45.9",
+		},
+		Spec: proxySpec{
+			Listeners: []proxySpecListener{
+				{
+					AggregateListener: proxySpecAggregateListener{
+						HTTPFilterChains: []proxyAggregateListenerHTTPFilterChain{
+							{
+								VirtualHostRefs: []string{"gloo-system.example-vs"},
+							},
+						},
+						HTTPResources: proxyAggregateListenerHTTPResources{
+							VirtualHosts: map[string]proxyVirtualHost{
+								"gloo-system.example-vs": {
+									Domains: []string{"l.test"},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
+
 	gatewayIngressAnnotatedProxyIngress = networkingv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name,
-			Namespace: gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace,
-		},
+		Name:      gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Name,
+		Namespace: gatewayIngressAnnotatedProxy.Spec.Listeners[0].MetadataStatic.Source[0].ResourceRef.Namespace,
 		Status: networkingv1.IngressStatus{
 			LoadBalancer: networkingv1.IngressLoadBalancerStatus{
 				Ingress: []networkingv1.IngressLoadBalancerIngress{
@@ -461,6 +443,7 @@ func TestGlooSource(t *testing.T) {
 	gatewayIngressAnnotatedProxyGatewayUnstructured := unstructured.Unstructured{}
 	proxyMetadataStaticUnstructured := unstructured.Unstructured{}
 	targetAnnotatedProxyUnstructured := unstructured.Unstructured{}
+	aggregateListenerProxyUnstructured := unstructured.Unstructured{}
 
 	internalProxySourceUnstructured := unstructured.Unstructured{}
 	externalProxySourceUnstructured := unstructured.Unstructured{}
@@ -468,94 +451,100 @@ func TestGlooSource(t *testing.T) {
 	targetAnnotatedProxySourceUnstructured := unstructured.Unstructured{}
 
 	internalProxyAsJSON, err := json.Marshal(internalProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	externalProxyAsJSON, err := json.Marshal(externalProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	gatewayIngressAnnotatedProxyAsJSON, err := json.Marshal(gatewayIngressAnnotatedProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	gatewayIngressAnnotatedProxyGatewayAsJSON, err := json.Marshal(gatewayIngressAnnotatedProxyGateway)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	proxyMetadataStaticAsJSON, err := json.Marshal(proxyWithMetadataStatic)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	targetAnnotatedProxyAsJSON, err := json.Marshal(targetAnnotatedProxy)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+
+	aggregateListenerProxyAsJSON, err := json.Marshal(aggregateListenerProxy)
+	require.NoError(t, err)
 
 	internalProxySvcAsJSON, err := json.Marshal(internalProxySource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	externalProxySvcAsJSON, err := json.Marshal(externalProxySource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	proxyMetadataStaticSvcAsJSON, err := json.Marshal(proxyWithMetadataStaticSource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	targetAnnotatedProxySvcAsJSON, err := json.Marshal(targetAnnotatedProxySource)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, internalProxyUnstructured.UnmarshalJSON(internalProxyAsJSON))
-	assert.NoError(t, externalProxyUnstructured.UnmarshalJSON(externalProxyAsJSON))
-	assert.NoError(t, gatewayIngressAnnotatedProxyUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyAsJSON))
-	assert.NoError(t, gatewayIngressAnnotatedProxyGatewayUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyGatewayAsJSON))
-	assert.NoError(t, proxyMetadataStaticUnstructured.UnmarshalJSON(proxyMetadataStaticAsJSON))
-	assert.NoError(t, targetAnnotatedProxyUnstructured.UnmarshalJSON(targetAnnotatedProxyAsJSON))
+	require.NoError(t, internalProxyUnstructured.UnmarshalJSON(internalProxyAsJSON))
+	require.NoError(t, externalProxyUnstructured.UnmarshalJSON(externalProxyAsJSON))
+	require.NoError(t, gatewayIngressAnnotatedProxyUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyAsJSON))
+	require.NoError(t, gatewayIngressAnnotatedProxyGatewayUnstructured.UnmarshalJSON(gatewayIngressAnnotatedProxyGatewayAsJSON))
+	require.NoError(t, proxyMetadataStaticUnstructured.UnmarshalJSON(proxyMetadataStaticAsJSON))
+	require.NoError(t, targetAnnotatedProxyUnstructured.UnmarshalJSON(targetAnnotatedProxyAsJSON))
+	require.NoError(t, aggregateListenerProxyUnstructured.UnmarshalJSON(aggregateListenerProxyAsJSON))
 
-	assert.NoError(t, internalProxySourceUnstructured.UnmarshalJSON(internalProxySvcAsJSON))
-	assert.NoError(t, externalProxySourceUnstructured.UnmarshalJSON(externalProxySvcAsJSON))
-	assert.NoError(t, proxyMetadataStaticSourceUnstructured.UnmarshalJSON(proxyMetadataStaticSvcAsJSON))
-	assert.NoError(t, targetAnnotatedProxySourceUnstructured.UnmarshalJSON(targetAnnotatedProxySvcAsJSON))
+	require.NoError(t, internalProxySourceUnstructured.UnmarshalJSON(internalProxySvcAsJSON))
+	require.NoError(t, externalProxySourceUnstructured.UnmarshalJSON(externalProxySvcAsJSON))
+	require.NoError(t, proxyMetadataStaticSourceUnstructured.UnmarshalJSON(proxyMetadataStaticSvcAsJSON))
+	require.NoError(t, targetAnnotatedProxySourceUnstructured.UnmarshalJSON(targetAnnotatedProxySvcAsJSON))
 
 	_, err = fakeKubernetesClient.CoreV1().Services(internalProxySvc.GetNamespace()).Create(t.Context(), &internalProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(externalProxySvc.GetNamespace()).Create(t.Context(), &externalProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(proxyWithMetadataStaticSvc.GetNamespace()).Create(t.Context(), &proxyWithMetadataStaticSvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(targetAnnotatedProxySvc.GetNamespace()).Create(t.Context(), &targetAnnotatedProxySvc, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = fakeKubernetesClient.NetworkingV1().Ingresses(gatewayIngressAnnotatedProxyIngress.GetNamespace()).Create(t.Context(), &gatewayIngressAnnotatedProxyIngress, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create proxy resources
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &internalProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &externalProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &proxyMetadataStaticUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &targetAnnotatedProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &gatewayIngressAnnotatedProxyUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(t.Context(), &aggregateListenerProxyUnstructured, metav1.CreateOptions{})
+	require.NoError(t, err)
 
 	// Create proxy source
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(internalProxySource.Namespace).Create(t.Context(), &internalProxySourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(externalProxySource.Namespace).Create(t.Context(), &externalProxySourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(proxyWithMetadataStaticSource.Namespace).Create(t.Context(), &proxyMetadataStaticSourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(targetAnnotatedProxySource.Namespace).Create(t.Context(), &targetAnnotatedProxySourceUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create gateway resource
 	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(t.Context(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
 		GlooNamespaces: []string{defaultGlooNamespace},
 	})
-	assert.NoError(t, err)
-	assert.NotNil(t, source)
+	require.NoError(t, err)
+	require.NotNil(t, source)
 
 	endpoints, err := source.Endpoints(t.Context())
-	assert.NoError(t, err)
-	assert.Len(t, endpoints, 11)
+	require.NoError(t, err)
+	assert.Len(t, endpoints, 12)
 
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
 		(&endpoint.Endpoint{
@@ -668,6 +657,14 @@ func TestGlooSource(t *testing.T) {
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{}},
+		{
+			DNSName:          "l.test",
+			Targets:          []string{"203.3.45.9"},
+			RecordType:       endpoint.RecordTypeA,
+			RecordTTL:        0,
+			Labels:           endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
 	})
 }
 
@@ -684,18 +681,16 @@ func TestTransformerInGlooSource(t *testing.T) {
 	t.Run("service strips managed fields and status conditions", func(t *testing.T) {
 		var (
 			svc = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-service",
-					Namespace: "default",
-					Labels:    map[string]string{"label1": "value1"},
-					Annotations: map[string]string{
-						"user-annotation":                  "value",
-						corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
-					},
-					UID: "someuid",
-					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-					},
+				Name:      "test-service",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":                  "value",
+					corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+				},
+				UID: "someuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 				},
 				Spec: corev1.ServiceSpec{Type: corev1.ServiceTypeLoadBalancer},
 				Status: corev1.ServiceStatus{
@@ -728,18 +723,16 @@ func TestTransformerInGlooSource(t *testing.T) {
 	t.Run("ingress strips managed fields", func(t *testing.T) {
 		var (
 			ingress = &networkingv1.Ingress{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-ingress",
-					Namespace: "default",
-					Labels:    map[string]string{"label1": "value1"},
-					Annotations: map[string]string{
-						"user-annotation":                  "value",
-						corev1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
-					},
-					UID: "someuid",
-					ManagedFields: []metav1.ManagedFieldsEntry{
-						{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-					},
+				Name:      "test-ingress",
+				Namespace: "default",
+				Labels:    map[string]string{"label1": "value1"},
+				Annotations: map[string]string{
+					"user-annotation":                  "value",
+					corev1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
+				},
+				UID: "someuid",
+				ManagedFields: []metav1.ManagedFieldsEntry{
+					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 				},
 				Status: networkingv1.IngressStatus{
 					LoadBalancer: networkingv1.IngressLoadBalancerStatus{
@@ -966,16 +959,12 @@ func (f *fakeGlooProxyInformer) Lister() cache.GenericLister         { return ni
 // the target comes from the annotation so no backing Service is needed.
 func glooProxyFixture(name, namespace, domain string) proxy {
 	return proxy{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: proxyGVR.GroupVersion().String(),
-			Kind:       "Proxy",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Annotations: map[string]string{
-				annotations.TargetKey: "1.2.3.4",
-			},
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+		Name:       name,
+		Namespace:  namespace,
+		Annotations: map[string]string{
+			annotations.TargetKey: "1.2.3.4",
 		},
 		Spec: proxySpec{
 			Listeners: []proxySpecListener{

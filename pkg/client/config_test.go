@@ -23,11 +23,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/flowcontrol"
@@ -54,7 +56,7 @@ func TestNewKubeClient(t *testing.T) {
 
 	client, err := NewKubeClient(config)
 	require.NoError(t, err)
-	assert.NotNil(t, client)
+	require.NotNil(t, client)
 }
 
 func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
@@ -67,8 +69,8 @@ func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
 	require.NotNil(t, config)
 
 	assert.Equal(t, timeout, config.Timeout)
-	assert.NotNil(t, config.WrapTransport, "WrapTransport should be set for metrics")
-	assert.NotNil(t, config.RateLimiter, "RateLimiter should always be set")
+	require.NotNil(t, config.WrapTransport, "WrapTransport should be set for metrics")
+	require.NotNil(t, config.RateLimiter, "RateLimiter should always be set")
 }
 
 func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
@@ -120,7 +122,7 @@ func TestInstrumentedRESTConfig_QPSAndBurstApplied(t *testing.T) {
 
 	assert.Equal(t, 20, int(config.QPS))
 	assert.Equal(t, 40, config.Burst)
-	assert.NotNil(t, config.RateLimiter)
+	require.NotNil(t, config.RateLimiter)
 	assert.Equal(t, 20, int(config.RateLimiter.QPS()))
 }
 
@@ -137,7 +139,7 @@ func TestInstrumentedRESTConfig_ZeroQPSKeepsConfigDefaults(t *testing.T) {
 	// qps == 0: client-go defaults applied; rate limiter still installed
 	assert.Equal(t, int(rest.DefaultQPS), int(config.QPS))
 	assert.Equal(t, rest.DefaultBurst, config.Burst)
-	assert.NotNil(t, config.RateLimiter)
+	require.NotNil(t, config.RateLimiter)
 	assert.Equal(t, int(rest.DefaultQPS), int(config.RateLimiter.QPS()))
 }
 
@@ -171,8 +173,70 @@ func TestEnrichingRateLimiter(t *testing.T) {
 	t.Run("Wait returns nil when token is available", func(t *testing.T) {
 		// burst=1: one token available immediately
 		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(100, 1)}
-		assert.NoError(t, rl.Wait(t.Context()))
+		require.NoError(t, rl.Wait(t.Context()))
 	})
+}
+
+func TestCurrentNamespace(t *testing.T) {
+	tests := []struct {
+		name      string
+		namespace string
+		want      string
+	}{
+		{
+			name:      "namespace of the kubeconfig context",
+			namespace: "external-dns",
+			want:      "external-dns",
+		},
+		{
+			name:      "kubeconfig context without a namespace",
+			namespace: "",
+			want:      metav1.NamespaceDefault,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isolateKubeConfig(t)
+			assert.Equal(t, tt.want, CurrentNamespace(writeKubeConfigWithNamespace(t, tt.namespace)))
+		})
+	}
+}
+
+func TestCurrentNamespaceWithoutKubeConfig(t *testing.T) {
+	isolateKubeConfig(t)
+
+	// Not running in a cluster and no kubeconfig to read a context from.
+	assert.Equal(t, metav1.NamespaceDefault, CurrentNamespace(""))
+}
+
+// isolateKubeConfig hides the kubeconfig of whoever runs the tests, so that the
+// discovery of the current namespace only sees what the test provides.
+func isolateKubeConfig(t *testing.T) {
+	t.Helper()
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
+	prev := clientcmd.RecommendedHomeFile
+	t.Cleanup(func() { clientcmd.RecommendedHomeFile = prev })
+	clientcmd.RecommendedHomeFile = filepath.Join(t.TempDir(), "absent")
+}
+
+// writeKubeConfigWithNamespace writes a kubeconfig whose current context carries the
+// given namespace, omitting it entirely when empty, and returns the path.
+func writeKubeConfigWithNamespace(t *testing.T, namespace string) string {
+	t.Helper()
+	path := writeKubeConfig(t, "https://localhost:6443")
+	if namespace == "" {
+		return path
+	}
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	updated := strings.Replace(
+		string(raw),
+		"    user: test-user\n",
+		fmt.Sprintf("    user: test-user\n    namespace: %s\n", namespace),
+		1)
+	require.NoError(t, os.WriteFile(path, []byte(updated), 0644))
+	return path
 }
 
 // writeKubeConfig writes a minimal kubeconfig pointing at serverURL into a temp dir

@@ -183,6 +183,7 @@ export ETCD_URLS="http://127.0.0.1:32379" # port mapping configured on kind clus
 go run main.go \
     --provider=coredns \
     --source=service \
+    --policy=sync \
     --log-level=debug
 ```
 
@@ -310,6 +311,7 @@ go run main.go \
     --source=service \
     --managed-record-types=PTR \
     --domain-filter=18.172.in-addr.arpa \
+    --policy=sync \
     --log-level=debug
 ```
 

@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -97,9 +98,9 @@ func TestNewEngine(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewEngine(tt.fqdn, tt.target, tt.fqdnTarget, false)
 			if tt.errContains != "" {
-				assert.ErrorContains(t, err, tt.errContains)
+				require.ErrorContains(t, err, tt.errContains)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -128,8 +129,87 @@ func TestEngine_Combining(t *testing.T) {
 	})
 }
 
+func TestEngine_WithSource(t *testing.T) {
+	obj := &testObject{Name: "svc", Namespace: "default"}
+
+	t.Run("isSource matches the bound name case-insensitively", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "Service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		got, err := scoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"yes.example.com"}, got)
+	})
+
+	t.Run("isSource is false for a non-matching name", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "pod" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		got, err := scoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"no.example.com"}, got)
+	})
+
+	t.Run("isSource is always false when Engine is never scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		got, err := e.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"no.example.com"}, got)
+	})
+
+	t.Run("isSource with an unknown source name errors when scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "servics" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		_, err = scoped.ExecFQDN(obj)
+		require.ErrorContains(t, err, `isSource: unknown source "servics"`)
+	})
+
+	t.Run("isSource with an unknown source name errors when never scoped", func(t *testing.T) {
+		e, err := NewEngine([]string{`{{ if isSource "servics" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+		_, err = e.ExecFQDN(obj)
+		require.ErrorContains(t, err, `isSource: unknown source "servics"`)
+	})
+
+	t.Run("scoping one source does not affect another built from the same base Engine", func(t *testing.T) {
+		base, err := NewEngine([]string{`{{ if isSource "service" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
+		require.NoError(t, err)
+
+		serviceScoped, err := base.WithSource("service")
+		require.NoError(t, err)
+		podScoped, err := base.WithSource("pod")
+		require.NoError(t, err)
+
+		gotService, err := serviceScoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"yes.example.com"}, gotService)
+
+		gotPod, err := podScoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"no.example.com"}, gotPod)
+
+		// Re-check service after scoping pod, to guard against in-place mutation of a shared template.
+		gotServiceAgain, err := serviceScoped.ExecFQDN(obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"yes.example.com"}, gotServiceAgain)
+	})
+
+	t.Run("safe to call on an unconfigured Engine", func(t *testing.T) {
+		e, err := NewEngine(nil, nil, nil, false)
+		require.NoError(t, err)
+		scoped, err := e.WithSource("service")
+		require.NoError(t, err)
+		assert.False(t, scoped.IsConfigured())
+	})
+}
+
 func TestEngine_execTarget(t *testing.T) {
-	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
+	obj := &testObject{Name: "svc", Namespace: "default"}
 
 	t.Run("returns targets from template", func(t *testing.T) {
 		e, err := NewEngine(nil, []string{"{{ .Name }}.target.example.com"}, nil, false)
@@ -154,7 +234,7 @@ func TestEngine_execTarget(t *testing.T) {
 }
 
 func TestEngine_execFQDNTarget(t *testing.T) {
-	obj := &testObject{ObjectMeta: metav1.ObjectMeta{Name: "svc", Namespace: "default"}}
+	obj := &testObject{Name: "svc", Namespace: "default"}
 
 	t.Run("returns fqdn:target pairs from template", func(t *testing.T) {
 		e, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:1.2.3.4"}, false)
@@ -190,10 +270,8 @@ func TestExecFQDN(t *testing.T) {
 			name: "simple template",
 			tmpl: "{{ .Name }}.example.com, {{ .Namespace }}.example.org",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 			},
 			want: []string{"default.example.org", "test.example.com"},
 		},
@@ -202,10 +280,8 @@ func TestExecFQDN(t *testing.T) {
 			tmpl: "{{.Name}}.example.com, {{.Name}}.example.org",
 			obj: &testObject{
 
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-				},
+				Name:      "test",
+				Namespace: "default",
 			},
 			want: []string{"test.example.com", "test.example.org"},
 		},
@@ -213,9 +289,7 @@ func TestExecFQDN(t *testing.T) {
 			name: "trim spaces",
 			tmpl: "  {{ trim .Name}}.example.com. ",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: " test ",
-				},
+				Name: " test ",
 			},
 			want: []string{"test.example.com"},
 		},
@@ -223,10 +297,8 @@ func TestExecFQDN(t *testing.T) {
 			name: "trim prefix",
 			tmpl: `{{ trimPrefix .Name "the-" }}.example.com`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "the-test",
-					Namespace: "default",
-				},
+				Name:      "the-test",
+				Namespace: "default",
 			},
 			want: []string{"test.example.com"},
 		},
@@ -234,10 +306,8 @@ func TestExecFQDN(t *testing.T) {
 			name: "trim suffix",
 			tmpl: `{{ trimSuffix .Name "-v2" }}.example.com`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-v2",
-					Namespace: "default",
-				},
+				Name:      "test-v2",
+				Namespace: "default",
 			},
 			want: []string{"test.example.com"},
 		},
@@ -245,10 +315,8 @@ func TestExecFQDN(t *testing.T) {
 			name: "replace dash",
 			tmpl: `{{ replace "-" "." .Name }}.example.com`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-v2",
-					Namespace: "default",
-				},
+				Name:      "test-v2",
+				Namespace: "default",
 			},
 			want: []string{"test.v2.example.com"},
 		},
@@ -256,22 +324,20 @@ func TestExecFQDN(t *testing.T) {
 			name: "annotations and labels",
 			tmpl: "{{.Labels.environment }}.example.com, {{ index .ObjectMeta.Annotations \"alb.ingress.kubernetes.io/scheme\" }}.{{ .Labels.environment }}.{{ index .ObjectMeta.Annotations \"dns.company.com/zone\" }}",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/hostname": "test.example.com, test.example.org",
-						"kubernetes.io/role/internal-elb":     "true",
-						"alb.ingress.kubernetes.io/scheme":    "internal",
-						"dns.company.com/zone":                "company.org",
-					},
-					Labels: map[string]string{
-						"environment": "production",
-						"app":         "myapp",
-						"tier":        "backend",
-						"role":        "worker",
-						"version":     "1",
-					},
+				Name:      "test",
+				Namespace: "default",
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/hostname": "test.example.com, test.example.org",
+					"kubernetes.io/role/internal-elb":     "true",
+					"alb.ingress.kubernetes.io/scheme":    "internal",
+					"dns.company.com/zone":                "company.org",
+				},
+				Labels: map[string]string{
+					"environment": "production",
+					"app":         "myapp",
+					"tier":        "backend",
+					"role":        "worker",
+					"version":     "1",
 				},
 			},
 			want: []string{"internal.production.company.org", "production.example.com"},
@@ -280,13 +346,11 @@ func TestExecFQDN(t *testing.T) {
 			name: "labels to lowercase",
 			tmpl: "{{ toLower .Labels.department }}.example.org",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-					Labels: map[string]string{
-						"department": "FINANCE",
-						"app":        "myapp",
-					},
+				Name:      "test",
+				Namespace: "default",
+				Labels: map[string]string{
+					"department": "FINANCE",
+					"app":        "myapp",
 				},
 			},
 			want: []string{"finance.example.org"},
@@ -295,16 +359,14 @@ func TestExecFQDN(t *testing.T) {
 			name: "generate multiple hostnames with if condition",
 			tmpl: "{{ if contains (index .ObjectMeta.Annotations \"external-dns.kubernetes.io/hostname\") \"example.com\" }}{{ toLower .Labels.hostoverride }}{{end}}",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test",
-					Namespace: "default",
-					Labels: map[string]string{
-						"hostoverride": "abrakadabra.google.com",
-						"app":          "myapp",
-					},
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/hostname": "test.example.com",
-					},
+				Name:      "test",
+				Namespace: "default",
+				Labels: map[string]string{
+					"hostoverride": "abrakadabra.google.com",
+					"app":          "myapp",
+				},
+				Annotations: map[string]string{
+					"external-dns.kubernetes.io/hostname": "test.example.com",
 				},
 			},
 			want: []string{"abrakadabra.google.com"},
@@ -313,9 +375,7 @@ func TestExecFQDN(t *testing.T) {
 			name: "ignore empty template output",
 			tmpl: "{{ if eq .Name \"other\" }}{{ .Name }}.example.com{{ end }}",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 			},
 			want: []string{},
 		},
@@ -323,9 +383,7 @@ func TestExecFQDN(t *testing.T) {
 			name: "ignore trailing comma output",
 			tmpl: "{{ .Name }}.example.com,",
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 			},
 			want: []string{"test.example.com"},
 		},
@@ -333,11 +391,9 @@ func TestExecFQDN(t *testing.T) {
 			name: "contains label with empty value",
 			tmpl: `{{if hasKey .Labels "service.kubernetes.io/headless"}}{{ .Name }}.example.com,{{end}}`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Labels: map[string]string{
-						"service.kubernetes.io/headless": "",
-					},
+				Name: "test",
+				Labels: map[string]string{
+					"service.kubernetes.io/headless": "",
 				},
 			},
 			want: []string{"test.example.com"},
@@ -346,11 +402,9 @@ func TestExecFQDN(t *testing.T) {
 			name: "result only contains unique values",
 			tmpl: `{{ .Name }}.example.com,{{ .Name }}.example.com,{{ .Name }}.example.com`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Labels: map[string]string{
-						"service.kubernetes.io/headless": "",
-					},
+				Name: "test",
+				Labels: map[string]string{
+					"service.kubernetes.io/headless": "",
 				},
 			},
 			want: []string{"test.example.com"},
@@ -360,12 +414,10 @@ func TestExecFQDN(t *testing.T) {
 			tmpl: `
 {{ if hasKey .Labels "records" }}{{ range $entry := (index .Labels "records" | fromJson) }}{{ index $entry "dns" }},{{ end }}{{ end }}`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Labels: map[string]string{
-						"records": `
+				Name: "test",
+				Labels: map[string]string{
+					"records": `
 [{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
-					},
 				},
 			},
 			want: []string{"entry1.internal.tld", "entry2.example.tld"},
@@ -374,9 +426,7 @@ func TestExecFQDN(t *testing.T) {
 			name: "configmap with multiple entries",
 			tmpl: `{{ range $entry := (index .Data "entries" | fromJson) }}{{ index $entry "dns" }},{{ end }}`,
 			obj: &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-configmap",
-				},
+				Name: "test-configmap",
 				Data: map[string]string{
 					"entries": `
 [{"dns":"entry1.internal.tld","target":"10.10.10.10"},{"dns":"entry2.example.tld","target":"my.cluster.local"}]`,
@@ -389,16 +439,14 @@ func TestExecFQDN(t *testing.T) {
 			tmpl: `
 {{ range $entry := (index .Annotations "field.cattle.io/publicEndpoints" | fromJson) }}{{ index $entry "hostname" }},{{ end }}`,
 			obj: &testObject{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-					Annotations: map[string]string{
-						"field.cattle.io/publicEndpoints": `
+				Name: "test",
+				Annotations: map[string]string{
+					"field.cattle.io/publicEndpoints": `
 							[{"addresses":[""],"port":80,"protocol":"HTTP",
 								"serviceName":"development:keycloak-ha-service",
 								"ingressName":"development:keycloak-ha-ingress",
 								"hostname":"keycloak.snip.com","allNodes":false
 							}]`,
-					},
 				},
 			},
 			want: []string{"keycloak.snip.com"},
@@ -421,7 +469,69 @@ func TestExecFQDNNilObject(t *testing.T) {
 	engine, err := NewEngine([]string{"{{ toLower .Labels.department }}.example.org"}, nil, nil, false)
 	require.NoError(t, err)
 	_, err = engine.ExecFQDN(nil)
-	assert.Error(t, err)
+	require.Error(t, err)
+}
+
+// A shared --fqdn-template using JSON-style Spec keys must succeed on typed objects too.
+func TestExecFQDNJSONFieldNamesOnTypedObject(t *testing.T) {
+	tmpl := `{{ range .Spec.hostnames }}{{ . }},{{ end }}`
+	engine, err := NewEngine([]string{tmpl}, nil, nil, false)
+	require.NoError(t, err)
+
+	typed := &hostnamesObject{
+		Name:      "route",
+		Namespace: "default",
+		Spec: hostnamesSpec{
+			Hostnames: []string{"a.example.com", "b.example.com"},
+		},
+	}
+	got, err := engine.ExecFQDN(typed)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a.example.com", "b.example.com"}, got)
+
+	empty := &hostnamesObject{
+		Name:      "route",
+		Namespace: "default",
+	}
+	got, err = engine.ExecFQDN(empty)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	unstructuredObj := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "gateway.networking.k8s.io/v1",
+			"kind":       "HTTPRoute",
+			"metadata": map[string]any{
+				"name":      "route",
+				"namespace": "default",
+			},
+			"spec": map[string]any{
+				"hostnames": []any{"a.example.com", "b.example.com"},
+			},
+		},
+	}
+	got, err = engine.ExecFQDN(unstructuredObj)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a.example.com", "b.example.com"}, got)
+}
+
+func TestExecFQDNJSONFieldNamesKeepsNameAccess(t *testing.T) {
+	// After a JSON-name retry, promoted Name must still work for templates
+	// that mix metav1 fields with JSON keys under Spec.
+	tmpl := `{{ .Name }}.{{ range .Spec.hostnames }}{{ . }}{{ end }}`
+	engine, err := NewEngine([]string{tmpl}, nil, nil, false)
+	require.NoError(t, err)
+
+	obj := &hostnamesObject{
+		Name:      "route",
+		Namespace: "default",
+		Spec: hostnamesSpec{
+			Hostnames: []string{"example.com"},
+		},
+	}
+	got, err := engine.ExecFQDN(obj)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"route.example.com"}, got)
 }
 
 func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
@@ -431,10 +541,8 @@ func TestExecFQDNPopulatesEmptyKind(t *testing.T) {
 
 	// Create object with empty TypeMeta (Kind == "")
 	obj := &testObject{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-		},
+		Name:      "test",
+		Namespace: "default",
 	}
 
 	// Kind should be empty initially
@@ -454,14 +562,10 @@ func TestExecFQDNPreservesExistingKind(t *testing.T) {
 	require.NoError(t, err)
 
 	obj := &testObject{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "CustomKind",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: "default",
-		},
+		Kind:       "CustomKind",
+		APIVersion: "v1",
+		Name:       "test",
+		Namespace:  "default",
 	}
 
 	got, err := engine.ExecFQDN(obj)
@@ -477,13 +581,9 @@ func TestExecFQDNExecutionError(t *testing.T) {
 	require.NoError(t, err)
 
 	obj := &metav1.PartialObjectMetadata{
-		TypeMeta: metav1.TypeMeta{
-			Kind: "TestKind",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-name",
-			Namespace: "default",
-		},
+		Kind:      "TestKind",
+		Name:      "test-name",
+		Namespace: "default",
 	}
 
 	_, err = engine.ExecFQDN(obj)
@@ -672,9 +772,9 @@ func TestValidateTemplates(t *testing.T) {
 			err := validateTemplates(tt.templates, tt.flagName)
 			if tt.errContains != "" {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.errContains)
+				require.ErrorContains(t, err, tt.errContains)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -690,4 +790,71 @@ func (t *testObject) DeepCopyObject() runtime.Object {
 		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
+}
+
+type hostnamesSpec struct {
+	Hostnames []string `json:"hostnames"`
+}
+
+// hostnamesObject mimics a typed API object with JSON tag names that differ
+// from Go exported field names (same shape as Gateway API HTTPRouteSpec).
+type hostnamesObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+	Spec hostnamesSpec `json:"spec"`
+}
+
+func (h *hostnamesObject) DeepCopyObject() runtime.Object {
+	c := *h
+	c.ObjectMeta = *h.ObjectMeta.DeepCopy()
+	if h.Spec.Hostnames != nil {
+		c.Spec.Hostnames = append([]string(nil), h.Spec.Hostnames...)
+	}
+	return &c
+}
+
+// TestExecFQDNFailsClosedOnUnknownField guards the unstructured retry
+// against text/template's default missingkey mode, which renders a missing
+// map key as "<no value>" instead of erroring.
+func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
+	svc := &corev1.Service{
+		Name: "svc", Namespace: "ns",
+	}
+
+	t.Run("fqdn template", func(t *testing.T) {
+		engine, err := NewEngine([]string{"{{ .Spec.hostname }}.example.com"}, nil, nil, false)
+		require.NoError(t, err)
+
+		got, err := engine.ExecFQDN(svc)
+
+		require.Error(t, err, "unknown field must not render as %q", "<no value>")
+		assert.Contains(t, err.Error(), "can't evaluate field hostname")
+		assert.Empty(t, got)
+	})
+
+	t.Run("target template", func(t *testing.T) {
+		// Same hole on --target-template: the endpoint would otherwise get
+		// "<no value>" as its target, which SuitableType classifies as a CNAME.
+		engine, err := NewEngine([]string{"{{ .Name }}.example.com"}, []string{"{{ .Spec.address }}"}, nil, false)
+		require.NoError(t, err)
+
+		eps, err := engine.ApplyTemplates(nil, svc)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "can't evaluate field address")
+		assert.Empty(t, eps)
+	})
+
+	t.Run("fqdn-target template", func(t *testing.T) {
+		// endpointsFromFQDNTargetTemplate skips pairs with an empty host or
+		// target, but "<no value>" is non-empty, so that guard cannot catch this.
+		engine, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:{{ .Spec.address }}"}, false)
+		require.NoError(t, err)
+
+		eps, err := engine.ApplyFQDNTargetTemplate(nil, svc)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "can't evaluate field address")
+		assert.Empty(t, eps)
+	})
 }

@@ -70,7 +70,7 @@ type gatewayRoute interface {
 type newGatewayRouteInformerFunc func(gwinformers.SharedInformerFactory) gatewayRouteInformer
 
 type gatewayRouteInformer interface {
-	List(namespace string, selector labels.Selector) ([]gatewayRoute, error)
+	List() []gatewayRoute
 	Informer() cache.SharedIndexInformer
 }
 
@@ -135,17 +135,12 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type gatewayRouteSource struct {
-	gwName      string
-	gwNamespace string
-	gwLabels    labels.Selector
-	gwInformer  informers_v1.GatewayInformer
-	lsInformer  informers_v1.ListenerSetInformer
+	gwName     string
+	gwInformer informers_v1.GatewayInformer
+	lsInformer informers_v1.ListenerSetInformer
 
-	rtKind        string
-	rtNamespace   string
-	rtLabels      labels.Selector
-	rtAnnotations labels.Selector
-	rtInformer    gatewayRouteInformer
+	rtKind     string
+	rtInformer gatewayRouteInformer
 
 	nsInformer coreinformers.NamespaceInformer
 
@@ -196,7 +191,7 @@ func newGatewaySource(
 		return nil, err
 	}
 
-	gwInformerFactory := newInformerFactory(client, config.Namespace, gwLabels)
+	gwInformerFactory := newInformerFactory(client, config.Namespace(), gwLabels)
 	gwInformer := gwInformerFactory.Gateway().V1().Gateways()
 	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
 		informers.TransformRemoveManagedFields(),
@@ -211,7 +206,7 @@ func newGatewaySource(
 
 	return &gatewaySource{
 		gwName:                   config.GatewayName,
-		gwNamespace:              config.Namespace,
+		gwNamespace:              config.Namespace(),
 		gwLabels:                 gwLabels,
 		gwAnnotations:            gwAnnotations,
 		gwInformer:               gwInformer,
@@ -350,6 +345,10 @@ func newGatewayRouteSource(
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
+	informers.MustAddIndexers(gwInformer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
+		informers.IndexSelectorWithLabelSelector(gwLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
+	))
 
 	var lsInformer informers_v1.ListenerSetInformer
 	lsInformerFactory := gwInformerFactory
@@ -363,17 +362,27 @@ func newGatewayRouteSource(
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
+		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
+			informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
+		))
 	}
 
+	rtNamespace := config.Namespace()
 	rtInformerFactory := gwInformerFactory
-	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
-		rtInformerFactory = newGatewayInformerFactory(client, config.Namespace, rtLabels)
+	if rtNamespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
+		rtInformerFactory = newGatewayInformerFactory(client, rtNamespace, rtLabels)
 	}
 	rtInformer := newInformerFn(rtInformerFactory)
 	informers.MustSetTransform(rtInformer.Informer(), informers.TransformerWithOptions[informers.Object](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(rtInformer.Informer(), informers.IndexerWithOptions[informers.Object](
+		informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+		informers.IndexSelectorWithLabelSelector(rtLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[informers.Object]),
 	))
 
 	kubeClient, err := clients.KubeClient()
@@ -388,6 +397,7 @@ func newGatewayRouteSource(
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
+	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
 
 	gwInformerFactory.Start(ctx.Done())
 	if lsInformerFactory != gwInformerFactory {
@@ -413,17 +423,12 @@ func newGatewayRouteSource(
 	}
 
 	src := &gatewayRouteSource{
-		gwName:      config.GatewayName,
-		gwNamespace: config.GatewayNamespace,
-		gwLabels:    gwLabels,
-		gwInformer:  gwInformer,
-		lsInformer:  lsInformer,
+		gwName:     config.GatewayName,
+		gwInformer: gwInformer,
+		lsInformer: lsInformer,
 
-		rtKind:        kind,
-		rtNamespace:   config.Namespace,
-		rtLabels:      rtLabels,
-		rtAnnotations: rtAnnotations,
-		rtInformer:    rtInformer,
+		rtKind:     kind,
+		rtInformer: rtInformer,
 
 		nsInformer: nsInformer,
 
@@ -445,41 +450,20 @@ func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()
 }
 
 func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-	routes, err := src.rtInformer.List(src.rtNamespace, src.rtLabels)
-	if err != nil {
-		return nil, err
-	}
-	gateways, err := src.gwInformer.Lister().Gateways(src.gwNamespace).List(src.gwLabels)
-	if err != nil {
-		return nil, err
-	}
+	routes := src.rtInformer.List()
+	gateways := informers.ListIndexed[*v1.Gateway](src.gwInformer.Informer().GetIndexer())
 	var listenerSets []*v1.ListenerSet
 	if src.lsInformer != nil {
-		listenerSets, err = src.lsInformer.Lister().List(labels.Everything())
-		if err != nil {
-			return nil, err
-		}
+		listenerSets = informers.ListIndexed[*v1.ListenerSet](src.lsInformer.Informer().GetIndexer())
 	}
-	namespaces, err := src.nsInformer.Lister().List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	namespaces := informers.ListIndexed[*corev1.Namespace](src.nsInformer.Informer().GetIndexer())
 	kind := strings.ToLower(src.rtKind)
 	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
+	var endpoints []*endpoint.Endpoint
 	for _, rt := range routes {
-		// Filter by annotations.
+		// Get Route hostnames and their targets.
 		meta := rt.Metadata()
 		annots := meta.Annotations
-		if !src.rtAnnotations.Matches(labels.Set(annots)) {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(meta, src.rtKind) {
-			continue
-		}
-
-		// Get Route hostnames and their targets.
 		hostTargets, err := resolver.resolve(rt)
 		if err != nil {
 			return nil, err
@@ -570,7 +554,7 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, li
 }
 
 func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
-	rtHosts, err := c.hosts(rt)
+	rtHosts, err := c.resolveHostnames(rt)
 	if err != nil {
 		return nil, err
 	}
@@ -712,12 +696,10 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
-	var hostnames []string
-	for _, name := range rt.Hostnames() {
-		hostnames = append(hostnames, string(name))
-	}
-	// TODO: The combine-fqdn-annotation flag is similarly vague.
+// appendFQDNTemplate appends the template-generated hostnames, unless another source already
+// supplied one and the template is not combining.
+// TODO: The combine-fqdn-annotation flag is similarly vague.
+func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
 	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
 		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
 		if err != nil {
@@ -725,42 +707,53 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 		}
 		hostnames = append(hostnames, hosts...)
 	}
+	return hostnames, nil
+}
+
+// resolveHostnames returns a route's hostnames in the order documented for the gateway sources:
+// spec, annotation, FQDN template, listener fallback, subject to gateway-hostname-source.
+func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, error) {
+	var hostnames []string
+	for _, name := range rt.Hostnames() {
+		hostnames = append(hostnames, string(name))
+	}
 
 	hostNameAnnotation, hostNameAnnotationExists := rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey]
-	if !hostNameAnnotationExists {
-		// This means that the route doesn't specify a hostname and should use any provided by
-		// attached Gateway Listeners. This is only useful for {HTTP,TLS}Routes, but it doesn't
-		// break {TCP,UDP}Routes.
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
+	if hostNameAnnotationExists {
+		switch strings.ToLower(hostNameAnnotation) {
+		case gatewayHostnameSourceAnnotationOnlyValue:
+			if c.src.ignoreHostnameAnnotation {
+				return []string{}, nil
+			}
+			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+		case gatewayHostnameSourceDefinedHostsOnlyValue:
+			// Explicitly use only defined hostnames (route spec and optional template result)
+			return c.appendFQDNTemplate(hostnames, rt)
+		default:
+			// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
+			log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
+				annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
 		}
-		if !c.src.ignoreHostnameAnnotation {
-			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-		}
-		return hostnames, nil
 	}
 
-	switch strings.ToLower(hostNameAnnotation) {
-	case gatewayHostnameSourceAnnotationOnlyValue:
-		if c.src.ignoreHostnameAnnotation {
-			return []string{}, nil
+	if !c.src.ignoreHostnameAnnotation {
+		// Skip empty values so an empty annotation does not gate the template below.
+		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
+			if hostname != "" {
+				hostnames = append(hostnames, hostname)
+			}
 		}
-		return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
-	case gatewayHostnameSourceDefinedHostsOnlyValue:
-		// Explicitly use only defined hostnames (route spec and optional template result)
-		return hostnames, nil
-	default:
-		// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
-		log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
-			annotations.GatewayHostnameSourceKey, rt.Metadata().Namespace, rt.Metadata().Name, hostNameAnnotation)
-		if len(rt.Hostnames()) == 0 {
-			hostnames = append(hostnames, "")
-		}
-		if !c.src.ignoreHostnameAnnotation {
-			hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
-		}
-		return hostnames, nil
 	}
+	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
+	if err != nil {
+		return nil, err
+	}
+	// Fall back to the listeners' hostnames only when spec, annotation and template named nothing:
+	// checking the spec alone would publish a wildcard listener hostname next to an annotated one.
+	if len(hostnames) == 0 {
+		hostnames = append(hostnames, "")
+	}
+	return hostnames, nil
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Listener, rt gatewayRoute) bool {
@@ -817,7 +810,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Lis
 
 func newObjectRef(group, kind, namespace, name string) objectRef {
 	return objectRef{
-		GroupKind:      schema.GroupKind{Group: group, Kind: kind},
+		Group: group, Kind: kind,
 		NamespacedName: namespacedName(namespace, name),
 	}
 }

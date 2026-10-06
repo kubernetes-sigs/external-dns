@@ -144,7 +144,7 @@ func TestTXTRegistry_Records_NilLabels(t *testing.T) {
 	endpoints, err := r.Records(t.Context())
 	require.NoError(t, err)
 	require.Len(t, endpoints, 1)
-	assert.NotNil(t, endpoints[0].Labels)
+	require.NotNil(t, endpoints[0].Labels)
 }
 
 func TestNew(t *testing.T) {
@@ -158,7 +158,7 @@ func TestNew(t *testing.T) {
 	}
 	r, err := New(cfg, p)
 	require.NoError(t, err)
-	assert.NotNil(t, r)
+	require.NotNil(t, r)
 }
 
 func TestTXTRegistry_AdjustEndpoints(t *testing.T) {
@@ -860,7 +860,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -907,7 +907,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -950,7 +950,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1054,7 +1054,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1135,7 +1135,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1502,7 +1502,7 @@ func TestNewTXTScheme(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1612,7 +1612,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
-			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", "foobar.test-zone.example.org"),
+			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY09KelukKxEr3oi5ozZF2sV5bnKva2/Dayyf\"", "foobar.test-zone.example.org"),
 		},
 	})
 	require.NoError(t, err)
@@ -1627,7 +1627,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	expected := &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
-			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", "foobar.test-zone.example.org"),
+			newTXTEndpointWithOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY09KelukKxEr3oi5ozZF2sV5bnKva2/Dayyf\"", "foobar.test-zone.example.org"),
 		},
 	}
 
@@ -1639,7 +1639,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 			"Delete": got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		assert.Nil(t, ctx.Value(provider.RecordsContextKey))
+		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -2011,7 +2011,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					err := p.CreateZone(testZone)
 					require.NoError(t, err)
 					err = p.ApplyChanges(ctx, &plan.Changes{Create: existing})
-					assert.NoError(t, err)
+					require.NoError(t, err)
 
 					// The first ApplyChanges call should create the expected records.
 					// Subsequent calls are expected to be no-ops (i.e., no additional creates).
@@ -2034,7 +2034,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					// When: Apply changes to recreate missing A records
 					managedRecords := []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeAAAA, endpoint.RecordTypeTXT}
 					registry, err := newRegistry(p, "", "", ownerId, time.Hour, "", managedRecords, nil, false, nil, "")
-					assert.NoError(t, err)
+					require.NoError(t, err)
 
 					expectedRecords := append(existing, expectedCreate...) // nolint:gocritic
 
@@ -2042,7 +2042,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					reconciliationLoops := 3
 					for i := range reconciliationLoops {
 						records, err := registry.Records(ctx)
-						assert.NoError(t, err)
+						require.NoError(t, err)
 						pl := &plan.Plan{
 							Policies:       []plan.Policy{policy},
 							Current:        records,
@@ -2052,11 +2052,11 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 						}
 						pln := pl.Calculate()
 						err = registry.ApplyChanges(ctx, pln.Changes)
-						assert.NoError(t, err)
+						require.NoError(t, err)
 
 						// Then: Verify that the missing records are recreated or the existing records are not modified
 						records, err = p.Records(ctx)
-						assert.NoError(t, err)
+						require.NoError(t, err)
 						assert.True(t, testutils.SameEndpoints(records, expectedRecords),
 							"Expected records after reconciliation loop #%d: %v, but got: %v",
 							i, expectedRecords, records,
@@ -2136,7 +2136,7 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: creates,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// 2. Simulate a "no change" reconciliation (ApplyChanges won't be called).
 	desired := []*endpoint.Endpoint{
@@ -2150,7 +2150,7 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	}
 
 	records, err := r.Records(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	calculated := &plan.Plan{
 		Policies:       []plan.Policy{&plan.SyncPolicy{}},
@@ -2168,11 +2168,11 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Delete: deletes,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// 4. Run reconciliation again — both A and TXT should be recreated.
 	records, err = r.Records(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	calculated = &plan.Plan{
 		Policies:       []plan.Policy{&plan.SyncPolicy{}},
@@ -2187,11 +2187,11 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	}
 
 	err = r.ApplyChanges(ctx, calculated.Changes)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// 5. Verify that both A and TXT records are recreated successfully.
 	records, err = p.Records(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, testutils.SameEndpoints(records, append(desired, txtRecord...)), "Expected records after reconciliation: %v, but got: %v", append(desired, txtRecord...), records)
 }
 
@@ -2215,9 +2215,9 @@ func TestTXTRegistryAliasARecordUsesARecordTXTPrefix(t *testing.T) {
 	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{aliasA}}))
 	require.NotNil(t, applied)
 
-	assert.NotNil(t, findEndpoint(applied.Create, "alias.test-zone.example.org", endpoint.RecordTypeA), "expected the A record to be applied")
-	assert.NotNil(t, findEndpoint(applied.Create, "a-alias.test-zone.example.org", endpoint.RecordTypeTXT), "expected an a- prefixed ownership TXT")
-	assert.Nil(t, findEndpoint(applied.Create, "cname-alias.test-zone.example.org", endpoint.RecordTypeTXT), "must not create a cname- TXT")
+	require.NotNil(t, findEndpoint(applied.Create, "alias.test-zone.example.org", endpoint.RecordTypeA), "expected the A record to be applied")
+	require.NotNil(t, findEndpoint(applied.Create, "a-alias.test-zone.example.org", endpoint.RecordTypeTXT), "expected an a- prefixed ownership TXT")
+	require.Nil(t, findEndpoint(applied.Create, "cname-alias.test-zone.example.org", endpoint.RecordTypeTXT), "must not create a cname- TXT")
 }
 
 // TestTXTRegistryAliasARecordForceUpdateOnMigration covers the "cname-" -> "a-" migration via Records():
@@ -2293,7 +2293,141 @@ func TestTXTRegistryAliasARecordDeleteLeavesLegacyCNAME(t *testing.T) {
 	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{aliasA}}))
 	require.NotNil(t, applied)
 
-	assert.NotNil(t, findEndpoint(applied.Delete, dnsName, endpoint.RecordTypeA), "the A ALIAS record itself must be deleted")
-	assert.NotNil(t, findEndpoint(applied.Delete, "a-alias.test-zone.example.org", endpoint.RecordTypeTXT), "the new a- ownership TXT must be deleted")
-	assert.Nil(t, findEndpoint(applied.Delete, "cname-alias.test-zone.example.org", endpoint.RecordTypeTXT), "the legacy cname- TXT should be kept")
+	require.NotNil(t, findEndpoint(applied.Delete, dnsName, endpoint.RecordTypeA), "the A ALIAS record itself must be deleted")
+	require.NotNil(t, findEndpoint(applied.Delete, "a-alias.test-zone.example.org", endpoint.RecordTypeTXT), "the new a- ownership TXT must be deleted")
+	require.Nil(t, findEndpoint(applied.Delete, "cname-alias.test-zone.example.org", endpoint.RecordTypeTXT), "the legacy cname- TXT should be kept")
+}
+
+const (
+	storedDNSName = "foo." + testZone
+	storedTXTName = "cname-foo." + testZone
+)
+
+// seedZoneWithTXT creates a CNAME and its ownership TXT holding txtValue verbatim, and returns a
+// registry over that zone plus an accessor for the changes the provider received.
+func seedZoneWithTXT(t *testing.T, txtValue string, encrypt bool, aesKey []byte, cacheInterval time.Duration) (*TXTRegistry, func() *plan.Changes) {
+	t.Helper()
+
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner(storedDNSName, "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+			newTXTEndpointWithOwnedRecord(storedTXTName, txtValue, storedDNSName),
+		},
+	}))
+
+	r, err := newRegistry(p, "", "", "owner", cacheInterval, "", []string{}, []string{}, encrypt, aesKey, "")
+	require.NoError(t, err)
+
+	var applied *plan.Changes
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) { applied = got }
+
+	return r, func() *plan.Changes { return applied }
+}
+
+// ownedRecordFrom returns the endpoint Records() produced for the seeded CNAME, as the plan would.
+func ownedRecordFrom(t *testing.T, r *TXTRegistry) *endpoint.Endpoint {
+	t.Helper()
+	records, err := r.Records(t.Context())
+	require.NoError(t, err)
+	ep := findEndpoint(records, storedDNSName, endpoint.RecordTypeCNAME)
+	require.NotNil(t, ep)
+	require.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey], "the TXT record must be recognized as owned")
+	return ep
+}
+
+// Deleting a TXT with a value that is not the one in the zone makes value-matching providers such
+// as Route53 reject the whole change batch.
+func TestTXTRegistryDeleteUsesStoredValue(t *testing.T) {
+	// A token without the heritage prefix is dropped on parse, so re-serializing drifts,
+	// same shape as the Go 1.27 gzip change.
+	stored := "\"heritage=external-dns,external-dns/owner=owner,drift=1\""
+
+	r, applied := seedZoneWithTXT(t, stored, false, nil, 0)
+	ep := ownedRecordFrom(t, r)
+
+	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{ep}}))
+
+	txt := findEndpoint(applied().Delete, storedTXTName, endpoint.RecordTypeTXT)
+	require.NotNil(t, txt, "the ownership TXT must be deleted alongside the record")
+	assert.Equal(t, stored, txt.Targets[0])
+}
+
+func TestTXTRegistryUpdateOldUsesStoredValue(t *testing.T) {
+	stored := "\"heritage=external-dns,external-dns/owner=owner,drift=1\""
+
+	r, applied := seedZoneWithTXT(t, stored, false, nil, 0)
+	ep := ownedRecordFrom(t, r)
+
+	updated := cloneEndpointWithOpts(ep, func(e *endpoint.Endpoint) {
+		e.Targets = endpoint.Targets{"new.loadbalancer.com"}
+	})
+	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{ep},
+		UpdateNew: []*endpoint.Endpoint{updated},
+	}))
+
+	oldTXT := findEndpoint(applied().UpdateOld, storedTXTName, endpoint.RecordTypeTXT)
+	require.NotNil(t, oldTXT)
+	assert.Equal(t, stored, oldTXT.Targets[0], "the old side of the update must carry the stored value")
+
+	newTXT := findEndpoint(applied().UpdateNew, storedTXTName, endpoint.RecordTypeTXT)
+	require.NotNil(t, newTXT)
+	assert.NotEqual(t, stored, newTXT.Targets[0], "the new side must carry a freshly serialized value")
+}
+
+// Same drift through the encrypted path: the nonce is recovered from the record, so re-encrypting
+// is deterministic and differs only because the plaintext does.
+func TestTXTRegistryDeleteUsesStoredValueEncrypted(t *testing.T) {
+	aesKey := []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^")
+
+	nonce, err := endpoint.GenerateNonce()
+	require.NoError(t, err)
+	ciphertext, err := endpoint.EncryptText("heritage=external-dns,external-dns/owner=owner,drift=1", aesKey, nonce)
+	require.NoError(t, err)
+	stored := "\"" + ciphertext + "\""
+
+	regenerated, err := endpoint.EncryptText("heritage=external-dns,external-dns/owner=owner", aesKey, nonce)
+	require.NoError(t, err)
+	require.NotEqual(t, ciphertext, regenerated, "the test is meaningless unless re-serializing drifts")
+
+	r, applied := seedZoneWithTXT(t, stored, true, aesKey, 0)
+	ep := ownedRecordFrom(t, r)
+
+	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{ep}}))
+
+	txt := findEndpoint(applied().Delete, storedTXTName, endpoint.RecordTypeTXT)
+	require.NotNil(t, txt)
+	assert.Equal(t, stored, txt.Targets[0])
+	assert.NotEqual(t, "\""+regenerated+"\"", txt.Targets[0])
+}
+
+// A cached Records() does not re-read the provider; existingTXTs has to survive that.
+func TestTXTRegistryDeleteUsesStoredValueFromCachedRecords(t *testing.T) {
+	stored := "\"heritage=external-dns,external-dns/owner=owner,drift=1\""
+
+	r, applied := seedZoneWithTXT(t, stored, false, nil, time.Hour)
+	_ = ownedRecordFrom(t, r)
+	ep := ownedRecordFrom(t, r) // served from the cache
+
+	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{ep}}))
+
+	txt := findEndpoint(applied().Delete, storedTXTName, endpoint.RecordTypeTXT)
+	require.NotNil(t, txt)
+	assert.Equal(t, stored, txt.Targets[0])
+}
+
+// Without a preceding Records() there is no stored value to use.
+func TestTXTRegistryDeleteFallsBackToGeneratedValue(t *testing.T) {
+	stored := "\"heritage=external-dns,external-dns/owner=owner\""
+
+	r, applied := seedZoneWithTXT(t, stored, false, nil, 0)
+	ep := newEndpointWithOwner(storedDNSName, "foo.loadbalancer.com", endpoint.RecordTypeCNAME, "owner")
+
+	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{ep}}))
+
+	txt := findEndpoint(applied().Delete, storedTXTName, endpoint.RecordTypeTXT)
+	require.NotNil(t, txt)
+	assert.Equal(t, stored, txt.Targets[0])
 }

@@ -78,7 +78,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 
 	for _, service := range suite.lbServices {
 		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.ingresses = []*networkv1.Ingress{
@@ -98,7 +98,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 
 	for _, ingress := range suite.ingresses {
 		_, err = fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.gwconfig = (fakeGatewayConfig{
@@ -107,7 +107,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		dnsnames:  [][]string{{"*"}},
 	}).Config()
 	_, err = fakeIstioClient.NetworkingV1().Gateways(suite.gwconfig.Namespace).Create(context.Background(), suite.gwconfig, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 
 	suite.vsconfig = (fakeVirtualServiceConfig{
 		name:      "foo-virtualservice",
@@ -116,7 +116,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		dnsnames:  []string{"foo"},
 	}).Config()
 	_, err = fakeIstioClient.NetworkingV1().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), suite.vsconfig, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 
 	suite.source, err = NewIstioVirtualServiceSource(
 		context.TODO(),
@@ -126,12 +126,12 @@ func (suite *VirtualServiceSuite) SetupTest() {
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
-	suite.NoError(err, "should initialize virtualservice source")
+	suite.Require().NoError(err, "should initialize virtualservice source")
 }
 
 func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
 	endpoints, err := suite.source.Endpoints(context.Background())
-	suite.NoError(err, "should succeed")
+	suite.Require().NoError(err, "should succeed")
 	suite.Len(endpoints, 2, "should return the correct number of endpoints")
 	for _, ep := range endpoints {
 		suite.Equal("virtualservice/istio-other/foo-virtualservice", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
@@ -2080,7 +2080,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				fakeKubernetesClient,
 				fakeIstioClient,
 				&Config{
-					Namespace:                ti.targetNamespace,
+					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              ti.labelFilter,
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
@@ -2091,9 +2091,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 
 			res, err := virtualServiceSource.Endpoints(t.Context())
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			testutils.ValidateEndpoints(t, res, ti.expected)
@@ -2171,13 +2171,11 @@ func (c fakeVirtualServiceConfig) Config() *networkingv1.VirtualService {
 	}
 
 	return &networkingv1.VirtualService{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        c.name,
-			Namespace:   c.namespace,
-			Annotations: c.annotations,
-			Labels:      c.labels,
-		},
-		Spec: *vs.DeepCopy(),
+		Name:        c.name,
+		Namespace:   c.namespace,
+		Annotations: c.annotations,
+		Labels:      c.labels,
+		Spec:        *vs.DeepCopy(),
 	}
 }
 
@@ -2217,10 +2215,10 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			ctx:        t.Context(),
 			gatewayStr: "doesnt/exist",
 			virtualService: &networkingv1.VirtualService{
-				TypeMeta:   metav1.TypeMeta{},
-				ObjectMeta: metav1.ObjectMeta{Name: "exist", Namespace: "doesnt"},
-				Spec:       istionetworking.VirtualService{},
-				Status:     v1alpha1.IstioStatus{},
+				TypeMeta: metav1.TypeMeta{},
+				Name:     "exist", Namespace: "doesnt",
+				Spec:   istionetworking.VirtualService{},
+				Status: v1alpha1.IstioStatus{},
 			},
 		}, want: nil, expectedErrStr: ""},
 		{name: "InvalidGatewayStr", fields: fields{
@@ -2242,23 +2240,23 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			ctx:        t.Context(),
 			gatewayStr: "bar/foo",
 			virtualService: &networkingv1.VirtualService{
-				TypeMeta:   metav1.TypeMeta{},
-				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
-				Spec:       istionetworking.VirtualService{},
-				Status:     v1alpha1.IstioStatus{},
+				TypeMeta: metav1.TypeMeta{},
+				Name:     "foo", Namespace: "bar",
+				Spec:   istionetworking.VirtualService{},
+				Status: v1alpha1.IstioStatus{},
 			},
 		}, want: &networkingv1.Gateway{
-			TypeMeta:   metav1.TypeMeta{Kind: "Gateway"},
-			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "bar"},
-			Spec:       istionetworking.Gateway{},
-			Status:     v1alpha1.IstioStatus{},
+			Kind: "Gateway",
+			Name: "foo", Namespace: "bar",
+			Spec:   istionetworking.Gateway{},
+			Status: v1alpha1.IstioStatus{},
 		}, expectedErrStr: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.fields.virtualServiceSource.getGateway(tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
 			if tt.expectedErrStr != "" {
-				assert.EqualError(t, err, tt.expectedErrStr, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+				require.EqualError(t, err, tt.expectedErrStr, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
 				return
 			} else {
 				require.NoError(t, err)
@@ -2323,11 +2321,9 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			svc := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-service",
-					Namespace: "default",
-					UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
-				},
+				Name:      "fake-service",
+				Namespace: "default",
+				UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
 				Spec: v1.ServiceSpec{
 					Selector: map[string]string{
 						"app":     "demo",
@@ -2346,10 +2342,8 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 			require.NoError(t, err)
 
 			gw := &networkingv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-gateway",
-					Namespace: "default",
-				},
+				Name:      "fake-gateway",
+				Namespace: "default",
 				Spec: istionetworking.Gateway{
 					Servers: []*istionetworking.Server{
 						{
@@ -2364,7 +2358,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 			require.NoError(t, err)
 
 			gwService := &networkingv1.VirtualService{
-				ObjectMeta: metav1.ObjectMeta{Name: "fake-vservice", Namespace: "default"},
+				Name: "fake-vservice", Namespace: "default",
 				Spec: istionetworking.VirtualService{
 					Gateways: []string{gw.Namespace + "/" + gw.Name},
 					Hosts:    []string{"example.org"},
@@ -2403,25 +2397,23 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 
 	t.Run("service strips managed fields and status conditions", func(t *testing.T) {
 		svc := &v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "fake-service",
-				Namespace: "default",
-				Labels: map[string]string{
-					"label1": "value1",
-					"label2": "value2",
-					"label3": "value3",
-				},
-				Annotations: map[string]string{
-					"user-annotation":                     "value",
-					"external-dns.kubernetes.io/hostname": "test-hostname",
-					"external-dns.kubernetes.io/random":   "value",
-					"other/annotation":                    "value",
-					v1.LastAppliedConfigAnnotation:        `{"apiVersion":"v1"}`,
-				},
-				UID: "someuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "fake-service",
+			Namespace: "default",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+				"label3": "value3",
+			},
+			Annotations: map[string]string{
+				"user-annotation":                     "value",
+				"external-dns.kubernetes.io/hostname": "test-hostname",
+				"external-dns.kubernetes.io/random":   "value",
+				"other/annotation":                    "value",
+				v1.LastAppliedConfigAnnotation:        `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 			Spec: v1.ServiceSpec{
 				Selector:    map[string]string{"selector": "one"},
@@ -2456,18 +2448,16 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 
 	t.Run("ingress strips managed fields", func(t *testing.T) {
 		ingress := &networkv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-ingress",
-				Namespace: "default",
-				Labels:    map[string]string{"label1": "value1"},
-				Annotations: map[string]string{
-					"user-annotation":              "value",
-					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
-				},
-				UID: "ingressuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "test-ingress",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
+			},
+			UID: "ingressuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 			Status: networkv1.IngressStatus{
 				LoadBalancer: networkv1.IngressLoadBalancerStatus{
@@ -2492,18 +2482,16 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 
 	t.Run("virtualservice strips managed fields", func(t *testing.T) {
 		vsObj := &networkingv1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-vs",
-				Namespace: "default",
-				Labels:    map[string]string{"label1": "value1"},
-				Annotations: map[string]string{
-					"user-annotation":              "value",
-					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
-				},
-				UID: "vsuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "test-vs",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
+			},
+			UID: "vsuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 		}
 		istioClient := istiofake.NewSimpleClientset()
@@ -2524,18 +2512,16 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 
 	t.Run("gateway strips managed fields", func(t *testing.T) {
 		gw := &networkingv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-gateway",
-				Namespace: "default",
-				Labels:    map[string]string{"label1": "value1"},
-				Annotations: map[string]string{
-					"user-annotation":              "value",
-					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
-				},
-				UID: "gatewayuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "test-gateway",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
+			},
+			UID: "gatewayuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 		}
 		istioClient := istiofake.NewSimpleClientset()

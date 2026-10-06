@@ -41,10 +41,10 @@ var (
 		KubeAPIQPS:                             int(rest.DefaultQPS),
 		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-system"},
-		SkipperRouteGroupVersion:               "zalando.org/v1",
 		Sources:                                []string{"service"},
-		Namespace:                              "",
+		Namespaces:                             nil,
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
+		EnableLegacyAnnotationPrefix:           false,
 		FQDNTemplate:                           nil,
 		Compatibility:                          "",
 		Provider:                               ProviderGoogle,
@@ -99,7 +99,7 @@ var (
 		PDNSServer:                                    "http://localhost:8081",
 		PDNSServerID:                                  "localhost",
 		PDNSAPIKey:                                    "",
-		Policy:                                        "sync",
+		Policy:                                        "",
 		Registry:                                      "txt",
 		TXTOwnerID:                                    "default",
 		TXTOwnerOld:                                   "",
@@ -128,6 +128,9 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		WebhookProviderReadHeaderTimeout:              5 * time.Second,
+		WebhookProviderIdleTimeout:                    30 * time.Second,
+		WebhookProviderMaxBodySize:                    32 << 20,
 		ExcludeUnschedulable:                          true,
 	}
 
@@ -139,10 +142,10 @@ var (
 		KubeAPIQPS:                             int(rest.DefaultQPS),
 		KubeAPIBurst:                           rest.DefaultBurst,
 		GlooNamespaces:                         []string{"gloo-not-system", "gloo-second-system"},
-		SkipperRouteGroupVersion:               "zalando.org/v2",
 		Sources:                                []string{"service", "ingress", "connector"},
-		Namespace:                              "namespace",
+		Namespaces:                             []string{"namespace"},
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
+		EnableLegacyAnnotationPrefix:           true,
 		IgnoreHostnameAnnotation:               true,
 		IgnoreNonHostNetworkPods:               true,
 		IgnoreIngressTLSSpec:                   true,
@@ -208,7 +211,7 @@ var (
 		TLSClientCert:                                 "/path/to/cert.pem",
 		TLSClientCertKey:                              "/path/to/key.pem",
 		PodSourceDomain:                               "example.org",
-		Policy:                                        "upsert-only",
+		Policy:                                        "sync",
 		Registry:                                      "noop",
 		TXTOwnerID:                                    "owner-1",
 		TXTPrefix:                                     "associated-txt-record",
@@ -239,6 +242,9 @@ var (
 		WebhookProviderURL:                            "http://localhost:8888",
 		WebhookProviderReadTimeout:                    5 * time.Second,
 		WebhookProviderWriteTimeout:                   10 * time.Second,
+		WebhookProviderReadHeaderTimeout:              5 * time.Second,
+		WebhookProviderIdleTimeout:                    30 * time.Second,
+		WebhookProviderMaxBodySize:                    32 << 20,
 		ExcludeUnschedulable:                          false,
 	}
 )
@@ -298,7 +304,6 @@ func TestParseFlags(t *testing.T) {
 				"--request-timeout=77s",
 				"--gloo-namespace=gloo-not-system",
 				"--gloo-namespace=gloo-second-system",
-				"--skipper-routegroup-groupversion=zalando.org/v2",
 				"--source=service",
 				"--source=ingress",
 				"--source=connector",
@@ -373,7 +378,7 @@ func TestParseFlags(t *testing.T) {
 				"--aws-sd-create-tag=key1=value1",
 				"--aws-sd-create-tag=key2=value2",
 				"--no-aws-evaluate-target-health",
-				"--policy=upsert-only",
+				"--policy=sync",
 				"--registry=noop",
 				"--txt-owner-id=owner-1",
 				"--migrate-from-txt-owner=old-owner",
@@ -386,6 +391,7 @@ func TestParseFlags(t *testing.T) {
 				"--once",
 				"--dry-run",
 				"--events",
+				"--enable-legacy-annotation-prefix",
 				"--log-format=json",
 				"--metrics-address=127.0.0.1:9099",
 				"--log-level=debug",
@@ -490,7 +496,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AWS_SD_CREATE_TAG":                                 "key1=value1\nkey2=value2",
 				"EXTERNAL_DNS_DYNAMODB_TABLE":                                    "custom-table",
 				"EXTERNAL_DNS_PIHOLE_API_VERSION":                                "6",
-				"EXTERNAL_DNS_POLICY":                                            "upsert-only",
+				"EXTERNAL_DNS_POLICY":                                            "sync",
 				"EXTERNAL_DNS_REGISTRY":                                          "noop",
 				"EXTERNAL_DNS_TXT_OWNER_ID":                                      "owner-1",
 				"EXTERNAL_DNS_TXT_PREFIX":                                        "associated-txt-record",
@@ -503,6 +509,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_ONCE":                                              "1",
 				"EXTERNAL_DNS_DRY_RUN":                                           "1",
 				"EXTERNAL_DNS_EVENTS":                                            "1",
+				"EXTERNAL_DNS_ENABLE_LEGACY_ANNOTATION_PREFIX":                   "1",
 				"EXTERNAL_DNS_LOG_FORMAT":                                        "json",
 				"EXTERNAL_DNS_METRICS_ADDRESS":                                   "127.0.0.1:9099",
 				"EXTERNAL_DNS_LOG_LEVEL":                                         "debug",
@@ -577,7 +584,7 @@ func TestParseFlagsDefaultKingpin(t *testing.T) {
 	assert.Equal(t, "http://127.0.0.1:8080", cfg.APIServerURL)
 	assert.Equal(t, "/some/path", cfg.KubeConfig)
 	assert.Equal(t, 2*time.Second, cfg.KubeAPIRequestTimeout)
-	assert.Equal(t, "ns", cfg.Namespace)
+	assert.Equal(t, []string{"ns"}, cfg.Namespaces)
 	assert.ElementsMatch(t, []string{"example.org", "company.com"}, cfg.DomainFilter)
 	assert.Equal(t, "default", cfg.OCPRouterName)
 }
@@ -591,6 +598,71 @@ func TestParseFlagsCliFlagSeparatedValue(t *testing.T) {
 	require.NoError(t, cfg.ParseFlags(args))
 	assert.Equal(t, ProviderAWS, cfg.Provider)
 	assert.ElementsMatch(t, []string{"service"}, cfg.Sources)
+}
+
+func TestParseFlagsCRDRegistryNamespace(t *testing.T) {
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service"}))
+	assert.Empty(t, cfg.CRDRegistryNamespace, "unset, so the current namespace is resolved at startup")
+
+	cfg = NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service", "--crd-registry-namespace=external-dns"}))
+	assert.Equal(t, "external-dns", cfg.CRDRegistryNamespace)
+}
+
+func TestParseFlagsNamespaces(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "unset watches all namespaces",
+			want: nil,
+		},
+		{
+			name: "single value",
+			args: []string{"--namespace=team-a"},
+			want: []string{"team-a"},
+		},
+		{
+			name: "repeated flag",
+			args: []string{"--namespace=team-a", "--namespace=team-b"},
+			want: []string{"team-a", "team-b"},
+		},
+		{
+			name: "comma-separated list",
+			args: []string{"--namespace=team-a,team-b"},
+			want: []string{"team-a", "team-b"},
+		},
+		{
+			name: "both forms combined, with spaces and duplicates",
+			args: []string{"--namespace=team-a, team-b", "--namespace=team-b,team-c"},
+			want: []string{"team-a", "team-b", "team-c"},
+		},
+		{
+			name: "blank values are dropped",
+			args: []string{"--namespace=,team-a,"},
+			want: []string{"team-a"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewConfig()
+			require.NoError(t, cfg.ParseFlags(append([]string{"--provider=aws", "--source=service"}, tt.args...)))
+			assert.Equal(t, tt.want, cfg.Namespaces)
+		})
+	}
+}
+
+func TestParseFlagsNamespacesFromEnv(t *testing.T) {
+	t.Setenv("EXTERNAL_DNS_NAMESPACE", "team-a,team-b")
+
+	cfg := NewConfig()
+	require.NoError(t, cfg.ParseFlags([]string{"--provider=aws", "--source=service"}))
+
+	assert.Equal(t, []string{"team-a", "team-b"}, cfg.Namespaces)
 }
 
 func TestPasswordsNotLogged(t *testing.T) {
@@ -763,13 +835,14 @@ func TestParseFlagsRFC2136(t *testing.T) {
 		"--rfc2136-zone=example.org.",
 		"--rfc2136-zone=example.com.",
 		"--rfc2136-insecure",
+		"--rfc2136-axfr-insecure",
 		"--rfc2136-kerberos-realm=EXAMPLE.COM",
 		"--rfc2136-kerberos-username=svc-externaldns",
 		"--rfc2136-kerberos-password=secret",
 		"--rfc2136-tsig-keyname=keyname.",
 		"--rfc2136-tsig-secret=base64secret",
 		"--rfc2136-tsig-secret-alg=hmac-sha256",
-		"--rfc2136-tsig-axfr",
+		"--rfc2136-axfr",
 		"--rfc2136-min-ttl=30s",
 		"--rfc2136-gss-tsig",
 		"--rfc2136-use-tls",
@@ -778,17 +851,63 @@ func TestParseFlagsRFC2136(t *testing.T) {
 	assert.Equal(t, 5353, cfg.RFC2136Port)
 	assert.ElementsMatch(t, []string{"example.org.", "example.com."}, cfg.RFC2136Zone)
 	assert.True(t, cfg.RFC2136Insecure)
+	assert.True(t, cfg.RFC2136AXFRInsecure)
 	assert.Equal(t, "EXAMPLE.COM", cfg.RFC2136KerberosRealm)
 	assert.Equal(t, "svc-externaldns", cfg.RFC2136KerberosUsername)
 	assert.Equal(t, "secret", cfg.RFC2136KerberosPassword)
 	assert.Equal(t, "keyname.", cfg.RFC2136TSIGKeyName)
 	assert.Equal(t, "base64secret", cfg.RFC2136TSIGSecret)
 	assert.Equal(t, "hmac-sha256", cfg.RFC2136TSIGSecretAlg)
-	assert.True(t, cfg.RFC2136TAXFR)
+	assert.True(t, cfg.RFC2136AXFR)
 	assert.Equal(t, 30*time.Second, cfg.RFC2136MinTTL)
 	assert.True(t, cfg.RFC2136GSSTSIG)
 	assert.True(t, cfg.RFC2136UseTLS)
 	assert.True(t, cfg.RFC2136SkipTLSVerify)
+}
+
+func TestParseFlagsRFC2136AXFR(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		args           []string
+		wantAXFR       bool
+		wantDeprecated bool
+	}{
+		{
+			name:     "neither flag leaves AXFR disabled",
+			args:     nil,
+			wantAXFR: false,
+		},
+		{
+			name:     "new flag enables AXFR",
+			args:     []string{"--rfc2136-axfr"},
+			wantAXFR: true,
+		},
+		{
+			name:           "deprecated flag is promoted",
+			args:           []string{"--rfc2136-tsig-axfr"},
+			wantAXFR:       true,
+			wantDeprecated: true,
+		},
+		{
+			name:           "both flags enable AXFR",
+			args:           []string{"--rfc2136-tsig-axfr", "--rfc2136-axfr"},
+			wantAXFR:       true,
+			wantDeprecated: true,
+		},
+		{
+			name:           "deprecated flag wins over --no-rfc2136-axfr",
+			args:           []string{"--rfc2136-tsig-axfr", "--no-rfc2136-axfr"},
+			wantAXFR:       true,
+			wantDeprecated: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfig()
+			require.NoError(t, cfg.ParseFlags(append([]string{"--provider=rfc2136", "--source=service"}, tc.args...)))
+			assert.Equal(t, tc.wantAXFR, cfg.RFC2136AXFR)
+			assert.Equal(t, tc.wantDeprecated, cfg.RFC2136TAXFR)
+		})
+	}
 }
 
 func TestParseFlagsTraefik(t *testing.T) {
@@ -821,11 +940,17 @@ func TestParseFlagsWebhookProvider(t *testing.T) {
 		"--webhook-provider-url=http://127.0.0.1:9999",
 		"--webhook-provider-read-timeout=7s",
 		"--webhook-provider-write-timeout=8s",
+		"--webhook-provider-read-header-timeout=3s",
+		"--webhook-provider-idle-timeout=15s",
+		"--webhook-provider-max-body-size=1048576",
 		"--webhook-server",
 	)
 	assert.Equal(t, "http://127.0.0.1:9999", cfg.WebhookProviderURL)
 	assert.Equal(t, 7*time.Second, cfg.WebhookProviderReadTimeout)
 	assert.Equal(t, 8*time.Second, cfg.WebhookProviderWriteTimeout)
+	assert.Equal(t, 3*time.Second, cfg.WebhookProviderReadHeaderTimeout)
+	assert.Equal(t, 15*time.Second, cfg.WebhookProviderIdleTimeout)
+	assert.Equal(t, int64(1<<20), cfg.WebhookProviderMaxBodySize)
 	assert.True(t, cfg.WebhookServer)
 }
 

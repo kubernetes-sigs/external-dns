@@ -18,13 +18,11 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
@@ -51,10 +49,6 @@ import (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 type httpProxySource struct {
-	dynamicKubeClient        dynamic.Interface
-	namespace                string
-	annotationFilter         labels.Selector
-	labelSelector            labels.Selector
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	httpProxyInformer        kubeinformers.GenericInformer
@@ -69,13 +63,19 @@ func NewContourHTTPProxySource(
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of HTTPProxys in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace, nil)
+	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace(), nil)
 	httpProxyInformer := informerFactory.ForResource(projectcontour.HTTPProxyGVR)
 
 	informers.MustSetTransform(httpProxyInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
+	))
+
+	informers.MustAddIndexers(httpProxyInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -94,10 +94,6 @@ func NewContourHTTPProxySource(
 	}
 
 	return &httpProxySource{
-		dynamicKubeClient:        dynamicKubeClient,
-		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
-		labelSelector:            cfg.LabelFilter,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		httpProxyInformer:        httpProxyInformer,
@@ -108,40 +104,23 @@ func NewContourHTTPProxySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all HTTPProxy resources in the source's namespace(s).
 func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	hps, err := sc.httpProxyInformer.Lister().ByNamespace(sc.namespace).List(sc.labelSelector)
-	if err != nil {
-		return nil, err
-	}
+	hps := informers.ListIndexed[*unstructured.Unstructured](sc.httpProxyInformer.Informer().GetIndexer())
 
 	var httpProxies []*projectcontour.HTTPProxy
 	for _, hp := range hps {
-		unstructuredHP, ok := hp.(*unstructured.Unstructured)
-		if !ok {
-			return nil, errors.New("could not convert")
-		}
-
 		hpConverted := &projectcontour.HTTPProxy{}
-		err := sc.unstructuredConverter.scheme.Convert(unstructuredHP, hpConverted, nil)
-		if err != nil {
+		if err := sc.unstructuredConverter.scheme.Convert(hp, hpConverted, nil); err != nil {
 			return nil, fmt.Errorf("failed to convert to HTTPProxy: %w", err)
 		}
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
-	httpProxies = annotations.Filter(httpProxies, sc.annotationFilter)
-
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, hp := range httpProxies {
-		if annotations.IsControllerMismatch(hp, types.ContourHTTPProxy) {
-			continue
-		}
-
-		hpEndpoints := sc.endpointsFromHTTPProxy(hp)
-
 		// apply template if fqdn is missing on HTTPProxy
-		hpEndpoints, err = sc.templateEngine.CombineWithEndpoints(
-			hpEndpoints,
+		hpEndpoints, err := sc.templateEngine.CombineWithEndpoints(
+			sc.endpointsFromHTTPProxy(hp),
 			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
 		)
 		if err != nil {

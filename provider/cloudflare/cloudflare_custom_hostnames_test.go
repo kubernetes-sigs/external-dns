@@ -28,10 +28,12 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func (m *mockCloudFlareClient) CustomHostnames(ctx context.Context, zoneID string) autoPager[custom_hostnames.CustomHostnameListResponse] {
@@ -124,7 +126,7 @@ func TestCloudflareCustomHostnameOperations(t *testing.T) {
 
 			endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
@@ -181,7 +183,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "a.foo.fancybar.com",
 						},
 					},
@@ -201,7 +203,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "c1.foo.fancybar.com",
 						},
 					},
@@ -227,7 +229,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "b.foo.fancybar.com",
 						},
 					},
@@ -240,7 +242,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "c2.foo.fancybar.com",
 						},
 					},
@@ -259,7 +261,7 @@ func TestCloudflareDisabledCustomHostnameOperations(t *testing.T) {
 
 			endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
@@ -306,7 +308,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "newerror-getCustomHostnameOrigin.foo.fancybar.com",
 						},
 					},
@@ -338,7 +340,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
-							Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+							Name:  annotations.CloudflareCustomHostnameProperty,
 							Value: "a.foo.fancybar.com",
 						},
 					},
@@ -360,7 +362,7 @@ func TestCloudflareCustomHostnameNotFoundOnRecordDeletion(t *testing.T) {
 
 			endpoints, err := provider.AdjustEndpoints(tc.Endpoints)
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			plan := &plan.Plan{
 				Current:        records,
 				Desired:        endpoints,
@@ -429,7 +431,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 				Labels:     endpoint.Labels{},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
-						Name:  "external-dns.kubernetes.io/cloudflare-custom-hostname",
+						Name:  annotations.CloudflareCustomHostnameProperty,
 						Value: fmt.Sprintf("host-%d.foo.fancybar.com", i),
 					},
 				},
@@ -445,7 +447,7 @@ func TestCloudflareListCustomHostnamesWithPagionation(t *testing.T) {
 
 	endpoints, err := provider.AdjustEndpoints(generatedEndpoints)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,

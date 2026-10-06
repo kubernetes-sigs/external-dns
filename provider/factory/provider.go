@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/coredns"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/exoscale"
-	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -88,7 +87,6 @@ func providers(selector string) (ProviderConstructor, bool) {
 		externaldns.ProviderSkyDNS:       coredns.New,
 		externaldns.ProviderDNSimple:     dnsimple.New,
 		externaldns.ProviderExoscale:     exoscale.New,
-		externaldns.ProviderGandi:        gandi.New,
 		externaldns.ProviderGoDaddy:      godaddy.New,
 		externaldns.ProviderGoogle:       google.New,
 		externaldns.ProviderInMemory:     inmemory.New,

@@ -437,13 +437,13 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRoute)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			labelFilter := ti.labelFilter
 			if labelFilter == nil {
@@ -451,13 +451,13 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			}
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					LabelFilter:              labelFilter,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -465,7 +465,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -749,13 +749,13 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				})
 			require.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -885,23 +885,23 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRouteUDP)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(ingressRouteUDPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -909,7 +909,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -1219,24 +1219,24 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRoute)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      true,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -1244,7 +1244,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -1518,24 +1518,24 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRouteTCP)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(oldIngressRouteTCPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      true,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -1543,7 +1543,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -1665,24 +1665,24 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRouteUDP)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(oldIngressRouteUDPGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      true,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -1690,7 +1690,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -1833,25 +1833,25 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 			ir := unstructured.Unstructured{}
 
 			ingressRouteAsJSON, err := json.Marshal(ti.ingressRoute)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
+			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultTraefikNamespace,
+					Namespaces:               []string{defaultTraefikNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 					LabelFilter:              labels.Everything(),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					TraefikEnableLegacy:      ti.enableLegacy,
 					TraefikDisableNew:        ti.disableNew,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -1859,7 +1859,7 @@ func TestTraefikAPIGroupFlags(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -2021,6 +2021,262 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 				withRemovedLastAppliedConfigAnnotation(),
 				withRemovedManagedFields(),
 			)
+		})
+	}
+}
+
+// newTraefikScheme builds a runtime.Scheme with all Traefik CRD types registered.
+func newTraefikScheme() *runtime.Scheme {
+	s := runtime.NewScheme()
+	s.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	s.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	s.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	s.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	s.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	s.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
+	return s
+}
+
+// TestTraefikIndexer verifies that the indexer correctly filters IngressRoute, IngressRouteTCP,
+// and IngressRouteUDP resources (current traefik.io GVRs) by annotation and label at index time.
+func TestTraefikIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(gvr schema.GroupVersionResource, kind, name string, ann, lbls map[string]string) *IngressRoute {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		ann[annotations.TargetKey] = "1.2.3.4"
+		return &IngressRoute{
+			APIVersion:  gvr.GroupVersion().String(),
+			Kind:        kind,
+			Name:        name,
+			Namespace:   defaultTraefikNamespace,
+			Annotations: ann,
+			Labels:      lbls,
+			Spec: traefikIngressRouteSpec{
+				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*IngressRoute
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all routes",
+			expectedCount: 3,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", nil, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", nil, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter includes matching routes",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter includes matching routes",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", nil, map[string]string{"env": "prod"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", nil, map[string]string{"env": "staging"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches returns empty",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			routes: []*IngressRoute{
+				makeEntity(ingressRouteGVR, "IngressRoute", "ir1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
+	}
+
+	traefikScheme := newTraefikScheme()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
+
+			for _, route := range tt.routes {
+				data, err := json.Marshal(route)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(ingressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespaces:       []string{defaultTraefikNamespace},
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
+// TestTraefikLegacyIndexer verifies that the indexer correctly filters legacy IngressRoute resources
+// (traefik.containo.us GVRs, enabled via --traefik-enable-legacy) by annotation and label at index time.
+func TestTraefikLegacyIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(name string, ann, lbls map[string]string) *IngressRoute {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		ann[annotations.TargetKey] = "1.2.3.4"
+		return &IngressRoute{
+			APIVersion:  oldIngressRouteGVR.GroupVersion().String(),
+			Kind:        "IngressRoute",
+			Name:        name,
+			Namespace:   defaultTraefikNamespace,
+			Annotations: ann,
+			Labels:      lbls,
+			Spec: traefikIngressRouteSpec{
+				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		routes           []*IngressRoute
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all legacy routes",
+			expectedCount: 3,
+			routes: []*IngressRoute{
+				makeEntity("ir1", nil, nil),
+				makeEntity("ir2", nil, nil),
+				makeEntity("ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter on legacy routes",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ir2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ir3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter on legacy routes",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			routes: []*IngressRoute{
+				makeEntity("ir1", nil, map[string]string{"env": "prod"}),
+				makeEntity("ir2", nil, map[string]string{"env": "staging"}),
+				makeEntity("ir3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ir2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ir3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches on legacy routes",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			routes: []*IngressRoute{
+				makeEntity("ir1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
+	}
+
+	traefikScheme := newTraefikScheme()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
+
+			for _, route := range tt.routes {
+				data, err := json.Marshal(route)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(oldIngressRouteGVR).Namespace(defaultTraefikNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespaces:          []string{defaultTraefikNamespace},
+				AnnotationFilter:    parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:         parseLabelSelectorOrEverything(t, tt.labelFilter),
+				TraefikDisableNew:   true,
+				TraefikEnableLegacy: true,
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
 		})
 	}
 }

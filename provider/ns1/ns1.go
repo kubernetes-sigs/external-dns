@@ -156,6 +156,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 		client:        NS1DomainService{apiClient},
 		domainFilter:  config.DomainFilter,
 		zoneIDFilter:  config.ZoneIDFilter,
+		dryRun:        config.DryRun,
 		minTTLSeconds: config.MinTTLSeconds,
 	}, nil
 }

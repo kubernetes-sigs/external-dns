@@ -64,11 +64,9 @@ func (suite *ServiceSuite) SetupTest() {
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeLoadBalancer,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "default",
-			Name:        "foo-with-targets",
-			Annotations: map[string]string{},
-		},
+		Namespace:   "default",
+		Name:        "foo-with-targets",
+		Annotations: map[string]string{},
 		Status: v1.ServiceStatus{
 			LoadBalancer: v1.LoadBalancerStatus{
 				Ingress: []v1.LoadBalancerIngress{
@@ -79,7 +77,7 @@ func (suite *ServiceSuite) SetupTest() {
 		},
 	}
 	_, err := fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
-	suite.NoError(err, "should successfully create service")
+	suite.Require().NoError(err, "should successfully create service")
 
 	suite.sc, err = NewServiceSource(
 		context.TODO(),
@@ -116,9 +114,9 @@ func testServiceSourceImplementsSource(t *testing.T) {
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
 	exampleDotComIP4, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip4", "example.com")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	exampleDotComIP6, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip6", "example.com")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Parallel()
 
@@ -1066,12 +1064,10 @@ func testServiceSourceEndpoints(t *testing.T) {
 					ClusterIP:   tc.clusterIP,
 					ExternalIPs: tc.externalIPs,
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tc.svcNamespace,
-					Name:        tc.svcName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
 				Status: v1.ServiceStatus{
 					LoadBalancer: v1.LoadBalancerStatus{
 						Ingress: ingresses,
@@ -1095,7 +1091,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 					AnnotationFilter:            parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:           tc.serviceTypesFilter,
 					Compatibility:               tc.compatibility,
-					Namespace:                   tc.targetNamespace,
+					Namespaces:                  []string{tc.targetNamespace},
 					ResolveLoadBalancerHostname: tc.resolveLoadBalancerHostname,
 					IgnoreHostnameAnnotation:    tc.ignoreHostnameAnnotation,
 					LabelFilter:                 sourceLabel,
@@ -1281,12 +1277,10 @@ func testMultipleServicesEndpoints(t *testing.T) {
 						Type:      tc.svcType,
 						ClusterIP: tc.clusterIP,
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   tc.svcNamespace,
-						Name:        tc.svcName + lb,
-						Labels:      tc.labels,
-						Annotations: ants,
-					},
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName + lb,
+					Labels:      tc.labels,
+					Annotations: ants,
 					Status: v1.ServiceStatus{
 						LoadBalancer: v1.LoadBalancerStatus{
 							Ingress: ingresses,
@@ -1305,7 +1299,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labels.Everything(),
 				},
@@ -1578,12 +1572,10 @@ func TestClusterIpServices(t *testing.T) {
 					Type:      tc.svcType,
 					ClusterIP: tc.clusterIP,
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tc.svcNamespace,
-					Name:        tc.svcName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
 			}
 
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
@@ -1600,7 +1592,7 @@ func TestClusterIpServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					PublishInternal:          true,
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labelSelector,
@@ -1666,9 +1658,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1678,9 +1668,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1702,9 +1690,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				annotations.HostnameKey: "foo.example.org.",
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1714,9 +1700,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1741,9 +1725,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1753,9 +1735,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1781,9 +1761,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
@@ -1791,9 +1769,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
@@ -1817,9 +1793,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1829,9 +1803,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1863,9 +1835,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1875,9 +1845,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1911,9 +1879,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1921,9 +1887,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1955,9 +1919,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -1965,9 +1927,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -1975,9 +1935,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node3",
-				},
+				Name: "node3",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
@@ -2012,9 +1970,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -2023,9 +1979,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -2052,9 +2006,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -2064,9 +2016,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -2095,9 +2045,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::3", "2001:DB8::4"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -2107,9 +2055,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -2138,11 +2084,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node1",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2152,11 +2096,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/control-plane": "",
-					},
+				Name: "node2",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/control-plane": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2184,11 +2126,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node1",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2198,11 +2138,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node2",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2231,11 +2169,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node1",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2245,11 +2181,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node2",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2274,11 +2208,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node1",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2288,11 +2220,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-					Labels: map[string]string{
-						"node-role.kubernetes.io/node": "",
-					},
+				Name: "node2",
+				Labels: map[string]string{
+					"node-role.kubernetes.io/node": "",
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2321,9 +2251,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
-				},
+				Name: "node1",
 				Spec: v1.NodeSpec{
 					Unschedulable: true,
 				},
@@ -2336,9 +2264,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
-				},
+				Name: "node2",
 				Spec: v1.NodeSpec{
 					Unschedulable: false,
 				},
@@ -2368,7 +2294,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA, RecordTTL: 300},
 			},
 			nodes: []*v1.Node{{
-				ObjectMeta: metav1.ObjectMeta{Name: "node1"},
+				Name: "node1",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
@@ -2378,7 +2304,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}, {
-				ObjectMeta: metav1.ObjectMeta{Name: "node2"},
+				Name: "node2",
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
@@ -2412,13 +2338,11 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 						Hostname:   podname,
 						NodeName:   tc.nodes[tc.nodeIndex[i]].Name,
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:         tc.svcNamespace,
-						Name:              podname,
-						Labels:            tc.labels,
-						Annotations:       tc.annotations,
-						DeletionTimestamp: tc.deletionTimestamp[i],
-					},
+					Namespace:         tc.svcNamespace,
+					Name:              podname,
+					Labels:            tc.labels,
+					Annotations:       tc.annotations,
+					DeletionTimestamp: tc.deletionTimestamp[i],
 					Status: v1.PodStatus{
 						Phase:      tc.phases[i],
 						Conditions: []v1.PodCondition{tc.conditions[i]},
@@ -2440,12 +2364,10 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 						},
 					},
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tc.svcNamespace,
-					Name:        tc.svcName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
 			}
 
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
@@ -2457,7 +2379,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExposeInternalIPv6:       tc.exposeInternalIPv6,
 					ExcludeUnschedulable:     tc.ignoreUnscheduledNodes,
@@ -3289,13 +3211,11 @@ func TestHeadlessServices(t *testing.T) {
 					Selector:                 tc.selector,
 					PublishNotReadyAddresses: tc.publishNotReadyAddresses,
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tc.svcNamespace,
-					Name:        tc.svcName,
-					Labels:      tc.labels,
-					Annotations: tc.svcAnnotations,
-				},
-				Status: v1.ServiceStatus{},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      tc.labels,
+				Annotations: tc.svcAnnotations,
+				Status:      v1.ServiceStatus{},
 			}
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
@@ -3307,12 +3227,10 @@ func TestHeadlessServices(t *testing.T) {
 						Containers: []v1.Container{},
 						Hostname:   tc.hostnames[i],
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   tc.svcNamespace,
-						Name:        podName,
-						Labels:      tc.labels,
-						Annotations: tc.podAnnotations,
-					},
+					Namespace:   tc.svcNamespace,
+					Name:        podName,
+					Labels:      tc.labels,
+					Annotations: tc.podAnnotations,
 					Status: v1.PodStatus{
 						PodIP:  tc.podIPs[i],
 						HostIP: tc.hostIPs[i],
@@ -3338,11 +3256,9 @@ func TestHeadlessServices(t *testing.T) {
 			endpointSliceLabels := maps.Clone(tc.labels)
 			endpointSliceLabels[discoveryv1.LabelServiceName] = tc.svcName
 			endpointSlice := &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: tc.svcNamespace,
-					Name:      tc.svcName,
-					Labels:    endpointSliceLabels,
-				},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      endpointSliceLabels,
 				AddressType: discoveryv1.AddressTypeIPv4,
 				Endpoints:   endpointSliceEndpoints,
 			}
@@ -3359,7 +3275,7 @@ func TestHeadlessServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExposeInternalIPv6:       tc.exposeInternalIPv6,
 					LabelFilter:              labels.Everything(),
@@ -3385,16 +3301,14 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 
 	services := []*v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "istio-ingressgateway",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":   "istio-ingressgateway",
-					"istio": "ingressgateway",
-				},
-				Annotations: map[string]string{
-					"external-dns.kubernetes.io/hostname": "example.org",
-				},
+			Name:      "istio-ingressgateway",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":   "istio-ingressgateway",
+				"istio": "ingressgateway",
+			},
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/hostname": "example.org",
 			},
 			Spec: v1.ServiceSpec{
 				Type:                  v1.ServiceTypeLoadBalancer,
@@ -3430,16 +3344,14 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "istio-ingressgatewayudp",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":   "istio-ingressgatewayudp",
-					"istio": "ingressgateway",
-				},
-				Annotations: map[string]string{
-					"external-dns.kubernetes.io/hostname": "example.org",
-				},
+			Name:      "istio-ingressgatewayudp",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":   "istio-ingressgatewayudp",
+				"istio": "ingressgateway",
+			},
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/hostname": "example.org",
 			},
 			Spec: v1.ServiceSpec{
 				Type:                  v1.ServiceTypeLoadBalancer,
@@ -3476,7 +3388,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		},
 	}
 
-	assert.NotNil(t, services)
+	require.NotNil(t, services)
 
 	for _, svc := range services {
 		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
@@ -3485,13 +3397,13 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
 	)
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
 
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -3506,15 +3418,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 
 	headless := []*v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app": "kafka",
-				},
-				Annotations: map[string]string{
-					annotations.HostnameKey: "example.org",
-				},
+			Name:      "kafka",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "kafka",
+			},
+			Annotations: map[string]string{
+				annotations.HostnameKey: "example.org",
 			},
 			Spec: v1.ServiceSpec{
 				Type:                  v1.ServiceTypeClusterIP,
@@ -3541,15 +3451,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka-2",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app": "kafka",
-				},
-				Annotations: map[string]string{
-					annotations.HostnameKey: "example.org",
-				},
+			Name:      "kafka-2",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "kafka",
+			},
+			Annotations: map[string]string{
+				annotations.HostnameKey: "example.org",
 			},
 			Spec: v1.ServiceSpec{
 				Type:                  v1.ServiceTypeClusterIP,
@@ -3577,25 +3485,23 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		},
 	}
 
-	assert.NotNil(t, headless)
+	require.NotNil(t, headless)
 
 	pods := []*v1.Pod{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka-0",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":                                 "kafka",
-					appsv1.PodIndexLabel:                  "0",
-					appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
-					appsv1.StatefulSetPodNameLabel:        "kafka-0",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: "apps/v1",
-						Kind:       "StatefulSet",
-						Name:       "kafka",
-					},
+			Name:      "kafka-0",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":                                 "kafka",
+				appsv1.PodIndexLabel:                  "0",
+				appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
+				appsv1.StatefulSetPodNameLabel:        "kafka-0",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "StatefulSet",
+					Name:       "kafka",
 				},
 			},
 			Spec: v1.PodSpec{
@@ -3620,21 +3526,19 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka-1",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":                                 "kafka",
-					appsv1.PodIndexLabel:                  "1",
-					appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
-					appsv1.StatefulSetPodNameLabel:        "kafka-1",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: "apps/v1",
-						Kind:       "StatefulSet",
-						Name:       "kafka",
-					},
+			Name:      "kafka-1",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":                                 "kafka",
+				appsv1.PodIndexLabel:                  "1",
+				appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
+				appsv1.StatefulSetPodNameLabel:        "kafka-1",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "StatefulSet",
+					Name:       "kafka",
 				},
 			},
 			Spec: v1.PodSpec{
@@ -3659,21 +3563,19 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka-2",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":                                 "kafka",
-					appsv1.PodIndexLabel:                  "2",
-					appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
-					appsv1.StatefulSetPodNameLabel:        "kafka-2",
-				},
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: "apps/v1",
-						Kind:       "StatefulSet",
-						Name:       "kafka",
-					},
+			Name:      "kafka-2",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":                                 "kafka",
+				appsv1.PodIndexLabel:                  "2",
+				appsv1.ControllerRevisionHashLabelKey: "kafka-b8d79cdb6",
+				appsv1.StatefulSetPodNameLabel:        "kafka-2",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "StatefulSet",
+					Name:       "kafka",
 				},
 			},
 			Spec: v1.PodSpec{
@@ -3702,15 +3604,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 
 	endpoints := []*discoveryv1.EndpointSlice{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka-xhrc9",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":                        "kafka",
-					discoveryv1.LabelServiceName: "kafka",
-					discoveryv1.LabelManagedBy:   "endpointslice-controller.k8s.io",
-					v1.IsHeadlessService:         "",
-				},
+			Name:      "kafka-xhrc9",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":                        "kafka",
+				discoveryv1.LabelServiceName: "kafka",
+				discoveryv1.LabelManagedBy:   "endpointslice-controller.k8s.io",
+				v1.IsHeadlessService:         "",
 			},
 			AddressType: discoveryv1.AddressTypeIPv4,
 			Endpoints: []discoveryv1.Endpoint{
@@ -3762,15 +3662,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kafka-2-svwsg",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":                        "kafka",
-					discoveryv1.LabelServiceName: "kafka-2",
-					discoveryv1.LabelManagedBy:   "endpointslice-controller.k8s.io",
-					v1.IsHeadlessService:         "",
-				},
+			Name:      "kafka-2-svwsg",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":                        "kafka",
+				discoveryv1.LabelServiceName: "kafka-2",
+				discoveryv1.LabelManagedBy:   "endpointslice-controller.k8s.io",
+				v1.IsHeadlessService:         "",
 			},
 			AddressType: discoveryv1.AddressTypeIPv4,
 			Endpoints: []discoveryv1.Endpoint{
@@ -3840,13 +3738,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			LabelFilter:          labels.Everything(),
 			ExcludeUnschedulable: true,
 		},
 	)
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
 
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -4229,13 +4127,11 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 					Selector:                 tc.selector,
 					PublishNotReadyAddresses: tc.publishNotReadyAddresses,
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tc.svcNamespace,
-					Name:        tc.svcName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
-				Status: v1.ServiceStatus{},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
+				Status:      v1.ServiceStatus{},
 			}
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
@@ -4247,12 +4143,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 						Containers: []v1.Container{},
 						Hostname:   tc.hostnames[i],
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   tc.svcNamespace,
-						Name:        podname,
-						Labels:      tc.labels,
-						Annotations: tc.annotations,
-					},
+					Namespace:   tc.svcNamespace,
+					Name:        podname,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
 					Status: v1.PodStatus{
 						HostIP: tc.hostIPs[i],
 					},
@@ -4273,11 +4167,9 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			endpointSliceLabels := maps.Clone(tc.labels)
 			endpointSliceLabels[discoveryv1.LabelServiceName] = tc.svcName
 			endpointSlice := &discoveryv1.EndpointSlice{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: tc.svcNamespace,
-					Name:      tc.svcName,
-					Labels:    endpointSliceLabels,
-				},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      endpointSliceLabels,
 				AddressType: discoveryv1.AddressTypeIPv4,
 				Endpoints:   endpointsSlicesEndpoints,
 			}
@@ -4287,7 +4179,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					LabelFilter:              labels.Everything(),
 					Compatibility:            tc.compatibility,
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
@@ -4477,13 +4369,11 @@ func TestExternalServices(t *testing.T) {
 					ExternalName: tc.externalName,
 					ExternalIPs:  tc.externalIPs,
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   tc.svcNamespace,
-					Name:        tc.svcName,
-					Labels:      tc.labels,
-					Annotations: tc.annotations,
-				},
-				Status: v1.ServiceStatus{},
+				Namespace:   tc.svcNamespace,
+				Name:        tc.svcName,
+				Labels:      tc.labels,
+				Annotations: tc.annotations,
+				Status:      v1.ServiceStatus{},
 			}
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
@@ -4494,7 +4384,7 @@ func TestExternalServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					Compatibility:            tc.compatibility,
 					ServiceTypeFilter:        tc.serviceTypeFilter,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExcludeUnschedulable:     true,
 					LabelFilter:              labels.Everything(),
@@ -4524,12 +4414,10 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	kubernetes := fake.NewClientset()
 
 	service := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "testing",
-			Name:      "foo",
-			Annotations: map[string]string{
-				annotations.HostnameKey: "foo.example.org.",
-			},
+		Namespace: "testing",
+		Name:      "foo",
+		Annotations: map[string]string{
+			annotations.HostnameKey: "foo.example.org.",
 		},
 		Status: v1.ServiceStatus{
 			LoadBalancer: v1.LoadBalancerStatus{
@@ -4546,7 +4434,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 
 	client, err := NewServiceSource(b.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -4568,64 +4456,64 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		{
 			name: "serviceTypeFilter is set to empty",
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.False(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.nodeInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.endpointSlicesInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains NodePort",
 			svcFilter: []string{string(v1.ServiceTypeClusterIP)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.Nil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
-				assert.NotNil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.Nil(t, svc.nodeInformer)
+				require.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.podInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains NodePort and ExternalName",
 			svcFilter: []string{string(v1.ServiceTypeNodePort), string(v1.ServiceTypeExternalName)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.NotNil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
-				assert.NotNil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.nodeInformer)
+				require.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.podInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains ExternalName",
 			svcFilter: []string{string(v1.ServiceTypeExternalName)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.Nil(t, svc.nodeInformer)
-				assert.Nil(t, svc.endpointSlicesInformer)
-				assert.Nil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.Nil(t, svc.nodeInformer)
+				require.Nil(t, svc.endpointSlicesInformer)
+				require.Nil(t, svc.podInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains LoadBalancer",
 			svcFilter: []string{string(v1.ServiceTypeLoadBalancer)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.Nil(t, svc.nodeInformer)
-				assert.Nil(t, svc.endpointSlicesInformer)
-				assert.Nil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.Nil(t, svc.nodeInformer)
+				require.Nil(t, svc.endpointSlicesInformer)
+				require.Nil(t, svc.podInformer)
 			},
 		},
 	}
@@ -4634,7 +4522,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
 				&Config{
-					Namespace:                      "default",
+					Namespaces:                     []string{"default"},
 					ServiceTypeFilter:              tc.svcFilter,
 					AlwaysPublishNotReadyAddresses: true,
 					LabelFilter:                    labels.Everything(),
@@ -4655,7 +4543,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 
 	svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
 		&Config{
-			Namespace:         "default",
+			Namespaces:        []string{"default"},
 			ServiceTypeFilter: serviceTypeFilter,
 			LabelFilter:       labels.Everything(),
 		},
@@ -4743,10 +4631,10 @@ func TestNewServiceTypes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st, err := newServiceTypesFilter(tt.filter)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, st)
+				require.Error(t, err)
+				require.Nil(t, st)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantEnabled, st.enabled)
 				if tt.wantTypes != nil {
 					assert.Equal(t, tt.wantTypes, st.types)
@@ -4761,17 +4649,15 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	fakeClient := fake.NewClientset()
 
 	es := &discoveryv1.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "test-slice",
-			Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
-			Annotations: map[string]string{
-				"some-annotation": "value",
-			},
-			UID: "esuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
-			},
+		Namespace: "default",
+		Name:      "test-slice",
+		Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
+		Annotations: map[string]string{
+			"some-annotation": "value",
+		},
+		UID: "esuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
 		},
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints:   []discoveryv1.Endpoint{{Addresses: []string{"10.0.0.1"}}},
@@ -4783,7 +4669,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	src, err := NewServiceSource(ctx, fakeClient,
 		&Config{
 			TemplateEngine:       templatetest.MustEngine(t, "{{.Name}}", "", "", false),
-			Namespace:            "default",
+			Namespaces:           []string{"default"},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -4804,10 +4690,8 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 			"object is not of type **v1.EndpointSlice",
 		func() {
 			_ = indexer.Add(&v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "not-an-endpointslice",
-					Namespace: "default",
-				},
+				Name:      "not-an-endpointslice",
+				Namespace: "default",
 			})
 		})
 }
@@ -4817,17 +4701,15 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	fakeClient := fake.NewClientset()
 
 	es := &discoveryv1.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "test-ns",
-			Name:      "test-slice",
-			Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
-			Annotations: map[string]string{
-				"some-annotation": "value",
-			},
-			UID: "esuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
-			},
+		Namespace: "test-ns",
+		Name:      "test-slice",
+		Labels:    map[string]string{discoveryv1.LabelServiceName: "test-service"},
+		Annotations: map[string]string{
+			"some-annotation": "value",
+		},
+		UID: "esuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "endpointslice-controller", Operation: metav1.ManagedFieldsOperationUpdate},
 		},
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints:   []discoveryv1.Endpoint{{Addresses: []string{"10.0.0.1"}}},
@@ -4841,22 +4723,20 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 			Hostname: "test-hostname",
 			NodeName: "test-node",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "test-ns",
-			Name:      "test-name",
-			Labels: map[string]string{
-				"label1": "value1",
-				"label2": "value2",
-				"label3": "value3",
-			},
-			Annotations: map[string]string{
-				"user-annotation":                     "value",
-				"external-dns.kubernetes.io/hostname": "test-hostname",
-				"external-dns.kubernetes.io/random":   "value",
-				"other/annotation":                    "value",
-			},
-			UID: "someuid",
+		Namespace: "test-ns",
+		Name:      "test-name",
+		Labels: map[string]string{
+			"label1": "value1",
+			"label2": "value2",
+			"label3": "value3",
 		},
+		Annotations: map[string]string{
+			"user-annotation":                     "value",
+			"external-dns.kubernetes.io/hostname": "test-hostname",
+			"external-dns.kubernetes.io/random":   "value",
+			"other/annotation":                    "value",
+		},
+		UID: "someuid",
 		Status: v1.PodStatus{
 			PodIP:  "127.0.0.1",
 			HostIP: "127.0.0.2",
@@ -4929,19 +4809,17 @@ func TestNodeTransformerInServiceSource(t *testing.T) {
 	ctx := t.Context()
 
 	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-node",
-			Labels: map[string]string{
-				"label1": "value1",
-			},
-			Annotations: map[string]string{
-				"user-annotation":              "value",
-				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
-			},
-			UID: "someuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name: "test-node",
+		Labels: map[string]string{
+			"label1": "value1",
+		},
+		Annotations: map[string]string{
+			"user-annotation":              "value",
+			v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+		},
+		UID: "someuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Status: v1.NodeStatus{
 			Addresses: []v1.NodeAddress{
@@ -4982,18 +4860,16 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 	ctx := t.Context()
 
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-service",
-			Namespace: "default",
-			Labels:    map[string]string{"label1": "value1"},
-			Annotations: map[string]string{
-				"user-annotation":              "value",
-				v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
-			},
-			UID: "someuid",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name:      "test-service",
+		Namespace: "default",
+		Labels:    map[string]string{"label1": "value1"},
+		Annotations: map[string]string{
+			"user-annotation":              "value",
+			v1.LastAppliedConfigAnnotation: `{"apiVersion":"v1"}`,
+		},
+		UID: "someuid",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Spec: v1.ServiceSpec{
 			Type:        v1.ServiceTypeLoadBalancer,
@@ -5012,7 +4888,7 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 	fakeClient := fake.NewClientset(svc)
 
 	src, err := NewServiceSource(ctx, fakeClient, &Config{
-		Namespace:   svc.Namespace,
+		Namespaces:  []string{svc.Namespace},
 		LabelFilter: labels.Everything(),
 	})
 	require.NoError(t, err)
@@ -5042,12 +4918,10 @@ func createTestServicesByType(ns string, typeCounts map[v1.ServiceType]int, func
 	for svcType, count := range typeCounts {
 		for range count {
 			svc := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        fmt.Sprintf("svc-%s-%d", svcType, idx),
-					Namespace:   ns,
-					Labels:      map[string]string{},
-					Annotations: map[string]string{},
-				},
+				Name:        fmt.Sprintf("svc-%s-%d", svcType, idx),
+				Namespace:   ns,
+				Labels:      map[string]string{},
+				Annotations: map[string]string{},
 				Spec: v1.ServiceSpec{
 					Type: svcType,
 				},
@@ -5200,7 +5074,7 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 func TestConvertToEndpointSlices(t *testing.T) {
 	t.Run("converts valid EndpointSlices", func(t *testing.T) {
 		validSlice := &discoveryv1.EndpointSlice{
-			ObjectMeta:  metav1.ObjectMeta{Name: "valid-slice"},
+			Name:        "valid-slice",
 			AddressType: discoveryv1.AddressTypeIPv4,
 		}
 
@@ -5214,7 +5088,7 @@ func TestConvertToEndpointSlices(t *testing.T) {
 	t.Run("skips invalid objects", func(t *testing.T) {
 		invalidObject := "not-an-endpoint-slice"
 		validSlice := &discoveryv1.EndpointSlice{
-			ObjectMeta:  metav1.ObjectMeta{Name: "valid-slice"},
+			Name:        "valid-slice",
 			AddressType: discoveryv1.AddressTypeIPv4,
 		}
 
@@ -5243,7 +5117,7 @@ func TestProcessEndpointSlices_PublishPodIPsPodNil(t *testing.T) {
 	sc := &serviceSource{}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		Name: "slice1", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{
 			{
@@ -5269,7 +5143,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 	sc := &serviceSource{}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "slice2", Namespace: "default"},
+		Name: "slice2", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeFQDN, // unsupported type
 		Endpoints: []discoveryv1.Endpoint{
 			{
@@ -5278,7 +5152,7 @@ func TestProcessEndpointSlices_PublishPodIPsUnsupportedAddressType(t *testing.T)
 			},
 		},
 	}
-	pods := []*v1.Pod{{ObjectMeta: metav1.ObjectMeta{Name: "some-pod"}}}
+	pods := []*v1.Pod{{Name: "some-pod"}}
 	hostname := "test.example.com"
 	endpointsType := "FQDN"
 	publishPodIPs := true
@@ -5295,7 +5169,7 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 	sc := &serviceSource{}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		Name: "slice1", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{
 			{
@@ -5306,8 +5180,8 @@ func TestProcessEndpointSlices_PublishPodIPsFalse(t *testing.T) {
 		},
 	}
 	pods := []*v1.Pod{{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+		Name:   "test-pod",
+		Status: v1.PodStatus{PodIP: "10.0.0.1"},
 	}}
 	hostname := "test.example.com"
 	endpointsType := "IPv4"
@@ -5325,7 +5199,7 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 	sc := &serviceSource{}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		Name: "slice1", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{
 			{
@@ -5336,8 +5210,8 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 		},
 	}
 	pods := []*v1.Pod{{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+		Name:   "test-pod",
+		Status: v1.PodStatus{PodIP: "10.0.0.1"},
 	}}
 	hostname := "test.example.com"
 	endpointsType := "IPv4"
@@ -5354,14 +5228,14 @@ func TestProcessEndpointSlices_NotReadyWithPublishNotReady(t *testing.T) {
 func TestGetTargetsForDomain_EmptyAddresses(t *testing.T) {
 	sc := &serviceSource{}
 	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+		Name:   "test-pod",
+		Status: v1.PodStatus{PodIP: "10.0.0.1"},
 	}
 	ep := discoveryv1.Endpoint{
 		Addresses: []string{}, // Empty addresses
 	}
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "test-slice", Namespace: "default"},
+		Name: "test-slice", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 	}
 	endpointsType := "IPv4"
@@ -5375,14 +5249,14 @@ func TestGetTargetsForDomain_EmptyAddresses(t *testing.T) {
 func TestGetTargetsForDomain_HostIP(t *testing.T) {
 	sc := &serviceSource{publishHostIP: false}
 	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Status:     v1.PodStatus{HostIP: "192.168.1.100", PodIP: "10.0.0.1"},
+		Name:   "test-pod",
+		Status: v1.PodStatus{HostIP: "192.168.1.100", PodIP: "10.0.0.1"},
 	}
 	ep := discoveryv1.Endpoint{
 		Addresses: []string{"10.0.0.1"},
 	}
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "test-slice", Namespace: "default"},
+		Name: "test-slice", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 	}
 	endpointsType := EndpointsTypeHostIP
@@ -5396,7 +5270,7 @@ func TestGetTargetsForDomain_HostIP(t *testing.T) {
 func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
 	// Create a fake node informer with a node
 	node := &v1.Node{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-node"},
+		Name: "test-node",
 		Status: v1.NodeStatus{
 			Addresses: []v1.NodeAddress{
 				{Type: v1.NodeExternalIP, Address: "203.0.113.10"},
@@ -5417,15 +5291,15 @@ func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
 	}
 
 	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Spec:       v1.PodSpec{NodeName: "test-node"},
-		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+		Name:   "test-pod",
+		Spec:   v1.PodSpec{NodeName: "test-node"},
+		Status: v1.PodStatus{PodIP: "10.0.0.1"},
 	}
 	ep := discoveryv1.Endpoint{
 		Addresses: []string{"10.0.0.1"},
 	}
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "test-slice", Namespace: "default"},
+		Name: "test-slice", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 	}
 	endpointsType := EndpointsTypeNodeExternalIP
@@ -5438,10 +5312,10 @@ func TestGetTargetsForDomain_NodeExternalIP(t *testing.T) {
 func TestFindPodForEndpoint(t *testing.T) {
 	pods := []*v1.Pod{
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "pod1"},
+			Name: "pod1",
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{Name: "pod2"},
+			Name: "pod2",
 		},
 	}
 
@@ -5454,7 +5328,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.NotNil(t, result)
+		require.NotNil(t, result)
 		assert.Equal(t, "pod1", result.Name)
 	})
 
@@ -5464,7 +5338,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 
 	t.Run("returns nil for non-Pod kind", func(t *testing.T) {
@@ -5476,7 +5350,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 
 	t.Run("returns nil for non-empty APIVersion", func(t *testing.T) {
@@ -5489,7 +5363,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 
 	t.Run("returns nil for non-existent pod", func(t *testing.T) {
@@ -5501,16 +5375,14 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 }
 
 func TestBuildHeadlessEndpoints(t *testing.T) {
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-service",
-			Namespace: "default",
-		},
+		Name:      "test-service",
+		Namespace: "default",
 	}
 
 	t.Run("builds endpoints from targets", func(t *testing.T) {
@@ -5525,7 +5397,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 		// Check A record
 		aRecord := findEndpointByType(result, endpoint.RecordTypeA)
-		assert.NotNil(t, aRecord)
+		require.NotNil(t, aRecord)
 		assert.Equal(t, "test.example.com", aRecord.DNSName)
 		assert.Contains(t, aRecord.Targets, "1.2.3.4")
 		assert.Contains(t, aRecord.Targets, "5.6.7.8")
@@ -5533,7 +5405,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 		// Check AAAA record
 		aaaaRecord := findEndpointByType(result, endpoint.RecordTypeAAAA)
-		assert.NotNil(t, aaaaRecord)
+		require.NotNil(t, aaaaRecord)
 		assert.Equal(t, "test.example.com", aaaaRecord.DNSName)
 		assert.Contains(t, aaaaRecord.Targets, "2001:db8::1")
 	})
@@ -5591,7 +5463,7 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 	sc := &serviceSource{}
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta:  metav1.ObjectMeta{Name: "slice1", Namespace: "default"},
+		Name: "slice1", Namespace: "default",
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints: []discoveryv1.Endpoint{
 			{
@@ -5602,9 +5474,9 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 		},
 	}
 	pods := []*v1.Pod{{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
-		Spec:       v1.PodSpec{Hostname: "my-pod"}, // Non-empty hostname
-		Status:     v1.PodStatus{PodIP: "10.0.0.1"},
+		Name:   "test-pod",
+		Spec:   v1.PodSpec{Hostname: "my-pod"}, // Non-empty hostname
+		Status: v1.PodStatus{PodIP: "10.0.0.1"},
 	}}
 	hostname := "test.example.com"
 	endpointsType := "IPv4"
@@ -5635,26 +5507,22 @@ func TestProcessEndpointSlices_PodWithHostname(t *testing.T) {
 func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 	elements := []runtime.Object{
 		&v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "01",
-				Name:      "foo",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "foo.example.com",
-					annotations.TargetKey:   "1.2.3",
-				},
-				UID: "uid-1",
+			Namespace: "01",
+			Name:      "foo",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.com",
+				annotations.TargetKey:   "1.2.3",
 			},
+			UID: "uid-1",
 		},
 		&v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "02",
-				Name:      "bar",
-				Annotations: map[string]string{
-					annotations.HostnameKey: "bar.example.com",
-					annotations.TargetKey:   "3.4.5",
-				},
-				UID: "uid-2",
+			Namespace: "02",
+			Name:      "bar",
+			Annotations: map[string]string{
+				annotations.HostnameKey: "bar.example.com",
+				annotations.TargetKey:   "3.4.5",
 			},
+			UID: "uid-2",
 		},
 	}
 
@@ -5679,8 +5547,8 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 
 	makeNode := func(name, ip string) *v1.Node {
 		return &v1.Node{
-			ObjectMeta: metav1.ObjectMeta{Name: name},
-			Status:     v1.NodeStatus{Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: ip}}},
+			Name:   name,
+			Status: v1.NodeStatus{Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: ip}}},
 		}
 	}
 
@@ -5690,8 +5558,8 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			readiness = v1.ConditionTrue
 		}
 		return &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "testing", DeletionTimestamp: deletionTimestamp},
-			Spec:       v1.PodSpec{NodeName: nodeName},
+			Name: name, Namespace: "testing", DeletionTimestamp: deletionTimestamp,
+			Spec: v1.PodSpec{NodeName: nodeName},
 			Status: v1.PodStatus{
 				Phase:      v1.PodRunning,
 				Conditions: []v1.PodCondition{{Type: v1.PodReady, Status: readiness}},
@@ -5715,7 +5583,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 	}
 
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "testing"},
+		Name: "foo", Namespace: "testing",
 		Spec: v1.ServiceSpec{
 			Type:                  v1.ServiceTypeNodePort,
 			ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
@@ -5798,9 +5666,9 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 
 	t.Run("skips pods that are not in Running phase", func(t *testing.T) {
 		pendingPod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: "pod-pending", Namespace: "testing"},
-			Spec:       v1.PodSpec{NodeName: "node1"},
-			Status:     v1.PodStatus{Phase: v1.PodPending},
+			Name: "pod-pending", Namespace: "testing",
+			Spec:   v1.PodSpec{NodeName: "node1"},
+			Status: v1.PodStatus{Phase: v1.PodPending},
 		}
 		sc := makeResourceSource(t,
 			[]*v1.Node{makeNode("node1", "54.10.11.1")},
@@ -5825,7 +5693,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Pod{},
 		)
 		got := sc.nodesExternalTrafficPolicyTypeLocal(svc)
-		assert.Nil(t, got)
+		require.Nil(t, got)
 	})
 
 	t.Run("returns only non-terminating ready nodes when mixed with terminating ready nodes", func(t *testing.T) {

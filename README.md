@@ -116,7 +116,7 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 - Change the desired hostname by modifying the Service's annotation.
 - Recreate the Service and see that the DNS record will be updated to point to the new load balancer IP.
 - Add another Service to create more DNS records.
-- Remove Services to clean up your managed zone.
+- Remove Services to clean up your managed zone (record deletion requires `--policy=sync`; with `--policy=upsert-only` records are never deleted).
 
 </details>
 
@@ -144,6 +144,7 @@ from the usage of any externally developed webhook.
 | --------------------- | -------------------------------------------------------------------- |
 | Abion                 | https://github.com/abiondevelopment/external-dns-webhook-abion       |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard            |
+| Akamai Edge DNS       | https://github.com/PixiBixi/external-dns-akamai-webhook              |
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
@@ -156,10 +157,13 @@ from the usage of any externally developed webhook.
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
-| Infoblox              | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infoblox NIOS         | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
+| Infoblox UDDI         | https://github.com/wayvz-io/external-dns-uddi-webhook                |
 | Infomaniak            | https://github.com/M0NsTeRRR/external-dns-webhook-infomaniak         |
 | Mikrotik              | https://github.com/mirceanton/external-dns-provider-mikrotik         |
 | Myra Security         | https://github.com/Myra-Security-GmbH/external-dns-myrasec-webhook   |
+| Namecheap             | https://github.com/evandeaubl/external-dns-namecheap-webhook         |
+| NAVER Cloud Platform  | https://github.com/NaverCloudPlatform/external-dns-navercloud-webhook |
 | Netbird               | https://codeberg.org/ccbash-oss/external-dns-netbird-webhook         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
@@ -197,7 +201,6 @@ Those interested can create a webhook provider based on an _in-tree_ provider an
 | [CoreDNS](https://coredns.io/)                                                                                   |               | [guide](docs/tutorials/coredns.md), [etcd backend](docs/tutorials/coredns-etcd.md)                                                                                                                                                                                                                         |
 | [DNSimple](https://dnsimple.com/)                                                                                |               | [guide](docs/tutorials/dnsimple.md)                                                                                                                                                                                                                                                                        |
 | [Exoscale](https://www.exoscale.com/dns/)                                                                        |               | [guide](docs/tutorials/exoscale.md)                                                                                                                                                                                                                                                                        |
-| [Gandi](https://www.gandi.net)                                                                                   | @packi        | [guide](docs/tutorials/gandi.md)                                                                                                                                                                                                                                                                           |
 | [GoDaddy](https://www.godaddy.com)                                                                               |               | [guide](docs/tutorials/godaddy.md)                                                                                                                                                                                                                                                                         |
 | [Google Cloud DNS](https://cloud.google.com/dns/docs/)                                                           |               | [GKE default ingress](docs/tutorials/gke.md), [GKE with nginx](docs/tutorials/gke-nginx.md)                                                                                                                                                                                                                 |
 | [Linode DNS](https://www.linode.com/docs/networking/dns/)                                                        |               | [guide](docs/tutorials/linode.md)                                                                                                                                                                                                                                                                          |
@@ -232,7 +235,7 @@ See the [sources documentation](docs/sources/about.md) for the full list and con
 | [Kubernetes Pod](https://kubernetes.io/docs/concepts/workloads/pods/)                                 | [guide](docs/sources/pod.md)                                                                                                   |
 | [Kubernetes Service](https://kubernetes.io/docs/concepts/services-networking/service/)                | [guide](docs/sources/service.md), [ExternalName](docs/tutorials/externalname.md), [Headless](docs/tutorials/hostport.md)       |
 | [OpenShift Route](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html) | [guide](docs/sources/openshift.md)                                                                                 |
-| [Skipper RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroups/)                  | —                                                                                                                               |
+| [Skipper RouteGroup](https://opensource.zalando.com/skipper/kubernetes/routegroups/)                  | [guide](docs/sources/skipper-routegroup.md)                                                                                 |
 | [Traefik IngressRoute](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/)              | [guide](docs/sources/traefik-proxy.md)                                                                                         |
 | [Unstructured (custom CRD)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) | [guide](docs/sources/unstructured.md)                                                                              |
 

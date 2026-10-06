@@ -78,7 +78,7 @@ Experimental channels as summarized below:
 | GRPCRoute          | v1                                  | v1.1.0                               | v1.1.0                          |
 | ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
 | TLSRoute           | v1                                  | v1.5.0                               | v1.0.0                          |
-| TCPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
+| TCPRoute           | v1                                  | v1.6.0                               | v1.6.0                          |
 | UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
 
 Gateways and HTTPRoutes were promoted to the Standard channel in Gateway API v1.0.0 and use the
@@ -101,7 +101,7 @@ ExternalDNS still uses the v1alpha2 API for compatibility with older CRDs but it
 has been deprecated and will be removed from future releases, at which point ExternalDNS will
 need to migrate to v1. (See [#6247](https://github.com/kubernetes-sigs/external-dns/issues/6247))
 
-TCPRoute and UDPRoute remain experimental and are only available as v1alpha2 in the Experimental channel.
+UDPRoute remains experimental and is only available as v1alpha2 in the Experimental channel.
 
 ## Hostnames
 
@@ -343,7 +343,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         # Add desired Gateway API Route sources.
         - --source=gateway-httproute
@@ -351,6 +351,7 @@ spec:
         - --source=gateway-tlsroute
         - --source=gateway-tcproute
         - --source=gateway-udproute
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         # Optionally, limit Routes to those in the given namespace.
         - --namespace=my-route-namespace
         # Optionally, limit Routes to those matching the given label selector.

@@ -796,7 +796,7 @@ func TestDomainFilterNilReceiver(t *testing.T) {
 	})
 	t.Run("MarshalJSON returns empty include/exclude", func(t *testing.T) {
 		b, err := (*DomainFilter)(nil).MarshalJSON()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.JSONEq(t, `{}`, string(b))
 	})
 	t.Run("MatchParent returns true", func(t *testing.T) {
@@ -868,14 +868,14 @@ func TestDomainFilterDeserializeError(t *testing.T) {
 			var deserialized DomainFilter
 			toJson, _ := json.Marshal(tt.serialized)
 			err := json.Unmarshal(toJson, &deserialized)
-			assert.EqualError(t, err, tt.expectedError)
+			require.EqualError(t, err, tt.expectedError)
 		})
 	}
 }
 
 func assertSerializes[T any](t *testing.T, domainFilter *DomainFilter, expectedSerialization map[string]T) {
 	serialized, err := json.Marshal(domainFilter)
-	assert.NoError(t, err, "serializing")
+	require.NoError(t, err, "serializing")
 	expected, err := json.Marshal(expectedSerialization)
 	require.NoError(t, err)
 	assert.JSONEq(t, string(expected), string(serialized), "json serialization")
@@ -886,7 +886,7 @@ func deserialize[T any](t *testing.T, serialized map[string]T) *DomainFilter {
 	require.NoError(t, err)
 	var deserialized DomainFilter
 	err = json.Unmarshal(inJson, &deserialized)
-	assert.NoError(t, err, "deserializing")
+	require.NoError(t, err, "deserializing")
 
 	return &deserialized
 }

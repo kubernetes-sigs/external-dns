@@ -27,10 +27,11 @@ func (in *Endpoint) DeepCopyInto(out *Endpoint) {
 	if in.refObjects != nil {
 		in, out := &in.refObjects, &out.refObjects
 		*out = make([]*ObjectRef, len(*in))
-		for i, ref := range *in {
-			if ref != nil {
-				copied := *ref
-				(*out)[i] = &copied
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(ObjectRef)
+				**out = **in
 			}
 		}
 	}

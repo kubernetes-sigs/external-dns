@@ -45,6 +45,18 @@ func parseAnnotationFilterOrNil(s string) labels.Selector {
 	return sel
 }
 
+// parseLabelSelectorOrEverything parses a label selector string for use in indexer tests.
+// Returns labels.Everything() for empty input (match all), and fails the test on parse errors.
+func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
+	t.Helper()
+	if s == "" {
+		return labels.Everything()
+	}
+	sel, err := labels.Parse(s)
+	require.NoError(t, err)
+	return sel
+}
+
 // Validate that fakeSource implements Source.
 var _ Source = &fakeSource{}
 
@@ -79,8 +91,8 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				t.Helper()
 				require.Len(t, ep.Targets, 1)
 				ip := net.ParseIP(ep.Targets[0])
-				assert.NotNil(t, ip, "A record target %q is not a valid IP", ep.Targets[0])
-				assert.NotNil(t, ip.To4(), "A record target %q must be IPv4", ep.Targets[0])
+				require.NotNil(t, ip, "A record target %q is not a valid IP", ep.Targets[0])
+				require.NotNil(t, ip.To4(), "A record target %q must be IPv4", ep.Targets[0])
 				refs := ep.RefObjects()
 				require.NotEmpty(t, refs)
 				assert.Equal(t, "Pod", refs[0].Kind())
@@ -145,7 +157,7 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				assert.Equal(t, defaultFQDNTemplate, ep.DNSName)
 				require.Len(t, ep.Targets, 1)
 				_, err := endpoint.NewMXRecord(ep.Targets[0])
-				assert.NoError(t, err, "MX target %q is invalid", ep.Targets[0])
+				require.NoError(t, err, "MX target %q is invalid", ep.Targets[0])
 			},
 		},
 		{
@@ -154,6 +166,15 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				t.Helper()
 				assert.True(t, strings.HasPrefix(ep.DNSName, "_sip._udp."), "NAPTR DNSName %q should start with _sip._udp.", ep.DNSName)
 				require.NotEmpty(t, ep.Targets)
+			},
+		},
+		{
+			recordType: endpoint.RecordTypeDNAME,
+			check: func(t *testing.T, ep *endpoint.Endpoint) {
+				t.Helper()
+				require.Len(t, ep.Targets, 1)
+				assert.True(t, strings.HasSuffix(ep.Targets[0], "."+defaultFQDNTemplate),
+					"DNAME target %q should be under %s", ep.Targets[0], defaultFQDNTemplate)
 			},
 		},
 	}

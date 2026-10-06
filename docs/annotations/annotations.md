@@ -30,6 +30,18 @@ The following table documents which sources support which annotations:
 [^5]: The annotation must be on the listener's `VirtualService`.
 [^6]: Traefik CRDs require an explicit `external-dns.kubernetes.io/target` value. They do not expose a load balancer IP or hostname in status, so no endpoint is generated without it and `--default-targets` cannot apply.
 
+## Annotation prefix
+
+Annotations below use the prefix set by `--annotation-prefix`, default `external-dns.kubernetes.io/`. Releases before v0.22.0
+used `external-dns.alpha.kubernetes.io/`.
+
+`--enable-legacy-annotation-prefix` adds the configured-prefix equivalent of every legacy-prefixed annotation before any
+filter, indexer or source reads the resource, so resources can be migrated gradually. The legacy key is kept, so an
+`--annotation-filter` or template written against either prefix keeps matching. On conflict the configured prefix wins and
+the ignored value is logged with the resource. Nothing is written back to the cluster.
+
+The flag is a migration aid and will be removed in a future release; drop it once no resource uses the legacy prefix.
+
 ## external-dns.kubernetes.io/access
 
 Specifies which set of node IP addresses to use for a `Service` of type `NodePort`.
@@ -40,6 +52,11 @@ If the value is `private`, use the Nodes' addresses of type `InternalIP`.
 
 If the annotation is not present and there is at least one address of type `ExternalIP`,
 behave as if the value were `public`, otherwise behave as if the value were `private`.
+
+This annotation is read only by the Service source. Every other source ignores it, including the
+Ingress source — see
+[the FAQ](../faq.md#how-do-i-specify-that-i-want-the-dns-record-to-point-to-either-the-nodes-public-or-private-ip-when-it-has-both)
+for the alternatives available there.
 
 ## external-dns.kubernetes.io/controller
 
@@ -367,7 +384,7 @@ Additionally, you can set the value to `A` or `AAAA` to create only one type of 
 This is useful when your alias target is IPv4-only (i.e., it does not have an AAAA target),
 and creating an AAAA alias record would fail.
 
-Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider.
+Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider — AWS-SD does not support them (see below).
 
 #### Example: IPv4-only alias target
 
@@ -378,10 +395,10 @@ metadata:
   name: my-app
   namespace: default
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
-    external-dns.alpha.kubernetes.io/target: ipv4-only-target.example.com
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/target: ipv4-only-target.example.com
     # Create only an A (IPv4) alias record to avoid creating an AAAA alias record for an IPv4-only target.
-    external-dns.alpha.kubernetes.io/alias: "A"
+    external-dns.kubernetes.io/alias: "A"
 spec:
   type: LoadBalancer
   ports:
@@ -396,10 +413,23 @@ record types (e.g. MX, SRV, TXT) that have this annotation set will be rejected.
 **Supported providers:**
 
 - **AWS**: This annotation is only relevant if the `--aws-prefer-cname` flag is specified.
+- **AWS-SD** (Cloud Map): For a CNAME endpoint whose target is a recognized AWS load-balancer
+  hostname, `alias: "true"` requests a new Cloud Map service with both `A` and `AAAA` DNS
+  records instead of the default `A`-only alias. `AWS_ALIAS_DNS_NAME` instance registration
+  itself is unaffected either way — it remains based solely on the recognized load-balancer
+  hostname. Only the literal value `"true"` is supported; the `A` and `AAAA` values are
+  Route53-only and are not understood by AWS-SD. The underlying load balancer must actually
+  support IPv6/dual-stack for the `AAAA` record to resolve correctly, and Cloud Map DNS record
+  types are immutable — an existing service's record types are never changed in place. When
+  ExternalDNS detects that the desired record types differ from an existing Cloud Map service,
+  it logs a warning; recreate the service to apply the new record types. See the
+  [AWS Cloud Map tutorial](../tutorials/aws-sd.md#dual-stack-load-balancer-aliases) for details.
 - **PowerDNS**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
   This is useful when using PowerDNS with `expand-alias=yes` to resolve CNAME targets to IP addresses
   on the authoritative server side. Alternatively, use the `--prefer-alias` flag to convert all
   CNAME records to ALIAS globally.
+- **Scaleway**: When this annotation is set to `true`, CNAME records will be created as ALIAS records.
+  Alternatively, use the `--prefer-alias` flag to convert all CNAME records to ALIAS globally.
 
 ### external-dns.kubernetes.io/set-identifier
 

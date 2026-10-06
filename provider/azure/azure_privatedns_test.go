@@ -47,9 +47,7 @@ func newMockPrivateZonesClient(zones []*privatedns.PrivateZone) mockPrivateZones
 		},
 		Fetcher: func(context.Context, *privatedns.PrivateZonesClientListByResourceGroupResponse) (privatedns.PrivateZonesClientListByResourceGroupResponse, error) {
 			return privatedns.PrivateZonesClientListByResourceGroupResponse{
-				PrivateZoneListResult: privatedns.PrivateZoneListResult{
-					Value: zones,
-				},
+				Value: zones,
 			}, nil
 		},
 	}
@@ -77,9 +75,7 @@ func newMockPrivateRecordSectsClient(recordSets []*privatedns.RecordSet) mockPri
 		},
 		Fetcher: func(context.Context, *privatedns.RecordSetsClientListResponse) (privatedns.RecordSetsClientListResponse, error) {
 			return privatedns.RecordSetsClientListResponse{
-				RecordSetListResult: privatedns.RecordSetListResult{
-					Value: recordSets,
-				},
+				Value: recordSets,
 			}, nil
 		},
 	}

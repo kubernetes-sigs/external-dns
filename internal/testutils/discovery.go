@@ -43,12 +43,12 @@ func NewFakeExternalDNSDiscoveryServer(t *testing.T, resources ...metav1.APIReso
 		switch r.URL.Path {
 		case "/api":
 			encode(metav1.APIVersions{
-				TypeMeta: metav1.TypeMeta{Kind: "APIVersions", APIVersion: "v1"},
+				Kind: "APIVersions", APIVersion: "v1",
 				Versions: []string{"v1"},
 			})
 		case "/apis":
 			encode(metav1.APIGroupList{
-				TypeMeta: metav1.TypeMeta{Kind: "APIGroupList", APIVersion: "v1"},
+				Kind: "APIGroupList", APIVersion: "v1",
 				Groups: []metav1.APIGroup{{
 					Name:             apiv1alpha1.GroupVersion.Group,
 					Versions:         []metav1.GroupVersionForDiscovery{{GroupVersion: apiv1alpha1.GroupVersion.String(), Version: apiv1alpha1.GroupVersion.Version}},
@@ -57,7 +57,7 @@ func NewFakeExternalDNSDiscoveryServer(t *testing.T, resources ...metav1.APIReso
 			})
 		case "/apis/" + apiv1alpha1.GroupVersion.String():
 			encode(metav1.APIResourceList{
-				TypeMeta:     metav1.TypeMeta{Kind: "APIResourceList", APIVersion: "v1"},
+				Kind: "APIResourceList", APIVersion: "v1",
 				GroupVersion: apiv1alpha1.GroupVersion.String(),
 				APIResources: resources,
 			})

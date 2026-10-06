@@ -466,13 +466,13 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			tcpi := unstructured.Unstructured{}
 
 			tcpIngressAsJSON, err := json.Marshal(ti.tcpProxy)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			assert.NoError(t, tcpi.UnmarshalJSON(tcpIngressAsJSON))
+			require.NoError(t, tcpi.UnmarshalJSON(tcpIngressAsJSON))
 
 			// Create proxy resources
 			_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &tcpi, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			labelFilter := ti.labelFilter
 			if labelFilter == nil {
@@ -480,13 +480,13 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			}
 			source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:                defaultKongNamespace,
+					Namespaces:               []string{defaultKongNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=kong"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
 					LabelFilter:              labelFilter,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			count := &unstructured.UnstructuredList{}
 			for len(count.Items) < 1 {
@@ -494,7 +494,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			}
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
@@ -520,4 +520,132 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
+}
+
+// TestKongTCPIngressIndexer verifies that the TCPIngress indexer correctly filters resources
+// by annotation filter and label selector at index time, so that only matching resources are
+// returned by Endpoints().
+func TestKongTCPIngressIndexer(t *testing.T) {
+	t.Parallel()
+
+	makeEntity := func(name string, ann, lbls map[string]string) *TCPIngress {
+		if ann == nil {
+			ann = map[string]string{}
+		}
+		if lbls == nil {
+			lbls = map[string]string{}
+		}
+		return &TCPIngress{
+			APIVersion:  kongGroupdVersionResource.GroupVersion().String(),
+			Kind:        "TCPIngress",
+			Name:        name,
+			Namespace:   defaultKongNamespace,
+			Annotations: ann,
+			Labels:      lbls,
+			Spec: tcpIngressSpec{
+				Rules: []tcpIngressRule{{Host: name + ".example.org", Port: 80}},
+			},
+			Status: tcpIngressStatus{
+				LoadBalancer: corev1.LoadBalancerStatus{
+					Ingress: []corev1.LoadBalancerIngress{{IP: "1.2.3.4"}},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name             string
+		annotationFilter string
+		labelFilter      string
+		ingresses        []*TCPIngress
+		expectedCount    int
+	}{
+		{
+			name:          "no filters returns all ingresses",
+			expectedCount: 3,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", nil, nil),
+				makeEntity("ti2", nil, nil),
+				makeEntity("ti3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation filter includes matching ingresses",
+			annotationFilter: "tier=frontend",
+			expectedCount:    2,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ti2", map[string]string{"tier": "frontend"}, nil),
+				makeEntity("ti3", map[string]string{"tier": "backend"}, nil),
+			},
+		},
+		{
+			name:          "label filter includes matching ingresses",
+			labelFilter:   "env=prod",
+			expectedCount: 1,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", nil, map[string]string{"env": "prod"}),
+				makeEntity("ti2", nil, map[string]string{"env": "staging"}),
+				makeEntity("ti3", nil, nil),
+			},
+		},
+		{
+			name:             "annotation and label filter combined",
+			annotationFilter: "tier=frontend",
+			labelFilter:      "env=prod",
+			expectedCount:    1,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{"tier": "frontend"}, map[string]string{"env": "prod"}),
+				makeEntity("ti2", map[string]string{"tier": "frontend"}, map[string]string{"env": "staging"}),
+				makeEntity("ti3", map[string]string{"tier": "backend"}, map[string]string{"env": "prod"}),
+			},
+		},
+		{
+			name:             "no matches returns empty",
+			annotationFilter: "tier=missing",
+			expectedCount:    0,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{"tier": "frontend"}, nil),
+			},
+		},
+		{
+			name:          "controller mismatch is excluded",
+			expectedCount: 0,
+			ingresses: []*TCPIngress{
+				makeEntity("ti1", map[string]string{annotations.ControllerKey: "other-controller"}, nil),
+			},
+		},
+	}
+
+	uc, err := newKongUnstructuredConverter()
+	require.NoError(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
+
+			for _, ing := range tt.ingresses {
+				data, err := json.Marshal(ing)
+				require.NoError(t, err)
+				obj := unstructured.Unstructured{}
+				require.NoError(t, obj.UnmarshalJSON(data))
+				_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			src, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+				Namespaces:       []string{defaultKongNamespace},
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
 }

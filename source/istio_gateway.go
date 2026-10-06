@@ -77,9 +77,10 @@ func NewIstioGatewaySource(
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
+	namespace := cfg.Namespace()
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(cfg.Namespace))
+	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	gatewayInformer := istioInformerFactory.Networking().V1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
@@ -120,7 +121,7 @@ func NewIstioGatewaySource(
 	}
 
 	return &istioGatewaySource{
-		namespace:                cfg.Namespace,
+		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
@@ -133,18 +134,11 @@ func NewIstioGatewaySource(
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *istioGatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexer := sc.gatewayInformer.Informer().GetIndexer()
-	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
+	objs := informers.ListIndexed[*networkingv1.Gateway](indexer)
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
-	log.Debugf("Found %d gateways in namespace %s", len(indexKeys), sc.namespace)
-
-	for _, key := range indexKeys {
-		gateway, err := informers.GetByKey[*networkingv1.Gateway](indexer, key)
-		if err != nil || gateway == nil {
-			continue
-		}
-
+	for _, gateway := range objs {
 		gwHostnames := sc.hostNamesFromGateway(gateway)
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))

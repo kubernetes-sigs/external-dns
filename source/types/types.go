@@ -16,6 +16,10 @@ limitations under the License.
 
 package types
 
+import (
+	"strings"
+)
+
 type Type = string
 
 const (
@@ -37,6 +41,7 @@ const (
 	TraefikProxy        Type = "traefik-proxy"
 	OpenShiftRoute      Type = "openshift-route"
 	Fake                Type = "fake"
+	Empty               Type = "empty"
 	Connector           Type = "connector"
 	CRD                 Type = "crd"
 	SkipperRouteGroup   Type = "skipper-routegroup"
@@ -45,3 +50,23 @@ const (
 	F5TransportServer   Type = "f5-transportserver"
 	Unstructured        Type = "unstructured"
 )
+
+// All lists every known source type.
+var All = []Type{
+	Node, Service, Ingress, Pod,
+	Gateway, GatewayHttpRoute, GatewayGrpcRoute, GatewayTlsRoute, GatewayTcpRoute, GatewayUdpRoute,
+	IstioGateway, IstioVirtualService,
+	AmbassadorHost, ContourHTTPProxy, GlooProxy, TraefikProxy, OpenShiftRoute,
+	Fake, Empty, Connector, CRD, SkipperRouteGroup, KongTCPIngress,
+	F5VirtualServer, F5TransportServer, Unstructured,
+}
+
+// IsKnown reports whether name matches one of the known source types, case-insensitively.
+func IsKnown(name string) bool {
+	for _, t := range All {
+		if strings.EqualFold(t, name) {
+			return true
+		}
+	}
+	return false
+}

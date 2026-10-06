@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReplace(t *testing.T) {
@@ -190,6 +191,51 @@ func TestHasKey(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := hasKey(tt.m, tt.key)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsSource(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		active    string
+		want      string
+		expected  bool
+		expectErr string
+	}{
+		{
+			name:     "matching name",
+			active:   "service",
+			want:     "service",
+			expected: true,
+		},
+		{
+			name:     "matching name, different case",
+			active:   "service",
+			want:     "Service",
+			expected: true,
+		},
+		{
+			name:     "known but non-matching name",
+			active:   "service",
+			want:     "ingress",
+			expected: false,
+		},
+		{
+			name:      "unknown name",
+			active:    "service",
+			want:      "servics",
+			expectErr: `isSource: unknown source "servics"`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := isSource(tt.active, tt.want)
+			if tt.expectErr != "" {
+				require.ErrorContains(t, err, tt.expectErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }
