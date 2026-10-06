@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +32,7 @@ import (
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
@@ -55,6 +57,10 @@ type crdSource struct {
 	informer         crcache.Informer
 	listOpts         []client.ListOption
 	annotationFilter labels.Selector
+	emitter          events.EventEmitter // events.Discard unless --events-emit is set
+	// defaultTargets is set when --default-targets can fill an endpoint without
+	// targets; otherwise dedupSource drops it and it must be rejected here.
+	defaultTargets bool
 }
 
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
@@ -77,7 +83,13 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *Config) (So
 		return nil, err
 	}
 
-	return newCrdSource(ctx, crReader, crWriter, namespace, cfg.LabelFilter, cfg.AnnotationFilter)
+	cs, err := newCrdSource(ctx, crReader, crWriter, namespace, cfg.LabelFilter, cfg.AnnotationFilter, cfg.EventEmitter)
+	if err != nil {
+		return nil, err
+	}
+	cs.defaultTargets = len(cfg.DefaultTargets) > 0
+
+	return cs, nil
 }
 
 func (cs *crdSource) AddEventHandler(_ context.Context, handler func()) {
@@ -104,87 +116,194 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(filtered))
 	for _, dnsEndpoint := range filtered {
-		var crdEndpoints []*endpoint.Endpoint
-		for _, ep := range dnsEndpoint.Spec.Endpoints {
-			if ep == nil {
-				log.Debugf(
-					"Skipping nil endpoint in DNSEndpoint %s/%s at spec.endpoints",
-					dnsEndpoint.Namespace,
-					dnsEndpoint.Name,
-				)
-				continue
-			}
-
-			if (ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeA || ep.RecordType == endpoint.RecordTypeAAAA) && len(ep.Targets) < 1 {
-				log.Debugf("Endpoint %s with DNSName %s has an empty list of targets, allowing it to pass through for default-targets processing", dnsEndpoint.Name, ep.DNSName)
-			}
-			illegalTarget := false
-			for key, target := range ep.Targets {
-				// CNAME/DNAME targets are domain names where a trailing dot is
-				// valid (RFC 1035 §5.1 absolute FQDN), so accept both dotted and
-				// bare forms.
-				if endpoint.RequiresTrailingDot(ep.RecordType) {
-					continue
-				}
-				switch ep.RecordType {
-				case endpoint.RecordTypeTXT:
-					continue // no format constraint on targets
-				case endpoint.RecordTypeMX:
-					// normalized, else it diffs against the provider's rendering
-					ep.Targets[key] = endpoint.NormalizeMXTarget(target)
-					continue
-				case endpoint.RecordTypeSRV:
-					// SRV targets are "<prio> <weight> <port> <host>"; RFC 2782
-					// requires the host to be an absolute FQDN and
-					// Endpoint.ValidateSRVRecord enforces the trailing dot.
-					// Reject-on-trailing-dot (the default branch below) would
-					// loop users between this warning and ValidateSRVRecord's
-					// "does not end with a dot" error (#6357).
-					continue
-				}
-
-				hasDot := strings.HasSuffix(target, ".")
-
-				switch ep.RecordType {
-				case endpoint.RecordTypeNAPTR:
-					illegalTarget = !hasDot
-				default:
-					illegalTarget = hasDot
-				}
-
-				if illegalTarget {
-					fixed := target + "."
-					if ep.RecordType != endpoint.RecordTypeNAPTR {
-						fixed = strings.TrimSuffix(target, ".")
-					}
-					log.Warnf("Endpoint %s/%s with DNSName %s has an illegal target %q for %s record — use %q not %q.",
-						dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, target, ep.RecordType, fixed, target)
-					break
-				}
-			}
-			if illegalTarget {
-				continue
-			}
-
-			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
-			crdEndpoints = append(crdEndpoints, ep)
-		}
+		crdEndpoints, rejections := validateEndpoints(dnsEndpoint, cs.defaultTargets)
 
 		endpoint.AttachRefObject(crdEndpoints, events.NewObjectReference(dnsEndpoint, types.CRD))
 		endpoints = append(endpoints, crdEndpoints...)
 
-		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
-			continue
-		}
-
-		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
-		if err := cs.crWriter.Status().Update(ctx, dnsEndpoint); err != nil {
-			log.Warnf("Could not update ObservedGeneration of [%s/%s/%s]: %v",
-				"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)
-		}
+		cs.reportAccepted(ctx, dnsEndpoint, len(crdEndpoints), rejections)
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+// validateEndpoints splits spec into endpoints for the plan and one rejection per
+// dropped endpoint. Rejections surface in Accepted and RecordInvalid, so they are
+// written for `kubectl describe`, not for a log line.
+func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool) ([]*endpoint.Endpoint, []string) {
+	var (
+		accepted   []*endpoint.Endpoint
+		rejections []string
+	)
+
+	for idx, ep := range dnsEndpoint.Spec.Endpoints {
+		if ep == nil {
+			log.Debugf(
+				"Skipping nil endpoint in DNSEndpoint %s/%s at spec.endpoints",
+				dnsEndpoint.Namespace,
+				dnsEndpoint.Name,
+			)
+			rejections = append(rejections, fmt.Sprintf("spec.endpoints[%d]: entry is null", idx))
+			continue
+		}
+
+		if reason := rejectionReason(ep, defaultTargets); reason != "" {
+			log.Warnf("Endpoint %s/%s with DNSName %s rejected: %s",
+				dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, reason)
+			rejections = append(rejections, fmt.Sprintf("spec.endpoints[%d] (%s %s): %s", idx, ep.RecordType, ep.DNSName, reason))
+			continue
+		}
+
+		ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
+		accepted = append(accepted, ep)
+	}
+
+	return accepted, rejections
+}
+
+// rejectionReason explains why ep cannot be planned, or returns "".
+//
+// It must cover everything dedupSource would later drop with only a log line
+// (CheckEndpoint), or Accepted would lie. Empty targets pass with defaultTargets:
+// the multi-source fills them before dedupSource runs.
+func rejectionReason(ep *endpoint.Endpoint, defaultTargets bool) string {
+	if len(ep.Targets) == 0 {
+		if defaultTargets {
+			return ""
+		}
+		return "no targets: set targets, or start external-dns with --default-targets"
+	}
+	if reason := illegalTargetReason(ep); reason != "" {
+		return reason
+	}
+
+	return rfcViolationReason(ep)
+}
+
+// illegalTargetReason explains the first target whose trailing dot is wrong for
+// the record type, or returns "".
+func illegalTargetReason(ep *endpoint.Endpoint) string {
+	for key, target := range ep.Targets {
+		// CNAME/DNAME targets are domain names where a trailing dot is
+		// valid (RFC 1035 §5.1 absolute FQDN), so accept both dotted and
+		// bare forms.
+		if endpoint.RequiresTrailingDot(ep.RecordType) {
+			continue
+		}
+		switch ep.RecordType {
+		case endpoint.RecordTypeTXT:
+			continue // no format constraint on targets
+		case endpoint.RecordTypeMX:
+			// normalized, else it diffs against the provider's rendering
+			ep.Targets[key] = endpoint.NormalizeMXTarget(target)
+			continue
+		case endpoint.RecordTypeSRV:
+			// RFC 2782 requires the dot; rfcViolationReason checks it (#6357).
+			continue
+		}
+
+		hasDot := strings.HasSuffix(target, ".")
+
+		if ep.RecordType == endpoint.RecordTypeNAPTR {
+			if !hasDot {
+				return fmt.Sprintf("target %q must be absolute for a NAPTR record — use %q", target, target+".")
+			}
+			continue
+		}
+
+		if hasDot {
+			return fmt.Sprintf("target %q must not end with a dot for a %s record — use %q", target, ep.RecordType, strings.TrimSuffix(target, "."))
+		}
+	}
+
+	return ""
+}
+
+// rfcViolationReason turns an Endpoint.CheckEndpoint failure into a message that
+// names the grammar the record type expects. It returns "" when ep passes.
+func rfcViolationReason(ep *endpoint.Endpoint) string {
+	if ep.CheckEndpoint() {
+		return ""
+	}
+
+	switch ep.RecordType {
+	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
+		family := 4
+		if ep.RecordType == endpoint.RecordTypeAAAA {
+			family = 6
+		}
+		return fmt.Sprintf("targets of a %s record must be IPv%d addresses, unless the endpoint sets the %q provider-specific property for a provider-native alias",
+			ep.RecordType, family, endpoint.ProviderSpecificAlias)
+	case endpoint.RecordTypeMX:
+		return `MX targets must be "<preference> <host>", e.g. "10 mail.example.com"`
+	case endpoint.RecordTypeSRV:
+		return `SRV targets must be "<priority> <weight> <port> <host>" with an absolute host, e.g. "10 5 5060 sip.example.com."`
+	case endpoint.RecordTypePTR:
+		return "a PTR record needs a dnsName under .in-addr.arpa or .ip6.arpa and at least one non-empty target"
+	}
+
+	return fmt.Sprintf("a %s record does not support the %q provider-specific property", ep.RecordType, endpoint.ProviderSpecificAlias)
+}
+
+// reportAccepted records whether external-dns understood the spec, and why it
+// refused any endpoint.
+func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, accepted int, rejections []string) {
+	condition := metav1.Condition{
+		Type:               apiv1alpha1.AcceptedCondition,
+		Status:             metav1.ConditionTrue,
+		Reason:             apiv1alpha1.AcceptedReason,
+		Message:            fmt.Sprintf("%d endpoint(s) accepted", accepted),
+		ObservedGeneration: dnsEndpoint.Generation,
+	}
+
+	if len(rejections) > 0 {
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = apiv1alpha1.InvalidReason
+		condition.Message = crd.TruncateConditionMessage(strings.Join(rejections, "; "))
+		// Events are never collapsed into a series: emitting on every sync would
+		// create one Event per interval, forever, for an untouched spec.
+		if verdictChanged(dnsEndpoint.Status.Conditions, condition) {
+			cs.emit(dnsEndpoint, condition.Message, events.ActionRejected, events.RecordInvalid)
+		}
+	}
+
+	crd.UpdateStatus(ctx, cs.crWriter, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
+		status.ObservedGeneration = dnsEndpoint.Generation
+		meta.SetStatusCondition(&status.Conditions, condition)
+
+		if accepted > 0 {
+			return
+		}
+		// The status writer never sees this object; don't leave a stale Ready.
+		if len(rejections) == 0 {
+			meta.RemoveStatusCondition(&status.Conditions, apiv1alpha1.ReadyCondition)
+			return
+		}
+		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
+			Type:               apiv1alpha1.ReadyCondition,
+			Status:             metav1.ConditionFalse,
+			Reason:             apiv1alpha1.InvalidReason,
+			Message:            "No endpoint reached the DNS provider: every endpoint in spec was rejected",
+			ObservedGeneration: dnsEndpoint.Generation,
+		})
+	})
+}
+
+// verdictChanged reports whether condition says anything stored does not already say.
+func verdictChanged(stored []metav1.Condition, condition metav1.Condition) bool {
+	current := meta.FindStatusCondition(stored, condition.Type)
+
+	return current == nil || current.Status != condition.Status || current.Reason != condition.Reason || current.Message != condition.Message
+}
+
+// emit sends a Kubernetes event on the DNSEndpoint. It is a no-op unless the
+// matching reason was enabled with --events-emit.
+func (cs *crdSource) emit(dnsEndpoint *apiv1alpha1.DNSEndpoint, msg string, action events.Action, reason events.Reason) {
+	if cs.emitter == nil {
+		return
+	}
+	ref := events.NewObjectReference(dnsEndpoint, types.CRD)
+	cs.emitter.Add(events.NewWarningEvent(ref, msg, action, reason))
 }
 
 // newCrdSource wires a cache and writer into a running crdSource.
@@ -193,7 +312,8 @@ func newCrdSource(
 	c crcache.Cache,
 	crWriter client.Client,
 	namespace string,
-	labelSelector, annotationFilter labels.Selector) (*crdSource, error) {
+	labelSelector, annotationFilter labels.Selector,
+	emitter events.EventEmitter) (*crdSource, error) {
 	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
 	if err != nil {
 		return nil, err
@@ -212,6 +332,7 @@ func newCrdSource(
 		informer:         inf,
 		listOpts:         listOpts,
 		annotationFilter: annotationFilter,
+		emitter:          emitter,
 	}
 
 	if err := startAndSync(ctx, c); err != nil {

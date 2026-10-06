@@ -26,7 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -56,6 +55,8 @@ type Controller struct {
 	// The lastRunAt used for throttling and batching reconciliation
 	lastRunAt    time.Time
 	EventEmitter events.EventEmitter
+	// StatusReporter is nil unless the crd source is enabled.
+	StatusReporter StatusReporter
 	// MangedRecordTypes are DNS record types that will be considered for management.
 	ManagedRecordTypes []string
 	// ExcludeRecordTypes are DNS record types that will be excluded from management.
@@ -64,8 +65,6 @@ type Controller struct {
 	MinEventSyncInterval time.Duration
 	// Old txt-owner value we need to migrate from
 	TXTOwnerOld string
-	// CrdClients syncs DNSEndpoint status after a reconcile; nil unless the crd source is enabled.
-	CrdClients *crd.CRDClients
 	// CRDSourceKind is the Kind reported for "crd/" deletes.
 	CRDSourceKind string
 }
@@ -123,12 +122,12 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	plan = plan.Calculate()
 
 	if plan.Changes.HasChanges() {
-		defer crd.SyncStatus(ctx, c.CrdClients, plan.Changes)
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
 			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError, c.CRDSourceKind)
+			reportSyncStatus(ctx, c.StatusReporter, plan, err)
 			return err
 		}
 		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady, c.CRDSourceKind)
@@ -136,6 +135,9 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")
 	}
+
+	// Also when nothing changed: in-sync objects still need a status.
+	reportSyncStatus(ctx, c.StatusReporter, plan, nil)
 
 	lastSyncTimestamp.Gauge.SetToCurrentTime()
 

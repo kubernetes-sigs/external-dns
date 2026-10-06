@@ -22,6 +22,25 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+const (
+	// AcceptedCondition reports whether every endpoint in spec passed source-level
+	// validation, before any provider call. ReadyCondition (see dnsrecord.go) then
+	// reports whether the provider applied them.
+	AcceptedCondition string = "Accepted"
+
+	// InvalidReason marks a spec with at least one endpoint external-dns refused to
+	// plan, e.g. an SRV target without a trailing dot.
+	InvalidReason string = "Invalid"
+
+	// FilteredReason is a ReadyCondition reason: filters or another owner excluded
+	// every endpoint.
+	FilteredReason string = "Filtered"
+
+	// DryRunReason is a ReadyCondition reason: --dry-run kept planned endpoints
+	// from the DNS provider.
+	DryRunReason string = "DryRun"
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -32,6 +51,9 @@ import (
 // +kubebuilder:resource:path=dnsendpoints
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/2007"
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=`.status.conditions[?(@.type=="Accepted")].status`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +versionName=v1alpha1
 type DNSEndpoint struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -62,4 +84,11 @@ type DNSEndpointStatus struct {
 	// The generation observed by the external-dns controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
+	// and Ready (the provider applied it).
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
