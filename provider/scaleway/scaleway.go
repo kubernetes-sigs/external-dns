@@ -30,6 +30,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/blueprint"
@@ -88,7 +89,7 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool, zonesCacheDur
 	scwClient, err := scw.NewClient(
 		scw.WithProfile(p),
 		scw.WithEnv(),
-		scw.WithUserAgent(externaldns.UserAgent()),
+		scw.WithUserAgent(version.UserAgent()),
 		scw.WithDefaultPageSize(uint32(defaultPageSize)),
 	)
 	if err != nil {

@@ -95,7 +95,7 @@ builds:
   ldflags:
   - -s
   - -w
-  - -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version={{.Env.VERSION}}
+  - -X sigs.k8s.io/external-dns/pkg/version.Version={{.Env.VERSION}}
 EOF
 
 echo ">> building FIPS-flagged image: ${IMAGE}:${VERSION}-fips"

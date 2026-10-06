@@ -29,6 +29,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -113,7 +114,7 @@ func newProvider(domainFilter *endpoint.DomainFilter, zoneIDFilter provider.Zone
 	tc := oauth2.NewClient(context.Background(), ts)
 
 	client := dnsimple.NewClient(tc)
-	client.SetUserAgent(externaldns.UserAgent())
+	client.SetUserAgent(version.UserAgent())
 
 	provider := &dnsimpleProvider{
 		client:       dnsimpleZoneService{service: client.Zones},
