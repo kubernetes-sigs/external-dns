@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -34,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -517,6 +519,52 @@ func TestKubeAPIRateLimitPropagation(t *testing.T) {
 		assert.Equal(t, 15, scg.QPS)
 		assert.Equal(t, 30, scg.Burst)
 	})
+}
+
+func TestWarnOnDualGatewayOwnership(t *testing.T) {
+	for _, ti := range []struct {
+		title       string
+		sources     []string
+		wantWarning string
+	}{
+		{
+			title:       "gateway alone produces no warning",
+			sources:     []string{types.Gateway},
+			wantWarning: ``,
+		},
+		{
+			title:       "route source alone produces no warning",
+			sources:     []string{types.GatewayHttpRoute},
+			wantWarning: ``,
+		},
+		{
+			title:       "unrelated sources produce no warning",
+			sources:     []string{types.Service, types.Ingress},
+			wantWarning: ``,
+		},
+		{
+			title:       "gateway and httproute together warn",
+			sources:     []string{types.Gateway, types.GatewayHttpRoute},
+			wantWarning: `can emit the same hostname`,
+		},
+		{
+			title:       "gateway and multiple route sources together warn",
+			sources:     []string{types.Gateway, types.GatewayHttpRoute, types.GatewayGrpcRoute},
+			wantWarning: `can emit the same hostname`,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			warnOnDualGatewayOwnership(ti.sources)
+
+			if ti.wantWarning == "" {
+				require.Empty(t, hook.Entries, "expected no warnings to be logged")
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(ti.wantWarning, log.WarnLevel, hook, t)
+			}
+		})
+	}
 }
 
 func TestStashCRDClients(t *testing.T) {

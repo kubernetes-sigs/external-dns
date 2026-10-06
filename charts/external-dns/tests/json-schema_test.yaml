@@ -40,7 +40,8 @@ tests:
       provider: null
     asserts:
       - failedTemplate:
-          errorPattern: 'executing "external-dns.providerName" at <.Values.provider.name>: nil pointer evaluating interface {}.name'
+          # Accept Helm error message variations across versions (direct vs wrapped "error calling include")
+          errorPattern: 'nil pointer evaluating interface \{\}\.name'
 
   - it: should not fail if provider block is empty
     set:
