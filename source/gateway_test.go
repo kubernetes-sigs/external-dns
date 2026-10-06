@@ -356,17 +356,6 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:  "GatewayNamespace filter limits to configured namespace",
-			config: &Config{GatewayNamespace: "ns1"},
-			gateways: []*v1.Gateway{
-				makeGateway("ns1", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
-				makeGateway("ns2", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
-			},
-			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("a.example.com", "1.2.3.4"),
-			},
-		},
-		{
 			title:  "Namespace filter limits to configured namespace",
 			config: &Config{Namespace: "ns1"},
 			gateways: []*v1.Gateway{
@@ -378,8 +367,8 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:  "GatewayLabelFilter skips gateways without matching label",
-			config: &Config{GatewayLabelFilter: "env=prod"},
+			title:  "LabelFilter skips gateways without matching label",
+			config: &Config{LabelFilter: mustGetLabelSelector("env=prod")},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), map[string]string{"env": "prod"}),
 				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), map[string]string{"env": "staging"}),

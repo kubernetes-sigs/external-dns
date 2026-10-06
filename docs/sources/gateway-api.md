@@ -54,12 +54,17 @@ This produces an A record: `app.example.com → 203.0.113.1`.
 
 | Flag | Effect on `gateway` source |
 |------|---------------------------|
+| `--namespace` | Limit to Gateways in a specific namespace |
+| `--label-filter` | Filter Gateways by label selector |
 | `--gateway-name` | Limit to a single Gateway by name |
-| `--gateway-namespace` | Limit to Gateways in a specific namespace |
-| `--gateway-label-filter` | Filter Gateways by label selector |
 | `--annotation-filter` | Filter Gateways by annotation selector |
 | `--ignore-hostname-annotation` | Skip the hostname annotation (useful with `--fqdn-template`) |
 | `--fqdn-template` | Generate hostnames from a Go template applied to the Gateway object |
+
+Note: `--gateway-namespace` and `--gateway-label-filter` apply only to the `gateway-*route` sources,
+where they scope the referenced Gateway independently of the Route's own `--namespace`/`--label-filter`.
+The `gateway` source has no such distinction — it watches Gateways directly — so it uses the generic
+`--namespace`/`--label-filter` flags instead.
 
 ## Supported API Versions
 
@@ -280,6 +285,10 @@ Choose one approach and apply it consistently:
 
 If both sources must run together, ensure there is **zero hostname overlap** between Gateway
 annotations and route hostnames.
+
+ExternalDNS logs a `WARN` on startup when `gateway` and a route source are both enabled, as a
+reminder of this risk — it cannot detect actual hostname overlap ahead of time, since that
+depends on cluster state (annotations and route specs) evaluated at sync time.
 
 ## Manifest with RBAC
 

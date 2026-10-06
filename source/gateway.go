@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
+	srctypes "sigs.k8s.io/external-dns/source/types"
 )
 
 const (
@@ -181,9 +182,9 @@ func newGatewaySource(
 	config *Config,
 	newInformerFactory func(gateway.Interface, string, labels.Selector) gwinformers.SharedInformerFactory,
 ) (Source, error) {
-	gwLabels, err := annotations.ParseFilter(config.GatewayLabelFilter)
-	if err != nil {
-		return nil, err
+	gwLabels := config.LabelFilter
+	if gwLabels == nil {
+		gwLabels = labels.Everything()
 	}
 	gwAnnotations := config.AnnotationFilter
 	if gwAnnotations == nil {
@@ -195,14 +196,13 @@ func newGatewaySource(
 		return nil, err
 	}
 
-	gwNamespace := config.GatewayNamespace
-	if gwNamespace == "" {
-		gwNamespace = config.Namespace
-	}
-
-	gwInformerFactory := newInformerFactory(client, gwNamespace, gwLabels)
+	gwInformerFactory := newInformerFactory(client, config.Namespace, gwLabels)
 	gwInformer := gwInformerFactory.Gateway().V1().Gateways()
-	gwInformer.Informer() // Register with factory before starting.
+	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
 
 	gwInformerFactory.Start(ctx.Done())
 	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
@@ -211,7 +211,7 @@ func newGatewaySource(
 
 	return &gatewaySource{
 		gwName:                   config.GatewayName,
-		gwNamespace:              gwNamespace,
+		gwNamespace:              config.Namespace,
 		gwLabels:                 gwLabels,
 		gwAnnotations:            gwAnnotations,
 		gwInformer:               gwInformer,
@@ -271,7 +271,11 @@ func (src *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, er
 		for _, host := range hostnames {
 			gwEndpoints = append(gwEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
+		if endpoint.HasNoEmptyEndpoints(gwEndpoints, srctypes.Gateway, gw) {
+			continue
+		}
 		log.Debugf("Endpoints generated from Gateway %s/%s: %v", gw.Namespace, gw.Name, gwEndpoints)
+		endpoint.AttachRefObject(gwEndpoints, events.NewObjectReference(gw, srctypes.Gateway))
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 	return endpoint.MergeEndpoints(endpoints), nil
