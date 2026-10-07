@@ -352,6 +352,57 @@ func TestOvhComputeChanges(t *testing.T) {
 
 }
 
+// existingRecords holds the records of every zone. An update in one zone must
+// never touch a record of another zone that has the same type and subdomain.
+func TestOvhComputeChangesUpdateIgnoresOtherZones(t *testing.T) {
+	existingRecords := []ovhRecord{
+		{ID: 1, Zone: "example.org", FieldType: "A", SubDomain: "", Target: "203.0.113.42"},
+		{ID: 2, Zone: "example.net", FieldType: "A", SubDomain: "", Target: "203.0.113.42"},
+		{ID: 3, Zone: "example.com", FieldType: "A", SubDomain: "", Target: "198.51.100.7"},
+		{ID: 4, Zone: "example.org", FieldType: "A", SubDomain: "www", Target: "198.51.100.8"},
+		{ID: 5, Zone: "example.net", FieldType: "A", SubDomain: "www", Target: "203.0.113.42"},
+	}
+
+	provider := &OVHProvider{client: nil, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+
+	for _, tc := range []struct {
+		name     string
+		dnsName  string
+		oldTTL   endpoint.TTL
+		newTTL   endpoint.TTL
+		target   string
+		expected []ovhChange
+	}{
+		{
+			// Only the TTL changes: the zone already has the target, nothing to do.
+			name: "apex TTL change", dnsName: "example.net", oldTTL: 0, newTTL: 300, target: "203.0.113.42",
+			expected: nil,
+		},
+		{
+			name: "subdomain target change", dnsName: "www.example.net", target: "203.0.113.43",
+			expected: []ovhChange{{
+				Action: ovhUpdate,
+				ovhRecord: ovhRecord{ID: 5, Zone: "example.net", ovhRecordFields: ovhRecordFields{
+					FieldType: "A", ovhRecordFieldUpdate: ovhRecordFieldUpdate{SubDomain: "www", TTL: defaultTTL, Target: "203.0.113.43"},
+				}},
+			}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			changes := plan.Changes{
+				UpdateOld: []*endpoint.Endpoint{{DNSName: tc.dnsName, RecordType: "A", RecordTTL: tc.oldTTL, Targets: []string{"203.0.113.42"}}},
+				UpdateNew: []*endpoint.Endpoint{{DNSName: tc.dnsName, RecordType: "A", RecordTTL: tc.newTTL, Targets: []string{tc.target}}},
+			}
+			ovhChanges, err := provider.computeSingleZoneChanges(t.Context(), "example.net", existingRecords, &changes)
+			td.CmpNoError(t, err)
+			for _, c := range ovhChanges {
+				td.Cmp(t, c.Zone, "example.net", "change %s targets another zone", c.String())
+			}
+			td.Cmp(t, ovhChanges, td.Bag(td.Flatten(tc.expected)))
+		})
+	}
+}
+
 func TestOvhRefresh(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
