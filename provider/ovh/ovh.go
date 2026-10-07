@@ -610,7 +610,8 @@ func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endp
 
 	for id := range oldEndpointByTypeAndName {
 		for _, record := range existingRecords {
-			if id == normalizeDNSName(record.FieldType+"//"+record.SubDomain) {
+			// existingRecords spans every zone: only records of this zone can be replaced.
+			if record.Zone == zone && id == normalizeDNSName(record.FieldType+"//"+record.SubDomain) {
 				oldRecordsInZone[id] = append(oldRecordsInZone[id], record)
 			}
 		}
