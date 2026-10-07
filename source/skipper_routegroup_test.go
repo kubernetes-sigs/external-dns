@@ -102,7 +102,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 	t.Run("respects namespace", func(t *testing.T) {
 		t.Parallel()
 		fakeClient := rgfake.NewSimpleClientset()
-		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{Namespace: "test-ns"})
+		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{Namespaces: []string{"test-ns"}})
 		require.NoError(t, err)
 		require.NotNil(t, src)
 	})

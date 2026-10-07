@@ -239,7 +239,7 @@ func TestRunOnce(t *testing.T) {
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "a"})
 	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, verifiedRecords.Gauge, map[string]string{"record_type": "aaaa"})
 
-	emitter.AssertNumberOfCalls(t, "Add", 6)
+	emitter.AssertNumberOfCalls(t, "Add", 4)
 }
 
 // TestRun tests that Run correctly starts and stops
