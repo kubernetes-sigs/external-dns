@@ -489,6 +489,86 @@ func TestGatewayHTTPRouteWithListenerSetRouteLabelFilter(t *testing.T) {
 	})
 }
 
+func TestGatewayHTTPRouteWithListenerSetRouteAnnotationFilter(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{Name: "default"}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	gw := &v1.Gateway{
+		Name: "gw", Namespace: "default",
+		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType, Port: 80}}},
+		Status: gatewayStatus("10.0.0.1"),
+	}
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// The ListenerSet does not carry the filtered annotation: the filter selects Routes only.
+	hostname := v1.Hostname("*.example.com")
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		Name: "ls", Namespace: "default",
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "gw"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Hostname: &hostname, Port: 8080, Protocol: v1.HTTPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+		Status: listenerSetAcceptedStatus("app"),
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	for _, rt := range []*v1.HTTPRoute{
+		{
+			Name:        "annotations-match",
+			Namespace:   "default",
+			Annotations: map[string]string{"foo": "bar"},
+			Spec: v1.HTTPRouteSpec{
+				Hostnames:       []v1.Hostname{"annotations-match.example.com"},
+				CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+			},
+			Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+		},
+		{
+			Name:        "annotations-dont-match",
+			Namespace:   "default",
+			Annotations: map[string]string{"foo": "qux"},
+			Spec: v1.HTTPRouteSpec{
+				Hostnames:       []v1.Hostname{"annotations-dont-match.example.com"},
+				CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+			},
+			Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+		},
+	} {
+		_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		AnnotationFilter:    parseAnnotationFilterOrNil("foo=bar"),
+		GatewayListenerSets: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("annotations-match.example.com", "10.0.0.1"),
+	})
+}
+
 func TestGatewayHTTPRouteWithListenerSetNotAccepted(t *testing.T) {
 	t.Parallel()
 
