@@ -23,23 +23,24 @@ cover:
 cover-html: cover
 	@go tool cover -html=cover.out
 
-#? go-tools: list installed go tools
-go-tools:
-	@echo ">> go tools installed in go.mod"
-	@go tool  -n
-	@echo ">> go tools installed in go.tool.mod"
-	@go tool -modfile=go.tool.mod
+#? check-tools: Compare the tools on PATH against the versions pinned in mise.toml
+.PHONY: check-tools
+check-tools:
+	@scripts/check-tools.sh --strict
 
-#? golangci-lint-install: Install golangci-lint tool
-golangci-lint-install:
-	@scripts/install-tools.sh --golangci
-
-#? go-lint: Run the golangci-lint tool
+#? go-lint: Run the golangci-lint tool, rewriting files in place
 .PHONY: go-lint
-go-lint: golangci-lint-install
+go-lint:
 	golangci-lint config verify
 	gofmt -l -s -w .
 	golangci-lint run --timeout=30m --fix ./...
+
+#? go-lint-check: Run the golangci-lint tool read-only, for CI
+.PHONY: go-lint-check
+go-lint-check:
+	golangci-lint config verify
+	@test -z "$$(gofmt -l -s .)" || { echo ">> gofmt -s needed, run 'make go-lint':"; gofmt -d -l -s .; exit 1; }
+	golangci-lint run --timeout=30m ./...
 
 #? licensecheck: Run the to check for license headers
 .PHONY: licensecheck
@@ -53,9 +54,13 @@ licensecheck:
 			exit 1; \
 		fi
 
-#? lint: Run all the linters
+#? lint: Run all the linters, rewriting files in place
 .PHONY: lint
 lint: licensecheck go-lint validate-json-yaml
+
+#? lint-check: Run all the linters read-only, for CI
+.PHONY: lint-check
+lint-check: licensecheck go-lint-check validate-json-yaml
 
 #? validate-json-yaml: Validate JSON and YAML files
 .PHONY: validate-json-yaml
@@ -65,12 +70,14 @@ validate-json-yaml:
 #? crd: Generates CRD using controller-gen and copy it into chart
 .PHONY: crd
 crd:
+	@scripts/check-tools.sh --strict golang kube-controller-tools yq yamlfmt
 	@./scripts/generate-crd.sh
 
-# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
-#? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
-update-tools-deps:
-	@go get -modfile=go.tool.mod tool
+#? update-tools: Bump every tool in mise.toml to its latest version
+.PHONY: update-tools
+update-tools:
+	@mise upgrade --bump
+	@$(MAKE) check-tools
 
 #? test: The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
@@ -108,6 +115,7 @@ IMG_SBOM      ?= none
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
+	@scripts/check-tools.sh --strict golang
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.push/multiarch: ko
@@ -171,6 +179,7 @@ release.staging: test
 release.prod: test
 	$(MAKE) build.push/multiarch
 
+# cloudbuild.yaml runs make inside golang:*-bookworm, which has no mise.
 .PHONY: ko
 ko:
 	scripts/install-ko.sh

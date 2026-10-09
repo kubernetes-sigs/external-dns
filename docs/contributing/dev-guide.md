@@ -13,42 +13,45 @@ The `external-dns` is the work of thousands of contributors, and is maintained b
 
 ## Tools
 
-Building and/or testing `external-dns` requires additional tooling.
+Tool versions are pinned once, in [`mise.toml`](https://github.com/kubernetes-sigs/external-dns/blob/master/mise.toml),
+the reference used by both CI and the `Makefile`. [`mise.lock`](https://github.com/kubernetes-sigs/external-dns/blob/master/mise.lock)
+holds the resolved URL and checksum of every tool on every platform, and is
+enforced on install.
 
-- [Git](https://git-scm.com/downloads)
-- [Go 1.25+](https://golang.org/dl/)
-- [Go modules](https://github.com/golang/go/wiki/Modules)
-- [golangci-lint](https://github.com/golangci/golangci-lint)
-- [ko](https://ko.build/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
-- [helm](https://helm.sh/docs/helm/helm_install/)
-- [spectral](https://github.com/stoplightio/spectral)
-- [python](https://www.python.org/downloads/)
+Install them with [mise](https://mise.jdx.dev), what CI uses:
 
-### Go Tools
+```sh
+mise install
+```
 
-Additional Go-based tools are managed in `go.tool.mod` and used for code generation:
+Check what is on your `PATH` against the pins:
+
+```sh
+make check-tools
+```
 
 | Tool                                                                  | Purpose                                            |
 |-----------------------------------------------------------------------|----------------------------------------------------|
+| golang, golangci-lint                                                 | Build and lint                                     |
 | [controller-gen](https://github.com/kubernetes-sigs/controller-tools) | Generates CRD manifests and deepcopy methods       |
 | [yq](https://github.com/mikefarah/yq)                                 | YAML processing (splitting, filtering CRD outputs) |
 | [yamlfmt](https://github.com/google/yamlfmt)                          | YAML formatting                                    |
+| [ko](https://ko.build/)                                               | Container image builds                             |
+| helm, helm-docs, ct                                                   | Chart linting, docs and tests                      |
 
-List all installed Go tools:
+Not covered by `mise.toml`: [git](https://git-scm.com/downloads),
+[kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl),
+[python](https://www.python.org/downloads/) (docs, see `docs/scripts/requirements.txt`)
+and the helm plugins installed by `scripts/helm-tools.sh --install`.
+
+Renovate keeps the pins current. To bump them by hand:
 
 ```sh
-make go-tools
+make update-tools
 ```
 
-Update Go tools to their latest versions:
-
-```sh
-make update-tools-deps
-```
-
-> **Note:** Updates are done manually because Dependabot does not yet support `go.tool.mod`
-> ([dependabot-core#12050](https://github.com/dependabot/dependabot-core/issues/12050)).
+> **Note:** Dependabot does not support mise
+> ([dependabot-core#12320](https://github.com/dependabot/dependabot-core/issues/12320)).
 
 ## First Steps
 
@@ -126,7 +129,7 @@ This runs [`scripts/generate-crd.sh`](../../scripts/generate-crd.sh) which:
 2. Generates the CRD manifest into `config/crd/standard/`
 3. Copies the CRD (with filtered annotations) into `charts/external-dns/crds/`
 
-The `controller-gen.kubebuilder.io/version` annotation in the generated YAML reflects the version of `controller-gen` from `go.tool.mod` at generation time and is updated automatically.
+The `controller-gen.kubebuilder.io/version` annotation in the generated YAML reflects the version of `controller-gen` from `mise.toml` at generation time and is updated automatically.
 
 ### Integration Tests
 
