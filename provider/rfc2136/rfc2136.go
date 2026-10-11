@@ -596,6 +596,11 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 // rrTargetFor renders an endpoint target for the RR text that is handed to
 // dns.NewRR. Handles validation and canonicalisation.
 func rrTargetFor(recordType, target string) (string, error) {
+	if recordType == endpoint.RecordTypeTXT {
+		// Zone-file syntax treats an unquoted semicolon as a comment, so
+		// dns.NewRR would keep only the text before it.
+		return quoteZoneCharacterString(target), nil
+	}
 	if recordType != endpoint.RecordTypeTLSA {
 		return target, nil
 	}
@@ -606,6 +611,26 @@ func rrTargetFor(recordType, target string) (string, error) {
 	}
 
 	return tlsa.String(), nil
+}
+
+// quoteZoneCharacterString renders target as one zone-file character-string.
+// A value that already starts and ends with a quote is left alone, which is
+// how registry TXT markers are stored.
+func quoteZoneCharacterString(target string) string {
+	if len(target) >= 2 && target[0] == '"' && target[len(target)-1] == '"' {
+		return target
+	}
+	var b strings.Builder
+	b.Grow(len(target) + 2)
+	b.WriteByte('"')
+	for i := 0; i < len(target); i++ {
+		if target[i] == '\\' || target[i] == '"' {
+			b.WriteByte('\\')
+		}
+		b.WriteByte(target[i])
+	}
+	b.WriteByte('"')
+	return b.String()
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given

@@ -1597,3 +1597,45 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 		})
 	}
 }
+
+func TestAddRecordQuotesTXTSemicolon(t *testing.T) {
+	r := &rfc2136Provider{}
+	dmarc := "v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.tld"
+
+	m := new(dns.Msg)
+	m.SetUpdate(dns.Fqdn("domain.tld"))
+	require.NoError(t, r.AddRecord(m, &endpoint.Endpoint{
+		DNSName:    "_dmarc.domain.tld",
+		RecordType: endpoint.RecordTypeTXT,
+		RecordTTL:  3600,
+		Targets:    []string{dmarc},
+	}))
+	require.Len(t, m.Ns, 1)
+	txt, ok := m.Ns[0].(*dns.TXT)
+	require.True(t, ok)
+	assert.Equal(t, []string{dmarc}, txt.Txt)
+
+	m = new(dns.Msg)
+	m.SetUpdate(dns.Fqdn("domain.tld"))
+	require.NoError(t, r.AddRecord(m, &endpoint.Endpoint{
+		DNSName:    "txt.domain.tld",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    []string{`"heritage=external-dns,external-dns/owner=private-dns"`},
+	}))
+	require.Len(t, m.Ns, 1)
+	txt, ok = m.Ns[0].(*dns.TXT)
+	require.True(t, ok)
+	assert.Equal(t, []string{"heritage=external-dns,external-dns/owner=private-dns"}, txt.Txt)
+
+	m = new(dns.Msg)
+	m.SetUpdate(dns.Fqdn("domain.tld"))
+	require.NoError(t, r.AddRecord(m, &endpoint.Endpoint{
+		DNSName:    "a.domain.tld",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    []string{"1.2.3.4"},
+	}))
+	require.Len(t, m.Ns, 1)
+	a, ok := m.Ns[0].(*dns.A)
+	require.True(t, ok)
+	assert.Equal(t, "1.2.3.4", a.A.String())
+}
