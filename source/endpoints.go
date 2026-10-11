@@ -41,7 +41,10 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 			continue
 		}
 
-		targets = append(targets, service.Spec.ExternalIPs...)
+		if len(service.Spec.ExternalIPs) > 0 {
+			targets = append(targets, service.Spec.ExternalIPs...)
+			continue
+		}
 
 		if publishInternal {
 			if service.Spec.ClusterIP != "" && service.Spec.ClusterIP != corev1.ClusterIPNone {
