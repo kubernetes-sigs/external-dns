@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestParseIngress(t *testing.T) {
@@ -244,66 +246,38 @@ func assertObjectTransformedHelper(t *testing.T, obj metav1.Object, cfg *informe
 	}
 }
 
-type mockObjectMetaAccessor struct {
-	namespace string
-	name      string
-}
-
-func (m *mockObjectMetaAccessor) GetObjectMeta() metav1.Object {
-	return &metav1.ObjectMeta{
-		Namespace: m.namespace,
-		Name:      m.name,
-	}
-}
-
-func TestHasEmptyEndpoints(t *testing.T) {
+func TestIsEmptyEndpoints(t *testing.T) {
+	svc := &corev1.Service{Namespace: "default", Name: "my-service"}
 	tests := []struct {
 		name      string
 		endpoints []*endpoint.Endpoint
-		rType     string
-		entity    metav1.ObjectMetaAccessor
 		expected  bool
 	}{
+		{name: "nil slice", expected: true},
+		{name: "empty slice", endpoints: []*endpoint.Endpoint{}, expected: true},
 		{
-			name:      "nil endpoints returns true",
-			endpoints: nil,
-			rType:     "Service",
-			entity:    &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected:  true,
+			name:      "single endpoint",
+			endpoints: []*endpoint.Endpoint{endpoint.NewEndpoint("example.org", "A", "1.2.3.4")},
 		},
 		{
-			name:      "empty slice returns true",
-			endpoints: []*endpoint.Endpoint{},
-			rType:     "Ingress",
-			entity:    &mockObjectMetaAccessor{namespace: "kube-system", name: "my-ingress"},
-			expected:  true,
-		},
-		{
-			name: "single endpoint returns false",
-			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", "A", "1.2.3.4"),
-			},
-			rType:    "Service",
-			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected: false,
-		},
-		{
-			name: "multiple endpoints returns false",
+			name: "multiple endpoints",
 			endpoints: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("example.org", "A", "1.2.3.4"),
 				endpoint.NewEndpoint("test.example.org", "CNAME", "example.org"),
 			},
-			rType:    "Ingress",
-			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
-			expected: false,
 		},
 	}
 
+	const wantLog = "No endpoints could be generated from 'Service/default/my-service'"
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := hasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
-			assert.Equal(t, tc.expected, result)
-			// TODO: Add log capture and verification
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			assert.Equal(t, tc.expected, isEmptyEndpoints(tc.endpoints, "Service", svc))
+			if tc.expected {
+				logtest.TestHelperLogContainsWithLogLevel(wantLog, log.DebugLevel, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(wantLog, hook, t)
+			}
 		})
 	}
 }

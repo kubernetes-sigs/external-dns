@@ -42,9 +42,9 @@ func ParseIngress(ingress string) (string, string, error) {
 	return namespace, name, err
 }
 
-// hasNoEmptyEndpoints checks if the endpoint list is empty and logs
-// a debug message if so. Returns true if empty, false otherwise.
-func hasNoEmptyEndpoints(
+// isEmptyEndpoints reports whether endpoints is empty, logging at debug level
+// so a source object that yields no records is still traceable.
+func isEmptyEndpoints(
 	endpoints []*endpoint.Endpoint,
 	rType string, entity metav1.ObjectMetaAccessor,
 ) bool {

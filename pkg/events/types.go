@@ -292,6 +292,8 @@ func objectRef(r *ObjectReference) *apiv1.ObjectReference {
 // NewObjectReferenceFromParts constructs an ObjectReference directly from its components.
 // Use this when you don't have a runtime.Object (e.g., in tests or when constructing
 // references from non-Kubernetes data sources).
+//
+// Deprecated: use endpoint.NewObjectRef.
 func NewObjectReferenceFromParts(kind, apiVersion, namespace, name string, uid types.UID, source string) *ObjectReference {
 	return endpoint.NewObjectRef(kind, apiVersion, namespace, name, uid, source)
 }

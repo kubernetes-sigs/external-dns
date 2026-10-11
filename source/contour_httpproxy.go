@@ -127,7 +127,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
-		if hasNoEmptyEndpoints(hpEndpoints, types.ContourHTTPProxy, hp) {
+		if isEmptyEndpoints(hpEndpoints, types.ContourHTTPProxy, hp) {
 			continue
 		}
 
