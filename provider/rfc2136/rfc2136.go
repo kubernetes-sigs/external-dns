@@ -594,18 +594,52 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 }
 
 // rrTargetFor renders an endpoint target for the RR text that is handed to
-// dns.NewRR. Handles validation and canonicalisation.
+// dns.NewRR. Handles validation, canonicalisation and quoting.
 func rrTargetFor(recordType, target string) (string, error) {
-	if recordType != endpoint.RecordTypeTLSA {
+	switch recordType {
+	case endpoint.RecordTypeTXT:
+		return quoteTXT(target), nil
+	case endpoint.RecordTypeTLSA:
+		tlsa, err := endpoint.NewTLSARecord(target)
+		if err != nil {
+			return "", err
+		}
+		return tlsa.String(), nil
+	default:
 		return target, nil
 	}
+}
 
-	tlsa, err := endpoint.NewTLSARecord(target)
-	if err != nil {
-		return "", err
+// quoteTXT quotes a TXT target for dns.NewRR. Unquoted, the zone-file parser
+// treats ';' as a comment and splits on whitespace.
+// Existing escapes like `\;` are kept.
+func quoteTXT(target string) string {
+	if len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`) {
+		return target
 	}
 
-	return tlsa.String(), nil
+	var b strings.Builder
+	b.Grow(len(target) + 2)
+	b.WriteByte('"')
+	escaped := false
+	for i := range len(target) {
+		c := target[i]
+		switch {
+		case escaped:
+			escaped = false
+		case c == '\\':
+			escaped = true
+		case c == '"':
+			b.WriteByte('\\')
+		}
+		b.WriteByte(c)
+	}
+	if escaped {
+		b.WriteByte('\\')
+	}
+	b.WriteByte('"')
+
+	return b.String()
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given
