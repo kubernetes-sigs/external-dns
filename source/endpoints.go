@@ -15,8 +15,8 @@ package source
 
 import (
 	"fmt"
-	"strconv"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 
@@ -24,9 +24,9 @@ import (
 )
 
 // EndpointTargetsFromServices retrieves endpoint targets from services in a given namespace
-// that match the specified selector. It returns external IPs, internal service addresses,
-// and load balancer addresses that can be used for DNS records.
-func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, namespace string, selector map[string]string) (endpoint.Targets, error) {
+// that match the specified selector. It returns external IPs and load balancer addresses,
+// plus internal service addresses when publishInternal is enabled.
+func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, namespace string, selector map[string]string, publishInternal bool) (endpoint.Targets, error) {
 	targets := endpoint.Targets{}
 
 	services, err := svcInformer.Lister().Services(namespace).List(labels.Everything())
@@ -43,17 +43,14 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 
 		targets = append(targets, service.Spec.ExternalIPs...)
 
-		if service.Spec.ClusterIP != "" && service.Spec.ClusterIP != "None" {
-			targets = append(targets, service.Spec.ClusterIP)
-		}
-		for _, clusterIP := range service.Spec.ClusterIPs {
-			if clusterIP != "" && clusterIP != "None" {
-				targets = append(targets, clusterIP)
+		if publishInternal {
+			if service.Spec.ClusterIP != "" && service.Spec.ClusterIP != corev1.ClusterIPNone {
+				targets = append(targets, service.Spec.ClusterIP)
 			}
-		}
-		for _, port := range service.Spec.Ports {
-			if port.NodePort != 0 {
-				targets = append(targets, strconv.Itoa(int(port.NodePort)))
+			for _, clusterIP := range service.Spec.ClusterIPs {
+				if clusterIP != "" && clusterIP != corev1.ClusterIPNone {
+					targets = append(targets, clusterIP)
+				}
 			}
 		}
 
