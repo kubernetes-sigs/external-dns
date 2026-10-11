@@ -162,7 +162,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			return nil, err
 		}
 
-		if hasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
+		if isEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
 			continue
 		}
 

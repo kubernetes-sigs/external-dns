@@ -80,7 +80,7 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 	return endpoints
 }
 
-// AttachRefObject sets the same ObjectReference on every endpoint in eps.
+// AttachRefObject sets the same ObjectRef on every endpoint in eps.
 // The reference is shared across all endpoints, so callers should create it once
 // per source object rather than once per endpoint.
 func AttachRefObject(eps []*Endpoint, ref *ObjectRef) {
