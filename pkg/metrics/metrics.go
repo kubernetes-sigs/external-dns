@@ -45,7 +45,7 @@ func init() {
 		),
 		ConstLabels: prometheus.Labels{
 			"version":    version.Version,
-			"revision":   promversion.GetRevision(),
+			"revision":   version.GitCommit,
 			"go_version": promversion.GoVersion,
 			"os":         promversion.GoOS,
 			"arch":       promversion.GoArch,

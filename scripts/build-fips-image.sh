@@ -96,6 +96,7 @@ builds:
   - -s
   - -w
   - -X sigs.k8s.io/external-dns/pkg/version.Version={{.Env.VERSION}}
+  - -X sigs.k8s.io/external-dns/pkg/version.GitCommit={{.Git.ShortCommit}}
 EOF
 
 echo ">> building FIPS-flagged image: ${IMAGE}:${VERSION}-fips"

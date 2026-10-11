@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package version reports the build identity of external-dns. It depends only
+// on the standard library so that webhook providers can import it without
+// pulling in the rest of external-dns.
 package version
 
 import (
@@ -26,16 +29,26 @@ const (
 )
 
 var (
-	Version          = "unknown" // Set at build time via `-ldflags "-X sigs.k8s.io/external-dns/pkg/version.Version=<value>"`
-	GitCommit        = "unknown" // Set at build time via `-ldflags "-X sigs.k8s.io/external-dns/pkg/version.GitCommit=<value>"`
+	// Version is the release version. It is set at link time via
+	// -ldflags "-X sigs.k8s.io/external-dns/pkg/version.Version=<value>"
+	// and must not be assigned at runtime.
+	Version = "unknown"
+	// GitCommit is the short commit hash the binary was built from. It is set
+	// at link time via
+	// -ldflags "-X sigs.k8s.io/external-dns/pkg/version.GitCommit=<value>"
+	// and must not be assigned at runtime.
+	GitCommit = "unknown"
+	// UserAgentProduct is the product token used in UserAgent.
 	UserAgentProduct = "ExternalDNS"
 	goVersion        = runtime.Version()
 )
 
+// UserAgent returns the HTTP User-Agent, "<UserAgentProduct>/<Version>".
 func UserAgent() string {
 	return fmt.Sprintf("%s/%s", UserAgentProduct, Version)
 }
 
+// Banner returns a one-line summary of the build for startup logs.
 func Banner() string {
 	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 	return fmt.Sprintf(
