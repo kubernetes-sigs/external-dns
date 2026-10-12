@@ -14,10 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package version reports the build identity of external-dns. It depends only
-// on the standard library so that webhook providers can import it without
-// pulling in the rest of external-dns.
-package version
+// Package version reports the build identity of external-dns. 
+// Stdlib-only to keep the import lightweight for webhook providers.
 
 import (
 	"fmt"
