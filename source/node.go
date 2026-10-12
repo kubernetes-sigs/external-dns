@@ -113,11 +113,16 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		// Only generate node name endpoints when there's no template or when combining
 		var nodeEndpoints []*endpoint.Endpoint
 		var err error
-		if !ns.templateEngine.IsConfigured() || ns.templateEngine.Combining() {
+		if !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining() {
 			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {
 				return nil, err
 			}
+		}
+
+		nodeEndpoints, err = ns.templateEngine.ApplyFQDNTargetTemplate(nodeEndpoints, node)
+		if err != nil {
+			return nil, err
 		}
 
 		nodeEndpoints, err = ns.templateEngine.CombineWithEndpoints(
@@ -178,6 +183,9 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 
 		for _, addr := range addrs {
 			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
+			if ep == nil {
+				continue
+			}
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)

@@ -57,19 +57,19 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 // the controller annotation is present and does not match the expected controller value.
 // It also logs the reason.
 func IsControllerMismatch(
-	entity metav1.ObjectMetaAccessor,
+	entity metav1.Object,
 	rType string,
 ) bool {
-	value, ok := entity.GetObjectMeta().GetAnnotations()[ControllerKey]
+	value, ok := entity.GetAnnotations()[ControllerKey]
 	if ok && value != ControllerValue {
-		log.Debugf(skipCtrlMsg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName(), ControllerKey, value, ControllerValue)
+		log.Debugf(skipCtrlMsg, rType, entity.GetNamespace(), entity.GetName(), ControllerKey, value, ControllerValue)
 		return true
 	}
 	return false
 }
 
 // IsControllerMatch returns true when the resource should not be skipped
-func IsControllerMatch[T metav1.ObjectMetaAccessor](entity T) bool {
+func IsControllerMatch[T metav1.Object](entity T) bool {
 	return !IsControllerMismatch(entity, "")
 }
 

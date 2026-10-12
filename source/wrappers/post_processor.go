@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 type postProcessor struct {
@@ -91,9 +92,16 @@ func (pp *postProcessor) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return endpoints, nil
 	}
 
+	// Legacy names are Cloudflare-only; rewriting "webhook/cloudflare-tags"
+	// would get it dropped by RetainProviderProperties.
+	normalize := pp.cfg.provider == "cloudflare"
+
 	for _, ep := range endpoints {
 		if ep == nil {
 			continue
+		}
+		if normalize {
+			annotations.NormalizeProviderSpecific(ep)
 		}
 		ep.WithMinTTL(pp.cfg.ttl)
 		ep.RetainProviderProperties(pp.cfg.provider)

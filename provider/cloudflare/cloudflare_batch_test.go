@@ -18,21 +18,19 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
 	"strings"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
+	"github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
-	"sigs.k8s.io/external-dns/provider"
 )
 
 func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error) {
@@ -95,11 +93,32 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 
 	// Process Posts (creates).
 	for _, postUnion := range params.Posts.Value {
-		record := extractBatchPostData(postUnion)
-		if record.Name == "" {
+		var record dns.RecordResponse
+		switch post := postUnion.(type) {
+		case dns.SRVRecordParam:
+			record = dns.RecordResponse{
+				ID:      generateDNSRecordID(string(post.Type.Value), post.Name.Value, srvContentFromParam(post.Data.Value)),
+				Name:    post.Name.Value,
+				TTL:     post.TTL.Value,
+				Proxied: post.Proxied.Value,
+				Type:    dns.RecordResponseType(post.Type.Value),
+				Content: srvContentFromParam(post.Data.Value),
+				Data:    srvDataFromParam(post.Data.Value),
+			}
+		case dns.RecordBatchParamsPost:
+			typeStr := string(post.Type.Value)
+			record = dns.RecordResponse{
+				ID:       generateDNSRecordID(typeStr, post.Name.Value, post.Content.Value),
+				Name:     post.Name.Value,
+				TTL:      dns.TTL(post.TTL.Value),
+				Proxied:  post.Proxied.Value,
+				Type:     dns.RecordResponseType(typeStr),
+				Content:  post.Content.Value,
+				Priority: post.Priority.Value,
+			}
+		default:
 			continue
 		}
-		record.ID = generateDNSRecordID(string(record.Type), record.Name, record.Content)
 		m.Actions = append(m.Actions, MockAction{
 			Name:       "Create",
 			ZoneId:     zoneID,
@@ -124,70 +143,6 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 	}
 
 	return &dns.RecordBatchResponse{}, nil
-}
-
-// srvResponseFromParam rebuilds a mock RecordResponse from a typed SRVRecordParam,
-// shared by the mock client and the batch-extract helpers so canonical Content
-// formatting lives in one place.
-func srvResponseFromParam(p dns.SRVRecordParam) dns.RecordResponse {
-	d := p.Data.Value
-	return dns.RecordResponse{
-		Name:     p.Name.Value,
-		TTL:      dns.TTL(p.TTL.Value),
-		Proxied:  p.Proxied.Value,
-		Type:     dns.RecordResponseTypeSRV,
-		Content:  fmt.Sprintf("%d %d %d %s", int64(d.Priority.Value), int64(d.Weight.Value), int64(d.Port.Value), d.Target.Value),
-		Priority: d.Priority.Value,
-		Data: dns.SRVRecordData{
-			Priority: d.Priority.Value,
-			Weight:   d.Weight.Value,
-			Port:     d.Port.Value,
-			Target:   d.Target.Value,
-		},
-	}
-}
-
-// naptrResponseFromParam mirrors srvResponseFromParam for NAPTR.
-func naptrResponseFromParam(p dns.NAPTRRecordParam) dns.RecordResponse {
-	d := p.Data.Value
-	return dns.RecordResponse{
-		Name:    p.Name.Value,
-		TTL:     dns.TTL(p.TTL.Value),
-		Proxied: p.Proxied.Value,
-		Type:    dns.RecordResponseTypeNAPTR,
-		Content: fmt.Sprintf("%d %d \"%s\" \"%s\" \"%s\" %s", int64(d.Order.Value), int64(d.Preference.Value), d.Flags.Value, d.Service.Value, d.Regex.Value, d.Replacement.Value),
-		Data: dns.NAPTRRecordData{
-			Order:       d.Order.Value,
-			Preference:  d.Preference.Value,
-			Flags:       d.Flags.Value,
-			Service:     d.Service.Value,
-			Regex:       d.Regex.Value,
-			Replacement: d.Replacement.Value,
-		},
-	}
-}
-
-// extractBatchPostData unpacks a RecordBatchParamsPostUnion into a RecordResponse
-// for the mock's Actions list. Typed SRV/NAPTR bodies route through the shared
-// srvResponseFromParam / naptrResponseFromParam helpers.
-func extractBatchPostData(post dns.RecordBatchParamsPostUnion) dns.RecordResponse {
-	switch p := post.(type) {
-	case dns.RecordBatchParamsPost:
-		return dns.RecordResponse{
-			Name:     p.Name.Value,
-			TTL:      dns.TTL(p.TTL.Value),
-			Proxied:  p.Proxied.Value,
-			Type:     dns.RecordResponseType(p.Type.Value),
-			Content:  p.Content.Value,
-			Priority: p.Priority.Value,
-		}
-	case dns.SRVRecordParam:
-		return srvResponseFromParam(p)
-	case dns.NAPTRRecordParam:
-		return naptrResponseFromParam(p)
-	default:
-		panic(fmt.Sprintf("extractBatchPostData: unexpected RecordBatchParamsPostUnion type %T", post))
-	}
 }
 
 // extractBatchPutData unpacks a BatchPutUnionParam into a record ID and a RecordResponse
@@ -250,13 +205,15 @@ func extractBatchPutData(put dns.BatchPutUnionParam) (string, dns.RecordResponse
 			Content: p.Content.Value,
 		}
 	case dns.BatchPutSRVRecordParam:
-		r := srvResponseFromParam(p.SRVRecordParam)
-		r.ID = p.ID.Value
-		return p.ID.Value, r
-	case dns.BatchPutNAPTRRecordParam:
-		r := naptrResponseFromParam(p.NAPTRRecordParam)
-		r.ID = p.ID.Value
-		return p.ID.Value, r
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeSRV,
+			Content: srvContentFromParam(p.Data.Value),
+			Data:    srvDataFromParam(p.Data.Value),
+		}
 	default:
 		panic(fmt.Sprintf("extractBatchPutData: unexpected BatchPutUnionParam type %T", put))
 	}
@@ -367,12 +324,10 @@ func TestChunkBatchChanges(t *testing.T) {
 	}
 	mkPut := func(id, name, content string) dns.BatchPutUnionParam {
 		return dns.BatchPutARecordParam{
-			ID: cloudflare.F(id),
-			ARecordParam: dns.ARecordParam{
-				Name:    cloudflare.F(name),
-				Type:    cloudflare.F(dns.ARecordTypeA),
-				Content: cloudflare.F(content),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(name),
+			Type:    cloudflare.F(dns.ARecordTypeA),
+			Content: cloudflare.F(content),
 		}
 	}
 	mkChange := func(action changeAction, name, content string) *cloudFlareChange {
@@ -476,15 +431,77 @@ func TestChunkBatchChanges(t *testing.T) {
 
 func TestTagsFromResponse(t *testing.T) {
 	t.Run("nil input returns nil", func(t *testing.T) {
-		assert.Nil(t, tagsFromResponse(nil))
+		require.Nil(t, tagsFromResponse(nil))
 	})
 	t.Run("non-string-slice returns nil", func(t *testing.T) {
-		assert.Nil(t, tagsFromResponse(42))
+		require.Nil(t, tagsFromResponse(42))
 	})
 	t.Run("string slice is returned unchanged", func(t *testing.T) {
 		tags := []string{"tag1", "tag2"}
 		assert.Equal(t, tags, tagsFromResponse(tags))
 	})
+}
+
+func TestSRVRecordTarget(t *testing.T) {
+	t.Run("parses SRV target", func(t *testing.T) {
+		target, err := endpoint.NewSRVRecord("0 1 443 caldav.fastmail.com.")
+		require.NoError(t, err)
+		data := srvRecordDataParam(target)
+		assert.InDelta(t, 0, data.Priority.Value, 0)
+		assert.InDelta(t, 1, data.Weight.Value, 0)
+		assert.InDelta(t, 443, data.Port.Value, 0)
+		assert.Equal(t, "caldav.fastmail.com", data.Target.Value)
+	})
+
+	t.Run("keeps root target", func(t *testing.T) {
+		target, err := endpoint.NewSRVRecord("0 0 0 .")
+		require.NoError(t, err)
+		data := srvRecordDataParam(target)
+		assert.Equal(t, ".", data.Target.Value)
+	})
+
+	t.Run("rejects malformed target", func(t *testing.T) {
+		_, err := endpoint.NewSRVRecord("0 1 443")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "priority, weight, port, and target host")
+	})
+}
+
+func TestBuildSRVRecordParam(t *testing.T) {
+	record := dns.RecordResponse{
+		Name:    "_caldavs._tcp.example.com",
+		TTL:     120,
+		Type:    dns.RecordResponseTypeSRV,
+		Content: "0 1 443 caldav.fastmail.com.",
+		Comment: "test-comment",
+	}
+
+	param, err := buildSRVRecordParam(record)
+	require.NoError(t, err)
+
+	assert.Equal(t, "_caldavs._tcp.example.com", param.Name.Value)
+	assert.Equal(t, dns.SRVRecordTypeSRV, param.Type.Value)
+	assert.InDelta(t, 0, param.Data.Value.Priority.Value, 0)
+	assert.InDelta(t, 1, param.Data.Value.Weight.Value, 0)
+	assert.InDelta(t, 443, param.Data.Value.Port.Value, 0)
+	assert.Equal(t, "caldav.fastmail.com", param.Data.Value.Target.Value)
+	assert.Equal(t, "test-comment", param.Comment.Value)
+}
+
+func TestBuildBatchPostParamSRV(t *testing.T) {
+	record := dns.RecordResponse{
+		Name:    "_caldavs._tcp.example.com",
+		TTL:     120,
+		Type:    dns.RecordResponseTypeSRV,
+		Content: "0 1 443 caldav.fastmail.com.",
+	}
+
+	param, ok := buildBatchPostParam(record)
+	require.True(t, ok)
+	srvParam, cast := param.(dns.SRVRecordParam)
+	require.True(t, cast)
+	assert.Equal(t, dns.SRVRecordTypeSRV, srvParam.Type.Value)
+	assert.Equal(t, "caldav.fastmail.com", srvParam.Data.Value.Target.Value)
 }
 
 func TestBuildBatchPutParam(t *testing.T) {
@@ -559,29 +576,20 @@ func TestBuildBatchPutParam(t *testing.T) {
 		assert.Equal(t, dns.NSRecordTypeNS, p.Type.Value)
 	})
 
-	t.Run("SRV record uses typed batch PUT", func(t *testing.T) {
+	t.Run("SRV record", func(t *testing.T) {
 		r := base
 		r.Type = dns.RecordResponseTypeSRV
-		r.Content = "10 20 443 target.bar.com"
+		r.Content = "10 20 443 target.bar.com."
 		param, ok := buildBatchPutParam("id-srv", r)
 		require.True(t, ok)
 		p, cast := param.(dns.BatchPutSRVRecordParam)
 		require.True(t, cast)
 		assert.Equal(t, "id-srv", p.ID.Value)
 		assert.Equal(t, dns.SRVRecordTypeSRV, p.Type.Value)
-		assert.InDelta(t, 10, p.Data.Value.Priority.Value, 0)
-		assert.InDelta(t, 20, p.Data.Value.Weight.Value, 0)
-		assert.InDelta(t, 443, p.Data.Value.Port.Value, 0)
 		assert.Equal(t, "target.bar.com", p.Data.Value.Target.Value)
-	})
-
-	t.Run("SRV with invalid content falls back to individual update", func(t *testing.T) {
-		r := base
-		r.Type = dns.RecordResponseTypeSRV
-		r.Content = "not a valid srv target"
-		param, ok := buildBatchPutParam("id-srv-bad", r)
-		assert.False(t, ok, "bad SRV data should fall back so the drain re-parses and logs")
-		assert.Nil(t, param)
+		assert.InDelta(t, 10, float64(p.Data.Value.Priority.Value), 0)
+		assert.InDelta(t, 20, float64(p.Data.Value.Weight.Value), 0)
+		assert.InDelta(t, 443, float64(p.Data.Value.Port.Value), 0)
 	})
 
 	t.Run("CAA record falls back (returns nil, false)", func(t *testing.T) {
@@ -590,7 +598,7 @@ func TestBuildBatchPutParam(t *testing.T) {
 		r.Content = "0 issue letsencrypt.org"
 		param, ok := buildBatchPutParam("id-caa", r)
 		assert.False(t, ok)
-		assert.Nil(t, param)
+		require.Nil(t, param)
 	})
 }
 
@@ -610,18 +618,17 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 		}
 		// Empty records map — getRecordID will return ""
 		bc := p.buildBatchCollections("zone1", changes, make(DNSRecordsMap))
-		assert.True(t, bc.failed, "UPDATE missing-target should flag retry")
 		assert.Empty(t, bc.batchPuts, "missing record should not be added to batch puts")
 		assert.Empty(t, bc.updateChanges)
 		assert.Empty(t, bc.fallbackUpdates)
 	})
 
-	t.Run("SRV update goes through typed batch PUT", func(t *testing.T) {
+	t.Run("SRV update goes to batchPuts", func(t *testing.T) {
 		srvRecord := dns.RecordResponse{
 			ID:      "srv-1",
 			Name:    "srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		records := DNSRecordsMap{
 			newDNSRecordIndex(srvRecord): srvRecord,
@@ -633,12 +640,9 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 			},
 		}
 		bc := p.buildBatchCollections("zone1", changes, records)
-		assert.False(t, bc.failed, "successful build")
-		require.Len(t, bc.batchPuts, 1, "SRV update should use typed batch PUT")
-		_, ok := bc.batchPuts[0].(dns.BatchPutSRVRecordParam)
-		assert.True(t, ok, "batch put should be the typed SRV param")
-		assert.Len(t, bc.updateChanges, 1)
-		assert.Empty(t, bc.fallbackUpdates, "SRV no longer falls back to individual update")
+		require.Len(t, bc.batchPuts, 1)
+		require.Len(t, bc.updateChanges, 1)
+		assert.Empty(t, bc.fallbackUpdates)
 	})
 
 	t.Run("delete with missing record ID is skipped", func(t *testing.T) {
@@ -653,7 +657,6 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 			},
 		}
 		bc := p.buildBatchCollections("zone1", changes, make(DNSRecordsMap))
-		assert.False(t, bc.failed, "DELETE missing-record is benign")
 		assert.Empty(t, bc.batchDeletes, "missing record should not be added to batch deletes")
 		assert.Empty(t, bc.deleteChanges)
 	})
@@ -704,7 +707,7 @@ func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
 			ID:      "srv-1",
 			Name:    "srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 			"001": {srvRecord},
@@ -730,7 +733,7 @@ func TestSubmitDNSRecordChanges_FallbackUpdates(t *testing.T) {
 			ID:      "newerror-upd-srv",
 			Name:    "newerror-update-srv.bar.com",
 			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 20 443 target.bar.com",
+			Content: "10 20 443 target.bar.com.",
 		}
 		client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
 			"001": {srvRecord},
@@ -775,7 +778,7 @@ func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
 		assert.False(t, failed, "delete of already-absent record should not report failure")
 	})
 
-	t.Run("update where record is not found flags retry", func(t *testing.T) {
+	t.Run("update where record is not found skips gracefully", func(t *testing.T) {
 		chunk := batchChunk{
 			updateChanges: []*cloudFlareChange{
 				{
@@ -789,348 +792,6 @@ func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
 			},
 		}
 		failed := p.fallbackIndividualChanges(t.Context(), "001", chunk, emptyRecords)
-		assert.True(t, failed, "update of missing record should flag retry (mirrors buildBatchCollections)")
+		assert.False(t, failed, "update of missing record should not report failure")
 	})
-}
-
-func TestBuildSRVData(t *testing.T) {
-	cases := []struct {
-		name        string
-		content     string
-		wantPort    float64
-		wantTarget  string
-		wantErrText string
-	}{
-		{"valid 4-field", "10 5 5060 sip.example.com.", 5060, "sip.example.com", ""},
-		{"valid 4-field no trailing dot", "10 5 5060 sip.example.com", 5060, "sip.example.com", ""},
-		{"preserves bare-dot (RFC 2782 service unavailable)", "0 0 0 .", 0, ".", ""},
-		{"target without trailing dot", "1 1 80 host", 80, "host", ""},
-		{"wrong field count", "10 5 sip.example.com.", 0, "", "invalid SRV target"},
-		{"non-numeric priority", "x 5 5060 sip.example.com.", 0, "", "invalid SRV target"},
-		{"port out of uint16 range", "10 5 65536 sip.example.com.", 0, "", "invalid SRV target"},
-		{"empty content", "", 0, "", "invalid SRV target"},
-		{"multi-dot trailing rejected", "10 5 5060 sip.example.com..", 0, "", "invalid SRV target"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			data, err := buildSRVData(c.content)
-			if c.wantErrText != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), c.wantErrText)
-				return
-			}
-			require.NoError(t, err)
-			assert.InDelta(t, c.wantPort, data.Port.Value, 0)
-			assert.Equal(t, c.wantTarget, data.Target.Value)
-		})
-	}
-}
-
-func TestSRVRecordParam(t *testing.T) {
-	cfc := cloudFlareChange{
-		ResourceRecord: dns.RecordResponse{
-			Name:    "_sip._udp.bar.com",
-			TTL:     120,
-			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 5 5060 target.bar.com.",
-			Comment: "managed",
-		},
-	}
-	p, err := srvRecordParam(cfc.ResourceRecord)
-	require.NoError(t, err)
-	assert.Equal(t, "_sip._udp.bar.com", p.Name.Value)
-	assert.Equal(t, dns.SRVRecordTypeSRV, p.Type.Value)
-	assert.Equal(t, "managed", p.Comment.Value)
-	assert.InDelta(t, 5060, p.Data.Value.Port.Value, 0)
-	assert.Equal(t, "target.bar.com", p.Data.Value.Target.Value)
-}
-
-func TestBuildBatchPostParam_SRV(t *testing.T) {
-	r := dns.RecordResponse{
-		Name:    "_sip._udp.bar.com",
-		Type:    dns.RecordResponseTypeSRV,
-		TTL:     120,
-		Content: "10 5 5060 target.bar.com.",
-	}
-	param, err := buildBatchPostParam(r)
-	require.NoError(t, err)
-	srv, ok := param.(dns.SRVRecordParam)
-	require.True(t, ok, "SRV should produce a typed SRVRecordParam")
-	assert.InDelta(t, 5060, srv.Data.Value.Port.Value, 0)
-	assert.Equal(t, "target.bar.com", srv.Data.Value.Target.Value)
-}
-
-func TestGetCreateDNSRecordParam_SRV(t *testing.T) {
-	cfc := &cloudFlareChange{
-		ResourceRecord: dns.RecordResponse{
-			Name:    "_sip._udp.bar.com",
-			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 5 5060 target.bar.com.",
-		},
-	}
-	params, err := getCreateDNSRecordParam("zone-1", cfc)
-	require.NoError(t, err)
-	body, ok := params.Body.(dns.SRVRecordParam)
-	require.True(t, ok, "SRV should use typed body, not the generic flat body")
-	assert.Equal(t, dns.SRVRecordTypeSRV, body.Type.Value)
-}
-
-func TestGetUpdateDNSRecordParam_SRV(t *testing.T) {
-	cfc := cloudFlareChange{
-		ResourceRecord: dns.RecordResponse{
-			Name:    "_sip._udp.bar.com",
-			Type:    dns.RecordResponseTypeSRV,
-			Content: "10 5 5060 target.bar.com.",
-		},
-	}
-	params, err := getUpdateDNSRecordParam("zone-1", cfc)
-	require.NoError(t, err)
-	body, ok := params.Body.(dns.SRVRecordParam)
-	require.True(t, ok, "SRV should use typed body, not the generic flat body")
-	assert.Equal(t, dns.SRVRecordTypeSRV, body.Type.Value)
-}
-
-func TestSRVContent(t *testing.T) {
-	r := dns.RecordResponse{
-		Name:    "_sip._udp.bar.com",
-		Type:    dns.RecordResponseTypeSRV,
-		Content: "5 5060 sip1.bar.com", // raw 3-field Cloudflare content (priority dropped)
-		Data: dns.SRVRecordData{
-			Priority: 10,
-			Weight:   5,
-			Port:     5060,
-			Target:   "sip1.bar.com",
-		},
-	}
-	// Canonical rebuild adds priority and trailing dot.
-	assert.Equal(t, "10 5 5060 sip1.bar.com.", srvContent(r))
-}
-
-func TestSRVContentFromListResponse(t *testing.T) {
-	// Mirrors Cloudflare's list payload: 3-field flat Content, structured Data nested.
-	raw := `{"id":"abc","type":"SRV","name":"_sip._udp.bar.com","content":"5 5060 sip1.bar.com","ttl":300,"priority":10,"data":{"priority":10,"weight":5,"port":5060,"target":"sip1.bar.com"}}`
-	var r dns.RecordResponse
-	require.NoError(t, json.Unmarshal([]byte(raw), &r))
-	assert.Equal(t, "10 5 5060 sip1.bar.com.", srvContent(r))
-}
-
-func TestSRVContentNoData(t *testing.T) {
-	// When neither structured Data nor recoverable raw JSON is present, srvContent
-	// logs a warning and returns the raw Content unchanged (best effort).
-	r := dns.RecordResponse{
-		Name:    "_sip._udp.bar.com",
-		Type:    dns.RecordResponseTypeSRV,
-		Content: "5 5060 sip1.bar.com",
-	}
-	assert.Equal(t, "5 5060 sip1.bar.com", srvContent(r))
-}
-
-// TestSRVDataNilOnSDKUnionBug pins the cloudflare-go v5.1.0 union-decoder bug
-// (cloudflare-go#4300). Fails when the SDK is upgraded and populates Data,
-// signalling that the raw-JSON fallback in srvContent can be removed.
-func TestSRVDataNilOnSDKUnionBug(t *testing.T) {
-	raw := `{"id":"abc","type":"SRV","name":"_sip._udp.bar.com","content":"5 5060 sip1.bar.com","ttl":300,"priority":10,"data":{"priority":10,"weight":5,"port":5060,"target":"sip1.bar.com"}}`
-	var r dns.RecordResponse
-	require.NoError(t, json.Unmarshal([]byte(raw), &r))
-	_, ok := r.Data.(dns.SRVRecordData)
-	require.False(t, ok, "SDK now populates Data on List for SRV; remove the raw-JSON fallback in srvContent (cloudflare-go#4300 fixed)")
-}
-
-func TestBuildNAPTRData(t *testing.T) {
-	cases := []struct {
-		name        string
-		content     string
-		wantOrder   float64
-		wantSvc     string
-		wantRepl    string
-		wantErrText string
-	}{
-		{"valid 6-field", `100 50 "U" "E2U+sip" "!^.*$!sip:info@bar.com!" .`, 100, "E2U+sip", ".", ""},
-		{"strips trailing dot on replacement", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, 10, "SIP+D2U", "_sip._udp.bar.com", ""},
-		{"no trailing dot on replacement", `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`, 10, "SIP+D2U", "_sip._udp.bar.com", ""},
-		{"5 fields rejected (missing preference)", `10 "U" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
-		{"non-numeric order rejected", `x 20 "S" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
-		{"order out of uint16 range", `99999 20 "S" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
-		{"preference out of uint16 range", `10 99999 "S" "SIP+D2U" "" host.`, 0, "", "", "invalid NAPTR target"},
-		{"empty content", "", 0, "", "", "invalid NAPTR target"},
-		{"multi-dot trailing rejected", `10 20 "S" "SIP+D2U" "" host..`, 0, "", "", "invalid NAPTR target"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			data, err := buildNAPTRData(c.content)
-			if c.wantErrText != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), c.wantErrText)
-				return
-			}
-			require.NoError(t, err)
-			assert.InDelta(t, c.wantOrder, data.Order.Value, 0)
-			assert.Equal(t, c.wantSvc, data.Service.Value)
-			assert.Equal(t, c.wantRepl, data.Replacement.Value)
-		})
-	}
-}
-
-func TestNAPTRRecordParam(t *testing.T) {
-	cfc := cloudFlareChange{
-		ResourceRecord: dns.RecordResponse{
-			Name:    "bar.com",
-			TTL:     120,
-			Type:    dns.RecordResponseTypeNAPTR,
-			Content: `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`,
-			Comment: "managed",
-		},
-	}
-	p, err := naptrRecordParam(cfc.ResourceRecord)
-	require.NoError(t, err)
-	assert.Equal(t, "bar.com", p.Name.Value)
-	assert.Equal(t, dns.NAPTRRecordTypeNAPTR, p.Type.Value)
-	assert.Equal(t, "managed", p.Comment.Value)
-	assert.Equal(t, "_sip._udp.bar.com", p.Data.Value.Replacement.Value)
-	assert.Equal(t, "SIP+D2U", p.Data.Value.Service.Value)
-}
-
-func TestBuildBatchPostParam_NAPTR(t *testing.T) {
-	r := dns.RecordResponse{
-		Name:    "bar.com",
-		Type:    dns.RecordResponseTypeNAPTR,
-		TTL:     120,
-		Content: `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`,
-	}
-	param, err := buildBatchPostParam(r)
-	require.NoError(t, err)
-	naptr, ok := param.(dns.NAPTRRecordParam)
-	require.True(t, ok, "NAPTR should produce a typed NAPTRRecordParam")
-	assert.Equal(t, "_sip._udp.bar.com", naptr.Data.Value.Replacement.Value)
-}
-
-func TestGetCreateDNSRecordParam_NAPTR(t *testing.T) {
-	cfc := &cloudFlareChange{
-		ResourceRecord: dns.RecordResponse{
-			Name:    "bar.com",
-			Type:    dns.RecordResponseTypeNAPTR,
-			Content: `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`,
-		},
-	}
-	params, err := getCreateDNSRecordParam("zone-1", cfc)
-	require.NoError(t, err)
-	body, ok := params.Body.(dns.NAPTRRecordParam)
-	require.True(t, ok, "NAPTR should use typed body")
-	assert.Equal(t, dns.NAPTRRecordTypeNAPTR, body.Type.Value)
-}
-
-func TestGetUpdateDNSRecordParam_NAPTR(t *testing.T) {
-	cfc := cloudFlareChange{
-		ResourceRecord: dns.RecordResponse{
-			Name:    "bar.com",
-			Type:    dns.RecordResponseTypeNAPTR,
-			Content: `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`,
-		},
-	}
-	params, err := getUpdateDNSRecordParam("zone-1", cfc)
-	require.NoError(t, err)
-	body, ok := params.Body.(dns.NAPTRRecordParam)
-	require.True(t, ok, "NAPTR should use typed body")
-	assert.Equal(t, dns.NAPTRRecordTypeNAPTR, body.Type.Value)
-}
-
-func TestNAPTRContent(t *testing.T) {
-	r := dns.RecordResponse{
-		Name:    "bar.com",
-		Type:    dns.RecordResponseTypeNAPTR,
-		Content: `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com`,
-		Data: dns.NAPTRRecordData{
-			Order:       10,
-			Preference:  20,
-			Flags:       "S",
-			Service:     "SIP+D2U",
-			Regex:       "",
-			Replacement: "_sip._udp.bar.com",
-		},
-	}
-	assert.Equal(t, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, naptrContent(r))
-}
-
-func TestNAPTRContentFromListResponse(t *testing.T) {
-	// Cloudflare's list payload for NAPTR: structured data in the JSON envelope.
-	raw := `{"id":"def","type":"NAPTR","name":"bar.com","content":"order 10 ...","ttl":300,"data":{"order":10,"preference":20,"flags":"S","service":"SIP+D2U","regex":"","replacement":"_sip._udp.bar.com"}}`
-	var r dns.RecordResponse
-	require.NoError(t, json.Unmarshal([]byte(raw), &r))
-	assert.Equal(t, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, naptrContent(r))
-}
-
-func TestNAPTRContentNoData(t *testing.T) {
-	r := dns.RecordResponse{
-		Name:    "bar.com",
-		Type:    dns.RecordResponseTypeNAPTR,
-		Content: "raw fallback content",
-	}
-	assert.Equal(t, "raw fallback content", naptrContent(r))
-}
-
-// TestNAPTRDataNilOnSDKUnionBug pins the cloudflare-go v5.1.0 union-decoder bug
-// for NAPTR. Same intent as the SRV sibling.
-func TestNAPTRDataNilOnSDKUnionBug(t *testing.T) {
-	raw := `{"id":"def","type":"NAPTR","name":"bar.com","content":"order 10 ...","ttl":300,"data":{"order":10,"preference":20,"flags":"S","service":"SIP+D2U","regex":"","replacement":"_sip._udp.bar.com"}}`
-	var r dns.RecordResponse
-	require.NoError(t, json.Unmarshal([]byte(raw), &r))
-	_, ok := r.Data.(dns.NAPTRRecordData)
-	require.False(t, ok, "SDK now populates Data on List for NAPTR; remove the raw-JSON fallback in naptrContent (cloudflare-go#4300 fixed)")
-}
-
-func TestCloudflareNAPTRRoundTrip(t *testing.T) {
-	client := NewMockCloudFlareClient()
-	p := &CloudFlareProvider{Client: client, zoneIDFilter: provider.NewZoneIDFilter([]string{"001"})}
-
-	endpoints := []*endpoint.Endpoint{
-		{
-			RecordType: "NAPTR",
-			DNSName:    "bar.com",
-			Targets:    endpoint.Targets{`10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`},
-			RecordTTL:  120,
-		},
-	}
-
-	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: endpoints}))
-
-	records, err := p.Records(t.Context())
-	require.NoError(t, err)
-	require.Len(t, records, 1)
-	assert.Equal(t, "NAPTR", records[0].RecordType)
-	require.Len(t, records[0].Targets, 1)
-	assert.Equal(t, `10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`, records[0].Targets[0])
-
-	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Delete: records}))
-	records2, err := p.Records(t.Context())
-	require.NoError(t, err)
-	assert.Empty(t, records2)
-}
-
-func TestCloudflareSRVRoundTrip(t *testing.T) {
-	client := NewMockCloudFlareClient()
-	p := &CloudFlareProvider{Client: client, zoneIDFilter: provider.NewZoneIDFilter([]string{"001"})}
-
-	endpoints := []*endpoint.Endpoint{
-		{
-			RecordType: "SRV",
-			DNSName:    "_sip._udp.bar.com",
-			Targets:    endpoint.Targets{"10 5 5060 sip.bar.com."},
-			RecordTTL:  120,
-		},
-	}
-
-	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: endpoints}))
-
-	records, err := p.Records(t.Context())
-	require.NoError(t, err)
-	require.Len(t, records, 1)
-	assert.Equal(t, "SRV", records[0].RecordType)
-	assert.Equal(t, "_sip._udp.bar.com", records[0].DNSName)
-	require.Len(t, records[0].Targets, 1)
-	assert.Equal(t, "10 5 5060 sip.bar.com.", records[0].Targets[0])
-
-	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Delete: records}))
-	records2, err := p.Records(t.Context())
-	require.NoError(t, err)
-	assert.Empty(t, records2)
 }

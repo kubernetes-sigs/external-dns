@@ -22,10 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
-	miekg "github.com/miekg/dns"
+	"github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
@@ -51,12 +52,10 @@ type batchCollections struct {
 	createChanges []*cloudFlareChange
 	updateChanges []*cloudFlareChange
 
-	// fallbackUpdates holds changes for record types whose batch-put param
-	// requires structured Data fields (e.g. SRV, CAA). These are submitted
-	// via individual UpdateDNSRecord calls instead of the batch API.
+	// fallbackUpdates holds changes for record types not supported by the
+	// typed batch-put union. These are submitted via individual UpdateDNSRecord
+	// calls instead of the batch API.
 	fallbackUpdates []*cloudFlareChange
-
-	failed bool
 }
 
 // batchChunk holds a DNS record batch request alongside the source changes
@@ -73,109 +72,29 @@ func (z zoneService) BatchDNSRecords(ctx context.Context, params dns.RecordBatch
 	return z.service.DNS.Records.Batch(ctx, params)
 }
 
-// buildSRVData parses an SRV target "<priority> <weight> <port> <target>" into the
-// structured data Cloudflare's batch endpoint requires (a flat content string is
-// rejected). Parsing goes through miekg/dns; the trailing dot on target is stripped.
-func buildSRVData(content string) (dns.SRVRecordDataParam, error) {
-	rr, err := miekg.NewRR("x. 0 IN SRV " + content)
-	if err != nil || rr == nil {
-		return dns.SRVRecordDataParam{}, fmt.Errorf("invalid SRV target %q: %w", content, err)
-	}
-	srv, ok := rr.(*miekg.SRV)
-	if !ok {
-		return dns.SRVRecordDataParam{}, fmt.Errorf("invalid SRV target %q: parsed as %T", content, rr)
-	}
-	target := srv.Target
-	if target != "." {
-		target = strings.TrimRight(target, ".")
-	}
-	return dns.SRVRecordDataParam{
-		Priority: cloudflare.F(float64(srv.Priority)),
-		Weight:   cloudflare.F(float64(srv.Weight)),
-		Port:     cloudflare.F(float64(srv.Port)),
-		Target:   cloudflare.F(target),
-	}, nil
-}
-
-// buildNAPTRData parses a NAPTR target into the structured data Cloudflare's batch
-// endpoint requires (a flat content string is rejected). Parsing goes through
-// miekg/dns; the trailing dot on replacement is stripped.
-func buildNAPTRData(content string) (dns.NAPTRRecordDataParam, error) {
-	rr, err := miekg.NewRR("x. 0 IN NAPTR " + content)
-	if err != nil || rr == nil {
-		return dns.NAPTRRecordDataParam{}, fmt.Errorf("invalid NAPTR target %q: %w", content, err)
-	}
-	naptr, ok := rr.(*miekg.NAPTR)
-	if !ok {
-		return dns.NAPTRRecordDataParam{}, fmt.Errorf("invalid NAPTR target %q: parsed as %T", content, rr)
-	}
-	replacement := naptr.Replacement
-	if replacement != "." {
-		replacement = strings.TrimRight(replacement, ".")
-	}
-	return dns.NAPTRRecordDataParam{
-		Order:       cloudflare.F(float64(naptr.Order)),
-		Preference:  cloudflare.F(float64(naptr.Preference)),
-		Flags:       cloudflare.F(naptr.Flags),
-		Service:     cloudflare.F(naptr.Service),
-		Regex:       cloudflare.F(naptr.Regexp),
-		Replacement: cloudflare.F(replacement),
-	}, nil
-}
-
-// naptrRecordParam builds the typed NAPTR record body, shared by the typed batch
-// POST / PUT paths and the individual-fallback chunk retry.
-func naptrRecordParam(r dns.RecordResponse) (dns.NAPTRRecordParam, error) {
-	data, err := buildNAPTRData(r.Content)
-	if err != nil {
-		return dns.NAPTRRecordParam{}, err
-	}
-	return dns.NAPTRRecordParam{
-		Name:    cloudflare.F(r.Name),
-		TTL:     cloudflare.F(r.TTL),
-		Type:    cloudflare.F(dns.NAPTRRecordTypeNAPTR),
-		Proxied: cloudflare.F(r.Proxied),
-		Comment: cloudflare.F(r.Comment),
-		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
-		Data:    cloudflare.F(data),
-	}, nil
-}
-
-// srvRecordParam builds the typed SRV record body, shared by the typed batch
-// POST / PUT paths and the individual-fallback chunk retry.
-func srvRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
-	data, err := buildSRVData(r.Content)
-	if err != nil {
-		return dns.SRVRecordParam{}, err
-	}
-	return dns.SRVRecordParam{
-		Name:    cloudflare.F(r.Name),
-		TTL:     cloudflare.F(r.TTL),
-		Type:    cloudflare.F(dns.SRVRecordTypeSRV),
-		Proxied: cloudflare.F(r.Proxied),
-		Comment: cloudflare.F(r.Comment),
-		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
-		Data:    cloudflare.F(data),
-	}, nil
-}
-
 // getUpdateDNSRecordParam returns the RecordUpdateParams for an individual update.
-// SRV and NAPTR use typed bodies with structured Data; other types use the generic body.
 func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpdateParams, error) {
 	switch cfc.ResourceRecord.Type {
 	case dns.RecordResponseTypeSRV:
-		body, err := srvRecordParam(cfc.ResourceRecord)
+		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
-			return dns.RecordUpdateParams{}, err
+			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
-		return dns.RecordUpdateParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
-	case dns.RecordResponseTypeNAPTR:
-		body, err := naptrRecordParam(cfc.ResourceRecord)
+		return dns.RecordUpdateParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeTLSA:
+		body, err := buildTLSARecordParam(cfc.ResourceRecord)
 		if err != nil {
-			return dns.RecordUpdateParams{}, err
+			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse TLSA record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
-		return dns.RecordUpdateParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
+		return dns.RecordUpdateParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
 	}
+
 	return dns.RecordUpdateParams{
 		ZoneID: cloudflare.F(zoneID),
 		Body: dns.RecordUpdateParamsBody{
@@ -192,22 +111,28 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpd
 }
 
 // getCreateDNSRecordParam returns the RecordNewParams for an individual create.
-// SRV and NAPTR use typed bodies with structured Data; other types use the generic body.
 func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) (dns.RecordNewParams, error) {
 	switch cfc.ResourceRecord.Type {
 	case dns.RecordResponseTypeSRV:
-		body, err := srvRecordParam(cfc.ResourceRecord)
+		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
-			return dns.RecordNewParams{}, err
+			return dns.RecordNewParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
-		return dns.RecordNewParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
-	case dns.RecordResponseTypeNAPTR:
-		body, err := naptrRecordParam(cfc.ResourceRecord)
+		return dns.RecordNewParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeTLSA:
+		body, err := buildTLSARecordParam(cfc.ResourceRecord)
 		if err != nil {
-			return dns.RecordNewParams{}, err
+			return dns.RecordNewParams{}, fmt.Errorf("failed to parse TLSA record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
-		return dns.RecordNewParams{ZoneID: cloudflare.F(zoneID), Body: body}, nil
+		return dns.RecordNewParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
 	}
+
 	return dns.RecordNewParams{
 		ZoneID: cloudflare.F(zoneID),
 		Body: dns.RecordNewParamsBody{
@@ -277,16 +202,91 @@ func tagsFromResponse(tags any) []dns.RecordTagsParam {
 	return nil
 }
 
-// buildBatchPostParam constructs the batch-POST create param for a DNS record.
-// SRV and NAPTR use typed union members; other types use the generic flat body.
-// Returns an error when typed parsing fails so the caller can skip the record.
-func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, error) {
+// cloudflareSRVTarget drops the trailing dot Cloudflare never stores.
+// Root "." is itself a host: SRV "no service" (RFC 2782).
+func cloudflareSRVTarget(target string) string {
+	if target == "." {
+		return target
+	}
+	return strings.TrimSuffix(target, ".")
+}
+
+func externalDNSSRVTarget(target string) string {
+	if target == "." || strings.HasSuffix(target, ".") {
+		return target
+	}
+	return target + "."
+}
+
+func srvRecordDataParam(target *endpoint.SRVTarget) dns.SRVRecordDataParam {
+	return dns.SRVRecordDataParam{
+		Priority: cloudflare.F(float64(target.GetPriority())),
+		Weight:   cloudflare.F(float64(target.GetWeight())),
+		Port:     cloudflare.F(float64(target.GetPort())),
+		Target:   cloudflare.F(cloudflareSRVTarget(target.GetHost())),
+	}
+}
+
+func buildSRVRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
+	target, err := endpoint.NewSRVRecord(r.Content)
+	if err != nil {
+		return dns.SRVRecordParam{}, err
+	}
+	return dns.SRVRecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.SRVRecordTypeSRV),
+		Data:    cloudflare.F(srvRecordDataParam(target)),
+		Proxied: cloudflare.F(r.Proxied),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+	}, nil
+}
+
+func tlsaRecordDataParam(target *endpoint.TLSATarget) dns.TLSARecordDataParam {
+	return dns.TLSARecordDataParam{
+		Usage:        cloudflare.F(float64(target.GetUsage())),
+		Selector:     cloudflare.F(float64(target.GetSelector())),
+		MatchingType: cloudflare.F(float64(target.GetMatchingType())),
+		Certificate:  cloudflare.F(target.GetCertificate()),
+	}
+}
+
+// buildTLSARecordParam builds TLSA parameters; the API rejects TLSA sent as content.
+func buildTLSARecordParam(r dns.RecordResponse) (dns.TLSARecordParam, error) {
+	target, err := endpoint.NewTLSARecord(r.Content)
+	if err != nil {
+		return dns.TLSARecordParam{}, err
+	}
+	return dns.TLSARecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.TLSARecordTypeTLSA),
+		Data:    cloudflare.F(tlsaRecordDataParam(target)),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+	}, nil
+}
+
+// buildBatchPostParam constructs a typed batch-post parameter for creating a DNS record.
+func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, bool) {
 	switch r.Type {
 	case dns.RecordResponseTypeSRV:
-		return srvRecordParam(r)
-	case dns.RecordResponseTypeNAPTR:
-		return naptrRecordParam(r)
+		param, err := buildSRVRecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse SRV record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return param, true
+	case dns.RecordResponseTypeTLSA:
+		param, err := buildTLSARecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse TLSA record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return param, true
 	}
+
 	return dns.RecordBatchParamsPost{
 		Name:     cloudflare.F(r.Name),
 		TTL:      cloudflare.F(r.TTL),
@@ -296,11 +296,11 @@ func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, 
 		Priority: cloudflare.F(r.Priority),
 		Comment:  cloudflare.F(r.Comment),
 		Tags:     cloudflare.F[any](tagsFromResponse(r.Tags)),
-	}, nil
+	}, true
 }
 
 // buildBatchPutParam constructs a BatchPutUnionParam for updating a DNS record in a batch.
-// Returns (nil, false) for record types that use structured Data fields (e.g. SRV, CAA),
+// Returns (nil, false) for record types not supported by the typed batch-put union,
 // which fall back to individual UpdateDNSRecord calls.
 func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam, bool) {
 	tags := tagsFromResponse(r.Tags)
@@ -308,98 +308,93 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 	switch r.Type {
 	case dns.RecordResponseTypeA:
 		return dns.BatchPutARecordParam{
-			ID: cloudflare.F(id),
-			ARecordParam: dns.ARecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.ARecordTypeA),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.ARecordTypeA),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeAAAA:
 		return dns.BatchPutAAAARecordParam{
-			ID: cloudflare.F(id),
-			AAAARecordParam: dns.AAAARecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.AAAARecordTypeAAAA),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeCNAME:
 		return dns.BatchPutCNAMERecordParam{
-			ID: cloudflare.F(id),
-			CNAMERecordParam: dns.CNAMERecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.CNAMERecordTypeCNAME),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeTXT:
 		return dns.BatchPutTXTRecordParam{
-			ID: cloudflare.F(id),
-			TXTRecordParam: dns.TXTRecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.TXTRecordTypeTXT),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.TXTRecordTypeTXT),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeMX:
 		return dns.BatchPutMXRecordParam{
-			ID: cloudflare.F(id),
-			MXRecordParam: dns.MXRecordParam{
-				Name:     cloudflare.F(r.Name),
-				TTL:      cloudflare.F(r.TTL),
-				Type:     cloudflare.F(dns.MXRecordTypeMX),
-				Content:  cloudflare.F(r.Content),
-				Proxied:  cloudflare.F(r.Proxied),
-				Comment:  cloudflare.F(comment),
-				Tags:     cloudflare.F(tags),
-				Priority: cloudflare.F(r.Priority),
-			},
+			ID:       cloudflare.F(id),
+			Name:     cloudflare.F(r.Name),
+			TTL:      cloudflare.F(r.TTL),
+			Type:     cloudflare.F(dns.MXRecordTypeMX),
+			Content:  cloudflare.F(r.Content),
+			Proxied:  cloudflare.F(r.Proxied),
+			Comment:  cloudflare.F(comment),
+			Tags:     cloudflare.F(tags),
+			Priority: cloudflare.F(r.Priority),
 		}, true
 	case dns.RecordResponseTypeNS:
 		return dns.BatchPutNSRecordParam{
-			ID: cloudflare.F(id),
-			NSRecordParam: dns.NSRecordParam{
-				Name:    cloudflare.F(r.Name),
-				TTL:     cloudflare.F(r.TTL),
-				Type:    cloudflare.F(dns.NSRecordTypeNS),
-				Content: cloudflare.F(r.Content),
-				Proxied: cloudflare.F(r.Proxied),
-				Comment: cloudflare.F(comment),
-				Tags:    cloudflare.F(tags),
-			},
+			ID:      cloudflare.F(id),
+			Name:    cloudflare.F(r.Name),
+			TTL:     cloudflare.F(r.TTL),
+			Type:    cloudflare.F(dns.NSRecordTypeNS),
+			Content: cloudflare.F(r.Content),
+			Proxied: cloudflare.F(r.Proxied),
+			Comment: cloudflare.F(comment),
+			Tags:    cloudflare.F(tags),
 		}, true
 	case dns.RecordResponseTypeSRV:
-		body, err := srvRecordParam(r)
+		param, err := buildSRVRecordParam(r)
 		if err != nil {
-			// Fall back to individual UPDATE, which re-parses and logs the error.
+			log.Errorf("failed to parse SRV record target %q for %s: %v", r.Content, r.Name, err)
 			return nil, false
 		}
-		return dns.BatchPutSRVRecordParam{ID: cloudflare.F(id), SRVRecordParam: body}, true
-	case dns.RecordResponseTypeNAPTR:
-		body, err := naptrRecordParam(r)
+		return dns.BatchPutSRVRecordParam{
+			ID:             cloudflare.F(id),
+			SRVRecordParam: param,
+		}, true
+	case dns.RecordResponseTypeTLSA:
+		param, err := buildTLSARecordParam(r)
 		if err != nil {
+			log.Errorf("failed to parse TLSA record target %q for %s: %v", r.Content, r.Name, err)
 			return nil, false
 		}
-		return dns.BatchPutNAPTRRecordParam{ID: cloudflare.F(id), NAPTRRecordParam: body}, true
+		return dns.BatchPutTLSARecordParam{
+			ID:              cloudflare.F(id),
+			TLSARecordParam: param,
+		}, true
 	default:
-		// Record types that use structured Data fields (e.g. CAA) are not
+		// Record types that use structured Data fields (CAA, etc.) are not
 		// supported in the generic batch put and fall back to individual updates.
 		return nil, false
 	}
@@ -408,7 +403,6 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 // buildBatchCollections classifies per-zone changes into batch collections.
 // Custom hostname side-effects are handled separately by
 // processCustomHostnameChanges before this is called.
-// Sets bc.failed when a change is skipped and a retry would help reconcile it.
 func (p *CloudFlareProvider) buildBatchCollections(
 	zoneID string,
 	changes []*cloudFlareChange,
@@ -418,29 +412,24 @@ func (p *CloudFlareProvider) buildBatchCollections(
 
 	for _, change := range changes {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 
 		switch change.Action {
 		case cloudFlareCreate:
-			postParam, err := buildBatchPostParam(change.ResourceRecord)
-			if err != nil {
-				log.WithFields(logFields).Errorf("failed to build batch POST param, skipping record: %v", err)
-				bc.failed = true
-				continue
+			if postParam, ok := buildBatchPostParam(change.ResourceRecord); ok {
+				bc.batchPosts = append(bc.batchPosts, postParam)
+				bc.createChanges = append(bc.createChanges, change)
 			}
-			bc.batchPosts = append(bc.batchPosts, postParam)
-			bc.createChanges = append(bc.createChanges, change)
 
 		case cloudFlareDelete:
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
-				// Record already gone is the desired state; no retry needed.
-				log.WithFields(logFields).Infof("record already gone, treating delete as success: %v", change.ResourceRecord)
+				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 				continue
 			}
 			bc.batchDeletes = append(bc.batchDeletes, dns.RecordBatchParamsDelete{ID: cloudflare.F(recordID)})
@@ -450,15 +439,13 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
-				bc.failed = true
 				continue
 			}
 			if putParam, ok := buildBatchPutParam(recordID, change.ResourceRecord); ok {
 				bc.batchPuts = append(bc.batchPuts, putParam)
 				bc.updateChanges = append(bc.updateChanges, change)
 			} else {
-				// Routing only; parse errors surface in the fallbackUpdates drain.
-				log.WithFields(logFields).Debugf("batch PUT not supported by SDK for this type or content; routing to individual update")
+				log.WithFields(logFields).Debugf("batch PUT not supported for type %s, using individual update", change.ResourceRecord.Type)
 				bc.fallbackUpdates = append(bc.fallbackUpdates, change)
 			}
 		}
@@ -505,17 +492,17 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 	}
 	for _, change := range bc.fallbackUpdates {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 		recordID := p.getRecordID(records, change.ResourceRecord)
 		recordParam, err := getUpdateDNSRecordParam(zoneID, *change)
 		if err != nil {
 			failed = true
-			log.WithFields(logFields).Errorf("failed to build update params: %v", err)
+			log.WithFields(logFields).Errorf("failed to build update record request: %v", err)
 			continue
 		}
 		if _, err := p.Client.UpdateDNSRecord(ctx, recordID, recordParam); err != nil {
@@ -556,22 +543,21 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 	for _, group := range groups {
 		for _, change := range group.changes {
 			logFields := log.Fields{
-				"record":  change.ResourceRecord.Name,
-				"type":    change.ResourceRecord.Type,
-				"content": change.ResourceRecord.Content,
-				"action":  change.Action.String(),
-				"zone":    zoneID,
+				logFieldRecord:  change.ResourceRecord.Name,
+				logFieldType:    change.ResourceRecord.Type,
+				logFieldContent: change.ResourceRecord.Content,
+				logFieldAction:  change.Action.String(),
+				logFieldZone:    zoneID,
 			}
 
 			var err error
 			switch change.Action {
 			case cloudFlareCreate:
-				params, paramErr := getCreateDNSRecordParam(zoneID, change)
-				if paramErr != nil {
-					err = paramErr
-					break
+				var params dns.RecordNewParams
+				params, err = getCreateDNSRecordParam(zoneID, change)
+				if err == nil {
+					_, err = p.Client.CreateDNSRecord(ctx, params)
 				}
-				_, err = p.Client.CreateDNSRecord(ctx, params)
 
 			case cloudFlareDelete:
 				recordID := p.getRecordID(records, change.ResourceRecord)
@@ -587,17 +573,15 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 			case cloudFlareUpdate:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					// Mirror buildBatchCollections: flag retry on stale UPDATE.
-					log.WithFields(logFields).Errorf("fallback: failed to find previous record: %v", change.ResourceRecord)
-					failed = true
+					// Record is gone; let the next sync cycle issue a fresh CREATE.
+					log.WithFields(logFields).Info("fallback: record unexpectedly not found for update, will re-evaluate on next sync")
 					continue
 				}
-				params, paramErr := getUpdateDNSRecordParam(zoneID, *change)
-				if paramErr != nil {
-					err = paramErr
-					break
+				var params dns.RecordUpdateParams
+				params, err = getUpdateDNSRecordParam(zoneID, *change)
+				if err == nil {
+					_, err = p.Client.UpdateDNSRecord(ctx, recordID, params)
 				}
-				_, err = p.Client.UpdateDNSRecord(ctx, recordID, params)
 			}
 
 			if err != nil {

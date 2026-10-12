@@ -78,13 +78,8 @@ func NewIngressSource(
 	cfg *Config) (Source, error) {
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
-	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != "" {
-		selector, err := getLabelSelector(cfg.AnnotationFilter)
-		if err != nil {
-			return nil, err
-		}
-
-		requirements, _ := selector.Requirements()
+	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != nil && !cfg.AnnotationFilter.Empty() {
+		requirements, _ := cfg.AnnotationFilter.Requirements()
 		for _, requirement := range requirements {
 			if requirement.Key() == IngressClassAnnotationKey {
 				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")
@@ -93,7 +88,7 @@ func NewIngressSource(
 	}
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace()))
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](

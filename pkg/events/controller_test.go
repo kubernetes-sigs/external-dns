@@ -115,15 +115,11 @@ func TestController_Run_EmitEvents(t *testing.T) {
 	ctrl.Run(t.Context())
 
 	event := NewEvent(NewObjectReference(&v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-object",
-			Namespace: v1.NamespaceDefault,
-			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       "fake-object",
+		Namespace:  v1.NamespaceDefault,
+		UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 	}, "fake-source"), "record created", ActionCreate, RecordReady)
 
 	ctrl.Add(event)
@@ -140,63 +136,58 @@ func TestController_Queue_EmitEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	event := NewEvent(NewObjectReference(&v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-object",
-			Namespace: v1.NamespaceDefault,
-			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       "fake-object",
+		Namespace:  v1.NamespaceDefault,
+		UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 	}, "fake-source"), "record created", ActionCreate, RecordReady)
 
 	ctrl.Add(event)
 
 	item, shutdown := ctrl.queue.Get()
 	require.False(t, shutdown)
-	assert.NotNil(t, item)
+	require.NotNil(t, item)
 
 	assert.Contains(t, item.Name, "fake-object.")
 	assert.Contains(t, item.Reason, RecordReady)
 }
 
 func TestController_Add(t *testing.T) {
-	for _, tt := range []struct {
-		title           string
-		maxQueuedEvents int
-		events          []Event
-		wantQueueLen    int
-		wantWarnLog     string
-	}{
-		{
-			title:           "queue full drops events and logs warning",
-			maxQueuedEvents: 0, // 0 >= 0 is always true, so queue is immediately "full"
-			events:          []Event{NewEvent(&ObjectReference{name: "test", namespace: "default"}, "msg", ActionCreate, RecordReady)},
-			wantQueueLen:    0,
-			wantWarnLog:     "event queue is full, dropped 1 events",
-		},
-		{
-			title:           "nil event is skipped",
-			maxQueuedEvents: maxQueuedEvents,
-			// NewEvent(nil, ...) returns a zero-value Event; its event() returns nil because ref.Name == "".
-			events:       []Event{NewEvent(nil, "msg", ActionCreate, RecordReady)},
-			wantQueueLen: 0,
-		},
-	} {
-		t.Run(tt.title, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-			ctrl, err := NewEventController(fake.NewClientset().EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
-			ctrl.maxQueuedEvents = tt.maxQueuedEvents
-			require.NoError(t, err)
+	svcRef := NewObjectReference(&v1.Service{
+		Kind: "Service", APIVersion: "v1",
+		Name: "my-svc", Namespace: "default", UID: "uid-svc",
+	}, "service")
 
-			ctrl.Add(tt.events...)
-			assert.Equal(t, tt.wantQueueLen, ctrl.queue.Len())
-			if tt.wantWarnLog != "" {
-				logtest.TestHelperLogContains(tt.wantWarnLog, hook, t)
-			}
-		})
+	crdRef := NewObjectReference(&v1.ConfigMap{
+		Kind: "ConfigMap", APIVersion: "v1",
+		Name: "my-crd", Namespace: "default", UID: "uid-crd",
+	}, "crd")
+
+	ep := func(refs ...*ObjectReference) EndpointInfo {
+		return &mockEndpointInfo{
+			dnsName:    "example.com",
+			recordType: "A",
+			recordTTL:  300,
+			targets:    []string{"1.2.3.4"},
+			owner:      "owner",
+			refObjects: refs,
+		}
 	}
+
+	t.Run("single ref object enqueues one k8s event", func(t *testing.T) {
+		ctrl, err := NewEventController(fake.NewClientset().EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
+		require.NoError(t, err)
+		ctrl.Add(NewEventFromEndpoint(ep(svcRef), ActionCreate, RecordReady))
+		assert.Equal(t, 1, ctrl.queue.Len())
+	})
+
+	t.Run("multiple ref objects enqueue one k8s event per ref", func(t *testing.T) {
+		ctrl, err := NewEventController(fake.NewClientset().EventsV1(), &Config{emitEvents: sets.New(RecordReady)})
+		require.NoError(t, err)
+		ctrl.Add(NewEventFromEndpoint(ep(svcRef, crdRef), ActionCreate, RecordReady))
+		assert.Equal(t, 2, ctrl.queue.Len())
+	})
 }
 
 func TestController_ProcessNextWorkItem(t *testing.T) {
@@ -210,7 +201,7 @@ func TestController_ProcessNextWorkItem(t *testing.T) {
 		ctrl, err := NewEventController(kubeClient.EventsV1(), &Config{dryRun: true})
 		require.NoError(t, err)
 		ctrl.queue.Add(&eventsv1.Event{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
+			Name: "test-event", Namespace: "default",
 		})
 		ctrl.processNextWorkItem(t.Context())
 		assert.Equal(t, []string{metav1.DryRunAll}, capturedDryRun)
@@ -226,7 +217,7 @@ func TestController_ProcessNextWorkItem(t *testing.T) {
 		require.NoError(t, err)
 
 		ctrl.queue.Add(&eventsv1.Event{
-			ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
+			Name: "test-event", Namespace: "default",
 		})
 		// First maxTriesPerEvent calls requeue; the final call exhausts retries and drops.
 		for range maxRetriesPerEvent + 1 {
@@ -243,8 +234,8 @@ func TestController_Emit_SkipsUnconfiguredReason(t *testing.T) {
 	require.NoError(t, err)
 
 	ctrl.emit(&eventsv1.Event{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: "default"},
-		Reason:     string(RecordDeleted), // not in emitEvents
+		Name: "test-event", Namespace: "default",
+		Reason: string(RecordDeleted), // not in emitEvents
 	})
 
 	assert.Equal(t, 0, ctrl.queue.Len())
@@ -273,15 +264,11 @@ func TestController_ProcessNextWorkItem_RequestOnError(t *testing.T) {
 	ctrl.Run(t.Context())
 
 	event := NewEvent(NewObjectReference(&v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-object",
-			Namespace: v1.NamespaceDefault,
-			UID:       "9de3fc19-8aeb-4e76-865d-ada955403103",
-		},
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       "fake-object",
+		Namespace:  v1.NamespaceDefault,
+		UID:        "9de3fc19-8aeb-4e76-865d-ada955403103",
 	}, "fake-source"), "record created", ActionCreate, RecordReady)
 
 	ctrl.Add(event)

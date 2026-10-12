@@ -122,7 +122,7 @@ func writeJSON(w http.ResponseWriter, v any) {
 
 func (h *dnsEndpointHandler) serveAPIVersions(w http.ResponseWriter) {
 	writeJSON(w, &metav1.APIVersions{
-		TypeMeta:                   metav1.TypeMeta{APIVersion: "v1", Kind: "APIVersions"},
+		APIVersion: "v1", Kind: "APIVersions",
 		ServerAddressByClientCIDRs: []metav1.ServerAddressByClientCIDR{},
 		Versions:                   []string{},
 	})
@@ -134,7 +134,7 @@ func (h *dnsEndpointHandler) serveAPIGroupList(w http.ResponseWriter) {
 		Version:      apiv1alpha1.GroupVersion.Version,
 	}
 	writeJSON(w, &metav1.APIGroupList{
-		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "APIGroupList"},
+		APIVersion: "v1", Kind: "APIGroupList",
 		Groups: []metav1.APIGroup{
 			{
 				Name:             apiv1alpha1.GroupVersion.Group,
@@ -151,7 +151,7 @@ func (h *dnsEndpointHandler) serveAPIGroup(w http.ResponseWriter) {
 		Version:      apiv1alpha1.GroupVersion.Version,
 	}
 	writeJSON(w, &metav1.APIGroup{
-		TypeMeta:         metav1.TypeMeta{APIVersion: "v1", Kind: "APIGroup"},
+		APIVersion: "v1", Kind: "APIGroup",
 		Name:             apiv1alpha1.GroupVersion.Group,
 		Versions:         []metav1.GroupVersionForDiscovery{gv},
 		PreferredVersion: gv,
@@ -160,7 +160,7 @@ func (h *dnsEndpointHandler) serveAPIGroup(w http.ResponseWriter) {
 
 func (h *dnsEndpointHandler) serveAPIResourceList(w http.ResponseWriter) {
 	writeJSON(w, &metav1.APIResourceList{
-		TypeMeta:     metav1.TypeMeta{APIVersion: "v1", Kind: "APIResourceList"},
+		APIVersion: "v1", Kind: "APIResourceList",
 		GroupVersion: apiv1alpha1.GroupVersion.String(),
 		APIResources: []metav1.APIResource{
 			{
@@ -199,9 +199,9 @@ func (h *dnsEndpointHandler) filteredEndpoints(ns string) []apiv1alpha1.DNSEndpo
 func (h *dnsEndpointHandler) serveList(w http.ResponseWriter, r *http.Request) {
 	items := h.filteredEndpoints(extractNamespace(r.URL.Path))
 	writeJSON(w, &apiv1alpha1.DNSEndpointList{
-		TypeMeta: metav1.TypeMeta{APIVersion: apiv1alpha1.GroupVersion.String(), Kind: dnsEndpointListKind},
-		ListMeta: metav1.ListMeta{ResourceVersion: "1"},
-		Items:    items,
+		APIVersion: apiv1alpha1.GroupVersion.String(), Kind: dnsEndpointListKind,
+		ResourceVersion: "1",
+		Items:           items,
 	})
 }
 

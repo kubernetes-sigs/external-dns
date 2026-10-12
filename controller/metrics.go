@@ -24,101 +24,111 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
+const (
+	subsystemRegistry   = "registry"
+	subsystemSource     = "source"
+	subsystemController = "controller"
+
+	metricErrorsTotal = "errors_total"
+
+	labelRecordType = "record_type"
+)
+
 var (
 	registryErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Subsystem: "registry",
-			Name:      "errors_total",
+			Subsystem: subsystemRegistry,
+			Name:      metricErrorsTotal,
 			Help:      "Number of Registry errors.",
 		},
 	)
 	sourceErrorsTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Subsystem: "source",
-			Name:      "errors_total",
+			Subsystem: subsystemSource,
+			Name:      metricErrorsTotal,
 			Help:      "Number of Source errors.",
 		},
 	)
 	sourceEndpointsTotal = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "source",
+			Subsystem: subsystemSource,
 			Name:      "endpoints_total",
 			Help:      "Number of Endpoints in all sources",
 		},
 	)
 	registryEndpointsTotal = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "registry",
+			Subsystem: subsystemRegistry,
 			Name:      "endpoints_total",
 			Help:      "Number of Endpoints in the registry",
 		},
 	)
 	lastSyncTimestamp = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "controller",
+			Subsystem: subsystemController,
 			Name:      "last_sync_timestamp_seconds",
 			Help:      "Timestamp of last successful sync with the DNS provider",
 		},
 	)
 	lastReconcileTimestamp = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "controller",
+			Subsystem: subsystemController,
 			Name:      "last_reconcile_timestamp_seconds",
 			Help:      "Timestamp of last attempted sync with the DNS provider",
 		},
 	)
 	controllerNoChangesTotal = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Subsystem: "controller",
+			Subsystem: subsystemController,
 			Name:      "no_op_runs_total",
 			Help:      "Number of reconcile loops ending up with no changes on the DNS provider side.",
 		},
 	)
 	deprecatedRegistryErrors = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Subsystem: "registry",
-			Name:      "errors_total",
+			Subsystem: subsystemRegistry,
+			Name:      metricErrorsTotal,
 			Help:      "Number of Registry errors.",
 		},
 	)
 	deprecatedSourceErrors = metrics.NewCounterWithOpts(
 		prometheus.CounterOpts{
-			Subsystem: "source",
-			Name:      "errors_total",
+			Subsystem: subsystemSource,
+			Name:      metricErrorsTotal,
 			Help:      "Number of Source errors.",
 		},
 	)
 
 	registryRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "registry",
+			Subsystem: subsystemRegistry,
 			Name:      "records",
 			Help:      "Number of registry records partitioned by label name (vector).",
 		},
-		[]string{"record_type"},
+		[]string{labelRecordType},
 	)
 
 	sourceRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "source",
+			Subsystem: subsystemSource,
 			Name:      "records",
 			Help:      "Number of source records partitioned by label name (vector).",
 		},
-		[]string{"record_type"},
+		[]string{labelRecordType},
 	)
 
 	verifiedRecords = metrics.NewGaugedVectorOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "controller",
+			Subsystem: subsystemController,
 			Name:      "verified_records",
 			Help:      "Number of DNS records that exists both in source and registry (vector).",
 		},
-		[]string{"record_type"},
+		[]string{labelRecordType},
 	)
 
 	consecutiveSoftErrors = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
-			Subsystem: "controller",
+			Subsystem: subsystemController,
 			Name:      "consecutive_soft_errors",
 			Help:      "Number of consecutive soft errors in reconciliation loop.",
 		},

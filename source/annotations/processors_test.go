@@ -19,6 +19,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -26,12 +27,10 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
-// helper implementing metav1.ObjectMetaAccessor for tests
+// helper implementing metav1.Object for tests via embedded ObjectMeta
 type objectUnderTest struct {
-	meta metav1.ObjectMeta
+	metav1.ObjectMeta
 }
-
-func (t *objectUnderTest) GetObjectMeta() metav1.Object { return &t.meta }
 
 func TestParseAnnotationFilter(t *testing.T) {
 	tests := []struct {
@@ -70,9 +69,9 @@ func TestParseAnnotationFilter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			selector, err := ParseFilter(tt.annotationFilter)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expectedSelector, selector)
 			}
 		})
@@ -378,7 +377,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "no controller annotation",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:        "my-service",
 					Namespace:   "default",
 					Annotations: map[string]string{},
@@ -390,7 +389,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "non-matching controller annotation",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "my-service",
 					Namespace: "default",
 					Annotations: map[string]string{
@@ -405,7 +404,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "empty controller value with annotation",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-ingress",
 					Namespace: "kube-system",
 					Annotations: map[string]string{
@@ -420,7 +419,7 @@ func TestIsControllerMismatch(t *testing.T) {
 		{
 			name: "nil annotations",
 			entity: objectUnderTest{
-				meta: metav1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:        "service",
 					Namespace:   "default",
 					Annotations: nil,

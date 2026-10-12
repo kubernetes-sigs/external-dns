@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/tests/integration/toolkit"
 )
 
@@ -80,7 +79,7 @@ func TestSourceIntegration(t *testing.T) {
 			// Get endpoints
 			endpoints, err := wrappedSource.Endpoints(ctx)
 			require.NoError(t, err)
-			testutils.ValidateEndpoints(t, endpoints, scenario.Expected)
+			toolkit.ValidateScenarioEndpoints(t, endpoints, scenario.Expected)
 		})
 	}
 }

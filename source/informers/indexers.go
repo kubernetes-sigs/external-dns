@@ -21,8 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
-
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -39,16 +37,9 @@ type IndexSelectorOptions struct {
 	conditions      []func(metav1.Object) bool
 }
 
-func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
+func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
-		if input == "" {
-			return
-		}
-		selector, err := annotations.ParseFilter(input)
-		if err != nil {
-			return
-		}
-		options.annotationFilter = selector
+		options.annotationFilter = input
 	}
 }
 
@@ -180,10 +171,10 @@ func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
 	return result
 }
 
-// GetByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
+// getByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
 // It returns the object and an error if the retrieval or type assertion fails.
 // If the object does not exist, it returns the zero value of T and nil.
-func GetByKey[T metav1.Object](indexer cache.Indexer, key string) (T, error) {
+func getByKey[T metav1.Object](indexer cache.Indexer, key string) (T, error) {
 	var entity T
 	obj, exists, err := indexer.GetByKey(key)
 	if err != nil || !exists {

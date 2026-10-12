@@ -119,11 +119,9 @@ func (ec *Controller) Add(events ...Event) {
 			dropped++
 			continue
 		}
-		event := e.event()
-		if event == nil {
-			continue
+		for _, event := range e.events() {
+			ec.emit(event)
 		}
-		ec.emit(event)
 	}
 	if dropped > 0 {
 		log.Warnf("event queue is full, dropped %d events", dropped)

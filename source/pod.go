@@ -67,7 +67,7 @@ func NewPodSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	namespace := cfg.Namespace
+	namespace := cfg.Namespace()
 	annotationFilter := cfg.AnnotationFilter
 	labelSelector := cfg.LabelFilter
 
@@ -124,7 +124,12 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 	for _, pod := range pods {
 		podEndpoints := ps.endpointsFromPodAnnotations(pod)
 
-		podEndpoints, err := ps.templateEngine.CombineWithEndpoints(
+		podEndpoints, err := ps.templateEngine.ApplyFQDNTargetTemplate(podEndpoints, pod)
+		if err != nil {
+			return nil, err
+		}
+
+		podEndpoints, err = ps.templateEngine.CombineWithEndpoints(
 			podEndpoints,
 			func() ([]*endpoint.Endpoint, error) { return ps.endpointsFromPodTemplate(pod) },
 		)
@@ -146,7 +151,9 @@ func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoi
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
-		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
+		if ep := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...); ep != nil {
+			endpoints = append(endpoints, ep)
+		}
 	}
 	return endpoints
 }
@@ -159,7 +166,9 @@ func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range hostsMap {
-		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
+		if ep := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...); ep != nil {
+			endpoints = append(endpoints, ep)
+		}
 	}
 	return endpoints, nil
 }

@@ -1,4 +1,6 @@
 suite: Test json value schema validation
+set:
+  policy: upsert-only
 templates:
   - templates/*
 release:

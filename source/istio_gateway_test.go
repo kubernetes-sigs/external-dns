@@ -41,6 +41,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
+	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -75,7 +76,7 @@ func (suite *GatewaySuite) SetupTest() {
 
 	for _, service := range suite.lbServices {
 		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.ingresses = []*networkv1.Ingress{
@@ -95,7 +96,7 @@ func (suite *GatewaySuite) SetupTest() {
 
 	for _, ingress := range suite.ingresses {
 		_, err = fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
-		suite.NoError(err, "should succeed")
+		suite.Require().NoError(err, "should succeed")
 	}
 
 	suite.source, err = NewIstioGatewaySource(
@@ -760,14 +761,15 @@ func testGatewayEndpoints(t *testing.T) {
 					name:     "fake1",
 					labels:   map[string]string{"app": "istio-gateway"},
 					dnsnames: [][]string{{"example.org"}},
+					uid:      "istio-gateway-uid",
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.8.8"},
-				},
+				}).WithRefObject(testutils.RefSource(string(sourcetypes.IstioGateway))),
 			},
 		},
 		{
@@ -1494,10 +1496,10 @@ func testGatewayEndpoints(t *testing.T) {
 				fakeKubernetesClient,
 				fakeIstioClient,
 				&Config{
-					Namespace:                targetNamespace,
+					Namespaces:               []string{targetNamespace},
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
-					AnnotationFilter:         ti.annotationFilter,
+					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              ti.labelFilter,
 				},
 			)
@@ -1505,9 +1507,9 @@ func testGatewayEndpoints(t *testing.T) {
 
 			res, err := gatewaySource.Endpoints(t.Context())
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			testutils.ValidateEndpoints(t, res, ti.expected)
@@ -1565,11 +1567,9 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			svc := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-service",
-					Namespace: "default",
-					UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
-				},
+				Name:      "fake-service",
+				Namespace: "default",
+				UID:       types.UID(fmt.Sprintf("fake-service-uid-%d", i)),
 				Spec: v1.ServiceSpec{
 					Selector: map[string]string{
 						"app":     "demo",
@@ -1587,10 +1587,8 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 			require.NoError(t, err)
 
 			gw := &networkingv1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "fake-gateway",
-					Namespace: "default",
-				},
+				Name:      "fake-gateway",
+				Namespace: "default",
 				Spec: istionetworking.Gateway{
 					Servers: []*istionetworking.Server{
 						{
@@ -1633,25 +1631,23 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 
 	t.Run("service strips managed fields and status conditions", func(t *testing.T) {
 		svc := &v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "fake-service",
-				Namespace: "default",
-				Labels: map[string]string{
-					"label1": "value1",
-					"label2": "value2",
-					"label3": "value3",
-				},
-				Annotations: map[string]string{
-					"user-annotation":                     "value",
-					"external-dns.kubernetes.io/hostname": "test-hostname",
-					"external-dns.kubernetes.io/random":   "value",
-					"other/annotation":                    "value",
-					v1.LastAppliedConfigAnnotation:        `{"apiVersion":"v1"}`,
-				},
-				UID: "someuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "fake-service",
+			Namespace: "default",
+			Labels: map[string]string{
+				"label1": "value1",
+				"label2": "value2",
+				"label3": "value3",
+			},
+			Annotations: map[string]string{
+				"user-annotation":                     "value",
+				"external-dns.kubernetes.io/hostname": "test-hostname",
+				"external-dns.kubernetes.io/random":   "value",
+				"other/annotation":                    "value",
+				v1.LastAppliedConfigAnnotation:        `{"apiVersion":"v1"}`,
+			},
+			UID: "someuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 			Spec: v1.ServiceSpec{
 				Selector:    map[string]string{"selector": "one"},
@@ -1687,18 +1683,16 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 
 	t.Run("ingress strips managed fields", func(t *testing.T) {
 		ingress := &networkv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-ingress",
-				Namespace: "default",
-				Labels:    map[string]string{"label1": "value1"},
-				Annotations: map[string]string{
-					"user-annotation":              "value",
-					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
-				},
-				UID: "ingressuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "test-ingress",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.k8s.io/v1"}`,
+			},
+			UID: "ingressuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 			Status: networkv1.IngressStatus{
 				LoadBalancer: networkv1.IngressLoadBalancerStatus{
@@ -1724,18 +1718,16 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 
 	t.Run("gateway strips managed fields", func(t *testing.T) {
 		gw := &networkingv1.Gateway{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-gateway",
-				Namespace: "default",
-				Labels:    map[string]string{"label1": "value1"},
-				Annotations: map[string]string{
-					"user-annotation":              "value",
-					v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
-				},
-				UID: "gatewayuid",
-				ManagedFields: []metav1.ManagedFieldsEntry{
-					{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-				},
+			Name:      "test-gateway",
+			Namespace: "default",
+			Labels:    map[string]string{"label1": "value1"},
+			Annotations: map[string]string{
+				"user-annotation":              "value",
+				v1.LastAppliedConfigAnnotation: `{"apiVersion":"networking.istio.io/v1beta1"}`,
+			},
+			UID: "gatewayuid",
+			ManagedFields: []metav1.ManagedFieldsEntry{
+				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 			},
 		}
 		istioClient := istiofake.NewSimpleClientset()
@@ -1760,10 +1752,8 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	gw := &networkingv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "argocd",
-			Namespace: "argocd",
-		},
+		Name:      "argocd",
+		Namespace: "argocd",
 		Spec: istionetworking.Gateway{
 			Servers: []*istionetworking.Server{
 				{
@@ -1788,13 +1778,11 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 
 	services := []*v1.Service{
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "istio-ingressgateway",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":   "istio-ingressgateway",
-					"istio": "ingressgateway",
-				},
+			Name:      "istio-ingressgateway",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":   "istio-ingressgateway",
+				"istio": "ingressgateway",
 			},
 			Spec: v1.ServiceSpec{
 				Type:                  v1.ServiceTypeLoadBalancer,
@@ -1830,13 +1818,11 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 			},
 		},
 		{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "istio-ingressgatewayudp",
-				Namespace: "default",
-				Labels: map[string]string{
-					"app":   "istio-ingressgatewayudp",
-					"istio": "ingressgateway",
-				},
+			Name:      "istio-ingressgatewayudp",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":   "istio-ingressgatewayudp",
+				"istio": "ingressgateway",
 			},
 			Spec: v1.ServiceSpec{
 				Type:                  v1.ServiceTypeLoadBalancer,
@@ -1873,7 +1859,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		},
 	}
 
-	assert.NotNil(t, services)
+	require.NotNil(t, services)
 
 	for _, svc := range services {
 		_, err := fakeKubeClient.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
@@ -1951,10 +1937,8 @@ type fakeIngressGatewayService struct {
 
 func (ig fakeIngressGatewayService) Service() *v1.Service {
 	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ig.namespace,
-			Name:      ig.name,
-		},
+		Namespace: ig.namespace,
+		Name:      ig.name,
 		Status: v1.ServiceStatus{
 			LoadBalancer: v1.LoadBalancerStatus{
 				Ingress: []v1.LoadBalancerIngress{},
@@ -1987,6 +1971,7 @@ type fakeGatewayConfig struct {
 	labels      map[string]string
 	dnsnames    [][]string
 	selector    map[string]string
+	uid         string
 }
 
 func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
@@ -1995,12 +1980,11 @@ func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
 		ns = "default"
 	}
 	gw := &networkingv1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        c.name,
-			Namespace:   ns,
-			Annotations: c.annotations,
-			Labels:      c.labels,
-		},
+		Name:        c.name,
+		Namespace:   ns,
+		Annotations: c.annotations,
+		Labels:      c.labels,
+		UID:         types.UID(c.uid),
 		Spec: istionetworking.Gateway{
 			Servers:  nil,
 			Selector: c.selector,

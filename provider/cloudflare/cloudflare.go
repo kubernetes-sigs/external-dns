@@ -18,7 +18,6 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,13 +28,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/addressing"
-	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
-	"github.com/cloudflare/cloudflare-go/v5/option"
-	"github.com/cloudflare/cloudflare-go/v5/zones"
-	miekg "github.com/miekg/dns"
+	"github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/addressing"
+	"github.com/cloudflare/cloudflare-go/v7/custom_hostnames"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
+	"github.com/cloudflare/cloudflare-go/v7/option"
+	"github.com/cloudflare/cloudflare-go/v7/zones"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 
@@ -69,6 +67,15 @@ const (
 	paidZoneMaxCommentLength = 500
 )
 
+const (
+	logFieldRecord  = "record"
+	logFieldType    = "type"
+	logFieldTTL     = "ttl"
+	logFieldContent = "content"
+	logFieldAction  = "action"
+	logFieldZone    = "zone"
+)
+
 var changeActionNames = map[changeAction]string{
 	cloudFlareCreate: "CREATE",
 	cloudFlareDelete: "DELETE",
@@ -94,7 +101,7 @@ var recordTypeProxyNotSupported = sets.New(
 	"SPF",
 	"TXT",
 	"SRV",
-	"NAPTR",
+	"TLSA",
 )
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -242,8 +249,7 @@ type cloudFlareChange struct {
 func convertCloudflareError(err error) error {
 	// Handle CloudFlare v5 SDK errors according to the documentation:
 	// https://github.com/cloudflare/cloudflare-go?tab=readme-ov-file#errors
-	var apierr *cloudflare.Error
-	if errors.As(err, &apierr) {
+	if apierr, ok := errors.AsType[*cloudflare.Error](err); ok {
 		// Rate limit errors (429) and server errors (5xx) should be treated as soft errors
 		// so that external-dns will retry them later
 		if apierr.StatusCode == http.StatusTooManyRequests || apierr.StatusCode >= http.StatusInternalServerError {
@@ -276,6 +282,22 @@ func convertCloudflareError(err error) error {
 	return err
 }
 
+// resolveAPIToken returns the Cloudflare API token from the given value,
+// reading it from a file when prefixed with "file:". Surrounding whitespace is
+// trimmed.
+func resolveAPIToken(input string) (string, error) {
+	path, ok := strings.CutPrefix(input, "file:")
+	if !ok {
+		return strings.TrimSpace(input), nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
+	}
+	return strings.TrimSpace(string(data)), nil
+}
+
 // newProvider initializes a new CloudFlare DNS based Provider.
 func newProvider(
 	domainFilter *endpoint.DomainFilter,
@@ -290,17 +312,13 @@ func newProvider(
 
 	var client *cloudflare.Client
 
-	token := os.Getenv(cfAPITokenEnvKey)
-	if token != "" {
-		if trimmed, ok := strings.CutPrefix(token, "file:"); ok {
-			tokenBytes, err := os.ReadFile(trimmed)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read %s from file: %w", cfAPITokenEnvKey, err)
-			}
-			token = strings.TrimSpace(string(tokenBytes))
+	if token := os.Getenv(cfAPITokenEnvKey); token != "" {
+		resolved, err := resolveAPIToken(token)
+		if err != nil {
+			return nil, err
 		}
 		client = cloudflare.NewClient(
-			option.WithAPIToken(token),
+			option.WithAPIToken(resolved),
 		)
 	} else {
 		apiKey := os.Getenv(cfAPIKeyEnvKey)
@@ -536,11 +554,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		for _, change := range zoneChanges {
 			logFields := log.Fields{
-				"record": change.ResourceRecord.Name,
-				"type":   change.ResourceRecord.Type,
-				"ttl":    change.ResourceRecord.TTL,
-				"action": change.Action.String(),
-				"zone":   zoneID,
+				logFieldRecord: change.ResourceRecord.Name,
+				logFieldType:   change.ResourceRecord.Type,
+				logFieldTTL:    change.ResourceRecord.TTL,
+				logFieldAction: change.Action.String(),
+				logFieldZone:   zoneID,
 			}
 			log.WithFields(logFields).Info("Changing record.")
 		}
@@ -587,9 +605,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 			failedChange = true
 		}
 		bc := p.buildBatchCollections(zoneID, zoneChanges, records)
-		if bc.failed {
-			failedChange = true
-		}
 
 		if p.submitDNSRecordChanges(ctx, zoneID, bc, records) {
 			failedChange = true
@@ -646,43 +661,29 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if proxied {
 			e.RecordTTL = 0
 		}
-		e.SetProviderSpecificProperty(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e.SetProviderSpecificProperty(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 
 		if p.CustomHostnamesConfig.Enabled {
 			// sort custom hostnames in annotation to properly detect changes
 			if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 1 {
 				sort.Strings(customHostnames)
-				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
 			}
 		} else {
 			// ignore custom hostnames annotations if not enabled
-			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameKey)
+			e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
 		}
 
-		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+		if val, ok := e.GetProviderSpecificProperty(annotations.CloudflareTagsProperty); ok {
 			sortedTags := parseTagsAnnotation(val)
-			e.SetProviderSpecificProperty(annotations.CloudflareTagsKey, strings.Join(sortedTags, ","))
+			e.SetProviderSpecificProperty(annotations.CloudflareTagsProperty, strings.Join(sortedTags, ","))
 		}
 
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
-			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); !found {
-				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentKey, p.DNSRecordsConfig.Comment)
-			}
-		}
-
-		// Canonicalize SRV/NAPTR targets to the read-back form so multi-space, tab,
-		// or missing-dot input does not re-emit an update on every reconcile.
-		switch e.RecordType {
-		case endpoint.RecordTypeSRV, endpoint.RecordTypeNAPTR:
-			for i, t := range e.Targets {
-				canonical, err := canonicalizeStructuredTarget(e.RecordType, t)
-				if err != nil {
-					log.Debugf("cloudflare: leaving %s target %q unchanged: %v", e.RecordType, t, err)
-					continue
-				}
-				e.Targets[i] = canonical
+			if _, found := e.GetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty); !found {
+				e.SetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty, p.DNSRecordsConfig.Comment)
 			}
 		}
 
@@ -714,10 +715,27 @@ func (p *CloudFlareProvider) changesByZone(zones []zones.Zone, changeSet []*clou
 }
 
 func (p *CloudFlareProvider) getRecordID(records DNSRecordsMap, record dns.RecordResponse) string {
-	if zoneRecord, ok := records[DNSRecordIndex{Name: record.Name, Type: string(record.Type), Content: record.Content}]; ok {
+	if zoneRecord, ok := records[newDNSRecordIndex(record)]; ok {
 		return zoneRecord.ID
 	}
 	return ""
+}
+
+func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
+	switch record.Type {
+	case dns.RecordResponseTypeSRV:
+		if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
+			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+		}
+	case dns.RecordResponseTypeTLSA:
+		// Cloudflare returns the digest uppercase; normalise so it compares equal.
+		if tlsa, err := endpoint.NewTLSARecord(record.Content); err == nil {
+			return tlsa.String()
+		}
+		log.Warnf("could not parse TLSA content %q for %s, using it verbatim", record.Content, record.Name)
+	}
+
+	return record.Content
 }
 
 func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoint.Endpoint, target string, current *endpoint.Endpoint) (*cloudFlareChange, error) {
@@ -741,13 +759,13 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 
 	// Load comment from program flag
 	comment := p.DNSRecordsConfig.Comment
-	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordCommentKey); ok {
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareRecordCommentProperty); ok {
 		// Replace comment with Ingress annotation
 		comment = val
 	}
 
 	var tags []string
-	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsKey); ok {
+	if val, ok := ep.GetProviderSpecificProperty(annotations.CloudflareTagsProperty); ok {
 		tags = parseTagsAnnotation(val)
 	}
 
@@ -756,13 +774,18 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	}
 
 	var priority float64
-	if ep.RecordType == "MX" {
+	if ep.RecordType == endpoint.RecordTypeMX {
 		mxRecord, err := endpoint.NewMXRecord(target)
 		if err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse MX record target %q: %w", target, err)
 		} else {
 			priority = float64(*mxRecord.GetPriority())
-			target = *mxRecord.GetHost()
+			target = mxRecord.GetHost()
+		}
+	}
+	if ep.RecordType == endpoint.RecordTypeSRV {
+		if _, err := endpoint.NewSRVRecord(target); err != nil {
+			return &cloudFlareChange{}, fmt.Errorf("failed to parse SRV record target %q: %w", target, err)
 		}
 	}
 
@@ -785,108 +808,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 }
 
 func newDNSRecordIndex(r dns.RecordResponse) DNSRecordIndex {
-	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: r.Content}
-}
-
-// naptrContent rebuilds the canonical NAPTR target from a record's structured Data,
-// adding the quoting and trailing dot that Cloudflare's flat Content drops.
-func naptrContent(r dns.RecordResponse) string {
-	data, ok := r.Data.(dns.NAPTRRecordData)
-	if !ok {
-		// Fallback for cloudflare-go#4300: v5.1.0 union decoder leaves Data nil on List.
-		var naptr dns.NAPTRRecord
-		raw := r.JSON.RawJSON()
-		var unmarshalErr error
-		if raw != "" {
-			unmarshalErr = json.Unmarshal([]byte(raw), &naptr)
-		}
-		if unmarshalErr == nil && raw != "" && (naptr.Data.Service != "" || naptr.Data.Replacement != "") {
-			data = naptr.Data
-		} else {
-			log.Warnf("NAPTR record %q has no structured data (unmarshal err: %v); using raw content %q, which may not match desired targets", r.Name, unmarshalErr, r.Content)
-			return r.Content
-		}
-	}
-	return naptrCanonical(uint16(data.Order), uint16(data.Preference), data.Flags, data.Service, data.Regex, data.Replacement)
-}
-
-// srvContent rebuilds the canonical SRV target from a record's structured Data,
-// adding the priority and trailing dot that Cloudflare's flat Content drops.
-func srvContent(r dns.RecordResponse) string {
-	data, ok := r.Data.(dns.SRVRecordData)
-	if !ok {
-		// Fallback for cloudflare-go#4300: v5.1.0 union decoder leaves Data nil on List.
-		var srv dns.SRVRecord
-		raw := r.JSON.RawJSON()
-		var unmarshalErr error
-		if raw != "" {
-			unmarshalErr = json.Unmarshal([]byte(raw), &srv)
-		}
-		if unmarshalErr == nil && raw != "" && srv.Data.Target != "" {
-			data = srv.Data
-		} else {
-			log.Warnf("SRV record %q has no structured data (unmarshal err: %v); using raw content %q, which may not match desired targets", r.Name, unmarshalErr, r.Content)
-			return r.Content
-		}
-	}
-	return srvCanonical(uint16(data.Priority), uint16(data.Weight), uint16(data.Port), data.Target)
-}
-
-// srvCanonical renders SRV fields in the canonical single-space, trailing-dot form
-// read-back produces, so a desired target normalized here matches the read-back
-// record and the plan converges instead of churning an update every reconcile.
-func srvCanonical(priority, weight, port uint16, target string) string {
-	rr := &miekg.SRV{
-		Priority: priority,
-		Weight:   weight,
-		Port:     port,
-		Target:   provider.EnsureTrailingDot(target),
-	}
-	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
-}
-
-// naptrCanonical mirrors srvCanonical for NAPTR.
-func naptrCanonical(order, preference uint16, flags, service, regexp, replacement string) string {
-	rr := &miekg.NAPTR{
-		Order:       order,
-		Preference:  preference,
-		Flags:       flags,
-		Service:     service,
-		Regexp:      regexp,
-		Replacement: provider.EnsureTrailingDot(replacement),
-	}
-	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
-}
-
-// canonicalizeStructuredTarget rewrites an SRV or NAPTR target into the same
-// canonical form read-back produces. Multi-space, tab, or missing-dot targets
-// otherwise differ from the canonical read-back and re-emit an update every
-// reconcile. The input is returned unchanged on a parse error, so a malformed
-// target still surfaces downstream as a SoftError.
-func canonicalizeStructuredTarget(recordType, target string) (string, error) {
-	switch recordType {
-	case endpoint.RecordTypeSRV:
-		rr, err := miekg.NewRR("x. 0 IN SRV " + target)
-		if err != nil || rr == nil {
-			return target, fmt.Errorf("invalid SRV target %q: %w", target, err)
-		}
-		srv, ok := rr.(*miekg.SRV)
-		if !ok {
-			return target, fmt.Errorf("invalid SRV target %q: parsed as %T", target, rr)
-		}
-		return srvCanonical(srv.Priority, srv.Weight, srv.Port, srv.Target), nil
-	case endpoint.RecordTypeNAPTR:
-		rr, err := miekg.NewRR("x. 0 IN NAPTR " + target)
-		if err != nil || rr == nil {
-			return target, fmt.Errorf("invalid NAPTR target %q: %w", target, err)
-		}
-		naptr, ok := rr.(*miekg.NAPTR)
-		if !ok {
-			return target, fmt.Errorf("invalid NAPTR target %q: parsed as %T", target, rr)
-		}
-		return naptrCanonical(naptr.Order, naptr.Preference, naptr.Flags, naptr.Service, naptr.Regexp, naptr.Replacement), nil
-	}
-	return target, nil
+	return DNSRecordIndex{Name: r.Name, Type: string(r.Type), Content: endpointTargetFromCloudflareRecord(r)}
 }
 
 // getDNSRecordsMap retrieves all DNS records for a given zone and returns them as a DNSRecordsMap.
@@ -899,12 +821,6 @@ func (p *CloudFlareProvider) getDNSRecordsMap(ctx context.Context, zoneID string
 	}
 	iter := p.Client.ListDNSRecords(ctx, params)
 	for record := range autoPagerIterator(iter) {
-		switch record.Type {
-		case dns.RecordResponseTypeSRV:
-			record.Content = srvContent(record)
-		case dns.RecordResponseTypeNAPTR:
-			record.Content = naptrContent(record)
-		}
 		recordsMap[newDNSRecordIndex(record)] = record
 	}
 	if iter.Err() != nil {
@@ -917,10 +833,10 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareProxiedKey {
+		if v.Name == annotations.CloudflareProxiedProperty {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%q]: %v", annotations.CloudflareProxiedProperty, err)
 			} else {
 				proxied = b
 			}
@@ -936,7 +852,7 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
-		if v.Name == annotations.CloudflareCustomHostnameKey {
+		if v.Name == annotations.CloudflareCustomHostnameProperty {
 			customHostnames := strings.Split(v.Value, ",")
 			return customHostnames
 		}
@@ -980,7 +896,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 			if records[i].Type == "MX" {
 				targets[i] = fmt.Sprintf("%v %v", record.Priority, record.Content)
 			} else {
-				targets[i] = record.Content
+				targets[i] = endpointTargetFromCloudflareRecord(record)
 			}
 		}
 		e := endpoint.NewEndpointWithTTL(
@@ -992,21 +908,21 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 		if e == nil {
 			continue
 		}
-		e = e.WithProviderSpecific(annotations.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e = e.WithProviderSpecific(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 		// noop (customHostnames is empty) if custom hostnames feature is not in use
 		if customHostnames, ok := customHostnames[records[0].Name]; ok {
 			sort.Strings(customHostnames)
-			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameKey, strings.Join(customHostnames, ","))
+			e = e.WithProviderSpecific(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
 		}
 
 		if records[0].Comment != "" {
-			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentKey, records[0].Comment)
+			e = e.WithProviderSpecific(annotations.CloudflareRecordCommentProperty, records[0].Comment)
 		}
 
 		if records[0].Tags != nil {
 			if tags, ok := records[0].Tags.([]string); ok && len(tags) > 0 {
 				sort.Strings(tags)
-				e = e.WithProviderSpecific(annotations.CloudflareTagsKey, strings.Join(tags, ","))
+				e = e.WithProviderSpecific(annotations.CloudflareTagsProperty, strings.Join(tags, ","))
 			}
 		}
 
@@ -1018,7 +934,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case endpoint.RecordTypeMX, endpoint.RecordTypeNAPTR:
+	case endpoint.RecordTypeMX, endpoint.RecordTypeTLSA:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)

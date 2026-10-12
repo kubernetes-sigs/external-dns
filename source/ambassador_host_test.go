@@ -22,8 +22,7 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 
-	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
-	"github.com/stretchr/testify/assert"
+	ambassador "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
@@ -36,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 const defaultAmbassadorNamespace = "ambassador"
@@ -77,6 +77,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			host: ambassador.Host{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
+					UID:  "ambassador-host-uid",
 					Annotations: map[string]string{
 						ambHostAnnotation: hostAnnotation,
 					},
@@ -98,11 +99,11 @@ func TestAmbassadorHostSource(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{
+				(&endpoint.Endpoint{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
-				},
+				}).WithRefObject(testutils.RefSource(types.AmbassadorHost)),
 			},
 		}, {
 			title:         "Service with load balancer hostname",
@@ -249,8 +250,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:                hostAnnotation,
-						annotations.CloudflareProxiedKey: "true",
+						ambHostAnnotation:                        hostAnnotation,
+						annotations.CloudflarePrefix + "proxied": "true",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -275,7 +276,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name:  "external-dns.kubernetes.io/cloudflare-proxied",
+						Name:  annotations.CloudflareProxiedProperty,
 						Value: "true",
 					}},
 				},
@@ -629,26 +630,26 @@ func TestAmbassadorHostSource(t *testing.T) {
 
 			// Create Ambassador service
 			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &ti.service, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Create host resource
 			host, err := createAmbassadorHost(&ti.host)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(t.Context(), host, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
 				&Config{
-					Namespace:        namespace,
-					AnnotationFilter: ti.annotationFilter,
+					Namespaces:       []string{namespace},
+					AnnotationFilter: parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:      ti.labelSelector,
 				})
-			assert.NoError(t, err)
-			assert.NotNil(t, source)
+			require.NoError(t, err)
+			require.NotNil(t, source)
 
 			endpoints, err := source.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			// Validate returned endpoints against expected endpoints.
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
@@ -661,6 +662,58 @@ func createAmbassadorHost(host *ambassador.Host) (*unstructured.Unstructured, er
 	err := uc.scheme.Convert(host, obj, nil)
 
 	return obj, err
+}
+
+// TestAmbassadorHostSource_RealApiserverObject converts a v3alpha1 Host in the wire shape
+// an Emissary-ingress 3.10 API server serves it, including the ambassador_id and acmeProvider
+// fields the conversion webhook injects (v2 is the storage version).
+func TestAmbassadorHostSource_RealApiserverObject(t *testing.T) {
+	t.Parallel()
+
+	host := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "getambassador.io/v3alpha1",
+			"kind":       "Host",
+			"metadata": map[string]any{
+				"name":      "my-host",
+				"namespace": "default",
+				"annotations": map[string]any{
+					ambHostAnnotation:     "emissary/emissary-ingress",
+					annotations.TargetKey: "203.0.113.10",
+				},
+			},
+			"spec": map[string]any{
+				"hostname":      "my-host.example.com",
+				"ambassador_id": []any{"default"},
+				"acmeProvider": map[string]any{
+					"authority": "none",
+				},
+			},
+		},
+	}
+
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	ambassadorScheme := runtime.NewScheme()
+	ambassador.AddToScheme(ambassadorScheme)
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
+
+	_, err := fakeDynamicClient.Resource(ambHostGVR).Namespace("default").Create(t.Context(), host, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
+		&Config{Namespaces: []string{"default"}, LabelFilter: labels.Everything()})
+	require.NoError(t, err)
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		{
+			DNSName:    "my-host.example.com",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"203.0.113.10"},
+		},
+	})
 }
 
 // TestParseAmbLoadBalancerService tests our parsing of Ambassador service info.

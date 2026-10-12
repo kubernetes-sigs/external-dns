@@ -23,10 +23,10 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/cloudflare/cloudflare-go/v5"
-	"github.com/cloudflare/cloudflare-go/v5/custom_hostnames"
-	"github.com/cloudflare/cloudflare-go/v5/dns"
-	"github.com/cloudflare/cloudflare-go/v5/option"
+	"github.com/cloudflare/cloudflare-go/v7"
+	"github.com/cloudflare/cloudflare-go/v7/custom_hostnames"
+	"github.com/cloudflare/cloudflare-go/v7/dns"
+	"github.com/cloudflare/cloudflare-go/v7/option"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
@@ -290,11 +290,11 @@ func (p *CloudFlareProvider) processCustomHostnameChanges(
 	failed := false
 	for _, change := range changes {
 		logFields := log.Fields{
-			"record": change.ResourceRecord.Name,
-			"type":   change.ResourceRecord.Type,
-			"ttl":    change.ResourceRecord.TTL,
-			"action": change.Action.String(),
-			"zone":   zoneID,
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
 		}
 		if !p.submitCustomHostnameChanges(ctx, zoneID, change, chs, logFields) {
 			failed = true

@@ -21,19 +21,17 @@ import (
 
 func fakeService() *corev1.Service {
 	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-service",
-			Namespace: "ns",
-			Labels:    map[string]string{"env": "prod", "team": "devops"},
-			Annotations: map[string]string{
-				"description":                         "some annotation",
-				corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"v1","kind":"Service"}`,
-				"external-dns.kubernetes.io/hostname": "example.com",
-			},
-			UID: "1234",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name:      "fake-service",
+		Namespace: "ns",
+		Labels:    map[string]string{"env": "prod", "team": "devops"},
+		Annotations: map[string]string{
+			"description":                         "some annotation",
+			corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"v1","kind":"Service"}`,
+			"external-dns.kubernetes.io/hostname": "example.com",
+		},
+		UID: "1234",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector:    map[string]string{"app": "demo"},
@@ -75,17 +73,15 @@ func fakeService() *corev1.Service {
 
 func fakeNode() *corev1.Node {
 	return &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "fake-node",
-			Labels: map[string]string{"region": "us-east-1"},
-			Annotations: map[string]string{
-				corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"v1","kind":"Node"}`,
-				"external-dns.kubernetes.io/hostname": "node.example.com",
-			},
-			UID: "9012",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name:   "fake-node",
+		Labels: map[string]string{"region": "us-east-1"},
+		Annotations: map[string]string{
+			corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"v1","kind":"Node"}`,
+			"external-dns.kubernetes.io/hostname": "node.example.com",
+		},
+		UID: "9012",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Status: corev1.NodeStatus{
 			Addresses: []corev1.NodeAddress{
@@ -101,19 +97,17 @@ func fakeNode() *corev1.Node {
 
 func fakePod() *corev1.Pod {
 	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-pod",
-			Namespace: "ns",
-			Labels:    map[string]string{"app": "demo"},
-			Annotations: map[string]string{
-				corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"v1","kind":"Pod"}`,
-				"external-dns.kubernetes.io/hostname": "pod.example.com",
-				"unrelated.io/annotation":             "should-be-dropped",
-			},
-			UID: "5678",
-			ManagedFields: []metav1.ManagedFieldsEntry{
-				{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
-			},
+		Name:      "fake-pod",
+		Namespace: "ns",
+		Labels:    map[string]string{"app": "demo"},
+		Annotations: map[string]string{
+			corev1.LastAppliedConfigAnnotation:    `{"apiVersion":"v1","kind":"Pod"}`,
+			"external-dns.kubernetes.io/hostname": "pod.example.com",
+			"unrelated.io/annotation":             "should-be-dropped",
+		},
+		UID: "5678",
+		ManagedFields: []metav1.ManagedFieldsEntry{
+			{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply},
 		},
 		Spec: corev1.PodSpec{
 			NodeName: "node-1",

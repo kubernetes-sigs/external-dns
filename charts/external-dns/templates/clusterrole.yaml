@@ -63,6 +63,14 @@ rules:
     resources: ["dnsendpoints/status"]
     verbs: ["update"]
 {{- end }}
+{{- if eq .Values.registry "crd" }}
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsrecords"]
+    verbs: ["get","watch","list","create","update","delete"]
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsrecords/status"]
+    verbs: ["update"]
+{{- end }}
 {{- if include "external-dns.hasGatewaySources" . }}
 {{- if or (not .Values.namespaced) (and .Values.namespaced (not .Values.gatewayNamespace)) }}
   - apiGroups: ["gateway.networking.k8s.io"]

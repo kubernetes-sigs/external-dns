@@ -31,7 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 )
 
 const (
@@ -223,7 +223,7 @@ func (c *Client) NewRequest(method, path string, reqBody any) (*http.Request, er
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("sso-key %s:%s", c.APIKey, c.APISecret))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", externaldns.UserAgent())
+	req.Header.Set("User-Agent", version.UserAgent())
 
 	// Send the request with requested timeout
 	c.Client.Timeout = c.Timeout
