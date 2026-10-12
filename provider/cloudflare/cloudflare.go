@@ -458,6 +458,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	var cloudflareChanges []*cloudFlareChange
+	skipped := 0
 
 	// if custom hostnames are enabled, deleting first allows to avoid conflicts with the new ones
 	if p.CustomHostnamesConfig.Enabled {
@@ -466,6 +467,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 				change, err := p.newCloudFlareChange(cloudFlareDelete, e, target, nil)
 				if err != nil {
 					log.Errorf("failed to create cloudflare change: %v", err)
+					skipped++
 					continue
 				}
 				cloudflareChanges = append(cloudflareChanges, change)
@@ -478,6 +480,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 			change, err := p.newCloudFlareChange(cloudFlareCreate, e, target, nil)
 			if err != nil {
 				log.Errorf("failed to create cloudflare change: %v", err)
+				skipped++
 				continue
 			}
 			cloudflareChanges = append(cloudflareChanges, change)
@@ -493,6 +496,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 			change, err := p.newCloudFlareChange(cloudFlareDelete, current, a, current)
 			if err != nil {
 				log.Errorf("failed to create cloudflare change: %v", err)
+				skipped++
 				continue
 			}
 			cloudflareChanges = append(cloudflareChanges, change)
@@ -502,6 +506,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 			change, err := p.newCloudFlareChange(cloudFlareCreate, desired, a, current)
 			if err != nil {
 				log.Errorf("failed to create cloudflare change: %v", err)
+				skipped++
 				continue
 			}
 			cloudflareChanges = append(cloudflareChanges, change)
@@ -511,6 +516,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 			change, err := p.newCloudFlareChange(cloudFlareUpdate, desired, a, current)
 			if err != nil {
 				log.Errorf("failed to create cloudflare change: %v", err)
+				skipped++
 				continue
 			}
 			cloudflareChanges = append(cloudflareChanges, change)
@@ -524,6 +530,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 				change, err := p.newCloudFlareChange(cloudFlareDelete, e, target, nil)
 				if err != nil {
 					log.Errorf("failed to create cloudflare change: %v", err)
+					skipped++
 					continue
 				}
 				cloudflareChanges = append(cloudflareChanges, change)
@@ -531,7 +538,13 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		}
 	}
 
-	return p.submitChanges(ctx, cloudflareChanges)
+	if err := p.submitChanges(ctx, cloudflareChanges); err != nil {
+		return err
+	}
+	if skipped > 0 {
+		return provider.NewSoftErrorf("skipped %d invalid record changes", skipped)
+	}
+	return nil
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.

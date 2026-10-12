@@ -641,6 +641,7 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 		assert.Empty(t, bc.batchPuts, "missing record should not be added to batch puts")
 		assert.Empty(t, bc.updateChanges)
 		assert.Empty(t, bc.fallbackUpdates)
+		assert.True(t, bc.failed, "skipped update must flag a retry")
 	})
 
 	t.Run("SRV update goes to batchPuts", func(t *testing.T) {
@@ -679,6 +680,7 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 		bc := p.buildBatchCollections("zone1", changes, make(DNSRecordsMap))
 		assert.Empty(t, bc.batchDeletes, "missing record should not be added to batch deletes")
 		assert.Empty(t, bc.deleteChanges)
+		assert.False(t, bc.failed, "delete of an already-absent record is benign")
 	})
 }
 
@@ -798,7 +800,7 @@ func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
 		assert.False(t, failed, "delete of already-absent record should not report failure")
 	})
 
-	t.Run("update where record is not found skips gracefully", func(t *testing.T) {
+	t.Run("update where record is not found reports failure", func(t *testing.T) {
 		chunk := batchChunk{
 			updateChanges: []*cloudFlareChange{
 				{
@@ -812,6 +814,6 @@ func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
 			},
 		}
 		failed := p.fallbackIndividualChanges(t.Context(), "001", chunk, emptyRecords)
-		assert.False(t, failed, "update of missing record should not report failure")
+		assert.True(t, failed, "update of missing record must flag a retry instead of dropping silently")
 	})
 }

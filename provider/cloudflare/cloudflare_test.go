@@ -2396,6 +2396,9 @@ func TestZoneHasPaidPlan(t *testing.T) {
 func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 	hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 
+	// The package identifier is shadowed by the provider variable below.
+	softError := provider.SoftError
+
 	client := NewMockCloudFlareClient()
 	provider := &CloudFlareProvider{
 		Client: client,
@@ -2525,7 +2528,8 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 			}
 			hook.Reset()
 			err := provider.ApplyChanges(t.Context(), tc.changes)
-			require.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
+			require.Error(t, err, "a skipped change must surface an error so the controller retries")
+			require.ErrorIs(t, err, softError)
 			errorLogCount := 0
 			for _, entry := range hook.Entries {
 				if entry.Level == log.ErrorLevel &&
@@ -3625,4 +3629,63 @@ func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
 			assert.InDelta(t, tt.priority, change.ResourceRecord.Priority, 0)
 		})
 	}
+}
+
+func TestCloudflareInvalidCreateReturnsSoftError(t *testing.T) {
+	tests := []struct {
+		name       string
+		recordType string
+		target     string
+	}{
+		// A malformed NAPTR target is rejected while the change is built.
+		{"NAPTR with missing fields", endpoint.RecordTypeNAPTR, "10 20"},
+		// A malformed TLSA target passes change building and is rejected while the batch create param is built.
+		{"TLSA with unparseable target", endpoint.RecordTypeTLSA, "not a tlsa record"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := NewMockCloudFlareClient()
+			p := &CloudFlareProvider{Client: client}
+
+			endpoints := []*endpoint.Endpoint{{
+				DNSName:    "bar.com",
+				RecordType: tc.recordType,
+				Targets:    endpoint.Targets{tc.target},
+				RecordTTL:  120,
+			}}
+
+			err := p.ApplyChanges(t.Context(), &plan.Changes{Create: endpoints})
+			require.Error(t, err, "invalid create must not be silently swallowed")
+			require.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
+
+			records, rerr := p.Records(t.Context())
+			require.NoError(t, rerr)
+			assert.Empty(t, records)
+		})
+	}
+}
+
+func TestCloudflareUpdateMissingRecordReturnsSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client}
+
+	old := &endpoint.Endpoint{
+		DNSName:    "bar.com",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordTTL:  120,
+	}
+	desired := &endpoint.Endpoint{
+		DNSName:    "bar.com",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordTTL:  300,
+	}
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{old},
+		UpdateNew: []*endpoint.Endpoint{desired},
+	})
+	require.Error(t, err, "an update whose record no longer exists must not be silently dropped")
+	require.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
 }

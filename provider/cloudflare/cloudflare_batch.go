@@ -56,6 +56,9 @@ type batchCollections struct {
 	// typed batch-put union. These are submitted via individual UpdateDNSRecord
 	// calls instead of the batch API.
 	fallbackUpdates []*cloudFlareChange
+
+	// failed marks a change dropped while building the collections; the sync must surface a soft error so the controller retries.
+	failed bool
 }
 
 // batchChunk holds a DNS record batch request alongside the source changes
@@ -494,6 +497,8 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			if postParam, ok := buildBatchPostParam(change.ResourceRecord); ok {
 				bc.batchPosts = append(bc.batchPosts, postParam)
 				bc.createChanges = append(bc.createChanges, change)
+			} else {
+				bc.failed = true
 			}
 
 		case cloudFlareDelete:
@@ -509,6 +514,7 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				bc.failed = true
 				continue
 			}
 			if putParam, ok := buildBatchPutParam(recordID, change.ResourceRecord); ok {
@@ -535,7 +541,7 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 	bc batchCollections,
 	records DNSRecordsMap,
 ) bool {
-	failed := false
+	failed := bc.failed
 	if len(bc.batchDeletes) > 0 || len(bc.batchPosts) > 0 || len(bc.batchPuts) > 0 {
 		limit := max(p.DNSRecordsConfig.BatchChangeSize, defaultBatchChangeSize)
 		chunks := chunkBatchChanges(zoneID, bc, limit)
@@ -643,8 +649,9 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 			case cloudFlareUpdate:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					// Record is gone; let the next sync cycle issue a fresh CREATE.
-					log.WithFields(logFields).Info("fallback: record unexpectedly not found for update, will re-evaluate on next sync")
+					// Record is gone; fail the sync so the controller retries instead of dropping the update.
+					log.WithFields(logFields).Errorf("fallback: record unexpectedly not found for update")
+					failed = true
 					continue
 				}
 				var params dns.RecordUpdateParams
