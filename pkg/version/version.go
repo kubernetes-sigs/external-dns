@@ -28,16 +28,11 @@ const (
 )
 
 var (
-	// Version is the release version. It is set at link time via
-	// -ldflags "-X sigs.k8s.io/external-dns/pkg/version.Version=<value>"
-	// and must not be assigned at runtime.
+	// Version is the release version, set via -ldflags -X.
 	Version = "unknown"
-	// GitCommit is the short commit hash the binary was built from. It is set
-	// at link time via
-	// -ldflags "-X sigs.k8s.io/external-dns/pkg/version.GitCommit=<value>"
-	// and must not be assigned at runtime.
+	// GitCommit is the short commit hash, set via -ldflags -X.
 	GitCommit = "unknown"
-	// UserAgentProduct is the product token used in UserAgent.
+	// UserAgentProduct prefixes UserAgent; webhook providers may override it.
 	UserAgentProduct = "ExternalDNS"
 	goVersion        = runtime.Version()
 )
