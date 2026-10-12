@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package version reports the build identity of external-dns.
 // Stdlib-only to keep the import lightweight for webhook providers.
-package externaldns
+package version
 
 import (
 	"fmt"
