@@ -646,3 +646,23 @@ func TestRun_HardError(t *testing.T) {
 
 	source.AssertExpectations(t)
 }
+
+func TestRun_CanceledDuringRunOnce(t *testing.T) {
+	cfg := getTestConfig()
+	r, err := registryfactory.Select(cfg, &fakes.MockProvider{ApplyChangesErr: context.Canceled})
+	require.NoError(t, err)
+
+	source := getTestSource()
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	require.NoError(t, ctrl.Run(ctx))
+	source.AssertExpectations(t)
+}
