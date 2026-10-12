@@ -97,6 +97,7 @@ type DNSRecordsMap map[DNSRecordIndex]dns.RecordResponse
 var recordTypeProxyNotSupported = sets.New(
 	"LOC",
 	"MX",
+	"NAPTR",
 	"NS",
 	"SPF",
 	"TXT",
@@ -679,6 +680,18 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			e.SetProviderSpecificProperty(annotations.CloudflareTagsProperty, strings.Join(sortedTags, ","))
 		}
 
+		// Canonicalize NAPTR targets to the read-back form, else a non-canonical target re-emits an update on every reconcile.
+		if e.RecordType == endpoint.RecordTypeNAPTR {
+			for i, target := range e.Targets {
+				naptr, err := endpoint.NewNAPTRRecord(target)
+				if err != nil {
+					log.Debugf("leaving NAPTR target %q unchanged: %v", target, err)
+					continue
+				}
+				e.Targets[i] = naptr.String()
+			}
+		}
+
 		p.adjustEndpointProviderSpecificRegionKeyProperty(e)
 
 		if p.DNSRecordsConfig.Comment != "" {
@@ -726,6 +739,11 @@ func endpointTargetFromCloudflareRecord(record dns.RecordResponse) string {
 	case dns.RecordResponseTypeSRV:
 		if data, ok := record.Data.(dns.SRVRecordData); ok && data.Target != "" {
 			return fmt.Sprintf("%v %v %v %s", data.Priority, data.Weight, data.Port, externalDNSSRVTarget(data.Target))
+		}
+	case dns.RecordResponseTypeNAPTR:
+		// Cloudflare's flat Content drops the quoting and the trailing dot, so rebuild the target from the structured data.
+		if data, ok := record.Data.(dns.NAPTRRecordData); ok && (data.Service != "" || data.Replacement != "") {
+			return endpoint.NewNAPTRTargetFromFields(uint16(data.Order), uint16(data.Preference), data.Flags, data.Service, data.Regex, data.Replacement).String()
 		}
 	case dns.RecordResponseTypeTLSA:
 		// Cloudflare returns the digest uppercase; normalise so it compares equal.
@@ -786,6 +804,11 @@ func (p *CloudFlareProvider) newCloudFlareChange(action changeAction, ep *endpoi
 	if ep.RecordType == endpoint.RecordTypeSRV {
 		if _, err := endpoint.NewSRVRecord(target); err != nil {
 			return &cloudFlareChange{}, fmt.Errorf("failed to parse SRV record target %q: %w", target, err)
+		}
+	}
+	if ep.RecordType == endpoint.RecordTypeNAPTR {
+		if _, err := endpoint.NewNAPTRRecord(target); err != nil {
+			return &cloudFlareChange{}, fmt.Errorf("failed to parse NAPTR record target %q: %w", target, err)
 		}
 	}
 
@@ -934,7 +957,7 @@ func (p *CloudFlareProvider) groupByNameAndTypeWithCustomHostnames(records DNSRe
 // SupportedRecordType returns true if the record type is supported by the provider
 func (p *CloudFlareProvider) SupportedAdditionalRecordTypes(recordType string) bool {
 	switch recordType {
-	case endpoint.RecordTypeMX, endpoint.RecordTypeTLSA:
+	case endpoint.RecordTypeMX, endpoint.RecordTypeNAPTR, endpoint.RecordTypeTLSA:
 		return true
 	default:
 		return provider.SupportedRecordType(recordType)

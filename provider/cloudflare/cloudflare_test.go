@@ -160,6 +160,28 @@ func srvDataFromParam(data dns.SRVRecordDataParam) dns.SRVRecordData {
 	}
 }
 
+func naptrContentFromParam(data dns.NAPTRRecordDataParam) string {
+	return endpoint.NewNAPTRTargetFromFields(
+		uint16(data.Order.Value),
+		uint16(data.Preference.Value),
+		data.Flags.Value,
+		data.Service.Value,
+		data.Regex.Value,
+		data.Replacement.Value,
+	).String()
+}
+
+func naptrDataFromParam(data dns.NAPTRRecordDataParam) dns.NAPTRRecordData {
+	return dns.NAPTRRecordData{
+		Order:       data.Order.Value,
+		Preference:  data.Preference.Value,
+		Flags:       data.Flags.Value,
+		Service:     data.Service.Value,
+		Regex:       data.Regex.Value,
+		Replacement: data.Replacement.Value,
+	}
+}
+
 func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResponse {
 	switch b := body.(type) {
 	case dns.SRVRecordParam:
@@ -171,6 +193,16 @@ func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResp
 			Type:    dns.RecordResponseType(b.Type.Value),
 			Content: srvContentFromParam(b.Data.Value),
 			Data:    srvDataFromParam(b.Data.Value),
+		}
+	case dns.NAPTRRecordParam:
+		return dns.RecordResponse{
+			ID:      generateDNSRecordID(string(b.Type.Value), b.Name.Value, naptrContentFromParam(b.Data.Value)),
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Proxied: b.Proxied.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: naptrContentFromParam(b.Data.Value),
+			Data:    naptrDataFromParam(b.Data.Value),
 		}
 	case dns.RecordNewParamsBody:
 		return dns.RecordResponse{
@@ -198,6 +230,16 @@ func recordResponseFromUpdateBody(recordID string, body dns.RecordUpdateParamsBo
 			Type:    dns.RecordResponseType(b.Type.Value),
 			Content: srvContentFromParam(b.Data.Value),
 			Data:    srvDataFromParam(b.Data.Value),
+		}
+	case dns.NAPTRRecordParam:
+		return dns.RecordResponse{
+			ID:      recordID,
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Proxied: b.Proxied.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: naptrContentFromParam(b.Data.Value),
+			Data:    naptrDataFromParam(b.Data.Value),
 		}
 	case dns.RecordUpdateParamsBody:
 		return dns.RecordResponse{

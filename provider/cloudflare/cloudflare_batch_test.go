@@ -105,6 +105,16 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 				Content: srvContentFromParam(post.Data.Value),
 				Data:    srvDataFromParam(post.Data.Value),
 			}
+		case dns.NAPTRRecordParam:
+			record = dns.RecordResponse{
+				ID:      generateDNSRecordID(string(post.Type.Value), post.Name.Value, naptrContentFromParam(post.Data.Value)),
+				Name:    post.Name.Value,
+				TTL:     post.TTL.Value,
+				Proxied: post.Proxied.Value,
+				Type:    dns.RecordResponseType(post.Type.Value),
+				Content: naptrContentFromParam(post.Data.Value),
+				Data:    naptrDataFromParam(post.Data.Value),
+			}
 		case dns.RecordBatchParamsPost:
 			typeStr := string(post.Type.Value)
 			record = dns.RecordResponse{
@@ -213,6 +223,16 @@ func extractBatchPutData(put dns.BatchPutUnionParam) (string, dns.RecordResponse
 			Type:    dns.RecordResponseTypeSRV,
 			Content: srvContentFromParam(p.Data.Value),
 			Data:    srvDataFromParam(p.Data.Value),
+		}
+	case dns.BatchPutNAPTRRecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeNAPTR,
+			Content: naptrContentFromParam(p.Data.Value),
+			Data:    naptrDataFromParam(p.Data.Value),
 		}
 	default:
 		panic(fmt.Sprintf("extractBatchPutData: unexpected BatchPutUnionParam type %T", put))

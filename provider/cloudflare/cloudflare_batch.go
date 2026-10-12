@@ -84,6 +84,15 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpd
 			ZoneID: cloudflare.F(zoneID),
 			Body:   body,
 		}, nil
+	case dns.RecordResponseTypeNAPTR:
+		body, err := buildNAPTRRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse NAPTR record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
+		}
+		return dns.RecordUpdateParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
 	case dns.RecordResponseTypeTLSA:
 		body, err := buildTLSARecordParam(cfc.ResourceRecord)
 		if err != nil {
@@ -117,6 +126,15 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) (dns.RecordNe
 		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
 			return dns.RecordNewParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
+		}
+		return dns.RecordNewParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeNAPTR:
+		body, err := buildNAPTRRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordNewParams{}, fmt.Errorf("failed to parse NAPTR record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
 		return dns.RecordNewParams{
 			ZoneID: cloudflare.F(zoneID),
@@ -243,6 +261,41 @@ func buildSRVRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
 	}, nil
 }
 
+// cloudflareNAPTRReplacement strips the trailing dot Cloudflare rejects; the root "." stays (RFC 2915 terminal rule).
+func cloudflareNAPTRReplacement(replacement string) string {
+	if replacement == "." {
+		return replacement
+	}
+	return strings.TrimSuffix(replacement, ".")
+}
+
+func naptrRecordDataParam(target *endpoint.NAPTRTarget) dns.NAPTRRecordDataParam {
+	return dns.NAPTRRecordDataParam{
+		Order:       cloudflare.F(float64(target.GetOrder())),
+		Preference:  cloudflare.F(float64(target.GetPreference())),
+		Flags:       cloudflare.F(target.GetFlags()),
+		Service:     cloudflare.F(target.GetService()),
+		Regex:       cloudflare.F(target.GetRegexp()),
+		Replacement: cloudflare.F(cloudflareNAPTRReplacement(target.GetReplacement())),
+	}
+}
+
+// buildNAPTRRecordParam builds NAPTR parameters; the API rejects NAPTR sent as content.
+func buildNAPTRRecordParam(r dns.RecordResponse) (dns.NAPTRRecordParam, error) {
+	target, err := endpoint.NewNAPTRRecord(r.Content)
+	if err != nil {
+		return dns.NAPTRRecordParam{}, err
+	}
+	return dns.NAPTRRecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.NAPTRRecordTypeNAPTR),
+		Data:    cloudflare.F(naptrRecordDataParam(target)),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+	}, nil
+}
+
 func tlsaRecordDataParam(target *endpoint.TLSATarget) dns.TLSARecordDataParam {
 	return dns.TLSARecordDataParam{
 		Usage:        cloudflare.F(float64(target.GetUsage())),
@@ -275,6 +328,13 @@ func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, 
 		param, err := buildSRVRecordParam(r)
 		if err != nil {
 			log.Errorf("failed to parse SRV record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return param, true
+	case dns.RecordResponseTypeNAPTR:
+		param, err := buildNAPTRRecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse NAPTR record target %q for %s: %v", r.Content, r.Name, err)
 			return nil, false
 		}
 		return param, true
@@ -382,6 +442,16 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 		return dns.BatchPutSRVRecordParam{
 			ID:             cloudflare.F(id),
 			SRVRecordParam: param,
+		}, true
+	case dns.RecordResponseTypeNAPTR:
+		param, err := buildNAPTRRecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse NAPTR record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return dns.BatchPutNAPTRRecordParam{
+			ID:               cloudflare.F(id),
+			NAPTRRecordParam: param,
 		}, true
 	case dns.RecordResponseTypeTLSA:
 		param, err := buildTLSARecordParam(r)
