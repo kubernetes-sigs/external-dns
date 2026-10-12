@@ -18,9 +18,9 @@ package metrics
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/prometheus/client_golang/prometheus"
-	promversion "github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
@@ -46,9 +46,9 @@ func init() {
 		ConstLabels: prometheus.Labels{
 			"version":    version.Version,
 			"revision":   version.GitCommit,
-			"go_version": promversion.GoVersion,
-			"os":         promversion.GoOS,
-			"arch":       promversion.GoArch,
+			"go_version": runtime.Version(),
+			"os":         runtime.GOOS,
+			"arch":       runtime.GOARCH,
 		},
 	}))
 }
