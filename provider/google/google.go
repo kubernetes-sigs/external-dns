@@ -63,6 +63,7 @@ type resourceRecordSetsClientInterface interface {
 }
 
 type changesCreateCallInterface interface {
+	Context(ctx context.Context) changesCreateCallInterface
 	Do(opts ...googleapi.CallOption) (*dns.Change, error)
 }
 
@@ -95,7 +96,19 @@ type changesService struct {
 }
 
 func (c changesService) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return c.service.Create(project, managedZone, change)
+	return changesCreateCall{call: c.service.Create(project, managedZone, change)}
+}
+
+type changesCreateCall struct {
+	call *dns.ChangesCreateCall
+}
+
+func (c changesCreateCall) Context(ctx context.Context) changesCreateCallInterface {
+	return changesCreateCall{call: c.call.Context(ctx)}
+}
+
+func (c changesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, error) {
+	return c.call.Do(opts...)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
@@ -127,16 +140,17 @@ type GoogleProvider struct {
 
 // New creates a Google Cloud DNS provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(ctx, cfg.GoogleProject, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
+	return newProvider(ctx, cfg.GoogleProject, domainFilter, provider.NewZoneIDFilter(cfg.ZoneIDFilter), cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleRequestTimeout, cfg.GoogleZoneVisibility, cfg.DryRun)
 }
 
 // newProvider initializes a new Google CloudDNS based Provider.
-func newProvider(ctx context.Context, project string, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
+func newProvider(ctx context.Context, project string, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, requestTimeout time.Duration, zoneVisibility string, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
 	}
 
+	gcloud.Timeout = requestTimeout
 	gcloud = extdnshttp.NewInstrumentedClient(gcloud)
 
 	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud))
@@ -302,11 +316,17 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 				continue
 			}
 
-			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
+			if _, err := p.changesClient.Create(p.project, zone, c).Context(ctx).Do(); err != nil {
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
 
-			time.Sleep(p.batchChangeInterval)
+			timer := time.NewTimer(p.batchChangeInterval)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return ctx.Err()
+			case <-timer.C:
+			}
 		}
 	}
 
