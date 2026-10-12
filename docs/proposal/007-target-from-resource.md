@@ -159,25 +159,30 @@ Informers are **not bound by `--namespace`**, which scopes only primary sources.
 RBAC needs `list`+`watch` only in referenced namespaces, so a namespace-scoped `Role` is enough.
 With only `get`, resolution works via direct reads but loses change-driven sync.
 
-**Empty / not-found / missing-field (critical)** — an unresolved reference (object not found, field absent, empty list) must **not** fall through to native discovery and must **not** delete records.
+**Empty / not-found / missing-field (critical)** — an unresolved reference (object not found, field absent, empty list) must **not** fall through to native discovery.
 
-Dropping the endpoint is not enough: the plan would delete its existing records under `sync`.
-Instead the source emits the endpoint marked *unresolved*, and the plan **keeps its current records** (no update, no delete) with a warning.
+It is handled like any other invalid endpoint today: the source emits it with no targets, `CheckEndpoint` rejects it, and the dedup wrapper skips it with a warning and the `invalid_endpoints` metric.
+
+Under `sync` that removes the record, as for any invalid endpoint; `upsert-only` and `create-only` keep it.
 
 Templating needs care here: `text/template` resolves a missing map key to the zero value and renders `<no value>` rather than failing.
 That would silently turn "field absent" into "empty target".
 
-Two guards, both with precedent in-tree:
+`text/template` also renders non-scalar and `null` values without error: `{{ .status.addresses }}` renders `[map[value:1.2.3.4]]`, a `null` renders `<no value>`.
+
+Three guards:
 
 1. The target-from template is parsed with `Option("missingkey=error")` so an absent key is a hard template error.
 2. An empty (or whitespace-only) render is treated as *unresolved*, not as *no targets* — the same "field may not yet be populated" skip like the `unstructured` source already does.
+3. Each rendered value must parse as an IP (`netip.ParseAddr`) or a hostname (apimachinery `validation.IsFullyQualifiedDomainName`, after lowercasing); otherwise the reference is *unresolved*.
 
-Both produce an unresolved endpoint, never a deletion.
+All three produce an unresolved reference, never a garbage target.
 
 **Edge cases**
 
 - Repeated targets from one template: de-duplicated.
-- Template parse/exec error (bad syntax, missing key, non-scalar value rendered): warn, unresolved.
+- Template parse/exec error (bad syntax, missing key): warn, unresolved.
+- Rendered value neither an IP nor a hostname (non-scalar, `null`): warn, unresolved.
 - No RBAC access: warn, unresolved.
 - Unknown GVR (CRD not installed / RESTMapper miss): warn, unresolved.
 - Cluster-scoped resource: `<namespace>` must be omitted, warn, unresolved.
@@ -202,7 +207,7 @@ Operators wanting a hard guardrail can use namespace-scoped RBAC; see also the a
 ### Implementation Steps
 
 - Shared resolver: parse grammar, RESTMapper lookup, lazy per-(GVR, namespace) dynamic informer, template eval via `source/template`. No new dependency, no new expression language.
-- Unresolved endpoint marker; plan keeps current records for that name and set identifier.
+- Unresolved reference: emit the endpoint with no targets so the existing `CheckEndpoint` / dedup path skips it; no plan change.
 - One new `source/template` entry point executing against an `unstructured.Unstructured`'s content map, reusing the existing `FuncMap` and `execTemplate`'s comma-split/dedupe.
 
   Scope `Option("missingkey=error")` to the `target-from` template **only**: the existing templates rely on today's lenient behavior, so setting it engine-wide would be a breaking change.
@@ -222,7 +227,7 @@ Operators wanting a hard guardrail can use namespace-scoped RBAC; see also the a
 ### Drawbacks
 
 - Dynamic client + per-(GVR, namespace) informer is more machinery than a typed lookup and adds watches.
-- The unresolved marker touches the plan, not just sources.
+- Under `sync`, a broken or not-yet-populated reference removes the record, like any invalid endpoint today.
 - A Go template in an annotation is verbose next to a bare field path, and missing keys rendering as `<no value>` is a sharp edge.
 
   Both handled per [Behavior](#behavior); the latter must stay covered by tests.
@@ -252,4 +257,7 @@ Operators wanting a hard guardrail can use namespace-scoped RBAC; see also the a
   Only gain: closing the shared-grant caveat. Deferred until needed. `--target-from-namespace`
   is rejected: RBAC already scopes per type and namespace, and reusing `--namespace` would block cross-namespace refs.
 - **Fail the whole sync on an unresolved reference** (legacy `ingress` behavior). One broken annotation would block every DNS update.
+- **Keep current records on an unresolved reference.** Needs a plan marker matched on the `resource` label, since `planKey` alone would also freeze unrelated records on the same name.
+
+  It would make `target-from` behave differently from every other invalid endpoint; if wanted, it belongs to all invalid endpoints, in its own proposal.
 - **Do nothing.** Each new "point at product X" request keeps arriving as a coupling PR that gets held or closed, leaving users on manual `target` or the heavier `unstructured` source.
