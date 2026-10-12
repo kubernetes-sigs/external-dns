@@ -297,8 +297,8 @@ type ObjectRef = events.ObjectReference
 //
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
-// The SRV and MX field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord, which the sources run when they read the object.
+// The SRV, MX and NAPTR field grammar is therefore left to Targets.ValidateSRVRecord /
+// ValidateMXRecord / ValidateNAPTRRecord, which the sources run when they read the object.
 //
 // DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
 // pattern accepts the trailing dot of an absolute name; its rule enforces the real
@@ -694,6 +694,8 @@ func (e *Endpoint) CheckEndpoint() bool {
 		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
 		return e.Targets.ValidateSRVRecord()
+	case RecordTypeNAPTR:
+		return e.Targets.ValidateNAPTRRecord()
 	case RecordTypePTR:
 		return e.ValidatePTRRecord()
 	}
