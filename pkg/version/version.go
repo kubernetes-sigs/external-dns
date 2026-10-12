@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package version reports the build identity of external-dns. 
+// Package version reports the build identity of external-dns.
 // Stdlib-only to keep the import lightweight for webhook providers.
 package externaldns
 
