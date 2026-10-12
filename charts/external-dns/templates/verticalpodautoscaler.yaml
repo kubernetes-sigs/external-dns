@@ -1,0 +1,29 @@
+{{- if .Values.verticalPodAutoscaler.enabled -}}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  namespace: {{ include "external-dns.namespace" . }}
+  {{- with .Values.verticalPodAutoscaler.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+  {{- with .Values.verticalPodAutoscaler.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "external-dns.fullname" . }}
+  {{- with .Values.verticalPodAutoscaler.updatePolicy }}
+  updatePolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.verticalPodAutoscaler.resourcePolicy }}
+  resourcePolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

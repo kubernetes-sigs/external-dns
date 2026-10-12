@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Add `verticalPodAutoscaler` values to optionally create a `VerticalPodAutoscaler` resource for the `Deployment`. [#6592](https://github.com/kubernetes-sigs/external-dns/pull/6592) @shcherbak
+
 ## [v1.23.0] - 2026-10-01
 
 ### Changed
