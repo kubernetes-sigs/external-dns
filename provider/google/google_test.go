@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,9 +132,29 @@ type mockChangesCreateCall struct {
 	project     string
 	managedZone string
 	change      *dns.Change
+	ctx         context.Context
+	doStarted   chan struct{}
+	doCompleted chan struct{}
+	waitForCtx  bool
+}
+
+func (m *mockChangesCreateCall) Context(ctx context.Context) changesCreateCallInterface {
+	m.ctx = ctx
+	return m
 }
 
 func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
+	if m.doStarted != nil {
+		close(m.doStarted)
+	}
+	if m.waitForCtx {
+		<-m.ctx.Done()
+		return nil, m.ctx.Err()
+	}
+	if m.ctx != nil && m.ctx.Err() != nil {
+		return nil, m.ctx.Err()
+	}
+
 	zoneKey := zoneKey(m.project, m.managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
@@ -163,12 +184,25 @@ func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, erro
 		testRecords[zoneKey][recordKey] = add
 	}
 
+	if m.doCompleted != nil {
+		close(m.doCompleted)
+	}
+
 	return m.change, nil
 }
 
-type mockChangesClient struct{}
+type mockChangesClient struct {
+	createCall *mockChangesCreateCall
+}
 
 func (m *mockChangesClient) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
+	if m.createCall != nil {
+		m.createCall.project = project
+		m.createCall.managedZone = managedZone
+		m.createCall.change = change
+		return m.createCall
+	}
+
 	return &mockChangesCreateCall{project: project, managedZone: managedZone, change: change}
 }
 
@@ -630,6 +664,71 @@ func TestSoftErrListRecordsConflict(t *testing.T) {
 	require.ErrorIs(t, err, provider.SoftError)
 
 	require.Empty(t, records)
+}
+
+func TestSubmitChangeCancelsCreateCall(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+	started := make(chan struct{})
+	p.changesClient = &mockChangesClient{createCall: &mockChangesCreateCall{doStarted: started, waitForCtx: true}}
+	change := &dns.Change{Additions: []*dns.ResourceRecordSet{{
+		Name:    "record.zone-1.ext-dns-test-2.gcp.zalan.do.",
+		Type:    endpoint.RecordTypeA,
+		Ttl:     defaultTTL,
+		Rrdatas: []string{"192.0.2.1"},
+	}}}
+	result := make(chan error, 1)
+	go func() {
+		result <- p.submitChange(ctx, change)
+	}()
+
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("change create call did not start")
+	}
+	cancel()
+
+	select {
+	case err := <-result:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(5 * time.Second):
+		t.Fatal("submitChange did not stop after cancellation")
+	}
+}
+
+func TestSubmitChangeCancelsBatchInterval(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+	p.batchChangeInterval = time.Hour
+	completed := make(chan struct{})
+	p.changesClient = &mockChangesClient{createCall: &mockChangesCreateCall{doCompleted: completed}}
+	change := &dns.Change{Additions: []*dns.ResourceRecordSet{{
+		Name:    "record.zone-1.ext-dns-test-2.gcp.zalan.do.",
+		Type:    endpoint.RecordTypeA,
+		Ttl:     defaultTTL,
+		Rrdatas: []string{"192.0.2.1"},
+	}}}
+	result := make(chan error, 1)
+	go func() {
+		result <- p.submitChange(ctx, change)
+	}()
+
+	select {
+	case <-completed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("change create call did not complete")
+	}
+	cancel()
+
+	select {
+	case err := <-result:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(5 * time.Second):
+		t.Fatal("submitChange did not stop after cancellation")
+	}
 }
 
 func sortChangesByName(cs *dns.Change) {
