@@ -73,7 +73,7 @@ func NewUnstructuredFQDNSource(
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
 		dynamicClient,
 		0,
-		cfg.Namespace,
+		cfg.Namespace(),
 		nil,
 	)
 

@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 )
 
 const (
@@ -110,7 +111,7 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*LinodeProvi
 	}
 
 	linodeClient := linodego.NewClient(oauth2Client)
-	linodeClient.SetUserAgent(fmt.Sprintf("%s linodego/%s", externaldns.UserAgent(), linodego.Version))
+	linodeClient.SetUserAgent(fmt.Sprintf("%s linodego/%s", version.UserAgent(), linodego.Version))
 
 	return &LinodeProvider{
 		Client:       &linodeClient,

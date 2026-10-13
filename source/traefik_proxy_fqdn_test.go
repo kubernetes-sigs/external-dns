@@ -19,7 +19,6 @@ package source
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -221,7 +220,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &Config{
-				Namespace:        defaultTraefikNamespace,
+				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 				LabelFilter:      labels.Everything(),
 				TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
@@ -235,7 +234,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
@@ -396,7 +395,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &Config{
-				Namespace:        defaultTraefikNamespace,
+				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 				LabelFilter:      labels.Everything(),
 				TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
@@ -410,7 +409,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
@@ -567,7 +566,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &Config{
-				Namespace:        defaultTraefikNamespace,
+				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 				LabelFilter:      labels.Everything(),
 				TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
@@ -581,7 +580,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}

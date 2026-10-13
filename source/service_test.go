@@ -78,7 +78,7 @@ func (suite *ServiceSuite) SetupTest() {
 		},
 	}
 	_, err := fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
-	suite.NoError(err, "should successfully create service")
+	suite.Require().NoError(err, "should successfully create service")
 
 	suite.sc, err = NewServiceSource(
 		context.TODO(),
@@ -115,9 +115,9 @@ func testServiceSourceImplementsSource(t *testing.T) {
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
 	exampleDotComIP4, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip4", "example.com")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	exampleDotComIP6, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip6", "example.com")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Parallel()
 
@@ -1092,7 +1092,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 					AnnotationFilter:            parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:           tc.serviceTypesFilter,
 					Compatibility:               tc.compatibility,
-					Namespace:                   tc.targetNamespace,
+					Namespaces:                  []string{tc.targetNamespace},
 					ResolveLoadBalancerHostname: tc.resolveLoadBalancerHostname,
 					IgnoreHostnameAnnotation:    tc.ignoreHostnameAnnotation,
 					LabelFilter:                 sourceLabel,
@@ -1300,7 +1300,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labels.Everything(),
 				},
@@ -1593,7 +1593,7 @@ func TestClusterIpServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					PublishInternal:          true,
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labelSelector,
@@ -2380,7 +2380,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExposeInternalIPv6:       tc.exposeInternalIPv6,
 					ExcludeUnschedulable:     tc.ignoreUnscheduledNodes,
@@ -3276,7 +3276,7 @@ func TestHeadlessServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExposeInternalIPv6:       tc.exposeInternalIPv6,
 					LabelFilter:              labels.Everything(),
@@ -3389,7 +3389,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		},
 	}
 
-	assert.NotNil(t, services)
+	require.NotNil(t, services)
 
 	for _, svc := range services {
 		_, err := kubernetes.CoreV1().Services(svc.Namespace).Create(t.Context(), svc, metav1.CreateOptions{})
@@ -3398,13 +3398,13 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
 	)
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
 
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -3486,7 +3486,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 		},
 	}
 
-	assert.NotNil(t, headless)
+	require.NotNil(t, headless)
 
 	pods := []*v1.Pod{
 		{
@@ -3739,13 +3739,13 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			LabelFilter:          labels.Everything(),
 			ExcludeUnschedulable: true,
 		},
 	)
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
 
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -4180,7 +4180,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
 				&Config{
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					LabelFilter:              labels.Everything(),
 					Compatibility:            tc.compatibility,
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
@@ -4385,7 +4385,7 @@ func TestExternalServices(t *testing.T) {
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					Compatibility:            tc.compatibility,
 					ServiceTypeFilter:        tc.serviceTypeFilter,
-					Namespace:                tc.targetNamespace,
+					Namespaces:               []string{tc.targetNamespace},
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					ExcludeUnschedulable:     true,
 					LabelFilter:              labels.Everything(),
@@ -4435,7 +4435,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 
 	client, err := NewServiceSource(b.Context(), kubernetes,
 		&Config{
-			Namespace:            v1.NamespaceAll,
+			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -4457,64 +4457,64 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		{
 			name: "serviceTypeFilter is set to empty",
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.False(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.nodeInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.endpointSlicesInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains NodePort",
 			svcFilter: []string{string(v1.ServiceTypeClusterIP)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.Nil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
-				assert.NotNil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.Nil(t, svc.nodeInformer)
+				require.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.podInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains NodePort and ExternalName",
 			svcFilter: []string{string(v1.ServiceTypeNodePort), string(v1.ServiceTypeExternalName)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.NotNil(t, svc.nodeInformer)
-				assert.NotNil(t, svc.endpointSlicesInformer)
-				assert.NotNil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.nodeInformer)
+				require.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.podInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains ExternalName",
 			svcFilter: []string{string(v1.ServiceTypeExternalName)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.Nil(t, svc.nodeInformer)
-				assert.Nil(t, svc.endpointSlicesInformer)
-				assert.Nil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.Nil(t, svc.nodeInformer)
+				require.Nil(t, svc.endpointSlicesInformer)
+				require.Nil(t, svc.podInformer)
 			},
 		},
 		{
 			name:      "serviceTypeFilter contains LoadBalancer",
 			svcFilter: []string{string(v1.ServiceTypeLoadBalancer)},
 			asserts: func(svc *serviceSource) {
-				assert.NotNil(t, svc)
-				assert.NotNil(t, svc.serviceTypeFilter)
+				require.NotNil(t, svc)
+				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				assert.NotNil(t, svc.serviceInformer)
-				assert.Nil(t, svc.nodeInformer)
-				assert.Nil(t, svc.endpointSlicesInformer)
-				assert.Nil(t, svc.podInformer)
+				require.NotNil(t, svc.serviceInformer)
+				require.Nil(t, svc.nodeInformer)
+				require.Nil(t, svc.endpointSlicesInformer)
+				require.Nil(t, svc.podInformer)
 			},
 		},
 	}
@@ -4523,7 +4523,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
 				&Config{
-					Namespace:                      "default",
+					Namespaces:                     []string{"default"},
 					ServiceTypeFilter:              tc.svcFilter,
 					AlwaysPublishNotReadyAddresses: true,
 					LabelFilter:                    labels.Everything(),
@@ -4544,7 +4544,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 
 	svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
 		&Config{
-			Namespace:         "default",
+			Namespaces:        []string{"default"},
 			ServiceTypeFilter: serviceTypeFilter,
 			LabelFilter:       labels.Everything(),
 		},
@@ -4632,10 +4632,10 @@ func TestNewServiceTypes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			st, err := newServiceTypesFilter(tt.filter)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, st)
+				require.Error(t, err)
+				require.Nil(t, st)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.wantEnabled, st.enabled)
 				if tt.wantTypes != nil {
 					assert.Equal(t, tt.wantTypes, st.types)
@@ -4670,7 +4670,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	src, err := NewServiceSource(ctx, fakeClient,
 		&Config{
 			TemplateEngine:       templatetest.MustEngine(t, "{{.Name}}", "", "", false),
-			Namespace:            "default",
+			Namespaces:           []string{"default"},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
 		},
@@ -4889,7 +4889,7 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 	fakeClient := fake.NewClientset(svc)
 
 	src, err := NewServiceSource(ctx, fakeClient, &Config{
-		Namespace:   svc.Namespace,
+		Namespaces:  []string{svc.Namespace},
 		LabelFilter: labels.Everything(),
 	})
 	require.NoError(t, err)
@@ -5329,7 +5329,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.NotNil(t, result)
+		require.NotNil(t, result)
 		assert.Equal(t, "pod1", result.Name)
 	})
 
@@ -5339,7 +5339,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 
 	t.Run("returns nil for non-Pod kind", func(t *testing.T) {
@@ -5351,7 +5351,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 
 	t.Run("returns nil for non-empty APIVersion", func(t *testing.T) {
@@ -5364,7 +5364,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 
 	t.Run("returns nil for non-existent pod", func(t *testing.T) {
@@ -5376,7 +5376,7 @@ func TestFindPodForEndpoint(t *testing.T) {
 		}
 
 		result := findPodForEndpoint(endpoint, pods)
-		assert.Nil(t, result)
+		require.Nil(t, result)
 	})
 }
 
@@ -5398,7 +5398,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 		// Check A record
 		aRecord := findEndpointByType(result, endpoint.RecordTypeA)
-		assert.NotNil(t, aRecord)
+		require.NotNil(t, aRecord)
 		assert.Equal(t, "test.example.com", aRecord.DNSName)
 		assert.Contains(t, aRecord.Targets, "1.2.3.4")
 		assert.Contains(t, aRecord.Targets, "5.6.7.8")
@@ -5406,7 +5406,7 @@ func TestBuildHeadlessEndpoints(t *testing.T) {
 
 		// Check AAAA record
 		aaaaRecord := findEndpointByType(result, endpoint.RecordTypeAAAA)
-		assert.NotNil(t, aaaaRecord)
+		require.NotNil(t, aaaaRecord)
 		assert.Equal(t, "test.example.com", aaaaRecord.DNSName)
 		assert.Contains(t, aaaaRecord.Targets, "2001:db8::1")
 	})
@@ -5694,7 +5694,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Pod{},
 		)
 		got := sc.nodesExternalTrafficPolicyTypeLocal(svc)
-		assert.Nil(t, got)
+		require.Nil(t, got)
 	})
 
 	t.Run("returns only non-terminating ready nodes when mixed with terminating ready nodes", func(t *testing.T) {

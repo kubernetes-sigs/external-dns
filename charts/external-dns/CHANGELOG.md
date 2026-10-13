@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.23.0] - 2026-10-01
+
+### Changed
+
+- Update _ExternalDNS_ OCI image version to [`v0.23.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.23.0). [#6772](https://github.com/kubernetes-sigs/external-dns/pull/6772) @stevehipwell
+
 ## [v1.22.0] - 2026-09-11
 
 ### Added
@@ -30,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** `policy` no longer defaults to `upsert-only` and is now required. You must set `policy` explicitly to one of `create-only`, `sync`, or `upsert-only`. [#6508](https://github.com/kubernetes-sigs/external-dns/pull/6508) @mloiseleur
-- Update _ExternalDNS_ OCI image version to [`v0.22.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.22.0). [#6650](https://github.com/kubernetes-sigs/external-dns/pull/5479) @stevehipwell
+- Update _ExternalDNS_ OCI image version to [`v0.22.0`](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.22.0). [#6650](https://github.com/kubernetes-sigs/external-dns/pull/6650) @stevehipwell
 
 ### Fixed
 
@@ -343,6 +349,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.23.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.23.0
 [v1.22.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.22.0
 [v1.21.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.21.1
 [v1.20.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.20.0

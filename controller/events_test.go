@@ -17,10 +17,15 @@ limitations under the License.
 package controller
 
 import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
@@ -37,7 +42,7 @@ func TestEmit_RecordReady(t *testing.T) {
 		asserts func(em *fake.EventEmitter, ch plan.Changes)
 	}{
 		{
-			name: "create, update and delete endpoints",
+			name: "create, update and labelled delete emit events",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
 					endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
@@ -48,42 +53,24 @@ func TestEmit_RecordReady(t *testing.T) {
 					endpoint.NewEndpoint("four.example.com", endpoint.RecordTypeA, "10.10.10.3").WithRefObject(refObj),
 				},
 				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
+					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").
+						WithLabel(endpoint.ResourceLabelKey, "ingress/default/five"),
+					endpoint.NewEndpoint("six.example.com", endpoint.RecordTypeA, "192.10.10.1"),
 				},
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
 				for _, ep := range ch.Create {
 					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionCreate, events.RecordReady))
 				}
-				for _, ep := range ch.Delete {
-					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
+				for _, ep := range ch.UpdateNew {
+					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionUpdate, events.RecordReady))
 				}
+				deleted := deletedEndpoint{Endpoint: ch.Delete[0], ref: refFromResourceLabel("ingress/default/five", "")}
+				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(deleted, events.ActionDelete, events.RecordDeleted))
 				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.EventType() == events.EventTypeWarning
 				}))
 				em.AssertNumberOfCalls(t, "Add", 5)
-			},
-		},
-		{
-			name: "delete endpoints",
-			changes: plan.Changes{
-				Create:    []*endpoint.Endpoint{},
-				UpdateNew: []*endpoint.Endpoint{},
-				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
-				},
-			},
-			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
-				for _, ep := range ch.Delete {
-					em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ep, events.ActionDelete, events.RecordDeleted))
-				}
-				em.AssertCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
-					return e.EventType() == events.EventTypeNormal &&
-						e.Action() == events.ActionDelete &&
-						e.Reason() == events.RecordDeleted
-				}))
-
-				em.AssertNumberOfCalls(t, "Add", 1)
 			},
 		},
 	}
@@ -92,7 +79,7 @@ func TestEmit_RecordReady(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			emitter := fake.NewFakeEventEmitter()
 
-			emitChangeEvent(emitter, &tt.changes, events.RecordReady)
+			emitChangeEvent(emitter, &tt.changes, events.RecordReady, "")
 
 			tt.asserts(emitter, tt.changes)
 			mock.AssertExpectationsForObjects(t, emitter)
@@ -102,7 +89,7 @@ func TestEmit_RecordReady(t *testing.T) {
 
 func TestEmit_NilEmitter(t *testing.T) {
 	assert.NotPanics(t, func() {
-		emitChangeEvent(nil, &plan.Changes{}, events.RecordError)
+		emitChangeEvent(nil, &plan.Changes{}, events.RecordError, "")
 	})
 }
 
@@ -115,7 +102,7 @@ func TestEmit_RecordError(t *testing.T) {
 		asserts func(em *fake.EventEmitter, ch plan.Changes)
 	}{
 		{
-			name: "create, update and delete endpoints",
+			name: "failed changes emit RecordError, including deletes",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
 					endpoint.NewEndpoint("one.example.com", endpoint.RecordTypeA, "10.10.10.0").WithRefObject(refObj),
@@ -124,31 +111,19 @@ func TestEmit_RecordError(t *testing.T) {
 					endpoint.NewEndpoint("two.example.com", endpoint.RecordTypeA, "10.10.10.1").WithRefObject(refObj),
 				},
 				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").WithRefObject(refObj),
+					endpoint.NewEndpoint("three.example.com", endpoint.RecordTypeA, "10.10.10.2").
+						WithLabel(endpoint.ResourceLabelKey, "service/default/three"),
 				},
 			},
 			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Create[0], events.ActionCreate, events.RecordError))
 				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.UpdateNew[0], events.ActionUpdate, events.RecordError))
-				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Delete[0], events.ActionDelete, events.RecordError))
-				em.AssertNumberOfCalls(t, "Add", 3)
-			},
-		},
-		{
-			name: "delete endpoints emit RecordError not RecordDeleted",
-			changes: plan.Changes{
-				Create:    []*endpoint.Endpoint{},
-				UpdateNew: []*endpoint.Endpoint{},
-				Delete: []*endpoint.Endpoint{
-					endpoint.NewEndpoint("five.example.com", endpoint.RecordTypeA, "192.10.10.0").WithRefObject(refObj),
-				},
-			},
-			asserts: func(em *fake.EventEmitter, ch plan.Changes) {
-				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(ch.Delete[0], events.ActionDelete, events.RecordError))
+				deleted := deletedEndpoint{Endpoint: ch.Delete[0], ref: refFromResourceLabel("service/default/three", "")}
+				em.AssertCalled(t, "Add", events.NewEventFromEndpoint(deleted, events.ActionDelete, events.RecordError))
 				em.AssertNotCalled(t, "Add", mock.MatchedBy(func(e events.Event) bool {
 					return e.Reason() == events.RecordDeleted
 				}))
-				em.AssertNumberOfCalls(t, "Add", 1)
+				em.AssertNumberOfCalls(t, "Add", 3)
 			},
 		},
 	}
@@ -157,10 +132,83 @@ func TestEmit_RecordError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			emitter := fake.NewFakeEventEmitter()
 
-			emitChangeEvent(emitter, &tt.changes, events.RecordError)
+			emitChangeEvent(emitter, &tt.changes, events.RecordError, "")
 
 			tt.asserts(emitter, tt.changes)
 			mock.AssertExpectationsForObjects(t, emitter)
 		})
+	}
+}
+
+func TestRefFromResourceLabel(t *testing.T) {
+	tests := []struct {
+		resource  string
+		crdKind   string
+		kind      string
+		namespace string
+		name      string
+	}{
+		{resource: "ingress/default/web", kind: "Ingress", namespace: "default", name: "web"},
+		{resource: "crd/team-a/records", kind: "DNSEndpoint", namespace: "team-a", name: "records"},
+		{resource: "crd/team-a/custom", crdKind: "MyDNSRecord", kind: "MyDNSRecord", namespace: "team-a", name: "custom"},
+		{resource: "tcpingress/kong/tcp", kind: "TCPIngress", namespace: "kong", name: "tcp"},
+		{resource: "f5-virtualserver/f5/vs", kind: "VirtualServer", namespace: "f5", name: "vs"},
+		{resource: "httproute/gw/api", kind: "HTTPRoute", namespace: "gw", name: "api"},
+		{resource: "node/worker-1", kind: "Node", name: "worker-1"},
+		{resource: "HTTPProxy/default/proxy", kind: "HTTPProxy", namespace: "default", name: "proxy"},
+		{resource: "virtualmachineinstance/vms/vm1", kind: "virtualmachineinstance", namespace: "vms", name: "vm1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.resource, func(t *testing.T) {
+			ref := refFromResourceLabel(tt.resource, tt.crdKind)
+			require.NotNil(t, ref)
+			assert.Equal(t, tt.kind, ref.Kind())
+			assert.Equal(t, tt.namespace, ref.Namespace())
+			assert.Equal(t, tt.name, ref.Name())
+			assert.Empty(t, ref.UID())
+			assert.Equal(t, registrySource, ref.Source())
+		})
+	}
+
+	for _, resource := range []string{"", "ingress", "ingress/", "/default/web", "a/b/c/d"} {
+		t.Run("invalid "+resource, func(t *testing.T) {
+			assert.Nil(t, refFromResourceLabel(resource, "DNSEndpoint"))
+		})
+	}
+}
+
+// Fails when a source's label prefix or Kind is missing from resourceKinds.
+func TestResourceKinds_CoverSources(t *testing.T) {
+	files, err := filepath.Glob("../source/*.go")
+	require.NoError(t, err)
+	require.NotEmpty(t, files)
+
+	markerRe := regexp.MustCompile(`\+externaldns:source:resources=(.+)`)
+	prefixRe := regexp.MustCompile(`"([A-Za-z0-9-]+)/%s(?:/%s)?"`)
+	kinds := make(map[string]bool, len(resourceKinds))
+	for _, k := range resourceKinds {
+		kinds[k] = true
+	}
+
+	for _, f := range files {
+		if strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		b, err := os.ReadFile(f)
+		require.NoError(t, err)
+
+		for _, m := range markerRe.FindAllStringSubmatch(string(b), -1) {
+			for res := range strings.SplitSeq(m[1], ",") {
+				kind, _, _ := strings.Cut(strings.TrimSpace(res), ".")
+				// Placeholders for sources without a fixed Kind.
+				if strings.Contains(kind, " ") || kind == "None" || kind == "Unstructured" {
+					continue
+				}
+				assert.True(t, kinds[kind], "%s: Kind %q missing from resourceKinds values", f, kind)
+			}
+		}
+		for _, m := range prefixRe.FindAllStringSubmatch(string(b), -1) {
+			assert.Contains(t, resourceKinds, strings.ToLower(m[1]), "%s: label prefix %q missing from resourceKinds", f, m[1])
+		}
 	}
 }

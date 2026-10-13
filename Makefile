@@ -97,8 +97,8 @@ GIT_REVISION  ?= $(shell git rev-parse HEAD)
 GIT_COMMIT    ?= $(shell git rev-parse --short HEAD)
 GIT_COMMIT    := $(or $(GIT_COMMIT),$(shell echo "$(GIT_REVISION)" | cut -c1-7))
 BUILD_FLAGS   ?= -v
-LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-LDFLAGS       += -X sigs.k8s.io/external-dns/pkg/apis/externaldns.GitCommit=$(GIT_COMMIT)
+LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/version.Version=$(VERSION) -w -s
+LDFLAGS       += -X sigs.k8s.io/external-dns/pkg/version.GitCommit=$(GIT_COMMIT)
 ARCH          ?= amd64
 SHELL          = /bin/bash
 IMG_PLATFORM  ?= linux/amd64,linux/arm64,linux/arm/v7

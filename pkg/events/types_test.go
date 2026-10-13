@@ -208,10 +208,10 @@ func TestWithEmitEvents(t *testing.T) {
 	}{
 		{
 			name:     "valid events",
-			input:    []string{string(RecordReady), string(RecordError)},
-			expected: sets.New(RecordReady, RecordError),
+			input:    []string{string(RecordReady), string(RecordDeleted), string(RecordError)},
+			expected: sets.New(RecordReady, RecordDeleted, RecordError),
 			assert: func(c *Config) {
-				require.Equal(t, sets.New(RecordReady, RecordError), c.emitEvents)
+				require.Equal(t, sets.New(RecordReady, RecordDeleted, RecordError), c.emitEvents)
 				require.True(t, c.IsEnabled())
 			},
 		},

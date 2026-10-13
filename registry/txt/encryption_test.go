@@ -108,7 +108,7 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 			t.Run(fmt.Sprintf("key '%s' with decrypted result '%s'", k, test.decrypted), func(t *testing.T) {
 				key := []byte(k)
 				r, err := newRegistry(p, "", "", "owner", time.Minute, "", []string{}, []string{}, true, key, "")
-				assert.NoError(t, err, "Error creating TXT registry")
+				require.NoError(t, err, "Error creating TXT registry")
 				txtRecords := r.generateTXTRecord(test.record)
 				assert.Len(t, txtRecords, len(test.record.Targets))
 
@@ -122,10 +122,10 @@ func TestGenerateTXTGenerateTextRecordEncryptionWihDecryption(t *testing.T) {
 					// decrypt targets
 					for _, target := range txtRecords[0].Targets {
 						encryptedText, errUnquote := strconv.Unquote(target)
-						assert.NoError(t, errUnquote, "Error unquoting the encrypted text")
+						require.NoError(t, errUnquote, "Error unquoting the encrypted text")
 
 						actual, nonce, errDecrypt := endpoint.DecryptText(encryptedText, r.txtEncryptAESKey)
-						assert.NoError(t, errDecrypt, "Error decrypting the encrypted text")
+						require.NoError(t, errDecrypt, "Error decrypting the encrypted text")
 
 						assert.True(t, strings.HasPrefix(encryptedText, nonce),
 							"Nonce '%s' should be a prefix of the encrypted text: '%s'", nonce, encryptedText)

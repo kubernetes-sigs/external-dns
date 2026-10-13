@@ -72,9 +72,9 @@ func TestParseIngress(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotNS, gotName, err := ParseIngress(tt.ingress)
 			if tt.wantError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.Equal(t, tt.wantNS, gotNS)
 			assert.Equal(t, tt.wantName, gotName)

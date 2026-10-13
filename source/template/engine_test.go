@@ -98,9 +98,9 @@ func TestNewEngine(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := NewEngine(tt.fqdn, tt.target, tt.fqdnTarget, false)
 			if tt.errContains != "" {
-				assert.ErrorContains(t, err, tt.errContains)
+				require.ErrorContains(t, err, tt.errContains)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -469,7 +469,7 @@ func TestExecFQDNNilObject(t *testing.T) {
 	engine, err := NewEngine([]string{"{{ toLower .Labels.department }}.example.org"}, nil, nil, false)
 	require.NoError(t, err)
 	_, err = engine.ExecFQDN(nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 // A shared --fqdn-template using JSON-style Spec keys must succeed on typed objects too.
@@ -772,9 +772,9 @@ func TestValidateTemplates(t *testing.T) {
 			err := validateTemplates(tt.templates, tt.flagName)
 			if tt.errContains != "" {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.errContains)
+				require.ErrorContains(t, err, tt.errContains)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

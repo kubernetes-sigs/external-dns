@@ -455,7 +455,7 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 
 func TestGoogleApplyChangesEmpty(t *testing.T) {
 	provider := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
-	assert.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{}))
+	require.NoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{}))
 }
 
 func TestNewFilteredRecords(t *testing.T) {
