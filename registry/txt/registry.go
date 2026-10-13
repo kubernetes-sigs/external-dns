@@ -295,12 +295,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsSet) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
-				// Get desired TXT records and detect the missing ones
-				desiredTXTs := im.generateTXTRecord(ep)
-				for _, desiredTXT := range desiredTXTs {
-					if !txtRecordsSet.Has(desiredTXT.DNSName) {
-						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
-					}
+				// Only the name is needed to detect a missing TXT record, and rendering the value
+				// would encrypt the labels of every owned record on each call.
+				if txtName := im.txtRecordName(ep); txtName != "" && !txtRecordsSet.Has(txtName) {
+					ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 				}
 			}
 		}
@@ -338,6 +336,16 @@ func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 // compatibility but can be disabled to reduce the number of DNS records.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
+}
+
+// txtRecordName returns the name generateTXTRecord gives the ownership TXT record of r, without
+// rendering its value. It returns "" when no such record can be generated.
+func (im *TXTRegistry) txtRecordName(r *endpoint.Endpoint) string {
+	txt := endpoint.NewEndpoint(im.mapper.ToTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT)
+	if txt == nil {
+		return ""
+	}
+	return txt.DNSName
 }
 
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {

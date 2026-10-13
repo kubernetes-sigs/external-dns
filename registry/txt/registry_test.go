@@ -2431,3 +2431,104 @@ func TestTXTRegistryDeleteFallsBackToGeneratedValue(t *testing.T) {
 	require.NotNil(t, txt)
 	assert.Equal(t, stored, txt.Targets[0])
 }
+
+// Records() relies on txtRecordName to look up the ownership TXT record without rendering it,
+// so it has to agree with the name generateTXTRecord gives that record.
+func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
+	mappers := []struct {
+		prefix, suffix, wildcard string
+	}{
+		{"", "", ""},
+		{"", "", "wildcard"},
+		{"txt.", "", ""},
+		{"TXT-", "", "wildcard"},
+		{"%{record_type}-txt.", "", ""},
+		{"", "-txt", ""},
+		{"", "-%{record_type}-txt", "wildcard"},
+	}
+	endpoints := []*endpoint.Endpoint{
+		newEndpointWithOwner("foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+		newEndpointWithOwner("foo.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, "owner"),
+		newEndpointWithOwner("foo.test-zone.example.org", "bar.example.com", endpoint.RecordTypeCNAME, "owner"),
+		newEndpointWithOwner("foo.test-zone.example.org", "10 mail.example.com", endpoint.RecordTypeMX, "owner"),
+		newEndpointWithOwner("foo.test-zone.example.org", "ns.example.com", endpoint.RecordTypeNS, "owner"),
+		newEndpointWithOwner("foo.test-zone.example.org", "bar.example.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("set-1"),
+		newEndpointWithOwner("*.foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+		newEndpointWithOwner("Foo.Test-Zone.Example.org.", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+		newEndpointWithOwner("foo", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+	}
+	// A label over 63 characters makes endpoint.NewEndpoint refuse the endpoint.
+	tooLong := &endpoint.Endpoint{
+		DNSName:    strings.Repeat("a", 64) + ".test-zone.example.org",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"192.0.2.1"},
+		Labels:     endpoint.NewLabels(),
+	}
+
+	for _, m := range mappers {
+		for _, encrypted := range []bool{false, true} {
+			t.Run(fmt.Sprintf("prefix=%q/suffix=%q/wildcard=%q/encrypted=%t", m.prefix, m.suffix, m.wildcard, encrypted), func(t *testing.T) {
+				var aesKey []byte
+				if encrypted {
+					aesKey = []byte("passphrasewhichneedstobe32bytes!")
+				}
+				r, err := newRegistry(inmemory.NewInMemoryProvider(), m.prefix, m.suffix, "owner", time.Hour, m.wildcard, []string{}, []string{}, encrypted, aesKey, "")
+				require.NoError(t, err)
+
+				for _, ep := range endpoints {
+					generated := r.generateTXTRecord(ep)
+					require.Len(t, generated, 1, ep.DNSName)
+
+					assert.Equal(t, generated[0].DNSName, r.txtRecordName(ep), "%s %s", ep.RecordType, ep.DNSName)
+				}
+
+				require.Empty(t, r.generateTXTRecord(tooLong))
+				assert.Empty(t, r.txtRecordName(tooLong))
+			})
+		}
+	}
+}
+
+// With encryption on, Records() must still flag records whose current-format TXT record is missing,
+// and leave alone the ones that have it.
+func TestTXTRegistryRecordsForceUpdateOnMigrationWithEncryption(t *testing.T) {
+	const dnsName = "foo.test-zone.example.org"
+	aesKey := []byte("passphrasewhichneedstobe32bytes!")
+	owner := endpoint.Labels{endpoint.OwnerLabelKey: "owner"}.Serialize(true, true, aesKey)
+
+	for _, tt := range []struct {
+		name      string
+		withATXT  bool
+		wantForce bool
+	}{
+		{"legacy TXT only: force-update to create the current one", false, true},
+		{"current TXT present: no churn", true, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+
+			seed := []*endpoint.Endpoint{
+				newEndpointWithOwner(dnsName, "192.0.2.1", endpoint.RecordTypeA, "owner"),
+				newTXTEndpointWithOwnedRecord(dnsName, owner, dnsName),
+			}
+			if tt.withATXT {
+				seed = append(seed, newTXTEndpointWithOwnedRecord("a-"+dnsName, owner, dnsName))
+			}
+			require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: seed}))
+
+			r, err := newRegistry(p, "", "", "owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, true, aesKey, "")
+			require.NoError(t, err)
+
+			records, err := r.Records(t.Context())
+			require.NoError(t, err)
+
+			ep := findEndpoint(records, dnsName, endpoint.RecordTypeA)
+			require.NotNil(t, ep)
+			assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
+
+			forceUpdate, _ := ep.GetProviderSpecificProperty(providerSpecificForceUpdate)
+			assert.Equal(t, tt.wantForce, forceUpdate == "true")
+		})
+	}
+}
