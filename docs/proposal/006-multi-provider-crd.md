@@ -4,7 +4,7 @@ title: "Multiple Providers and Zones from a Single Deployment via CRDs"
 version: v1alpha1
 authors: "@mloiseleur"
 creation-date: 2026-06-21
-status: rejected
+status: not-planned
 ---
 ```
 
