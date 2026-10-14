@@ -340,11 +340,11 @@ func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
-	t := new(dns.Transfer)
-
 	if r.shouldSignAXFR() {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+		return r.signedIncomeTransfer(m, nameserver)
 	}
+
+	t := new(dns.Transfer)
 
 	c, err := makeClient(r, nameserver)
 	if err != nil {
