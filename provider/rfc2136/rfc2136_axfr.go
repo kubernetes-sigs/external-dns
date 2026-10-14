@@ -38,17 +38,25 @@ func (r *rfc2136Provider) signedIncomeTransfer(m *dns.Msg, nameserver string) (c
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
 
-	wire, requestMAC, err := dns.TsigGenerate(m, r.tsigSecret, "", false)
+	requestMAC, err := signAndSendAXFRRequest(conn, m, r.tsigSecret)
 	if err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("failed to sign AXFR request: %w", err)
-	}
-	if _, err := conn.Write(wire); err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("failed to send AXFR request: %w", err)
+		return nil, err
 	}
 
 	return readSignedAXFR(conn, m.Id, requestMAC, r.tsigSecret, tsig.HMAC{r.tsigKeyName: r.tsigSecret}), nil
+}
+
+func signAndSendAXFRRequest(conn *dns.Conn, message *dns.Msg, secret string) (string, error) {
+	wire, requestMAC, err := dns.TsigGenerate(message, secret, "", false)
+	if err != nil {
+		_ = conn.Close()
+		return "", fmt.Errorf("failed to sign AXFR request: %w", err)
+	}
+	if _, err := conn.Write(wire); err != nil {
+		_ = conn.Close()
+		return "", fmt.Errorf("failed to send AXFR request: %w", err)
+	}
+	return requestMAC, nil
 }
 
 func readSignedAXFR(conn *dns.Conn, id uint16, requestMAC, secret string, provider dns.TsigProvider) chan *dns.Envelope {
@@ -111,18 +119,7 @@ func readSignedAXFR(conn *dns.Conn, id uint16, requestMAC, secret string, provid
 					return
 				}
 			} else {
-				current, stripErr := stripAXFRTsig(wire, ts)
-				if stripErr != nil {
-					envelopes <- &dns.Envelope{Error: stripErr}
-					return
-				}
-				macInput, inputErr := axfrTsigMACInput(priorMAC, unsignedMessages, current, ts)
-				if inputErr != nil {
-					envelopes <- &dns.Envelope{Error: inputErr}
-					return
-				}
-				chainedProvider := axfrTsigProvider{provider: provider, macInput: macInput}
-				err = dns.TsigVerifyWithProvider(wire, chainedProvider, priorMAC, true)
+				err = verifySignedAXFRMessage(wire, ts, priorMAC, unsignedMessages, provider)
 			}
 			if err != nil {
 				envelopes <- &dns.Envelope{Error: err}
@@ -141,6 +138,19 @@ func readSignedAXFR(conn *dns.Conn, id uint16, requestMAC, secret string, provid
 		}
 	}()
 	return envelopes
+}
+
+func verifySignedAXFRMessage(wire []byte, ts *dns.TSIG, priorMAC string, unsignedMessages [][]byte, provider dns.TsigProvider) error {
+	current, err := stripAXFRTsig(wire, ts)
+	if err != nil {
+		return err
+	}
+	macInput, err := axfrTsigMACInput(priorMAC, unsignedMessages, current, ts)
+	if err != nil {
+		return err
+	}
+	chainedProvider := axfrTsigProvider{provider: provider, macInput: macInput}
+	return dns.TsigVerifyWithProvider(wire, chainedProvider, priorMAC, true)
 }
 
 func isSOALast(message *dns.Msg) bool {
