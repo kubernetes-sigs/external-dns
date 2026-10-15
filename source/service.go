@@ -158,10 +158,12 @@ func NewServiceSource(
 		podInformers.MustAddEventHandler(informers.DefaultEventHandler())
 	}
 
+	// Nodes are cluster-scoped, so they get their own factory.
+	var nodeFactory kubeinformers.SharedInformerFactory
 	var nodeInformer coreinformers.NodeInformer
 	if sTypesFilter.isRequired(v1.ServiceTypeNodePort) {
-		// Nodes are cluster-scoped: any factory returns the same objects.
-		nodeInformer = factories.All()[0].Core().V1().Nodes()
+		nodeFactory = kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+		nodeInformer = nodeFactory.Core().V1().Nodes()
 		informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
@@ -171,10 +173,18 @@ func NewServiceSource(
 	}
 
 	factories.Start(ctx.Done())
+	if nodeFactory != nil {
+		nodeFactory.Start(ctx.Done())
+	}
 
 	// wait for the local caches to be populated.
 	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
+	}
+	if nodeFactory != nil {
+		if err := informers.WaitForCacheSync(ctx, nodeFactory); err != nil {
+			return nil, err
+		}
 	}
 
 	return &serviceSource{

@@ -32,9 +32,9 @@ type SharedInformer interface {
 	Informer() cache.SharedIndexInformer
 }
 
-// Factories holds one informer factory per watched namespace, so that a tenant allowed to
-// list only its own namespaces still works. Request cluster-scoped resources from a single
-// factory: they ignore its namespace, so every factory would watch the same objects.
+// Factories holds one informer factory per watched namespace, so RBAC can grant
+// namespace-scoped access only (least privilege).
+// Cluster-scoped resources need a separate factory.
 type Factories[T Factory] struct {
 	namespaces []string
 	factories  map[string]T
