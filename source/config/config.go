@@ -25,6 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
@@ -97,6 +98,8 @@ type Config struct {
 	PreferAlias                    bool
 	PTRSupported                   bool
 	CreatePTR                      bool
+	// DomainFilter scopes the source wrappers only. The provider builds its own filter from the same flags.
+	DomainFilter *endpoint.DomainFilter
 
 	Sources []string
 
@@ -236,7 +239,13 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		PreferAlias:                    cfg.PreferAlias,
 		PTRSupported:                   cfg.IsPTRSupported(),
 		CreatePTR:                      cfg.CreatePTR,
-		Sources:                        cfg.Sources,
+		DomainFilter: endpoint.NewDomainFilterWithOptions(
+			endpoint.WithDomainFilter(cfg.DomainFilter),
+			endpoint.WithDomainExclude(cfg.DomainExclude),
+			endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
+			endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
+		),
+		Sources: cfg.Sources,
 	}
 	for _, opt := range opts {
 		opt(c)

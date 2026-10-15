@@ -251,3 +251,11 @@ func fakeCRDClient(t *testing.T) ctrlclient.Client {
 	t.Helper()
 	return ctrlfake.NewClientBuilder().Build()
 }
+
+func TestNewSourceConfigDomainFilter(t *testing.T) {
+	got, err := NewSourceConfig(&externaldns.Config{DomainFilter: []string{"example.org"}, DomainExclude: []string{"internal.example.org"}})
+	require.NoError(t, err)
+	assert.True(t, got.DomainFilter.Match("app.example.org"))
+	assert.False(t, got.DomainFilter.Match("app.example.com"))
+	assert.False(t, got.DomainFilter.Match("app.internal.example.org"))
+}
