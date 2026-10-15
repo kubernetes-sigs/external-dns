@@ -103,3 +103,15 @@ func TestBuildWrappedSource(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildWrappedSource_DomainFilter(t *testing.T) {
+	cfg := stubConfig(t, &externaldns.Config{Sources: []string{types.Fake}, DomainFilter: []string{"example.org"}})
+	src, err := Build(t.Context(), cfg)
+	require.NoError(t, err)
+	// no target filter or PTR is configured, so the domain filter source sits right below the post-processor
+	pp, ok := src.(*postProcessor)
+	require.True(t, ok)
+	df, ok := pp.source.(*domainFilterSource)
+	require.True(t, ok)
+	require.Same(t, cfg.DomainFilter, df.domainFilter)
+}

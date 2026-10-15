@@ -156,7 +156,6 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	}
 
 	endpointMap := make(map[EndpointKey]*Endpoint)
-	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
 
 	for _, ep := range endpoints {
 		key := EndpointKey{
@@ -172,13 +171,6 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 				continue
 			}
 			key.Target = ep.Targets[0]
-			singleKey := ep.RecordType + "/" + ep.DNSName + "/" + ep.SetIdentifier
-			// This will be caught by the provider when it tries to create the record, but log a warning here to make it more obvious.
-			// TODO: add metric for CNAME/DNAME conflicts
-			if first, ok := singleTargets[singleKey]; ok && first != ep.Targets[0] {
-				log.Warnf("Only one %[1]s per name — %[2]s %[1]s %[3]s and %[2]s %[1]s %[4]s is invalid DNS. A resolver wouldn't know which canonical name to follow.", ep.RecordType, ep.DNSName, first, ep.Targets[0])
-			}
-			singleTargets[singleKey] = ep.Targets[0]
 		}
 		if existing, ok := endpointMap[key]; ok {
 			existing.Targets = append(existing.Targets, ep.Targets...)
