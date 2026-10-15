@@ -40,15 +40,20 @@ type Factories[T Factory] struct {
 	factories  map[string]T
 }
 
-// NewFactories builds one factory per namespace, as normalized by NewSourceConfig. An
-// empty namespace list yields a single cluster-wide factory.
+// NewFactories builds one factory per namespace, as normalized by NewSourceConfig.
+// An empty namespace list yields a single cluster-wide factory.
+// Duplicates are dropped so that no namespace is watched twice.
 func NewFactories[T Factory](namespaces []string, newFactory func(namespace string) T) *Factories[T] {
-	nss := namespaces
-	if len(nss) == 0 {
-		nss = []string{v1.NamespaceAll}
+	if len(namespaces) == 0 {
+		namespaces = []string{v1.NamespaceAll}
 	}
-	factories := make(map[string]T, len(nss))
-	for _, ns := range nss {
+	nss := make([]string, 0, len(namespaces))
+	factories := make(map[string]T, len(namespaces))
+	for _, ns := range namespaces {
+		if _, ok := factories[ns]; ok {
+			continue
+		}
+		nss = append(nss, ns)
 		factories[ns] = newFactory(ns)
 	}
 	return &Factories[T]{namespaces: nss, factories: factories}

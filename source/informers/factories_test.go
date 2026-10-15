@@ -107,6 +107,7 @@ func TestNewFactoriesBuildsOnePerNamespace(t *testing.T) {
 	}{
 		{name: "one per namespace", namespaces: []string{"team-a", "team-b"}, want: []string{"team-a", "team-b"}},
 		{name: "cluster wide", namespaces: nil, want: []string{corev1.NamespaceAll}},
+		{name: "duplicates dropped", namespaces: []string{"team-a", "team-b", "team-a"}, want: []string{"team-a", "team-b"}},
 	}
 
 	for _, tt := range tests {
