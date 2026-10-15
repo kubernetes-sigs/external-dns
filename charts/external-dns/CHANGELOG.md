@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Add value `job.enabled` to run _ExternalDNS_ once as a `Job` with the `--once` flag instead of as a `Deployment`. [#PR](https://github.com/kubernetes-sigs/external-dns/pull/PR) @USER
+
 ## [v1.23.0] - 2026-10-01
 
 ### Changed

@@ -3,6 +3,9 @@ set:
   policy: upsert-only
 templates:
   - "*.yaml"
+# job.yaml replaces deployment.yaml when job.enabled is true; covered in job_test.yaml.
+excludeTemplates:
+  - job.yaml
 release:
   name: external-dns
 chart:

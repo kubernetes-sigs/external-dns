@@ -1,0 +1,152 @@
+suite: Job configuration
+set:
+  policy: upsert-only
+templates:
+  - deployment.yaml
+  - job.yaml
+release:
+  namespace: default
+tests:
+  - it: should not render a Job by default
+    template: job.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render a Job instead of a Deployment when job.enabled is true
+    set:
+      job.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: deployment.yaml
+      - hasDocuments:
+          count: 1
+        template: job.yaml
+      - isKind:
+          of: Job
+        template: job.yaml
+      - equal:
+          path: spec.template.spec.restartPolicy
+          value: OnFailure
+        template: job.yaml
+      - notExists:
+          path: spec.backoffLimit
+        template: job.yaml
+      - notExists:
+          path: spec.activeDeadlineSeconds
+        template: job.yaml
+      - notExists:
+          path: spec.ttlSecondsAfterFinished
+        template: job.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: external-dns
+        template: job.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: external-dns
+        template: job.yaml
+
+  - it: should set the --once flag
+    template: job.yaml
+    set:
+      job.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: --once
+
+  - it: should not set the --once flag on the Deployment
+    template: deployment.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: --once
+
+  - it: should apply Job settings
+    template: job.yaml
+    set:
+      job:
+        enabled: true
+        annotations:
+          foo: bar
+        restartPolicy: Never
+        backoffLimit: 3
+        activeDeadlineSeconds: 600
+        ttlSecondsAfterFinished: 0
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            foo: bar
+      - equal:
+          path: spec.template.spec.restartPolicy
+          value: Never
+      - equal:
+          path: spec.backoffLimit
+          value: 3
+      - equal:
+          path: spec.activeDeadlineSeconds
+          value: 600
+      - equal:
+          path: spec.ttlSecondsAfterFinished
+          value: 0
+
+  - it: should run the webhook provider as a native sidecar
+    template: job.yaml
+    set:
+      job.enabled: true
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: example/webhook
+            tag: v1.0.0
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+      - isSubset:
+          path: spec.template.spec.initContainers[?(@.name == "webhook")]
+          content:
+            image: example/webhook:v1.0.0
+            restartPolicy: Always
+
+  - it: should keep the webhook provider as a regular container on the Deployment
+    template: deployment.yaml
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: example/webhook
+            tag: v1.0.0
+    asserts:
+      - notExists:
+          path: spec.template.spec.initContainers
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook")].restartPolicy
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook")].image
+          value: example/webhook:v1.0.0
+
+  - it: should keep user initContainers alongside the webhook sidecar
+    template: job.yaml
+    set:
+      job.enabled: true
+      initContainers:
+        - name: init
+          image: busybox
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: example/webhook
+            tag: v1.0.0
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: init
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: webhook
