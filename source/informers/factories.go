@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 
+	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -69,17 +70,15 @@ func (f *Factories[T]) Start(stopCh <-chan struct{}) {
 	}
 }
 
-// WaitForCacheSyncAll waits for every factory cache to sync, each with its own timeout.
+// WaitForCacheSyncAll waits for every factory cache to sync. Namespaces sync in parallel,
+// so startup stays within one timeout however many are watched.
 func WaitForCacheSyncAll[T interface {
 	Factory
 	informerFactory
 }](ctx context.Context, factories *Factories[T]) error {
-	for _, ns := range factories.namespaces {
-		if err := WaitForCacheSync(ctx, factories.factories[ns]); err != nil {
-			return fmt.Errorf("namespace %s: %w", namespaceName(ns), err)
-		}
-	}
-	return nil
+	return waitForCacheSyncAll(ctx, factories, func(ctx context.Context, factory T) error {
+		return WaitForCacheSync(ctx, factory)
+	})
 }
 
 // WaitForDynamicCacheSyncAll is WaitForCacheSyncAll for dynamic informer factories.
@@ -87,12 +86,23 @@ func WaitForDynamicCacheSyncAll[T interface {
 	Factory
 	dynamicInformerFactory
 }](ctx context.Context, factories *Factories[T]) error {
+	return waitForCacheSyncAll(ctx, factories, func(ctx context.Context, factory T) error {
+		return WaitForDynamicCacheSync(ctx, factory)
+	})
+}
+
+func waitForCacheSyncAll[T Factory](ctx context.Context, factories *Factories[T], wait func(context.Context, T) error) error {
+	g, gctx := errgroup.WithContext(ctx)
 	for _, ns := range factories.namespaces {
-		if err := WaitForDynamicCacheSync(ctx, factories.factories[ns]); err != nil {
-			return fmt.Errorf("namespace %s: %w", namespaceName(ns), err)
-		}
+		factory := factories.factories[ns]
+		g.Go(func() error {
+			if err := wait(gctx, factory); err != nil {
+				return fmt.Errorf("namespace %s: %w", namespaceName(ns), err)
+			}
+			return nil
+		})
 	}
-	return nil
+	return g.Wait()
 }
 
 // Informers holds one informer of a given resource type per watched namespace.

@@ -14,8 +14,11 @@ limitations under the License.
 package informers
 
 import (
+	"context"
 	"reflect"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,14 +37,45 @@ type startableFactory struct {
 	namespace   string
 	started     bool
 	syncResults map[reflect.Type]bool
+	barrier     *syncBarrier
 }
 
 func (f *startableFactory) Start(_ <-chan struct{}) {
 	f.started = true
 }
 
-func (f *startableFactory) WaitForCacheSync(_ <-chan struct{}) map[reflect.Type]bool {
+func (f *startableFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
+	if f.barrier != nil && !f.barrier.arrive(stopCh) {
+		return map[reflect.Type]bool{reflect.TypeFor[string](): false}
+	}
 	return f.syncResults
+}
+
+// syncBarrier lets every factory sync only once all of them are waiting, which never
+// happens when caches are waited for one after another.
+type syncBarrier struct {
+	wg   sync.WaitGroup
+	done chan struct{}
+}
+
+func newSyncBarrier(n int) *syncBarrier {
+	b := &syncBarrier{done: make(chan struct{})}
+	b.wg.Add(n)
+	go func() {
+		b.wg.Wait()
+		close(b.done)
+	}()
+	return b
+}
+
+func (b *syncBarrier) arrive(stopCh <-chan struct{}) bool {
+	b.wg.Done()
+	select {
+	case <-b.done:
+		return true
+	case <-stopCh:
+		return false
+	}
 }
 
 // startableDynamicFactory is the dynamic counterpart of startableFactory.
@@ -171,7 +205,21 @@ func TestWaitForDynamicCacheSyncAll(t *testing.T) {
 
 	err := WaitForDynamicCacheSyncAll(t.Context(), newFactories(false))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "namespace team-a: failed to sync")
+	assert.Contains(t, err.Error(), "failed to sync")
+}
+
+func TestWaitForCacheSyncAllWaitsInParallel(t *testing.T) {
+	namespaces := []string{"team-a", "team-b", "team-c"}
+	barrier := newSyncBarrier(len(namespaces))
+	factories := newStartableFactories(namespaces)
+	for _, factory := range factories.All() {
+		factory.barrier = barrier
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	require.NoError(t, WaitForCacheSyncAll(ctx, factories))
 }
 
 func TestInformersFor(t *testing.T) {
