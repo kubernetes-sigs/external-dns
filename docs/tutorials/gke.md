@@ -245,6 +245,17 @@ You have an option to chose from using the gcloud CLI or using Terraform.
     * `variable "ksa_name"` : Name of the Kubernetes service account external-dns will use
     * `variable "kns_name"` : Name of the Kubernetes Name Space that will have external-dns installed to
 
+### Restricting access to specific zones
+
+By default, ExternalDNS lists every managed zone in the project. That requires `dns.managedZones.list`, which can only be granted at project level (for example through `roles/dns.reader` above) and exposes the names of all zones in the project.
+
+To limit ExternalDNS to specific zones, set `--zone-id-filter` to each zone's exact name or numeric ID, and grant only a zone-level role such as `roles/dns.admin` on those zones (`google_dns_managed_zone_iam_member` above), without the project-level `roles/dns.reader`. ExternalDNS then looks up each zone with `dns.managedZones.get` instead of listing.
+
+!!! warning "Change in zone ID matching"
+    `--zone-id-filter` values are matched as a suffix of the zone name or numeric ID, so `public` used to match both `public` and `prod-public`.
+    A value that is an exact zone name or ID now matches only that zone.
+    A value that matches no zone exactly (a suffix pattern such as `ernal-1`) still falls back to listing, keeps the old suffix behavior, and still needs `dns.managedZones.list`.
+
 ### Worker Node Service Account method
 
 In this method, the GSA (Google Service Account) that is associated with GKE worker nodes will be configured to have access to Cloud DNS.
