@@ -136,14 +136,19 @@ func Single[I SharedInformer](informer I) *Informers[I] {
 }
 
 // For returns the informer watching the given namespace, the cluster-wide one if any.
+// A nil collection finds nothing, so a source that skipped building it reports a
+// missing informer rather than panicking.
 func (i *Informers[I]) For(namespace string) (I, bool) {
+	var zero I
+	if i == nil {
+		return zero, false
+	}
 	if informer, ok := i.informers[namespace]; ok {
 		return informer, true
 	}
 	if informer, ok := i.informers[v1.NamespaceAll]; ok {
 		return informer, true
 	}
-	var zero I
 	return zero, false
 }
 

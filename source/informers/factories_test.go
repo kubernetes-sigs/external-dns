@@ -223,6 +223,15 @@ func TestWaitForCacheSyncAllWaitsInParallel(t *testing.T) {
 	require.NoError(t, WaitForCacheSyncAll(ctx, factories))
 }
 
+func TestInformersForNilCollection(t *testing.T) {
+	var serviceInformers *Informers[coreinformers.ServiceInformer]
+
+	informer, ok := serviceInformers.For("team-a")
+
+	assert.False(t, ok)
+	assert.Nil(t, informer)
+}
+
 func TestInformersFor(t *testing.T) {
 	tests := []struct {
 		name       string
