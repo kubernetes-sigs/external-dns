@@ -2432,8 +2432,7 @@ func TestTXTRegistryDeleteFallsBackToGeneratedValue(t *testing.T) {
 	assert.Equal(t, stored, txt.Targets[0])
 }
 
-// Records() relies on txtRecordName to look up the ownership TXT record without rendering it,
-// so it has to agree with the name generateTXTRecord gives that record.
+// generateTXTRecord must keep the name txtRecordName gives it, since Records() looks TXT records up by that name.
 func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
 	mappers := []struct {
 		prefix, suffix, wildcard string
@@ -2446,18 +2445,20 @@ func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
 		{"", "-txt", ""},
 		{"", "-%{record_type}-txt", "wildcard"},
 	}
-	endpoints := []*endpoint.Endpoint{
-		newEndpointWithOwner("foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner"),
-		newEndpointWithOwner("foo.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, "owner"),
-		newEndpointWithOwner("foo.test-zone.example.org", "bar.example.com", endpoint.RecordTypeCNAME, "owner"),
-		newEndpointWithOwner("foo.test-zone.example.org", "10 mail.example.com", endpoint.RecordTypeMX, "owner"),
-		newEndpointWithOwner("foo.test-zone.example.org", "ns.example.com", endpoint.RecordTypeNS, "owner"),
-		newEndpointWithOwner("foo.test-zone.example.org", "bar.example.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("set-1"),
-		newEndpointWithOwner("*.foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner"),
-		newEndpointWithOwner("Foo.Test-Zone.Example.org.", "192.0.2.1", endpoint.RecordTypeA, "owner"),
-		newEndpointWithOwner("foo", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+	// Built per subtest: generateTXTRecord adds a nonce label to the endpoint when encrypting.
+	newEndpoints := func() []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			newEndpointWithOwner("foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+			newEndpointWithOwner("foo.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, "owner"),
+			newEndpointWithOwner("foo.test-zone.example.org", "bar.example.com", endpoint.RecordTypeCNAME, "owner"),
+			newEndpointWithOwner("foo.test-zone.example.org", "10 mail.example.com", endpoint.RecordTypeMX, "owner"),
+			newEndpointWithOwner("foo.test-zone.example.org", "ns.example.com", endpoint.RecordTypeNS, "owner"),
+			newEndpointWithOwner("foo.test-zone.example.org", "bar.example.com", endpoint.RecordTypeCNAME, "owner").WithSetIdentifier("set-1"),
+			newEndpointWithOwner("*.foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+			newEndpointWithOwner("Foo.Test-Zone.Example.org.", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+			newEndpointWithOwner("foo", "192.0.2.1", endpoint.RecordTypeA, "owner"),
+		}
 	}
-	// A label over 63 characters makes endpoint.NewEndpoint refuse the endpoint.
 	tooLong := &endpoint.Endpoint{
 		DNSName:    strings.Repeat("a", 64) + ".test-zone.example.org",
 		RecordType: endpoint.RecordTypeA,
@@ -2475,7 +2476,7 @@ func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
 				r, err := newRegistry(inmemory.NewInMemoryProvider(), m.prefix, m.suffix, "owner", time.Hour, m.wildcard, []string{}, []string{}, encrypted, aesKey, "")
 				require.NoError(t, err)
 
-				for _, ep := range endpoints {
+				for _, ep := range newEndpoints() {
 					generated := r.generateTXTRecord(ep)
 					require.Len(t, generated, 1, ep.DNSName)
 
@@ -2496,26 +2497,56 @@ func TestTXTRegistryRecordsForceUpdateOnMigrationWithEncryption(t *testing.T) {
 	aesKey := []byte("passphrasewhichneedstobe32bytes!")
 	owner := endpoint.Labels{endpoint.OwnerLabelKey: "owner"}.Serialize(true, true, aesKey)
 
+	aRecord := func(setID string) *endpoint.Endpoint {
+		return newEndpointWithOwner(dnsName, "192.0.2.1", endpoint.RecordTypeA, "owner").WithSetIdentifier(setID)
+	}
+	aliasRecord := func() *endpoint.Endpoint {
+		return newEndpointWithOwner(dnsName, "lb.example.com", endpoint.RecordTypeA, "owner").WithAliasProperty(endpoint.AliasTrue)
+	}
+	txt := func(name, setID string) *endpoint.Endpoint {
+		return newTXTEndpointWithOwnedRecord(name, owner, dnsName).WithSetIdentifier(setID)
+	}
+
 	for _, tt := range []struct {
-		name      string
-		withATXT  bool
-		wantForce bool
+		name string
+		seed []*endpoint.Endpoint
+		// wantForce maps the SetIdentifier of each A record to whether it must be force-updated.
+		wantForce map[string]bool
 	}{
-		{"legacy TXT only: force-update to create the current one", false, true},
-		{"current TXT present: no churn", true, false},
+		{
+			name:      "legacy TXT only: force-update to create the current one",
+			seed:      []*endpoint.Endpoint{aRecord(""), txt(dnsName, "")},
+			wantForce: map[string]bool{"": true},
+		},
+		{
+			name:      "current TXT present: no churn",
+			seed:      []*endpoint.Endpoint{aRecord(""), txt(dnsName, ""), txt("a-"+dnsName, "")},
+			wantForce: map[string]bool{"": false},
+		},
+		{
+			name: "routed records: current TXT of one set does not cover the other",
+			seed: []*endpoint.Endpoint{
+				aRecord("set-1"), aRecord("set-2"),
+				txt(dnsName, "set-1"), txt(dnsName, "set-2"),
+				txt("a-"+dnsName, "set-1"),
+			},
+			wantForce: map[string]bool{"set-1": false, "set-2": true},
+		},
+		{
+			name:      "A alias with legacy cname- TXT only: force-update to create the a- one",
+			seed:      []*endpoint.Endpoint{aliasRecord(), txt("cname-"+dnsName, "")},
+			wantForce: map[string]bool{"": true},
+		},
+		{
+			name:      "A alias with a- TXT present: no churn",
+			seed:      []*endpoint.Endpoint{aliasRecord(), txt("cname-"+dnsName, ""), txt("a-"+dnsName, "")},
+			wantForce: map[string]bool{"": false},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			p := inmemory.NewInMemoryProvider()
 			require.NoError(t, p.CreateZone(testZone))
-
-			seed := []*endpoint.Endpoint{
-				newEndpointWithOwner(dnsName, "192.0.2.1", endpoint.RecordTypeA, "owner"),
-				newTXTEndpointWithOwnedRecord(dnsName, owner, dnsName),
-			}
-			if tt.withATXT {
-				seed = append(seed, newTXTEndpointWithOwnedRecord("a-"+dnsName, owner, dnsName))
-			}
-			require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: seed}))
+			require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: tt.seed}))
 
 			r, err := newRegistry(p, "", "", "owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, true, aesKey, "")
 			require.NoError(t, err)
@@ -2523,12 +2554,19 @@ func TestTXTRegistryRecordsForceUpdateOnMigrationWithEncryption(t *testing.T) {
 			records, err := r.Records(t.Context())
 			require.NoError(t, err)
 
-			ep := findEndpoint(records, dnsName, endpoint.RecordTypeA)
-			require.NotNil(t, ep)
-			assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
-
-			forceUpdate, _ := ep.GetProviderSpecificProperty(providerSpecificForceUpdate)
-			assert.Equal(t, tt.wantForce, forceUpdate == "true")
+			got := map[string]bool{}
+			for _, ep := range records {
+				if ep.DNSName != dnsName || ep.RecordType != endpoint.RecordTypeA {
+					continue
+				}
+				assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey], ep.SetIdentifier)
+				forceUpdate, ok := ep.GetProviderSpecificProperty(providerSpecificForceUpdate)
+				if ok {
+					assert.Equal(t, "true", forceUpdate, ep.SetIdentifier)
+				}
+				got[ep.SetIdentifier] = ok
+			}
+			assert.Equal(t, tt.wantForce, got)
 		})
 	}
 }
