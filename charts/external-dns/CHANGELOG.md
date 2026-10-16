@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Mount a projected `ServiceAccount` token into the `external-dns` container when `automountServiceAccountToken` is `false`, so the pod no longer crashes without API credentials. [#6704](https://github.com/kubernetes-sigs/external-dns/issues/6704) @ashokpariya0
+
 ## [v1.23.0] - 2026-10-01
 
 ### Changed

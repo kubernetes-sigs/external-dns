@@ -1,5 +1,15 @@
 {{- $defaultSelector := (include "external-dns.labelSelector" $ ) | fromYaml -}}
 {{- $providerName := tpl (include "external-dns.providerName" .) $ }}
+{{- /* ExternalDNS always needs the Kubernetes API. With automounting disabled, mount the token
+     into the external-dns container only (not the webhook sidecar), unless the user already
+     mounts that path through extraVolumeMounts. */}}
+{{- $tokenMountPath := "/var/run/secrets/kubernetes.io/serviceaccount" }}
+{{- $mountToken := and (kindIs "bool" .Values.automountServiceAccountToken) (not .Values.automountServiceAccountToken) }}
+{{- range .Values.extraVolumeMounts }}
+{{- if eq (toString .mountPath) $tokenMountPath }}
+{{- $mountToken = false }}
+{{- end }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -178,8 +188,13 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts }}
+          {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts $mountToken }}
           volumeMounts:
+            {{- if $mountToken }}
+            - name: kube-api-access
+              mountPath: {{ $tokenMountPath }}
+              readOnly: true
+            {{- end }}
             {{- if .Values.secretConfiguration.enabled }}
             - name: secrets
               mountPath: {{ tpl .Values.secretConfiguration.mountPath $ }}
@@ -232,8 +247,27 @@ spec:
           {{- end }}
         {{- end }}
         {{- end }}
-      {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
+      {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes $mountToken }}
       volumes:
+        {{- if $mountToken }}
+        - name: kube-api-access
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3607
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+        {{- end }}
         {{- if .Values.secretConfiguration.enabled }}
         - name: secrets
           secret:
