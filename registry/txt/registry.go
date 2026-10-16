@@ -288,6 +288,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		if im.oldOwnerID != "" && ep.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 			ep.Labels[endpoint.OwnerLabelKey] = im.ownerID
+			// Force an update so the companion TXT record is rewritten with the new
+			// owner ID even when the data record is otherwise identical. This mirrors
+			// the existing format-migration pattern below (providerSpecificForceUpdate).
+			ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 		}
 
 		// TODO: remove this migration logic in some future release
