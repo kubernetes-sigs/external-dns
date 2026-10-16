@@ -20,6 +20,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -42,5 +43,8 @@ var (
 
 func addKnownTypes(s *runtime.Scheme) error {
 	s.AddKnownTypes(GroupVersion, &DNSEndpoint{}, &DNSEndpointList{}, &DNSRecord{}, &DNSRecordList{})
+	// Register ListOptions, CreateOptions and the other meta types so client-go can
+	// encode request parameters for this group.
+	metav1.AddToGroupVersion(s, GroupVersion)
 	return nil
 }
