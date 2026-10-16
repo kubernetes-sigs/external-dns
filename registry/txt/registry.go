@@ -106,6 +106,11 @@ func (im *existingTXTs) isAbsent(ep *endpoint.Endpoint) bool {
 	return !ok
 }
 
+func (im *existingTXTs) has(dnsName, setIdentifier string) bool {
+	_, ok := im.entries[recordKey{dnsName: dnsName, setIdentifier: setIdentifier}]
+	return ok
+}
+
 func (im *existingTXTs) storedValue(ep *endpoint.Endpoint) (string, bool) {
 	value, ok := im.entries[keyFor(ep)]
 	return value, ok && value != ""
@@ -213,7 +218,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	endpoints := []*endpoint.Endpoint{}
 
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
-	txtRecordsSet := make(sets.Set[string], len(records))
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
@@ -242,7 +246,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: record.SetIdentifier,
 		}
 		labelMap[key] = labels
-		txtRecordsSet.Insert(record.DNSName)
 		im.existingTXTs.add(record)
 	}
 
@@ -293,14 +296,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// TODO: remove this migration logic in some future release
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
-		if len(txtRecordsSet) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
+		if len(im.existingTXTs.entries) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
-				// Get desired TXT records and detect the missing ones
-				desiredTXTs := im.generateTXTRecord(ep)
-				for _, desiredTXT := range desiredTXTs {
-					if !txtRecordsSet.Has(desiredTXT.DNSName) {
-						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
-					}
+				// Name only: rendering the value would encrypt every owned record's labels on each call.
+				if txtName := im.txtRecordName(ep); txtName != "" && !im.existingTXTs.has(txtName, ep.SetIdentifier) {
+					ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 				}
 			}
 		}
@@ -340,24 +340,38 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
 }
 
+// txtRecordName returns the name of r's ownership TXT record without rendering its value,
+// or "" if a label exceeds 63 characters.
+func (im *TXTRegistry) txtRecordName(r *endpoint.Endpoint) string {
+	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
+	name := im.mapper.ToTXTName(r.DNSName, r.RecordType)
+	for label := range strings.SplitSeq(name, ".") {
+		if len(label) > 63 {
+			return ""
+		}
+	}
+	return strings.TrimSuffix(name, ".")
+}
+
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
 	endpoints := make([]*endpoint.Endpoint, 0)
-
-	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
-	recordType := r.RecordType
 
 	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 
-	txtNew := endpoint.NewEndpoint(im.mapper.ToTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
-		txtNew.WithSetIdentifier(r.SetIdentifier)
-		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtNew.ProviderSpecific = r.ProviderSpecific
-		if filter(txtNew) {
-			endpoints = append(endpoints, txtNew)
-		}
+	name := im.txtRecordName(r)
+	if name == "" {
+		log.Errorf("Cannot create ownership TXT record for %s: a label of %q is longer than 63 characters", r.DNSName, im.mapper.ToTXTName(r.DNSName, r.RecordType))
+		return endpoints
+	}
+
+	txtNew := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	txtNew.WithSetIdentifier(r.SetIdentifier)
+	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+	txtNew.ProviderSpecific = r.ProviderSpecific
+	if filter(txtNew) {
+		endpoints = append(endpoints, txtNew)
 	}
 	return endpoints
 }
