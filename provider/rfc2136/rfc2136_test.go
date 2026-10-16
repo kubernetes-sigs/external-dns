@@ -1597,3 +1597,116 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 		})
 	}
 }
+
+func TestRrTargetForTXT(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		expected []string
+	}{
+		{
+			name:     "plain value",
+			target:   "foo",
+			expected: []string{"foo"},
+		},
+		{
+			name:     "semicolons are not treated as comments",
+			target:   "v=DMARC1;p=quarantine;sp=none",
+			expected: []string{"v=DMARC1;p=quarantine;sp=none"},
+		},
+		{
+			name:     "spaces and semicolons stay in one string",
+			target:   "v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.tld; ruf=mailto:postmaster@domain.tld; sp=none; fo=1; ri=604800",
+			expected: []string{"v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.tld; ruf=mailto:postmaster@domain.tld; sp=none; fo=1; ri=604800"},
+		},
+		{
+			name:     "spf record",
+			target:   "v=spf1 mx a:mail.domain.tld -all",
+			expected: []string{"v=spf1 mx a:mail.domain.tld -all"},
+		},
+		{
+			name:     "already quoted value is kept",
+			target:   `"heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.domain.tld"`,
+			expected: []string{"heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.domain.tld"},
+		},
+		{
+			name:     "already quoted multi-string value is kept",
+			target:   `"part one" "part two"`,
+			expected: []string{"part one", "part two"},
+		},
+		{
+			name:     "embedded quote is escaped",
+			target:   `say "hi"; bye`,
+			expected: []string{`say \"hi\"; bye`},
+		},
+		{
+			// miekg/dns keeps escapes in presentation form; on the wire this is "v=DKIM1; k=rsa; p=abc".
+			name:     "existing escapes are preserved",
+			target:   `v=DKIM1\; k=rsa\; p=abc`,
+			expected: []string{`v=DKIM1\; k=rsa\; p=abc`},
+		},
+		{
+			name:     "dangling backslash does not swallow the closing quote",
+			target:   `foo\`,
+			expected: []string{`foo\\`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rrTarget, err := rrTargetFor(endpoint.RecordTypeTXT, tt.target)
+			require.NoError(t, err)
+
+			rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "_dmarc.domain.tld.", 3600, "TXT", rrTarget))
+			require.NoError(t, err)
+			require.IsType(t, &dns.TXT{}, rr)
+			assert.Equal(t, tt.expected, rr.(*dns.TXT).Txt)
+		})
+	}
+}
+
+func TestRrTargetForNonTXTIsUnquoted(t *testing.T) {
+	rrTarget, err := rrTargetFor(endpoint.RecordTypeA, "1.2.3.4")
+	require.NoError(t, err)
+	assert.Equal(t, "1.2.3.4", rrTarget)
+}
+
+func TestRfc2136ApplyChangesTXTWithSemicolons(t *testing.T) {
+	stub := newStub()
+	provider, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+
+	dmarc := "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
+	oldDmarc := "v=DMARC1; p=none"
+
+	p := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "_dmarc.foo.com",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    []string{dmarc},
+				RecordTTL:  endpoint.TTL(3600),
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:    "_dmarc.foobar.com",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    []string{oldDmarc},
+			},
+		},
+	}
+
+	err = provider.ApplyChanges(t.Context(), p)
+	require.NoError(t, err)
+
+	require.Len(t, stub.createMsgs, 1)
+	require.Len(t, stub.createMsgs[0].Ns, 1)
+	require.IsType(t, &dns.TXT{}, stub.createMsgs[0].Ns[0])
+	assert.Equal(t, []string{dmarc}, stub.createMsgs[0].Ns[0].(*dns.TXT).Txt)
+
+	require.Len(t, stub.updateMsgs, 1)
+	require.Len(t, stub.updateMsgs[0].Ns, 1)
+	require.IsType(t, &dns.TXT{}, stub.updateMsgs[0].Ns[0])
+	assert.Equal(t, []string{oldDmarc}, stub.updateMsgs[0].Ns[0].(*dns.TXT).Txt)
+}
