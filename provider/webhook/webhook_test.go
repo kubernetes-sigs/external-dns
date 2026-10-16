@@ -32,7 +32,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
-	"sigs.k8s.io/external-dns/pkg/events"
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -388,7 +387,7 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
 		require.NoError(t, err)
 
-		ref := events.NewObjectReferenceFromParts("Service", "v1", "default", "my-svc", "uid-1", "service")
+		ref := endpoint.NewObjectRef("Service", "v1", "default", "my-svc", "uid-1", "service")
 		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
 			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").WithRefObject(ref),
 		})
@@ -406,8 +405,8 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
 		require.NoError(t, err)
 
-		ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
-		ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
+		ref1 := endpoint.NewObjectRef("Service", "v1", "default", "svc-a", "uid-1", "service")
+		ref2 := endpoint.NewObjectRef("Service", "v1", "default", "svc-b", "uid-2", "service")
 		adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
 			endpoint.NewEndpoint("test.example.com", "A", "1.2.3.4").
 				WithRefObject(ref1).

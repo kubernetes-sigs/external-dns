@@ -172,7 +172,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		hostEndpoints := sc.endpointsFromHost(host, targets)
-		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
+		if isEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
 

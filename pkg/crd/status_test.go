@@ -319,12 +319,12 @@ func newTestScheme(t *testing.T) *runtime.Scheme {
 }
 
 func dnsEndpointRef(namespace, name string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts(
+	return endpoint.NewObjectRef(
 		dnsEndpointKind, apiv1alpha1.GroupVersion.String(), namespace, name, "", types.CRD)
 }
 
 func serviceRef(namespace, name string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts("Service", "v1", namespace, name, "", "service")
+	return endpoint.NewObjectRef("Service", "v1", namespace, name, "", "service")
 }
 
 // forbidGet fails the test if cl.Get is ever called, for asserting a code path
