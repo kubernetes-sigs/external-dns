@@ -105,6 +105,16 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 				Content: srvContentFromParam(post.Data.Value),
 				Data:    srvDataFromParam(post.Data.Value),
 			}
+		case dns.NAPTRRecordParam:
+			record = dns.RecordResponse{
+				ID:      generateDNSRecordID(string(post.Type.Value), post.Name.Value, naptrContentFromParam(post.Data.Value)),
+				Name:    post.Name.Value,
+				TTL:     post.TTL.Value,
+				Proxied: post.Proxied.Value,
+				Type:    dns.RecordResponseType(post.Type.Value),
+				Content: naptrContentFromParam(post.Data.Value),
+				Data:    naptrDataFromParam(post.Data.Value),
+			}
 		case dns.RecordBatchParamsPost:
 			typeStr := string(post.Type.Value)
 			record = dns.RecordResponse{
@@ -213,6 +223,16 @@ func extractBatchPutData(put dns.BatchPutUnionParam) (string, dns.RecordResponse
 			Type:    dns.RecordResponseTypeSRV,
 			Content: srvContentFromParam(p.Data.Value),
 			Data:    srvDataFromParam(p.Data.Value),
+		}
+	case dns.BatchPutNAPTRRecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Proxied: p.Proxied.Value,
+			Type:    dns.RecordResponseTypeNAPTR,
+			Content: naptrContentFromParam(p.Data.Value),
+			Data:    naptrDataFromParam(p.Data.Value),
 		}
 	default:
 		panic(fmt.Sprintf("extractBatchPutData: unexpected BatchPutUnionParam type %T", put))
@@ -621,6 +641,7 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 		assert.Empty(t, bc.batchPuts, "missing record should not be added to batch puts")
 		assert.Empty(t, bc.updateChanges)
 		assert.Empty(t, bc.fallbackUpdates)
+		assert.True(t, bc.failed, "skipped update must flag a retry")
 	})
 
 	t.Run("SRV update goes to batchPuts", func(t *testing.T) {
@@ -659,6 +680,7 @@ func TestBuildBatchCollections_EdgeCases(t *testing.T) {
 		bc := p.buildBatchCollections("zone1", changes, make(DNSRecordsMap))
 		assert.Empty(t, bc.batchDeletes, "missing record should not be added to batch deletes")
 		assert.Empty(t, bc.deleteChanges)
+		assert.False(t, bc.failed, "delete of an already-absent record is benign")
 	})
 }
 
@@ -778,7 +800,7 @@ func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
 		assert.False(t, failed, "delete of already-absent record should not report failure")
 	})
 
-	t.Run("update where record is not found skips gracefully", func(t *testing.T) {
+	t.Run("update where record is not found reports failure", func(t *testing.T) {
 		chunk := batchChunk{
 			updateChanges: []*cloudFlareChange{
 				{
@@ -792,6 +814,6 @@ func TestFallbackIndividualChanges_MissingRecord(t *testing.T) {
 			},
 		}
 		failed := p.fallbackIndividualChanges(t.Context(), "001", chunk, emptyRecords)
-		assert.False(t, failed, "update of missing record should not report failure")
+		assert.True(t, failed, "update of missing record must flag a retry instead of dropping silently")
 	})
 }
