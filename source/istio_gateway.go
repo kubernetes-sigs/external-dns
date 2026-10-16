@@ -63,6 +63,7 @@ type gatewaySource struct {
 	namespace                string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
+	publishInternal          bool
 	serviceInformer          coreinformers.ServiceInformer
 	gatewayInformer          networkingv1informer.GatewayInformer
 	ingressInformer          netinformers.IngressInformer
@@ -124,6 +125,7 @@ func NewIstioGatewaySource(
 		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		publishInternal:          cfg.PublishInternal,
 		serviceInformer:          serviceInformer,
 		gatewayInformer:          gatewayInformer,
 		ingressInformer:          ingressInformer,
@@ -220,7 +222,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endp
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
-	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector, sc.publishInternal)
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object

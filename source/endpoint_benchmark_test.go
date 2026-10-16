@@ -45,7 +45,7 @@ func BenchmarkEndpointTargetsFromServicesMedium(b *testing.B) {
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
 	for b.Loop() {
-		targets, _ := EndpointTargetsFromServices(svcInformer, "default", sel)
+		targets, _ := EndpointTargetsFromServices(svcInformer, "default", sel, false)
 		assert.Equal(b, 36, targets.Len())
 	}
 }
@@ -58,7 +58,7 @@ func BenchmarkEndpointTargetsFromServicesMediumIterateOverGateways(b *testing.B)
 
 	for b.Loop() {
 		for _, gateway := range gateways {
-			_, _ = EndpointTargetsFromServices(svcInformer, gateway.Namespace, gateway.Spec.Selector)
+			_, _ = EndpointTargetsFromServices(svcInformer, gateway.Namespace, gateway.Spec.Selector, false)
 		}
 	}
 }
@@ -69,7 +69,7 @@ func BenchmarkEndpointTargetsFromServicesHigh(b *testing.B) {
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
 	for b.Loop() {
-		targets, _ := EndpointTargetsFromServices(svcInformer, "default", sel)
+		targets, _ := EndpointTargetsFromServices(svcInformer, "default", sel, false)
 		assert.Equal(b, 36, targets.Len())
 	}
 }
@@ -83,7 +83,7 @@ func BenchmarkEndpointTargetsFromServicesHighIterateOverGateways(b *testing.B) {
 
 	for b.Loop() {
 		for _, gateway := range gateways {
-			_, _ = EndpointTargetsFromServices(svcInformer, gateway.Namespace, gateway.Spec.Selector)
+			_, _ = EndpointTargetsFromServices(svcInformer, gateway.Namespace, gateway.Spec.Selector, false)
 		}
 	}
 }

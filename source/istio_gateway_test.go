@@ -1619,6 +1619,56 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 	}
 }
 
+func TestGatewaySource_PublishInternalServiceTarget(t *testing.T) {
+	kubeClient := fake.NewClientset(&v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ingress-gateway",
+			Namespace: v1.NamespaceDefault,
+			Labels:    map[string]string{"istio": "ingressgateway"},
+		},
+		Spec: v1.ServiceSpec{
+			ClusterIP:  "10.96.0.10",
+			ClusterIPs: []string{"10.96.0.10"},
+			Selector:   map[string]string{"istio": "ingressgateway"},
+		},
+	})
+	gateway := &networkingv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gateway",
+			Namespace: v1.NamespaceDefault,
+		},
+		Spec: istionetworking.Gateway{
+			Servers: []*istionetworking.Server{{Hosts: []string{"example.org"}}},
+			Selector: map[string]string{
+				"istio": "ingressgateway",
+			},
+		},
+	}
+	istioClient := istiofake.NewSimpleClientset(gateway)
+
+	src, err := NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &Config{
+		Namespaces:      []string{v1.NamespaceDefault},
+		PublishInternal: true,
+	})
+	require.NoError(t, err)
+
+	gwSource, ok := src.(*gatewaySource)
+	require.True(t, ok)
+	got, err := gwSource.targetsFromGateway(gateway)
+	require.NoError(t, err)
+	assert.Equal(t, endpoint.Targets{"10.96.0.10"}, got)
+
+	src, err = NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &Config{
+		Namespaces: []string{v1.NamespaceDefault},
+	})
+	require.NoError(t, err)
+	gwSource, ok = src.(*gatewaySource)
+	require.True(t, ok)
+	got, err = gwSource.targetsFromGateway(gateway)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
 func TestTransformerInIstioGatewaySource(t *testing.T) {
 	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *gatewaySource {
 		t.Helper()

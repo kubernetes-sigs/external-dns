@@ -16,6 +16,7 @@ package source
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 
@@ -23,10 +24,9 @@ import (
 )
 
 // EndpointTargetsFromServices retrieves endpoint targets from services in a given namespace
-// that match the specified selector. It returns external IPs or load balancer addresses.
-//
-// TODO: add support for service.Spec.Ports (type NodePort) and service.Spec.ClusterIPs (type ClusterIP)
-func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, namespace string, selector map[string]string) (endpoint.Targets, error) {
+// that match the specified selector. It returns external IPs and load balancer addresses,
+// plus internal service addresses when publishInternal is enabled.
+func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, namespace string, selector map[string]string, publishInternal bool) (endpoint.Targets, error) {
 	targets := endpoint.Targets{}
 
 	services, err := svcInformer.Lister().Services(namespace).List(labels.Everything())
@@ -44,6 +44,17 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 		if len(service.Spec.ExternalIPs) > 0 {
 			targets = append(targets, service.Spec.ExternalIPs...)
 			continue
+		}
+
+		if publishInternal {
+			if service.Spec.ClusterIP != "" && service.Spec.ClusterIP != corev1.ClusterIPNone {
+				targets = append(targets, service.Spec.ClusterIP)
+			}
+			for _, clusterIP := range service.Spec.ClusterIPs {
+				if clusterIP != "" && clusterIP != corev1.ClusterIPNone {
+					targets = append(targets, clusterIP)
+				}
+			}
 		}
 
 		for _, lb := range service.Status.LoadBalancer.Ingress {
