@@ -181,6 +181,51 @@
       "description": "Interval for DNS updates.",
       "type": "string"
     },
+    "job": {
+      "type": "object",
+      "properties": {
+        "activeDeadlineSeconds": {
+          "description": "Duration in seconds the `Job` may be active before the system tries to terminate it.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "annotations": {
+          "description": "Annotations to add to the `Job`.",
+          "type": "object"
+        },
+        "backoffLimit": {
+          "description": "Number of retries before marking the `Job` as failed.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "enabled": {
+          "description": "If `true`, run _ExternalDNS_ once as a `Job` (with the `--once` flag) instead of as a `Deployment`. Note that the `Job` pod template is immutable, so changing it requires the existing `Job` to be deleted first (e.g. via `job.ttlSecondsAfterFinished` or Helm hook annotations). Any `extraContainers` must exit on their own, otherwise the `Job` will never complete; the webhook provider is run as a native sidecar (Kubernetes v1.29+).",
+          "type": "boolean"
+        },
+        "restartPolicy": {
+          "description": "[Restart policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy) for the `Job` `Pod`.",
+          "type": "string",
+          "enum": [
+            "OnFailure",
+            "Never"
+          ]
+        },
+        "ttlSecondsAfterFinished": {
+          "description": "Duration in seconds after the `Job` finishes before it is automatically deleted.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
     "labelFilter": {
       "description": "Filter resources queried for endpoints by label selector.",
       "type": [

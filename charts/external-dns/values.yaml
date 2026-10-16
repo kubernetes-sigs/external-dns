@@ -72,6 +72,22 @@ replicaCount: 1  # @schema minimum:0; maximum:1
 # -- Annotations to add to the `Deployment`.
 deploymentAnnotations: {}
 
+job:
+  # -- If `true`, run _ExternalDNS_ once as a `Job` (with the `--once` flag) instead of as a `Deployment`.
+  # Note that the `Job` pod template is immutable, so changing it requires the existing `Job` to be deleted first (e.g. via `job.ttlSecondsAfterFinished` or Helm hook annotations).
+  # Any `extraContainers` must exit on their own, otherwise the `Job` will never complete; the webhook provider is run as a native sidecar (Kubernetes v1.29+).
+  enabled: false
+  # -- Annotations to add to the `Job`.
+  annotations: {}
+  # -- [Restart policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy) for the `Job` `Pod`.
+  restartPolicy: OnFailure  # @schema enum:[OnFailure, Never]; type:string
+  # -- (int) Number of retries before marking the `Job` as failed.
+  backoffLimit:  # @schema type:[integer, null];minimum:0
+  # -- (int) Duration in seconds the `Job` may be active before the system tries to terminate it.
+  activeDeadlineSeconds:  # @schema type:[integer, null];minimum:1
+  # -- (int) Duration in seconds after the `Job` finishes before it is automatically deleted.
+  ttlSecondsAfterFinished:  # @schema type:[integer, null];minimum:0
+
 # -- Extra containers to add to the `Deployment`.
 extraContainers: []
 

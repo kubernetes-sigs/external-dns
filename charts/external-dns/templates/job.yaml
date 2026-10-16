@@ -1,0 +1,25 @@
+{{- if .Values.job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  namespace: {{ include "external-dns.namespace" . }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+  {{- with .Values.job.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not (has (quote .Values.job.backoffLimit) (list "" (quote ""))) }}
+  backoffLimit: {{ .Values.job.backoffLimit | int64 }}
+  {{- end }}
+  {{- if not (has (quote .Values.job.activeDeadlineSeconds) (list "" (quote ""))) }}
+  activeDeadlineSeconds: {{ .Values.job.activeDeadlineSeconds | int64 }}
+  {{- end }}
+  {{- if not (has (quote .Values.job.ttlSecondsAfterFinished) (list "" (quote ""))) }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished | int64 }}
+  {{- end }}
+  template:
+    {{- include "external-dns.podTemplate" . | nindent 4 }}
+{{- end }}

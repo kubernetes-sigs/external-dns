@@ -1,0 +1,323 @@
+{{/*
+Pod template shared by the Deployment and the Job.
+*/}}
+{{- define "external-dns.podTemplate" -}}
+{{- $defaultSelector := (include "external-dns.labelSelector" $ ) | fromYaml -}}
+{{- $providerName := tpl (include "external-dns.providerName" .) $ -}}
+metadata:
+  labels:
+    {{- include "external-dns.selectorLabels" . | nindent 4 }}
+  {{- with .Values.podLabels }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if or .Values.secretConfiguration.enabled .Values.podAnnotations }}
+  annotations:
+    {{- if .Values.secretConfiguration.enabled }}
+    checksum/secret: {{ tpl (toYaml .Values.secretConfiguration.data) . | sha256sum }}
+    {{- end }}
+    {{- with .Values.podAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+{{- if not (quote .Values.automountServiceAccountToken | empty) }}
+  automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+{{- end }}
+  {{- with (default .Values.global.imagePullSecrets .Values.imagePullSecrets) }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  serviceAccountName: {{ include "external-dns.serviceAccountName" . }}
+  {{- if .Values.job.enabled }}
+  restartPolicy: {{ .Values.job.restartPolicy }}
+  {{- end }}
+  {{- with .Values.shareProcessNamespace }}
+  shareProcessNamespace: {{ . }}
+  {{- end }}
+  {{- with .Values.podSecurityContext }}
+  securityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.priorityClassName }}
+  priorityClassName: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.terminationGracePeriodSeconds }}
+  terminationGracePeriodSeconds: {{ . }}
+  {{- end }}
+  {{- with .Values.dnsPolicy }}
+  dnsPolicy: {{ . }}
+  {{- end }}
+  {{- with .Values.dnsConfig }}
+  dnsConfig:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.hostAliases }}
+  hostAliases:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- $webhookSidecar := and (eq $providerName "webhook") .Values.job.enabled }}
+  {{- if or .Values.initContainers $webhookSidecar }}
+  initContainers:
+    {{- with .Values.initContainers }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- if $webhookSidecar }}
+    {{- include "external-dns.webhookContainer" . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  containers:
+  {{- with .Values.extraContainers }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+    - name: external-dns
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      image: {{ include "external-dns.image" . }}
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      {{- with .Values.env }}
+      env:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      args:
+        - --log-level={{ .Values.logLevel }}
+        - --log-format={{ .Values.logFormat }}
+        - --interval={{ .Values.interval }}
+        {{- if .Values.job.enabled }}
+        - --once
+        {{- end }}
+        {{- if .Values.triggerLoopOnEvent }}
+        - --events
+        {{- end }}
+        {{- range .Values.sources }}
+        - --source={{ . }}
+        {{- end }}
+        - --policy={{ .Values.policy }}
+        - --registry={{ .Values.registry }}
+        {{- if .Values.txtOwnerId }}
+        - --txt-owner-id={{ .Values.txtOwnerId }}
+        {{- end }}
+        {{- if and .Values.txtPrefix .Values.txtSuffix }}
+        {{- fail (printf "'txtPrefix' and 'txtSuffix' are mutually exclusive") }}
+        {{- end }}
+        {{- if .Values.txtPrefix }}
+        - --txt-prefix={{ .Values.txtPrefix }}
+        {{- else if .Values.txtSuffix }}
+        - --txt-suffix={{ .Values.txtSuffix }}
+        {{- end }}
+        {{- if .Values.namespaced }}
+        - --namespace={{ default (include "external-dns.namespace" .) .Values.sourceNamespace }}
+        {{- end }}
+        {{- if .Values.gatewayNamespace }}
+        - --gateway-namespace={{ .Values.gatewayNamespace }}
+        {{- end }}
+        {{- if .Values.enableGatewayListenerSets }}
+        - --gateway-listener-sets
+        {{- end }}
+        {{- range .Values.domainFilters }}
+        - --domain-filter={{ . }}
+        {{- end }}
+        {{- range .Values.excludeDomains }}
+        - --exclude-domains={{ . }}
+        {{- end }}
+        {{- if .Values.labelFilter }}
+        - --label-filter={{ .Values.labelFilter }}
+        {{- end }}
+        {{- if .Values.annotationFilter }}
+        - --annotation-filter={{ .Values.annotationFilter }}
+        {{- end }}
+        {{- if .Values.annotationPrefix }}
+        - --annotation-prefix={{ .Values.annotationPrefix }}
+        {{- end }}
+        {{- range .Values.managedRecordTypes }}
+        - --managed-record-types={{ . }}
+        {{- end }}
+        - --provider={{ $providerName }}
+        {{- if kindIs "map" .Values.extraArgs }}
+        {{- range $key, $value := .Values.extraArgs }}
+        {{- if not (kindIs "invalid" $value) }}
+        {{- if kindIs "slice" $value }}
+        {{- range $value }}
+        - {{ print "--" $key "=" (tpl (. | toString) $) | quote }}
+        {{- end }}
+        {{- else if kindIs "bool" $value }}
+        {{- if $value }}
+        - --{{ $key }}
+        {{- else }}
+        - --no-{{ $key }}
+        {{- end }}
+        {{- else }}
+        - {{ print "--" $key "=" (tpl ($value | toString) $) | quote }}
+        {{- end }}
+        {{- else }}
+        - {{ print "--" $key | quote }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- if kindIs "slice" .Values.extraArgs }}
+        {{- range .Values.extraArgs }}
+        - {{ tpl . $ | quote }}
+        {{- end }}
+        {{- end }}
+      ports:
+        - name: http
+          protocol: TCP
+          containerPort: 7979
+      livenessProbe:
+        {{- toYaml .Values.livenessProbe | nindent 8 }}
+      readinessProbe:
+        {{- toYaml .Values.readinessProbe | nindent 8 }}
+      {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts }}
+      volumeMounts:
+        {{- if .Values.secretConfiguration.enabled }}
+        - name: secrets
+          mountPath: {{ tpl .Values.secretConfiguration.mountPath $ }}
+        {{- with .Values.secretConfiguration.subPath }}
+          subPath: {{ tpl . $ }}
+        {{- end }}
+        {{- end }}
+        {{- with .Values.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.resources }}
+      resources:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- if and (eq $providerName "webhook") (not .Values.job.enabled) }}
+    {{- include "external-dns.webhookContainer" . | nindent 4 }}
+    {{- end }}
+  {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
+  volumes:
+    {{- if .Values.secretConfiguration.enabled }}
+    - name: secrets
+      secret:
+        secretName: {{ include "external-dns.fullname" . }}
+    {{- end }}
+    {{- with .Values.extraVolumes }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.affinity }}
+  affinity:
+  {{- with .nodeAffinity }}
+    nodeAffinity:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+  {{- with .podAffinity }}
+    podAffinity:
+      {{- with .preferredDuringSchedulingIgnoredDuringExecution }}
+      preferredDuringSchedulingIgnoredDuringExecution:
+      {{- range . }}
+        - podAffinityTerm:
+          {{- if dig "podAffinityTerm" "labelSelector" nil . }}
+            {{- toYaml .podAffinityTerm | nindent 12 }}
+          {{- else }}
+            {{- (merge $defaultSelector .podAffinityTerm) | toYaml | nindent 12 }}
+          {{- end }}
+          weight: {{ .weight  }}
+      {{- end }}
+      {{- end }}
+      {{- with .requiredDuringSchedulingIgnoredDuringExecution }}
+      requiredDuringSchedulingIgnoredDuringExecution:
+      {{- range . }}
+        {{- if dig "labelSelector" nil . }}
+          - {{ toYaml . | indent 12 | trim }}
+        {{- else }}
+          - {{ (merge $defaultSelector .) | toYaml | indent 12 | trim }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+  {{- end }}
+  {{- with .podAntiAffinity }}
+    podAntiAffinity:
+      {{- with .preferredDuringSchedulingIgnoredDuringExecution }}
+      preferredDuringSchedulingIgnoredDuringExecution:
+      {{- range . }}
+        - podAffinityTerm:
+          {{- if dig "podAffinityTerm" "labelSelector" nil . }}
+            {{- toYaml .podAffinityTerm | nindent 12 }}
+          {{- else }}
+            {{- (merge $defaultSelector .podAffinityTerm) | toYaml | nindent 12 }}
+          {{- end }}
+          weight: {{ .weight  }}
+      {{- end }}
+      {{- end }}
+      {{- with .requiredDuringSchedulingIgnoredDuringExecution }}
+      requiredDuringSchedulingIgnoredDuringExecution:
+      {{- range . }}
+        {{- if dig "labelSelector" nil . }}
+          - {{ toYaml . | indent 12 | trim }}
+        {{- else }}
+          - {{ (merge $defaultSelector .) | toYaml | indent 12 | trim }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- with .Values.topologySpreadConstraints }}
+  topologySpreadConstraints:
+    {{- range . }}
+    - {{ toYaml . | nindent 6 | trim }}
+      {{- if not (hasKey . "labelSelector") }}
+      labelSelector:
+        matchLabels:
+          {{- include "external-dns.selectorLabels" $ | nindent 10 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- with .Values.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Webhook provider container; rendered as a native sidecar init container when running as a Job.
+*/}}
+{{- define "external-dns.webhookContainer" -}}
+{{- with .Values.provider.webhook -}}
+- name: webhook
+  image: {{ include "external-dns.webhookImage" . }}
+  imagePullPolicy: {{ .image.pullPolicy }}
+  {{- if $.Values.job.enabled }}
+  {{- /* Run as a native sidecar so it does not block the Job from completing. */}}
+  restartPolicy: Always
+  {{- end }}
+  {{- with .env }}
+  env:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .args }}
+  args:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  ports:
+    - name: http-webhook
+      protocol: TCP
+      containerPort: 8080
+  livenessProbe:
+    {{- toYaml .livenessProbe | nindent 4 }}
+  readinessProbe:
+    {{- toYaml .readinessProbe | nindent 4 }}
+  {{- if .extraVolumeMounts }}
+  volumeMounts:
+    {{- with .extraVolumeMounts }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  {{- with .resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .securityContext }}
+  securityContext:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

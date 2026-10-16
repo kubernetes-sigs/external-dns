@@ -121,6 +121,12 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | imagePullSecrets | list | `[]` | Image pull secrets. |
 | initContainers | list | `[]` | [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition. |
 | interval | string | `"1m"` | Interval for DNS updates. |
+| job.activeDeadlineSeconds | int | `nil` | Duration in seconds the `Job` may be active before the system tries to terminate it. |
+| job.annotations | object | `{}` | Annotations to add to the `Job`. |
+| job.backoffLimit | int | `nil` | Number of retries before marking the `Job` as failed. |
+| job.enabled | bool | `false` | If `true`, run _ExternalDNS_ once as a `Job` (with the `--once` flag) instead of as a `Deployment`. Note that the `Job` pod template is immutable, so changing it requires the existing `Job` to be deleted first (e.g. via `job.ttlSecondsAfterFinished` or Helm hook annotations). Any `extraContainers` must exit on their own, otherwise the `Job` will never complete; the webhook provider is run as a native sidecar (Kubernetes v1.29+). |
+| job.restartPolicy | string | `"OnFailure"` | [Restart policy](https://kubernetes.io/docs/concepts/workloads/controllers/job/#pod-backoff-failure-policy) for the `Job` `Pod`. |
+| job.ttlSecondsAfterFinished | int | `nil` | Duration in seconds after the `Job` finishes before it is automatically deleted. |
 | labelFilter | string | `nil` | Filter resources queried for endpoints by label selector. |
 | livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | logFormat | string | `"text"` | Log format. |
