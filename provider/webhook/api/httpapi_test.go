@@ -306,7 +306,16 @@ func TestAdjustEndpointsHandlerWithError(t *testing.T) {
 
 func TestStartHTTPApi(t *testing.T) {
 	startedChan := make(chan struct{})
-	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, "127.0.0.1:8887")
+	go StartHTTPApi(ServerOptions{
+		Provider:          FakeWebhookProvider{},
+		StartedChan:       startedChan,
+		ProviderPort:      "127.0.0.1:8887",
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		MaxBodySize:       32 << 20,
+	})
 	<-startedChan
 	resp, err := http.Get("http://127.0.0.1:8887")
 	require.NoError(t, err)
@@ -354,4 +363,43 @@ func TestNegotiateHandler_FiltersWithSpecialEncodings(t *testing.T) {
 	defer res.Body.Close()
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+// endlessBody emits an infinite stream of 'a' bytes, standing in for a client
+// that pushes a request body with no end in sight.
+type endlessBody struct{}
+
+func (endlessBody) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 'a'
+	}
+	return len(p), nil
+}
+
+func TestRecordsHandlerApplyChangesRequestBodyOverLimit(t *testing.T) {
+	body := io.MultiReader(strings.NewReader(`{"create":[{"dnsName":"`), endlessBody{})
+	req := httptest.NewRequest(http.MethodPost, UrlApplyChanges, body)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		Provider:    &FakeWebhookProvider{},
+		MaxBodySize: 1 << 20,
+	}
+	providerAPIServer.RecordsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.StatusCode)
+}
+
+func TestAdjustEndpointsHandlerRequestBodyOverLimit(t *testing.T) {
+	body := io.MultiReader(strings.NewReader(`[{"dnsName":"`), endlessBody{})
+	req := httptest.NewRequest(http.MethodPost, UrlAdjustEndpoints, body)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		Provider:    &FakeWebhookProvider{},
+		MaxBodySize: 1 << 20,
+	}
+	providerAPIServer.AdjustEndpointsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusRequestEntityTooLarge, res.StatusCode)
 }

@@ -88,6 +88,7 @@ kubectl explain pod.spec.containers
 | `contains`   | Check if `substr` is in `string`                      | `{{ contains "hello" "ell" }} → true`                                              |
 | `isIPv4`     | Validate an IPv4 address                              | `{{ isIPv4 "192.168.1.1" }} → true`                                                |
 | `isIPv6`     | Validate an IPv6 address (including IPv4-mapped IPv6) | `{{ isIPv6 "2001:db8::1" }} → true`<br/>`{{ isIPv6 "::FFFF:192.168.1.1" }} → true` |
+| `isSource`   | Check the ExternalDNS source name (case-insensitive)  | `{{ if isSource "traefik-proxy" }}...{{ end }}`                                    |
 | `replace`    | Replace `old` with `new`                              | `{{ replace "l" "w" "hello" }} → hewwo`                                            |
 | `trim`       | Remove leading and trailing spaces                    | `{{ trim "  hello  " }} → hello`                                                   |
 | `toLower`    | Convert to lowercase                                  | `{{ toLower "HELLO" }} → hello`                                                    |
@@ -114,14 +115,22 @@ metadata:
 ```
 
 ```sh
+# Single template
 external-dns \
   --provider=aws \
   --source=service \
-  --fqdn-template="{{ .Name }}.example.com,{{ .Name }}.{{ .Namespace }}.example.tld"
+  --fqdn-template="{{ .Name }}.example.com"
+
+# Multiple templates — specify the flag more than once
+external-dns \
+  --provider=aws \
+  --source=service \
+  --fqdn-template="{{ .Name }}.example.com" \
+  --fqdn-template="{{ .Name }}.{{ .Namespace }}.example.tld"
 
 # This will result in DNS entries like
->route53> my-service.example.com
->route53> my-service.my-namespace.example.tld
+# route53> my-service.example.com
+# route53> my-service.my-namespace.example.tld
 ```
 
 ### With Namespace
@@ -177,10 +186,15 @@ ExternalDNS allows specifying multiple FQDN templates, which can be useful when 
 
 > Be cautious, as this will create multiple DNS records per resource, potentially increasing the number of API calls to your DNS provider.
 
+Specify `--fqdn-template` multiple times — one flag per template:
+
 ```yml
 args:
-  --fqdn-template={{.Name}}.example.com,{{.Name}}.svc.example.com
+  - --fqdn-template={{.Name}}.example.com
+  - --fqdn-template={{.Name}}.svc.example.com
 ```
+
+Duplicate templates and leading/trailing whitespace are ignored automatically.
 
 ### Conditional Templating combined with Annotations processing
 
@@ -251,6 +265,26 @@ You can also handle multiple kinds in one template:
 args:
   --fqdn-template='{{ if eq .Kind "Service" }}{{ .Name }}.svc.example.com{{ end }}{{ if eq .Kind "Pod" }}{{ .Name }}.pod.example.com{{ end }}'
 ```
+
+### Using `isSource` for Conditional Templating by Source
+
+`isSource` checks which ExternalDNS **source** (the `--source` flag value, e.g. `service`, `ingress`, `traefik-proxy`) produced the object, not its Kubernetes `Kind`.
+
+This matters because `Kind` and source don't always map one-to-one: `traefik-proxy` alone produces `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` objects, and `unstructured` can produce arbitrary CRD kinds.
+
+`isSource` lets a single `--fqdn-template` (applied across all configured sources) target one source regardless of which kind(s) it emits:
+
+```yml
+args:
+  --source=service
+  --source=traefik-proxy
+  --fqdn-template='{{ if isSource "traefik-proxy" }}{{ .Name }}.proxy.example.com{{ end }}{{ if isSource "service" }}{{ .Name }}.svc.example.com{{ end }}'
+
+# Only objects from the traefik-proxy source get a .proxy.example.com record,
+# regardless of whether they're IngressRoute, IngressRouteTCP, or IngressRouteUDP.
+```
+
+The match is case-insensitive.
 
 ### Using Spec Fields
 
@@ -416,7 +450,7 @@ This is helpful in scenarios such as:
 
 ## Tips
 
-- If `--fqdn-template` is specified, ExternalDNS ignores any `external-dns.alpha.kubernetes.io/hostname` annotations.
+- If `--fqdn-template` is specified, ExternalDNS ignores any `external-dns.kubernetes.io/hostname` annotations (unless `--combine-fqdn-annotation` is also set).
 - You must still ensure the resulting FQDN is valid and unique.
 - Since Go templates can be error-prone, test your template with simple examples before deploying. Mismatched field names or nil values (e.g., missing labels) will result in errors or skipped entries.
 
@@ -424,7 +458,15 @@ This is helpful in scenarios such as:
 
 ### Can I specify multiple global FQDN templates?
 
-Yes, you can. Pass in a comma separated list to --fqdn-template. Beware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
+Yes. Specify `--fqdn-template` more than once — one flag per template:
+
+```sh
+external-dns \
+  --fqdn-template="{{ .Name }}.example.com" \
+  --fqdn-template="{{ .Name }}.svc.example.com"
+```
+
+Beware: this will double (triple, etc.) the number of DNS entries based on how many services, ingresses, and so on you have, and will bring you faster towards the API request limit of your DNS provider. Duplicate templates are deduplicated automatically.
 
 ### Where to find template syntax
 
@@ -498,7 +540,7 @@ args:
   - --fqdn-template="{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.example.com"
 ```
 
-This is a complex template that iternates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
+This is a complex template that iterates through a list of a Node's Addresses and creates a FQDN with public IPv4 addresses.
 
 ### Using `hasKey` for Safe Label and Annotation Access
 

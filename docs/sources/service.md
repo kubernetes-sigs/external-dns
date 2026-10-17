@@ -14,8 +14,8 @@ by a set of labels.
 
 The domain names of the DNS entries created from a Service are sourced from the following places:
 
-1. Adds the domain names from any `external-dns.alpha.kubernetes.io/hostname` and/or
-`external-dns.alpha.kubernetes.io/internal-hostname` annotation.
+1. Adds the domain names from any `external-dns.kubernetes.io/hostname` and/or
+`external-dns.kubernetes.io/internal-hostname` annotation.
 This behavior is suppressed if the `--ignore-hostname-annotation` flag was specified.
 
 2. If no DNS entries were produced for a Service by the previous steps
@@ -28,20 +28,20 @@ generated from any`--fqdn-template` flag.
 
 ### Domain names for headless service pods
 
-If a headless Service (without an `external-dns.alpha.kubernetes.io/target` annotation) creates DNS entries with targets from
+If a headless Service (without an `external-dns.kubernetes.io/target` annotation) creates DNS entries with targets from
 a Pod that has a non-empty `spec.hostname` field, additional DNS entries are created for that Pod, containing the targets from that Pod.
 For each domain name created for the Service, the additional DNS entry for the Pod has that domain name prefixed with
 the value of the Pod's `spec.hostname` field and a `.`.
 
 ## Targets
 
-If the Service has an `external-dns.alpha.kubernetes.io/target` annotation, uses
+If the Service has an `external-dns.kubernetes.io/target` annotation, uses
 the values from that. Otherwise, the targets of the DNS entries created from a service are sourced depending
 on the Service's `spec.type`:
 
 ### LoadBalancer
 
-1. If the hostname came from an `external-dns.alpha.kubernetes.io/internal-hostname` annotation, uses
+1. If the hostname came from an `external-dns.kubernetes.io/internal-hostname` annotation, uses
 the Service's `spec.clusterIP` field. If that field has the value `None`, does not generate
 any targets for the hostname.
 
@@ -61,21 +61,21 @@ also iterates over the Endpoints's `subsets.notReadyAddresses`.
 
 1. If an address does not target a `Pod` that matches the Service's `spec.selector`, it is ignored.
 
-2. If the target pod has an `external-dns.alpha.kubernetes.io/target` annotation, uses
+2. If the target pod has an `external-dns.kubernetes.io/target` annotation, uses
 the values from that.
 
-3. Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP`
+3. Otherwise, if the Service has an `external-dns.kubernetes.io/endpoints-type: NodeExternalIP`
 annotation, uses the addresses from the Pod's Node's `status.addresses` that are either of type
 `ExternalIP` or IPv6 addresses of type `InternalIP`.
 
-4. Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: HostIP` annotation
+4. Otherwise, if the Service has an `external-dns.kubernetes.io/endpoints-type: HostIP` annotation
 or the `--publish-host-ip` flag was specified, uses the Pod's `status.hostIP` field.
 
 5. Otherwise uses the `ip` field of the address from the Endpoints.
 
 ### ClusterIP (not headless)
 
-1. If the hostname came from an `external-dns.alpha.kubernetes.io/internal-hostname` annotation
+1. If the hostname came from an `external-dns.kubernetes.io/internal-hostname` annotation
 or the `--publish-internal-services` flag was specified, uses the `spec.ClusterIP`.
 
 2. Otherwise, does not create any targets.
@@ -93,10 +93,10 @@ Otherwise iterates over all Nodes, of any phase.
 
 Iterates over each relevant Node's `status.addresses`:
 
-1. If there is an `external-dns.alpha.kubernetes.io/access: public` annotation on the Service, uses both addresses with
+1. If there is an `external-dns.kubernetes.io/access: public` annotation on the Service, uses both addresses with
 a `type` of `ExternalIP` and IPv6 addresses with a `type` of `InternalIP`.
 
-2. Otherwise, if there is an `external-dns.alpha.kubernetes.io/access: private` annotation on the Service, uses addresses with
+2. Otherwise, if there is an `external-dns.kubernetes.io/access: private` annotation on the Service, uses addresses with
 a `type` of `InternalIP`.
 
 3. Otherwise, if there is at least one address with a `type` of `ExternalIP`, uses both addresses with

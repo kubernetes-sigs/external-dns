@@ -3,6 +3,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: {{ .Values.namespaced | ternary "RoleBinding" "ClusterRoleBinding" }}
 metadata:
   name: {{ printf "%s-viewer" (include "external-dns.fullname" .) }}
+  {{- if and .Values.namespaced .Values.sourceNamespace }}
+  namespace: {{ .Values.sourceNamespace }}
+  {{- end }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
 roleRef:
@@ -12,7 +15,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ template "external-dns.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ include "external-dns.namespace" . }}
 {{- if and .Values.rbac.create .Values.namespaced (include "external-dns.hasGatewaySources" .) }}
 {{- /*
      If namespaced=true and gatewayNamespace is NOT set, bind the namespaces ClusterRole.
@@ -33,7 +36,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ template "external-dns.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ include "external-dns.namespace" . }}
 {{- end }}
 {{- if .Values.gatewayNamespace }}
 ---
@@ -51,7 +54,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ template "external-dns.serviceAccountName" . }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ include "external-dns.namespace" . }}
 {{- end }}
 {{- end }}
 {{- end }}

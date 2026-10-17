@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -33,9 +34,9 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
-	ptrSupported        bool            // PTR is in --managed-record-types
-	createPTR           bool            // --create-ptr default for all A/AAAA records
-	sourceWrappers      map[string]bool // map of source wrappers, e.g. "targetfilter", "nat64"
+	ptrSupported        bool             // PTR is in --managed-record-types
+	createPTR           bool             // --create-ptr default for all A/AAAA records
+	sourceWrappers      sets.Set[string] // set of source wrappers, e.g. "targetfilter", "nat64"
 }
 
 func NewConfig(opts ...Option) *Config {
@@ -121,18 +122,17 @@ func WithCreatePTR(enabled bool) Option {
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
 	if o.sourceWrappers == nil {
-		o.sourceWrappers = make(map[string]bool)
+		o.sourceWrappers = sets.New[string]()
 	}
-	o.sourceWrappers[name] = true
+	o.sourceWrappers.Insert(name)
 }
 
 // isSourceWrapperInstrumented returns whether a source wrapper is enabled or not.
 func (o *Config) isSourceWrapperInstrumented(name string) bool {
-	if o.sourceWrappers == nil {
+	if len(o.sourceWrappers) == 0 {
 		return false
 	}
-	_, ok := o.sourceWrappers[name]
-	return ok
+	return o.sourceWrappers.Has(name)
 }
 
 // wrapSources combines multiple sources into a single source,

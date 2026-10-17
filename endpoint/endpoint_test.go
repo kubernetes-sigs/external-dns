@@ -576,14 +576,14 @@ func TestRetainProviderProperties(t *testing.T) {
 			name: "provider agnostic properties without prefix are retained",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "alias", Value: "true"},
+					{Name: ProviderSpecificAlias, Value: "true"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
 					{Name: "coredns/group", Value: "my-group"},
 				},
 			},
 			provider: "aws",
 			expected: []ProviderSpecificProperty{
-				{Name: "alias", Value: "true"},
+				{Name: ProviderSpecificAlias, Value: "true"},
 				{Name: "aws/evaluate-target-health", Value: "true"},
 			},
 		},
@@ -600,36 +600,33 @@ func TestRetainProviderProperties(t *testing.T) {
 				{Name: "aws/weight", Value: "10"},
 			},
 		},
-		// cloudflare uses annotation-style names (e.g. "external-dns.alpha.kubernetes.io/cloudflare-*")
-		// rather than the standard "provider/" prefix, so all properties are retained and only sorted.
 		{
-			name: "cloudflare retains all properties",
+			name: "cloudflare drops other providers' properties",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "cloudflare/tags", Value: "tag1"},
 					{Name: "aws/evaluate-target-health", Value: "true"},
-					{Name: "alias", Value: "false"},
+					{Name: ProviderSpecificAlias, Value: "false"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "alias", Value: "false"},
-				{Name: "aws/evaluate-target-health", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: ProviderSpecificAlias, Value: "false"},
+				{Name: "cloudflare/tags", Value: "tag1"},
 			},
 		},
 		{
 			name: "cloudflare properties are sorted",
 			endpoint: Endpoint{
 				ProviderSpecific: []ProviderSpecificProperty{
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-					{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+					{Name: "cloudflare/tags", Value: "tag1"},
+					{Name: "cloudflare/proxied", Value: "true"},
 				},
 			},
 			provider: "cloudflare",
 			expected: []ProviderSpecificProperty{
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied", Value: "true"},
-				{Name: "external-dns.alpha.kubernetes.io/cloudflare-tags", Value: "tag1"},
+				{Name: "cloudflare/proxied", Value: "true"},
+				{Name: "cloudflare/tags", Value: "tag1"},
 			},
 		},
 	}
@@ -1128,9 +1125,9 @@ func TestNewMXTarget(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual, err := NewMXRecord(tt.target)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
 			}
 		})
@@ -1141,7 +1138,73 @@ func TestMXTarget_Getters(t *testing.T) {
 	m, err := NewMXRecord("10 mail.example.com")
 	require.NoError(t, err)
 	assert.Equal(t, uint16(10), *m.GetPriority())
-	assert.Equal(t, "mail.example.com", *m.GetHost())
+	assert.Equal(t, "mail.example.com", m.GetHost())
+}
+
+func TestNewSRVRecord(t *testing.T) {
+	tests := []struct {
+		description string
+		target      string
+		expected    *SRVTarget
+		expectError bool
+	}{
+		{
+			description: "Valid SRV record",
+			target:      "10 20 5060 service.example.com.",
+			expected:    &SRVTarget{priority: 10, weight: 20, port: 5060, host: "service.example.com."},
+		},
+		{
+			description: "Valid root target",
+			target:      "0 0 0 .",
+			expected:    &SRVTarget{priority: 0, weight: 0, port: 0, host: "."},
+		},
+		{
+			description: "Invalid SRV record with missing part",
+			target:      "10 20 5060",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer priority",
+			target:      "abc 20 5060 service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer weight",
+			target:      "10 abc 5060 service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with non-integer port",
+			target:      "10 20 abc service.example.com.",
+			expectError: true,
+		},
+		{
+			description: "Invalid SRV record with missing dot for target host",
+			target:      "10 20 5060 service.example.com",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			actual, err := NewSRVRecord(tt.target)
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.expected, actual)
+			}
+		})
+	}
+}
+
+func TestSRVTarget_Getters(t *testing.T) {
+	s, err := NewSRVRecord("10 20 5060 service.example.com.")
+	require.NoError(t, err)
+	assert.Equal(t, uint16(10), s.GetPriority())
+	assert.Equal(t, uint16(20), s.GetWeight())
+	assert.Equal(t, uint16(5060), s.GetPort())
+	assert.Equal(t, "service.example.com.", s.GetHost())
 }
 
 func TestCheckEndpoint(t *testing.T) {
@@ -1246,7 +1309,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeA,
 				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: true,
 		},
@@ -1256,7 +1319,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeAAAA,
 				Targets:          Targets{"dualstack.my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: true,
 		},
@@ -1266,7 +1329,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeCNAME,
 				Targets:          Targets{"d111111abcdef8.cloudfront.net"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: true,
 		},
@@ -1276,7 +1339,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1286,7 +1349,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeTXT,
 				Targets:          Targets{"v=spf1 ~all"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1296,7 +1359,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeNS,
 				Targets:          Targets{"ns1.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1306,7 +1369,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "_sip._tcp.example.com",
 				RecordType:       RecordTypeSRV,
 				Targets:          Targets{"10 5 5060 sip.example.com."},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			expected: false,
 		},
@@ -1316,7 +1379,7 @@ func TestCheckEndpoint(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "false"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "false"}},
 			},
 			expected: false,
 		},
@@ -1437,6 +1500,49 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			description: "Invalid A record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeA,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid alias A record - no targets",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid TXT record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTXT,
+				Targets:    Targets{},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid MX record - no targets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeMX,
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1459,7 +1565,7 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLog: true,
 		},
@@ -1469,7 +1575,7 @@ func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
 				DNSName:          "example.com",
 				RecordType:       RecordTypeA,
 				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
 			wantLog: false,
 		},
@@ -1540,7 +1646,7 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 				RecordType: RecordTypePTR,
 				Targets:    Targets{},
 			},
-			wantLog: "at least one target is required",
+			wantLog: "has no targets",
 		},
 		{
 			name: "valid PTR does not log",
@@ -1569,16 +1675,52 @@ func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
 }
 
 func TestEndpoint_WithRefObject(t *testing.T) {
-	ep := &Endpoint{}
-	ref := &events.ObjectReference{
-		Kind:      "Service",
-		Namespace: "default",
-		Name:      "my-service",
-	}
-	result := ep.WithRefObject(ref)
+	ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
+	ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
 
-	assert.Equal(t, ref, ep.RefObject(), "refObject should be set")
-	assert.Equal(t, ep, result, "should return the same Endpoint pointer")
+	tests := []struct {
+		name     string
+		add      []*events.ObjectReference
+		wantLen  int
+		wantRefs []*events.ObjectReference
+	}{
+		{
+			name:     "nil ref is a no-op",
+			add:      []*events.ObjectReference{nil},
+			wantLen:  0,
+			wantRefs: nil,
+		},
+		{
+			name:     "single ref is stored",
+			add:      []*events.ObjectReference{ref1},
+			wantLen:  1,
+			wantRefs: []*events.ObjectReference{ref1},
+		},
+		{
+			name:     "same ref added twice is deduplicated",
+			add:      []*events.ObjectReference{ref1, ref1},
+			wantLen:  1,
+			wantRefs: []*events.ObjectReference{ref1},
+		},
+		{
+			name:     "distinct refs are added in insertion order",
+			add:      []*events.ObjectReference{ref1, ref2},
+			wantLen:  2,
+			wantRefs: []*events.ObjectReference{ref1, ref2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &Endpoint{}
+			for _, ref := range tt.add {
+				ep.WithRefObject(ref)
+			}
+			refs := ep.RefObjects()
+			require.Len(t, refs, tt.wantLen)
+			assert.Equal(t, tt.wantRefs, refs)
+		})
+	}
 }
 
 func TestTargets_UniqueOrdered(t *testing.T) {
@@ -1703,6 +1845,139 @@ func TestNewEndpointWithTTLPreservesDotsInTXTRecords(t *testing.T) {
 	cnameEndpoint := NewEndpointWithTTL("example.com", RecordTypeCNAME, TTL(300), "target.example.com.")
 	require.NotNil(t, cnameEndpoint, "CNAME endpoint should be created")
 	assert.Equal(t, "target.example.com", cnameEndpoint.Targets[0], "CNAME record should have trailing dot trimmed")
+}
+
+func TestNewEndpointWithTTLMXTargets(t *testing.T) {
+	tests := []struct {
+		name     string
+		target   string
+		expected string
+	}{
+		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
+		{"already canonical", "10 mail.example.com", "10 mail.example.com"},
+		// RFC 7505: the dot is the host
+		{"null MX preserved", "0 .", "0 ."},
+		{"malformed left alone", "mail.example.com.", "mail.example.com."},
+		{"whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
+		{"leading zero dropped", "010 mail.example.com", "10 mail.example.com"},
+		{"surrounding space trimmed", "  10 mail.example.com  ", "10 mail.example.com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := NewEndpointWithTTL("example.com", RecordTypeMX, TTL(300), tt.target)
+			require.NotNil(t, ep)
+			assert.Equal(t, tt.expected, ep.Targets[0])
+		})
+	}
+
+	assert.True(t, Targets{"0 ."}.ValidateMXRecord(), "null MX must stay a valid MX target")
+}
+
+func TestGetAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint Endpoint
+		expected AliasType
+	}{
+		{
+			name:     "no alias property returns AliasNone",
+			endpoint: Endpoint{},
+			expected: AliasNone,
+		},
+		{
+			name: "alias=true returns AliasTrue",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "true"},
+				},
+			},
+			expected: AliasTrue,
+		},
+		{
+			name: "alias=false returns AliasFalse",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "false"},
+				},
+			},
+			expected: AliasFalse,
+		},
+		{
+			name: "alias=A returns AliasA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "A"},
+				},
+			},
+			expected: AliasA,
+		},
+		{
+			name: "alias=AAAA returns AliasAAAA",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "AAAA"},
+				},
+			},
+			expected: AliasAAAA,
+		},
+		{
+			name: "alias with invalid value returns AliasNone",
+			endpoint: Endpoint{
+				ProviderSpecific: []ProviderSpecificProperty{
+					{Name: "alias", Value: "invalid"},
+				},
+			},
+			expected: AliasNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.endpoint.GetAliasProperty()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestWithAliasProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    AliasType
+		expected AliasType
+	}{
+		{
+			name:     "AliasNone sets alias to empty string",
+			input:    AliasNone,
+			expected: AliasNone,
+		},
+		{
+			name:     "AliasFalse sets alias=false",
+			input:    AliasFalse,
+			expected: AliasFalse,
+		},
+		{
+			name:     "AliasTrue sets alias=true",
+			input:    AliasTrue,
+			expected: AliasTrue,
+		},
+		{
+			name:     "AliasA sets alias=A",
+			input:    AliasA,
+			expected: AliasA,
+		},
+		{
+			name:     "AliasAAAA sets alias=AAAA",
+			input:    AliasAAAA,
+			expected: AliasAAAA,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewEndpoint("example.com", "A", "1.2.3.4").WithAliasProperty(tt.input)
+			assert.Equal(t, tt.expected, e.GetAliasProperty())
+		})
+	}
 }
 
 func TestGetBoolProviderSpecificProperty(t *testing.T) {
@@ -1977,7 +2252,7 @@ func TestNewPTREndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ep, err := NewPTREndpoint(tt.target, tt.ttl, tt.hostnames...)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
@@ -2016,4 +2291,67 @@ func TestEndpointKey_String(t *testing.T) {
 			assert.Equal(t, tt.want, tt.key.String())
 		})
 	}
+}
+
+func TestEndpointEqual(t *testing.T) {
+	base := func() *Endpoint {
+		return NewEndpointWithTTL("example.org", RecordTypeA, TTL(300), "1.2.3.4").
+			WithSetIdentifier("id").
+			WithLabel(OwnerLabelKey, "owner").
+			WithProviderSpecific("alias", "false")
+	}
+
+	tests := []struct {
+		name   string
+		a, b   *Endpoint
+		modify func(*Endpoint)
+		want   bool
+	}{
+		{name: "identical", a: base(), b: base(), want: true},
+		{name: "both nil", want: true},
+		{name: "one nil", a: base(), want: false},
+		{name: "DNSName", a: base(), b: base(), modify: func(e *Endpoint) { e.DNSName = "other.org" }},
+		{name: "RecordType", a: base(), b: base(), modify: func(e *Endpoint) { e.RecordType = RecordTypeAAAA }},
+		{name: "SetIdentifier", a: base(), b: base(), modify: func(e *Endpoint) { e.SetIdentifier = "other" }},
+		{name: "RecordTTL", a: base(), b: base(), modify: func(e *Endpoint) { e.RecordTTL = 60 }},
+		{name: "Targets", a: base(), b: base(), modify: func(e *Endpoint) { e.Targets = Targets{"5.6.7.8"} }},
+		{name: "Labels", a: base(), b: base(), modify: func(e *Endpoint) { e.Labels[OwnerLabelKey] = "other" }},
+		{name: "ProviderSpecific", a: base(), b: base(), modify: func(e *Endpoint) { e.SetProviderSpecificProperty("alias", "true") }},
+		{
+			name: "refObjects ignored", a: base(), b: base(), want: true,
+			modify: func(e *Endpoint) {
+				e.WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "svc", "", "service"))
+			},
+		},
+		{
+			name: "nil and empty collections equal", want: true,
+			a: &Endpoint{DNSName: "example.org"},
+			b: &Endpoint{DNSName: "example.org", Targets: Targets{}, Labels: Labels{}, ProviderSpecific: ProviderSpecific{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.modify != nil {
+				tt.modify(tt.b)
+			}
+			assert.Equal(t, tt.want, Equal(tt.a, tt.b))
+			assert.Equal(t, tt.want, Equal(tt.b, tt.a))
+		})
+	}
+}
+
+// TestEndpointEqualCoversAllFields fails when a field is added to Endpoint, so
+// the author has to decide whether Equal compares it.
+func TestEndpointEqualCoversAllFields(t *testing.T) {
+	handled := []string{
+		// compared by Equal
+		"DNSName", "Targets", "RecordType", "SetIdentifier", "RecordTTL", "Labels", "ProviderSpecific",
+		// intentionally ignored
+		"refObjects",
+	}
+	var fields []string
+	for f := range reflect.TypeFor[Endpoint]().Fields() {
+		fields = append(fields, f.Name)
+	}
+	assert.ElementsMatch(t, handled, fields, "update Equal and this list")
 }

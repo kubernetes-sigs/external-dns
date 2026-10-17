@@ -16,7 +16,7 @@ The `external-dns` is the work of thousands of contributors, and is maintained b
 Building and/or testing `external-dns` requires additional tooling.
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.25+](https://golang.org/dl/)
+- [Go 1.27.2+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [ko](https://ko.build/)
@@ -84,7 +84,7 @@ In the context of the `external-dns`, acceptance tests are tests of interactions
 
 ### Log Unit Testing
 
-Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [build-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
+Testing log messages within codebase provides significant advantages, especially when it comes to debugging, monitoring, and gaining a deeper understanding of system behavior. Log library [built-in testing functionality](https://github.com/sirupsen/logrus?tab=readme-ov-file#testing)
 
 This practice enables:
 
@@ -202,7 +202,7 @@ Add an entry to `tests/integration/scenarios/tests.yaml`. Each scenario declares
           name: my-svc
           namespace: default
           annotations:
-            external-dns.alpha.kubernetes.io/hostname: my.example.com
+            external-dns.kubernetes.io/hostname: my.example.com
         spec:
           type: LoadBalancer
         status:
@@ -239,6 +239,7 @@ go run main.go \
     --provider=aws \
     --registry=txt \
     --source=fake \
+    --policy=sync \
     --log-level=info
 ```
 

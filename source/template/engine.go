@@ -19,18 +19,18 @@ package template
 import (
 	"bytes"
 	"fmt"
-	"maps"
 	"reflect"
-	"slices"
 	"strings"
 	"text/template"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 // Engine holds the parsed Go templates used to derive DNS names and targets
@@ -55,30 +55,62 @@ type Engine struct {
 // NewEngine parses the provided Go template strings into a Engine.
 // An empty string leaves the corresponding template unset; IsConfigured reflects
 // whether the FQDN template was provided. Returns an error on the first parse failure.
-func NewEngine(fqdnStr, targetStr, fqdnTargetStr string, combineFQDN bool) (Engine, error) {
-	fqdnTmpl, err := parseTemplate(fqdnStr)
+func NewEngine(fqdnTemplates, targetTemplates, fqdnTargetTemplates []string, combineFQDN bool) (Engine, error) {
+	fqdnTmpl, err := validateAndParse(fqdnTemplates, "--fqdn-template")
 	if err != nil {
-		return Engine{}, fmt.Errorf("parse --fqdn-template: %w", err)
+		return Engine{}, err
 	}
-	targetTmpl, err := parseTemplate(targetStr)
+	targetTmpl, err := validateAndParse(targetTemplates, "--target-template")
 	if err != nil {
-		return Engine{}, fmt.Errorf("parse --target-template: %w", err)
+		return Engine{}, err
 	}
-	fqdnTargetTmpl, err := parseTemplate(fqdnTargetStr)
+	fqdnTargetTmpl, err := validateAndParse(fqdnTargetTemplates, "--fqdn-target-template")
 	if err != nil {
-		return Engine{}, fmt.Errorf("parse --fqdn-target-template: %w", err)
+		return Engine{}, err
 	}
-	return Engine{
-		fqdn:       fqdnTmpl,
-		target:     targetTmpl,
-		fqdnTarget: fqdnTargetTmpl,
-		combine:    combineFQDN,
-	}, nil
+	return Engine{fqdn: fqdnTmpl, target: targetTmpl, fqdnTarget: fqdnTargetTmpl, combine: combineFQDN}, nil
+}
+
+// WithSource returns a copy of the Engine scoped to the given source name, so its
+// templates can use isSource "name" (see source/types.Type).
+func (e Engine) WithSource(name string) (Engine, error) {
+	var err error
+	if e.fqdn, err = bindSource(e.fqdn, name); err != nil {
+		return Engine{}, err
+	}
+	if e.target, err = bindSource(e.target, name); err != nil {
+		return Engine{}, err
+	}
+	if e.fqdnTarget, err = bindSource(e.fqdnTarget, name); err != nil {
+		return Engine{}, err
+	}
+	return e, nil
+}
+
+// bindSource clones tmpl and rebinds isSource to name.
+func bindSource(tmpl *template.Template, name string) (*template.Template, error) {
+	if tmpl == nil {
+		return nil, nil //nolint:nilnil // nil signals "not configured"; matches tmpl's own nil-ness
+	}
+	clone, err := tmpl.Clone()
+	if err != nil {
+		return nil, fmt.Errorf("template: clone for source %q: %w", name, err)
+	}
+	return clone.Funcs(template.FuncMap{
+		"isSource": func(want string) (bool, error) { return isSource(name, want) },
+	}), nil
 }
 
 // IsConfigured reports whether the FQDN template is set and ready to use.
 func (e Engine) IsConfigured() bool {
 	return e.fqdn != nil
+}
+
+// HasDNSNameTemplate reports whether any name-generating template (fqdn or fqdn-target) is
+// configured. The target template alone cannot generate DNS names, so it is excluded.
+// Use this to decide whether template output should replace resource-derived DNS names.
+func (e Engine) HasDNSNameTemplate() bool {
+	return e.fqdn != nil || e.fqdnTarget != nil
 }
 
 // Combining reports whether the engine is configured to combine template-based
@@ -90,16 +122,6 @@ func (e Engine) Combining() bool {
 // ExecFQDN executes the FQDN template against a Kubernetes object and returns hostnames.
 func (e Engine) ExecFQDN(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdn, obj)
-}
-
-// ExecTarget executes the Target template against a Kubernetes object and returns targets.
-func (e Engine) ExecTarget(obj kubeObject) ([]string, error) {
-	return execTemplate(e.target, obj)
-}
-
-// ExecFQDNTarget executes the FQDNTarget template against a Kubernetes object and returns hostname:target pairs.
-func (e Engine) ExecFQDNTarget(obj kubeObject) ([]string, error) {
-	return execTemplate(e.fqdnTarget, obj)
 }
 
 // CombineWithEndpoints merges annotation-based endpoints with template-based endpoints.
@@ -126,10 +148,116 @@ func (e Engine) CombineWithEndpoints(
 	return templatedEndpoints, nil
 }
 
-func parseTemplate(input string) (*template.Template, error) {
-	if strings.TrimSpace(input) == "" {
-		return nil, nil //nolint:nilnil // nil template signals "not configured"; callers check IsConfigured()
+// ApplyFQDNTargetTemplate combines existing endpoints with those derived from the fqdn-target
+// template (host:target pairs). Used standalone by sources whose second template pass derives
+// targets from the resource itself (pod IPs, service ClusterIP, node addresses).
+func (e Engine) ApplyFQDNTargetTemplate(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
+	return e.CombineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
+		return e.endpointsFromFQDNTargetTemplate(obj)
+	})
+}
+
+// ApplyTemplates runs both template passes in sequence — fqdn-target first, then
+// fqdn+target — returning the combined result. Use this for sources where the template
+// itself provides the DNS target (gloo, traefik, f5, unstructured). Sources that derive
+// targets from the resource (pod, service, node) call ApplyFQDNTargetTemplate and then
+// their own resource-specific CombineWithEndpoints.
+func (e Engine) ApplyTemplates(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
+	eps, err := e.ApplyFQDNTargetTemplate(existing, obj)
+	if err != nil {
+		return nil, err
 	}
+	return e.CombineWithEndpoints(eps, func() ([]*endpoint.Endpoint, error) {
+		return e.endpointsFromTemplate(obj)
+	})
+}
+
+func (e Engine) execTarget(obj kubeObject) ([]string, error) {
+	return execTemplate(e.target, obj)
+}
+
+func (e Engine) execFQDNTarget(obj kubeObject) ([]string, error) {
+	return execTemplate(e.fqdnTarget, obj)
+}
+
+func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
+	pairs, err := e.execFQDNTarget(obj)
+	if err != nil || len(pairs) == 0 {
+		return nil, err
+	}
+	kind := strings.ToLower(obj.GetObjectKind().GroupVersionKind().Kind)
+	eps := make([]*endpoint.Endpoint, 0, len(pairs))
+	for _, pair := range pairs {
+		parts := strings.SplitN(pair, ":", 2)
+		if len(parts) != 2 {
+			log.Debugf("Skipping invalid host:target pair %q from %s %s/%s: missing ':' separator",
+				pair, kind, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		host := strings.TrimSpace(parts[0])
+		target := strings.TrimSpace(parts[1])
+		if host == "" || target == "" {
+			log.Debugf("Skipping incomplete host:target pair %q from %s %s/%s: field may not yet be populated",
+				pair, kind, obj.GetNamespace(), obj.GetName())
+			continue
+		}
+		eps = append(eps, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+	}
+	return endpoint.MergeEndpoints(eps), nil
+}
+
+func (e Engine) endpointsFromTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
+	hostnames, err := e.ExecFQDN(obj)
+	if err != nil || len(hostnames) == 0 {
+		return nil, err
+	}
+	targets, err := e.execTarget(obj)
+	if err != nil {
+		return nil, err
+	}
+	return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
+}
+
+func validateAndParse(templates []string, flag string) (*template.Template, error) {
+	if err := validateTemplates(templates, flag); err != nil {
+		return nil, err
+	}
+	joined := strings.Join(templates, ",")
+	if strings.TrimSpace(joined) == "" {
+		return nil, nil //nolint:nilnil // nil signals "not configured"; callers guard via IsConfigured/HasDNSNameTemplate
+	}
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("%s: %s", flag, joined)
+	}
+	t, err := parseTemplate(joined)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", flag, err)
+	}
+	return t, nil
+}
+
+// validateTemplates validates each template string individually for syntax errors,
+// then checks cumulatively for cross-value {{ define }} block conflicts.
+// Duplicate and blank strings are silently skipped.
+// validateTemplates parses templates cumulatively so that both syntax errors and
+// cross-value {{ define }} block conflicts are caught. Go only reports redefinition
+// when both definitions appear in the same Parse call.
+func validateTemplates(templates []string, flagName string) error {
+	var joined []string
+	for i, tmpl := range templates {
+		joined = append(joined, tmpl)
+		t, err := baseTemplate.Clone()
+		if err != nil {
+			return err
+		}
+		if _, err = t.Parse(strings.Join(joined, ",")); err != nil {
+			return fmt.Errorf("%s[%d] %q: %w", flagName, i, tmpl, err)
+		}
+	}
+	return nil
+}
+
+func parseTemplate(input string) (*template.Template, error) {
 	// Clone is cheaper than re-registering all functions on a new template each call.
 	t, err := baseTemplate.Clone()
 	if err != nil {
@@ -171,17 +299,81 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, obj); err != nil {
-		kind := obj.GetObjectKind().GroupVersionKind().Kind
-		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+		// Retry against the unstructured data shape, so JSON-keyed Spec paths work on typed objects too.
+		data, convErr := toTemplateData(obj)
+		if convErr != nil {
+			return nil, wrapTemplateErr(obj, err)
+		}
+		// Clone before setting the option: Option mutates the template in place,
+		// and tmpl is the shared, cached parse reused by every call. Left
+		// unguarded, a missing map key silently renders as "<no value>" instead
+		// of failing the retry, masking template typos that should be errors.
+		strict, cloneErr := tmpl.Clone()
+		if cloneErr != nil {
+			return nil, wrapTemplateErr(obj, err)
+		}
+		strict = strict.Option("missingkey=error")
+		buf.Reset()
+		if err2 := strict.Execute(&buf, data); err2 != nil {
+			return nil, fmt.Errorf("%w (unstructured retry also failed: %w)", wrapTemplateErr(obj, err), err2)
+		}
 	}
 	hosts := strings.Split(buf.String(), ",")
-	hostnames := make(map[string]struct{}, len(hosts))
+	hostnames := make(sets.Set[string], len(hosts))
 	for _, name := range hosts {
 		name = strings.TrimSpace(name)
 		name = strings.TrimSuffix(name, ".")
 		if name != "" {
-			hostnames[name] = struct{}{}
+			hostnames.Insert(name)
 		}
 	}
-	return slices.Sorted(maps.Keys(hostnames)), nil
+	return sets.Sorted(hostnames), nil
+}
+
+func wrapTemplateErr(obj kubeObject, err error) error {
+	kind := obj.GetObjectKind().GroupVersionKind().Kind
+	return fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+}
+
+// fqdnTemplateData mirrors source.unstructuredWrapper so typed objects can
+// evaluate the same --fqdn-template as the unstructured source.
+type fqdnTemplateData struct {
+	Name        string
+	Namespace   string
+	Kind        string
+	APIVersion  string
+	Labels      map[string]string
+	Annotations map[string]string
+	Metadata    map[string]any
+	Spec        map[string]any
+	Status      map[string]any
+	Object      map[string]any
+}
+
+// toTemplateData converts a Kubernetes object into the unstructured-style
+// template data shape (JSON keys under Spec/Status, plus Name/Namespace/...).
+func toTemplateData(obj kubeObject) (*fqdnTemplateData, error) {
+	raw, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+	if err != nil {
+		return nil, err
+	}
+	data := &fqdnTemplateData{
+		Name:        obj.GetName(),
+		Namespace:   obj.GetNamespace(),
+		Kind:        obj.GetObjectKind().GroupVersionKind().Kind,
+		APIVersion:  obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		Labels:      obj.GetLabels(),
+		Annotations: obj.GetAnnotations(),
+		Object:      raw,
+	}
+	if metadata, ok := raw["metadata"].(map[string]any); ok {
+		data.Metadata = metadata
+	}
+	if spec, ok := raw["spec"].(map[string]any); ok {
+		data.Spec = spec
+	}
+	if status, ok := raw["status"].(map[string]any); ok {
+		data.Status = status
+	}
+	return data, nil
 }

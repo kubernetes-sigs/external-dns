@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -60,7 +61,6 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string
-	annotationFilter         string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -77,9 +77,10 @@ func NewIstioGatewaySource(
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
+	namespace := cfg.Namespace()
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(cfg.Namespace))
+	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	gatewayInformer := istioInformerFactory.Networking().V1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
@@ -100,6 +101,7 @@ func NewIstioGatewaySource(
 	informers.MustAddIndexers(gatewayInformer.Informer(), informers.IndexerWithOptions[*networkingv1.Gateway](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.Gateway]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
@@ -119,8 +121,7 @@ func NewIstioGatewaySource(
 	}
 
 	return &gatewaySource{
-		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
+		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
@@ -133,22 +134,11 @@ func NewIstioGatewaySource(
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	indexer := sc.gatewayInformer.Informer().GetIndexer()
-	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
+	objs := informers.ListIndexed[*networkingv1.Gateway](indexer)
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
-	log.Debugf("Found %d gateways in namespace %s", len(indexKeys), sc.namespace)
-
-	for _, key := range indexKeys {
-		gateway, err := informers.GetByKey[*networkingv1.Gateway](indexer, key)
-		if err != nil || gateway == nil {
-			continue
-		}
-
-		if annotations.IsControllerMismatch(gateway, types.IstioGateway) {
-			continue
-		}
-
+	for _, gateway := range objs {
 		gwHostnames := sc.hostNamesFromGateway(gateway)
 
 		log.Debugf("Processing gateway '%s/%s.%s' and hosts %q", gateway.Namespace, gateway.APIVersion, gateway.Name, strings.Join(gwHostnames, ","))
@@ -177,11 +167,13 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			continue
 		}
 
+		endpoint.AttachRefObject(gwEndpoints, events.NewObjectReference(gateway, types.IstioGateway))
+
 		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(gateway.Kind), gateway.Namespace, gateway.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.

@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 type PlanTestSuite struct {
@@ -162,11 +163,11 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 				Value: "true",
 			},
 		},
@@ -180,11 +181,11 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Name:  "external-dns.kubernetes.io/cloudflare-proxied",
 				Value: "false",
 			},
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 		},
@@ -198,7 +199,7 @@ func (suite *PlanTestSuite) SetupTest() {
 		},
 		ProviderSpecific: endpoint.ProviderSpecific{
 			endpoint.ProviderSpecificProperty{
-				Name:  "alias",
+				Name:  endpoint.ProviderSpecificAlias,
 				Value: "false",
 			},
 		},
@@ -617,7 +618,7 @@ func (suite *PlanTestSuite) TestExistingDualStackWithCNameDesired() {
 
 // TestExistingOwnerNotMatchingDualStackDesired validates that if there is an existing
 // record for a domain but there is no ownership claim over it and there are desired
-// records no changes are planed. Only domains that have explicit ownership claims should
+// records no changes are planned. Only domains that have explicit ownership claims should
 // be updated.
 func (suite *PlanTestSuite) TestExistingOwnerNotMatchingDualStackDesired() {
 	suite.fooA5.Labels = nil
@@ -673,7 +674,7 @@ func (suite *PlanTestSuite) TestConflictingCurrentNonConflictingDesired() {
 
 // TestConflictingCurrentNoDesired is a bit of a corner case as it would indicate
 // that the provider is not following valid DNS rules or there may be some
-// caching issues. In this case there are no desired enpoint candidates so plan
+// caching issues. In this case there are no desired endpoint candidates so plan
 // on deleting the records.
 func (suite *PlanTestSuite) TestConflictingCurrentNoDesired() {
 	suite.fooA5.Labels[endpoint.OwnerLabelKey] = suite.fooV1Cname.Labels[endpoint.OwnerLabelKey]
@@ -1178,4 +1179,15 @@ func TestOwnerMismatchLogsDebug(t *testing.T) {
 	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 	p.Calculate()
 	logtest.TestHelperLogContainsWithLogLevel(wantMsg, log.DebugLevel, hook, t)
+}
+
+func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
+	old := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4")
+	updated := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4").
+		WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "svc", "", "service"))
+	changes := &Changes{
+		UpdateOld: []*endpoint.Endpoint{old},
+		UpdateNew: []*endpoint.Endpoint{updated},
+	}
+	suite.False(changes.HasChanges())
 }

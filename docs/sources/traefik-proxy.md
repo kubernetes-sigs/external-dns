@@ -26,9 +26,34 @@ Create an IngressRoute file called 'ingress-route-default' with the following co
 [[% include 'traefik-proxy/ingress-route-default.yaml' %]]
 ```
 
-Note the annotation on the IngressRoute (`external-dns.alpha.kubernetes.io/target`); use the same hostname as the traefik DNS.
+Note the annotation on the IngressRoute (`external-dns.kubernetes.io/target`); use the same hostname as the traefik DNS.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS.
+
+Traefik `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` resources do
+not expose a load balancer IP or hostname in their status. Because of that,
+the `traefik-proxy` source requires an explicit
+`external-dns.kubernetes.io/target` annotation. Without it, no endpoint is
+generated and `--default-targets` cannot apply.
+
+If you want to use `--default-targets`, use the `crd` source with
+`DNSEndpoint` resources instead, for example:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: my-app
+  namespace: default
+spec:
+  endpoints:
+    - dnsName: application.example.com
+      recordType: CNAME
+      targets:
+      recordTTL: 300
+```
+
+With `--default-targets=lb.example.net`, ExternalDNS fills in the empty `targets` list.
 
 Create the IngressRoute:
 

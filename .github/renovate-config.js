@@ -23,21 +23,12 @@ module.exports = {
   "baseBranches": ["master", "main"],
   "recreateWhen": "always",
   "semanticCommits": "enabled",
-  "pre-commit": {
-    "enabled": true
-  },
   "labels": ["{{depType}}", "datasource::{{datasource}}", "type::{{updateType}}", "manager::{{manager}}"], // can be overridden per packageRule
   "addLabels": ["renovate-bot"], // cannot be overridden, any packageRule config extends this
   "packageRules": [
-    {
-      "groupName": "pre-commit",
-      "matchManagers": ["pre-commit"],
-      "addLabels": ["pre-commit", "skip-release"]
-    },
   ],
   "enabledManagers": [ // supported managers https://docs.renovatebot.com/modules/manager/
-    "regex",
-    "pre-commit"
+    "regex"
   ],
   "customManagers": [ // https://docs.renovatebot.com/modules/manager/regex/
     {

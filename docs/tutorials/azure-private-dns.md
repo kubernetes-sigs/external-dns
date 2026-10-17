@@ -144,10 +144,11 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -220,10 +221,11 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -296,10 +298,11 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=service
         - --source=ingress
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com
         - --provider=azure-private-dns
         - --azure-resource-group=externaldns
@@ -359,8 +362,8 @@ metadata:
   name: nginx-svc
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-    external-dns.alpha.kubernetes.io/hostname: server.example.com
-    external-dns.alpha.kubernetes.io/internal-hostname: server-clusterip.example.com
+    external-dns.kubernetes.io/hostname: server.example.com
+    external-dns.kubernetes.io/internal-hostname: server-clusterip.example.com
 spec:
   ports:
     - port: 80
@@ -373,8 +376,8 @@ spec:
 
 In the service we used multiple annotations.
 The annotation `service.beta.kubernetes.io/azure-load-balancer-internal` is used to create an internal load balancer.
-The annotation `external-dns.alpha.kubernetes.io/hostname` is used to create a DNS record for the load balancer that will point to the internal IP address in the VNET allocated by the internal load balancer.
-The annotation `external-dns.alpha.kubernetes.io/internal-hostname` is used to create a private DNS record for the load balancer that will point to the cluster IP.
+The annotation `external-dns.kubernetes.io/hostname` is used to create a DNS record for the load balancer that will point to the internal IP address in the VNET allocated by the internal load balancer.
+The annotation `external-dns.kubernetes.io/internal-hostname` is used to create a private DNS record for the load balancer that will point to the cluster IP.
 
 ## Install NGINX Ingress Controller (Optional)
 

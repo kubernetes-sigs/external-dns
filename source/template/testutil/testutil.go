@@ -24,10 +24,10 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-// MustEngine creates an Engine with all three templates and combine flag, failing the test on error.
+// MustEngine creates an Engine with the given template strings and combine flag, failing the test on error.
 func MustEngine(t testing.TB, fqdnStr, targetStr, fqdnTargetStr string, combine bool) template.Engine {
 	t.Helper()
-	engine, err := template.NewEngine(fqdnStr, targetStr, fqdnTargetStr, combine)
+	engine, err := template.NewEngine([]string{fqdnStr}, []string{targetStr}, []string{fqdnTargetStr}, combine)
 	require.NoError(t, err)
 	return engine
 }

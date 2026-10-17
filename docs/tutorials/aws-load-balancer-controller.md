@@ -124,7 +124,7 @@ kind: Ingress
 metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
-    external-dns.alpha.kubernetes.io/hostname: echoserver.mycluster.example.org, echoserver.example.org
+    external-dns.kubernetes.io/hostname: echoserver.mycluster.example.org, echoserver.example.org
   name: echoserver
 spec:
   ingressClassName: alb
@@ -141,7 +141,7 @@ spec:
 ```
 
 In the above example we create a default path that works for any hostname, and
-make use of the `external-dns.alpha.kubernetes.io/hostname` annotation to create
+make use of the `external-dns.kubernetes.io/hostname` annotation to create
 multiple aliases for the resulting ALB.
 
 ## Dualstack Load Balancers
@@ -213,7 +213,7 @@ There are several approaches to ensure DNS records point to the correct (NLB) ta
 #### Option 1: Combine load balancer naming with target annotation (Recommended)
 
 Use [`alb.ingress.kubernetes.io/load-balancer-name`][8] to create predictable hostnames, then
-explicitly reference the NLB using [`external-dns.alpha.kubernetes.io/target`][9]:
+explicitly reference the NLB using [`external-dns.kubernetes.io/target`][9]:
 
 [8]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/#load-balancer-name
 [9]: https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalphakubernetesiotarget
@@ -227,7 +227,7 @@ metadata:
     alb.ingress.kubernetes.io/enable-frontend-nlb: "true"
     alb.ingress.kubernetes.io/frontend-nlb-scheme: internal
     alb.ingress.kubernetes.io/load-balancer-name: myapp-alb
-    external-dns.alpha.kubernetes.io/target: k8s-myapp-nlb.elb.us-east-1.amazonaws.com
+    external-dns.kubernetes.io/target: k8s-myapp-nlb.elb.us-east-1.amazonaws.com
   name: echoserver
 spec:
   ingressClassName: alb
@@ -269,7 +269,7 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internal
     alb.ingress.kubernetes.io/enable-frontend-nlb: "true"
     alb.ingress.kubernetes.io/frontend-nlb-scheme: internal
-    external-dns.alpha.kubernetes.io/target: k8s-myapp-nlb-123456789.elb.us-east-1.amazonaws.com
+    external-dns.kubernetes.io/target: k8s-myapp-nlb-123456789.elb.us-east-1.amazonaws.com
   name: echoserver
 spec:
   ingressClassName: alb
