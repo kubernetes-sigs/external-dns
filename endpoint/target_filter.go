@@ -25,7 +25,7 @@ import (
 
 // TargetFilterInterface defines the interface to select matching targets for a specific provider or runtime
 type TargetFilterInterface interface {
-	Match(target string) bool
+	Match(target string, ep *Endpoint) bool
 	IsEnabled() bool
 }
 
@@ -60,7 +60,12 @@ func NewTargetNetFilterWithExclusions(targetFilterNets []string, excludeNets []s
 }
 
 // Match checks whether a target can be found in the TargetNetFilter.
-func (tf TargetNetFilter) Match(target string) bool {
+func (tf TargetNetFilter) Match(target string, ep *Endpoint) bool {
+	// Target network filter is only relevant for A/AAAA records containing IPv4/IPv6 address
+	// therefore we can add other endpoints directly and skip filtering
+	if ep.RecordType != RecordTypeA && ep.RecordType != RecordTypeAAAA {
+		return true
+	}
 	return matchTargetNetFilter(tf.filterNets, target, true) && !matchTargetNetFilter(tf.excludeNets, target, false)
 }
 
