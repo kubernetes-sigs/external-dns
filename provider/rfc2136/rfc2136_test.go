@@ -17,12 +17,16 @@ limitations under the License.
 package rfc2136
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -30,6 +34,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bodgit/tsig"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -582,6 +587,283 @@ func TestRfc2136GetRecords(t *testing.T) {
 	require.NotNil(t, dname, "expected a DNAME record to be read back")
 	assert.Equal(t, "v5.foo.com", dname.DNSName)
 	assert.Equal(t, []string{"target.example.com"}, []string(dname.Targets))
+}
+
+// gssTsigSpyStub wraps rfc2136Stub to capture the dns.Msg passed to IncomeTransfer,
+// so tests can verify that List() does not pre-set TSIG for the GSS-TSIG case.
+type gssTsigSpyStub struct {
+	rfc2136Stub
+	incomeTransferMsg *dns.Msg
+}
+
+func (r *gssTsigSpyStub) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
+	r.incomeTransferMsg = m
+	return r.rfc2136Stub.IncomeTransfer(m, nameserver)
+}
+
+func TestRfc2136GetRecordsGssTsig(t *testing.T) {
+	spy := &gssTsigSpyStub{}
+	err := spy.setOutput([]string{
+		"v1.foo.com 3600 A 1.2.3.4",
+		"v1.foo.com 3600 TXT \"heritage=external-dns,external-dns/owner=owner\"",
+	})
+	require.NoError(t, err)
+
+	tlsConfig := TLSConfig{}
+	p, err := newProvider([]string{""}, 0, []string{"foo.com"}, false, false, "", "", "", true, &endpoint.DomainFilter{}, false, 300*time.Second, true, "user", "pass", "REALM", 50, tlsConfig, "", spy)
+	require.NoError(t, err)
+
+	recs, err := p.Records(t.Context())
+	require.NoError(t, err)
+
+	assert.Len(t, recs, 2)
+	assert.True(t, contains(recs, "v1.foo.com"))
+
+	// List() must not pre-set TSIG when gssTsig is enabled;
+	// signing is deferred to the production IncomeTransfer method.
+	require.NotNil(t, spy.incomeTransferMsg)
+	assert.Nil(t, spy.incomeTransferMsg.IsTsig(), "List() must not set TSIG when gssTsig is enabled")
+}
+
+// axfrRequest is what the test AXFR server saw of one transfer request.
+type axfrRequest struct {
+	tsig       *dns.TSIG
+	tsigStatus error
+}
+
+// startAXFRServer serves a transfer of foo.com. over TCP on a random local port
+// and reports every request it receives. configure sets the server's TSIG options.
+func startAXFRServer(t *testing.T, configure func(*dns.Server)) (string, chan axfrRequest) {
+	t.Helper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	requests := make(chan axfrRequest, 10)
+	soa, err := dns.NewRR("foo.com. 3600 IN SOA ns.foo.com. admin.foo.com. 1 3600 600 86400 300")
+	require.NoError(t, err)
+	a, err := dns.NewRR("v1.foo.com. 3600 IN A 1.2.3.4")
+	require.NoError(t, err)
+
+	started := make(chan struct{})
+	srv := &dns.Server{
+		Listener:          listener,
+		NotifyStartedFunc: func() { close(started) },
+		Handler: dns.HandlerFunc(func(w dns.ResponseWriter, req *dns.Msg) {
+			requests <- axfrRequest{tsig: req.IsTsig(), tsigStatus: w.TsigStatus()}
+			ch := make(chan *dns.Envelope, 1)
+			ch <- &dns.Envelope{RR: []dns.RR{soa, a, soa}}
+			close(ch)
+			_ = new(dns.Transfer).Out(w, req, ch)
+			_ = w.Close()
+		}),
+	}
+	if configure != nil {
+		configure(srv)
+	}
+	go func() { _ = srv.ActivateAndServe() }()
+	<-started
+	t.Cleanup(func() { _ = srv.Shutdown() })
+
+	return listener.Addr().String(), requests
+}
+
+func newIncomeTransferProvider(t *testing.T, addr string, insecure bool, gssTsig bool, tlsConfig TLSConfig) *rfc2136Provider {
+	t.Helper()
+	host, port, err := net.SplitHostPort(addr)
+	require.NoError(t, err)
+	portNum, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	p, err := newProvider([]string{host}, portNum, []string{"foo.com"}, insecure, false, "key", "c2VjcmV0", "hmac-sha256", true, &endpoint.DomainFilter{}, false, 300*time.Second, gssTsig, "user", "pass", "REALM", 50, tlsConfig, "", nil)
+	require.NoError(t, err)
+	return p.(*rfc2136Provider)
+}
+
+func drainTransfer(t *testing.T, env chan *dns.Envelope) []dns.RR {
+	t.Helper()
+	var rrs []dns.RR
+	for e := range env {
+		require.NoError(t, e.Error)
+		rrs = append(rrs, e.RR...)
+	}
+	return rrs
+}
+
+// fakeGssHandle stands in for a negotiated *gss.Client: it signs with a
+// SHA-256 of the message so both ends can verify without Kerberos.
+type fakeGssHandle struct {
+	generateErr error
+	closed      bool
+}
+
+func (h *fakeGssHandle) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
+	if h.generateErr != nil {
+		return nil, h.generateErr
+	}
+	if dns.CanonicalName(t.Algorithm) != tsig.GSS {
+		return nil, dns.ErrKeyAlg
+	}
+	sum := sha256.Sum256(msg)
+	return sum[:], nil
+}
+
+func (h *fakeGssHandle) Verify(msg []byte, t *dns.TSIG) error {
+	mac, err := hex.DecodeString(t.MAC)
+	if err != nil {
+		return err
+	}
+	sum := sha256.Sum256(msg)
+	if !bytes.Equal(mac, sum[:]) {
+		return dns.ErrSig
+	}
+	return nil
+}
+
+func (h *fakeGssHandle) Close() error {
+	h.closed = true
+	return nil
+}
+
+func newAxfrMsg() *dns.Msg {
+	m := new(dns.Msg)
+	m.SetAxfr(dns.Fqdn("foo.com"))
+	return m
+}
+
+func TestRfc2136IncomeTransferInsecure(t *testing.T) {
+	addr, requests := startAXFRServer(t, nil)
+	p := newIncomeTransferProvider(t, addr, true, false, TLSConfig{})
+
+	env, err := p.IncomeTransfer(newAxfrMsg(), addr)
+	require.NoError(t, err)
+
+	assert.Len(t, drainTransfer(t, env), 3)
+	assert.Nil(t, (<-requests).tsig, "insecure transfer must not be signed")
+}
+
+func TestRfc2136IncomeTransferTsig(t *testing.T) {
+	addr, requests := startAXFRServer(t, func(srv *dns.Server) {
+		srv.TsigSecret = map[string]string{"key.": "c2VjcmV0"}
+	})
+	p := newIncomeTransferProvider(t, addr, false, false, TLSConfig{})
+
+	m := newAxfrMsg()
+	m.SetTsig(p.tsigKeyName, p.tsigSecretAlg, clockSkew, time.Now().Unix())
+	env, err := p.IncomeTransfer(m, addr)
+	require.NoError(t, err)
+
+	assert.Len(t, drainTransfer(t, env), 3)
+	req := <-requests
+	require.NotNil(t, req.tsig)
+	assert.NoError(t, req.tsigStatus)
+}
+
+func TestRfc2136IncomeTransferGssTsig(t *testing.T) {
+	handle := &fakeGssHandle{}
+	addr, requests := startAXFRServer(t, func(srv *dns.Server) {
+		srv.TsigProvider = handle
+	})
+	p := newIncomeTransferProvider(t, addr, false, true, TLSConfig{})
+	p.gssKeyData = func(nameserver string) (string, gssTsigHandle, error) {
+		assert.Equal(t, addr, nameserver)
+		return "gss-key.foo.com.", handle, nil
+	}
+
+	m := newAxfrMsg()
+	env, err := p.IncomeTransfer(m, addr)
+	require.NoError(t, err)
+
+	assert.Len(t, drainTransfer(t, env), 3)
+	assert.True(t, handle.closed, "GSS context must be released once the transfer is drained")
+	// Signing strips the TSIG RR again on send, so a signed caller message
+	// would only show as a non-nil Extra section.
+	assert.Nil(t, m.Extra, "IncomeTransfer must not sign the caller's message")
+
+	req := <-requests
+	require.NotNil(t, req.tsig)
+	assert.Equal(t, tsig.GSS, req.tsig.Algorithm)
+	assert.Equal(t, "gss-key.foo.com.", req.tsig.Hdr.Name)
+	assert.NoError(t, req.tsigStatus)
+}
+
+func TestRfc2136IncomeTransferGssTsigAxfrInsecure(t *testing.T) {
+	// --rfc2136-axfr-insecure: updates are GSS-TSIG signed, zone transfers are not.
+	addr, requests := startAXFRServer(t, nil)
+	p := newIncomeTransferProvider(t, addr, false, true, TLSConfig{})
+	p.axfrInsecure = true
+	p.gssKeyData = func(string) (string, gssTsigHandle, error) {
+		t.Fatal("GSS-TSIG must not be negotiated for an insecure zone transfer")
+		return "", nil, nil
+	}
+
+	env, err := p.IncomeTransfer(newAxfrMsg(), addr)
+	require.NoError(t, err)
+
+	assert.Len(t, drainTransfer(t, env), 3)
+	assert.Nil(t, (<-requests).tsig, "insecure transfer must not be signed")
+}
+
+func TestRfc2136IncomeTransferGssTsigNegotiationError(t *testing.T) {
+	addr, _ := startAXFRServer(t, nil)
+	p := newIncomeTransferProvider(t, addr, false, true, TLSConfig{})
+	p.gssKeyData = func(_ string) (string, gssTsigHandle, error) {
+		return "", nil, errors.New("kerberos unavailable")
+	}
+
+	_, err := p.IncomeTransfer(newAxfrMsg(), addr)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to negotiate GSS-TSIG")
+	assert.Contains(t, err.Error(), "kerberos unavailable")
+}
+
+func TestRfc2136IncomeTransferGssTsigKerberosError(t *testing.T) {
+	addr, _ := startAXFRServer(t, nil)
+	p := newIncomeTransferProvider(t, addr, false, true, TLSConfig{})
+
+	// No KDC serves the test realm, so the real KeyData negotiation fails.
+	_, err := p.IncomeTransfer(newAxfrMsg(), addr)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to negotiate GSS-TSIG")
+}
+
+func TestRfc2136IncomeTransferGssTsigSigningError(t *testing.T) {
+	addr, _ := startAXFRServer(t, nil)
+	handle := &fakeGssHandle{generateErr: errors.New("context expired")}
+	p := newIncomeTransferProvider(t, addr, false, true, TLSConfig{})
+	p.gssKeyData = func(_ string) (string, gssTsigHandle, error) {
+		return "gss-key.foo.com.", handle, nil
+	}
+
+	_, err := p.IncomeTransfer(newAxfrMsg(), addr)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context expired")
+	assert.True(t, handle.closed, "GSS context must be released when the request cannot be sent")
+}
+
+func TestRfc2136IncomeTransferTLSSetupError(t *testing.T) {
+	tlsConfig := TLSConfig{
+		UseTLS:     true,
+		CAFilePath: filepath.Join(t.TempDir(), "missing-ca.crt"),
+	}
+	p := newIncomeTransferProvider(t, "127.0.0.1:53", false, false, tlsConfig)
+
+	_, err := p.IncomeTransfer(newAxfrMsg(), "127.0.0.1:53")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error setting up TLS")
+}
+
+func TestRfc2136IncomeTransferDialError(t *testing.T) {
+	// Reserve a port, then free it so nothing is listening there.
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := listener.Addr().String()
+	require.NoError(t, listener.Close())
+
+	p := newIncomeTransferProvider(t, addr, false, false, TLSConfig{})
+
+	_, err = p.IncomeTransfer(newAxfrMsg(), addr)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to connect for transfer")
 }
 
 // Make sure the test version of SendMessage raises an error
@@ -1332,6 +1614,37 @@ func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
 	endpoints, err := providerInstance.Records(t.Context())
 	require.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
 	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
+}
+
+// axfrConnectFailoverStub fails to open a transfer to the first nameserver,
+// then serves a clean transfer from the next one.
+type axfrConnectFailoverStub struct {
+	rfc2136Stub
+	nameserversTried []string
+}
+
+func (r *axfrConnectFailoverStub) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
+	r.nameserversTried = append(r.nameserversTried, nameserver)
+	if len(r.nameserversTried) == 1 {
+		return nil, fmt.Errorf("failed to connect for transfer: dial tcp %s: connection refused", nameserver)
+	}
+	return r.rfc2136Stub.IncomeTransfer(m, nameserver)
+}
+
+func TestRfc2136AxfrFailoverSucceedsAfterConnectError(t *testing.T) {
+	stub := &axfrConnectFailoverStub{}
+	require.NoError(t, stub.setOutput([]string{
+		"v1.foo.com 3600 A 1.2.3.4",
+	}))
+
+	providerInstance, err := newProvider([]string{"ns1", "ns2"}, 53, []string{"foo.com"}, false, false, "key", "secret", "hmac-sha512", true, &endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, TLSConfig{}, "round-robin", stub)
+	require.NoError(t, err)
+
+	recs, err := providerInstance.Records(t.Context())
+	require.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails to connect")
+	assert.Len(t, recs, 1)
+	assert.True(t, contains(recs, "v1.foo.com"))
+	assert.Equal(t, []string{"ns1:53", "ns2:53"}, stub.nameserversTried)
 }
 
 // axfrTsigStripStub drops the TSIG RR like dns.TsigGenerateWithProvider does,
