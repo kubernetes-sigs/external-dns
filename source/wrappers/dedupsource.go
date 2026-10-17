@@ -40,13 +40,14 @@ func NewDedupSource(source source.Source) source.Source {
 func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Debug("dedupSource: collecting endpoints and removing duplicates")
 	resetMetrics()
-	result := make([]*endpoint.Endpoint, 0)
-	collected := make(map[string]struct{})
 
 	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	result := make([]*endpoint.Endpoint, 0, len(endpoints))
+	byIdentifier := make(map[string]*endpoint.Endpoint, len(endpoints))
 
 	for _, ep := range endpoints {
 		if ep == nil {
@@ -66,13 +67,16 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
 
-		if _, ok := collected[identifier]; ok {
+		if existing, ok := byIdentifier[identifier]; ok {
+			for _, ref := range ep.RefObjects() {
+				existing.WithRefObject(ref)
+			}
 			log.Debugf("Removing duplicate endpoint %s", ep)
 			deduplicatedEndpoints.AddWithLabels(1, ep.RecordType, endpointSource(ep))
 			continue
 		}
 
-		collected[identifier] = struct{}{}
+		byIdentifier[identifier] = ep
 		result = append(result, ep)
 	}
 

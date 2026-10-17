@@ -136,7 +136,7 @@ kind: Service
 metadata:
   name: echoserver
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/hostname: app.example.com
 spec:
   ports:
     - port: 80

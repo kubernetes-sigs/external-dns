@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source"
 
@@ -29,19 +30,15 @@ import (
 )
 
 type mockTargetNetFilter struct {
-	targets map[string]bool
+	targets sets.Set[string]
 }
 
 func NewMockTargetNetFilter(targets []string) endpoint.TargetFilterInterface {
-	targetMap := make(map[string]bool)
-	for _, target := range targets {
-		targetMap[target] = true
-	}
-	return &mockTargetNetFilter{targets: targetMap}
+	return &mockTargetNetFilter{targets: sets.New(targets...)}
 }
 
 func (m *mockTargetNetFilter) Match(target string) bool {
-	return m.targets[target]
+	return m.targets.Has(target)
 }
 
 func (m *mockTargetNetFilter) IsEnabled() bool {

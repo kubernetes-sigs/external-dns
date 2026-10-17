@@ -52,14 +52,6 @@ func getEndpointsTypeFromAnnotations(annots map[string]string) string {
 	return annots[annotations.EndpointsTypeKey]
 }
 
-func getLabelSelector(annotationFilter string) (labels.Selector, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	return metav1.LabelSelectorAsSelector(labelSelector)
-}
-
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
 	return selector.Matches(labels.Set(srcAnnotations))
 }

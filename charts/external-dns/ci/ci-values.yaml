@@ -1,5 +1,6 @@
 labelFilter: foo=bar
 managedRecordTypes: []
+policy: upsert-only
 provider:
   name: inmemory
 affinity:

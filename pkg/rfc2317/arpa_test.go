@@ -93,11 +93,20 @@ func TestCidrToInAddr(t *testing.T) {
 		// IPv4-mapped IPv6 addresses:
 		{"::ffff:174.136.107.15", "15.107.136.174.in-addr.arpa", ""},
 
+		// Bare IPv6 addresses (no "/", treated as /128).
+		{"2001::", "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.1.0.0.2.ip6.arpa", ""},
+		{"2001:db8::", "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa", ""},
+		{"::1", "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa", ""},
+
 		// Error Cases:
 		{"0.0.0.0/0", "", "cannot use /0 in reverse CIDR"},
 		{"2001::/0", "", "CIDR 2001::/0 has 1 bits beyond the mask"},
 		{"4.5/16", "", "invalid CIDR address: 4.5/16"},
 		{"foo.com", "", "invalid CIDR address: foo.com"},
+		// IPv4 mask not a multiple of 8 (and not in the /25-/31 RFC2317 range).
+		{"174.0.0.0/15", "", "IPv4 mask must be multiple of 8 bits"},
+		// IPv6 mask not a multiple of 4.
+		{"2001:db80::/30", "", "IPv6 mask must be multiple of 4 bits"},
 	}
 	for i, tst := range tests {
 		t.Run(fmt.Sprintf("%d--%s", i, tst.in), func(t *testing.T) {

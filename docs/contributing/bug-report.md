@@ -176,7 +176,7 @@ aws route53 list-resource-record-sets \
 **external-dns info** — version, startup args, and logs:
 
 ```sh
-[[% include 'snippets/contributing/collect-extdns-info.sh' %]]
+[[% include 'contributing/collect-extdns-info.sh' %]]
 ```
 
 **Kubernetes resources** — set `RESOURCE` to the resource(s) relevant to your
@@ -184,7 +184,7 @@ source (e.g. `ingress`, `"ingress,service"`, `"gateway,httproute"`,
 `dnsendpoint`):
 
 ```sh
-[[% include 'snippets/contributing/collect-resources.sh' %]]
+[[% include 'contributing/collect-resources.sh' %]]
 ```
 
 ---

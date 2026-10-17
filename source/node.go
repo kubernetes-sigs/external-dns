@@ -22,7 +22,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -48,12 +47,10 @@ import (
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
 type nodeSource struct {
-	client           kubernetes.Interface
-	annotationFilter string
-	templateEngine   template.Engine
+	client         kubernetes.Interface
+	templateEngine template.Engine
 
 	nodeInformer         coreinformers.NodeInformer
-	labelSelector        labels.Selector
 	excludeUnschedulable bool
 	exposeInternalIPv6   bool
 }
@@ -67,6 +64,12 @@ func NewNodeSource(
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
+
+	informers.MustAddIndexers(nodeInformer.Informer(), informers.IndexerWithOptions[*v1.Node](
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Node]),
+	))
 
 	informers.MustSetTransform(nodeInformer.Informer(), informers.TransformerWithOptions[*v1.Node](
 		informers.TransformRemoveManagedFields(),
@@ -86,10 +89,8 @@ func NewNodeSource(
 
 	return &nodeSource{
 		client:               kubeClient,
-		annotationFilter:     cfg.AnnotationFilter,
 		templateEngine:       cfg.TemplateEngine,
 		nodeInformer:         nodeInformer,
-		labelSelector:        cfg.LabelFilter,
 		excludeUnschedulable: cfg.ExcludeUnschedulable,
 		exposeInternalIPv6:   cfg.ExposeInternalIPv6,
 	}, nil
@@ -97,24 +98,11 @@ func NewNodeSource(
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	nodes, err := ns.nodeInformer.Lister().List(ns.labelSelector)
-	if err != nil {
-		return nil, err
-	}
+	nodes := informers.ListIndexed[*v1.Node](ns.nodeInformer.Informer().GetIndexer())
 
-	nodes, err = annotations.Filter(nodes, ns.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
+	endpoints := make([]*endpoint.Endpoint, 0, len(nodes))
 
-	endpoints := make([]*endpoint.Endpoint, 0)
-
-	// create endpoints for all nodes
 	for _, node := range nodes {
-		if annotations.IsControllerMismatch(node, types.Node) {
-			continue
-		}
-
 		if node.Spec.Unschedulable && ns.excludeUnschedulable {
 			log.Debugf("Skipping node %s because it is unschedulable", node.Name)
 			continue
@@ -124,11 +112,17 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 		// Only generate node name endpoints when there's no template or when combining
 		var nodeEndpoints []*endpoint.Endpoint
-		if !ns.templateEngine.IsConfigured() || ns.templateEngine.Combining() {
+		var err error
+		if !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining() {
 			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
 			if err != nil {
 				return nil, err
 			}
+		}
+
+		nodeEndpoints, err = ns.templateEngine.ApplyFQDNTargetTemplate(nodeEndpoints, node)
+		if err != nil {
+			return nil, err
 		}
 
 		nodeEndpoints, err = ns.templateEngine.CombineWithEndpoints(
@@ -149,7 +143,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		endpoints = append(endpoints, nodeEndpoints...)
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
@@ -189,13 +183,16 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 
 		for _, addr := range addrs {
 			ep := endpoint.NewEndpointWithTTL(dns, endpoint.SuitableType(addr), ttl, addr)
+			if ep == nil {
+				continue
+			}
 			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("node/%s", node.Name))
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			endpoints = append(endpoints, ep)
 		}
 	}
 
-	return MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints), nil
 }
 
 // nodeAddress returns the node's externalIP and if that's not found, the node's internalIP

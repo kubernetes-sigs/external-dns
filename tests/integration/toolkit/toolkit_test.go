@@ -46,7 +46,7 @@ scenarios:
 
 func TestLoadScenarios_InvalidYAML(t *testing.T) {
 	_, err := LoadScenarios([]byte(":\tinvalid"))
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestLoadScenarios_MissingName(t *testing.T) {
@@ -57,7 +57,7 @@ scenarios:
       sources: ["service"]
 `)
 	_, err := LoadScenarios(yaml)
-	assert.ErrorContains(t, err, "missing required field: name")
+	require.ErrorContains(t, err, "missing required field: name")
 }
 
 func TestLoadScenarios_MissingDescription(t *testing.T) {
@@ -68,7 +68,7 @@ scenarios:
       sources: ["service"]
 `)
 	_, err := LoadScenarios(yaml)
-	assert.ErrorContains(t, err, "missing required field: description")
+	require.ErrorContains(t, err, "missing required field: description")
 }
 
 func TestLoadScenarios_MissingSources(t *testing.T) {
@@ -79,7 +79,7 @@ scenarios:
     config: {}
 `)
 	_, err := LoadScenarios(yaml)
-	assert.ErrorContains(t, err, "missing required field: config.sources")
+	require.ErrorContains(t, err, "missing required field: config.sources")
 }
 
 func rawService() []byte {
@@ -122,6 +122,22 @@ metadata:
   name: eps
   namespace: default
 addressType: IPv4
+`)
+}
+
+func rawDNSEndpoint() []byte {
+	return []byte(`apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: my-dns
+  namespace: default
+spec:
+  endpoints:
+    - dnsName: www.example.com
+      targets:
+        - 1.2.3.4
+      recordType: A
+      recordTTL: 300
 `)
 }
 
@@ -174,6 +190,15 @@ func TestParseResources_EndpointSlice(t *testing.T) {
 	assert.Equal(t, "eps", parsed.EndpointSlices[0].Name)
 }
 
+func TestParseResources_DNSEndpoint(t *testing.T) {
+	parsed, err := ParseResources([]ResourceWithDependencies{
+		{Resource: runtime.RawExtension{Raw: rawDNSEndpoint()}},
+	})
+	require.NoError(t, err)
+	require.Len(t, parsed.DNSEndpoints, 1)
+	assert.Equal(t, "my-dns", parsed.DNSEndpoints[0].Name)
+}
+
 func TestParseResources_UnsupportedType(t *testing.T) {
 	raw := []byte(`apiVersion: v1
 kind: ConfigMap
@@ -184,32 +209,32 @@ metadata:
 	_, err := ParseResources([]ResourceWithDependencies{
 		{Resource: runtime.RawExtension{Raw: raw}},
 	})
-	assert.ErrorContains(t, err, "unsupported resource type")
+	require.ErrorContains(t, err, "unsupported resource type")
 }
 
 func TestParseResources_InvalidRaw(t *testing.T) {
 	_, err := ParseResources([]ResourceWithDependencies{
 		{Resource: runtime.RawExtension{Raw: []byte("not yaml")}},
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestLoadResources_Service(t *testing.T) {
-	client, err := LoadResources(t.Context(), Scenario{
+	loaded, err := LoadResources(t.Context(), Scenario{
 		Resources: []ResourceWithDependencies{
 			{Resource: runtime.RawExtension{Raw: rawService()}},
 		},
 	})
 	require.NoError(t, err)
-	svcs, err := client.CoreV1().Services("default").List(t.Context(), metav1.ListOptions{})
+	svcs, err := loaded.K8sClient.CoreV1().Services("default").List(t.Context(), metav1.ListOptions{})
 	require.NoError(t, err)
 	assert.Len(t, svcs.Items, 1)
 }
 
 func TestLoadResources_ServiceWithLoadBalancerStatus(t *testing.T) {
 	svc := &corev1.Service{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
-		ObjectMeta: metav1.ObjectMeta{Name: "lb-svc", Namespace: "default"},
+		APIVersion: "v1", Kind: "Service",
+		Name: "lb-svc", Namespace: "default",
 		Status: corev1.ServiceStatus{
 			LoadBalancer: corev1.LoadBalancerStatus{
 				Ingress: []corev1.LoadBalancerIngress{{IP: "1.2.3.4"}},
@@ -219,21 +244,21 @@ func TestLoadResources_ServiceWithLoadBalancerStatus(t *testing.T) {
 	raw, err := encodeObject(svc)
 	require.NoError(t, err)
 
-	client, err := LoadResources(t.Context(), Scenario{
+	loaded, err := LoadResources(t.Context(), Scenario{
 		Resources: []ResourceWithDependencies{
 			{Resource: runtime.RawExtension{Raw: raw}},
 		},
 	})
 	require.NoError(t, err)
-	got, err := client.CoreV1().Services("default").Get(t.Context(), "lb-svc", metav1.GetOptions{})
+	got, err := loaded.K8sClient.CoreV1().Services("default").Get(t.Context(), "lb-svc", metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, "1.2.3.4", got.Status.LoadBalancer.Ingress[0].IP)
 }
 
 func TestLoadResources_IngressWithLoadBalancerStatus(t *testing.T) {
 	ing := &networkingv1.Ingress{
-		TypeMeta:   metav1.TypeMeta{APIVersion: "networking.k8s.io/v1", Kind: "Ingress"},
-		ObjectMeta: metav1.ObjectMeta{Name: "lb-ing", Namespace: "default"},
+		APIVersion: "networking.k8s.io/v1", Kind: "Ingress",
+		Name: "lb-ing", Namespace: "default",
 		Status: networkingv1.IngressStatus{
 			LoadBalancer: networkingv1.IngressLoadBalancerStatus{
 				Ingress: []networkingv1.IngressLoadBalancerIngress{{IP: "5.6.7.8"}},
@@ -243,39 +268,50 @@ func TestLoadResources_IngressWithLoadBalancerStatus(t *testing.T) {
 	raw, err := encodeObject(ing)
 	require.NoError(t, err)
 
-	client, err := LoadResources(t.Context(), Scenario{
+	loaded, err := LoadResources(t.Context(), Scenario{
 		Resources: []ResourceWithDependencies{
 			{Resource: runtime.RawExtension{Raw: raw}},
 		},
 	})
 	require.NoError(t, err)
-	got, err := client.NetworkingV1().Ingresses("default").Get(t.Context(), "lb-ing", metav1.GetOptions{})
+	got, err := loaded.K8sClient.NetworkingV1().Ingresses("default").Get(t.Context(), "lb-ing", metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, "5.6.7.8", got.Status.LoadBalancer.Ingress[0].IP)
 }
 
 func TestLoadResources_Pods(t *testing.T) {
-	client, err := LoadResources(t.Context(), Scenario{
+	loaded, err := LoadResources(t.Context(), Scenario{
 		Resources: []ResourceWithDependencies{
 			{Resource: runtime.RawExtension{Raw: rawPod()}},
 		},
 	})
 	require.NoError(t, err)
-	pods, err := client.CoreV1().Pods("default").List(t.Context(), metav1.ListOptions{})
+	pods, err := loaded.K8sClient.CoreV1().Pods("default").List(t.Context(), metav1.ListOptions{})
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
 
 func TestLoadResources_EndpointSlices(t *testing.T) {
-	client, err := LoadResources(t.Context(), Scenario{
+	loaded, err := LoadResources(t.Context(), Scenario{
 		Resources: []ResourceWithDependencies{
 			{Resource: runtime.RawExtension{Raw: rawEndpointSlice()}},
 		},
 	})
 	require.NoError(t, err)
-	epsList, err := client.DiscoveryV1().EndpointSlices("default").List(t.Context(), metav1.ListOptions{})
+	epsList, err := loaded.K8sClient.DiscoveryV1().EndpointSlices("default").List(t.Context(), metav1.ListOptions{})
 	require.NoError(t, err)
 	assert.Len(t, epsList.Items, 1)
+}
+
+func TestLoadResources_DNSEndpoint(t *testing.T) {
+	loaded, err := LoadResources(t.Context(), Scenario{
+		Resources: []ResourceWithDependencies{
+			{Resource: runtime.RawExtension{Raw: rawDNSEndpoint()}},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, loaded.DNSEndpoints, 1)
+	assert.Equal(t, "my-dns", loaded.DNSEndpoints[0].Name)
 }
 
 func TestLoadResources_ParseError(t *testing.T) {
@@ -284,22 +320,37 @@ func TestLoadResources_ParseError(t *testing.T) {
 			{Resource: runtime.RawExtension{Raw: []byte("not yaml")}},
 		},
 	})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestCreateWrappedSource(t *testing.T) {
-	client, err := LoadResources(t.Context(), Scenario{
+	loaded, err := LoadResources(t.Context(), Scenario{
 		Resources: []ResourceWithDependencies{
 			{Resource: runtime.RawExtension{Raw: rawService()}},
 		},
 	})
 	require.NoError(t, err)
 
-	src, err := CreateWrappedSource(t.Context(), client, ScenarioConfig{
+	src, err := CreateWrappedSource(t.Context(), loaded, ScenarioConfig{
 		Sources: []string{"service"},
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, src)
+	require.NotNil(t, src)
+}
+
+func TestCreateWrappedSource_CRD(t *testing.T) {
+	loaded, err := LoadResources(t.Context(), Scenario{
+		Resources: []ResourceWithDependencies{
+			{Resource: runtime.RawExtension{Raw: rawDNSEndpoint()}},
+		},
+	})
+	require.NoError(t, err)
+
+	src, err := CreateWrappedSource(t.Context(), loaded, ScenarioConfig{
+		Sources: []string{"crd"},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, src)
 }
 
 func TestScenarioToConfig(t *testing.T) {
@@ -311,7 +362,7 @@ func TestScenarioToConfig(t *testing.T) {
 		Provider:          "inmemory",
 	})
 	require.NoError(t, err)
-	assert.NotNil(t, cfg)
+	require.NotNil(t, cfg)
 }
 
 // encodeObject serializes a runtime.Object to JSON for use as RawExtension.Raw.

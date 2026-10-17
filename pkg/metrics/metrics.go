@@ -18,12 +18,13 @@ package metrics
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
 
-	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/internal/sets"
+	"sigs.k8s.io/external-dns/pkg/version"
 )
 
 const (
@@ -43,11 +44,11 @@ func init() {
 			Namespace,
 		),
 		ConstLabels: prometheus.Labels{
-			"version":    cfg.Version,
-			"revision":   version.GetRevision(),
-			"go_version": version.GoVersion,
-			"os":         version.GoOS,
-			"arch":       version.GoArch,
+			"version":    version.Version,
+			"revision":   version.GitCommit,
+			"go_version": runtime.Version(),
+			"os":         runtime.GOOS,
+			"arch":       runtime.GOARCH,
 		},
 	}))
 }
@@ -59,7 +60,7 @@ func NewMetricsRegister() *MetricRegistry {
 	return &MetricRegistry{
 		Registerer: reg,
 		Metrics:    []*Metric{},
-		mName:      make(map[string]bool),
+		mName:      sets.New[string](),
 	}
 }
 
@@ -74,11 +75,10 @@ func NewMetricsRegister() *MetricRegistry {
 func (m *MetricRegistry) MustRegister(cs IMetric) {
 	switch v := cs.(type) {
 	case CounterMetric, GaugeMetric, SummaryVecMetric, CounterVecMetric, GaugeVecMetric, GaugeFuncMetric:
-		if _, exists := m.mName[cs.Get().FQDN]; exists {
+		if m.mName.Has(cs.Get().FQDN) {
 			return
-		} else {
-			m.mName[cs.Get().FQDN] = true
 		}
+		m.mName.Insert(cs.Get().FQDN)
 		m.Metrics = append(m.Metrics, cs.Get())
 		switch metric := v.(type) {
 		case CounterMetric:

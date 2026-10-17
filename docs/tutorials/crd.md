@@ -67,6 +67,7 @@ spec:
 
 - **Without `--force-default-targets` (New Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
 - **With `--force-default-targets` (Legacy Behavior):** A CNAME record for `smoke-nt.example.com` will be created pointing to `1.2.3.4`.
+- **Without `--default-targets`:** The endpoint is skipped.
 
 `--force-default-targets` allows migration path to clean CRD resources.
 

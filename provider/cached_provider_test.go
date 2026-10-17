@@ -99,7 +99,7 @@ func TestNewCachedProvider(t *testing.T) {
 	cp := NewCachedProvider(inner, delay)
 	assert.Equal(t, inner, cp.Provider)
 	assert.Equal(t, delay, cp.RefreshDelay)
-	assert.Nil(t, cp.cache)
+	require.Nil(t, cp.cache)
 	assert.True(t, cp.lastRead.IsZero())
 }
 
@@ -111,7 +111,7 @@ func TestCachedProviderRecordsError(t *testing.T) {
 	cp := NewCachedProvider(testProvider, 0)
 	_, err := cp.Records(t.Context())
 	require.ErrorIs(t, err, assert.AnError)
-	assert.Nil(t, cp.cache)
+	require.Nil(t, cp.cache)
 }
 
 func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
@@ -123,7 +123,7 @@ func TestCachedProviderCallsProviderOnFirstCall(t *testing.T) {
 		Provider: testProvider,
 	}
 	endpoints, err := provider.Records(t.Context())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, endpoints)
 	require.Len(t, endpoints, 1)
 	require.NotNil(t, endpoints[0])
@@ -145,7 +145,7 @@ func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 	t.Run("With consecutive calls within the caching time frame", func(t *testing.T) {
 		testProvider.records = recordsNotCalled(t)
 		endpoints, err := provider.Records(t.Context())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, endpoints)
 		require.Len(t, endpoints, 1)
 		require.NotNil(t, endpoints[0])
@@ -158,7 +158,7 @@ func TestCachedProviderUsesCacheWhileValid(t *testing.T) {
 		}
 		provider.lastRead = time.Now().Add(-20 * time.Minute)
 		endpoints, err := provider.Records(t.Context())
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, endpoints)
 		require.Len(t, endpoints, 1)
 		require.NotNil(t, endpoints[0])
@@ -184,7 +184,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 			return nil
 		}
 		err := provider.ApplyChanges(t.Context(), &plan.Changes{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		t.Run("Next call to Records is cached", func(t *testing.T) {
 			testProvider.applyChanges = applyChangesNotCalled(t)
 			testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -192,7 +192,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 			}
 			endpoints, err := provider.Records(t.Context())
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, endpoints)
 			require.Len(t, endpoints, 1)
 			require.NotNil(t, endpoints[0])
@@ -210,7 +210,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 				{DNSName: "hello.world"},
 			},
 		})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		t.Run("Next call to Records is not cached", func(t *testing.T) {
 			testProvider.applyChanges = applyChangesNotCalled(t)
 			testProvider.records = func(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -218,7 +218,7 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 			}
 			endpoints, err := provider.Records(t.Context())
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, endpoints)
 			require.Len(t, endpoints, 1)
 			require.NotNil(t, endpoints[0])

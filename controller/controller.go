@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -63,6 +64,10 @@ type Controller struct {
 	MinEventSyncInterval time.Duration
 	// Old txt-owner value we need to migrate from
 	TXTOwnerOld string
+	// CrdClients syncs DNSEndpoint status after a reconcile; nil unless the crd source is enabled.
+	CrdClients *crd.CRDClients
+	// CRDSourceKind is the Kind reported for "crd/" deletes.
+	CRDSourceKind string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -118,14 +123,15 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	plan = plan.Calculate()
 
 	if plan.Changes.HasChanges() {
+		defer crd.SyncStatus(ctx, c.CrdClients, plan.Changes)
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()
-			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError)
+			emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordError, c.CRDSourceKind)
 			return err
 		}
-		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady)
+		emitChangeEvent(c.EventEmitter, plan.Changes, events.RecordReady, c.CRDSourceKind)
 	} else {
 		controllerNoChangesTotal.Counter.Inc()
 		log.Info("All records are already up to date")
@@ -178,7 +184,7 @@ func (c *Controller) ShouldRunOnce(now time.Time) bool {
 }
 
 // Run runs RunOnce in a loop with a delay until context is canceled
-func (c *Controller) Run(ctx context.Context) {
+func (c *Controller) Run(ctx context.Context) error {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	var softErrorCount int
@@ -190,7 +196,7 @@ func (c *Controller) Run(ctx context.Context) {
 					consecutiveSoftErrors.Gauge.Set(float64(softErrorCount))
 					log.Errorf("Failed to do run once: %v (consecutive soft errors: %d)", err, softErrorCount)
 				} else {
-					log.Fatalf("Failed to do run once: %v", err) // nolint: gocritic // exitAfterDefer
+					return fmt.Errorf("failed to do run once: %w", err)
 				}
 			} else {
 				if softErrorCount > 0 {
@@ -204,7 +210,7 @@ func (c *Controller) Run(ctx context.Context) {
 		case <-ticker.C:
 		case <-ctx.Done():
 			log.Info("Terminating main controller loop")
-			return
+			return nil
 		}
 	}
 }

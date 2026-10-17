@@ -24,9 +24,10 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=gloo-proxy
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
@@ -35,7 +36,7 @@ spec:
 
 ## Manifest (for clusters with RBAC enabled)
 
-Could be change if you have mulitple sources
+Could be change if you have multiple sources
 
 ```yaml
 apiVersion: v1
@@ -96,9 +97,10 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.20.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         args:
         - --source=gloo-proxy
+        - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Specify multiple times for multiple namespaces. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
@@ -134,7 +136,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   annotations:
-    external-dns.alpha.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
+    external-dns.kubernetes.io/ingress: "$ingressNamespace/$ingressName"
   labels:
     app: gloo
   name: gateway-proxy

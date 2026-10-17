@@ -9,8 +9,8 @@ metadata:
   labels:
     svc: test-svc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: a.example.org
-    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+    external-dns.kubernetes.io/hostname: a.example.org
+    external-dns.kubernetes.io/coredns-group: "g1"
     cluster-name: "cluster1"
   namespace: default
 spec:
@@ -29,8 +29,8 @@ metadata:
   labels:
     svc: test-svc
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: aa.example.org
-    external-dns.alpha.kubernetes.io/coredns-group: "g1"
+    external-dns.kubernetes.io/hostname: aa.example.org
+    external-dns.kubernetes.io/coredns-group: "g1"
     cluster-name: "cluster1"
   namespace: default
 spec:

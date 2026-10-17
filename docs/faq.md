@@ -29,7 +29,7 @@ ExternalDNS can solve this for you as well.
 
 ## Which DNS providers are supported?
 
-Please check the [provider status table](https://github.com/kubernetes-sigs/external-dns#status-of-in-tree-providers) for the list of supported providers and their status.
+Please check the [in-tree providers](https://github.com/kubernetes-sigs/external-dns#in-tree-providers) table for the list of built-in providers, and the [webhook providers](https://github.com/kubernetes-sigs/external-dns#new-providers) list for out-of-tree ones.
 
 As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
@@ -41,10 +41,10 @@ Services exposed via `type=LoadBalancer`, `type=ExternalName`, `type=NodePort`, 
 
 There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below:
 
-1. For ingress objects ExternalDNS will create a DNS record based on the hosts specified for the ingress object, as well as the `external-dns.alpha.kubernetes.io/hostname` annotation.
-   - For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.alpha.kubernetes.io/internal-hostname` on the service and use the service IP.
-   - For ingresses, you can optionally force ExternalDNS to create records based on _either_ the hosts specified or the `external-dns.alpha.kubernetes.io/hostname` annotation. This behavior is controlled by
-      setting the `external-dns.alpha.kubernetes.io/ingress-hostname-source` annotation on that ingress to either `defined-hosts-only` or `annotation-only`.
+1. For ingress objects ExternalDNS will create a DNS record based on the hosts specified for the ingress object, as well as the `external-dns.kubernetes.io/hostname` annotation.
+   - For services ExternalDNS will look for the annotation `external-dns.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.kubernetes.io/internal-hostname` on the service and use the service IP.
+   - For ingresses, you can optionally force ExternalDNS to create records based on _either_ the hosts specified or the `external-dns.kubernetes.io/hostname` annotation. This behavior is controlled by
+      setting the `external-dns.kubernetes.io/ingress-hostname-source` annotation on that ingress to either `defined-hosts-only` or `annotation-only`.
 
 2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
 
@@ -67,14 +67,14 @@ Regarding Ingress, we'll support:
 
 For Ingress objects, ExternalDNS will attempt to discover the target hostname of the relevant Ingress Controller automatically.
 If you are using an Ingress Controller that is not listed above you may have issues with ExternalDNS not discovering Endpoints and consequently not creating any DNS records.
-As a workaround, it is possible to force create an Endpoint by manually specifying a target host/IP for the records to be created by setting the annotation `external-dns.alpha.kubernetes.io/target` in the Ingress object.
+As a workaround, it is possible to force create an Endpoint by manually specifying a target host/IP for the records to be created by setting the annotation `external-dns.kubernetes.io/target` in the Ingress object.
 
 Another reason you may want to override the ingress hostname or IP address is if you have an external mechanism for handling failover across ingress endpoints.
 Possible scenarios for this would include using [keepalived-vip](https://github.com/kubernetes/contrib/tree/HEAD/keepalived-vip) to manage failover faster than DNS TTLs might expire.
 
 Note that if you set the target to a hostname, then a CNAME record will be created.
 In this case, the hostname specified in the Ingress object's annotation must already exist.
-(i.e. you have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value)
+(i.e. you have a Service resource for your Ingress Controller with the `external-dns.kubernetes.io/hostname` annotation set to the same value)
 
 ## What about other projects similar to ExternalDNS?
 
@@ -156,6 +156,33 @@ spec:
 
 ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/267.
 
+## Two sources claim the same hostname and the record won't switch. Why?
+
+When more than one source (for example an `ingress` and a `gateway-httproute`)
+generates the same DNS name with different targets, ExternalDNS keeps the record
+pointing at whichever resource acquired it first and ignores the competing
+source. This is intentional: it prevents the record from flapping between
+resources when both keep claiming the name.
+
+As a result, migrating a hostname from one source to another does not update the
+target on its own. To complete the migration you must make the old source stop
+emitting the hostname entirely. Once it does, ExternalDNS hands the record to the
+remaining source on the next reconcile, with no manual record deletion required.
+
+Be aware that a source may produce a hostname from more than one place, so
+removing a single field is not always enough. An `ingress`, for example, emits a
+hostname from both `spec.rules[].host` and the
+`external-dns.kubernetes.io/hostname` annotation, and by default returns
+the union of the two. Commenting out the annotation alone does not help if the
+host is still listed under `spec.rules`. To stop an Ingress from claiming
+`test1.example.com`, do one of:
+
+- remove `test1.example.com` from `spec.rules[].host`;
+- set `external-dns.kubernetes.io/ingress-hostname-source: annotation-only`
+  so only the annotation is read (then remove the annotation), or
+  `defined-hosts-only` so only `spec.rules` is read; or
+- delete the Ingress.
+
 ## I'm using an ELB with TXT registry but the CNAME record clashes with the TXT record. How to avoid this?
 
 CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/262.
@@ -193,7 +220,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.20.0
+  registry.k8s.io/external-dns/external-dns:v0.23.0
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -280,7 +307,7 @@ For example:
 --annotation-prefix=internal.company.io/ --provider=aws --aws-zone-type=private
 
 # External DNS instance
---annotation-prefix=external-dns.alpha.kubernetes.io/ --provider=aws --aws-zone-type=public
+--annotation-prefix=external-dns.kubernetes.io/ --provider=aws --aws-zone-type=public
 ```
 
 Then annotate your resources with both prefixes:
@@ -289,7 +316,7 @@ Then annotate your resources with both prefixes:
 metadata:
   annotations:
     internal.company.io/hostname: app.internal.company.com
-    external-dns.alpha.kubernetes.io/hostname: app.company.com
+    external-dns.kubernetes.io/hostname: app.company.com
 ```
 
 See the [Split Horizon DNS guide](advanced/split-horizon.md) for detailed examples and configuration.
@@ -299,19 +326,32 @@ See the [Split Horizon DNS guide](advanced/split-horizon.md) for detailed exampl
 If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.
 For example, you may want to write a DNS record in a private zone that resolves to your Nodes' private IPs so that traffic never leaves your private network.
 
-To accomplish this, set this annotation on your service: `external-dns.alpha.kubernetes.io/access=private`
-Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=public`
+To accomplish this, set this annotation on your `Service` of type `NodePort`: `external-dns.kubernetes.io/access=private`
+Conversely, to force the public IP: `external-dns.kubernetes.io/access=public`
 
 If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
 
+This applies to the [Service source](sources/service.md) only, and only to `Service`s of type `NodePort`.
+Every other source ignores the annotation.
+
+In particular, the [Ingress source](sources/ingress.md) takes its targets from the `Ingress`'s
+`status.loadBalancer.ingress` entries, which are written by the ingress controller. ExternalDNS does not look at
+`Node` addresses there, so it has no public/private pair to choose between — if the status lists both a public
+and a private address, both are published. To control which addresses end up in DNS for an `Ingress`:
+
+- configure the ingress controller to publish the addresses you want in `status.loadBalancer.ingress`;
+- set `external-dns.kubernetes.io/target` on the `Ingress`, which overrides the status entirely; or
+- use `--target-net-filter` / `--exclude-target-net`, described below.
+
 Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
-using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`.
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to every source,
+and an endpoint whose targets are all filtered out is dropped.
 
 ## Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
 Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
 
-## How do I provide multiple values to the annotation `external-dns.alpha.kubernetes.io/hostname`?
+## How do I provide multiple values to the annotation `external-dns.kubernetes.io/hostname`?
 
 Separate them by `,`.
 

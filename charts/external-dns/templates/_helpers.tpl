@@ -6,6 +6,16 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+Allow overriding the namespace that chart resources are rendered into
+(e.g. when external-dns is installed as a subchart that should live in a
+dedicated namespace, separate from the umbrella chart's release namespace).
+Falls back to .Release.Namespace when namespaceOverride is not set.
+*/}}
+{{- define "external-dns.namespace" -}}
+{{- default .Release.Namespace .Values.namespaceOverride }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.

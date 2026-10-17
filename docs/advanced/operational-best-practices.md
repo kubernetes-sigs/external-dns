@@ -119,7 +119,7 @@ Combine with label or annotation filters to further limit the set of Service obj
 
 ```sh
 --label-filter=external-dns/enabled=true
---annotation-filter=external-dns.alpha.kubernetes.io/hostname
+--annotation-filter=external-dns.kubernetes.io/hostname
 ```
 
 The table below shows which informers are eliminated by `--service-type-filter`:
@@ -211,6 +211,11 @@ sources:
   - service
   - ingress
 ```
+
+**Give each cluster its own `--txt-owner-id`.**
+Sharing one owner ID across clusters in a shared zone makes each cluster delete the other's records. When
+several clusters must publish the same hostname, follow one of the patterns in
+[Multi-Cluster Shared DNS Records](multi-cluster-shared-records.md).
 
 **Validate configuration early — fail in CI, not in production.**
 Add a startup check to your CI or pre-deployment pipeline using `--dry-run --once` against a
