@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry/txt"
 )
 
 type rfc2136Stub struct {
@@ -847,6 +848,70 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	assert.Contains(t, createRecords[2], "v3.foo.com")
 	assert.Contains(t, createRecords[2], "4.3.3.3")
 	assert.Contains(t, createRecords[2], "300")
+}
+
+func TestRfc2136AdjustEndpointsAppliesMinTTL(t *testing.T) {
+	p, err := createRfc2136StubProvider(newStub())
+	require.NoError(t, err)
+
+	adjusted, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("below.foo.com", endpoint.RecordTypeA, endpoint.TTL(200), "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("above.foo.com", endpoint.RecordTypeA, endpoint.TTL(400), "1.2.3.5"),
+		endpoint.NewEndpoint("unconfigured.foo.com", endpoint.RecordTypeA, "1.2.3.6"),
+	})
+	require.NoError(t, err)
+	require.Len(t, adjusted, 3)
+
+	assert.Equal(t, endpoint.TTL(300), adjusted[0].RecordTTL)
+	assert.Equal(t, endpoint.TTL(400), adjusted[1].RecordTTL)
+	assert.False(t, adjusted[2].RecordTTL.IsConfigured())
+}
+
+func TestRfc2136MinTTLKeepsReconcileStable(t *testing.T) {
+	stub := newStub()
+	p, err := createRfc2136StubProvider(stub, "foo.com")
+	require.NoError(t, err)
+	r, err := txt.New(&externaldns.Config{
+		TXTOwnerID:            "test",
+		TXTPrefix:             "%{record_type}-",
+		ManagedDNSRecordTypes: []string{endpoint.RecordTypeA},
+	}, p)
+	require.NoError(t, err)
+
+	for cycle := range 2 {
+		current, err := r.Records(t.Context())
+		require.NoError(t, err)
+		desired, err := r.AdjustEndpoints([]*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("below.foo.com", endpoint.RecordTypeA, endpoint.TTL(200), "1.2.3.4"),
+		})
+		require.NoError(t, err)
+
+		pl := &plan.Plan{
+			Current:        current,
+			Desired:        desired,
+			Policies:       []plan.Policy{&plan.SyncPolicy{}},
+			ManagedRecords: []string{endpoint.RecordTypeA},
+			OwnerID:        "test",
+		}
+		changes := pl.Calculate().Changes
+		if cycle == 0 {
+			require.Len(t, changes.Create, 1)
+			require.NoError(t, r.ApplyChanges(t.Context(), changes))
+			require.Len(t, stub.createMsgs, 2)
+			require.Len(t, stub.createMsgs[0].Ns, 2)
+
+			var records []string
+			for _, rr := range stub.createMsgs[0].Ns {
+				assert.Equal(t, uint32(300), rr.Header().Ttl)
+				records = append(records, rr.String())
+			}
+			require.NoError(t, stub.setOutput(records))
+		} else {
+			require.Len(t, current, 1, "ownership TXT is folded into the A record's labels")
+			assert.Equal(t, "test", current[0].Labels[endpoint.OwnerLabelKey])
+			assert.False(t, changes.HasChanges(), "the second reconcile must not rewrite the A or ownership TXT record")
+		}
+	}
 }
 
 func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
