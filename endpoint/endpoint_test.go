@@ -115,6 +115,18 @@ func TestSameSuccess(t *testing.T) {
 			[]string{"::1", "1.1.1.1", "2600.com", "3.3.3.3"},
 			[]string{"2600.com", "::0001", "3.3.3.3", "1.1.1.1"},
 		},
+		{
+			[]string{"traefik.example.com"},
+			[]string{"traefik.example.com."},
+		},
+		{
+			[]string{"ns1.example.com.", "ns2.example.com"},
+			[]string{"ns2.example.com.", "ns1.example.com"},
+		},
+		{
+			[]string{"FOO.Example.COM."},
+			[]string{"foo.example.com"},
+		},
 	}
 
 	for _, d := range tests {
