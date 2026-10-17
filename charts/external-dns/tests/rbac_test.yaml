@@ -649,3 +649,178 @@ tests:
           path: metadata.name
           value: rbac-external-dns-gateway
         template: clusterrole.yaml
+
+  - it: should not grant events creation by default
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should not grant events creation when only 'triggerLoopOnEvent' is set
+    set:
+      triggerLoopOnEvent: true
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should grant events creation in a ClusterRole when 'events-emit' is set in map 'extraArgs'
+    set:
+      sources:
+        - service
+      extraArgs:
+        events-emit: RecordReady
+    asserts:
+      - isKind:
+          of: ClusterRole
+        template: clusterrole.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["list", "watch"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "watch", "list"]
+            - apiGroups: [""]
+              resources: ["services"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["discovery.k8s.io"]
+              resources: ["endpointslices"]
+              verbs: ["get","watch","list"]
+            - apiGroups: ["events.k8s.io"]
+              resources: ["events"]
+              verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should grant events creation when 'events-emit' is a list in map 'extraArgs'
+    set:
+      extraArgs:
+        events-emit:
+          - RecordReady
+          - RecordDeleted
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should grant events creation when '--events-emit' is set in slice 'extraArgs'
+    set:
+      extraArgs:
+        - --txt-prefix=abc
+        - --events-emit=RecordReady
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should grant events creation when '--events-emit' and its value are separate items in slice 'extraArgs'
+    set:
+      extraArgs:
+        - --events-emit
+        - RecordReady
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should not grant events creation when 'events-emit' is empty in map 'extraArgs'
+    set:
+      extraArgs:
+        events-emit: []
+        other-flag: value
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should not grant events creation for unrelated slice 'extraArgs'
+    set:
+      extraArgs:
+        - --events
+        - --events-emitter=RecordReady
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should grant events creation in a Role when namespaced is true
+    set:
+      namespaced: true
+      sources:
+        - service
+      extraArgs:
+        events-emit: RecordReady
+    asserts:
+      - isKind:
+          of: Role
+        template: clusterrole.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: ["events.k8s.io"]
+            resources: ["events"]
+            verbs: ["create"]
+        template: clusterrole.yaml
+
+  - it: should keep 'rbac.additionalPermissions' after the events rule
+    set:
+      sources: []
+      extraArgs:
+        events-emit: RecordReady
+      rbac:
+        additionalPermissions:
+          - apiGroups: [""]
+            resources: ["configmaps"]
+            verbs: ["get"]
+    asserts:
+      - equal:
+          path: rules
+          value:
+            - apiGroups: ["events.k8s.io"]
+              resources: ["events"]
+              verbs: ["create"]
+            - apiGroups: [""]
+              resources: ["configmaps"]
+              verbs: ["get"]
+        template: clusterrole.yaml
+
+  - it: should not render RBAC when 'rbac.create' is false even if events are emitted
+    set:
+      rbac:
+        create: false
+      extraArgs:
+        events-emit: RecordReady
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: clusterrole.yaml

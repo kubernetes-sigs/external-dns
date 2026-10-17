@@ -146,6 +146,11 @@ rules:
     resources: ["virtualservers", "transportservers"]
     verbs: ["get","watch","list"]
 {{- end }}
+{{- if include "external-dns.emitsEvents" . }}
+  - apiGroups: ["events.k8s.io"]
+    resources: ["events"]
+    verbs: ["create"]
+{{- end }}
 {{- with .Values.rbac.additionalPermissions }}
   {{- toYaml . | nindent 2 }}
 {{- end }}
