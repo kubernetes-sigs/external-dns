@@ -24,11 +24,28 @@ const (
 	// DefaultAnnotationPrefix is the default annotation prefix used by external-dns
 	DefaultAnnotationPrefix = "external-dns.kubernetes.io/"
 
+	// TTLMinimum and TTLMaximum bound the value accepted by the ttl annotation.
+	TTLMinimum = 1
+	TTLMaximum = math.MaxInt32
+
 	// LegacyAnnotationPrefix is the annotation prefix used by releases before v0.22.0.
 	LegacyAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 
-	ttlMinimum = 1
-	ttlMaximum = math.MaxInt32
+	// Suffixes (the part after AnnotationKeyPrefix) for each *Key var below.
+	AccessSuffix                = "access"
+	AliasSuffix                 = "alias"
+	AzureTagsSuffix             = "azure-tags"
+	ControllerSuffix            = "controller"
+	EndpointsTypeSuffix         = "endpoints-type"
+	GatewayHostnameSourceSuffix = "gateway-hostname-source"
+	HostnameSuffix              = "hostname"
+	IngressSuffix               = "ingress"
+	IngressHostnameSourceSuffix = "ingress-hostname-source"
+	InternalHostnameSuffix      = "internal-hostname"
+	RecordTypeSuffix            = "record-type"
+	SetIdentifierSuffix         = "set-identifier"
+	TargetSuffix                = "target"
+	TtlSuffix                   = "ttl"
 )
 
 var (
@@ -40,7 +57,7 @@ var (
 	legacyAnnotationPrefix string
 
 	// AzureTagsKey The annotation used for Azure DNS record tags
-	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
+	AzureTagsKey = AnnotationKeyPrefix + AzureTagsSuffix
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
@@ -48,30 +65,30 @@ var (
 	WebhookPrefix    = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
 
-	TtlKey           = AnnotationKeyPrefix + "ttl"
-	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
-	AliasKey         = AnnotationKeyPrefix + "alias"
-	RecordTypeKey    = AnnotationKeyPrefix + "record-type"
-	TargetKey        = AnnotationKeyPrefix + "target"
+	TtlKey           = AnnotationKeyPrefix + TtlSuffix
+	SetIdentifierKey = AnnotationKeyPrefix + SetIdentifierSuffix
+	AliasKey         = AnnotationKeyPrefix + AliasSuffix
+	RecordTypeKey    = AnnotationKeyPrefix + RecordTypeSuffix
+	TargetKey        = AnnotationKeyPrefix + TargetSuffix
 	// ControllerKey The annotation used for figuring out which controller is responsible
-	ControllerKey = AnnotationKeyPrefix + "controller"
+	ControllerKey = AnnotationKeyPrefix + ControllerSuffix
 	// HostnameKey The annotation used for defining the desired hostname
-	HostnameKey = AnnotationKeyPrefix + "hostname"
+	HostnameKey = AnnotationKeyPrefix + HostnameSuffix
 	// AccessKey The annotation used for specifying whether the public or private interface address is used
-	AccessKey = AnnotationKeyPrefix + "access"
+	AccessKey = AnnotationKeyPrefix + AccessSuffix
 	// EndpointsTypeKey The annotation used for specifying the type of endpoints to use for headless services
-	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
+	EndpointsTypeKey = AnnotationKeyPrefix + EndpointsTypeSuffix
 	// Ingress the annotation used to determine if the gateway is implemented by an Ingress object
-	Ingress = AnnotationKeyPrefix + "ingress"
+	Ingress = AnnotationKeyPrefix + IngressSuffix
 	// IngressHostnameSourceKey The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
 	// available hostname sources are used if not specified.
-	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
+	IngressHostnameSourceKey = AnnotationKeyPrefix + IngressHostnameSourceSuffix
 	// ControllerValue The value of the controller annotation so that we feel responsible
 	ControllerValue = "dns-controller"
 	// InternalHostnameKey The annotation used for defining the desired hostname
-	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
+	InternalHostnameKey = AnnotationKeyPrefix + InternalHostnameSuffix
 	// The annotation used for defining the desired hostname source for gateways
-	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+	GatewayHostnameSourceKey = AnnotationKeyPrefix + GatewayHostnameSourceSuffix
 )
 
 // SetAnnotationPrefix sets a custom annotation prefix and rebuilds all annotation keys.
@@ -81,7 +98,7 @@ func SetAnnotationPrefix(prefix string) {
 	AnnotationKeyPrefix = prefix
 
 	// Azure annotations
-	AzureTagsKey = AnnotationKeyPrefix + "azure-tags"
+	AzureTagsKey = AnnotationKeyPrefix + AzureTagsSuffix
 
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"
@@ -91,19 +108,19 @@ func SetAnnotationPrefix(prefix string) {
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
 
 	// Core annotations
-	TtlKey = AnnotationKeyPrefix + "ttl"
-	SetIdentifierKey = AnnotationKeyPrefix + "set-identifier"
-	AliasKey = AnnotationKeyPrefix + "alias"
-	RecordTypeKey = AnnotationKeyPrefix + "record-type"
-	TargetKey = AnnotationKeyPrefix + "target"
-	ControllerKey = AnnotationKeyPrefix + "controller"
-	HostnameKey = AnnotationKeyPrefix + "hostname"
-	AccessKey = AnnotationKeyPrefix + "access"
-	EndpointsTypeKey = AnnotationKeyPrefix + "endpoints-type"
-	Ingress = AnnotationKeyPrefix + "ingress"
-	IngressHostnameSourceKey = AnnotationKeyPrefix + "ingress-hostname-source"
-	InternalHostnameKey = AnnotationKeyPrefix + "internal-hostname"
-	GatewayHostnameSourceKey = AnnotationKeyPrefix + "gateway-hostname-source"
+	TtlKey = AnnotationKeyPrefix + TtlSuffix
+	SetIdentifierKey = AnnotationKeyPrefix + SetIdentifierSuffix
+	AliasKey = AnnotationKeyPrefix + AliasSuffix
+	RecordTypeKey = AnnotationKeyPrefix + RecordTypeSuffix
+	TargetKey = AnnotationKeyPrefix + TargetSuffix
+	ControllerKey = AnnotationKeyPrefix + ControllerSuffix
+	HostnameKey = AnnotationKeyPrefix + HostnameSuffix
+	AccessKey = AnnotationKeyPrefix + AccessSuffix
+	EndpointsTypeKey = AnnotationKeyPrefix + EndpointsTypeSuffix
+	Ingress = AnnotationKeyPrefix + IngressSuffix
+	IngressHostnameSourceKey = AnnotationKeyPrefix + IngressHostnameSourceSuffix
+	InternalHostnameKey = AnnotationKeyPrefix + InternalHostnameSuffix
+	GatewayHostnameSourceKey = AnnotationKeyPrefix + GatewayHostnameSourceSuffix
 }
 
 // SetLegacyAnnotationPrefix makes ResolveLegacyAnnotations accept annotations carrying prefix in addition

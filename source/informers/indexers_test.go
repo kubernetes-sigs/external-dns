@@ -15,8 +15,10 @@ package informers
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -26,6 +28,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
+
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
@@ -143,6 +148,191 @@ func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
 		IndexSelectorWithAnnotationFilter(nil)(options)
 		require.Nil(t, options.annotationFilter)
 	})
+}
+
+func TestIndexSelectorWithAnnotationValidation(t *testing.T) {
+	t.Run("stores source and mode in options", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationValidation("pod", schema.ModeStrict)(options)
+		assert.Equal(t, "pod", options.source)
+		assert.Equal(t, schema.ModeStrict, options.mode)
+	})
+
+	t.Run("empty source stored as empty", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationValidation("", schema.ModeWarn)(options)
+		assert.Empty(t, options.source)
+	})
+}
+
+// withTestRegistry temporarily replaces schema.Registry with a single fixture entry
+// for the given key, restoring the original Registry when the test completes.
+func withTestRegistry(t *testing.T, keySuffix string, cfg schema.Config) {
+	t.Helper()
+	orig := schema.Registry
+	schema.Registry = []schema.AnnotationSpec{{KeySuffix: keySuffix, Config: cfg}}
+	t.Cleanup(func() { schema.Registry = orig })
+}
+
+func TestIndexerWithOptions_AnnotationValidation(t *testing.T) {
+	const testKeySuffix = "test-annotation"
+	const testKey = "external-dns.kubernetes.io/" + testKeySuffix
+
+	strictCfg := schema.Config{
+		Validators:    []schema.Validator{schema.ValidateOneOf("valid-value")},
+		WarnMessage:   "falls back to default",
+		StrictMessage: "excluded entirely",
+	}
+	warnOnlyCfg := schema.Config{
+		Validators:  []schema.Validator{schema.ValidateOneOf("valid-value")},
+		WarnMessage: "falls back to default",
+	}
+
+	makePod := func(annotationsMap map[string]string) *corev1.Pod {
+		p := &corev1.Pod{}
+		p.SetName("test-pod")
+		p.SetNamespace("default")
+		p.SetAnnotations(annotationsMap)
+		return p
+	}
+
+	type testCase struct {
+		name        string
+		cfg         schema.Config
+		source      string
+		mode        schema.Mode
+		annotations map[string]string
+		wantIndexed bool
+	}
+
+	tests := []testCase{
+		{
+			name:        "valid value indexed in warn mode",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeWarn,
+			annotations: map[string]string{testKey: "valid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "valid value indexed in strict mode",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "valid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "invalid value in warn mode stays indexed",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeWarn,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "invalid value in strict mode is excluded",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: false,
+		},
+		{
+			name:        "invalid value in strict mode with no StrictMessage stays indexed",
+			cfg:         warnOnlyCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: true,
+		},
+		{
+			name:        "annotation absent stays indexed",
+			cfg:         strictCfg,
+			source:      "pod",
+			mode:        schema.ModeStrict,
+			annotations: nil,
+			wantIndexed: true,
+		},
+		{
+			name:        "source not configured skips validation entirely",
+			cfg:         strictCfg,
+			source:      "",
+			mode:        schema.ModeStrict,
+			annotations: map[string]string{testKey: "invalid-value"},
+			wantIndexed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withTestRegistry(t, testKeySuffix, tt.cfg)
+			var opts []func(*IndexSelectorOptions)
+			if tt.source != "" {
+				opts = append(opts, IndexSelectorWithAnnotationValidation(tt.source, tt.mode))
+			}
+			indexers := IndexerWithOptions[*corev1.Pod](opts...)
+			keys, err := indexers[IndexWithSelectors](makePod(tt.annotations))
+			assert.NoError(t, err)
+			if tt.wantIndexed {
+				assert.Equal(t, []string{"default/test-pod"}, keys)
+			} else {
+				assert.Nil(t, keys)
+			}
+		})
+	}
+}
+
+// TestIndexerWithOptions_AnnotationValidation_DedupesRepeatedCall covers client-go's
+// old-object/new-object index recompute on Update: the same object, annotations, and
+// outcome must only be logged once when the index func runs twice back-to-back for it.
+func TestIndexerWithOptions_AnnotationValidation_DedupesRepeatedCall(t *testing.T) {
+	const testKeySuffix = "test-annotation"
+	const testKey = "external-dns.kubernetes.io/" + testKeySuffix
+
+	makePod := func(annotationsMap map[string]string) *corev1.Pod {
+		p := &corev1.Pod{}
+		p.SetName("test-pod")
+		p.SetNamespace("default")
+		p.SetAnnotations(annotationsMap)
+		return p
+	}
+
+	withTestRegistry(t, testKeySuffix, schema.Config{
+		Validators:    []schema.Validator{schema.ValidateOneOf("valid-value")},
+		StrictMessage: "excluded entirely",
+	})
+	indexFn := IndexerWithOptions[*corev1.Pod](
+		IndexSelectorWithAnnotationValidation("pod", schema.ModeStrict),
+	)[IndexWithSelectors]
+
+	pod := makePod(map[string]string{testKey: "invalid-value"})
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+	_, err := indexFn(pod)
+	require.NoError(t, err)
+	_, err = indexFn(pod)
+	require.NoError(t, err)
+
+	count := 0
+	for _, entry := range hook.AllEntries() {
+		if strings.Contains(entry.Message, "excluded entirely") {
+			count++
+		}
+	}
+	assert.Equal(t, 1, count, "expected the warning to be logged once for two back-to-back identical calls")
+
+	otherPod := makePod(map[string]string{testKey: "invalid-value-2"})
+	_, err = indexFn(otherPod)
+	require.NoError(t, err)
+
+	count = 0
+	for _, entry := range hook.AllEntries() {
+		if strings.Contains(entry.Message, "excluded entirely") {
+			count++
+		}
+	}
+	assert.Equal(t, 2, count, "a genuinely different call must still log")
 }
 
 func TestIndexerWithOptions_LabelKey(t *testing.T) {

@@ -130,6 +130,7 @@ func NewTraefikSource(
 	indexerOpts := informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(types.TraefikProxy, cfg.AnnotationValidationMode),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	)
 	if !cfg.TraefikDisableNew {
