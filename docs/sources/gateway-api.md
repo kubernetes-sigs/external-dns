@@ -16,7 +16,7 @@ Experimental channels as summarized below:
 | ListenerSet        | v1                                  | v1.5.0                               | v1.5.0                          |
 | TLSRoute           | v1                                  | v1.5.0                               | v1.0.0                          |
 | TCPRoute           | v1                                  | v1.6.0                               | v1.6.0                          |
-| UDPRoute           | v1alpha2                            | TBD                                  | v1.0.0                          |
+| UDPRoute           | v1                                  | v1.6.0                               | v1.6.0                          |
 
 Gateways and HTTPRoutes were promoted to the Standard channel in Gateway API v1.0.0 and use the
 v1 API.
@@ -38,7 +38,8 @@ ExternalDNS still uses the v1alpha2 API for compatibility with older CRDs but it
 has been deprecated and will be removed from future releases, at which point ExternalDNS will
 need to migrate to v1. (See [#6247](https://github.com/kubernetes-sigs/external-dns/issues/6247))
 
-UDPRoute remains experimental and is only available as v1alpha2 in the Experimental channel.
+TCPRoute and UDPRoute were moved from Experimental to Standard channel in Gateway API v1.6.0 and
+are now served within v1 API.
 
 ## Hostnames
 
