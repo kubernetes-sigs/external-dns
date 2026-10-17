@@ -310,9 +310,11 @@ func tlsaTarget(rr *dns.TLSA) string {
 	return tlsa.String()
 }
 
-// Canonicalize targets to avoid reconciliation when not needed.
+// AdjustEndpoints raises desired TTLs to the configured minimum and canonicalizes
+// TLSA targets to avoid differences on reconciliation.
 func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range eps {
+		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
 		if ep.RecordType != endpoint.RecordTypeTLSA {
 			continue
 		}
@@ -543,12 +545,22 @@ func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, new
 	return r.AddRecord(m, newEp)
 }
 
+// floorTTL raises a TTL provided by a source up to the configured minimum.
+// A TTL that no source provided is returned unchanged.
+func (r *rfc2136Provider) floorTTL(ttl endpoint.TTL) endpoint.TTL {
+	minTTL := int64(r.minTTL.Seconds())
+	if ttl.IsConfigured() && int64(ttl) < minTTL {
+		return endpoint.TTL(minTTL)
+	}
+	return ttl
+}
+
 func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 
-	ttl := int64(r.minTTL.Seconds())
-	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
-		ttl = int64(ep.RecordTTL)
+	ttl := r.floorTTL(ep.RecordTTL)
+	if !ttl.IsConfigured() {
+		ttl = endpoint.TTL(int64(r.minTTL.Seconds()))
 	}
 
 	for _, target := range ep.Targets {
@@ -557,7 +569,7 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 			return fmt.Errorf("failed to build RR: %w", err)
 		}
 
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, rrTarget)
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, int64(ttl), ep.RecordType, rrTarget)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
