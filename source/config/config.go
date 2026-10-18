@@ -97,8 +97,6 @@ type Config struct {
 	PTRSupported                   bool
 	CreatePTR                      bool
 
-	// Sources lists the source names the controller should instantiate.
-	// Populated from externaldns.Config.Sources and consumed by source.ByNames.
 	Sources []string
 
 	// clientGen stores an injected or lazily initialized Kubernetes client

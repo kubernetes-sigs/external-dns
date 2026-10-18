@@ -222,9 +222,8 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
-	names := cfg.Sources()
-	sources := make([]Source, 0, len(names))
-	for _, name := range names {
+	sources := make([]Source, 0, len(cfg.Sources))
+	for _, name := range cfg.Sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err
