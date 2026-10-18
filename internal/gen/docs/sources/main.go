@@ -42,6 +42,7 @@ const (
 	annotationFQDNTemplate     = annotationPrefix + "fqdn-template="
 	annotationEvents           = annotationPrefix + "events="
 	annotationProviderSpecific = annotationPrefix + "provider-specific="
+	annotationValidation       = annotationPrefix + "validation="
 )
 
 var (
@@ -64,6 +65,7 @@ type Source struct {
 	FQDNTemplate     string // FQDN template support: "true", "false"
 	Events           string // Events support: "true", "false"
 	ProviderSpecific string // Provider-specific properties support: "true", "false"
+	Validation       string // Comma-separated validation kinds enabled, e.g., "annotation"
 }
 
 type Sources []Source
@@ -114,6 +116,7 @@ type columnWidths struct {
 	FQDNTemplate     int
 	Events           int
 	ProviderSpecific int
+	Validation       int
 	Category         int
 }
 
@@ -126,6 +129,7 @@ func computeColumnWidths(sources Sources) columnWidths {
 		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
 		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
+		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.Validation }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
 }
@@ -304,6 +308,8 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			currentSource.Events = strings.TrimPrefix(line, annotationEvents)
 		case strings.HasPrefix(line, annotationProviderSpecific):
 			currentSource.ProviderSpecific = strings.TrimPrefix(line, annotationProviderSpecific)
+		case strings.HasPrefix(line, annotationValidation):
+			currentSource.Validation = strings.TrimPrefix(line, annotationValidation)
 		}
 	}
 

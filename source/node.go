@@ -46,6 +46,7 @@ import (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type nodeSource struct {
 	client         kubernetes.Interface
 	templateEngine template.Engine

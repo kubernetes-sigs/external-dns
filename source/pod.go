@@ -49,6 +49,7 @@ import (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type podSource struct {
 	client         kubernetes.Interface
 	namespace      string

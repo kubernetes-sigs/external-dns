@@ -61,6 +61,7 @@ const (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type ingressSource struct {
 	client                   kubernetes.Interface
 	ingressClassNames        []string

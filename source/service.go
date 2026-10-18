@@ -68,6 +68,7 @@ var (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type serviceSource struct {
 	client         kubernetes.Interface
 	namespace      string
