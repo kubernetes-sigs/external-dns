@@ -66,10 +66,7 @@ type Source struct {
 	ProviderSpecific string // Provider-specific properties support: "true", "false"
 }
 
-// EventsCell returns the Events value for the generated table. For sources that
-// support events (Events == "true"), it appends the `[^events-emit]` footnote
-// reference so readers see that the --events-emit flag must be set to a
-// non-none value for events to actually be emitted.
+// EventsCell links the Events value to the --events-emit footnote.
 func (s Source) EventsCell() string {
 	if s.Events == "true" {
 		return "true[^events-emit]"
@@ -77,10 +74,7 @@ func (s Source) EventsCell() string {
 	return s.Events
 }
 
-// FiltersCell returns the Filters value with a `[^filter-<kind>]` footnote
-// reference appended to each comma-separated token (e.g. "annotation" becomes
-// "annotation[^filter-annotation]"), so each kind links to the flag that
-// controls it at the bottom of the page.
+// FiltersCell links each filter kind to its controlling-flag footnote.
 func (s Source) FiltersCell() string {
 	if s.Filters == "" {
 		return ""
@@ -93,10 +87,7 @@ func (s Source) FiltersCell() string {
 	return strings.Join(parts, ",")
 }
 
-// NamespaceCell returns the Namespace value with a single `[^namespace]`
-// footnote reference appended, since the one --namespace flag controls both
-// the "all" and "single" modes. Empty cells (sources without namespace scope)
-// get no footnote.
+// NamespaceCell links the Namespace value to the --namespace footnote.
 func (s Source) NamespaceCell() string {
 	if s.Namespace == "" {
 		return ""
