@@ -15,6 +15,7 @@ package annotations
 
 import (
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -94,6 +95,55 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 			setIdentifier: "",
 		},
 		{
+			name: "Google routing policy annotation",
+			annotations: map[string]string{
+				"external-dns.kubernetes.io/google-routing-policy": "wrr",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "google/routing-policy", Value: "wrr"},
+			},
+			setIdentifier: "",
+		},
+		{
+			name: "Google weight annotation",
+			annotations: map[string]string{
+				"external-dns.kubernetes.io/google-weight": "50",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "google/weight", Value: "50"},
+			},
+			setIdentifier: "",
+		},
+		{
+			// Without this, two HTTPRoutes sharing a hostname with different google-location
+			// values (but no explicit set-identifier) collide in endpoint.MergeEndpoints /
+			// dedupSource (both keyed on SetIdentifier) before provider.AdjustEndpoints ever
+			// runs, silently dropping one location.
+			name: "Google location annotation derives SetIdentifier when none set explicitly",
+			annotations: map[string]string{
+				"external-dns.kubernetes.io/google-routing-policy": "geo",
+				"external-dns.kubernetes.io/google-location":       "us-east1",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "google/routing-policy", Value: "geo"},
+				{Name: "google/location", Value: "us-east1"},
+			},
+			setIdentifier: "us-east1",
+		},
+		{
+			name: "explicit set-identifier annotation wins over google-location",
+			annotations: map[string]string{
+				"external-dns.kubernetes.io/google-routing-policy": "geo",
+				"external-dns.kubernetes.io/google-location":       "us-east1",
+				SetIdentifierKey: "explicit-id",
+			},
+			expected: endpoint.ProviderSpecific{
+				{Name: "google/routing-policy", Value: "geo"},
+				{Name: "google/location", Value: "us-east1"},
+			},
+			setIdentifier: "explicit-id",
+		},
+		{
 			name: "Azure tags annotation",
 			annotations: map[string]string{
 				AzureTagsKey: "cost-center=12345,owner=backend-team",
@@ -136,7 +186,17 @@ func TestProviderSpecificAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, setIdentifier := ProviderSpecificAnnotations(tt.annotations)
-			assert.Equal(t, tt.expected, result)
+			// ProviderSpecificAnnotations iterates annotations as a map, so relative order
+			// between properties isn't guaranteed -- sort both sides before comparing.
+			sortByName := func(props endpoint.ProviderSpecific) {
+				slices.SortFunc(props, func(a, b endpoint.ProviderSpecificProperty) int {
+					return strings.Compare(a.Name, b.Name)
+				})
+			}
+			sortByName(result)
+			expected := slices.Clone(tt.expected)
+			sortByName(expected)
+			assert.Equal(t, expected, result)
 			assert.Equal(t, tt.setIdentifier, setIdentifier)
 
 			for _, prop := range result {

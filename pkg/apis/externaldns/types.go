@@ -90,6 +90,7 @@ type Config struct {
 	ProviderCacheTime                             time.Duration
 	CreatePTR                                     bool
 	GoogleProject                                 string
+	GoogleLocation                                string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
 	GoogleZoneVisibility                          string
@@ -307,6 +308,7 @@ var defaultConfig = &Config{
 	GoDaddyTTL:                       600,
 	GoogleBatchChangeInterval:        time.Second,
 	GoogleBatchChangeSize:            1000,
+	GoogleLocation:                   "",
 	GoogleProject:                    "",
 	GoogleZoneVisibility:             "",
 	IgnoreHostnameAnnotation:         false,
@@ -601,6 +603,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneNameFilter)
 	b.StringsVar("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)", []string{""}, &cfg.ZoneIDFilter)
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)
+	b.StringVar("google-location", "When using the Google provider, current location is auto-detected, when running on GCP. Specify location with this. May be specified when running outside GCP.", defaultConfig.GoogleLocation, &cfg.GoogleLocation)
 	b.IntVar("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.", defaultConfig.GoogleBatchChangeSize, &cfg.GoogleBatchChangeSize)
 	b.DurationVar("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.", defaultConfig.GoogleBatchChangeInterval, &cfg.GoogleBatchChangeInterval)
 	b.EnumVar("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)", defaultConfig.GoogleZoneVisibility, &cfg.GoogleZoneVisibility, "", "public", "private")

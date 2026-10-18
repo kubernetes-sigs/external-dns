@@ -63,12 +63,21 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 		})
 	}
 	setIdentifier := ""
+	googleLocation := ""
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
 			setIdentifier = v
 		} else if attr, ok := strings.CutPrefix(k, AWSPrefix); ok {
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
+				Value: v,
+			})
+		} else if attr, ok := strings.CutPrefix(k, GooglePrefix); ok {
+			if attr == "location" {
+				googleLocation = v
+			}
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("google/%s", attr),
 				Value: v,
 			})
 		} else if attr, ok := strings.CutPrefix(k, SCWPrefix); ok {
@@ -100,6 +109,19 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 				})
 			}
 		}
+	}
+	// Geo routing policy endpoints coexist as separate RRSet items keyed by location, so the
+	// location must become the endpoint's SetIdentifier here -- before any source's
+	// endpoint.MergeEndpoints() or the dedup source wrapper run, both of which collapse
+	// endpoints with the same (DNSName, RecordType, SetIdentifier) into one. Leaving this to
+	// provider.AdjustEndpoints (which also fills it in, for an endpoint built by a source that
+	// doesn't go through this annotation parser, e.g. the fake source in tests) runs too late:
+	// two HTTPRoutes for the same hostname with different google-location values but no
+	// explicit set-identifier annotation would otherwise merge into one endpoint, silently
+	// dropping one location's provider-specific properties. An explicit set-identifier
+	// annotation still wins, matching how WRR already requires one for its item index.
+	if setIdentifier == "" && googleLocation != "" {
+		setIdentifier = googleLocation
 	}
 	return providerSpecificAnnotations, setIdentifier
 }

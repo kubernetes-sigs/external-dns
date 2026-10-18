@@ -44,6 +44,7 @@ var (
 
 	AWSPrefix        = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix    = AnnotationKeyPrefix + "coredns-"
+	GooglePrefix     = AnnotationKeyPrefix + "google-"
 	SCWPrefix        = AnnotationKeyPrefix + "scw-"
 	WebhookPrefix    = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
@@ -86,6 +87,7 @@ func SetAnnotationPrefix(prefix string) {
 	// Provider prefixes
 	AWSPrefix = AnnotationKeyPrefix + "aws-"
 	CoreDNSPrefix = AnnotationKeyPrefix + "coredns-"
+	GooglePrefix = AnnotationKeyPrefix + "google-"
 	SCWPrefix = AnnotationKeyPrefix + "scw-"
 	WebhookPrefix = AnnotationKeyPrefix + "webhook-"
 	CloudflarePrefix = AnnotationKeyPrefix + "cloudflare-"
