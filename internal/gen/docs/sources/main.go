@@ -74,6 +74,14 @@ func (s Source) EventsCell() string {
 	return s.Events
 }
 
+// FQDNTemplateCell links the FQDN Template value to the --fqdn-template footnote.
+func (s Source) FQDNTemplateCell() string {
+	if s.FQDNTemplate == "true" {
+		return "true[^fqdn-template]"
+	}
+	return s.FQDNTemplate
+}
+
 // FiltersCell links each filter kind to its controlling-flag footnote.
 func (s Source) FiltersCell() string {
 	if s.Filters == "" {
@@ -152,7 +160,7 @@ func computeColumnWidths(sources Sources) columnWidths {
 		Resources:        render.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
 		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.FiltersCell() }),
 		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.NamespaceCell() }),
-		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
+		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplateCell() }),
 		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.EventsCell() }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
