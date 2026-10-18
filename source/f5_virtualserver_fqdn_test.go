@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -352,7 +351,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
-				Namespace:      defaultF5VirtualServerNamespace,
+				Namespaces:     []string{defaultF5VirtualServerNamespace},
 				LabelFilter:    labels.Everything(),
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 			})
@@ -365,7 +364,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			}
 
 			endpoints, err := src.Endpoints(t.Context())
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}

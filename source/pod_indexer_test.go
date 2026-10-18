@@ -140,11 +140,11 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 				Name: pod.Spec.NodeName,
 			}
 			if _, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{}); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 		if _, err := client.CoreV1().Pods(pod.Namespace).Create(t.Context(), pod, metav1.CreateOptions{}); err != nil {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 
@@ -217,7 +217,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 			pSource, err := NewPodSource(
 				t.Context(), client,
 				&Config{
-					Namespace:        tt.namespace,
+					Namespaces:       []string{tt.namespace},
 					TemplateEngine:   templatetest.MustEngine(t, "{{ .Name }}.tld.org", "", "", false),
 					AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 					LabelFilter:      selector,

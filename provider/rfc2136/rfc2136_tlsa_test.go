@@ -175,12 +175,12 @@ func TestRfc2136MalformedTLSATargetIsRejected(t *testing.T) {
 
 	err = r.AddRecord(m, ep)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "not valid hex")
+	require.ErrorContains(t, err, "not valid hex")
 	assert.Empty(t, m.Ns, "a malformed target must not reach the update message")
 
 	err = r.RemoveRecord(m, ep)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "not valid hex")
+	require.ErrorContains(t, err, "not valid hex")
 	assert.Empty(t, m.Ns)
 }
 

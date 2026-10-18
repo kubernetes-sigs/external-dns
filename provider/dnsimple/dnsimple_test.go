@@ -161,17 +161,17 @@ func testDnsimpleProviderZones(t *testing.T) {
 	ctx := t.Context()
 	mockProvider.accountID = "1"
 	result, err := mockProvider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	validateDnsimpleZones(t, result, dnsimpleListZonesResponse.Data)
 
 	mockProvider.accountID = "2"
 	_, err = mockProvider.Zones(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	mockProvider.accountID = "3"
 	t.Setenv("DNSIMPLE_ZONES", "example-from-env.com")
 	result, err = mockProvider.Zones(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	validateDnsimpleZones(t, result, dnsimpleListZonesFromEnvResponse.Data)
 
 	mockProvider.accountID = "2"
@@ -285,7 +285,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 
 			result, err := p.Records(t.Context())
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				mockDNS.AssertExpectations(t)
 				return
 			}
@@ -465,11 +465,11 @@ func testDnsimpleGetRecordID(t *testing.T) {
 
 	mockProvider.accountID = "1"
 	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example", "CNAME")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), result)
 
 	result, err = mockProvider.GetRecordID(t.Context(), "example.com", "example-beta", "A")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), result)
 }
 

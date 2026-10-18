@@ -155,8 +155,8 @@ func TestEtcdHttpsProtocol(t *testing.T) {
 	testutils.TestHelperEnvSetter(t, envs)
 
 	cfg, err := getETCDConfig()
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
 }
 
 func TestEtcdHttpsIncorrectConfigError(t *testing.T) {
@@ -648,7 +648,7 @@ func TestGetServices_Success(t *testing.T) {
 	}
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "example.com", result[0].Host)
 }
@@ -680,7 +680,7 @@ func TestGetServices_Duplicate(t *testing.T) {
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 1)
 }
 
@@ -714,7 +714,7 @@ func TestGetServices_Multiple(t *testing.T) {
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 2)
 	assert.Equal(t, priority, result[1].Priority)
 }
@@ -758,7 +758,7 @@ func TestGetServices_FilterOutOtherServicesOwnerSetButNothingChanged(t *testing.
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 3)
 }
 
@@ -801,7 +801,7 @@ func TestGetServices_FilterOutOtherServicesWithStrictlyOwned(t *testing.T) {
 		}, nil)
 
 	result, err := c.GetServices(t.Context(), "/prefix")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, result, 1)
 	assert.Equal(t, "owner", result[0].Owner)
 }
@@ -829,7 +829,7 @@ func TestGetServices_UnmarshalError(t *testing.T) {
 		}, nil)
 
 	_, err := c.GetServices(t.Context(), "/prefix")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "/prefix/1")
 }
 
@@ -845,8 +845,8 @@ func TestGetServices_GetError(t *testing.T) {
 		Return(&etcdcv3.GetResponse{}, errors.New("etcd failure"))
 
 	_, err := c.GetServices(t.Context(), "/prefix")
-	assert.Error(t, err)
-	assert.EqualError(t, err, "etcd failure")
+	require.Error(t, err)
+	require.EqualError(t, err, "etcd failure")
 }
 
 func TestDeleteService(t *testing.T) {
@@ -1279,9 +1279,9 @@ func TestSaveService(t *testing.T) {
 
 			err = c.SaveService(t.Context(), tt.service)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			mockKV.AssertExpectations(t)
 		})
@@ -1318,7 +1318,7 @@ func TestNewProvider(t *testing.T) {
 			provider, err := newProvider(&endpoint.DomainFilter{}, "/prefix/", "", false, false)
 			if tt.wantErr {
 				require.Error(t, err)
-				assert.EqualError(t, err, tt.errMsg)
+				require.EqualError(t, err, tt.errMsg)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, provider)
@@ -1370,7 +1370,7 @@ func TestFindEp(t *testing.T) {
 			if ok {
 				assert.Equal(t, tt.dnsName, got.DNSName)
 			} else {
-				assert.Nil(t, got)
+				require.Nil(t, got)
 			}
 		})
 	}
@@ -1792,4 +1792,76 @@ func TestPTRRecords(t *testing.T) {
 		assert.Equal(t, 0, services[0].TargetStrip)
 		assert.Equal(t, "txt-value", services[0].Text)
 	})
+}
+
+// The registry rebuilds ownership endpoints without the "prefix" label, so a key
+// derived from the bare name never existed and left the entry in etcd.
+func TestDeleteRegistryTXTRecord(t *testing.T) {
+	const ownership = `"heritage=external-dns,external-dns/owner=cluster-a"`
+
+	client := &fakeETCDClient{services: map[string]Service{}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("app.example.com", endpoint.RecordTypeA, "198.51.100.10"),
+			endpoint.NewEndpoint("a-app.example.com", endpoint.RecordTypeTXT, ownership),
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, client.services, 2)
+
+	// The A record keeps its labels; the registry regenerates the TXT without any.
+	records, err := coredns.Records(t.Context())
+	require.NoError(t, err)
+
+	var aRecord *endpoint.Endpoint
+	for _, ep := range records {
+		if ep.RecordType == endpoint.RecordTypeA {
+			aRecord = ep
+		}
+	}
+	require.NotNil(t, aRecord)
+
+	err = coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			aRecord,
+			endpoint.NewEndpoint("a-app.example.com", endpoint.RecordTypeTXT, ownership),
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Empty(t, client.services, "ownership TXT must not be left behind in etcd")
+}
+
+// Looking the key up must not widen the delete to other entries or subdomains.
+func TestDeleteRegistryTXTRecordKeepsOtherEntries(t *testing.T) {
+	const ownerA = `"heritage=external-dns,external-dns/owner=cluster-a"`
+	const ownerB = `"heritage=external-dns,external-dns/owner=cluster-b"`
+
+	client := &fakeETCDClient{services: map[string]Service{
+		"/skydns/com/example/a-app/aaaaaaaa":     {Text: ownerA, TargetStrip: 1},
+		"/skydns/com/example/a-app/bbbbbbbb":     {Text: ownerB, TargetStrip: 1},
+		"/skydns/com/example/a-app/cccccccc":     {Host: "198.51.100.10", Text: ownerA, TargetStrip: 1},
+		"/skydns/com/example/a-app/a-x/dddddddd": {Text: ownerA, TargetStrip: 1},
+	}}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	err := coredns.ApplyChanges(t.Context(), &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("a-app.example.com", endpoint.RecordTypeTXT, ownerA),
+		},
+	})
+	require.NoError(t, err)
+
+	assert.NotContains(t, client.services, "/skydns/com/example/a-app/aaaaaaaa")
+	assert.Contains(t, client.services, "/skydns/com/example/a-app/bbbbbbbb", "another owner's entry must survive")
+	assert.Contains(t, client.services, "/skydns/com/example/a-app/cccccccc", "text sharing a key with an address record goes away with that record")
+	assert.Contains(t, client.services, "/skydns/com/example/a-app/a-x/dddddddd", "a subdomain's entry must survive")
 }

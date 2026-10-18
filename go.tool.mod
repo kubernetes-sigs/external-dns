@@ -1,6 +1,6 @@
 module sigs.k8s.io/external-dns/tools
 
-go 1.27.0
+go 1.27.2
 
 tool (
 	github.com/google/yamlfmt/cmd/yamlfmt

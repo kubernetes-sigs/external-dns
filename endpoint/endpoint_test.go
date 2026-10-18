@@ -1125,9 +1125,9 @@ func TestNewMXTarget(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual, err := NewMXRecord(tt.target)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
 			}
 		})
@@ -1189,9 +1189,9 @@ func TestNewSRVRecord(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			actual, err := NewSRVRecord(tt.target)
 			if tt.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, tt.expected, actual)
 			}
 		})
@@ -2252,7 +2252,7 @@ func TestNewPTREndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ep, err := NewPTREndpoint(tt.target, tt.ttl, tt.hostnames...)
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
@@ -2291,4 +2291,67 @@ func TestEndpointKey_String(t *testing.T) {
 			assert.Equal(t, tt.want, tt.key.String())
 		})
 	}
+}
+
+func TestEndpointEqual(t *testing.T) {
+	base := func() *Endpoint {
+		return NewEndpointWithTTL("example.org", RecordTypeA, TTL(300), "1.2.3.4").
+			WithSetIdentifier("id").
+			WithLabel(OwnerLabelKey, "owner").
+			WithProviderSpecific("alias", "false")
+	}
+
+	tests := []struct {
+		name   string
+		a, b   *Endpoint
+		modify func(*Endpoint)
+		want   bool
+	}{
+		{name: "identical", a: base(), b: base(), want: true},
+		{name: "both nil", want: true},
+		{name: "one nil", a: base(), want: false},
+		{name: "DNSName", a: base(), b: base(), modify: func(e *Endpoint) { e.DNSName = "other.org" }},
+		{name: "RecordType", a: base(), b: base(), modify: func(e *Endpoint) { e.RecordType = RecordTypeAAAA }},
+		{name: "SetIdentifier", a: base(), b: base(), modify: func(e *Endpoint) { e.SetIdentifier = "other" }},
+		{name: "RecordTTL", a: base(), b: base(), modify: func(e *Endpoint) { e.RecordTTL = 60 }},
+		{name: "Targets", a: base(), b: base(), modify: func(e *Endpoint) { e.Targets = Targets{"5.6.7.8"} }},
+		{name: "Labels", a: base(), b: base(), modify: func(e *Endpoint) { e.Labels[OwnerLabelKey] = "other" }},
+		{name: "ProviderSpecific", a: base(), b: base(), modify: func(e *Endpoint) { e.SetProviderSpecificProperty("alias", "true") }},
+		{
+			name: "refObjects ignored", a: base(), b: base(), want: true,
+			modify: func(e *Endpoint) {
+				e.WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "svc", "", "service"))
+			},
+		},
+		{
+			name: "nil and empty collections equal", want: true,
+			a: &Endpoint{DNSName: "example.org"},
+			b: &Endpoint{DNSName: "example.org", Targets: Targets{}, Labels: Labels{}, ProviderSpecific: ProviderSpecific{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.modify != nil {
+				tt.modify(tt.b)
+			}
+			assert.Equal(t, tt.want, Equal(tt.a, tt.b))
+			assert.Equal(t, tt.want, Equal(tt.b, tt.a))
+		})
+	}
+}
+
+// TestEndpointEqualCoversAllFields fails when a field is added to Endpoint, so
+// the author has to decide whether Equal compares it.
+func TestEndpointEqualCoversAllFields(t *testing.T) {
+	handled := []string{
+		// compared by Equal
+		"DNSName", "Targets", "RecordType", "SetIdentifier", "RecordTTL", "Labels", "ProviderSpecific",
+		// intentionally ignored
+		"refObjects",
+	}
+	var fields []string
+	for f := range reflect.TypeFor[Endpoint]().Fields() {
+		fields = append(fields, f.Name)
+	}
+	assert.ElementsMatch(t, handled, fields, "update Equal and this list")
 }

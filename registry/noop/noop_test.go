@@ -39,7 +39,7 @@ func TestNew(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	r, err := New(&externaldns.Config{}, p)
 	require.NoError(t, err)
-	assert.NotNil(t, r)
+	require.NotNil(t, r)
 }
 
 func TestNoopRegistry_OwnerID(t *testing.T) {
@@ -50,7 +50,7 @@ func TestNoopRegistry_OwnerID(t *testing.T) {
 func TestNoopRegistry_GetDomainFilter(t *testing.T) {
 	p := inmemory.NewInMemoryProvider(inmemory.InMemoryWithDomain(endpoint.NewDomainFilter([]string{"example.com"})))
 	r := newRegistry(p)
-	assert.NotNil(t, r.GetDomainFilter())
+	require.NotNil(t, r.GetDomainFilter())
 }
 
 func TestNoopRegistry_AdjustEndpoints(t *testing.T) {
@@ -131,7 +131,7 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	})
-	assert.EqualError(t, err, inmemory.ErrRecordAlreadyExists.Error())
+	require.EqualError(t, err, inmemory.ErrRecordAlreadyExists.Error())
 
 	// correct changes
 	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{

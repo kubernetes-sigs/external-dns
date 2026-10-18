@@ -30,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -70,24 +69,24 @@ func TestGatewayTCPRouteSourceEndpoints(t *testing.T) {
 	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create Gateway")
 
-	rt := &v1alpha2.TCPRoute{
+	rt := &v1.TCPRoute{
 		Name:      "api",
 		Namespace: "default",
 		Annotations: map[string]string{
 			annotations.HostnameKey: "api-annotation.foobar.internal",
 		},
-		Spec: v1alpha2.TCPRouteSpec{
+		Spec: v1.TCPRouteSpec{
 			CommonRouteSpec: v1.CommonRouteSpec{
 				ParentRefs: []v1.ParentReference{
 					gwParentRef("default", "internal"),
 				},
 			},
 		},
-		Status: v1alpha2.TCPRouteStatus{
+		Status: v1.TCPRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},
 	}
-	_, err = gwClient.GatewayV1alpha2().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create TCPRoute")
 
 	src, err := NewGatewayTCPRouteSource(ctx, clients, &Config{
@@ -109,11 +108,11 @@ func TestGatewayTCPRouteSource_InformerTransform(t *testing.T) {
 	gwClient := gatewayfake.NewSimpleClientset()
 	kubeClient := kubefake.NewClientset()
 
-	rt := &v1alpha2.TCPRoute{ObjectMeta: informerTransformObjectMeta()}
+	rt := &v1.TCPRoute{ObjectMeta: informerTransformObjectMeta()}
 	require.Contains(t, rt.GetAnnotations(), corev1.LastAppliedConfigAnnotation)
 	require.NotEmpty(t, rt.GetManagedFields())
 
-	_, err := gwClient.GatewayV1alpha2().TCPRoutes(rt.GetNamespace()).Create(t.Context(), rt, metav1.CreateOptions{})
+	_, err := gwClient.GatewayV1().TCPRoutes(rt.GetNamespace()).Create(t.Context(), rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	clients := new(testutils.MockClientGenerator)
@@ -137,20 +136,20 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 
 	fromAll := v1.NamespacesFromAll
 
-	makeRoute := func(namespace, name string, ann, lbls map[string]string) *v1alpha2.TCPRoute {
+	makeRoute := func(namespace, name string, ann, lbls map[string]string) *v1.TCPRoute {
 		allAnn := map[string]string{annotations.HostnameKey: name + ".example.com"}
 		maps.Copy(allAnn, ann)
-		return &v1alpha2.TCPRoute{
+		return &v1.TCPRoute{
 			Namespace:   namespace,
 			Name:        name,
 			Annotations: allAnn,
 			Labels:      lbls,
-			Spec: v1alpha2.TCPRouteSpec{
+			Spec: v1.TCPRouteSpec{
 				CommonRouteSpec: v1.CommonRouteSpec{
 					ParentRefs: []v1.ParentReference{gwParentRef("default", "gw")},
 				},
 			},
-			Status: v1alpha2.TCPRouteStatus{
+			Status: v1.TCPRouteStatus{
 				RouteStatus: gwRouteStatus(gwParentRef("default", "gw")),
 			},
 		}
@@ -160,12 +159,12 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 		name             string
 		annotationFilter string
 		labelFilter      string
-		routes           []*v1alpha2.TCPRoute
+		routes           []*v1.TCPRoute
 		wantCount        int
 	}{
 		{
 			name: "no filters — all namespaces included",
-			routes: []*v1alpha2.TCPRoute{
+			routes: []*v1.TCPRoute{
 				makeRoute("default", "r1", nil, nil),
 				makeRoute("staging", "r2", nil, nil),
 				makeRoute("production", "r3", nil, nil),
@@ -175,7 +174,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 		{
 			name:             "annotation filter matches",
 			annotationFilter: "external-dns.kubernetes.io/managed=true",
-			routes: []*v1alpha2.TCPRoute{
+			routes: []*v1.TCPRoute{
 				makeRoute("default", "r1", map[string]string{"external-dns.kubernetes.io/managed": "true"}, nil),
 				makeRoute("default", "r2", nil, nil),
 			},
@@ -184,7 +183,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 		{
 			name:        "label filter matches",
 			labelFilter: "tier=external",
-			routes: []*v1alpha2.TCPRoute{
+			routes: []*v1.TCPRoute{
 				makeRoute("default", "r1", nil, map[string]string{"tier": "external"}),
 				makeRoute("default", "r2", nil, map[string]string{"tier": "internal"}),
 			},
@@ -194,7 +193,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 			name:             "annotation and label filter combined",
 			annotationFilter: "external-dns.kubernetes.io/managed=true",
 			labelFilter:      "tier=external",
-			routes: []*v1alpha2.TCPRoute{
+			routes: []*v1.TCPRoute{
 				makeRoute("default", "r1",
 					map[string]string{"external-dns.kubernetes.io/managed": "true"},
 					map[string]string{"tier": "external"}),
@@ -207,7 +206,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 		{
 			name:             "no-match annotation filter",
 			annotationFilter: "external-dns.kubernetes.io/managed=true",
-			routes: []*v1alpha2.TCPRoute{
+			routes: []*v1.TCPRoute{
 				makeRoute("default", "r1", nil, nil),
 				makeRoute("default", "r2", nil, nil),
 			},
@@ -215,7 +214,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 		},
 		{
 			name: "controller mismatch is excluded",
-			routes: []*v1alpha2.TCPRoute{
+			routes: []*v1.TCPRoute{
 				makeRoute("default", "r1",
 					map[string]string{annotations.ControllerKey: "other-controller"},
 					nil),
@@ -248,7 +247,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, rt := range tc.routes {
-				_, err := gwClient.GatewayV1alpha2().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+				_, err := gwClient.GatewayV1().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
