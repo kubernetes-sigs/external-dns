@@ -41,24 +41,19 @@ import (
 // ErrSourceNotFound is returned when a requested source doesn't exist.
 var ErrSourceNotFound = errors.New("source not found")
 
-// Aliases keeping the public source API after the move to source/config.
-type (
-	Config               = config.Config
-	OverrideConfigOption = config.OverrideConfigOption
-)
+// Config aliases config.Config so the source package's existing *Config
+// signatures keep working after the shared config moved to source/config.
+type Config = config.Config
 
 // WithClientGenerator sets a custom ClientGenerator, overriding the default
 // SingletonClientGenerator. Intended for testing.
-func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
+func WithClientGenerator(gen ClientGenerator) config.OverrideConfigOption {
 	return func(cfg *Config) {
 		cfg.SetClientGen(gen)
 	}
 }
 
-// ClientGeneratorFor returns cfg's ClientGenerator, lazily building a
-// SingletonClientGenerator from cfg's connection settings when none was
-// injected via WithClientGenerator. UpdateEvents forces the request timeout
-// to zero so watches can run indefinitely.
+// ClientGeneratorFor returns cfg's ClientGenerator, lazily building a SingletonClientGenerator if none was injected.
 func ClientGeneratorFor(cfg *Config) ClientGenerator {
 	gen := cfg.EnsureClientGen(func() any {
 		return &SingletonClientGenerator{
@@ -227,8 +222,9 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
-	sources := make([]Source, 0, len(cfg.Sources))
-	for _, name := range cfg.Sources {
+	names := cfg.Sources()
+	sources := make([]Source, 0, len(names))
+	for _, name := range names {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err
