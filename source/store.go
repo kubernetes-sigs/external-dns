@@ -64,7 +64,7 @@ var ErrSourceNotFound = errors.New("source not found")
 type Config struct {
 	Namespaces                     []string
 	AnnotationFilter               labels.Selector
-	AnnotationValidationMode       schema.Mode
+	Schema                         *schema.Schema
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	TemplateEngine                 template.Engine
@@ -161,9 +161,12 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		return nil, err
 	}
 	c := &Config{
-		Namespaces:                     externaldns.NormalizeNamespaces(cfg.Namespaces),
-		AnnotationFilter:               annotationSelector,
-		AnnotationValidationMode:       schema.Mode(cfg.AnnotationValidationMode),
+		Namespaces:       externaldns.NormalizeNamespaces(cfg.Namespaces),
+		AnnotationFilter: annotationSelector,
+		Schema: schema.New(schema.Options{
+			Mode:                     schema.Mode(cfg.AnnotationValidationMode),
+			IgnoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		}),
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,

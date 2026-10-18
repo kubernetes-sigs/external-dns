@@ -24,13 +24,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-func withRegistry(t *testing.T, entries ...AnnotationSpec) {
-	t.Helper()
-	orig := Registry
-	Registry = entries
-	t.Cleanup(func() { Registry = orig })
-}
-
 func makePod(annotations map[string]string) *corev1.Pod {
 	p := &corev1.Pod{}
 	p.SetName("test-pod")
@@ -177,10 +170,10 @@ func TestIsValid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withRegistry(t, tt.registry...)
+			s := NewWithSpecs(tt.registry, Options{Mode: tt.mode}).WithSource(tt.source)
 			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
-			valid := IsValid(makePod(tt.podAnnotations), tt.source, tt.mode)
+			valid := s.IsValid(makePod(tt.podAnnotations))
 
 			assert.Equal(t, tt.wantValid, valid)
 			for _, s := range tt.wantLogContains {
@@ -197,6 +190,55 @@ func TestRegistryFollowsCustomAnnotationPrefix(t *testing.T) {
 	annotations.SetAnnotationPrefix("custom.io/")
 	t.Cleanup(func() { annotations.SetAnnotationPrefix(annotations.DefaultAnnotationPrefix) })
 
-	assert.False(t, IsValid(makePod(map[string]string{annotations.HostnameKey: "bad..name"}), "pod", ModeStrict))
-	assert.True(t, IsValid(makePod(map[string]string{annotations.DefaultAnnotationPrefix + "hostname": "bad..name"}), "pod", ModeStrict))
+	s := New(Options{Mode: ModeStrict}).WithSource("pod")
+	assert.False(t, s.IsValid(makePod(map[string]string{annotations.HostnameKey: "bad..name"})))
+	assert.True(t, s.IsValid(makePod(map[string]string{annotations.DefaultAnnotationPrefix + "hostname": "bad..name"})))
+}
+
+func TestIgnoreHostnameAnnotation(t *testing.T) {
+	tests := []struct {
+		name        string
+		source      string
+		annotations map[string]string
+		opts        Options
+		wantValid   bool
+	}{
+		{
+			name:        "flag off: strict mode still drops",
+			source:      "service",
+			annotations: map[string]string{annotations.HostnameKey: "bad!.example.org"},
+			opts:        Options{Mode: ModeStrict},
+			wantValid:   false,
+		},
+		{
+			name:   "flag on, service: hostname and internal-hostname both ignored",
+			source: "service",
+			annotations: map[string]string{
+				annotations.HostnameKey:         "bad!.example.org",
+				annotations.InternalHostnameKey: "bad!.internal.example.org",
+			},
+			opts:      Options{Mode: ModeStrict, IgnoreHostnameAnnotation: true},
+			wantValid: true,
+		},
+		{
+			name:        "flag on, ingress: hostname ignored",
+			source:      "ingress",
+			annotations: map[string]string{annotations.HostnameKey: "bad!.example.org"},
+			opts:        Options{Mode: ModeStrict, IgnoreHostnameAnnotation: true},
+			wantValid:   true,
+		},
+		{
+			name:        "flag on, ingress: internal-hostname NOT ignored (ingress doesn't honor the flag for it)",
+			source:      "ingress",
+			annotations: map[string]string{annotations.InternalHostnameKey: "bad!.internal.example.org"},
+			opts:        Options{Mode: ModeStrict, IgnoreHostnameAnnotation: true},
+			wantValid:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := New(tt.opts).WithSource(tt.source)
+			assert.Equal(t, tt.wantValid, s.IsValid(makePod(tt.annotations)))
+		})
+	}
 }

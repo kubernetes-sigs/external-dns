@@ -95,7 +95,7 @@ func NewIngressSource(
 	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
-		informers.IndexSelectorWithAnnotationValidation(types.Ingress, cfg.AnnotationValidationMode),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Ingress)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkv1.Ingress]),
 	))
 

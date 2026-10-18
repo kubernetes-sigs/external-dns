@@ -1185,7 +1185,7 @@ func TestPodIndexer(t *testing.T) {
 			}
 
 			client, err := NewPodSource(ctx, kubernetes, &Config{
-				AnnotationValidationMode: tt.mode,
+				Schema: schema.New(schema.Options{Mode: tt.mode}),
 			})
 			require.NoError(t, err)
 

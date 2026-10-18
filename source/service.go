@@ -113,7 +113,7 @@ func NewServiceSource(
 	informers.MustAddIndexers(serviceInformer.Informer(), informers.IndexerWithOptions[*v1.Service](
 		informers.IndexSelectorWithAnnotationFilter(config.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(config.LabelFilter),
-		informers.IndexSelectorWithAnnotationValidation(types.Service, config.AnnotationValidationMode),
+		informers.IndexSelectorWithAnnotationValidation(config.Schema.WithSource(types.Service)),
 		informers.IndexSelectorWithConditions(
 			sTypesFilter.predicate,
 			annotations.IsControllerMatch[*v1.Service],

@@ -26,8 +26,9 @@ import (
 
 const defaultStrictMessage = "the resource will not receive a DNS record"
 
-// Registry maps each supported annotation to the sources that consume it and its validation rules.
-var Registry = []AnnotationSpec{
+// defaultSpecs lists each supported annotation, the sources that consume it,
+// and its validation rules. New(opts) builds a Schema around this list.
+var defaultSpecs = []AnnotationSpec{
 	{
 		KeySuffix:        annotations.AccessSuffix,
 		SupportedSources: []string{types.Service},
@@ -139,24 +140,86 @@ var Registry = []AnnotationSpec{
 	},
 }
 
-// IsValid returns false iff an invalid or unsupported-for-source annotation is in strict mode.
+// Options configures a Schema at construction time. Fields correspond to runtime
+// flags that change what the schema validates.
+type Options struct {
+	// Mode is the active validation mode. ModeOff disables all validation.
+	Mode Mode
+	// IgnoreHostnameAnnotation mirrors --ignore-hostname-annotation: when true,
+	// IsValid skips the hostname (and, for the service source, internal-hostname)
+	// annotation checks, because the source will not read those values at runtime.
+	IgnoreHostnameAnnotation bool
+}
+
+// Schema validates annotations against a fixed list of AnnotationSpecs under a
+// fixed set of Options. Constructed once and shared across sources; each source
+// binds a per-call identity via WithSource.
+type Schema struct {
+	specs                    []AnnotationSpec
+	mode                     Mode
+	ignoreHostnameAnnotation bool
+	source                   string
+}
+
+// WithSource returns a shallow copy of s bound to the given source name
+// (e.g. types.Ingress). IsValid is a no-op until a source is bound.
+func (s *Schema) WithSource(name string) *Schema {
+	if s == nil {
+		return nil
+	}
+	cp := *s
+	cp.source = name
+	return &cp
+}
+
+// New returns a Schema using the default spec list and the given options.
+func New(opts Options) *Schema {
+	return NewWithSpecs(defaultSpecs, opts)
+}
+
+// NewWithSpecs returns a Schema with an explicit spec list — intended for tests
+// and future schema extensions that supply their own specs.
+func NewWithSpecs(specs []AnnotationSpec, opts Options) *Schema {
+	return &Schema{
+		specs:                    specs,
+		mode:                     opts.Mode,
+		ignoreHostnameAnnotation: opts.IgnoreHostnameAnnotation,
+	}
+}
+
+// Mode reports the Schema's active validation mode.
+func (s *Schema) Mode() Mode {
+	if s == nil {
+		return ModeOff
+	}
+	return s.mode
+}
+
+// IsValid returns false iff an invalid or unsupported-for-source annotation is
+// in strict mode. A nil, ModeOff, or source-unbound Schema always returns true.
 // Warn-mode violations are logged only.
-func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
+func (s *Schema) IsValid(entity metav1.Object) bool {
+	if s == nil || s.mode == "" || s.mode == ModeOff || s.source == "" {
+		return true
+	}
 	annots := entity.GetAnnotations()
 	desc := describe(entity)
 	valid := true
-	for _, e := range Registry {
+	for _, e := range s.specs {
 		key := e.Key()
 		value, ok := annots[key]
 		if !ok {
 			continue
 		}
-		if len(e.SupportedSources) > 0 && !slices.Contains(e.SupportedSources, source) {
-			if e.IsStrict(mode) {
-				log.Warnf("Excluding %s: annotation %s is not supported for source %q. %s", desc, key, source, e.StrictMessage)
+		if s.shouldSkipKey(key) {
+			continue
+		}
+		if len(e.SupportedSources) > 0 && !slices.Contains(e.SupportedSources, s.source) {
+			if e.IsStrict(s.mode) {
+				log.Warnf("Excluding %s: annotation %s is not supported for source %q. %s", desc, key, s.source, e.StrictMessage)
 				valid = false
 			} else {
-				log.Debugf("%s: annotation %s is not supported for source %q", desc, key, source)
+				log.Debugf("%s: annotation %s is not supported for source %q", desc, key, s.source)
 			}
 			continue
 		}
@@ -164,7 +227,7 @@ func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
 		if err == nil {
 			continue
 		}
-		if e.IsStrict(mode) {
+		if e.IsStrict(s.mode) {
 			log.Warnf("Excluding %s: %q is not a valid %s value: %v. %s", desc, value, key, err, e.StrictMessage)
 			valid = false
 			continue
@@ -172,6 +235,17 @@ func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
 		log.Warnf("%s: %q is not a valid %s value: %v. %s", desc, value, key, err, e.warnText())
 	}
 	return valid
+}
+
+// Service short-circuits internal-hostname too; other sources only gate hostname.
+func (s *Schema) shouldSkipKey(key string) bool {
+	if !s.ignoreHostnameAnnotation {
+		return false
+	}
+	if key == annotations.HostnameKey {
+		return true
+	}
+	return s.source == types.Service && key == annotations.InternalHostnameKey
 }
 
 func describe(entity metav1.Object) string {

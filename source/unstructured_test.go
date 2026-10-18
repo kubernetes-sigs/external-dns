@@ -573,11 +573,11 @@ func TestUnstructuredIndexer(t *testing.T) {
 			}
 
 			src, err := NewUnstructuredFQDNSource(t.Context(), dynamicClient, kubeClient, &Config{
-				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:              labelSel,
-				UnstructuredResources:    resources,
-				TemplateEngine:           templatetest.MustEngine(t, "", "", "", false),
-				AnnotationValidationMode: tt.annotationValidationMode,
+				AnnotationFilter:      parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:           labelSel,
+				UnstructuredResources: resources,
+				TemplateEngine:        templatetest.MustEngine(t, "", "", "", false),
+				Schema:                annotationschema.New(annotationschema.Options{Mode: tt.annotationValidationMode}),
 			})
 			require.NoError(t, err)
 

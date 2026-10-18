@@ -5920,10 +5920,10 @@ func TestServiceIndexer(t *testing.T) {
 			}
 
 			src, err := NewServiceSource(t.Context(), client, &Config{
-				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:              labelSel,
-				ServiceTypeFilter:        tt.serviceTypeFilter,
-				AnnotationValidationMode: tt.annotationValidationMode,
+				AnnotationFilter:  parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:       labelSel,
+				ServiceTypeFilter: tt.serviceTypeFilter,
+				Schema:            schema.New(schema.Options{Mode: tt.annotationValidationMode}),
 			})
 			require.NoError(t, err)
 

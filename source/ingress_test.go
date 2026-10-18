@@ -2106,10 +2106,10 @@ func TestIngressIndexer(t *testing.T) {
 			}
 
 			src, err := NewIngressSource(t.Context(), client, &Config{
-				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:              labelSel,
-				TemplateEngine:           templatetest.MustEngine(t, "", "", "", false),
-				AnnotationValidationMode: tt.annotationValidationMode,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+				Schema:           schema.New(schema.Options{Mode: tt.annotationValidationMode}),
 			})
 			require.NoError(t, err)
 

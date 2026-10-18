@@ -79,7 +79,7 @@ func NewPodSource(
 	informers.MustAddIndexers(podInformer.Informer(), informers.IndexerWithOptions[*v1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 		informers.IndexSelectorWithLabelSelector(labelSelector),
-		informers.IndexSelectorWithAnnotationValidation(types.Pod, cfg.AnnotationValidationMode),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Pod)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Pod]),
 	))
 	informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](

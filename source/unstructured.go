@@ -87,7 +87,7 @@ func NewUnstructuredFQDNSource(
 		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
-			informers.IndexSelectorWithAnnotationValidation(types.Unstructured, cfg.AnnotationValidationMode),
+			informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Unstructured)),
 			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 		))
 		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](

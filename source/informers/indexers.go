@@ -39,8 +39,7 @@ type IndexSelectorOptions struct {
 	// resource they reference via a label (e.g. EndpointSlices by Service name).
 	indexByLabelKey string
 	conditions      []func(metav1.Object) bool
-	source          string
-	mode            schema.Mode
+	schema          *schema.Schema
 }
 
 func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
@@ -70,16 +69,14 @@ func IndexSelectorWithConditions[T metav1.Object](fns ...func(T) bool) func(*Ind
 }
 
 // IndexSelectorWithAnnotationValidation configures IndexerWithOptions to validate
-// annotations known to schema.Registry against the given source name (e.g.
-// "service") and Mode, excluding objects with an invalid strict-mode annotation from
-// the index.
-func IndexSelectorWithAnnotationValidation(source string, mode schema.Mode) func(options *IndexSelectorOptions) {
+// an indexed object's annotations against s. s must already be bound to a source
+// via Schema.WithSource; a nil, ModeOff, or unbound Schema makes this a no-op.
+func IndexSelectorWithAnnotationValidation(s *schema.Schema) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
-		if mode == "" || mode == schema.ModeOff {
+		if s == nil || s.Mode() == "" || s.Mode() == schema.ModeOff {
 			return
 		}
-		options.source = source
-		options.mode = mode
+		options.schema = s
 	}
 }
 
@@ -120,7 +117,7 @@ type schemaValidationCache struct {
 	valid       bool
 }
 
-func (c *schemaValidationCache) isValid(entity metav1.Object, source string, mode schema.Mode) bool {
+func (c *schemaValidationCache) isValid(entity metav1.Object, s *schema.Schema) bool {
 	key := entity.GetNamespace() + "/" + entity.GetName()
 	annots := entity.GetAnnotations()
 
@@ -130,7 +127,7 @@ func (c *schemaValidationCache) isValid(entity metav1.Object, source string, mod
 		return c.valid
 	}
 
-	valid := schema.IsValid(entity, source, mode)
+	valid := s.IsValid(entity)
 	c.key, c.annotations, c.valid = key, annots, valid
 	return valid
 }
@@ -161,7 +158,7 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 					return nil, nil
 				}
 			}
-			if options.source != "" && !validation.isValid(entity, options.source, options.mode) {
+			if options.schema != nil && !validation.isValid(entity, options.schema) {
 				return nil, nil
 			}
 			if options.indexByLabelKey != "" {

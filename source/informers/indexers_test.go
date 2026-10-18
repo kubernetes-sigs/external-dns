@@ -151,27 +151,29 @@ func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
 }
 
 func TestIndexSelectorWithAnnotationValidation(t *testing.T) {
-	t.Run("stores source and mode in options", func(t *testing.T) {
+	t.Run("stores schema in options", func(t *testing.T) {
+		s := schema.New(schema.Options{Mode: schema.ModeStrict}).WithSource("pod")
 		options := &IndexSelectorOptions{}
-		IndexSelectorWithAnnotationValidation("pod", schema.ModeStrict)(options)
-		assert.Equal(t, "pod", options.source)
-		assert.Equal(t, schema.ModeStrict, options.mode)
+		IndexSelectorWithAnnotationValidation(s)(options)
+		assert.Same(t, s, options.schema)
 	})
 
-	t.Run("empty source stored as empty", func(t *testing.T) {
+	t.Run("nil schema is a no-op", func(t *testing.T) {
 		options := &IndexSelectorOptions{}
-		IndexSelectorWithAnnotationValidation("", schema.ModeWarn)(options)
-		assert.Empty(t, options.source)
+		IndexSelectorWithAnnotationValidation(nil)(options)
+		assert.Nil(t, options.schema)
+	})
+
+	t.Run("mode off is a no-op", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationValidation(schema.New(schema.Options{Mode: schema.ModeOff}).WithSource("pod"))(options)
+		assert.Nil(t, options.schema)
 	})
 }
 
-// withTestRegistry temporarily replaces schema.Registry with a single fixture entry
-// for the given key, restoring the original Registry when the test completes.
-func withTestRegistry(t *testing.T, keySuffix string, cfg schema.Config) {
-	t.Helper()
-	orig := schema.Registry
-	schema.Registry = []schema.AnnotationSpec{{KeySuffix: keySuffix, Config: cfg}}
-	t.Cleanup(func() { schema.Registry = orig })
+// schemaWithFixture builds a schema with a single annotation spec; test-local shortcut.
+func schemaWithFixture(keySuffix string, cfg schema.Config, opts schema.Options) *schema.Schema {
+	return schema.NewWithSpecs([]schema.AnnotationSpec{{KeySuffix: keySuffix, Config: cfg}}, opts)
 }
 
 func TestIndexerWithOptions_AnnotationValidation(t *testing.T) {
@@ -266,10 +268,10 @@ func TestIndexerWithOptions_AnnotationValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			withTestRegistry(t, testKeySuffix, tt.cfg)
 			var opts []func(*IndexSelectorOptions)
 			if tt.source != "" {
-				opts = append(opts, IndexSelectorWithAnnotationValidation(tt.source, tt.mode))
+				s := schemaWithFixture(testKeySuffix, tt.cfg, schema.Options{Mode: tt.mode}).WithSource(tt.source)
+				opts = append(opts, IndexSelectorWithAnnotationValidation(s))
 			}
 			indexers := IndexerWithOptions[*corev1.Pod](opts...)
 			keys, err := indexers[IndexWithSelectors](makePod(tt.annotations))
@@ -298,12 +300,12 @@ func TestIndexerWithOptions_AnnotationValidation_DedupesRepeatedCall(t *testing.
 		return p
 	}
 
-	withTestRegistry(t, testKeySuffix, schema.Config{
+	s := schemaWithFixture(testKeySuffix, schema.Config{
 		Validators:    []schema.Validator{schema.ValidateOneOf("valid-value")},
 		StrictMessage: "excluded entirely",
-	})
+	}, schema.Options{Mode: schema.ModeStrict}).WithSource("pod")
 	indexFn := IndexerWithOptions[*corev1.Pod](
-		IndexSelectorWithAnnotationValidation("pod", schema.ModeStrict),
+		IndexSelectorWithAnnotationValidation(s),
 	)[IndexWithSelectors]
 
 	pod := makePod(map[string]string{testKey: "invalid-value"})

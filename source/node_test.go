@@ -851,10 +851,10 @@ func TestNodeIndexer(t *testing.T) {
 			}
 
 			src, err := NewNodeSource(t.Context(), client, &Config{
-				AnnotationFilter:         parseAnnotationFilterOrNil(tt.annotationFilter),
-				LabelFilter:              labelSel,
-				TemplateEngine:           templatetest.MustEngine(t, "", "", "", false),
-				AnnotationValidationMode: tt.mode,
+				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:      labelSel,
+				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+				Schema:           schema.New(schema.Options{Mode: tt.mode}),
 			})
 			require.NoError(t, err)
 
