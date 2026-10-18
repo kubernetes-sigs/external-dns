@@ -75,6 +75,9 @@ func IndexSelectorWithConditions[T metav1.Object](fns ...func(T) bool) func(*Ind
 // the index.
 func IndexSelectorWithAnnotationValidation(source string, mode schema.Mode) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
+		if mode == "" || mode == schema.ModeOff {
+			return
+		}
 		options.source = source
 		options.mode = mode
 	}
