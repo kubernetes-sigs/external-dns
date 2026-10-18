@@ -294,9 +294,7 @@ func TestDedupEndpointsValidation(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", RecordType: endpoint.RecordTypeNAPTR, Targets: endpoint.Targets{"100 10 \"u\""}}, // invalid
 			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "example.org", RecordType: endpoint.RecordTypeNAPTR, Targets: endpoint.Targets{"100 10 \"u\""}},
-			},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			name: "mixed valid and invalid records",
