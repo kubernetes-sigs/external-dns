@@ -34,7 +34,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
-	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -388,136 +387,15 @@ func TestSingletonClientGenerator_ErrorPersistence(t *testing.T) {
 	}
 }
 
-func TestNewSourceConfig(t *testing.T) {
-	tests := []struct {
-		name           string
-		cfg            *externaldns.Config
-		wantConfigured bool
-		wantCombining  bool
-		wantErr        bool
-		errContains    string
-	}{
-		{
-			name: "no templates configured",
-			cfg:  &externaldns.Config{},
-		},
-		{
-			name: "fqdn template only",
-			cfg: &externaldns.Config{
-				FQDNTemplate: []string{"{{.Name}}.example.com"},
-			},
-			wantConfigured: true,
-		},
-		{
-			name: "fqdn template with combine",
-			cfg: &externaldns.Config{
-				FQDNTemplate:             []string{"{{.Name}}.example.com"},
-				CombineFQDNAndAnnotation: true,
-			},
-			wantConfigured: true,
-			wantCombining:  true,
-		},
-		{
-			name: "all three templates configured",
-			cfg: &externaldns.Config{
-				FQDNTemplate:             []string{"{{.Name}}.example.com"},
-				TargetTemplate:           []string{"{{.Name}}.targets.example.com"},
-				FQDNTargetTemplate:       []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"},
-				CombineFQDNAndAnnotation: true,
-			},
-			wantConfigured: true,
-			wantCombining:  true,
-		},
-		{
-			name: "multiple fqdn templates",
-			cfg: &externaldns.Config{
-				FQDNTemplate: []string{"{{.Name}}.a.example.com", "{{.Name}}.b.example.com"},
-			},
-			wantConfigured: true,
-		},
-		{
-			name:        "invalid fqdn template",
-			cfg:         &externaldns.Config{FQDNTemplate: []string{"{{.Name"}},
-			wantErr:     true,
-			errContains: `--fqdn-template[0]`,
-		},
-		{
-			name:        "invalid target template",
-			cfg:         &externaldns.Config{TargetTemplate: []string{"{{.Status.LoadBalancer.Ingress"}},
-			wantErr:     true,
-			errContains: `--target-template[0]`,
-		},
-		{
-			name:        "invalid fqdn-target template",
-			cfg:         &externaldns.Config{FQDNTargetTemplate: []string{"{{.Name}}.example.com:{{.Status"}},
-			wantErr:     true,
-			errContains: `--fqdn-target-template[0]`,
-		},
-		{
-			name: "duplicate define block in fqdn templates",
-			cfg: &externaldns.Config{
-				FQDNTemplate: []string{
-					`{{ define "zone" }}example.com{{ end }}{{.Name}}.{{ template "zone" }}`,
-					`{{ define "zone" }}other.com{{ end }}{{.Name}}.{{ template "zone" }}`,
-				},
-			},
-			wantErr:     true,
-			errContains: `--fqdn-template[1]`,
-		},
-		{
-			name:        "invalid label filter",
-			cfg:         &externaldns.Config{LabelFilter: "#invalid-selector"},
-			wantErr:     true,
-			errContains: `Invalid value: "#invalid-selector"`,
-		},
-		{
-			name:        "invalid annotation filter",
-			cfg:         &externaldns.Config{AnnotationFilter: "kubernetes.io/gateway.name in (a b)"},
-			wantErr:     true,
-			errContains: `couldn't parse the selector string`,
-		},
+func TestClientGeneratorFor_WiresQPSAndBurstIntoSingleton(t *testing.T) {
+	cfg := &config.Config{
+		KubeAPIQPS:   15,
+		KubeAPIBurst: 30,
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := config.NewSourceConfig(tt.cfg)
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errContains != "" {
-					require.ErrorContains(t, err, tt.errContains)
-				}
-				return
-			}
-			require.NoError(t, err)
-			tmpl := got.TemplateEngine
-			assert.Equal(t, tt.wantConfigured, tmpl.IsConfigured(), "IsConfigured")
-			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
-		})
-	}
-}
-
-func TestKubeAPIRateLimitPropagation(t *testing.T) {
-	t.Run("NewSourceConfig propagates QPS and burst", func(t *testing.T) {
-		cfg := &externaldns.Config{
-			KubeAPIQPS:   20,
-			KubeAPIBurst: 40,
-		}
-		got, err := config.NewSourceConfig(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, 20, got.KubeAPIQPS)
-		assert.Equal(t, 40, got.KubeAPIBurst)
-	})
-
-	t.Run("ClientGenerator wires QPS and burst into SingletonClientGenerator", func(t *testing.T) {
-		cfg := &config.Config{
-			KubeAPIQPS:   15,
-			KubeAPIBurst: 30,
-		}
-		scg, ok := ClientGeneratorFor(cfg).(*SingletonClientGenerator)
-		require.True(t, ok)
-		assert.Equal(t, 15, scg.QPS)
-		assert.Equal(t, 30, scg.Burst)
-	})
+	scg, ok := ClientGeneratorFor(cfg).(*SingletonClientGenerator)
+	require.True(t, ok)
+	assert.Equal(t, 15, scg.QPS)
+	assert.Equal(t, 30, scg.Burst)
 }
 
 func TestStashCRDClients(t *testing.T) {

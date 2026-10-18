@@ -14,14 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package config holds the shared Source configuration used by the parent
-// source package and by any package that needs to pass source options
-// around without depending on concrete source implementations.
-//
-// The Kubernetes-client factory (ClientGenerator) deliberately lives in the
-// source package so this package stays free of client-go dependencies and
-// avoids an import cycle. Config stores the injected or lazily built
-// generator as an untyped slot that source.ClientGeneratorFor type-asserts.
+// Package config holds the Source configuration passed to source
+// constructors. The Kubernetes-client factory lives in the source package to
+// keep this one free of client-go.
 package config
 
 import (
