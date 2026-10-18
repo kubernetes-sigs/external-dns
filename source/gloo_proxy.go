@@ -161,6 +161,7 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer

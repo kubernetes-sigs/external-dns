@@ -58,6 +58,7 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
 	namespace                string

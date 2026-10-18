@@ -22,33 +22,33 @@ Sources are responsible for:
 
 ## Available Sources
 
-| **Source Name**          | Filters          | Namespace  | FQDN Template | Events | Provider Specific | Category            | Resources                                                                             |
-|:-------------------------|:-----------------|:-----------|:--------------|:-------|:------------------|:--------------------|:--------------------------------------------------------------------------------------|
-| **ambassador-host**      | annotation,label | all,single | false         | false  | true              | ingress controllers | Host.getambassador.io                                                                 |
-| **connector**            |                  |            | false         | false  | false             | special             | Remote TCP Server                                                                     |
-| **contour-httpproxy**    | annotation,label | all,single | true          | false  | true              | ingress controllers | HTTPProxy.projectcontour.io                                                           |
-| **crd**                  | annotation,label | all,single | false         | true   | true              | externaldns         | DNSEndpoint.externaldns.k8s.io                                                        |
-| **empty**                |                  |            | false         | false  | false             | testing             | None                                                                                  |
-| **f5-transportserver**   | annotation,label | all,single | true          | false  | false             | load balancers      | TransportServer.cis.f5.com                                                            |
-| **f5-virtualserver**     | annotation,label | all,single | true          | false  | false             | load balancers      | VirtualServer.cis.f5.com                                                              |
-| **fake**                 |                  |            | true          | true   | false             | testing             | Fake Endpoints                                                                        |
-| **gateway-grpcroute**    | annotation,label | all,single | true          | false  | true              | gateway api         | GRPCRoute.gateway.networking.k8s.io                                                   |
-| **gateway-httproute**    | annotation,label | all,single | true          | false  | true              | gateway api         | HTTPRoute.gateway.networking.k8s.io                                                   |
-| **gateway-tcproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TCPRoute.gateway.networking.k8s.io                                                    |
-| **gateway-tlsroute**     | annotation,label | all,single | true          | false  | true              | gateway api         | TLSRoute.gateway.networking.k8s.io                                                    |
-| **gateway-udproute**     | annotation,label | all,single | true          | false  | true              | gateway api         | UDPRoute.gateway.networking.k8s.io                                                    |
-| **gloo-proxy**           | annotation,label | all,single | true          | false  | true              | service mesh        | Proxy.gloo.solo.io                                                                    |
-| **ingress**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Ingress                                                                               |
-| **istio-gateway**        | annotation,label | all,single | true          | false  | true              | service mesh        | Gateway.networking.istio.io                                                           |
-| **istio-virtualservice** | annotation,label | all,single | true          | false  | true              | service mesh        | VirtualService.networking.istio.io                                                    |
-| **kong-tcpingress**      | annotation,label | all,single | false         | false  | true              | ingress controllers | TCPIngress.configuration.konghq.com                                                   |
-| **node**                 | annotation,label | all        | true          | true   | false             | kubernetes core     | Node                                                                                  |
-| **openshift-route**      | annotation,label | all,single | true          | false  | true              | openshift           | Route.route.openshift.io                                                              |
-| **pod**                  | annotation,label | all,single | true          | true   | false             | kubernetes core     | Pod                                                                                   |
-| **service**              | annotation,label | all,single | true          | true   | true              | kubernetes core     | Service                                                                               |
-| **skipper-routegroup**   | annotation,label | all,single | true          | true   | true              | ingress controllers | RouteGroup.zalando.org                                                                |
-| **traefik-proxy**        | annotation,label | all,single | true          | false  | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
-| **unstructured**         | annotation,label | all,single | true          | false  | false             | custom resources    | Unstructured                                                                          |
+| **Source Name**          | Filters          | Namespace  | FQDN Template | Events             | Provider Specific | Category            | Resources                                                                             |
+|:-------------------------|:-----------------|:-----------|:--------------|:-------------------|:------------------|:--------------------|:--------------------------------------------------------------------------------------|
+| **ambassador-host**      | annotation,label | all,single | false         | false              | true              | ingress controllers | Host.getambassador.io                                                                 |
+| **connector**            |                  |            | false         | false              | false             | special             | Remote TCP Server                                                                     |
+| **contour-httpproxy**    | annotation,label | all,single | true          | true[^events-emit] | true              | ingress controllers | HTTPProxy.projectcontour.io                                                           |
+| **crd**                  | annotation,label | all,single | false         | true[^events-emit] | true              | externaldns         | DNSEndpoint.externaldns.k8s.io                                                        |
+| **empty**                |                  |            | false         | false              | false             | testing             | None                                                                                  |
+| **f5-transportserver**   | annotation,label | all,single | true          | true[^events-emit] | false             | load balancers      | TransportServer.cis.f5.com                                                            |
+| **f5-virtualserver**     | annotation,label | all,single | true          | true[^events-emit] | false             | load balancers      | VirtualServer.cis.f5.com                                                              |
+| **fake**                 |                  |            | true          | true[^events-emit] | false             | testing             | Fake Endpoints                                                                        |
+| **gateway-grpcroute**    | annotation,label | all,single | true          | true[^events-emit] | true              | gateway api         | GRPCRoute.gateway.networking.k8s.io                                                   |
+| **gateway-httproute**    | annotation,label | all,single | true          | true[^events-emit] | true              | gateway api         | HTTPRoute.gateway.networking.k8s.io                                                   |
+| **gateway-tcproute**     | annotation,label | all,single | true          | true[^events-emit] | true              | gateway api         | TCPRoute.gateway.networking.k8s.io                                                    |
+| **gateway-tlsroute**     | annotation,label | all,single | true          | true[^events-emit] | true              | gateway api         | TLSRoute.gateway.networking.k8s.io                                                    |
+| **gateway-udproute**     | annotation,label | all,single | true          | true[^events-emit] | true              | gateway api         | UDPRoute.gateway.networking.k8s.io                                                    |
+| **gloo-proxy**           | annotation,label | all,single | true          | true[^events-emit] | true              | service mesh        | Proxy.gloo.solo.io                                                                    |
+| **ingress**              | annotation,label | all,single | true          | true[^events-emit] | true              | kubernetes core     | Ingress                                                                               |
+| **istio-gateway**        | annotation,label | all,single | true          | true[^events-emit] | true              | service mesh        | Gateway.networking.istio.io                                                           |
+| **istio-virtualservice** | annotation,label | all,single | true          | true[^events-emit] | true              | service mesh        | VirtualService.networking.istio.io                                                    |
+| **kong-tcpingress**      | annotation,label | all,single | false         | true[^events-emit] | true              | ingress controllers | TCPIngress.configuration.konghq.com                                                   |
+| **node**                 | annotation,label | all        | true          | true[^events-emit] | false             | kubernetes core     | Node                                                                                  |
+| **openshift-route**      | annotation,label | all,single | true          | true[^events-emit] | true              | openshift           | Route.route.openshift.io                                                              |
+| **pod**                  | annotation,label | all,single | true          | true[^events-emit] | false             | kubernetes core     | Pod                                                                                   |
+| **service**              | annotation,label | all,single | true          | true[^events-emit] | true              | kubernetes core     | Service                                                                               |
+| **skipper-routegroup**   | annotation,label | all,single | true          | true[^events-emit] | true              | ingress controllers | RouteGroup.zalando.org                                                                |
+| **traefik-proxy**        | annotation,label | all,single | true          | true[^events-emit] | true              | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
+| **unstructured**         | annotation,label | all,single | true          | true[^events-emit] | false             | custom resources    | Unstructured                                                                          |
 
 ## Usage
 
@@ -73,3 +73,5 @@ Multiple sources can be combined to watch different resource types simultaneousl
 - **Wrappers**: Source wrappers that modify or combine other sources
 - **Special**: Special purpose sources (connector, empty)
 - **Testing**: Sources used for testing purposes
+
+[^events-emit]: Controlled by the `--events-emit` flag. Set to one or more of `RecordReady`, `RecordDeleted`, `RecordError` (repeat the flag for multiple). Defaults to none (events disabled).

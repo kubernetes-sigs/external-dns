@@ -66,6 +66,17 @@ type Source struct {
 	ProviderSpecific string // Provider-specific properties support: "true", "false"
 }
 
+// EventsCell returns the Events value for the generated table. For sources that
+// support events (Events == "true"), it appends the `[^events-emit]` footnote
+// reference so readers see that the --events-emit flag must be set to a
+// non-none value for events to actually be emitted.
+func (s Source) EventsCell() string {
+	if s.Events == "true" {
+		return "true[^events-emit]"
+	}
+	return s.Events
+}
+
 type Sources []Source
 
 // main generates a markdown file with the supported sources
@@ -124,7 +135,7 @@ func computeColumnWidths(sources Sources) columnWidths {
 		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
 		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
 		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
-		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
+		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.EventsCell() }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
