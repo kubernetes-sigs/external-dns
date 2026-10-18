@@ -39,11 +39,8 @@ type IndexSelectorOptions struct {
 	// resource they reference via a label (e.g. EndpointSlices by Service name).
 	indexByLabelKey string
 	conditions      []func(metav1.Object) bool
-	// source, when set, is the source name (e.g. "service") passed to
-	// schema.IsValid to validate any schema.Registry annotations present
-	// on indexed objects.
-	source string
-	mode   schema.Mode
+	source          string
+	mode            schema.Mode
 }
 
 func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
@@ -110,13 +107,9 @@ func IndexSelectorWithLabelKey(key string) func(options *IndexSelectorOptions) {
 //
 // This function ensures type safety and simplifies the process of adding
 // custom indexers to informers.
-// schemaValidationCache dedupes schema.IsValid's logging against the immediately
-// preceding call: client-go's ThreadSafeStore.Update recomputes an object's index
-// twice per update (once for the old object, once for the new) under the store's
-// single write lock, so an object whose annotations didn't change would otherwise
-// log the same warning twice back-to-back. Caching only the single most recent call
-// is enough, since that lock also rules out any other object's call landing between
-// the old and new calls for this one.
+// schemaValidationCache suppresses the duplicate warning emitted when client-go's
+// ThreadSafeStore.Update recomputes the index for the old and new object back-to-back
+// under its single write lock. One slot is enough because that lock serializes callers.
 type schemaValidationCache struct {
 	mu          sync.Mutex
 	key         string

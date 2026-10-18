@@ -31,7 +31,6 @@ const (
 	// LegacyAnnotationPrefix is the annotation prefix used by releases before v0.22.0.
 	LegacyAnnotationPrefix = "external-dns.alpha.kubernetes.io/"
 
-	// Suffixes (the part after AnnotationKeyPrefix) for each *Key var below.
 	AccessSuffix                = "access"
 	AliasSuffix                 = "alias"
 	AzureTagsSuffix             = "azure-tags"

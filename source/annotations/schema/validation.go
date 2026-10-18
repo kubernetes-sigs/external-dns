@@ -28,23 +28,16 @@ import (
 // why the value is invalid, or nil if the value is acceptable.
 type Validator func(value string) error
 
-// Config describes how a single annotation should be validated, documented, and
-// what should happen when validation fails.
+// Config describes how a single annotation is validated and what happens when it isn't.
 type Config struct {
-	// Validators are run in order against a raw annotation value; the first error wins.
-	Validators []Validator
-	// WarnMessage explains the fallback behavior used when the value is invalid
-	// and strict mode is not in effect for this annotation.
+	// Validators run in order; the first error wins.
+	Validators  []Validator
 	WarnMessage string
-	// StrictMessage explains the consequence of an invalid value when strict mode is
-	// in effect for this annotation. An empty StrictMessage means this annotation has
-	// no sensible strict behavior, so ModeStrict has no effect on it.
+	// StrictMessage: empty means ModeStrict has no effect on this annotation.
 	StrictMessage string
-	// Documentation is a human-readable explanation of the annotation, used for documentation.
 	Documentation string
 }
 
-// Validate runs all of the Config's Validators against value, returning the first error.
 func (c Config) Validate(value string) error {
 	for _, validator := range c.Validators {
 		if err := validator(value); err != nil {
@@ -60,9 +53,6 @@ func (c Config) IsStrict(mode Mode) bool {
 	return mode == ModeStrict && c.StrictMessage != ""
 }
 
-// warnText returns the message to log when this annotation's value is invalid and
-// strict mode does not apply. It falls back to StrictMessage when WarnMessage is unset,
-// for annotations whose warn and strict consequences are identical.
 func (c Config) warnText() string {
 	if c.WarnMessage != "" {
 		return c.WarnMessage
@@ -71,14 +61,10 @@ func (c Config) warnText() string {
 }
 
 // AnnotationSpec pairs an annotation's key suffix with its Config.
+// KeySuffix stays prefix-less so Key() resolves against the current --annotation-prefix,
+// not whatever was in effect when Registry was built.
 type AnnotationSpec struct {
-	// KeySuffix is the annotation's name without the configurable --annotation-prefix,
-	// e.g. "access" for the AccessKey annotation. Kept as a suffix, not the full key,
-	// so Key() can resolve it against whatever prefix is current rather than whatever
-	// prefix was in effect when Registry was built.
-	KeySuffix string
-	// SupportedSources lists the source names (e.g. "service") that consume this annotation.
-	// An empty slice means no restriction is enforced.
+	KeySuffix        string
 	SupportedSources []string
 	Config
 }

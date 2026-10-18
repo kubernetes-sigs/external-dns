@@ -24,10 +24,9 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-// defaultStrictMessage is the StrictMessage shared by specs with no record-shaping fallback.
 const defaultStrictMessage = "the resource will not receive a DNS record"
 
-// Registry is external-dns's contract for which annotations are supported by which sources, and their validation rules and warn/strict messages.
+// Registry maps each supported annotation to the sources that consume it and its validation rules.
 var Registry = []AnnotationSpec{
 	{
 		KeySuffix:        annotations.AccessSuffix,
@@ -151,9 +150,8 @@ var Registry = []AnnotationSpec{
 	},
 }
 
-// IsValid checks entity's annotations against Registry for source and mode. In warn
-// mode it only logs; in strict mode an invalid or unsupported annotation excludes the
-// object from the informer's index.
+// IsValid returns false iff an invalid or unsupported-for-source annotation is in strict mode.
+// Warn-mode violations are logged only.
 func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
 	annots := entity.GetAnnotations()
 	desc := describe(entity)
@@ -187,8 +185,6 @@ func IsValid[T metav1.Object](entity T, source string, mode Mode) bool {
 	return valid
 }
 
-// describe returns a "namespace/name" identifier for entity, or just "name" for
-// cluster-scoped objects (empty namespace), for use in log messages.
 func describe(entity metav1.Object) string {
 	if ns := entity.GetNamespace(); ns != "" {
 		return ns + "/" + entity.GetName()
