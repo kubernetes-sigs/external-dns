@@ -77,6 +77,33 @@ func (s Source) EventsCell() string {
 	return s.Events
 }
 
+// FiltersCell returns the Filters value with a `[^filter-<kind>]` footnote
+// reference appended to each comma-separated token (e.g. "annotation" becomes
+// "annotation[^filter-annotation]"), so each kind links to the flag that
+// controls it at the bottom of the page.
+func (s Source) FiltersCell() string {
+	if s.Filters == "" {
+		return ""
+	}
+	parts := strings.Split(s.Filters, ",")
+	for i, p := range parts {
+		p = strings.TrimSpace(p)
+		parts[i] = fmt.Sprintf("%s[^filter-%s]", p, p)
+	}
+	return strings.Join(parts, ",")
+}
+
+// NamespaceCell returns the Namespace value with a single `[^namespace]`
+// footnote reference appended, since the one --namespace flag controls both
+// the "all" and "single" modes. Empty cells (sources without namespace scope)
+// get no footnote.
+func (s Source) NamespaceCell() string {
+	if s.Namespace == "" {
+		return ""
+	}
+	return s.Namespace + "[^namespace]"
+}
+
 type Sources []Source
 
 // main generates a markdown file with the supported sources
@@ -132,8 +159,8 @@ func computeColumnWidths(sources Sources) columnWidths {
 	return columnWidths{
 		Name:             render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
 		Resources:        render.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
-		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
-		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
+		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.FiltersCell() }),
+		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.NamespaceCell() }),
 		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
 		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.EventsCell() }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
