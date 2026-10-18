@@ -68,6 +68,21 @@ type Source struct {
 	Validation       string // Comma-separated validation kinds enabled, e.g., "annotation"
 }
 
+// ValidationCell returns the Validation value with a footnote reference per kind
+// (e.g., `annotation[^val-annotation]`), so the generated table links each kind
+// to its explanation at the bottom of the page. Empty when no validation applies.
+func (s Source) ValidationCell() string {
+	if s.Validation == "" {
+		return ""
+	}
+	parts := strings.Split(s.Validation, ",")
+	for i, p := range parts {
+		p = strings.TrimSpace(p)
+		parts[i] = fmt.Sprintf("%s[^val-%s]", p, p)
+	}
+	return strings.Join(parts, ",")
+}
+
 type Sources []Source
 
 // main generates a markdown file with the supported sources
@@ -129,7 +144,7 @@ func computeColumnWidths(sources Sources) columnWidths {
 		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
 		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
-		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.Validation }),
+		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.ValidationCell() }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
 }
