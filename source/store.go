@@ -47,11 +47,6 @@ type (
 	OverrideConfigOption = config.OverrideConfigOption
 )
 
-var (
-	NewSourceConfig = config.NewSourceConfig
-	WithCRDClients  = config.WithCRDClients
-)
-
 // WithClientGenerator sets a custom ClientGenerator, overriding the default
 // SingletonClientGenerator. Intended for testing.
 func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
