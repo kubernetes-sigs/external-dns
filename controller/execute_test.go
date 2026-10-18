@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/crd"
 	provider "sigs.k8s.io/external-dns/provider/factory"
-	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -296,7 +296,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	sCfg, err := source.NewSourceConfig(cfg)
+	sCfg, err := config.NewSourceConfig(cfg)
 	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -326,7 +326,7 @@ func TestControllerRunCancelContextStopsLoop(t *testing.T) {
 	}
 }
 
-func buildTestController(t *testing.T, opts ...source.OverrideConfigOption) *Controller {
+func buildTestController(t *testing.T, opts ...config.OverrideConfigOption) *Controller {
 	t.Helper()
 	cfg := &externaldns.Config{
 		Sources:    []string{"fake"},
@@ -337,7 +337,7 @@ func buildTestController(t *testing.T, opts ...source.OverrideConfigOption) *Con
 		Registry:   "txt",
 		TXTOwnerID: "test-owner",
 	}
-	sCfg, err := source.NewSourceConfig(cfg, opts...)
+	sCfg, err := config.NewSourceConfig(cfg, opts...)
 	require.NoError(t, err)
 	ctx := t.Context()
 	src, err := wrappers.Build(ctx, sCfg)
@@ -352,7 +352,7 @@ func buildTestController(t *testing.T, opts ...source.OverrideConfigOption) *Con
 
 func TestBuildControllerWiresCRDClient(t *testing.T) {
 	cc := crd.NewCRDClients(fake.NewClientBuilder().Build(), fake.NewClientBuilder().Build())
-	ctrl := buildTestController(t, source.WithCRDClients(cc))
+	ctrl := buildTestController(t, config.WithCRDClients(cc))
 
 	assert.Same(t, cc, ctrl.CrdClients)
 }

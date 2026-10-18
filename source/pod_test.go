@@ -33,6 +33,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -785,7 +786,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, &Config{
+			client, err := NewPodSource(ctx, kubernetes, &config.Config{
 				Namespaces:               []string{tc.targetNamespace},
 				Compatibility:            tc.compatibility,
 				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
@@ -1004,7 +1005,7 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			src, err := NewPodSource(ctx, kubernetes, &Config{
+			src, err := NewPodSource(ctx, kubernetes, &config.Config{
 				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
 			})
 			require.NoError(t, err)
@@ -1151,7 +1152,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, &Config{})
+		src, err := NewPodSource(ctx, fakeClient, &config.Config{})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
@@ -1229,7 +1230,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(t.Context(), fakeClient, &Config{
+		src, err := NewPodSource(t.Context(), fakeClient, &config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "template", "", "", false),
 		})
 		require.NoError(t, err)
@@ -1274,7 +1275,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 	client, err := NewPodSource(
 		t.Context(),
 		fakeClient,
-		&Config{},
+		&config.Config{},
 	)
 	require.NoError(t, err)
 

@@ -40,6 +40,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
@@ -122,7 +123,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
@@ -2079,7 +2080,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              ti.labelFilter,
@@ -2135,7 +2136,7 @@ func newTestVirtualServiceSource(t *testing.T, loadBalancerList []fakeIngressGat
 		t.Context(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "{{ .Name }}", "", "", false),
 		},
 	)
@@ -2372,7 +2373,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
-				&Config{},
+				&config.Config{},
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -2388,7 +2389,7 @@ func TestIstioVirtualServiceSource_GWServiceSelectorMatchServiceSelector(t *test
 func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *virtualServiceSource {
 		t.Helper()
-		src, err := NewIstioVirtualServiceSource(t.Context(), kClient, istioClient, &Config{})
+		src, err := NewIstioVirtualServiceSource(t.Context(), kClient, istioClient, &config.Config{})
 		require.NoError(t, err)
 		vs, ok := src.(*virtualServiceSource)
 		require.True(t, ok)

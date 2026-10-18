@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
@@ -681,7 +682,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 				labelFilter = labels.Everything()
 			}
 			source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-				&Config{
+				&config.Config{
 					Namespaces:       []string{defaultF5VirtualServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
@@ -711,7 +712,7 @@ func TestF5VirtualServerSource_InformerTransform(t *testing.T) {
 	fakeClient := fakeKube.NewClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &Config{LabelFilter: labels.Everything()})
+	source, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5VirtualServerSource{}, source)
 
@@ -837,7 +838,7 @@ func TestF5VirtualServerIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{
 				Namespaces:       []string{defaultF5VirtualServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),

@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -160,7 +161,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 
 	tests := []struct {
 		title           string
-		config          *Config
+		config          *config.Config
 		namespaces      []*corev1.Namespace
 		gateways        []*v1.Gateway
 		routes          []*v1.HTTPRoute
@@ -169,7 +170,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 	}{
 		{
 			title: "GatewayName",
-			config: &Config{
+			config: &config.Config{
 				GatewayName: "gateway-name",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -223,7 +224,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "GatewayNameNoneAccepted",
-			config: &Config{
+			config: &config.Config{
 				GatewayName: "gateway-name",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -258,7 +259,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "GatewayNamespace",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "not-gateway-namespace", "route-namespace"),
@@ -303,7 +304,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "RouteNamespace",
-			config: &Config{
+			config: &config.Config{
 				Namespaces: []string{"route-namespace"},
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace", "not-route-namespace"),
@@ -344,7 +345,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "GatewayLabelFilter",
-			config: &Config{
+			config: &config.Config{
 				GatewayLabelFilter: "foo=bar",
 			},
 			namespaces: namespaces("default"),
@@ -390,7 +391,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "RouteLabelFilter",
-			config: &Config{
+			config: &config.Config{
 				LabelFilter: mustGetLabelSelector("foo=bar"),
 			},
 			namespaces: namespaces("default"),
@@ -437,7 +438,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "RouteAnnotationFilter",
-			config: &Config{
+			config: &config.Config{
 				AnnotationFilter: parseAnnotationFilterOrNil("foo=bar"),
 			},
 			namespaces: namespaces("default"),
@@ -484,7 +485,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "SkipControllerAnnotation",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -513,7 +514,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "MultipleGateways",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{
 				{
@@ -553,7 +554,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "MultipleListeners",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "one"),
@@ -594,7 +595,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "SectionNameMatch",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -635,7 +636,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
 			title:      "PortNumberMatch",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -684,7 +685,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "WildcardInGateway",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -716,7 +717,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "WildcardInRoute",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -748,7 +749,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "WildcardInRouteAndGateway",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -780,7 +781,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "NoRouteHostname",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -810,7 +811,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "NoGateways",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways:   nil,
 			routes: []*v1.HTTPRoute{{
@@ -827,7 +828,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "NoHostnames",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -852,7 +853,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "HostnameAnnotation",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -905,7 +906,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			// A wildcard listener hostname must not become a record of its own when the route
 			// named a hostname through the annotation (#6596).
 			title:      "WildcardListenerWithHostnameAnnotation",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -941,7 +942,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			// The FQDN template names the route, so the wildcard listener hostname must not become
 			// a record of its own either.
 			title: "WildcardListenerWithFQDNTemplate",
-			config: &Config{
+			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.example.internal", "", "", false),
 			},
 			namespaces: namespaces("default"),
@@ -976,7 +977,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			// the annotation does not match the listener, and it also suppresses the fallback that
 			// used to publish the listener's own hostname.
 			title:      "HostnameAnnotationOutsideListenerDomain",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -1009,7 +1010,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			// The annotation already named the record, so the template must not fire.
 			title: "AnnotationBeforeFQDNTemplate",
-			config: &Config{
+			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
 			},
 			namespaces: namespaces("default"),
@@ -1043,7 +1044,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			// An empty annotation names no record, so it must not suppress the template either.
 			title: "EmptyHostnameAnnotationFallsBackToFQDNTemplate",
-			config: &Config{
+			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.template.internal", "", "", false),
 			},
 			namespaces: namespaces("default"),
@@ -1076,7 +1077,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "IgnoreHostnameAnnotation",
-			config: &Config{
+			config: &config.Config{
 				IgnoreHostnameAnnotation: true,
 			},
 			namespaces: namespaces("default"),
@@ -1109,7 +1110,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "FQDNTemplate",
-			config: &Config{
+			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ", "", "", false),
 			},
 			namespaces: namespaces("default"),
@@ -1156,7 +1157,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			// combine so the template runs even though Spec.Hostnames is already set.
 			title: "FQDNTemplate with JSON-style Spec access on typed HTTPRoute",
-			config: &Config{
+			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{range .Spec.hostnames}}{{.}}.json.internal,{{end}}", "", "", true),
 			},
 			namespaces: namespaces("default"),
@@ -1186,7 +1187,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "CombineFQDN",
-			config: &Config{
+			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "combine-{{.Name}}.internal", "", "", true),
 			},
 			namespaces: namespaces("default"),
@@ -1216,7 +1217,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "TTL",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -1262,7 +1263,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "ProviderAnnotations",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -1296,7 +1297,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "DifferentHostnameDifferentGateway",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{
 				{
@@ -1343,7 +1344,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "AllowedRoutesSameNamespace",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("same-namespace", "other-namespace"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("same-namespace", "test"),
@@ -1391,7 +1392,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "AllowedRoutesNamespaceSelector",
-			config: &Config{},
+			config: &config.Config{},
 			namespaces: []*corev1.Namespace{
 				{
 					Name: "default",
@@ -1454,7 +1455,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "MissingNamespace",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: nil,
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -1490,7 +1491,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "AnnotationOverride",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -1530,7 +1531,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "MutlipleGatewaysOneAnnotationOverride",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -1582,7 +1583,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "MultipleGatewaysMultipleRoutes",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{
 				{
@@ -1641,7 +1642,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "NoParentRefs",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -1671,7 +1672,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "ParentRefsMismatch",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -1706,7 +1707,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "SourceAnnotation",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -1744,7 +1745,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title: "OnlyAnnotationHost",
-			config: &Config{
+			config: &config.Config{
 				GatewayNamespace: "gateway-namespace",
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace"),
@@ -1782,7 +1783,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			title:      "InvalidSourceAnnotation",
-			config:     &Config{},
+			config:     &config.Config{},
 			namespaces: namespaces("default"),
 			gateways: []*v1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -1879,7 +1880,7 @@ func TestGatewayHTTPRouteSource_RouteInformerTransform(t *testing.T) {
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
 
-	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{})
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &config.Config{})
 	require.NoError(t, err)
 	require.IsType(t, &gatewayRouteSource{}, source)
 
@@ -1916,7 +1917,7 @@ func TestGatewayHTTPRouteSource_InformerTransform(t *testing.T) {
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
 
-	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &Config{})
+	source, err := NewGatewayHTTPRouteSource(t.Context(), clients, &config.Config{})
 	require.NoError(t, err)
 	require.IsType(t, &gatewayRouteSource{}, source)
 
@@ -2053,7 +2054,7 @@ func TestGatewayHTTPRouteIndexer(t *testing.T) {
 			clients.On("GatewayClient").Return(gwClient, nil)
 			clients.On("KubeClient").Return(kubeClient, nil)
 
-			src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+			src, err := NewGatewayHTTPRouteSource(ctx, clients, &config.Config{
 				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
 			})

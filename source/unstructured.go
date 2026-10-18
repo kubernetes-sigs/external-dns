@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -62,7 +63,7 @@ func NewUnstructuredFQDNSource(
 	ctx context.Context,
 	dynamicClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	gvrs, err := discoverResources(kubeClient, cfg.UnstructuredResources)
 	if err != nil {

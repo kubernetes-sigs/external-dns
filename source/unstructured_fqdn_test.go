@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -984,7 +985,7 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				&Config{
+				&config.Config{
 					LabelFilter:           selector,
 					UnstructuredResources: tt.cfg.resources,
 					TemplateEngine:        templatetest.MustEngine(t, tt.cfg.fqdnTemplate, tt.cfg.targetTemplate, tt.cfg.fqdnTargetTemplate, tt.cfg.combine),

@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -91,27 +92,27 @@ type serviceSource struct {
 	compatibility string
 }
 
-// NewServiceSource creates a new serviceSource with the given config.
+// NewServiceSource creates a new serviceSource with the given cfg.
 func NewServiceSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	config *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set the resync period to 0 to prevent processing when nothing has changed
-	namespace := config.Namespace()
+	namespace := cfg.Namespace()
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 
 	// Transform the slice into a map so it will be way much easier and fast to filter later
-	sTypesFilter, err := newServiceTypesFilter(config.ServiceTypeFilter)
+	sTypesFilter, err := newServiceTypesFilter(cfg.ServiceTypeFilter)
 	if err != nil {
 		return nil, err
 	}
 
 	informers.MustAddIndexers(serviceInformer.Informer(), informers.IndexerWithOptions[*v1.Service](
-		informers.IndexSelectorWithAnnotationFilter(config.AnnotationFilter),
-		informers.IndexSelectorWithLabelSelector(config.LabelFilter),
+		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
+		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(
 			sTypesFilter.predicate,
 			annotations.IsControllerMatch[*v1.Service],
@@ -172,21 +173,21 @@ func NewServiceSource(
 	return &serviceSource{
 		client:                         kubeClient,
 		namespace:                      namespace,
-		compatibility:                  config.Compatibility,
-		templateEngine:                 config.TemplateEngine,
-		ignoreHostnameAnnotation:       config.IgnoreHostnameAnnotation,
-		publishInternal:                config.PublishInternal,
-		publishHostIP:                  config.PublishHostIP,
-		alwaysPublishNotReadyAddresses: config.AlwaysPublishNotReadyAddresses,
+		compatibility:                  cfg.Compatibility,
+		templateEngine:                 cfg.TemplateEngine,
+		ignoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
+		publishInternal:                cfg.PublishInternal,
+		publishHostIP:                  cfg.PublishHostIP,
+		alwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
 		endpointSlicesInformer:         endpointSlicesInformer,
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
-		resolveLoadBalancerHostname:    config.ResolveLoadBalancerHostname,
-		listenEndpointEvents:           config.ListenEndpointEvents,
-		exposeInternalIPv6:             config.ExposeInternalIPv6,
-		excludeUnschedulable:           config.ExcludeUnschedulable,
+		resolveLoadBalancerHostname:    cfg.ResolveLoadBalancerHostname,
+		listenEndpointEvents:           cfg.ListenEndpointEvents,
+		exposeInternalIPv6:             cfg.ExposeInternalIPv6,
+		excludeUnschedulable:           cfg.ExcludeUnschedulable,
 	}, nil
 }
 

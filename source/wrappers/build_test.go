@@ -25,12 +25,13 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-func stubConfig(t *testing.T, extCfg *externaldns.Config) *source.Config {
+func stubConfig(t *testing.T, extCfg *externaldns.Config) *config.Config {
 	t.Helper()
-	cfg, err := source.NewSourceConfig(extCfg, source.WithClientGenerator(testutils.StubClientGenerator{}))
+	cfg, err := config.NewSourceConfig(extCfg, source.WithClientGenerator(testutils.StubClientGenerator{}))
 	require.NoError(t, err)
 	return cfg
 }
@@ -38,7 +39,7 @@ func stubConfig(t *testing.T, extCfg *externaldns.Config) *source.Config {
 func TestBuildWrappedSource(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     *source.Config
+		cfg     *config.Config
 		wantErr bool
 	}{
 		{

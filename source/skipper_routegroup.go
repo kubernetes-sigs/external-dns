@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -68,7 +69,7 @@ func (w *routeGroupWrapper) Metadata() *metav1.ObjectMeta {
 }
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
-func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *Config) (Source, error) {
+func NewRouteGroupSource(ctx context.Context, client rgversioned.Interface, cfg *config.Config) (Source, error) {
 	namespace := cfg.Namespace()
 	// The reflector retries a failing List until WaitForCacheSync gives up a minute later,
 	// so probe up front: a missing CRD should fail startup at once, and say so.

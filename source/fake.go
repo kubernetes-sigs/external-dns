@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -65,7 +66,7 @@ var (
 )
 
 // NewFakeSource creates a new fakeSource with the given config.
-func NewFakeSource(cfg *Config) (Source, error) {
+func NewFakeSource(cfg *config.Config) (Source, error) {
 	dnsNames := []string{defaultFQDNTemplate}
 	if cfg.TemplateEngine.IsConfigured() {
 		hostnames, err := cfg.TemplateEngine.ExecFQDN(&fakePod)

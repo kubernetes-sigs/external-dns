@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -992,7 +993,7 @@ func TestNewCRDSource(t *testing.T) {
 				ctx, cancel = context.WithTimeout(ctx, tc.ctxTimeout)
 				t.Cleanup(cancel)
 			}
-			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &Config{})
+			_, err := NewCRDSource(ctx, tc.makeRestCfg(t), &config.Config{})
 			require.ErrorContains(t, err, tc.wantErrContains)
 		})
 	}
