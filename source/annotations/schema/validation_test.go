@@ -174,6 +174,8 @@ func TestValidateHostNames(t *testing.T) {
 		{name: "trailing dot", value: "foo.example.com."},
 		{name: "uppercase", value: "Foo.example.com"},
 		{name: "underscore-led SRV-style label", value: "_sip._tcp.example.com"},
+		{name: "IDN hostname", value: "bücher.example.org"},
+		{name: "wildcard IDN hostname", value: "*.bücher.example.org"},
 		{name: "trailing comma yields an ignored empty entry", value: "foo.example.com,"},
 		{name: "double dot yields an empty label", value: "bad..name", wantErr: true},
 		{name: "bare wildcard is invalid", value: "*", wantErr: true},

@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
@@ -143,7 +144,13 @@ func ValidateHostnames(value string) error {
 }
 
 func validateDNSName(name string) error {
-	normalized := strings.TrimPrefix(strings.TrimSuffix(strings.ToLower(name), "."), "*.")
+	// Strip the wildcard prefix before IDNA conversion ("*" is not a valid IDNA label),
+	// then punycode-convert so DNS1123 (which is ASCII-only) accepts IDN hostnames.
+	ascii, err := idna.Profile.ToASCII(strings.TrimPrefix(name, "*."))
+	if err != nil {
+		return fmt.Errorf("%q is not a valid DNS name: %w", name, err)
+	}
+	normalized := strings.TrimSuffix(strings.ToLower(ascii), ".")
 	if errs := validation.IsDNS1123SubdomainWithUnderscore(normalized); len(errs) > 0 {
 		return fmt.Errorf("%q is not a valid DNS name: %s", name, strings.Join(errs, "; "))
 	}
