@@ -273,7 +273,7 @@ func TestIndexerWithOptions_AnnotationValidation(t *testing.T) {
 			}
 			indexers := IndexerWithOptions[*corev1.Pod](opts...)
 			keys, err := indexers[IndexWithSelectors](makePod(tt.annotations))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			if tt.wantIndexed {
 				assert.Equal(t, []string{"default/test-pod"}, keys)
 			} else {
