@@ -24,7 +24,7 @@ Sources are responsible for:
 
 | **Source Name**          | Filters          | Namespace  | FQDN Template | Events             | Provider Specific | Category            | Resources                                                                             |
 |:-------------------------|:-----------------|:-----------|:--------------|:-------------------|:------------------|:--------------------|:--------------------------------------------------------------------------------------|
-| **ambassador-host**      | annotation,label | all,single | false         | false              | true              | ingress controllers | Host.getambassador.io                                                                 |
+| **ambassador-host**      | annotation,label | all,single | false         | true[^events-emit] | true              | ingress controllers | Host.getambassador.io                                                                 |
 | **connector**            |                  |            | false         | false              | false             | special             | Remote TCP Server                                                                     |
 | **contour-httpproxy**    | annotation,label | all,single | true          | true[^events-emit] | true              | ingress controllers | HTTPProxy.projectcontour.io                                                           |
 | **crd**                  | annotation,label | all,single | false         | true[^events-emit] | true              | externaldns         | DNSEndpoint.externaldns.k8s.io                                                        |
