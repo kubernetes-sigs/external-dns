@@ -97,8 +97,8 @@ spec:
             - --log-level={{ .Values.logLevel }}
             - --log-format={{ .Values.logFormat }}
             - --interval={{ .Values.interval }}
-            {{- if .Values.fqdnTemplates }}
-            - --fqdn-template={{ join "," .Values.fqdnTemplates }}{{/* Explicitly wants comma separated list */}}
+            {{- range .Values.fqdnTemplates }}
+            - --fqdn-template={{ . }}
             {{- end }}
             {{- if .Values.triggerLoopOnEvent }}
             - --events

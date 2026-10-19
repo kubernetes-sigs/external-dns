@@ -282,7 +282,7 @@ tests:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--fqdn-template={{.Name}}.example.com"
 
-  - it: should configure multiple fqdn templates as comma-separated list
+  - it: should configure multiple fqdn templates as repeated flags
     set:
       fqdnTemplates:
         - "{{.Name}}.example.com"
@@ -290,4 +290,7 @@ tests:
     asserts:
       - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
-          content: "--fqdn-template={{.Name}}.example.com,{{.Name}}.example.org"
+          content: "--fqdn-template={{.Name}}.example.com"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: "--fqdn-template={{.Name}}.example.org"
