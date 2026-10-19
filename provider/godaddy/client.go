@@ -244,14 +244,22 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 	// In case of several clients behind NAT we still can hit rate limit
 	for i := 1; i < 3 && resp != nil && resp.StatusCode == http.StatusTooManyRequests; i++ {
-		retryAfter, err := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
+		resetHeader := resp.Header.Get("RateLimit-Reset")
+		if resetHeader == "" {
+			resetHeader = resp.Header.Get("Retry-After")
+		}
+
+		retryAfter, err := strconv.ParseInt(resetHeader, 10, 0)
 		if err != nil {
-			log.Error("Rate-limited response did not contain a valid Retry-After header, quota likely exceeded")
+			log.Error("Rate-limited response did not contain a valid RateLimit-Reset or Retry-After header, quota likely exceeded")
 			break
 		}
 
-		jitter := rand.Int63n(retryAfter)
-		retryAfterSec := retryAfter + jitter/2
+		retryAfterSec := retryAfter
+		if retryAfter > 0 {
+			jitter := rand.Int63n(retryAfter)
+			retryAfterSec = retryAfter + jitter/2
+		}
 
 		sleepTime := time.Duration(retryAfterSec) * time.Second
 		time.Sleep(sleepTime)
