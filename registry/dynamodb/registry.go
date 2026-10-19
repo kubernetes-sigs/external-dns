@@ -30,9 +30,9 @@ import (
 	awsdynamodb "github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -155,7 +155,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 
-	orphanedLabels := sets.KeySet(im.labels)
+	orphanedLabels := sets.NewFromMapKeys(im.labels)
 	endpoints := make([]*endpoint.Endpoint, 0, len(records))
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
 	txtRecordsMap := map[endpoint.EndpointKey]*endpoint.Endpoint{}
@@ -275,12 +275,12 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 
 	oldLabels := make(map[endpoint.EndpointKey]endpoint.Labels, len(filteredChanges.UpdateOld))
-	needMigration := map[endpoint.EndpointKey]bool{}
+	needMigration := sets.New[endpoint.EndpointKey]()
 	for _, r := range filteredChanges.UpdateOld {
 		oldLabels[r.Key()] = r.Labels
 
 		if _, ok := r.GetProviderSpecificProperty(dynamodbAttributeMigrate); ok {
-			needMigration[r.Key()] = true
+			needMigration.Insert(r.Key())
 		}
 
 		// remove old version of record from cache
@@ -291,7 +291,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 	for _, r := range filteredChanges.UpdateNew {
 		key := r.Key()
-		if needMigration[key] {
+		if needMigration.Has(key) {
 			statements = im.appendInsert(statements, key, r.Labels)
 			// Invalidate the records cache so the next sync deletes the TXT ownership record
 			im.recordsCache = nil

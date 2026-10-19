@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	providerfactory "sigs.k8s.io/external-dns/provider/factory"
@@ -72,6 +73,11 @@ func execute(ctx context.Context) {
 		log.Fatal(err)
 	}
 
+	if cfg.EnableLegacyAnnotationPrefix {
+		annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+		log.Warnf("Annotations with the legacy prefix %s are also read; %s takes precedence when both are present. --enable-legacy-annotation-prefix is a migration aid and will be removed in a future release", annotations.LegacyAnnotationPrefix, cfg.AnnotationPrefix)
+	}
+
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
@@ -87,7 +93,7 @@ func execute(ctx context.Context) {
 	// external-dns uses logrus for all logging, so controller-runtime's logr output is discarded here.
 	crlog.SetLogger(logr.Discard())
 
-	log.Info(externaldns.Banner())
+	log.Info(version.Banner())
 
 	go serveMetrics(cfg.MetricsAddress)
 
@@ -113,7 +119,15 @@ func execute(ctx context.Context) {
 	}
 
 	if cfg.WebhookServer {
-		webhookapi.StartHTTPApi(prvdr, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		webhookapi.StartHTTPApi(webhookapi.ServerOptions{
+			Provider:          prvdr,
+			ProviderPort:      "127.0.0.1:8888",
+			ReadTimeout:       cfg.WebhookProviderReadTimeout,
+			WriteTimeout:      cfg.WebhookProviderWriteTimeout,
+			ReadHeaderTimeout: cfg.WebhookProviderReadHeaderTimeout,
+			IdleTimeout:       cfg.WebhookProviderIdleTimeout,
+			MaxBodySize:       cfg.WebhookProviderMaxBodySize,
+		})
 		os.Exit(0)
 	}
 
@@ -188,6 +202,8 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
+		CrdClients:           sCfg.CRDClients(),
+		CRDSourceKind:        cfg.CRDSourceKind,
 	}, nil
 }
 

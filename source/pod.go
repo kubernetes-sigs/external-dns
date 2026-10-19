@@ -67,7 +67,7 @@ func NewPodSource(
 	kubeClient kubernetes.Interface,
 	cfg *Config,
 ) (Source, error) {
-	namespace := cfg.Namespace
+	namespace := cfg.Namespace()
 	annotationFilter := cfg.AnnotationFilter
 	labelSelector := cfg.LabelFilter
 
@@ -118,16 +118,16 @@ func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexKeys := ps.podInformer.Informer().GetIndexer().ListIndexFuncValues(informers.IndexWithSelectors)
+	pods := informers.ListIndexed[*v1.Pod](ps.podInformer.Informer().GetIndexer())
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
-	for _, key := range indexKeys {
-		pod, err := informers.GetByKey[*v1.Pod](ps.podInformer.Informer().GetIndexer(), key)
-		if err != nil {
-			continue
-		}
-
+	endpoints := make([]*endpoint.Endpoint, 0, len(pods))
+	for _, pod := range pods {
 		podEndpoints := ps.endpointsFromPodAnnotations(pod)
+
+		podEndpoints, err := ps.templateEngine.ApplyFQDNTargetTemplate(podEndpoints, pod)
+		if err != nil {
+			return nil, err
+		}
 
 		podEndpoints, err = ps.templateEngine.CombineWithEndpoints(
 			podEndpoints,
@@ -151,7 +151,9 @@ func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoi
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range endpointMap {
-		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
+		if ep := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...); ep != nil {
+			endpoints = append(endpoints, ep)
+		}
 	}
 	return endpoints
 }
@@ -164,7 +166,9 @@ func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range hostsMap {
-		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...))
+		if ep := endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, key.RecordTTL, targets...); ep != nil {
+			endpoints = append(endpoints, ep)
+		}
 	}
 	return endpoints, nil
 }

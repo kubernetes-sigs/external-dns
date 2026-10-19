@@ -880,6 +880,93 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 			},
 			expected: nil,
 		},
+		{
+			title: "title-cased Spec field resolves against a lowercase JSON key",
+			cfg: cfg{
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   `{{index .Spec.Hostnames 0}}`,
+				targetTemplate: `{{index .Spec.hosts 0}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+						"kind":       "ProxyService",
+						"metadata": map[string]any{
+							"name":      "reviews",
+							"namespace": "default",
+						},
+						"spec": map[string]any{
+							"hostnames": []any{"reviews.bookinfo.example.com"},
+							"hosts":     []any{"promo.svc.local"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("reviews.bookinfo.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
+			},
+		},
+		{
+			title: "title-cased alias does not clobber a key already present under that name",
+			cfg: cfg{
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   `{{index .Spec.Hostnames 0}}`,
+				targetTemplate: `{{index .Spec.hosts 0}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+						"kind":       "ProxyService",
+						"metadata": map[string]any{
+							"name":      "reviews",
+							"namespace": "default",
+						},
+						"spec": map[string]any{
+							"hostnames": "ignored.example.com",
+							"Hostnames": []any{"real.example.com"},
+							"hosts":     []any{"promo.svc.local"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("real.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
+			},
+		},
+		{
+			title: "title-cased alias resolves the top-level Spec key; nested JSON keys stay literal",
+			cfg: cfg{
+				resources:      []string{"proxyservices.v1beta1.proxyconfigs.acme.corp"},
+				fqdnTemplate:   `{{.Spec.Endpoint.hostname}}`,
+				targetTemplate: `{{index .Spec.hosts 0}}`,
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+						"kind":       "ProxyService",
+						"metadata": map[string]any{
+							"name":      "reviews",
+							"namespace": "default",
+						},
+						"spec": map[string]any{
+							"endpoint": map[string]any{
+								"hostname": "reviews.nested.example.com",
+							},
+							"hosts": []any{"promo.svc.local"},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("reviews.nested.example.com", endpoint.RecordTypeCNAME, "promo.svc.local").
+					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)
@@ -1049,6 +1136,26 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			},
 			want: []string{"reviews.bookinfo.svc.cluster.local"},
 		},
+		{
+			name: "Spec field access matches JSON key casing regardless of template casing",
+			tmpl: `{{index .Spec.Hostnames 0}}`,
+			obj: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "gateway.networking.k8s.io/v1",
+					"kind":       "HTTPRoute",
+					"metadata": map[string]any{
+						"name":      "reviews",
+						"namespace": "bookinfo",
+					},
+					"spec": map[string]any{
+						"hostnames": []any{
+							"reviews.bookinfo.example.com",
+						},
+					},
+				},
+			},
+			want: []string{"reviews.bookinfo.example.com"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1064,5 +1171,71 @@ func TestUnstructuredWrapper_Templating(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+// TestUnstructuredWrapper_MapIterationIsNotAliasPolluted guards
+// withTitleCaseAliases against recursing into nested maps, which used to
+// double every key one level down and break range/len over nested data.
+func TestUnstructuredWrapper_MapIterationIsNotAliasPolluted(t *testing.T) {
+	obj := &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "proxyconfigs.acme.corp/v1beta1",
+			"kind":       "ProxyService",
+			"metadata": map[string]any{
+				"name":      "reviews",
+				"namespace": "default",
+			},
+			"spec": map[string]any{
+				"records": map[string]any{
+					"env":  "1.2.3.4",
+					"team": "5.6.7.8",
+				},
+			},
+		},
+	}
+
+	t.Run("range over a nested map yields each key once", func(t *testing.T) {
+		engine := templatetest.MustEngine(t, `{{range $k, $v := .Spec.records}}{{$k}}.example.com,{{end}}`, "", "", false)
+
+		got, err := engine.ExecFQDN(newUnstructuredWrapper(obj))
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"env.example.com", "team.example.com"}, got,
+			"aliases must not leak into map iteration")
+	})
+
+	t.Run("len of a nested map counts declared keys only", func(t *testing.T) {
+		engine := templatetest.MustEngine(t, `{{len .Spec.records}}.example.com`, "", "", false)
+
+		got, err := engine.ExecFQDN(newUnstructuredWrapper(obj))
+
+		require.NoError(t, err)
+		assert.Equal(t, []string{"2.example.com"}, got)
+	})
+
+	t.Run("the source object itself is not mutated", func(t *testing.T) {
+		// This one already holds on both sides; kept so a future fix that
+		// aliases in place instead of copying is caught.
+		newUnstructuredWrapper(obj)
+
+		spec, _ := obj.Object["spec"].(map[string]any)
+		records, _ := spec["records"].(map[string]any)
+		assert.Len(t, records, 2, "informer cache object must stay untouched")
+	})
+}
+
+// TestTitleCaseKey_KnownInitialisms covers CRD field names a naive
+// first-letter-only titlecase would miss, e.g. cert-manager's URL/DNSNames.
+func TestTitleCaseKey_KnownInitialisms(t *testing.T) {
+	cases := map[string]string{
+		"url":       "URL",
+		"dnsNames":  "DNSNames",
+		"hostname":  "Hostname",
+		"hostnames": "Hostnames",
+		"ipAddress": "IPAddress",
+	}
+	for in, want := range cases {
+		assert.Equal(t, want, titleCaseKey(in), "titleCaseKey(%q)", in)
 	}
 }

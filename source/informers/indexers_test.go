@@ -14,9 +14,11 @@ limitations under the License.
 package informers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -27,8 +29,10 @@ import (
 )
 
 func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
+	sel, err := annotations.ParseFilter("example-annotation")
+	require.NoError(t, err)
 	indexers := IndexerWithOptions[*unstructured.Unstructured](
-		IndexSelectorWithAnnotationFilter("example-annotation"),
+		IndexSelectorWithAnnotationFilter(sel),
 	)
 
 	obj := &unstructured.Unstructured{}
@@ -37,7 +41,7 @@ func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"default/test-object"}, keys)
 }
 
@@ -53,7 +57,7 @@ func TestIndexerWithOptions_FilterByLabel(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"default/test-object"}, keys)
 }
 
@@ -69,8 +73,8 @@ func TestIndexerWithOptions_NoMatch(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
-	assert.Nil(t, keys)
+	require.NoError(t, err)
+	require.Nil(t, keys)
 }
 
 func TestIndexerWithOptions_InvalidType(t *testing.T) {
@@ -79,26 +83,39 @@ func TestIndexerWithOptions_InvalidType(t *testing.T) {
 	obj := "invalid-object"
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.Error(t, err)
-	assert.Nil(t, keys)
+	require.Error(t, err)
+	require.Nil(t, keys)
 	assert.Contains(t, err.Error(), "object is not of type")
 }
 
 func TestIndexerWithOptions_EmptyOptions(t *testing.T) {
-	indexers := IndexerWithOptions[*unstructured.Unstructured]()
+	t.Run("namespaced resource", func(t *testing.T) {
+		indexers := IndexerWithOptions[*unstructured.Unstructured]()
+		obj := &unstructured.Unstructured{}
+		obj.SetNamespace("default")
+		obj.SetName("test-object")
 
-	obj := &unstructured.Unstructured{}
-	obj.SetNamespace("default")
-	obj.SetName("test-object")
+		keys, err := indexers[IndexWithSelectors](obj)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"default/test-object"}, keys)
+	})
 
-	keys, err := indexers["withSelectors"](obj)
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"default/test-object"}, keys)
+	t.Run("cluster-scoped resource", func(t *testing.T) {
+		indexers := IndexerWithOptions[*corev1.Node]()
+		node := &corev1.Node{}
+		node.SetName("my-node")
+
+		keys, err := indexers[IndexWithSelectors](node)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"my-node"}, keys)
+	})
 }
 
 func TestIndexerWithOptions_AnnotationFilterNoMatch(t *testing.T) {
+	sel, err := annotations.ParseFilter("example-annotation=value")
+	require.NoError(t, err)
 	indexers := IndexerWithOptions[*unstructured.Unstructured](
-		IndexSelectorWithAnnotationFilter("example-annotation=value"),
+		IndexSelectorWithAnnotationFilter(sel),
 	)
 
 	obj := &unstructured.Unstructured{}
@@ -107,45 +124,25 @@ func TestIndexerWithOptions_AnnotationFilterNoMatch(t *testing.T) {
 	obj.SetName("test-object")
 
 	keys, err := indexers[IndexWithSelectors](obj)
-	assert.NoError(t, err)
-	assert.Nil(t, keys)
+	require.NoError(t, err)
+	require.Nil(t, keys)
 }
 
 func TestIndexSelectorWithAnnotationFilter(t *testing.T) {
-	tests := []struct {
-		name           string
-		input          string
-		expectedFilter labels.Selector
-	}{
-		{
-			name:           "valid input",
-			input:          "key=value",
-			expectedFilter: func() labels.Selector { s, _ := annotations.ParseFilter("key=value"); return s }(),
-		},
-		{
-			name:           "empty input",
-			input:          "",
-			expectedFilter: nil,
-		},
-		{
-			name:           "key only filter",
-			input:          "app",
-			expectedFilter: func() labels.Selector { s, _ := annotations.ParseFilter("app"); return s }(),
-		},
-		{
-			name:           "poisoned input",
-			input:          "=app",
-			expectedFilter: nil,
-		},
-	}
+	sel, err := annotations.ParseFilter("key=value")
+	require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			options := &IndexSelectorOptions{}
-			IndexSelectorWithAnnotationFilter(tt.input)(options)
-			assert.Equal(t, tt.expectedFilter, options.annotationFilter)
-		})
-	}
+	t.Run("stores selector in options", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationFilter(sel)(options)
+		assert.Equal(t, sel, options.annotationFilter)
+	})
+
+	t.Run("nil selector stored as nil", func(t *testing.T) {
+		options := &IndexSelectorOptions{}
+		IndexSelectorWithAnnotationFilter(nil)(options)
+		require.Nil(t, options.annotationFilter)
+	})
 }
 
 func TestIndexerWithOptions_LabelKey(t *testing.T) {
@@ -161,7 +158,7 @@ func TestIndexerWithOptions_LabelKey(t *testing.T) {
 		es.SetLabels(map[string]string{discoveryv1.LabelServiceName: "my-service"})
 
 		keys, err := indexFn(es)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"default/my-service"}, keys)
 	})
 
@@ -172,14 +169,14 @@ func TestIndexerWithOptions_LabelKey(t *testing.T) {
 		es.SetLabels(map[string]string{})
 
 		keys, err := indexFn(es)
-		assert.NoError(t, err)
-		assert.Nil(t, keys)
+		require.NoError(t, err)
+		require.Nil(t, keys)
 	})
 
 	t.Run("wrong type returns error", func(t *testing.T) {
 		keys, err := indexFn(&corev1.Service{})
-		assert.Error(t, err)
-		assert.Nil(t, keys)
+		require.Error(t, err)
+		require.Nil(t, keys)
 	})
 }
 
@@ -190,20 +187,20 @@ func TestGetByKey_ObjectExists(t *testing.T) {
 	pod.SetName("test-pod")
 
 	err := indexer.Add(pod)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	result, err := GetByKey[*corev1.Pod](indexer, "default/test-pod")
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
+	result, err := getByKey[*corev1.Pod](indexer, "default/test-pod")
+	require.NoError(t, err)
+	require.NotNil(t, result)
 	assert.Equal(t, "test-pod", result.GetName())
 }
 
 func TestGetByKey_ObjectDoesNotExist(t *testing.T) {
 	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 
-	result, err := GetByKey[*corev1.Pod](indexer, "default/non-existent-pod")
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	result, err := getByKey[*corev1.Pod](indexer, "default/non-existent-pod")
+	require.NoError(t, err)
+	require.Nil(t, result)
 }
 
 func TestGetByKey_TypeAssertionFailure(t *testing.T) {
@@ -213,15 +210,96 @@ func TestGetByKey_TypeAssertionFailure(t *testing.T) {
 	service.SetName("test-service")
 
 	err := indexer.Add(service)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	result, err := GetByKey[*corev1.Pod](indexer, "default/test-service")
-	assert.Error(t, err)
+	result, err := getByKey[*corev1.Pod](indexer, "default/test-service")
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "object is not of type")
-	assert.Nil(t, result)
+	require.Nil(t, result)
+}
+
+type errIndexer struct {
+	cache.Indexer
+}
+
+func (e *errIndexer) ListIndexFuncValues(_ string) []string { return []string{"default/pod"} }
+func (e *errIndexer) GetByKey(_ string) (any, bool, error) {
+	return nil, false, fmt.Errorf("store error")
+}
+
+func TestListIndexed(t *testing.T) {
+	t.Run("empty store", func(t *testing.T) {
+		indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod]())
+		assert.Empty(t, ListIndexed[*corev1.Pod](indexer))
+	})
+
+	t.Run("all matching", func(t *testing.T) {
+		indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod]())
+		for _, name := range []string{"pod-1", "pod-2", "pod-3"} {
+			p := &corev1.Pod{}
+			p.SetNamespace("default")
+			p.SetName(name)
+			require.NoError(t, indexer.Add(p))
+		}
+		assert.Len(t, ListIndexed[*corev1.Pod](indexer), 3)
+	})
+
+	t.Run("label filter excludes non-matching", func(t *testing.T) {
+		sel := labels.SelectorFromSet(labels.Set{"app": "nginx"})
+		indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod](
+			IndexSelectorWithLabelSelector(sel),
+		))
+
+		match := &corev1.Pod{}
+		match.SetNamespace("default")
+		match.SetName("nginx-pod")
+		match.SetLabels(map[string]string{"app": "nginx"})
+
+		noMatch := &corev1.Pod{}
+		noMatch.SetNamespace("default")
+		noMatch.SetName("other-pod")
+		noMatch.SetLabels(map[string]string{"app": "apache"})
+
+		require.NoError(t, indexer.Add(match))
+		require.NoError(t, indexer.Add(noMatch))
+
+		result := ListIndexed[*corev1.Pod](indexer)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "nginx-pod", result[0].GetName())
+	})
+
+	t.Run("cluster-scoped resource", func(t *testing.T) {
+		indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Node]())
+		node := &corev1.Node{}
+		node.SetName("my-node")
+		require.NoError(t, indexer.Add(node))
+
+		result := ListIndexed[*corev1.Node](indexer)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "my-node", result[0].GetName())
+	})
+
+	t.Run("GetByKey error is skipped", func(t *testing.T) {
+		result := ListIndexed[*corev1.Pod](&errIndexer{})
+		assert.Empty(t, result)
+	})
+
+	t.Run("type mismatch is skipped", func(t *testing.T) {
+		indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, IndexerWithOptions[*corev1.Pod]())
+		pod := &corev1.Pod{}
+		pod.SetNamespace("default")
+		pod.SetName("test-pod")
+		require.NoError(t, indexer.Add(pod))
+
+		result := ListIndexed[*corev1.Service](indexer)
+		assert.Empty(t, result)
+	})
 }
 
 func TestIndexSelectorWithFunctions(t *testing.T) {
+	envProdSel, err := annotations.ParseFilter("env=prod")
+	require.NoError(t, err)
+
 	makePod := func(name, namespace string, labelsMap, annotationsMap map[string]string) *corev1.Pod {
 		p := &corev1.Pod{}
 		p.SetName(name)
@@ -294,7 +372,7 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		{
 			name: "combined annotation and predicate both pass includes object",
 			indexers: IndexerWithOptions[*corev1.Pod](
-				IndexSelectorWithAnnotationFilter("env=prod"),
+				IndexSelectorWithAnnotationFilter(envProdSel),
 				IndexSelectorWithConditions(func(p *corev1.Pod) bool { return p.GetLabels()["app"] == "web" }),
 			),
 			obj:      makePod("p", "default", map[string]string{"app": "web"}, map[string]string{"env": "prod"}),
@@ -303,7 +381,7 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		{
 			name: "combined annotation fails excludes object",
 			indexers: IndexerWithOptions[*corev1.Pod](
-				IndexSelectorWithAnnotationFilter("env=prod"),
+				IndexSelectorWithAnnotationFilter(envProdSel),
 				IndexSelectorWithConditions(func(p *corev1.Pod) bool { return p.GetLabels()["app"] == "web" }),
 			),
 			obj: makePod("p", "default", map[string]string{"app": "web"}, map[string]string{"env": "staging"}),
@@ -311,7 +389,7 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		{
 			name: "combined predicate fails excludes object",
 			indexers: IndexerWithOptions[*corev1.Pod](
-				IndexSelectorWithAnnotationFilter("env=prod"),
+				IndexSelectorWithAnnotationFilter(envProdSel),
 				IndexSelectorWithConditions(func(p *corev1.Pod) bool { return p.GetLabels()["app"] == "web" }),
 			),
 			obj: makePod("p", "default", map[string]string{"app": "api"}, map[string]string{"env": "prod"}),
@@ -322,11 +400,11 @@ func TestIndexSelectorWithFunctions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			keys, err := tt.indexers[IndexWithSelectors](tt.obj)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, keys)
+				require.Error(t, err)
+				require.Nil(t, keys)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.wantKeys, keys)
 		})
 	}

@@ -5,8 +5,6 @@ kind: DNSEndpoint
 metadata:
   name: simple-example
   namespace: default
-  annotations:
-    dns.why/type: aws-localstack-tutorial
 spec:
   endpoints:
     - dnsName: dnsendpoint-a.example.com

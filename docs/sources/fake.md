@@ -53,10 +53,11 @@ On each reconciliation the fake source emits one endpoint per record type:
 | `SRV`       | `_sip._udp.example.com`    | `10 20 5060 <random>.example.com.`                            | CRD (DNSEndpoint) only      |
 | `PTR`       | `<n>.2.0.192.in-addr.arpa` | `<random>.example.com`                                        | CRD (DNSEndpoint) only      |
 | `NAPTR`     | `_sip._udp.example.com`    | `100 10 "u" "E2U+sip" "!^.*$!sip:info@example.com!" .`        | CRD (DNSEndpoint) only      |
+| `DNAME`     | `<random>.example.com`     | `<random>.example.com`                                        | CRD (DNSEndpoint) only      |
 
 The NAPTR target fields are: `order preference flags service regexp replacement` (RFC 2915). In the example above: order=100, preference=10, flags=`"u"` (URI result), service=`"E2U+sip"`, regexp=`"!^.*$!sip:info@example.com!"`, replacement=`.` (none).
 
-> **Note:** `SRV`, `PTR`, and `NAPTR` are only reachable in practice via the CRD source (`DNSEndpoint`). The fake source emits them so webhook providers can verify handling of these types, but a passing result does not indicate that any real source will produce them.
+> **Note:** `SRV`, `PTR`, `NAPTR`, and `DNAME` are only reachable in practice via the CRD source (`DNSEndpoint`). The fake source emits them so webhook providers can verify handling of these types, but a passing result does not indicate that any real source will produce them.
 
 IPv4 addresses are drawn from `192.0.2.0/24` and IPv6 from `2001:db8::/32` — both reserved for documentation and examples, so they will never accidentally match real infrastructure.
 
@@ -76,7 +77,8 @@ external-dns \
   --managed-record-types=SRV \
   --managed-record-types=NS \
   --managed-record-types=MX \
-  --managed-record-types=NAPTR
+  --managed-record-types=NAPTR \
+  --managed-record-types=DNAME
 ```
 
 To test all record types at once, list every type explicitly. The fake source always generates a full set; `--managed-record-types` controls which ones the provider receives.
@@ -117,7 +119,7 @@ external-dns --source=fake --provider=webhook --webhook-provider-url=http://loca
   --fqdn-template=one.example.com,two.example.com,three.example.com
 ```
 
-This produces `3 × 9 = 27` endpoints in total, with each `A` and `AAAA` record having 3 targets.
+This produces `3 × 10 = 30` endpoints in total, with each `A` and `AAAA` record having 3 targets.
 
 > **Note:** Multiple domains add volume but not predictability — names are still random and change on every reconciliation. If your integration test needs a stable, known set of records, use `DNSEndpoint` resources with `--source=crd` instead.
 

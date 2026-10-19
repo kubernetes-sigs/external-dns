@@ -21,8 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
-
-	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 const (
@@ -39,16 +37,9 @@ type IndexSelectorOptions struct {
 	conditions      []func(metav1.Object) bool
 }
 
-func IndexSelectorWithAnnotationFilter(input string) func(options *IndexSelectorOptions) {
+func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
-		if input == "" {
-			return
-		}
-		selector, err := annotations.ParseFilter(input)
-		if err != nil {
-			return
-		}
-		options.annotationFilter = selector
+		options.annotationFilter = input
 	}
 }
 
@@ -124,15 +115,18 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 					return nil, nil
 				}
 			}
-			name := entity.GetName()
 			if options.indexByLabelKey != "" {
-				name = entity.GetLabels()[options.indexByLabelKey]
+				name := entity.GetLabels()[options.indexByLabelKey]
 				if name == "" {
 					return nil, nil
 				}
+				return []string{types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()}, nil
 			}
-			key := types.NamespacedName{Namespace: entity.GetNamespace(), Name: name}.String()
-			return []string{key}, nil
+			ns := entity.GetNamespace()
+			if ns == "" {
+				return []string{entity.GetName()}, nil
+			}
+			return []string{ns + "/" + entity.GetName()}, nil
 		},
 	}
 }
@@ -157,10 +151,30 @@ func MustAddEventHandler(informer cache.SharedInformer, handler cache.ResourceEv
 	}
 }
 
-// GetByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
+// ListIndexed returns all objects of type T admitted by the IndexWithSelectors index.
+// Objects missing from the store or failing type assertion are silently skipped — a missing
+// key means the object was deleted between the index scan and the lookup, which is normal.
+func ListIndexed[T metav1.Object](indexer cache.Indexer) []T {
+	keys := indexer.ListIndexFuncValues(IndexWithSelectors)
+	result := make([]T, 0, len(keys))
+	for _, key := range keys {
+		raw, exists, err := indexer.GetByKey(key)
+		if !exists || err != nil {
+			continue
+		}
+		obj, ok := raw.(T)
+		if !ok {
+			continue
+		}
+		result = append(result, obj)
+	}
+	return result
+}
+
+// getByKey retrieves an object of type T (metav1.Object) from the given cache.Indexer by its key.
 // It returns the object and an error if the retrieval or type assertion fails.
 // If the object does not exist, it returns the zero value of T and nil.
-func GetByKey[T metav1.Object](indexer cache.Indexer, key string) (T, error) {
+func getByKey[T metav1.Object](indexer cache.Indexer, key string) (T, error) {
 	var entity T
 	obj, exists, err := indexer.GetByKey(key)
 	if err != nil || !exists {

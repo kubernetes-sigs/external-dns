@@ -95,6 +95,8 @@ func ParseResources(resources []ResourceWithDependencies) (*ParsedResources, err
 				parsed.Pods = append(parsed.Pods, pods...)
 				parsed.EndpointSlices = append(parsed.EndpointSlices, endpointSlice)
 			}
+		case *corev1.Node:
+			parsed.Nodes = append(parsed.Nodes, res)
 		case *networkingv1.Ingress:
 			parsed.Ingresses = append(parsed.Ingresses, res)
 		case *discoveryv1.EndpointSlice:
@@ -119,11 +121,9 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 		podIP := fmt.Sprintf("10.0.0.%d", i+1)
 
 		pod := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: svc.Namespace,
-				Labels:    svc.Spec.Selector,
-			},
+			Name:      podName,
+			Namespace: svc.Namespace,
+			Labels:    svc.Spec.Selector,
 			Spec: corev1.PodSpec{
 				Hostname: podName,
 			},
@@ -150,11 +150,9 @@ func generatePodsAndEndpointSlice(svc *corev1.Service, deps *PodDependencies) ([
 	endpointSliceLabels[discoveryv1.LabelServiceName] = svc.Name
 
 	endpointSlice := &discoveryv1.EndpointSlice{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-slice", svc.Name),
-			Namespace: svc.Namespace,
-			Labels:    endpointSliceLabels,
-		},
+		Name:        fmt.Sprintf("%s-slice", svc.Name),
+		Namespace:   svc.Namespace,
+		Labels:      endpointSliceLabels,
 		AddressType: discoveryv1.AddressTypeIPv4,
 		Endpoints:   endpoints,
 	}
@@ -177,6 +175,21 @@ func createIngressWithOptionalStatus(ctx context.Context, client *fake.Clientset
 		}
 	}
 
+	return nil
+}
+
+func createNodeWithAddresses(ctx context.Context, client *fake.Clientset, node *corev1.Node) error {
+	created, err := client.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	if len(node.Status.Addresses) > 0 {
+		created.Status = node.Status
+		_, err = client.CoreV1().Nodes().UpdateStatus(ctx, created, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -210,6 +223,11 @@ func LoadResources(ctx context.Context, scenario Scenario) (*LoadedResources, er
 		return nil, err
 	}
 
+	for _, node := range resources.Nodes {
+		if err := createNodeWithAddresses(ctx, k8sClient, node); err != nil {
+			return nil, err
+		}
+	}
 	for _, ing := range resources.Ingresses {
 		if err := createIngressWithOptionalStatus(ctx, k8sClient, ing); err != nil {
 			return nil, err
@@ -250,6 +268,7 @@ func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigO
 		NAT64Networks:       scenarioCfg.NAT64Networks,
 		Provider:            scenarioCfg.Provider,
 		PreferAlias:         scenarioCfg.PreferAlias,
+		FQDNTemplate:        scenarioCfg.FQDNTemplate,
 	}, opts...)
 }
 

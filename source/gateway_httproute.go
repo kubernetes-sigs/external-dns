@@ -20,15 +20,16 @@ import (
 	"context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
-	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
+
+	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
 // NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given config.
 func NewGatewayHTTPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "HTTPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
+	return newGatewayRouteSource(ctx, clients, config, "HTTPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayHTTPRouteInformer{factory.Gateway().V1().HTTPRoutes()}
 	})
 }
@@ -46,14 +47,10 @@ type gatewayHTTPRouteInformer struct {
 	informers_v1.HTTPRouteInformer
 }
 
-func (inf gatewayHTTPRouteInformer) List(namespace string, selector labels.Selector) ([]gatewayRoute, error) {
-	list, err := inf.HTTPRouteInformer.Lister().HTTPRoutes(namespace).List(selector)
-	if err != nil {
-		return nil, err
-	}
+func (inf gatewayHTTPRouteInformer) List() []gatewayRoute {
+	list := extInformers.ListIndexed[*v1.HTTPRoute](inf.HTTPRouteInformer.Informer().GetIndexer())
 	routes := make([]gatewayRoute, len(list))
 	for i, rt := range list {
-		// List results are supposed to be treated as read-only.
 		// We make a shallow copy since we're only interested in setting the TypeMeta.
 		clone := *rt
 		clone.TypeMeta = metav1.TypeMeta{
@@ -62,5 +59,5 @@ func (inf gatewayHTTPRouteInformer) List(namespace string, selector labels.Selec
 		}
 		routes[i] = &gatewayHTTPRoute{clone}
 	}
-	return routes, nil
+	return routes
 }

@@ -41,30 +41,26 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			title: "templating resolve Ingress source hostnames to IP",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
 							{
 								Host: "example.org",
-								IngressRuleValue: networkv1.IngressRuleValue{
-									HTTP: &networkv1.HTTPIngressRuleValue{
-										Paths: []networkv1.HTTPIngressPath{
-											{
-												Backend: networkv1.IngressBackend{
-													Service: &networkv1.IngressServiceBackend{
-														Name: "my-service",
-														Port: networkv1.ServiceBackendPort{
-															Name: "http",
-														},
+								HTTP: &networkv1.HTTPIngressRuleValue{
+									Paths: []networkv1.HTTPIngressPath{
+										{
+											Backend: networkv1.IngressBackend{
+												Service: &networkv1.IngressServiceBackend{
+													Name: "my-service",
+													Port: networkv1.ServiceBackendPort{
+														Name: "http",
 													},
 												},
-												PathType: new(networkv1.PathTypePrefix),
-												Path:     "/",
 											},
+											PathType: new(networkv1.PathTypePrefix),
+											Path:     "/",
 										},
 									},
 								},
@@ -90,10 +86,8 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			title: "templating resolve hostnames with nip.io",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
@@ -118,12 +112,10 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			title: "templating resolve hostnames with nip.io and target annotation",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-						Annotations: map[string]string{
-							"external-dns.kubernetes.io/target": "10.200.130.84",
-						},
+					Name:      "my-ingress",
+					Namespace: "default",
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "10.200.130.84",
 					},
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("my-ingress"),
@@ -150,10 +142,8 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			title: "templating resolve hostnames with nip.io and status IP",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("my-ingress"),
 						Rules: []networkv1.IngressRule{
@@ -183,10 +173,8 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			title: "templating resolve with different hostnames and rules",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("ingress-with-override"),
 						Rules: []networkv1.IngressRule{
@@ -221,10 +209,8 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			title: "templating resolve with rules and tls",
 			ingresses: []*networkv1.Ingress{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "my-ingress",
-						Namespace: "default",
-					},
+					Name:      "my-ingress",
+					Namespace: "default",
 					Spec: networkv1.IngressSpec{
 						IngressClassName: new("ingress-with-override"),
 						Rules: []networkv1.IngressRule{

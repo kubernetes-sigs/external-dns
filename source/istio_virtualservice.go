@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
@@ -61,7 +62,6 @@ const IstioMeshGateway = "mesh"
 // +externaldns:source:provider-specific=true
 type virtualServiceSource struct {
 	namespace                string
-	annotationFilter         string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
@@ -79,9 +79,10 @@ func NewIstioVirtualServiceSource(
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
+	namespace := cfg.Namespace()
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(cfg.Namespace))
+	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	virtualServiceInformer := istioInformerFactory.Networking().V1().VirtualServices()
 	gatewayInformer := istioInformerFactory.Networking().V1().Gateways()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
@@ -128,8 +129,7 @@ func NewIstioVirtualServiceSource(
 	}
 
 	return &virtualServiceSource{
-		namespace:                cfg.Namespace,
-		annotationFilter:         cfg.AnnotationFilter,
+		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
@@ -143,18 +143,11 @@ func NewIstioVirtualServiceSource(
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	indexer := sc.vServiceInformer.Informer().GetIndexer()
-	indexKeys := indexer.ListIndexFuncValues(informers.IndexWithSelectors)
+	objs := informers.ListIndexed[*networkingv1.VirtualService](indexer)
 
-	endpoints := make([]*endpoint.Endpoint, 0, len(indexKeys))
+	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
-	log.Debugf("Found %d virtualservice in namespace %s", len(indexKeys), sc.namespace)
-
-	for _, key := range indexKeys {
-		vService, err := informers.GetByKey[*networkingv1.VirtualService](indexer, key)
-		if err != nil || vService == nil {
-			continue
-		}
-
+	for _, vService := range objs {
 		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, vService)
 		if err != nil {
 			return nil, err
@@ -172,6 +165,8 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
 			continue
 		}
+
+		endpoint.AttachRefObject(gwEndpoints, events.NewObjectReference(vService, types.IstioVirtualService))
 
 		log.Debugf("Endpoints generated from '%s/%s/%s': %q", strings.ToLower(vService.Kind), vService.Namespace, vService.Name, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)

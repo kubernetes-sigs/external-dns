@@ -123,6 +123,13 @@ You will need to use the above policy (represented by the `POLICY_ARN` environme
 - [Static credentials](#static-credentials)
 - [IAM Roles for Service Accounts](#iam-roles-for-service-accounts)
 
+> [!NOTE]
+> ExternalDNS resolves AWS credentials through the
+> [AWS SDK for Go v2 default credential provider chain](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials).
+> Any source supported by the SDK works without additional configuration in ExternalDNS — including environment
+> variables, shared config and credentials files, EC2 instance profile / ECS container credentials, and EKS Pod
+> Identity. See the AWS SDK reference for the full list and precedence order.
+
 For this tutorial, ExternalDNS will use the environment variable `EXTERNALDNS_NS` to represent the namespace, defaulted to `default`.
 Feel free to change this to something else, such `externaldns` or `kube-addons`.
 Make sure to edit the `subjects[0].namespace` for the `ClusterRoleBinding` resource when deploying ExternalDNS with RBAC enabled.
@@ -249,9 +256,32 @@ If ExternalDNS is not yet deployed, follow the steps under [Deploy ExternalDNS](
 
 In this method, the policy is attached to an IAM user, and the credentials secrets for the IAM user are then made available using a Kubernetes secret.
 
-This method is not the preferred method as the secrets in the credential file could be copied and used by an unauthorized threat actor.
+> [!WARNING]
+> **Security Risks with Static Credentials**
+>
+> - `kubectl describe pod` could expose secrets.
+> - Anyone who can `exec` into the container and run `env` can see them.
+> - Env vars can leak into logs, crash dumps, or child processes.
+> - There is no way to make them visible to a specific user only.
+> - They are long-lived, easy to leak, hard to rotate, and easy to accidentally commit or log.
+>
+> **When to use:**
+>
+> - Limit usage to non-AWS clusters.
+> - Always apply minimal privileges.
+> - Acknowledges reality (sometimes it is the only viable option).
+>
+> **For AWS specifically, the best practice and recommended hierarchy is:**
+>
+> 1. **IRSA (preferred):** Map an AWS IAM role to a Kubernetes service account; no static credentials in the pod.
+> 2. **EKS Pod Identity:** Native EKS alternative to IRSA; associates IAM role with a service account via the Pod Identity Agent.
+> 3. **Node IAM Role:** Attach policy to the node instance profile; not recommended beyond tests because all pods on the node inherit the permissions. Tolerated, but not recommended.
+> 4. **Mount credentials file:** Minimize privileges and avoid long-lived keys where possible.
+> 5. **Environment variables:** Minimize privileges and avoid long-lived keys where possible.
+
+This method is not the preferred method as the secrets in the credential file or environment variables could be copied and used by an unauthorized threat actor.
 However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.
-Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not used a credentials file that has extra privileges beyond what is required.
+Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not use a credentials file that has extra privileges beyond what is required.
 
 #### Create IAM user and attach the policy
 
@@ -295,6 +325,30 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 > the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case
 > ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile
 > in order to be able to modify the zones in the correct profile.
+
+<!-- markdownlint-disable-line MD028 -->
+
+> [!TIP]
+> To pass static credentials as environment variables (e.g. when running outside AWS and
+> mounting the credentials file is not convenient), source them from a Kubernetes `Secret`
+> and project them into the pod. With the
+> [in-tree `external-dns` Helm chart](https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns),
+> set the top-level `env` value:
+>
+> ```yaml
+> # values.yaml
+> env:
+>   - name: AWS_ACCESS_KEY_ID
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-access-key-id
+>   - name: AWS_SECRET_ACCESS_KEY
+>     valueFrom:
+>       secretKeyRef:
+>         name: aws-route53-credentials
+>         key: aws-secret-access-key
+> ```
 
 ### IAM Roles for Service Accounts
 
@@ -399,7 +453,7 @@ kubectl patch serviceaccount "external-dns" --namespace ${EXTERNALDNS_NS:-"defau
  "{\"metadata\": { \"annotations\": { \"eks.amazonaws.com/role-arn\": \"$ROLE_ARN\" }}}"
 ```
 
-If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing the the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.
+If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing to the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.
 
 When the service account annotations are updated, then the current running pods will have to be terminated, so that new pod(s) with proper configuration (environment variables) will be created automatically.
 
@@ -622,13 +676,13 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.21.0
+          image: registry.k8s.io/external-dns/external-dns:v0.23.0
           args:
             - --source=service
             - --source=ingress
             - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
             - --provider=aws
-            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+            - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
             - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
             - --registry=txt
             - --txt-owner-id=my-hostedzone-identifier
@@ -720,6 +774,16 @@ Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 
 ### target-hosted-zone
 
 `external-dns.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
+
+### hosted-zone-id
+
+`external-dns.kubernetes.io/aws-hosted-zone-id` pins a record to a specific Route53 hosted zone by ID. Use when overlapping zones share the same name (e.g. public + private `a.my.com`). If the pinned zone is not configured, the record is skipped.
+
+```yaml
+metadata:
+  annotations:
+    external-dns.kubernetes.io/aws-hosted-zone-id: "Z1234567890ABC"
+```
 
 ### aws-zone-match-parent
 
@@ -1114,6 +1178,9 @@ spec:
 
 > Route53 will direct each user to the region with the lowest latency.
 
+Routing policies also let several ExternalDNS instances — one per cluster — publish the same hostname, each
+owning its own record set. See [Multi-Cluster Shared DNS Records](../advanced/multi-cluster-shared-records.md).
+
 ### Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using
@@ -1192,7 +1259,7 @@ If the cluster was provisioned using `eksctl`, you can delete the cluster with:
 eksctl delete cluster --name $EKS_CLUSTER_NAME --region $EKS_CLUSTER_REGION
 ```
 
-Give ExternalDNS some time to clean up the DNS records for you. Then delete the hosted zone if you created one for the testing purpose.
+Delete the DNS records manually (with `--policy=upsert-only` ExternalDNS does not remove them; use `--policy=sync` to let ExternalDNS delete records). Then delete the hosted zone if you created one for the testing purpose.
 
 ```bash
 aws route53 delete-hosted-zone --id $ZONE_ID # e.g /hostedzone/ZEWFWZ4R16P7IB
@@ -1264,7 +1331,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.21.0
+        image: registry.k8s.io/external-dns/external-dns:v0.23.0
         command:
         - /bin/sh
         - -c
