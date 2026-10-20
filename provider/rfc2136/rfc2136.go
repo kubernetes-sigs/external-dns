@@ -260,6 +260,10 @@ OuterLoop:
 		case dns.TypeTXT:
 			rrValues = (rr.(*dns.TXT).Txt)
 			rrType = "TXT"
+		case dns.TypeMX:
+			mx := rr.(*dns.MX)
+			rrValues = []string{fmt.Sprintf("%d %s", mx.Preference, mx.Mx)}
+			rrType = endpoint.RecordTypeMX
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
 			rrType = "NS"
@@ -273,19 +277,22 @@ OuterLoop:
 			continue // Unhandled record type
 		}
 
-		for idx, existingEndpoint := range eps {
-			if existingEndpoint.DNSName == strings.TrimSuffix(rrFqdn, ".") && existingEndpoint.RecordType == rrType {
-				eps[idx].Targets = append(eps[idx].Targets, rrValues...)
-				continue OuterLoop
-			}
-		}
-
 		ep := endpoint.NewEndpointWithTTL(
 			rrFqdn,
 			rrType,
 			rrTTL,
 			rrValues...,
 		)
+		if ep == nil {
+			continue
+		}
+
+		for idx, existingEndpoint := range eps {
+			if existingEndpoint.DNSName == ep.DNSName && existingEndpoint.RecordType == ep.RecordType {
+				eps[idx].Targets = append(eps[idx].Targets, ep.Targets...)
+				continue OuterLoop
+			}
+		}
 
 		eps = append(eps, ep)
 	}
