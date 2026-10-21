@@ -16,11 +16,6 @@ package source
 import (
 	"fmt"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // ParseIngress parses an ingress string in the format "namespace/name" or "name".
@@ -40,17 +35,4 @@ func ParseIngress(ingress string) (string, string, error) {
 	}
 
 	return namespace, name, err
-}
-
-// isEmptyEndpoints reports whether endpoints is empty, logging at debug level
-// so a source object that yields no records is still traceable.
-func isEmptyEndpoints(
-	endpoints []*endpoint.Endpoint,
-	rType string, entity metav1.ObjectMetaAccessor,
-) bool {
-	if len(endpoints) == 0 {
-		log.Debugf("No endpoints could be generated from '%s/%s/%s'", rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName())
-		return true
-	}
-	return false
 }

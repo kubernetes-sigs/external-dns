@@ -2319,7 +2319,7 @@ func TestEndpointEqual(t *testing.T) {
 		{
 			name: "refObjects ignored", a: base(), b: base(), want: true,
 			modify: func(e *Endpoint) {
-				e.WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "svc", "", "service"))
+				e.WithRefObject(NewObjectRef("Service", "v1", "default", "svc", "", "service"))
 			},
 		},
 		{

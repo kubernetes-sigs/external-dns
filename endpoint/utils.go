@@ -52,6 +52,24 @@ func RequiresTrailingDot(recordType string) bool {
 	}
 }
 
+// namedObject is the subset of metav1.Object that IsEmptyEndpoints logs. It is
+// declared here so endpoint does not import k8s.io/apimachinery/pkg/apis/meta/v1,
+// which would pull the Kubernetes client stack into every webhook provider.
+type namedObject interface {
+	GetNamespace() string
+	GetName() string
+}
+
+// IsEmptyEndpoints reports whether endpoints is empty, logging at debug level
+// so a source object that yields no records is still traceable.
+func IsEmptyEndpoints(endpoints []*Endpoint, rType string, entity namedObject) bool {
+	if len(endpoints) == 0 {
+		log.Debugf("No endpoints could be generated from '%s/%s/%s'", rType, entity.GetNamespace(), entity.GetName())
+		return true
+	}
+	return false
+}
+
 // EndpointsForHostname returns endpoint objects for each host-target combination,
 // grouping targets by their suitable DNS record type (A, AAAA, or CNAME).
 func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpecific ProviderSpecific, setIdentifier string, resource string) []*Endpoint {

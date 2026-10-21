@@ -138,7 +138,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 			return nil, err
 		}
 
-		if isEmptyEndpoints(eps, types.SkipperRouteGroup, rg) {
+		if endpoint.IsEmptyEndpoints(eps, types.SkipperRouteGroup, rg) {
 			continue
 		}
 

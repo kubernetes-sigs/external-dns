@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -29,9 +28,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
-
-	"sigs.k8s.io/external-dns/endpoint"
-	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func TestParseIngress(t *testing.T) {
@@ -243,41 +239,5 @@ func assertObjectTransformedHelper(t *testing.T, obj metav1.Object, cfg *informe
 			require.IsType(t, reflect.Slice, condField.Kind())
 			assert.NotZero(t, condField.Len())
 		}
-	}
-}
-
-func TestIsEmptyEndpoints(t *testing.T) {
-	svc := &corev1.Service{Namespace: "default", Name: "my-service"}
-	tests := []struct {
-		name      string
-		endpoints []*endpoint.Endpoint
-		expected  bool
-	}{
-		{name: "nil slice", expected: true},
-		{name: "empty slice", endpoints: []*endpoint.Endpoint{}, expected: true},
-		{
-			name:      "single endpoint",
-			endpoints: []*endpoint.Endpoint{endpoint.NewEndpoint("example.org", "A", "1.2.3.4")},
-		},
-		{
-			name: "multiple endpoints",
-			endpoints: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("example.org", "A", "1.2.3.4"),
-				endpoint.NewEndpoint("test.example.org", "CNAME", "example.org"),
-			},
-		},
-	}
-
-	const wantLog = "No endpoints could be generated from 'Service/default/my-service'"
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-			assert.Equal(t, tc.expected, isEmptyEndpoints(tc.endpoints, "Service", svc))
-			if tc.expected {
-				logtest.TestHelperLogContainsWithLogLevel(wantLog, log.DebugLevel, hook, t)
-			} else {
-				logtest.TestHelperLogNotContains(wantLog, hook, t)
-			}
-		})
 	}
 }

@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
@@ -88,7 +89,7 @@ func TestObjectReference_Description(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ref := NewObjectReferenceFromParts(tt.kind, "", tt.namespace, tt.name, "", "")
+		ref := endpoint.NewObjectRef(tt.kind, "", tt.namespace, tt.name, "", "")
 		require.Equal(t, tt.expected, description(ref))
 	}
 }
@@ -151,7 +152,7 @@ func TestEvent_NewEvents(t *testing.T) {
 }
 
 func TestEvent_Transpose(t *testing.T) {
-	ev := NewEvent(NewObjectReferenceFromParts("Pod", "", "default", "nginx", "", ""), "test message", ActionCreate, RecordReady)
+	ev := NewEvent(endpoint.NewObjectRef("Pod", "", "default", "nginx", "", ""), "test message", ActionCreate, RecordReady)
 
 	evs := ev.events()
 	require.Len(t, evs, 1)
@@ -171,7 +172,7 @@ func TestEvent_Transpose(t *testing.T) {
 	require.Len(t, evs, 1)
 	require.Equal(t, longMsg[:1021]+"...", evs[0].Note)
 
-	ev.refs[0] = *NewObjectReferenceFromParts("Pod", "", "default", "", "", "")
+	ev.refs[0] = *endpoint.NewObjectRef("Pod", "", "default", "", "", "")
 	require.Empty(t, ev.events())
 }
 
@@ -180,7 +181,7 @@ func TestEvent_NameAndEventTimeConsistent(t *testing.T) {
 		now := time.Now() // deterministic bubble time: 2000-01-01 00:00:00 UTC
 		expectedSuffix := fmt.Sprintf(".%x", now.UnixNano())
 
-		ev := NewEvent(NewObjectReferenceFromParts("Pod", "", "default", "nginx", "", ""), "msg", ActionCreate, RecordReady)
+		ev := NewEvent(endpoint.NewObjectRef("Pod", "", "default", "nginx", "", ""), "msg", ActionCreate, RecordReady)
 
 		evs := ev.events()
 		require.Len(t, evs, 1)
@@ -306,7 +307,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				recordTTL:  300,
 				targets:    []string{"10.0.0.1", "10.0.0.2"},
 				owner:      "my-owner",
-				refObjects: []*ObjectReference{NewObjectReferenceFromParts("Service", "", "default", "my-service", "", "service")},
+				refObjects: []*ObjectReference{endpoint.NewObjectRef("Service", "", "default", "my-service", "", "service")},
 			},
 			action: ActionCreate,
 			reason: RecordReady,
@@ -334,7 +335,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				recordTTL:  0,
 				targets:    []string{"target.example.com"},
 				owner:      "",
-				refObjects: []*ObjectReference{NewObjectReferenceFromParts("Ingress", "", "prod", "my-ingress", "", "ingress")},
+				refObjects: []*ObjectReference{endpoint.NewObjectRef("Ingress", "", "prod", "my-ingress", "", "ingress")},
 			},
 			action: ActionDelete,
 			reason: RecordDeleted,
@@ -354,7 +355,7 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				recordTTL:  60,
 				targets:    []string{"192.168.1.1"},
 				owner:      "default",
-				refObjects: []*ObjectReference{NewObjectReferenceFromParts("Node", "", "", "node1", "", "node")},
+				refObjects: []*ObjectReference{endpoint.NewObjectRef("Node", "", "", "node1", "", "node")},
 			},
 			action: ActionCreate,
 			reason: RecordReady,
@@ -376,8 +377,8 @@ func TestNewEventFromEndpoint(t *testing.T) {
 				targets:    []string{"1.2.3.4"},
 				owner:      "owner",
 				refObjects: []*ObjectReference{
-					NewObjectReferenceFromParts("DNSEndpoint", "", "default", "shared-dns", "", "crd"),
-					NewObjectReferenceFromParts("Service", "", "default", "shared-svc", "", "service"),
+					endpoint.NewObjectRef("DNSEndpoint", "", "default", "shared-dns", "", "crd"),
+					endpoint.NewObjectRef("Service", "", "default", "shared-svc", "", "service"),
 				},
 			},
 			action: ActionCreate,
@@ -417,7 +418,7 @@ func TestNewObjectReference(t *testing.T) {
 				UID:        "pod-uid-123",
 			},
 			source:   "pod",
-			expected: NewObjectReferenceFromParts("Pod", "v1", "default", "my-pod", "pod-uid-123", "pod"),
+			expected: endpoint.NewObjectRef("Pod", "v1", "default", "my-pod", "pod-uid-123", "pod"),
 		},
 		{
 			name: "Pod without TypeMeta (simulating informer behavior)",
@@ -427,7 +428,7 @@ func TestNewObjectReference(t *testing.T) {
 				UID:       "informer-uid-456",
 			},
 			source:   "pod",
-			expected: NewObjectReferenceFromParts("Pod", "v1", "kube-system", "informer-pod", "informer-uid-456", "pod"),
+			expected: endpoint.NewObjectRef("Pod", "v1", "kube-system", "informer-pod", "informer-uid-456", "pod"),
 		},
 		{
 			name: "Service without TypeMeta",
@@ -437,7 +438,7 @@ func TestNewObjectReference(t *testing.T) {
 				UID:       "svc-uid-789",
 			},
 			source:   "service",
-			expected: NewObjectReferenceFromParts("Service", "v1", "prod", "my-service", "svc-uid-789", "service"),
+			expected: endpoint.NewObjectRef("Service", "v1", "prod", "my-service", "svc-uid-789", "service"),
 		},
 		{
 			name: "Node (cluster-scoped, no namespace)",
@@ -446,7 +447,7 @@ func TestNewObjectReference(t *testing.T) {
 				UID:  "node-uid-abc",
 			},
 			source:   "node",
-			expected: NewObjectReferenceFromParts("Node", "v1", "", "worker-node-1", "node-uid-abc", "node"),
+			expected: endpoint.NewObjectRef("Node", "v1", "", "worker-node-1", "node-uid-abc", "node"),
 		},
 		{
 			name: "Endpoints without TypeMeta",
@@ -456,7 +457,7 @@ func TestNewObjectReference(t *testing.T) {
 				UID:       "ep-uid-def",
 			},
 			source:   "endpoints",
-			expected: NewObjectReferenceFromParts("Endpoints", "v1", "default", "my-endpoints", "ep-uid-def", "endpoints"),
+			expected: endpoint.NewObjectRef("Endpoints", "v1", "default", "my-endpoints", "ep-uid-def", "endpoints"),
 		},
 	}
 
@@ -487,7 +488,7 @@ func (c *customObject) DeepCopyObject() runtime.Object {
 }
 
 func TestEvent_Accessors(t *testing.T) {
-	ref := NewObjectReferenceFromParts("Pod", "", "default", "nginx", "", "")
+	ref := endpoint.NewObjectRef("Pod", "", "default", "nginx", "", "")
 	ev := NewEvent(ref, "msg", ActionDelete, RecordDeleted)
 
 	assert.Equal(t, ActionDelete, ev.Action())
@@ -503,17 +504,17 @@ func TestObjectReference_Key(t *testing.T) {
 	}{
 		{
 			name:     "namespaced resource",
-			ref:      NewObjectReferenceFromParts("", "", "default", "svc", "", "service"),
+			ref:      endpoint.NewObjectRef("", "", "default", "svc", "", "service"),
 			expected: "service/default/svc",
 		},
 		{
 			name:     "cluster-scoped resource has empty namespace segment",
-			ref:      NewObjectReferenceFromParts("", "", "", "node-1", "", "node"),
+			ref:      endpoint.NewObjectRef("", "", "", "node-1", "", "node"),
 			expected: "node//node-1",
 		},
 		{
 			name:     "different sources with same namespace and name produce distinct keys",
-			ref:      NewObjectReferenceFromParts("", "", "default", "my-dns", "", "crd"),
+			ref:      endpoint.NewObjectRef("", "", "default", "my-dns", "", "crd"),
 			expected: "crd/default/my-dns",
 		},
 	}

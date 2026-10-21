@@ -26,7 +26,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
-	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 )
@@ -45,7 +44,7 @@ func (f *fakeStatusReporter) ReportStatus(_ context.Context, objects []plan.Plan
 
 // An in-sync object produces no changes but must still be reported.
 func TestRunOnceReportsStatusWhenPlanHasNoChanges(t *testing.T) {
-	ref := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "steady", "", "crd")
+	ref := endpoint.NewObjectRef("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "steady", "", "crd")
 
 	src := new(testutils.MockSource)
 	src.On("Endpoints").Return([]*endpoint.Endpoint{
@@ -79,7 +78,7 @@ func TestRunOnceReportsStatusWhenPlanHasNoChanges(t *testing.T) {
 }
 
 func TestReportSyncStatus(t *testing.T) {
-	ref := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "first", "", "crd")
+	ref := endpoint.NewObjectRef("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", "first", "", "crd")
 	desired := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "10.0.0.1").WithRefObject(ref),
 	}

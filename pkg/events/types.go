@@ -29,7 +29,6 @@ import (
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	runtime "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -287,13 +286,4 @@ func objectRef(r *ObjectReference) *apiv1.ObjectReference {
 		UID:        r.UID(),
 		APIVersion: r.APIVersion(),
 	}
-}
-
-// NewObjectReferenceFromParts constructs an ObjectReference directly from its components.
-// Use this when you don't have a runtime.Object (e.g., in tests or when constructing
-// references from non-Kubernetes data sources).
-//
-// Deprecated: use endpoint.NewObjectRef.
-func NewObjectReferenceFromParts(kind, apiVersion, namespace, name string, uid types.UID, source string) *ObjectReference {
-	return endpoint.NewObjectRef(kind, apiVersion, namespace, name, uid, source)
 }

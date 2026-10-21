@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
@@ -522,4 +523,40 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		logtest.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)
 		logtest.TestHelperLogContains("example.com", hook, t)
 	})
+}
+
+func TestIsEmptyEndpoints(t *testing.T) {
+	svc := &corev1.Service{Namespace: "default", Name: "my-service"}
+	tests := []struct {
+		name      string
+		endpoints []*Endpoint
+		expected  bool
+	}{
+		{name: "nil slice", expected: true},
+		{name: "empty slice", endpoints: []*Endpoint{}, expected: true},
+		{
+			name:      "single endpoint",
+			endpoints: []*Endpoint{NewEndpoint("example.org", "A", "1.2.3.4")},
+		},
+		{
+			name: "multiple endpoints",
+			endpoints: []*Endpoint{
+				NewEndpoint("example.org", "A", "1.2.3.4"),
+				NewEndpoint("test.example.org", "CNAME", "example.org"),
+			},
+		},
+	}
+
+	const wantLog = "No endpoints could be generated from 'Service/default/my-service'"
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			assert.Equal(t, tc.expected, IsEmptyEndpoints(tc.endpoints, "Service", svc))
+			if tc.expected {
+				logtest.TestHelperLogContainsWithLogLevel(wantLog, log.DebugLevel, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(wantLog, hook, t)
+			}
+		})
+	}
 }
