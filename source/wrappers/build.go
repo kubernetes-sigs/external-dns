@@ -23,7 +23,7 @@ import (
 )
 
 // Build creates all named sources using cfg's ClientGenerator and wraps them
-// with the standard pipeline (dedup, optional NAT64, domain filter, optional target
+// with the standard pipeline (dedup, optional NAT64, CNAME conflict check, optional target
 // filter, post-processor). Inject a custom ClientGenerator via source.WithClientGenerator.
 func Build(ctx context.Context, cfg *source.Config) (source.Source, error) {
 	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())

@@ -26,20 +26,20 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
-// domainFilterSource reports CNAME/DNAME conflicts for names within the domain filter.
+// cnameConflictSource reports CNAME/DNAME conflicts for names within the domain filter.
 // Endpoints pass through unchanged.
-type domainFilterSource struct {
+type cnameConflictSource struct {
 	source       source.Source
 	domainFilter endpoint.DomainFilterInterface
 }
 
-// NewDomainFilterSource creates a new domainFilterSource wrapping the provided Source.
+// NewCNAMEConflictSource creates a new cnameConflictSource wrapping the provided Source.
 // A nil domainFilter puts every endpoint in scope.
-func NewDomainFilterSource(source source.Source, domainFilter endpoint.DomainFilterInterface) source.Source {
-	return &domainFilterSource{source: source, domainFilter: domainFilter}
+func NewCNAMEConflictSource(source source.Source, domainFilter endpoint.DomainFilterInterface) source.Source {
+	return &cnameConflictSource{source: source, domainFilter: domainFilter}
 }
 
-func (s *domainFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (s *cnameConflictSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints, err := s.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (s *domainFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoin
 
 // reportConflicts warns about CNAME/DNAME endpoints with the same name and set identifier
 // but different targets.
-func (s *domainFilterSource) reportConflicts(endpoints []*endpoint.Endpoint) {
+func (s *cnameConflictSource) reportConflicts(endpoints []*endpoint.Endpoint) {
 	lastTargets := make(map[string]string) // recordType/DNSName/SetIdentifier -> last target seen
 	for _, ep := range endpoints {
 		if ep == nil || len(ep.Targets) == 0 || (ep.RecordType != endpoint.RecordTypeCNAME && ep.RecordType != endpoint.RecordTypeDNAME) {
@@ -70,6 +70,6 @@ func (s *domainFilterSource) reportConflicts(endpoints []*endpoint.Endpoint) {
 	}
 }
 
-func (s *domainFilterSource) AddEventHandler(ctx context.Context, handler func()) {
+func (s *cnameConflictSource) AddEventHandler(ctx context.Context, handler func()) {
 	s.source.AddEventHandler(ctx, handler)
 }

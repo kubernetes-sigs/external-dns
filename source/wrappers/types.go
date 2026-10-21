@@ -119,7 +119,7 @@ func WithCreatePTR(enabled bool) Option {
 	}
 }
 
-// WithDomainFilter sets the domain filter that scopes the domain filter source wrapper.
+// WithDomainFilter sets the domain filter that scopes the CNAME conflict source wrapper.
 func WithDomainFilter(input endpoint.DomainFilterInterface) Option {
 	return func(o *Config) {
 		o.domainFilter = input
@@ -160,8 +160,8 @@ func wrapSources(
 		}
 		opts.addSourceWrapper("nat64")
 	}
-	combinedSource = NewDomainFilterSource(combinedSource, opts.domainFilter)
-	opts.addSourceWrapper("domain-filter")
+	combinedSource = NewCNAMEConflictSource(combinedSource, opts.domainFilter)
+	opts.addSourceWrapper("cname-conflict")
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(opts.targetNetFilter, opts.excludeTargetNets)
 	if targetFilter.IsEnabled() {
 		combinedSource = NewTargetFilterSource(combinedSource, targetFilter)
