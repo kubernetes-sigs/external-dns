@@ -59,7 +59,7 @@ func (s *cnameConflictSource) reportConflicts(endpoints []*endpoint.Endpoint) {
 		if s.domainFilter != nil && !s.domainFilter.Match(ep.DNSName) {
 			continue
 		}
-		// Lowercase the name like DomainFilter.Match does, so names that differ only in case share a key.
+		// Lowercase so names that differ only in case share a key.
 		key := ep.RecordType + "/" + strings.ToLower(ep.DNSName) + "/" + ep.SetIdentifier
 		if last, ok := lastTargets[key]; ok && last != ep.Targets[0] {
 			// Sort the pair so the same two targets always print the same way.
