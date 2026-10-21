@@ -108,14 +108,7 @@ func execute(ctx context.Context) {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
 
-	domainFilter := endpoint.NewDomainFilterWithOptions(
-		endpoint.WithDomainFilter(cfg.DomainFilter),
-		endpoint.WithDomainExclude(cfg.DomainExclude),
-		endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
-		endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
-	)
-
-	prvdr, err := providerfactory.Select(ctx, cfg, domainFilter)
+	prvdr, err := providerfactory.Select(ctx, cfg, sCfg.DomainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,7 +126,7 @@ func execute(ctx context.Context) {
 		os.Exit(0)
 	}
 
-	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, domainFilter)
+	ctrl, err := buildController(ctx, cfg, sCfg, endpointsSource, prvdr, sCfg.DomainFilter)
 	if err != nil {
 		log.Fatal(err)
 	}
