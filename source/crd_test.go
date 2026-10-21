@@ -188,7 +188,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 		},
 		{
-			// Without --default-targets, dedupSource would drop it with only a log line.
 			title:           "crd with no targets is rejected without default-targets",
 			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
@@ -330,8 +329,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 		},
 		{
-			// Accepting a relative host here would only have dedupSource drop it
-			// later, with no status to show for it.
 			title:           "SRV target with a relative host is rejected",
 			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
@@ -531,8 +528,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 		},
 		{
-			// A bare host is what ValidateMXRecord rejects, so the source refuses
-			// it rather than letting dedupSource drop it silently.
 			title:           "MX Record without a preference is rejected",
 			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",

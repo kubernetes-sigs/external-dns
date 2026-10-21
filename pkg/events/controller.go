@@ -42,12 +42,11 @@ type EventEmitter interface {
 	Add(...Event)
 }
 
-// discardEmitter drops every event, so callers never branch on a nil emitter.
 type discardEmitter struct{}
 
 func (discardEmitter) Add(...Event) {}
 
-// Discard is an EventEmitter that emits nothing.
+// Discard emits nothing, so callers never branch on a nil emitter.
 var Discard EventEmitter = discardEmitter{}
 
 type Controller struct {
