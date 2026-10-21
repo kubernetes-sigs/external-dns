@@ -299,10 +299,10 @@ The following metrics are the first place to look when diagnosing operational pr
 
 See [Available Metrics](../monitoring/metrics.md) for the full list.
 
-> **Future:** Work is in progress to add an `external_dns_source_invalid_endpoints` gauge
-> (partitioned by `record_type` and `source_type`) that resets and refills each reconcile cycle,
-> making it straightforward to alert on dropped endpoints without log grepping. Until that lands,
-> watch `external_dns_source_errors_total` and enable `--events-emit=RecordError` (see below).
+> The `external_dns_source_invalid_endpoints` gauge (partitioned by `record_type` and
+> `source_type`) resets and refills each reconcile cycle, making it straightforward to alert on
+> rejected or conflicting endpoints without log grepping. For invalid endpoints,
+> `--events-emit=RecordError` (see below) also adds events on the affected resources.
 
 ### Kubernetes Events for invalid endpoints
 

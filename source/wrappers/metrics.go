@@ -28,7 +28,7 @@ var (
 		prometheus.GaugeOpts{
 			Subsystem: "source",
 			Name:      "invalid_endpoints",
-			Help:      "Number of endpoints currently rejected due to invalid configuration, partitioned by record type and source.",
+			Help:      "Number of endpoints currently rejected or conflicting, partitioned by record type and source.",
 		},
 		[]string{"record_type", "source_type"},
 	)
