@@ -25,6 +25,27 @@ tests:
           path: spec.template.spec.automountServiceAccountToken
           value: true
 
+  - it: should not set hostUsers by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.hostUsers
+
+  - it: should set hostUsers to false
+    set:
+      hostUsers: false
+    asserts:
+      - equal:
+          path: spec.template.spec.hostUsers
+          value: false
+
+  - it: should set hostUsers to true
+    set:
+      hostUsers: true
+    asserts:
+      - equal:
+          path: spec.template.spec.hostUsers
+          value: true
+
   - it: should provide expected defaults for securityContext
     asserts:
       - isSubset:
