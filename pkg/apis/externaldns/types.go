@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -444,10 +445,12 @@ func sortedAllowedSources() []string {
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
 	"connector",
+	"crd",
 	"empty",
 	"fake",
 	"gloo-proxy",
 	"node",
+	"service",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -748,7 +751,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Specify multiple times for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
 
 	// kube client config flags
-	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
+	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: $KUBECONFIG, ~/.kube/config, in-cluster)", defaultConfig.KubeConfig, &cfg.KubeConfig)
 	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
 	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
@@ -757,7 +760,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 func App(cfg *Config) *kingpin.Application {
 	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.\n\nNote that all flags may be replaced with env vars - `--flag` -> `EXTERNAL_DNS_FLAG=1` or `--flag value` -> `EXTERNAL_DNS_FLAG=value`")
-	app.Version(Version)
+	app.Version(version.Version)
 	app.DefaultEnvars()
 
 	bindFlags(flags.NewKingpinBinder(app), cfg)

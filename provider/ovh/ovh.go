@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -140,7 +141,7 @@ func newProvider(
 		return nil, err
 	}
 
-	client.UserAgent = externaldns.UserAgent()
+	client.UserAgent = version.UserAgent()
 
 	return &OVHProvider{
 		client:                    client,

@@ -19,6 +19,7 @@ package endpoint
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"net/netip"
 	"slices"
 	"sort"
@@ -580,6 +581,21 @@ func (e *Endpoint) Key() EndpointKey {
 		RecordType:    e.RecordType,
 		SetIdentifier: e.SetIdentifier,
 	}
+}
+
+// Equal reports whether a and b describe the same DNS record. refObjects is
+// ignored because it only tracks provenance. Nil and empty collections are equal.
+func Equal(a, b *Endpoint) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.DNSName == b.DNSName &&
+		a.RecordType == b.RecordType &&
+		a.SetIdentifier == b.SetIdentifier &&
+		a.RecordTTL == b.RecordTTL &&
+		slices.Equal(a.Targets, b.Targets) &&
+		maps.Equal(a.Labels, b.Labels) &&
+		slices.Equal(a.ProviderSpecific, b.ProviderSpecific)
 }
 
 // IsOwnedBy returns true if the endpoint owner label matches the given ownerID, false otherwise
