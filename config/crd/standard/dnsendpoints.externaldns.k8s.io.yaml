@@ -144,7 +144,14 @@ spec:
                   type: array
               type: object
             status:
-              description: DNSEndpointStatus defines the observed state of DNSEndpoint
+              default:
+                conditions:
+                  - lastTransitionTime: "1970-01-01T00:00:00Z"
+                    message: Waiting for external-dns
+                    reason: Pending
+                    status: Unknown
+                    type: Accepted
+              description: Status starts as Accepted=Unknown (Pending) until external-dns reads the object.
               properties:
                 conditions:
                   description: 'Conditions observe the DNSEndpoint state: Accepted (the spec was understood).'

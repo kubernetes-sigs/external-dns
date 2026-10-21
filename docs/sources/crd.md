@@ -160,8 +160,9 @@ writes, where a rejected write aborts the sync instead of teaching anyone anythi
 rule should not reject what external-dns can legitimately build.
 
 The rest is checked when external-dns reads the object, before anything is planned. A
-rejected endpoint gets an `Invalid` [status condition](#status) and, optionally, a
-`RecordInvalid` event:
+rejected endpoint is left out of the plan, while the other endpoints of the same object
+are still published. The object gets an `Invalid` [status condition](#status) and,
+optionally, a `RecordInvalid` event:
 
 * `A`/`AAAA` targets must be addresses of the matching family, unless the endpoint sets
   the `alias` provider-specific property.
@@ -171,10 +172,6 @@ rejected endpoint gets an `Invalid` [status condition](#status) and, optionally,
 * Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
   where both forms are valid (RFC 1035 §5.1).
 * `targets` may be empty only when `--default-targets` is configured.
-
-An `MX` target without a preference, or empty `targets` without `--default-targets`,
-used to be dropped later with only a log line. They now show up as `Accepted=False`;
-the provider sees no difference.
 
 ### Status
 
@@ -186,10 +183,11 @@ NAME               ACCEPTED   AGE
 examplednsrecord   True       2m
 ```
 
-| Condition  | Reason     | Meaning                                                                     |
-|------------|------------|-----------------------------------------------------------------------------|
-| `Accepted` | `Accepted` | external-dns understood every endpoint in `spec`.                           |
-| `Accepted` | `Invalid`  | At least one endpoint was refused; the message names the index and the fix. |
+| Condition  | Status    | Reason     | Meaning                                                                     |
+|------------|-----------|------------|-----------------------------------------------------------------------------|
+| `Accepted` | `Unknown` | `Pending`  | Schema default: no external-dns instance has read the object yet.           |
+| `Accepted` | `True`    | `Accepted` | external-dns understood every endpoint in `spec`.                           |
+| `Accepted` | `False`   | `Invalid`  | At least one endpoint was refused; the message names the index and the fix. |
 
 `Accepted` is written before any provider call and refreshed on every sync, but only
 stored when it changes. `status.observedGeneration` tracks the last `spec` processed.
