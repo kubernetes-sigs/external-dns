@@ -23,13 +23,11 @@ import (
 )
 
 const (
-	// AcceptedCondition reports whether every endpoint in spec passed source-level
-	// validation, before any provider call. ReadyCondition (see dnsrecord.go) then
-	// reports whether the provider applied them.
+	// AcceptedCondition reports whether every endpoint in spec passed validation,
+	// before any provider call.
 	AcceptedCondition string = "Accepted"
 
-	// InvalidReason marks a spec with at least one endpoint external-dns refused to
-	// plan, e.g. an SRV target without a trailing dot.
+	// InvalidReason marks a spec with at least one endpoint external-dns refused.
 	InvalidReason string = "Invalid"
 
 	// PendingReason is the schema default for Accepted, shown until an

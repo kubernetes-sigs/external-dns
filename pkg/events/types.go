@@ -41,8 +41,8 @@ const (
 	ActionUpdate Action = "Updated"
 	ActionDelete Action = "Deleted"
 	ActionFailed Action = "FailedSync"
-	// ActionRejected is used when a source refuses to plan a record that a user
-	// declared, i.e. the record never reaches the provider.
+	// ActionRejected: a source refused a user's record; it never reaches the
+	// provider.
 	ActionRejected Action = "Rejected"
 
 	RecordReady   Reason = "RecordReady"

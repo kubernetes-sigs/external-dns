@@ -192,9 +192,8 @@ examplednsrecord   True       2m
 `Accepted` is written before any provider call and refreshed on every sync, but only
 stored when it changes. `status.observedGeneration` tracks the last `spec` processed.
 
-Rejected endpoints can additionally raise a Kubernetes `Warning` event by starting
-external-dns with `--events-emit=RecordInvalid`. The event is emitted when the verdict
-first appears and again whenever it changes, not on every sync:
+With `--events-emit=RecordInvalid`, a rejection also raises a `Warning` event, once per
+verdict change:
 
 ```console
 $ kubectl describe dnsendpoint examplednsrecord

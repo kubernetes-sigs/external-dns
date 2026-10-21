@@ -81,8 +81,6 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			wantMessagePart: `spec.endpoints[1] (A bad.example.org): target "1.2.3.4." must not end with a dot`,
 		},
 		{
-			// dedupSource drops what CheckEndpoint rejects with only a log line,
-			// so the source has to catch the grammar for anyone to hear about it.
 			title: "SRV target with a relative host is reported",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "_svc._tcp.example.org", Targets: endpoint.Targets{"0 0 80 abc.example.org"}, RecordType: endpoint.RecordTypeSRV},
@@ -282,8 +280,7 @@ func TestCRDSourceEmitsEventOnRejectedEndpoint(t *testing.T) {
 	assert.Equal(t, events.EventTypeWarning, emitted.EventType())
 }
 
-// Events carry a timestamped name, so nothing collapses them into a series:
-// emitting per reconcile would create one Event a minute for an untouched spec.
+// See reportAccepted: one event per verdict, not per sync.
 func TestCRDSourceEmitsRejectionEventOnlyWhenTheVerdictChanges(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
