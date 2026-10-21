@@ -631,6 +631,48 @@ func TestProcessEndpoint_Unstructured_RefObjectExist(t *testing.T) {
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Unstructured, len(objects))
 }
 
+func TestUnstructuredSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	var objects []*unstructured.Unstructured
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		objects = append(objects, &unstructured.Unstructured{
+			Object: map[string]any{
+				"apiVersion": "kubevirt.io/v1",
+				"kind":       "VirtualMachineInstance",
+				"metadata": map[string]any{
+					"name":      "vm",
+					"namespace": namespace,
+					"annotations": map[string]any{
+						annotations.HostnameKey: namespace + ".example.org",
+						annotations.TargetKey:   "10.0.0.1",
+					},
+				},
+			},
+		})
+	}
+
+	kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, objects)
+
+	src, err := NewUnstructuredFQDNSource(t.Context(), dynamicClient, kubeClient, &Config{
+		Namespaces:            []string{"team-a", "team-b"},
+		LabelFilter:           labels.Everything(),
+		UnstructuredResources: resources,
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "10.0.0.1").
+			WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/team-a/vm"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "10.0.0.1").
+			WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/team-b/vm"),
+	})
+}
+
 // setupUnstructuredTestClients creates fake kube and dynamic clients with the given resources and objects.
 func setupUnstructuredTestClients(t *testing.T, resources []string, objects []*unstructured.Unstructured) (
 	kubernetes.Interface, dynamic.Interface,

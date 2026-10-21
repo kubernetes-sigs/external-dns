@@ -1927,6 +1927,42 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
 }
 
+func TestIngressSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	var elements []runtime.Object
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		elements = append(elements, &networkv1.Ingress{
+			Namespace: namespace,
+			Name:      "ing",
+			Spec: networkv1.IngressSpec{
+				Rules: []networkv1.IngressRule{{Host: namespace + ".example.org"}},
+			},
+			Status: networkv1.IngressStatus{
+				LoadBalancer: networkv1.IngressLoadBalancerStatus{
+					Ingress: []networkv1.IngressLoadBalancerIngress{{Hostname: "lb.example.org"}},
+				},
+			},
+		})
+	}
+
+	src, err := NewIngressSource(t.Context(), fake.NewClientset(elements...), &Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "ingress/team-a/ing"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "ingress/team-b/ing"),
+	})
+}
+
 func TestNewIngressSource_Errors(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
