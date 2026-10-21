@@ -71,6 +71,9 @@ type TXTRegistry struct {
 
 	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
 	obsoleteTXTWarned sets.Set[string]
+
+	// crossOwnerTXTWarned dedups cross-owner ownership TXT warnings to once per DNS name per process.
+	crossOwnerTXTWarned sets.Set[string]
 }
 
 // existingTXTs maps pre-existing TXT records to the value they hold at the provider.
@@ -117,6 +120,8 @@ func (im *existingTXTs) storedValue(ep *endpoint.Endpoint) (string, bool) {
 }
 
 func (im *existingTXTs) reset() {
+	// Reset the existing TXT records for the next reconciliation loop.
+	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
 	im.entries = make(map[recordKey]existingTXTRecord)
 }
 
@@ -176,8 +181,9 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		oldOwnerID:          oldOwnerID,
-		existingTXTs:        newExistingTXTs(),
-		obsoleteTXTWarned:   sets.New[string](),
+		existingTXTs:          newExistingTXTs(),
+		obsoleteTXTWarned:     sets.New[string](),
+		crossOwnerTXTWarned:   sets.New[string](),
 	}, nil
 }
 
@@ -359,11 +365,13 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 
 // generateTXTRecordForRemoval builds the TXT records to delete alongside an endpoint, preferring
 // the value read from the provider over a regenerated one, as deletes match by value.
+// With gzip output, a regenerated one can differ between two Go standard library implementations.
 func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	txts := im.generateTXTRecord(r)
 	for _, txt := range txts {
 		stored, ok := im.existingTXTs.storedValue(txt)
 		if !ok {
+			// Records() saw no TXT under this name; keep the generated value.
 			continue
 		}
 		txt.Targets = endpoint.Targets{stored}
@@ -377,7 +385,10 @@ func (im *TXTRegistry) shouldCreateTXT(txt *endpoint.Endpoint) bool {
 		return true
 	}
 	if existing.owner != "" && existing.owner != im.ownerID {
-		log.Warnf("ownership TXT %q is owned by %q, not %q; skipping creation", txt.DNSName, existing.owner, im.ownerID)
+		if !im.crossOwnerTXTWarned.Has(txt.DNSName) {
+			im.crossOwnerTXTWarned.Insert(txt.DNSName)
+			log.Warnf("ownership TXT %q is owned by %q, not %q; skipping creation", txt.DNSName, existing.owner, im.ownerID)
+		}
 	}
 	return false
 }
@@ -415,23 +426,23 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		if r.RecordType != endpoint.RecordTypeTXT {
-			filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
-		}
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
+		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
 		}
 	}
 
+	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		if r.RecordType != endpoint.RecordTypeTXT {
-			filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
-		}
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		// add new version of record to cache
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
 		}
 	}
 
+	// when caching is enabled, disable the provider from using the cache
 	if im.cacheInterval > 0 {
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
 	}

@@ -2196,6 +2196,8 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 }
 
 func TestTXTRegistryCrossOwnerSkipsTXT(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
 	ctx := t.Context()
 	p := inmemory.NewInMemoryProvider()
 	require.NoError(t, p.CreateZone(testZone))
@@ -2242,6 +2244,9 @@ func TestTXTRegistryCrossOwnerSkipsTXT(t *testing.T) {
 	}
 
 	require.NoError(t, r.ApplyChanges(ctx, changes))
+
+	logtest.TestHelperLogContains("ownership TXT", hook, t)
+	logtest.TestHelperLogContains(clusterA, hook, t)
 
 	records, err = p.Records(ctx)
 	require.NoError(t, err)
