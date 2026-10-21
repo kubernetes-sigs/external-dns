@@ -31,6 +31,10 @@ const (
 	// InvalidReason marks a spec with at least one endpoint external-dns refused to
 	// plan, e.g. an SRV target without a trailing dot.
 	InvalidReason string = "Invalid"
+
+	// PendingReason is the schema default for Accepted, shown until an
+	// external-dns instance has read the object.
+	PendingReason string = "Pending"
 )
 
 // +genclient
@@ -50,7 +54,9 @@ type DNSEndpoint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DNSEndpointSpec   `json:"spec,omitempty"`
+	Spec DNSEndpointSpec `json:"spec,omitempty"`
+	// Status starts as Accepted=Unknown (Pending) until external-dns reads the object.
+	// +kubebuilder:default={conditions: {{type: "Accepted", status: "Unknown", reason: "Pending", message: "Waiting for external-dns", lastTransitionTime: "1970-01-01T00:00:00Z"}}}
 	Status DNSEndpointStatus `json:"status,omitempty"`
 }
 
