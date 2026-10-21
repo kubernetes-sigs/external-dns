@@ -30,7 +30,7 @@ import (
 )
 
 // The log hook and the metric are process-wide, so this test must not run in parallel.
-func TestDomainFilterSourceEndpoints(t *testing.T) {
+func TestCNAMEConflictSourceEndpoints(t *testing.T) {
 	conflict := func(name, recordType string) []*endpoint.Endpoint {
 		return []*endpoint.Endpoint{
 			endpoint.NewEndpoint(name, recordType, "a.elb.example.com"),
@@ -75,7 +75,7 @@ func TestDomainFilterSourceEndpoints(t *testing.T) {
 			recordType := tt.endpoints[0].RecordType
 			msg := "Only one " + recordType + " per name"
 
-			endpoints, err := NewDomainFilterSource(testutils.NewMockSource(tt.endpoints...), tt.filter).Endpoints(t.Context())
+			endpoints, err := NewCNAMEConflictSource(testutils.NewMockSource(tt.endpoints...), tt.filter).Endpoints(t.Context())
 			require.NoError(t, err)
 
 			assert.Equal(t, want, endpoints, "endpoints must be returned unchanged")
