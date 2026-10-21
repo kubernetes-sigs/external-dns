@@ -109,7 +109,7 @@ type Config struct {
 	PreferAlias                    bool
 	PTRSupported                   bool
 	CreatePTR                      bool
-	// DomainFilter scopes the source wrappers only. The provider builds its own filter from the same flags.
+	// DomainFilter is built from the domain filter flags. The source wrappers and the provider share it.
 	DomainFilter *endpoint.DomainFilter
 
 	sources []string
