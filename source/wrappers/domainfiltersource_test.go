@@ -58,6 +58,10 @@ func TestDomainFilterSourceEndpoints(t *testing.T) {
 			endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, "a.elb.example.com").WithSetIdentifier("one"),
 			endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, "b.elb.example.com").WithSetIdentifier("two"),
 		}, 0},
+		{"conflict between names that differ in case", filter, []*endpoint.Endpoint{
+			endpoint.NewEndpoint("App.example.org", endpoint.RecordTypeCNAME, "a.elb.example.com"),
+			endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, "b.elb.example.com"),
+		}, 1},
 	}
 
 	for _, tt := range tests {
