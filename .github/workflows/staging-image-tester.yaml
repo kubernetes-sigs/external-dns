@@ -34,3 +34,7 @@ jobs:
 
     - name: Test
       run: make build.image/multiarch
+      env:
+        # /tmp has a disk quota on ubuntu-26.04 runners that the multi-arch build exceeds.
+        GOTMPDIR: ${{ runner.temp }}
+        TMPDIR: ${{ runner.temp }}
