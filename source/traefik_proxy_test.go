@@ -1952,54 +1952,54 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 	tests := []struct {
 		name          string
 		gvr           schema.GroupVersionResource
-		getSource     func(source *traefikSource) kubeinformers.GenericInformer
+		getSource     func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer
 		enabledLegacy bool
 	}{
 		{
 			name: "IngressRoute",
 			gvr:  ingressRouteGVR,
-			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
-				return firstInformer(source.ingressRouteInformers)
+			getSource: func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer {
+				return informerFor(t, source.ingressRouteInformers, metav1.NamespaceAll)
 			},
 			enabledLegacy: false,
 		},
 		{
 			name: "IngressRouteTCP",
 			gvr:  ingressRouteTCPGVR,
-			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
-				return firstInformer(source.ingressRouteTcpInformers)
+			getSource: func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer {
+				return informerFor(t, source.ingressRouteTcpInformers, metav1.NamespaceAll)
 			},
 			enabledLegacy: false,
 		},
 		{
 			name: "IngressRouteUDP",
 			gvr:  ingressRouteUDPGVR,
-			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
-				return firstInformer(source.ingressRouteUdpInformers)
+			getSource: func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer {
+				return informerFor(t, source.ingressRouteUdpInformers, metav1.NamespaceAll)
 			},
 			enabledLegacy: false,
 		},
 		{
 			name: "IngressRoute with legacy API group",
 			gvr:  oldIngressRouteGVR,
-			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
-				return firstInformer(source.oldIngressRouteInformers)
+			getSource: func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer {
+				return informerFor(t, source.oldIngressRouteInformers, metav1.NamespaceAll)
 			},
 			enabledLegacy: true,
 		},
 		{
 			name: "IngressRouteTCP with legacy API group",
 			gvr:  oldIngressRouteTCPGVR,
-			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
-				return firstInformer(source.oldIngressRouteTcpInformers)
+			getSource: func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer {
+				return informerFor(t, source.oldIngressRouteTcpInformers, metav1.NamespaceAll)
 			},
 			enabledLegacy: true,
 		},
 		{
 			name: "IngressRouteUDP with legacy API group",
 			gvr:  oldIngressRouteUDPGVR,
-			getSource: func(source *traefikSource) kubeinformers.GenericInformer {
-				return firstInformer(source.oldIngressRouteUdpInformers)
+			getSource: func(t *testing.T, source *traefikSource) kubeinformers.GenericInformer {
+				return informerFor(t, source.oldIngressRouteUdpInformers, metav1.NamespaceAll)
 			},
 			enabledLegacy: true,
 		},
@@ -2019,7 +2019,7 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 			testDynamicInformerTransformHelper(t,
 				tt.gvr,
 				fakeDynamicClient,
-				tt.getSource(source.(*traefikSource)),
+				tt.getSource(t, source.(*traefikSource)),
 				withRemovedLastAppliedConfigAnnotation(),
 				withRemovedManagedFields(),
 			)
