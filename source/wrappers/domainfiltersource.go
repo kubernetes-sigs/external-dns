@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"context"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -58,7 +59,8 @@ func (s *domainFilterSource) reportConflicts(endpoints []*endpoint.Endpoint) {
 		if s.domainFilter != nil && !s.domainFilter.Match(ep.DNSName) {
 			continue
 		}
-		key := ep.RecordType + "/" + ep.DNSName + "/" + ep.SetIdentifier
+		// Lowercase the name like DomainFilter.Match does, so names that differ only in case share a key.
+		key := ep.RecordType + "/" + strings.ToLower(ep.DNSName) + "/" + ep.SetIdentifier
 		if last, ok := lastTargets[key]; ok && last != ep.Targets[0] {
 			// Sort the pair so the same two targets always print the same way.
 			log.Warnf("Only one %[1]s per name — %[2]s %[1]s %[3]s and %[2]s %[1]s %[4]s is invalid DNS. A resolver wouldn't know which canonical name to follow.", ep.RecordType, ep.DNSName, min(last, ep.Targets[0]), max(last, ep.Targets[0]))
