@@ -23,7 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-		"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
@@ -255,7 +255,7 @@ func buildCacheOptions(namespaces []string, labelFilter labels.Selector) (crcach
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
 	}
-	
+
 	if len(namespaces) == 0 {
 		namespaces = []string{v1.NamespaceAll}
 	}
