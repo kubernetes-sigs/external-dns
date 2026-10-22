@@ -1598,69 +1598,128 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 	}
 }
 
-func TestRrTargetForTXT(t *testing.T) {
+const (
+	txtDMARC    = "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
+	txtRegistry = "heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.foo.com"
+)
+
+func txtOverWire(t *testing.T, rr dns.RR) *dns.TXT {
+	t.Helper()
+	buf := make([]byte, dns.MaxMsgSize)
+	off, err := dns.PackRR(rr, buf, 0, nil, false)
+	require.NoError(t, err)
+	unpacked, _, err := dns.UnpackRR(buf[:off], 0)
+	require.NoError(t, err)
+	require.IsType(t, &dns.TXT{}, unpacked)
+	return unpacked.(*dns.TXT)
+}
+
+func TestRfc2136AdjustEndpointsCanonicalisesTXT(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   string
-		expected []string
+		expected string
 	}{
-		{
-			name:     "plain value",
-			target:   "foo",
-			expected: []string{"foo"},
-		},
-		{
-			name:     "semicolons are not treated as comments",
-			target:   "v=DMARC1;p=quarantine;sp=none",
-			expected: []string{"v=DMARC1;p=quarantine;sp=none"},
-		},
-		{
-			name:     "spaces and semicolons stay in one string",
-			target:   "v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.tld; ruf=mailto:postmaster@domain.tld; sp=none; fo=1; ri=604800",
-			expected: []string{"v=DMARC1; p=quarantine; rua=mailto:postmaster@domain.tld; ruf=mailto:postmaster@domain.tld; sp=none; fo=1; ri=604800"},
-		},
-		{
-			name:     "spf record",
-			target:   "v=spf1 mx a:mail.domain.tld -all",
-			expected: []string{"v=spf1 mx a:mail.domain.tld -all"},
-		},
-		{
-			name:     "already quoted value is kept",
-			target:   `"heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.domain.tld"`,
-			expected: []string{"heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.domain.tld"},
-		},
-		{
-			name:     "already quoted multi-string value is kept",
-			target:   `"part one" "part two"`,
-			expected: []string{"part one", "part two"},
-		},
-		{
-			name:     "embedded quote is escaped",
-			target:   `say "hi"; bye`,
-			expected: []string{`say \"hi\"; bye`},
-		},
-		{
-			// miekg/dns keeps escapes in presentation form; on the wire this is "v=DKIM1; k=rsa; p=abc".
-			name:     "existing escapes are preserved",
-			target:   `v=DKIM1\; k=rsa\; p=abc`,
-			expected: []string{`v=DKIM1\; k=rsa\; p=abc`},
-		},
-		{
-			name:     "dangling backslash does not swallow the closing quote",
-			target:   `foo\`,
-			expected: []string{`foo\\`},
-		},
+		{name: "plain value", target: "boom", expected: "boom"},
+		{name: "semicolons are not comments", target: "v=DMARC1;p=quarantine;sp=none", expected: "v=DMARC1;p=quarantine;sp=none"},
+		{name: "spaces and semicolons", target: txtDMARC, expected: txtDMARC},
+		{name: "spf record", target: "v=spf1 mx a:mail.foo.com -all", expected: "v=spf1 mx a:mail.foo.com -all"},
+		{name: "embedded quotes", target: `say "hi"; bye`, expected: `say "hi"; bye`},
+		{name: "zone-file escapes are decoded", target: `v=DKIM1\; k=rsa\; p=abc`, expected: "v=DKIM1; k=rsa; p=abc"},
+		{name: "quoted value is unquoted", target: `"` + txtRegistry + `"`, expected: txtRegistry},
+		{name: "multi-string value is joined", target: `"part1" "part2"`, expected: "part1part2"},
+		{name: "non-ASCII", target: "grüße", expected: "grüße"},
+		{name: "dangling backslash is literal", target: `foo\`, expected: `foo\`},
+		{name: "long value", target: "p=" + strings.Repeat("A", 400), expected: "p=" + strings.Repeat("A", 400)},
 	}
+
+	stub := newStub()
+	p, err := createRfc2136StubProvider(stub, "foo.com")
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rrTarget, err := rrTargetFor(endpoint.RecordTypeTXT, tt.target)
+			eps, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+				endpoint.NewEndpoint("txt.foo.com", endpoint.RecordTypeTXT, tt.target),
+			})
+			require.NoError(t, err)
+			require.Len(t, eps, 1)
+			assert.Equal(t, []string{tt.expected}, []string(eps[0].Targets))
+		})
+	}
+}
+
+func TestRfc2136AdjustEndpointsLeavesMalformedTXTUnchanged(t *testing.T) {
+	stub := newStub()
+	p, err := createRfc2136StubProvider(stub, "foo.com")
+	require.NoError(t, err)
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	malformed := `"abc\"`
+	eps, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		endpoint.NewEndpoint("txt.foo.com", endpoint.RecordTypeTXT, malformed),
+	})
+	require.NoError(t, err)
+
+	require.Len(t, eps, 1)
+	assert.Equal(t, []string{malformed}, []string(eps[0].Targets))
+	logtest.TestHelperLogContains("could not parse TXT target", hook, t)
+}
+
+func TestRfc2136GetRecordsTXTJoinsAndUnescapes(t *testing.T) {
+	stub := newStub()
+	err := stub.setOutput([]string{
+		`multi.foo.com 300 TXT "part1" "part2"`,
+		`quote.foo.com 300 TXT "say \"hi\"; bye"`,
+		`utf8.foo.com 300 TXT "gr\195\188\195\159e"`,
+		`two.foo.com 300 TXT "a"`,
+		`two.foo.com 300 TXT "b"`,
+	})
+	require.NoError(t, err)
+
+	p, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+
+	recs, err := p.Records(t.Context())
+	require.NoError(t, err)
+
+	targets := map[string][]string{}
+	for _, r := range recs {
+		targets[r.DNSName] = r.Targets
+	}
+	assert.Equal(t, map[string][]string{
+		"multi.foo.com": {"part1part2"},
+		"quote.foo.com": {`say "hi"; bye`},
+		"utf8.foo.com":  {"grüße"},
+		"two.foo.com":   {"a", "b"},
+	}, targets)
+}
+
+func TestEncodeTXTSurvivesTheWire(t *testing.T) {
+	tests := []string{
+		"",
+		"boom",
+		txtDMARC,
+		`say "hi"; bye`,
+		`back\slash`,
+		`foo\`,
+		"grüße",
+		"tab\there",
+		"line1\nline2",
+		"nul\x00byte",
+		strings.Repeat("A", 255),
+		"v=DKIM1; k=rsa; p=" + strings.Repeat("B", 600),
+	}
+
+	for _, target := range tests {
+		t.Run(target[:min(len(target), 20)], func(t *testing.T) {
+			rrTarget, err := rrTargetFor(endpoint.RecordTypeTXT, target)
 			require.NoError(t, err)
 
-			rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "_dmarc.domain.tld.", 3600, "TXT", rrTarget))
+			rr, err := dns.NewRR("txt.foo.com. 300 IN TXT " + rrTarget)
 			require.NoError(t, err)
-			require.IsType(t, &dns.TXT{}, rr)
-			assert.Equal(t, tt.expected, rr.(*dns.TXT).Txt)
+			assert.Equal(t, target, txtTarget(txtOverWire(t, rr)))
 		})
 	}
 }
@@ -1671,42 +1730,92 @@ func TestRrTargetForNonTXTIsUnquoted(t *testing.T) {
 	assert.Equal(t, "1.2.3.4", rrTarget)
 }
 
-func TestRfc2136ApplyChangesTXTWithSemicolons(t *testing.T) {
+// The TXT registry creates its records from the quoted serialized label but
+// deletes them using the value Records() returned. This ensures both must hit the same RR.
+func TestRfc2136TXTRegistryCreateAndDeleteMatch(t *testing.T) {
 	stub := newStub()
-	provider, err := createRfc2136StubProvider(stub)
+	p, err := createRfc2136StubProvider(stub)
 	require.NoError(t, err)
 
-	dmarc := "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
-	oldDmarc := "v=DMARC1; p=none"
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{endpoint.NewEndpoint("txt-a.foo.com", endpoint.RecordTypeTXT, `"`+txtRegistry+`"`)},
+		Delete: []*endpoint.Endpoint{endpoint.NewEndpoint("txt-a.foo.com", endpoint.RecordTypeTXT, txtRegistry)},
+	})
+	require.NoError(t, err)
 
-	p := &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			{
-				DNSName:    "_dmarc.foo.com",
-				RecordType: endpoint.RecordTypeTXT,
-				Targets:    []string{dmarc},
-				RecordTTL:  endpoint.TTL(3600),
-			},
-		},
-		Delete: []*endpoint.Endpoint{
-			{
-				DNSName:    "_dmarc.foobar.com",
-				RecordType: endpoint.RecordTypeTXT,
-				Targets:    []string{oldDmarc},
-			},
-		},
-	}
+	require.Len(t, stub.createMsgs, 1)
+	require.Len(t, stub.updateMsgs, 1)
+	require.Len(t, stub.createMsgs[0].Ns, 1)
+	require.Len(t, stub.updateMsgs[0].Ns, 1)
+	require.IsType(t, &dns.TXT{}, stub.createMsgs[0].Ns[0])
+	require.IsType(t, &dns.TXT{}, stub.updateMsgs[0].Ns[0])
+	assert.Equal(t, []string{txtRegistry}, stub.createMsgs[0].Ns[0].(*dns.TXT).Txt)
+	assert.Equal(t, []string{txtRegistry}, stub.updateMsgs[0].Ns[0].(*dns.TXT).Txt)
+}
 
-	err = provider.ApplyChanges(t.Context(), p)
+func TestRfc2136ApplyChangesTXTWithSemicolons(t *testing.T) {
+	stub := newStub()
+	p, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+
+	oldDMARC := "v=DMARC1; p=none"
+	err = p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("_dmarc.foo.com", endpoint.RecordTypeTXT, 3600, txtDMARC)},
+		Delete: []*endpoint.Endpoint{endpoint.NewEndpoint("_dmarc.foobar.com", endpoint.RecordTypeTXT, oldDMARC)},
+	})
 	require.NoError(t, err)
 
 	require.Len(t, stub.createMsgs, 1)
 	require.Len(t, stub.createMsgs[0].Ns, 1)
 	require.IsType(t, &dns.TXT{}, stub.createMsgs[0].Ns[0])
-	assert.Equal(t, []string{dmarc}, stub.createMsgs[0].Ns[0].(*dns.TXT).Txt)
+	assert.Equal(t, []string{txtDMARC}, stub.createMsgs[0].Ns[0].(*dns.TXT).Txt)
 
 	require.Len(t, stub.updateMsgs, 1)
 	require.Len(t, stub.updateMsgs[0].Ns, 1)
 	require.IsType(t, &dns.TXT{}, stub.updateMsgs[0].Ns[0])
-	assert.Equal(t, []string{oldDmarc}, stub.updateMsgs[0].Ns[0].(*dns.TXT).Txt)
+	assert.Equal(t, []string{oldDMARC}, stub.updateMsgs[0].Ns[0].(*dns.TXT).Txt)
+}
+
+// Values that are written correctly but read back in a different encoding
+// would otherwise be updated on every sync.
+func TestRfc2136TXTRoundTripHasNoChanges(t *testing.T) {
+	stub := newStub()
+	p, err := createRfc2136StubProvider(stub)
+	require.NoError(t, err)
+
+	desired, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("_dmarc.foo.com", endpoint.RecordTypeTXT, 3600, txtDMARC),
+		endpoint.NewEndpointWithTTL("quote.foo.com", endpoint.RecordTypeTXT, 3600, `say "hi"; bye`),
+		endpoint.NewEndpointWithTTL("escaped.foo.com", endpoint.RecordTypeTXT, 3600, `v=DKIM1\; k=rsa\; p=abc`),
+		endpoint.NewEndpointWithTTL("utf8.foo.com", endpoint.RecordTypeTXT, 3600, "grüße"),
+		endpoint.NewEndpointWithTTL("long.foo.com", endpoint.RecordTypeTXT, 3600, "v=DKIM1; k=rsa; p="+strings.Repeat("A", 400)),
+		endpoint.NewEndpointWithTTL("multi.foo.com", endpoint.RecordTypeTXT, 3600, `"part1" "part2"`),
+		endpoint.NewEndpointWithTTL("two.foo.com", endpoint.RecordTypeTXT, 3600, "a b", "c;d"),
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{Create: desired}))
+
+	require.NotEmpty(t, stub.createMsgs)
+	packed, err := stub.createMsgs[0].Pack()
+	require.NoError(t, err)
+	received := new(dns.Msg)
+	require.NoError(t, received.Unpack(packed))
+	stub.output = []*dns.Envelope{{RR: received.Ns}}
+
+	current, err := p.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, current, len(desired))
+
+	changes := (&plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeTXT},
+	}).Calculate().Changes
+
+	assert.Empty(t, changes.Create)
+	assert.Empty(t, changes.UpdateOld)
+	assert.Empty(t, changes.UpdateNew)
+	assert.Empty(t, changes.Delete)
 }

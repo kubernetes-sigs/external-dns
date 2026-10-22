@@ -258,7 +258,7 @@ OuterLoop:
 			rrValues = []string{rr.(*dns.AAAA).AAAA.String()}
 			rrType = "AAAA"
 		case dns.TypeTXT:
-			rrValues = (rr.(*dns.TXT).Txt)
+			rrValues = []string{txtTarget(rr.(*dns.TXT))}
 			rrType = "TXT"
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
@@ -310,24 +310,95 @@ func tlsaTarget(rr *dns.TLSA) string {
 	return tlsa.String()
 }
 
-// Canonicalize targets to avoid reconciliation when not needed.
-func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	for _, ep := range eps {
-		if ep.RecordType != endpoint.RecordTypeTLSA {
+// txtTarget returns the text a TXT RR contains. AXFR hands Txt back escaped and
+// split into 255-byte strings. Keeping them would make desired and current targets never compare equal.
+func txtTarget(rr *dns.TXT) string {
+	var b strings.Builder
+	for _, s := range rr.Txt {
+		b.WriteString(unescapeTXT(s))
+	}
+	return b.String()
+}
+
+// unescapeTXT decodes the \X and \DDD escapes of TXT presentation.
+func unescapeTXT(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	b := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 == len(s) {
+			b = append(b, s[i])
 			continue
 		}
-		for i, target := range ep.Targets {
-			tlsa, err := endpoint.NewTLSARecord(target)
-			if err != nil {
-				// AddRecord reports this as a hard error when the change is applied.
-				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+		if i+3 < len(s) && isDigit(s[i+1]) && isDigit(s[i+2]) && isDigit(s[i+3]) {
+			if n := int(s[i+1]-'0')*100 + int(s[i+2]-'0')*10 + int(s[i+3]-'0'); n <= 255 {
+				b = append(b, byte(n))
+				i += 3
 				continue
 			}
-			ep.Targets[i] = tlsa.String()
+		}
+		b = append(b, s[i+1])
+		i++
+	}
+	return string(b)
+}
+
+func isDigit(c byte) bool {
+	return '0' <= c && c <= '9'
+}
+
+// AdjustEndpoints canonicalizes targets to avoid reconciliation when not needed.
+func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range eps {
+		switch ep.RecordType {
+		case endpoint.RecordTypeTLSA:
+			adjustTLSATargets(ep)
+		case endpoint.RecordTypeTXT:
+			adjustTXTTargets(ep)
 		}
 	}
 
 	return eps, nil
+}
+
+func adjustTLSATargets(ep *endpoint.Endpoint) {
+	for i, target := range ep.Targets {
+		tlsa, err := endpoint.NewTLSARecord(target)
+		if err != nil {
+			// AddRecord reports this as a hard error when the change is applied.
+			log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+			continue
+		}
+		ep.Targets[i] = tlsa.String()
+	}
+}
+
+func adjustTXTTargets(ep *endpoint.Endpoint) {
+	for i, target := range ep.Targets {
+		canonical, err := canonicalTXT(target)
+		if err != nil {
+			// AddRecord reports this as a hard error when the change is applied.
+			log.Warnf("could not parse TXT target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+			continue
+		}
+		ep.Targets[i] = canonical
+	}
+}
+
+// canonicalTXT reduces a desired TXT target to the form txtTarget reads back.
+// The target is read as zone-file text, so escapes like `\;` and multi-string
+// values like `"a" "b"` keep their meaning.
+func canonicalTXT(target string) (string, error) {
+	rr, err := dns.NewRR(". 0 IN TXT " + quoteTXT(target))
+	if err != nil {
+		return "", err
+	}
+	txt, ok := rr.(*dns.TXT)
+	if !ok {
+		return "", fmt.Errorf("parsed %q as %T, not TXT", target, rr)
+	}
+	return txtTarget(txt), nil
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
@@ -594,11 +665,11 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 }
 
 // rrTargetFor renders an endpoint target for the RR text that is handed to
-// dns.NewRR. Handles validation, canonicalisation and quoting.
+// dns.NewRR. Handles validation, canonicalisation and TXT encoding.
 func rrTargetFor(recordType, target string) (string, error) {
 	switch recordType {
 	case endpoint.RecordTypeTXT:
-		return quoteTXT(target), nil
+		return encodeTXT(target), nil
 	case endpoint.RecordTypeTLSA:
 		tlsa, err := endpoint.NewTLSARecord(target)
 		if err != nil {
@@ -610,11 +681,40 @@ func rrTargetFor(recordType, target string) (string, error) {
 	}
 }
 
-// quoteTXT quotes a TXT target for dns.NewRR. Unquoted, the zone-file parser
-// treats ';' as a comment and splits on whitespace.
-// Existing escapes like `\;` are kept.
+// encodeTXT renders a canonical TXT target so it is stored literally.
+// The TXT registry hands over freshly serialized labels already
+// quoted, without passing AdjustEndpoints, so quoted targets are used as-is.
+func encodeTXT(target string) string {
+	if isQuotedTXT(target) {
+		return target
+	}
+	var b strings.Builder
+	b.Grow(len(target) + 2)
+	b.WriteByte('"')
+	for i := range len(target) {
+		switch c := target[i]; {
+		case c == '"' || c == '\\':
+			b.WriteByte('\\')
+			b.WriteByte(c)
+		case c < ' ' || c == 0x7f:
+			b.Write([]byte{'\\', '0' + c/100, '0' + c/10%10, '0' + c%10})
+		default:
+			b.WriteByte(c)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}
+
+func isQuotedTXT(target string) bool {
+	return len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`)
+}
+
+// quoteTXT quotes a desired TXT target so dns.NewRR reads it as one value.
+// Unquoted, the zone-file parser treats ';' as a comment and splits on
+// whitespace. Quoted targets pass through; existing escapes like `\;` are kept.
 func quoteTXT(target string) string {
-	if len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`) {
+	if isQuotedTXT(target) {
 		return target
 	}
 
