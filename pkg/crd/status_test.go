@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
+	"sigs.k8s.io/external-dns/endpoint"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
@@ -48,7 +49,7 @@ func newStatusWriter(t *testing.T, funcs interceptor.Funcs, objs ...client.Objec
 }
 
 func dnsEndpointRef(name string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "foo", name, "", types.CRD)
+	return endpoint.NewObjectRef("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "foo", name, "", types.CRD)
 }
 
 func TestStatusWriterReportStatus(t *testing.T) {
@@ -57,7 +58,7 @@ func TestStatusWriterReportStatus(t *testing.T) {
 	t.Run("logs only DNSEndpoint objects", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 		w := newStatusWriter(t, interceptor.Funcs{}, mine)
-		foreign := events.NewObjectReferenceFromParts("Ingress", "networking.k8s.io/v1", "foo", "theirs", "", types.Ingress)
+		foreign := endpoint.NewObjectRef("Ingress", "networking.k8s.io/v1", "foo", "theirs", "", types.Ingress)
 
 		w.ReportStatus(t.Context(), []plan.PlannedObject{
 			{Ref: nil, Endpoints: 1},
