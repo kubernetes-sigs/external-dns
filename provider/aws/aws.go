@@ -1076,13 +1076,14 @@ func (gp *geoProximity) withLocalZoneGroup() *geoProximity {
 func (gp *geoProximity) withBias() *geoProximity {
 	if prop, ok := gp.endpoint.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); ok {
 		bias, err := strconv.ParseInt(prop, 10, 32)
-		if err != nil {
+		switch {
+		case err != nil:
 			log.Warnf("Failed parsing value of %s: %s: %v; using bias of 0", providerSpecificGeoProximityLocationBias, prop, err)
 			bias = 0
-		} else if bias < minBias {
+		case bias < minBias:
 			log.Warnf("Value of %s: %s is below the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, minBias)
 			bias = minBias
-		} else if bias > maxBias {
+		case bias > maxBias:
 			log.Warnf("Value of %s: %s is above the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, maxBias)
 			bias = maxBias
 		}
