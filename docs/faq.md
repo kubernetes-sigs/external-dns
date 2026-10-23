@@ -344,8 +344,8 @@ and a private address, both are published. To control which addresses end up in 
 - use `--target-net-filter` / `--exclude-target-net`, described below.
 
 Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
-using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to every source,
-and an endpoint whose targets are all filtered out is dropped.
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply only to A and AAAA endpoints, other non-IP
+records are skipped by target filtering and will pass.
 
 ## Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 

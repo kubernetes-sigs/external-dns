@@ -43,6 +43,7 @@ Filters targets (e.g. IPs or hostnames) based on inclusion or exclusion rules.
 📌 **Use case**: Only publish public IPs, exclude test environments.
 
 ```yaml
+--managed-record-types=A
 --target-net-filter=192.168.0.0/16
 --exclude-target-nets=10.0.0.0/8
 ```
