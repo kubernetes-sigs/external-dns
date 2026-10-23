@@ -38,6 +38,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/source/types"
@@ -644,6 +646,115 @@ func testServiceSourceEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "bar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
+		},
+		{
+			title:         "services annotated with legacy mate annotations return a CNAME endpoint for hostname load balancer targets in compatibility mode",
+			svcNamespace:  "testing",
+			svcName:       "foo",
+			svcType:       v1.ServiceTypeLoadBalancer,
+			compatibility: "mate",
+			labels:        map[string]string{},
+			annotations: map[string]string{
+				"zalando.org/dnsname": "foo.example.org.",
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"lb.example.com"},
+			serviceTypesFilter: []string{},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:         "services annotated with legacy molecule annotations return CNAME endpoints for hostname load balancer targets in compatibility mode",
+			svcNamespace:  "testing",
+			svcName:       "foo",
+			svcType:       v1.ServiceTypeLoadBalancer,
+			compatibility: "molecule",
+			labels: map[string]string{
+				"dns": "route53",
+			},
+			annotations: map[string]string{
+				"domainName": "foo.example.org., bar.example.org",
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"lb.example.com"},
+			serviceTypesFilter: []string{},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+				{DNSName: "bar.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:              "services without mate annotation return no endpoints in mate compatibility mode",
+			svcNamespace:       "testing",
+			svcName:            "foo",
+			svcType:            v1.ServiceTypeLoadBalancer,
+			compatibility:      "mate",
+			labels:             map[string]string{},
+			annotations:        map[string]string{},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
+			title:         "services opted out of molecule return no endpoints in molecule compatibility mode",
+			svcNamespace:  "testing",
+			svcName:       "foo",
+			svcType:       v1.ServiceTypeLoadBalancer,
+			compatibility: "molecule",
+			labels:        map[string]string{},
+			annotations: map[string]string{
+				"domainName": "foo.example.org.",
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
+			title:         "services without molecule annotation return no endpoints in molecule compatibility mode",
+			svcNamespace:  "testing",
+			svcName:       "foo",
+			svcType:       v1.ServiceTypeLoadBalancer,
+			compatibility: "molecule",
+			labels: map[string]string{
+				"dns": "route53",
+			},
+			annotations:        map[string]string{},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
+			title:              "services return no endpoints for unknown compatibility mode",
+			svcNamespace:       "testing",
+			svcName:            "foo",
+			svcType:            v1.ServiceTypeLoadBalancer,
+			compatibility:      "unknown",
+			labels:             map[string]string{},
+			annotations:        map[string]string{},
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected:           []*endpoint.Endpoint{},
+		},
+		{
+			title:         "clusterIP services return no endpoints in kops-dns-controller compatibility mode",
+			svcNamespace:  "testing",
+			svcName:       "foo",
+			svcType:       v1.ServiceTypeClusterIP,
+			compatibility: "kops-dns-controller",
+			labels:        map[string]string{},
+			annotations: map[string]string{
+				kopsDNSControllerHostnameAnnotationKey: "foo.example.org.",
+			},
+			clusterIP:          "1.2.3.4",
+			externalIPs:        []string{},
+			lbs:                []string{},
+			serviceTypesFilter: []string{},
+			expected:           []*endpoint.Endpoint{},
 		},
 		{
 			title:         "load balancer services annotated with DNS Controller annotations return an endpoint with A and CNAME targets in compatibility mode",
@@ -4447,6 +4558,104 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	}
 }
 
+func TestServiceSourceMultipleNamespaces(t *testing.T) {
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		svc := &v1.Service{
+			Namespace:   namespace,
+			Name:        "svc",
+			Annotations: map[string]string{annotations.HostnameKey: fmt.Sprintf("%s.example.org", namespace)},
+			Spec:        v1.ServiceSpec{Type: v1.ServiceTypeLoadBalancer},
+			Status: v1.ServiceStatus{
+				LoadBalancer: v1.LoadBalancerStatus{Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}}},
+			},
+		}
+		_, err := fakeClient.CoreV1().Services(namespace).Create(ctx, svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		Namespaces:           []string{"team-a", "team-b"},
+		LabelFilter:          labels.Everything(),
+		ExcludeUnschedulable: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+
+	dnsNames := make([]string, 0, len(endpoints))
+	for _, ep := range endpoints {
+		dnsNames = append(dnsNames, ep.DNSName)
+	}
+	assert.ElementsMatch(t, []string{"team-a.example.org", "team-b.example.org"}, dnsNames,
+		"services of unwatched namespaces must not produce endpoints")
+}
+
+func TestServiceSourceMultipleNamespacesHeadless(t *testing.T) {
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+
+	for _, namespace := range []string{"team-a", "team-b"} {
+		svc := &v1.Service{
+			Namespace:   namespace,
+			Name:        "headless",
+			Annotations: map[string]string{annotations.HostnameKey: fmt.Sprintf("%s.example.org", namespace)},
+			Spec: v1.ServiceSpec{
+				Type:      v1.ServiceTypeClusterIP,
+				ClusterIP: v1.ClusterIPNone,
+				Selector:  map[string]string{"app": "demo"},
+			},
+		}
+		_, err := fakeClient.CoreV1().Services(namespace).Create(ctx, svc, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		pod := &v1.Pod{
+			Namespace: namespace,
+			Name:      "pod",
+			Labels:    map[string]string{"app": "demo"},
+			Spec:      v1.PodSpec{Hostname: "pod"},
+			Status:    v1.PodStatus{PodIP: "10.0.0.1"},
+		}
+		_, err = fakeClient.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		_, err = fakeClient.DiscoveryV1().EndpointSlices(namespace).Create(ctx, &discoveryv1.EndpointSlice{
+			Namespace:   namespace,
+			Name:        "headless-slice",
+			Labels:      map[string]string{discoveryv1.LabelServiceName: "headless"},
+			AddressType: discoveryv1.AddressTypeIPv4,
+			Endpoints: []discoveryv1.Endpoint{{
+				Addresses: []string{"10.0.0.1"},
+				TargetRef: &v1.ObjectReference{Kind: "Pod", Name: "pod", Namespace: namespace},
+			}},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewServiceSource(ctx, fakeClient, &Config{
+		Namespaces:                     []string{"team-a", "team-b"},
+		LabelFilter:                    labels.Everything(),
+		ExcludeUnschedulable:           true,
+		AlwaysPublishNotReadyAddresses: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+
+	// Headless resolution reads the EndpointSlice and Pod informers of the service namespace,
+	// so an empty target list means the wrong informer was picked.
+	targets := map[string]string{}
+	for _, ep := range endpoints {
+		targets[ep.DNSName] = ep.Targets.String()
+	}
+	assert.Equal(t, "10.0.0.1", targets["team-a.example.org"])
+	assert.Equal(t, "10.0.0.1", targets["team-b.example.org"])
+}
+
 func TestNewServiceSourceInformersEnabled(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -4460,8 +4669,8 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				require.NotNil(t, svc.serviceTypeFilter)
 				assert.False(t, svc.serviceTypeFilter.enabled)
 				require.NotNil(t, svc.nodeInformer)
-				require.NotNil(t, svc.serviceInformer)
-				require.NotNil(t, svc.endpointSlicesInformer)
+				require.NotNil(t, svc.serviceInformers)
+				require.NotNil(t, svc.endpointSlicesInformers)
 			},
 		},
 		{
@@ -4471,10 +4680,10 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				require.NotNil(t, svc)
 				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.serviceInformers)
 				require.Nil(t, svc.nodeInformer)
-				require.NotNil(t, svc.endpointSlicesInformer)
-				require.NotNil(t, svc.podInformer)
+				require.NotNil(t, svc.endpointSlicesInformers)
+				require.NotNil(t, svc.podInformers)
 			},
 		},
 		{
@@ -4484,10 +4693,10 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				require.NotNil(t, svc)
 				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.serviceInformers)
 				require.NotNil(t, svc.nodeInformer)
-				require.NotNil(t, svc.endpointSlicesInformer)
-				require.NotNil(t, svc.podInformer)
+				require.NotNil(t, svc.endpointSlicesInformers)
+				require.NotNil(t, svc.podInformers)
 			},
 		},
 		{
@@ -4497,10 +4706,10 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				require.NotNil(t, svc)
 				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.serviceInformers)
 				require.Nil(t, svc.nodeInformer)
-				require.Nil(t, svc.endpointSlicesInformer)
-				require.Nil(t, svc.podInformer)
+				require.Nil(t, svc.endpointSlicesInformers)
+				require.Nil(t, svc.podInformers)
 			},
 		},
 		{
@@ -4510,10 +4719,10 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 				require.NotNil(t, svc)
 				require.NotNil(t, svc.serviceTypeFilter)
 				assert.True(t, svc.serviceTypeFilter.enabled)
-				require.NotNil(t, svc.serviceInformer)
+				require.NotNil(t, svc.serviceInformers)
 				require.Nil(t, svc.nodeInformer)
-				require.Nil(t, svc.endpointSlicesInformer)
-				require.Nil(t, svc.podInformer)
+				require.Nil(t, svc.endpointSlicesInformers)
+				require.Nil(t, svc.podInformers)
 			},
 		},
 	}
@@ -4679,7 +4888,9 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 	require.True(t, ok)
 
 	// Try to get EndpointSlices by index; should not panic or error, should return empty slice
-	indexer := ss.endpointSlicesInformer.Informer().GetIndexer()
+	endpointSlicesInformer, ok := ss.endpointSlicesInformers.For("default")
+	require.True(t, ok)
+	indexer := endpointSlicesInformer.Informer().GetIndexer()
 	slices, err := indexer.ByIndex(informers.IndexWithSelectors, "default/foo")
 	require.NoError(t, err)
 	require.Empty(t, slices)
@@ -4766,7 +4977,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	ss, ok := src.(*serviceSource)
 	require.True(t, ok)
 
-	retrieved, err := ss.podInformer.Lister().Pods("test-ns").Get("test-name")
+	retrieved, err := informerFor(t, ss.podInformers, "test-ns").Lister().Pods("test-ns").Get("test-name")
 	require.NoError(t, err)
 
 	// Metadata
@@ -4797,7 +5008,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 	}}, retrieved.Status.Conditions)
 
 	// EndpointSlice — managedFields stripped, everything else preserved
-	retrievedES, err := ss.endpointSlicesInformer.Lister().EndpointSlices(es.Namespace).Get(es.Name)
+	retrievedES, err := informerFor(t, ss.endpointSlicesInformers, es.Namespace).Lister().EndpointSlices(es.Namespace).Get(es.Name)
 	require.NoError(t, err)
 	assert.Empty(t, retrievedES.ManagedFields)
 	assert.Equal(t, es.Labels, retrievedES.Labels)
@@ -4895,7 +5106,7 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 	ss, ok := src.(*serviceSource)
 	require.True(t, ok)
 
-	retrieved, err := ss.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+	retrieved, err := informerFor(t, ss.serviceInformers, svc.Namespace).Lister().Services(svc.Namespace).Get(svc.Name)
 	require.NoError(t, err)
 
 	assert.Equal(t, svc.Name, retrieved.Name)
@@ -5054,11 +5265,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 			filter, _ := newServiceTypesFilter(tt.filter)
 
 			svcSource := &serviceSource{
-				endpointSlicesInformer: fakeEdpInformer,
-				serviceInformer:        fakeServiceInformer,
-				nodeInformer:           fakeNodeInformer,
-				serviceTypeFilter:      filter,
-				listenEndpointEvents:   true,
+				endpointSlicesInformers: informers.Single[discoveryinformers.EndpointSliceInformer](fakeEdpInformer),
+				serviceInformers:        informers.Single[coreinformers.ServiceInformer](fakeServiceInformer),
+				nodeInformer:            fakeNodeInformer,
+				serviceTypeFilter:       filter,
+				listenEndpointEvents:    true,
 			}
 
 			svcSource.AddEventHandler(t.Context(), func() {})
@@ -5579,7 +5790,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 		for _, p := range pods {
 			require.NoError(t, podInformer.Informer().GetStore().Add(p))
 		}
-		return &serviceSource{podInformer: podInformer, nodeInformer: nodeInformer}
+		return &serviceSource{podInformers: informers.Single[coreinformers.PodInformer](podInformer), nodeInformer: nodeInformer}
 	}
 
 	svc := &v1.Service{
