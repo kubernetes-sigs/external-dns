@@ -224,6 +224,107 @@ func TestTargetFilterConcreteTargetFilter(t *testing.T) {
 	}
 }
 
+func TestTargetFilterNonAddressRecords(t *testing.T) {
+	tests := []struct {
+		title     string
+		filters   endpoint.TargetFilterInterface
+		endpoints []*endpoint.Endpoint
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title:   "should pass CNAME records",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8", "91ca::/16"}, []string{}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "192.168.7.1"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "2ac3:beef:83b2:beef:1490:beef:d192:beef"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+			},
+		},
+		{
+			title:   "should pass non-IP records and exclude IP records with targets in 172.16.0.0/12",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{"172.16.0.0/12"}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "192.168.7.1"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "172.20.1.66"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "172.23.8.134"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 20 443 target-2.example.com."),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "192.168.7.1"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 20 443 target-2.example.com."),
+			},
+		},
+		{
+			title:   "should pass non-IP records and 10.16.0.0/16 except 10.16.2.0/23",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.16.0.0/16"}, []string{"10.16.2.0/23"}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.70.1", "10.16.70.2", "10.16.3.123"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.33.33"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.2.123"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.70.1", "10.16.70.2"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.33.33"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+			},
+		},
+		{
+			// LoadBalancer status with IP + hostname; CNAME no longer dropped (RFC 1034 conflict).
+			title:   "should pass CNAME alongside A at the same name with include filter",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8"}, []string{}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.5"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeCNAME, "lb.example.net"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.5"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeCNAME, "lb.example.net"),
+			},
+		},
+		{
+			title:   "should drop A record with non-IP target with include filter",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8"}, []string{}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "lb.example.net"),
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.title, func(t *testing.T) {
+			echo := testutils.NewMockSource(tt.endpoints...)
+			src := NewTargetFilterSource(echo, tt.filters)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err, "failed to get Endpoints")
+
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
 func TestTargetFilterSource_AddEventHandler(t *testing.T) {
 	tests := []struct {
 		title   string
