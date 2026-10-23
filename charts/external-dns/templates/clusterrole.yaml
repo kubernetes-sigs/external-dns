@@ -146,7 +146,7 @@ rules:
     resources: ["virtualservers", "transportservers"]
     verbs: ["get","watch","list"]
 {{- end }}
-{{- if include "external-dns.emitsEvents" . }}
+{{- if .Values.eventsEmit }}
   - apiGroups: ["events.k8s.io"]
     resources: ["events"]
     verbs: ["create"]

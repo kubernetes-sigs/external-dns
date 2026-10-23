@@ -122,20 +122,3 @@ Check if any Gateway API sources are enabled
 true
 {{- end -}}
 {{- end }}
-
-{{/*
-Check if --events-emit is set in extraArgs, so RBAC can grant events creation only when ExternalDNS emits events.
-*/}}
-{{- define "external-dns.emitsEvents" -}}
-{{- if kindIs "map" .Values.extraArgs -}}
-{{- if not (empty (get .Values.extraArgs "events-emit")) -}}
-true
-{{- end -}}
-{{- else if kindIs "slice" .Values.extraArgs -}}
-{{- range .Values.extraArgs -}}
-{{- if regexMatch "^--events-emit(=.+)?$" (toString .) -}}
-true
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end }}
