@@ -37,7 +37,7 @@ func NewMockTargetNetFilter(targets []string) endpoint.TargetFilterInterface {
 	return &mockTargetNetFilter{targets: sets.New(targets...)}
 }
 
-func (m *mockTargetNetFilter) Match(target string, _ *endpoint.Endpoint) bool {
+func (m *mockTargetNetFilter) Match(target string) bool {
 	return m.targets.Has(target)
 }
 
@@ -245,6 +245,49 @@ func TestTargetFilterNonAddressRecords(t *testing.T) {
 				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
 				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
 				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+			},
+		},
+		{
+			title:   "should pass non-IP records and exclude IP records with targets in 172.16.0.0/12",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{}, []string{"172.16.0.0/12"}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "192.168.7.1"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "172.20.1.66"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "172.23.8.134"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 20 443 target-2.example.com."),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "192.168.7.1"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-cname", endpoint.RecordTypeCNAME, "target-rr.example.com"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 20 443 target-2.example.com."),
+			},
+		},
+		{
+			title:   "should pass non-IP records and 10.16.0.0/16 except 10.16.2.0/23",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.16.0.0/16"}, []string{"10.16.2.0/23"}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.1.2.3"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.70.1", "10.16.70.2", "10.16.3.123"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.33.33"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.2.123"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeAAAA, "91ca:beef:83b2:beef:1490:7604:d192:b326"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.70.1", "10.16.70.2"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.16.33.33"),
+				endpoint.NewEndpoint("foo-txt", endpoint.RecordTypeTXT, "random text data"),
+				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
 			},
 		},
 	}
