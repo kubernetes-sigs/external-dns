@@ -42,6 +42,13 @@ type EventEmitter interface {
 	Add(...Event)
 }
 
+type discardEmitter struct{}
+
+func (discardEmitter) Add(...Event) {}
+
+// Discard emits nothing, so callers never branch on a nil emitter.
+var Discard EventEmitter = discardEmitter{}
+
 type Controller struct {
 	client          v1.EventsV1Interface
 	queue           workqueue.TypedRateLimitingInterface[*eventsv1.Event]

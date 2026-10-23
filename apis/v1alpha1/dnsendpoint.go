@@ -22,6 +22,19 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+const (
+	// AcceptedCondition reports whether every endpoint in spec passed validation,
+	// before any provider call.
+	AcceptedCondition string = "Accepted"
+
+	// InvalidReason marks a spec with at least one endpoint external-dns refused.
+	InvalidReason string = "Invalid"
+
+	// PendingReason is the schema default for Accepted, shown until an
+	// external-dns instance has read the object.
+	PendingReason string = "Pending"
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -32,12 +45,15 @@ import (
 // +kubebuilder:resource:path=dnsendpoints
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/2007"
+// +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=`.status.conditions[?(@.type=="Accepted")].status`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +versionName=v1alpha1
 type DNSEndpoint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DNSEndpointSpec   `json:"spec,omitempty"`
+	Spec DNSEndpointSpec `json:"spec,omitempty"`
+	// +kubebuilder:default={}
 	Status DNSEndpointStatus `json:"status,omitempty"`
 }
 
@@ -62,4 +78,12 @@ type DNSEndpointStatus struct {
 	// The generation observed by the external-dns controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood).
+	// They start as Accepted=Unknown (Pending) until external-dns reads the object.
+	// +optional
+	// +kubebuilder:default={{type: "Accepted", status: "Unknown", reason: "Pending", message: "Waiting for external-dns", lastTransitionTime: "1970-01-01T00:00:00Z"}}
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

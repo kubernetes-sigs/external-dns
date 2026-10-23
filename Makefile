@@ -62,10 +62,15 @@ lint: licensecheck go-lint validate-json-yaml
 validate-json-yaml:
 	bash scripts/validate-json-yaml.sh
 
-#? crd: Generates CRD using controller-gen and copy it into chart
+#? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd:
 	@./scripts/generate-crd.sh
+
+#? crd-chart: Generates CRD and copies it into the chart, once a release supports it
+.PHONY: crd-chart
+crd-chart:
+	@./scripts/generate-crd.sh --chart
 
 # Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
 #? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
