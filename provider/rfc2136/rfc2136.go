@@ -640,7 +640,7 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
-// txtEscaper escapes a TXT value for use inside a quoted character-string as a package level variable.
+// txtEscaper escapes a TXT value for use inside a quoted character-string.
 var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
 // rrTargetFor renders an endpoint target for the RR text that is handed to
