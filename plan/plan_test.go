@@ -1190,3 +1190,56 @@ func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 	}
 	suite.False(changes.HasChanges())
 }
+
+// TestResourceLabelMovesToRemainingSource verifies that when multiple sources
+// claim the same name+target and one of them disappears, the resource label
+// is updated to the remaining source.
+func (suite *PlanTestSuite) TestResourceLabelMovesToRemainingSource() {
+	// Current record was created by the first source
+	current := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "service/default/a", // original owner
+			endpoint.OwnerLabelKey:    "pwner",
+		},
+	}
+
+	// Only the second source is still claiming the name (same target)
+	desired := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/b", // remaining source
+		},
+	}
+
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{current}
+	expectedUpdateNew := []*endpoint.Endpoint{{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/b", // must move
+			endpoint.OwnerLabelKey:    "pwner",             // owner is inherited
+		},
+	}}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}

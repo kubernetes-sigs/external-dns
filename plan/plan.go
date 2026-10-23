@@ -308,8 +308,7 @@ func (p *Plan) calculatePlanTableRowChanges(t planTable, key planKey, row *planT
 func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *endpoint.Endpoint, candidates []*endpoint.Endpoint, inSync *[]*endpoint.Endpoint) {
 	update := t.resolver.ResolveUpdate(current, candidates)
 
-	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
-		p.providerSpecificChanged(update, current) || p.isOldOwnerIDSetAndDifferent(current) {
+	if p.needsUpdate(current, update) {
 		inheritOwner(current, update)
 		changes.UpdateNew = append(changes.UpdateNew, update)
 		changes.UpdateOld = append(changes.UpdateOld, current)
@@ -318,6 +317,30 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 	if p.OwnerID == "" || current.IsOwnedBy(p.OwnerID) {
 		*inSync = append(*inSync, update)
 	}
+}
+
+func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
+	if shouldUpdateTTL(desired, current) {
+		return true
+	}
+
+	if targetChanged(desired, current) {
+		return true
+	}
+
+	if p.providerSpecificChanged(desired, current) {
+		return true
+	}
+
+	if p.isOldOwnerIDSetAndDifferent(current) {
+		return true
+	}
+
+	if current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey] {
+		return true
+	}
+
+	return false
 }
 
 func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {
