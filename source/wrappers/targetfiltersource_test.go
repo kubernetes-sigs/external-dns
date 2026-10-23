@@ -290,6 +290,27 @@ func TestTargetFilterNonAddressRecords(t *testing.T) {
 				endpoint.NewEndpoint("_foo._tcp", endpoint.RecordTypeSRV, "10 80 443 target-1.example.com."),
 			},
 		},
+		{
+			// LoadBalancer status with IP + hostname; CNAME no longer dropped (RFC 1034 conflict).
+			title:   "should pass CNAME alongside A at the same name with include filter",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8"}, []string{}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.5"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeCNAME, "lb.example.net"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "10.0.0.5"),
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeCNAME, "lb.example.net"),
+			},
+		},
+		{
+			title:   "should drop A record with non-IP target with include filter",
+			filters: endpoint.NewTargetNetFilterWithExclusions([]string{"10.0.0.0/8"}, []string{}),
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("foo", endpoint.RecordTypeA, "lb.example.net"),
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.title, func(t *testing.T) {

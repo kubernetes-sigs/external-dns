@@ -38,14 +38,13 @@ Wrappers solve these key challenges:
 
 ### 1.1 `TargetFilterSource`
 
-Filters targets (e.g. IPs or hostnames) based on inclusion or exclusion rules.
+Filters A/AAAA targets by CIDR inclusion or exclusion rules. Other record types pass through unfiltered.
 
 📌 **Use case**: Only publish public IPs, exclude test environments.
 
 ```yaml
---managed-record-types=A
 --target-net-filter=192.168.0.0/16
---exclude-target-nets=10.0.0.0/8
+--exclude-target-net=10.0.0.0/8
 ```
 
 ### 2.1 `NAT64Source`
