@@ -434,6 +434,11 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 
 	obj, ok := c.objects[newObjectRef(group, kind, namespace, string(ref.Name))]
 	if !ok {
+		if kind == listenerSetKind && c.src.lsInformer == nil {
+			log.Warnf("%s %s/%s not found for %s %s/%s: ListenerSet support is disabled, set --gateway-listener-sets to resolve it",
+				kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+			return nil, false
+		}
 		log.Debugf("%s %s/%s not found for %s %s/%s", kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
 	}
