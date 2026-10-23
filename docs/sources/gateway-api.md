@@ -26,11 +26,11 @@ v1 API.
 
 ListenerSets were promoted to the Standard channel in Gateway API v1.5.0.
 They use the v1 API and allow attaching additional listeners to an existing Gateway.
-Routes that reference a ListenerSet as a parentRef are automatically supported —
-ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addresses.
+Routes that reference a ListenerSet as a parentRef are supported when `--gateway-listener-sets`
+is enabled: ExternalDNS follows the ListenerSet to its parent Gateway to resolve target addresses.
+Without the flag, ExternalDNS ignores such routes and produces no records for them.
 The `external-dns.kubernetes.io/target` annotation is also supported on ListenerSet
 resources. When present, it takes precedence over the parent Gateway's target annotation.
-ListenerSet support requires the `--gateway-listener-sets` flag to be enabled.
 
 TLSRoutes were promoted to the Standard channel in Gateway API v1.5.0 but have been
 available in the Experimental channel as v1alpha2 since v1.0.0.

@@ -138,6 +138,8 @@ type gatewayRouteSource struct {
 	gwInformer informers_v1.GatewayInformer
 	lsInformer informers_v1.ListenerSetInformer
 
+	listenerSetsEnabled bool
+
 	rtKind     string
 	rtInformer gatewayRouteInformer
 
@@ -260,6 +262,8 @@ func newGatewayRouteSource(
 		gwName:     config.GatewayName,
 		gwInformer: gwInformer,
 		lsInformer: lsInformer,
+
+		listenerSetsEnabled: config.GatewayListenerSets,
 
 		rtKind:     kind,
 		rtInformer: rtInformer,
@@ -431,6 +435,14 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 		log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
 	}
+	if !gwRouteIsAccepted(rps.Conditions) {
+		log.Debugf("%s %s/%s has not accepted the current generation %s %s/%s", kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
+	}
+	if kind == listenerSetKind && !c.src.listenerSetsEnabled {
+		log.Warnf("ListenerSet %s/%s ignored for %s %s/%s: --gateway-listener-sets is disabled", namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
+		return nil, false
+	}
 
 	obj, ok := c.objects[newObjectRef(group, kind, namespace, string(ref.Name))]
 	if !ok {
@@ -439,10 +451,6 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}
 	if c.src.gwName != "" && c.src.gwName != obj.gatewayRef.Name {
 		log.Debugf("Gateway %s/%s does not match %s %s/%s", obj.gatewayRef.Namespace, obj.gatewayRef.Name, c.src.gwName, meta.Namespace, meta.Name)
-		return nil, false
-	}
-	if !gwRouteIsAccepted(rps.Conditions) {
-		log.Debugf("%s %s/%s has not accepted the current generation %s %s/%s", kind, namespace, ref.Name, c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
 	}
 	if !obj.attached {
