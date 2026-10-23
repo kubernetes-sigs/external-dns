@@ -1,0 +1,121 @@
+/*
+Copyright 2024 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package wrappers
+
+import (
+	"context"
+	"fmt"
+	"net/netip"
+
+	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source"
+)
+
+var (
+	addrFromSlice = netip.AddrFromSlice
+)
+
+// nat64Source is a Source that adds A endpoints for AAAA records including an NAT64 address.
+type nat64Source struct {
+	source        source.Source
+	nat64Prefixes []netip.Prefix
+}
+
+// NewNAT64Source creates a new nat64Source wrapping the provided Source.
+func NewNAT64Source(source source.Source, nat64Prefixes []string) (source.Source, error) {
+	parsedNAT64Prefixes := make([]netip.Prefix, 0)
+	for _, prefix := range nat64Prefixes {
+		pPrefix, err := netip.ParsePrefix(prefix)
+		if err != nil {
+			return nil, err
+		}
+
+		if pPrefix.Bits() != 96 {
+			return nil, fmt.Errorf("NAT64 prefixes need to be /96 prefixes")
+		}
+		parsedNAT64Prefixes = append(parsedNAT64Prefixes, pPrefix)
+	}
+	return &nat64Source{source: source, nat64Prefixes: parsedNAT64Prefixes}, nil
+}
+
+// Endpoints collects endpoints from its wrapped source and returns them without duplicates.
+func (s *nat64Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debug("nat64Source: collecting endpoints and processing NAT64 translation")
+
+	additionalEndpoints := []*endpoint.Endpoint{}
+
+	endpoints, err := s.source.Endpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ep := range endpoints {
+		if ep.RecordType != endpoint.RecordTypeAAAA {
+			continue
+		}
+
+		v4Targets := make([]string, 0)
+
+		for _, target := range ep.Targets {
+			ip, err := netip.ParseAddr(target)
+			if err != nil {
+				return nil, err
+			}
+
+			var sPrefix *netip.Prefix
+
+			for _, cPrefix := range s.nat64Prefixes {
+				if cPrefix.Contains(ip) {
+					sPrefix = &cPrefix
+				}
+			}
+
+			// If we do not have a NAT64 prefix, we skip this record.
+			if sPrefix == nil {
+				continue
+			}
+
+			ipBytes := ip.As16()
+			v4AddrBytes := ipBytes[12:16]
+
+			v4Addr, ok := addrFromSlice(v4AddrBytes)
+			if !ok {
+				return nil, fmt.Errorf("could not parse %v to IPv4 address", v4AddrBytes)
+			}
+
+			v4Targets = append(v4Targets, v4Addr.String())
+		}
+
+		if len(v4Targets) == 0 {
+			continue
+		}
+
+		v4EP := ep.DeepCopy()
+		v4EP.Targets = v4Targets
+		v4EP.RecordType = endpoint.RecordTypeA
+
+		additionalEndpoints = append(additionalEndpoints, v4EP)
+	}
+	return append(endpoints, additionalEndpoints...), nil
+}
+
+func (s *nat64Source) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("nat64Source: adding event handler")
+	s.source.AddEventHandler(ctx, handler)
+}

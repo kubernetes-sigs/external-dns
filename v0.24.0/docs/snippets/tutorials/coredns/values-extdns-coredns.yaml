@@ -1,0 +1,39 @@
+
+# ref: https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
+provider:
+  name: coredns
+
+env:
+  - name: ETCD_URLS
+    value: "http://etcd.default.svc.cluster.local:2379"
+
+
+txtOwnerId: cluster1
+# Filter resources queried for endpoints by annotation, using label selector semantics
+annotationFilter: cluster-name=cluster1
+
+domainFilters:
+  - example.org
+
+# Sources define what ExternalDNS will use to discover endpoints
+sources:
+  - service
+
+# Policy options
+policy: sync
+
+logLevel: debug
+interval: 1m
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Optional: tune resource requests
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

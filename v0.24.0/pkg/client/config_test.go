@@ -1,0 +1,292 @@
+/*
+Copyright 2026 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package kubeclient
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/flowcontrol"
+)
+
+const testKubeAPIServerURL = "https://8119d24c-db6b-4d45-9aa4-64075b2b0de5:6443"
+
+func TestGetRestConfig_WithKubeConfig(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	config, err := buildRestConfig(kubeCfgPath, "")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, testKubeAPIServerURL, config.Host)
+}
+
+func TestNewKubeClient(t *testing.T) {
+	config, err := InstrumentedRESTConfig(writeKubeConfig(t), "", 30*time.Second, 0, 0)
+	require.NoError(t, err)
+
+	client, err := NewKubeClient(config)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+}
+
+func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
+	timeout := 30 * time.Second
+	config, err := InstrumentedRESTConfig(writeKubeConfig(t), "", timeout, 0, 0)
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	assert.Equal(t, timeout, config.Timeout)
+	require.NotNil(t, config.WrapTransport, "WrapTransport should be set for metrics")
+	require.NotNil(t, config.RateLimiter, "RateLimiter should always be set")
+}
+
+func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
+	prevRecommendedHomeFile := clientcmd.RecommendedHomeFile
+	t.Cleanup(func() {
+		clientcmd.RecommendedHomeFile = prevRecommendedHomeFile
+	})
+	clientcmd.RecommendedHomeFile = kubeCfgPath
+
+	config, err := buildRestConfig("", "")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, testKubeAPIServerURL, config.Host)
+}
+
+func TestGetRestConfig_RecommendedConfigPathEnvVar(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, kubeCfgPath)
+
+	config, err := buildRestConfig("", "")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, testKubeAPIServerURL, config.Host)
+}
+
+func TestGetRestConfig_ServerOverridesKubeConfig(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	config, err := buildRestConfig(kubeCfgPath, "https://override:6443")
+	require.NoError(t, err)
+	assert.Equal(t, "https://override:6443", config.Host)
+}
+
+func TestGetRestConfig_WithoutKubeConfig(t *testing.T) {
+	inCluster := func() (*rest.Config, error) {
+		return &rest.Config{Host: "https://10.0.0.1:443", BearerTokenFile: "/token"}, nil
+	}
+	notInCluster := func() (*rest.Config, error) { return nil, rest.ErrNotInCluster }
+
+	tests := []struct {
+		name         string
+		inCluster    func() (*rest.Config, error)
+		apiServerURL string
+		wantHost     string
+		wantToken    string
+		wantErr      error
+	}{
+		{name: "in-cluster", inCluster: inCluster, wantHost: "https://10.0.0.1:443", wantToken: "/token"},
+		{name: "in-cluster with server override keeps credentials", inCluster: inCluster, apiServerURL: "https://override:6443", wantHost: "https://override:6443", wantToken: "/token"},
+		{name: "out of cluster with server only", inCluster: notInCluster, apiServerURL: "http://127.0.0.1:8001", wantHost: "http://127.0.0.1:8001"},
+		{name: "out of cluster without server", inCluster: notInCluster, wantErr: rest.ErrNotInCluster},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
+			prevRecommendedHomeFile, prevInClusterConfig := clientcmd.RecommendedHomeFile, inClusterConfig
+			t.Cleanup(func() {
+				clientcmd.RecommendedHomeFile, inClusterConfig = prevRecommendedHomeFile, prevInClusterConfig
+			})
+			clientcmd.RecommendedHomeFile = filepath.Join(t.TempDir(), "missing")
+			inClusterConfig = tt.inCluster
+
+			config, err := buildRestConfig("", tt.apiServerURL)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantHost, config.Host)
+			assert.Equal(t, tt.wantToken, config.BearerTokenFile)
+		})
+	}
+}
+
+func TestInstrumentedRESTConfig_QPSAndBurstApplied(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	config, err := InstrumentedRESTConfig(kubeCfgPath, "", 30*time.Second, 20, 40)
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	assert.Equal(t, 20, int(config.QPS))
+	assert.Equal(t, 40, config.Burst)
+	require.NotNil(t, config.RateLimiter)
+	assert.Equal(t, 20, int(config.RateLimiter.QPS()))
+}
+
+func TestInstrumentedRESTConfig_ZeroQPSKeepsConfigDefaults(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	config, err := InstrumentedRESTConfig(kubeCfgPath, "", 30*time.Second, 0, 0)
+	require.NoError(t, err)
+	require.NotNil(t, config)
+
+	// qps == 0: client-go defaults applied; rate limiter still installed
+	assert.Equal(t, int(rest.DefaultQPS), int(config.QPS))
+	assert.Equal(t, rest.DefaultBurst, config.Burst)
+	require.NotNil(t, config.RateLimiter)
+	assert.Equal(t, int(rest.DefaultQPS), int(config.RateLimiter.QPS()))
+}
+
+func TestEnrichingRateLimiter(t *testing.T) {
+	t.Run("delegates QPS and TryAccept", func(t *testing.T) {
+		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(5, 10)}
+		assert.Equal(t, 5, int(rl.QPS()))
+		assert.True(t, rl.TryAccept(), "first TryAccept should succeed with non-zero burst")
+	})
+
+	t.Run("Accept does not panic", func(t *testing.T) {
+		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(1000, 10)}
+		assert.NotPanics(t, rl.Accept)
+	})
+
+	t.Run("Stop does not panic", func(t *testing.T) {
+		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(5, 10)}
+		assert.NotPanics(t, rl.Stop)
+	})
+
+	t.Run("Wait enriches error with actionable hint", func(t *testing.T) {
+		// burst=0: no tokens available; cancelled context triggers error immediately
+		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(0.0001, 0)}
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		err := rl.Wait(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "consider raising --kube-api-qps/--kube-api-burst")
+	})
+
+	t.Run("Wait returns nil when token is available", func(t *testing.T) {
+		// burst=1: one token available immediately
+		rl := &rateLimiter{delegate: flowcontrol.NewTokenBucketRateLimiter(100, 1)}
+		require.NoError(t, rl.Wait(t.Context()))
+	})
+}
+
+func TestCurrentNamespace(t *testing.T) {
+	tests := []struct {
+		name      string
+		namespace string
+		want      string
+	}{
+		{
+			name:      "namespace of the kubeconfig context",
+			namespace: "external-dns",
+			want:      "external-dns",
+		},
+		{
+			name:      "kubeconfig context without a namespace",
+			namespace: "",
+			want:      metav1.NamespaceDefault,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isolateKubeConfig(t)
+			assert.Equal(t, tt.want, CurrentNamespace(writeKubeConfigWithNamespace(t, tt.namespace)))
+		})
+	}
+}
+
+func TestCurrentNamespaceWithoutKubeConfig(t *testing.T) {
+	isolateKubeConfig(t)
+
+	// Not running in a cluster and no kubeconfig to read a context from.
+	assert.Equal(t, metav1.NamespaceDefault, CurrentNamespace(""))
+}
+
+// isolateKubeConfig hides the kubeconfig of whoever runs the tests, so that the
+// discovery of the current namespace only sees what the test provides.
+func isolateKubeConfig(t *testing.T) {
+	t.Helper()
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
+	prev := clientcmd.RecommendedHomeFile
+	t.Cleanup(func() { clientcmd.RecommendedHomeFile = prev })
+	clientcmd.RecommendedHomeFile = filepath.Join(t.TempDir(), "absent")
+}
+
+// writeKubeConfigWithNamespace writes a kubeconfig whose current context carries the
+// given namespace, omitting it entirely when empty, and returns the path.
+func writeKubeConfigWithNamespace(t *testing.T, namespace string) string {
+	t.Helper()
+	path := writeKubeConfig(t)
+	if namespace == "" {
+		return path
+	}
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	updated := strings.Replace(
+		string(raw),
+		"    user: test-user\n",
+		fmt.Sprintf("    user: test-user\n    namespace: %s\n", namespace),
+		1)
+	require.NoError(t, os.WriteFile(path, []byte(updated), 0644))
+	return path
+}
+
+// writeKubeConfig writes a minimal kubeconfig pointing at serverURL into a temp dir
+// and returns the path.
+func writeKubeConfig(t *testing.T) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), ".kube")
+	path := filepath.Join(dir, "config")
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	tmpl := `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: %s
+  name: test-cluster
+contexts:
+- context:
+    cluster: test-cluster
+    user: test-user
+  name: test-context
+current-context: test-context
+users:
+- name: test-user
+  user:
+    token: fake-token
+`
+	require.NoError(t, os.WriteFile(path, fmt.Appendf(nil, tmpl, testKubeAPIServerURL), 0644))
+	return path
+}

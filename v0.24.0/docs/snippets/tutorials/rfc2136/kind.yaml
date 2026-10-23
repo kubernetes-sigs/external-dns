@@ -1,0 +1,34 @@
+# ref: https://kind.sigs.k8s.io/docs/user/quick-start/
+# https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings
+
+# kind create cluster --config=docs/snippets/tutorials/rfc2136/kind.yaml
+# kind delete cluster --name rfc2136-bind9
+# kubectl cluster-info --context kind-rfc2136-bind9
+# kubectl get nodes -o wide
+---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: rfc2136-bind9
+networking:
+  apiServerAddress: 127.0.0.1
+  apiServerPort: 6443
+nodes:
+- role: control-plane
+  image: kindest/node:v1.35.1
+  kubeadmConfigPatches:
+    - |
+      kind: InitConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "ingress-ready=true"
+  extraPortMappings:
+    - containerPort: 30053   # BIND9 DNS NodePort
+      hostPort: 5354         # exposed on host
+      listenAddress: "0.0.0.0"
+      protocol: TCP
+    - containerPort: 30053
+      hostPort: 5354
+      listenAddress: "0.0.0.0"
+      protocol: UDP
+- role: worker
+  image: kindest/node:v1.35.1
