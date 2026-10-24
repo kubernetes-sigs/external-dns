@@ -15,12 +15,16 @@ package informers
 
 import (
 	"fmt"
+	"maps"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 )
 
 const (
@@ -35,6 +39,7 @@ type IndexSelectorOptions struct {
 	// resource they reference via a label (e.g. EndpointSlices by Service name).
 	indexByLabelKey string
 	conditions      []func(metav1.Object) bool
+	schema          *schema.Schema
 }
 
 func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
@@ -60,6 +65,18 @@ func IndexSelectorWithConditions[T metav1.Object](fns ...func(T) bool) func(*Ind
 				return ok && fn(typed)
 			})
 		}
+	}
+}
+
+// IndexSelectorWithAnnotationValidation configures IndexerWithOptions to validate
+// an indexed object's annotations against s. s must already be bound to a source
+// via Schema.WithSource; a nil, ModeOff, or unbound Schema makes this a no-op.
+func IndexSelectorWithAnnotationValidation(s *schema.Schema) func(options *IndexSelectorOptions) {
+	return func(options *IndexSelectorOptions) {
+		if s == nil || s.Mode() == "" || s.Mode() == schema.ModeOff {
+			return
+		}
+		options.schema = s
 	}
 }
 
@@ -90,11 +107,38 @@ func IndexSelectorWithLabelKey(key string) func(options *IndexSelectorOptions) {
 //
 // This function ensures type safety and simplifies the process of adding
 // custom indexers to informers.
+// schemaValidationCache suppresses the duplicate warning emitted when client-go's
+// ThreadSafeStore.Update recomputes the index for the old and new object back-to-back
+// under its single write lock. One slot is enough because that lock serializes callers.
+type schemaValidationCache struct {
+	mu          sync.Mutex
+	key         string
+	annotations map[string]string
+	valid       bool
+}
+
+func (c *schemaValidationCache) isValid(entity metav1.Object, s *schema.Schema) bool {
+	key := entity.GetNamespace() + "/" + entity.GetName()
+	annots := entity.GetAnnotations()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.key == key && maps.Equal(c.annotations, annots) {
+		return c.valid
+	}
+
+	valid := s.IsValid(entity)
+	c.key, c.annotations, c.valid = key, annots, valid
+	return valid
+}
+
 func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOptions)) cache.Indexers {
 	options := IndexSelectorOptions{}
 	for _, fn := range optFns {
 		fn(&options)
 	}
+
+	var validation schemaValidationCache
 
 	return cache.Indexers{
 		IndexWithSelectors: func(obj any) ([]string, error) {
@@ -102,7 +146,6 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 			if !ok {
 				return nil, fmt.Errorf("object is not of type %T", new(T))
 			}
-
 			if options.annotationFilter != nil && !options.annotationFilter.Matches(labels.Set(entity.GetAnnotations())) {
 				return nil, nil
 			}
@@ -114,6 +157,9 @@ func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOp
 				if !condition(entity) {
 					return nil, nil
 				}
+			}
+			if options.schema != nil && !validation.isValid(entity, options.schema) {
+				return nil, nil
 			}
 			if options.indexByLabelKey != "" {
 				name := entity.GetLabels()[options.indexByLabelKey]

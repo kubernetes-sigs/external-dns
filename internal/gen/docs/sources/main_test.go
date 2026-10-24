@@ -114,6 +114,7 @@ func TestParseSourceAnnotations(t *testing.T) {
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
+// +externaldns:source:validation=annotation
 type testSource struct {
 	client string
 }
@@ -134,6 +135,7 @@ type testSource struct {
 	assert.Equal(t, "true", source.FQDNTemplate)
 	assert.Equal(t, "false", source.Events)
 	assert.Equal(t, "true", source.ProviderSpecific)
+	assert.Equal(t, "annotation", source.Validation)
 }
 
 func TestParseSourceAnnotations_SkipsTestFiles(t *testing.T) {
