@@ -50,6 +50,7 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type ocpRouteSource struct {
 	templateEngine           template.Engine
