@@ -55,7 +55,7 @@ func WithClientGenerator(gen ClientGenerator) config.OverrideConfigOption {
 
 // ClientGeneratorFor returns cfg's ClientGenerator, lazily building a SingletonClientGenerator if none was injected.
 func ClientGeneratorFor(cfg *Config) ClientGenerator {
-	gen := cfg.EnsureClientGen(func() any {
+	return cfg.EnsureClientGen(func() ClientGenerator {
 		return &SingletonClientGenerator{
 			KubeConfig:   cfg.KubeConfig,
 			APIServerURL: cfg.APIServerURL,
@@ -69,7 +69,6 @@ func ClientGeneratorFor(cfg *Config) ClientGenerator {
 			Burst: cfg.KubeAPIBurst,
 		}
 	})
-	return gen.(ClientGenerator)
 }
 
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
