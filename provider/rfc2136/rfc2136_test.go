@@ -18,8 +18,6 @@ package rfc2136
 
 import (
 	"crypto/tls"
-	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -1393,6 +1391,25 @@ func TestRfc2136AxfrEnvelopeErrorReturnsSoftError(t *testing.T) {
 	assert.Empty(t, records, "Expected no records returned when AXFR envelope carries an error")
 }
 
+type axfrSigningTsigProvider struct {
+	provider         dns.TsigProvider
+	priorMACLen      int
+	unsignedMessages [][]byte
+}
+
+func (p axfrSigningTsigProvider) Generate(message []byte, ts *dns.TSIG) ([]byte, error) {
+	prefix := 2 + p.priorMACLen
+	macInput := append([]byte(nil), message[:prefix]...)
+	for _, unsignedMessage := range p.unsignedMessages {
+		macInput = append(macInput, unsignedMessage...)
+	}
+	return p.provider.Generate(append(macInput, message[prefix:]...), ts)
+}
+
+func (p axfrSigningTsigProvider) Verify(message []byte, ts *dns.TSIG) error {
+	return p.provider.Verify(message, ts)
+}
+
 func TestRFC2136AXFRVerifiesMultiMessageTsig(t *testing.T) {
 	const keyName = "key.example.com."
 	const secret = "c2VjcmV0"
@@ -1400,7 +1417,8 @@ func TestRFC2136AXFRVerifiesMultiMessageTsig(t *testing.T) {
 	query := new(dns.Msg)
 	query.SetAxfr("example.com.")
 	query.SetTsig(keyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	_, requestMAC, err := dns.TsigGenerate(query, secret, "", false)
+	macProvider := tsig.HMAC{keyName: secret}
+	_, requestMAC, err := dns.TsigGenerateWithProvider(query, macProvider, "", false)
 	require.NoError(t, err)
 
 	soa, err := dns.NewRR("example.com. 300 IN SOA ns.example.com. hostmaster.example.com. 1 7200 3600 1209600 300")
@@ -1412,36 +1430,31 @@ func TestRFC2136AXFRVerifiesMultiMessageTsig(t *testing.T) {
 	first.SetReply(query)
 	first.Answer = []dns.RR{soa}
 	first.SetTsig(keyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	firstWire, priorMAC, err := dns.TsigGenerate(first, secret, requestMAC, false)
+	firstWire, priorMAC, err := dns.TsigGenerateWithProvider(first, macProvider, requestMAC, false)
 	require.NoError(t, err)
 
-	middle := &dns.Msg{MsgHdr: dns.MsgHdr{Id: query.Id, Response: true}, Answer: []dns.RR{aRecord}}
+	middle := new(dns.Msg)
+	middle.Id = query.Id
+	middle.Response = true
+	middle.Answer = []dns.RR{aRecord}
 	middleWire, err := middle.Pack()
+	require.NoError(t, err)
+	empty := new(dns.Msg)
+	empty.Id = query.Id
+	empty.Response = true
+	emptyWire, err := empty.Pack()
 	require.NoError(t, err)
 
 	last := new(dns.Msg)
 	last.SetReply(query)
 	last.Answer = []dns.RR{soa}
 	last.SetTsig(keyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	lastUnsigned := last.Copy()
-	lastUnsigned.Extra = lastUnsigned.Extra[:len(lastUnsigned.Extra)-1]
-	lastUnsignedWire, err := lastUnsigned.Pack()
-	require.NoError(t, err)
-	priorMACBytes, err := hex.DecodeString(priorMAC)
-	require.NoError(t, err)
-	macInput := []byte{byte(len(priorMACBytes) >> 8), byte(len(priorMACBytes))}
-	macInput = append(macInput, priorMACBytes...)
-	macInput = append(macInput, middleWire...)
-	macInput = append(macInput, lastUnsignedWire...)
-	var timers [8]byte
-	binary.BigEndian.PutUint64(timers[:], last.IsTsig().TimeSigned)
-	macInput = append(macInput, timers[2:]...)
-	macInput = binary.BigEndian.AppendUint16(macInput, last.IsTsig().Fudge)
-	macProvider := axfrTsigProvider{
-		provider: tsig.HMAC{keyName: secret},
-		macInput: macInput,
+	lastProvider := axfrSigningTsigProvider{
+		provider:         macProvider,
+		priorMACLen:      len(priorMAC) / 2,
+		unsignedMessages: [][]byte{middleWire, emptyWire},
 	}
-	lastWire, _, err := dns.TsigGenerateWithProvider(last, macProvider, priorMAC, true)
+	lastWire, _, err := dns.TsigGenerateWithProvider(last, lastProvider, priorMAC, true)
 	require.NoError(t, err)
 
 	for _, tamperMiddle := range []bool{false, true} {
@@ -1453,7 +1466,7 @@ func TestRFC2136AXFRVerifiesMultiMessageTsig(t *testing.T) {
 				middleMessage[len(middleMessage)-1] ^= 0xff
 			}
 			go func() {
-				for _, packet := range [][]byte{firstWire, middleMessage, lastWire} {
+				for _, packet := range [][]byte{firstWire, middleMessage, emptyWire, lastWire} {
 					length := []byte{byte(len(packet) >> 8), byte(len(packet))}
 					if _, writeErr := serverConn.Write(length); writeErr != nil {
 						return
@@ -1464,7 +1477,7 @@ func TestRFC2136AXFRVerifiesMultiMessageTsig(t *testing.T) {
 				}
 			}()
 
-			envelopes := readSignedAXFR(&dns.Conn{Conn: clientConn}, query.Id, requestMAC, secret, tsig.HMAC{keyName: secret})
+			envelopes := readSignedAXFR(&dns.Conn{Conn: clientConn}, query.Id, requestMAC, macProvider)
 			var records []dns.RR
 			var transferErr error
 			for envelope := range envelopes {
@@ -1476,7 +1489,7 @@ func TestRFC2136AXFRVerifiesMultiMessageTsig(t *testing.T) {
 			}
 			if tamperMiddle {
 				require.Error(t, transferErr)
-				assert.Len(t, records, 2)
+				assert.Len(t, records, 1)
 				return
 			}
 			require.NoError(t, transferErr)
@@ -1492,7 +1505,8 @@ func TestRFC2136AXFRSingleMessageTsig(t *testing.T) {
 	query := new(dns.Msg)
 	query.SetAxfr("example.com.")
 	query.SetTsig(keyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	_, requestMAC, err := dns.TsigGenerate(query, secret, "", false)
+	provider := tsig.HMAC{keyName: secret}
+	_, requestMAC, err := dns.TsigGenerateWithProvider(query, provider, "", false)
 	require.NoError(t, err)
 
 	soa, err := dns.NewRR("example.com. 300 IN SOA ns.example.com. hostmaster.example.com. 1 7200 3600 1209600 300")
@@ -1501,7 +1515,7 @@ func TestRFC2136AXFRSingleMessageTsig(t *testing.T) {
 	response.SetReply(query)
 	response.Answer = []dns.RR{soa, soa}
 	response.SetTsig(keyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	responseWire, _, err := dns.TsigGenerate(response, secret, requestMAC, false)
+	responseWire, _, err := dns.TsigGenerateWithProvider(response, provider, requestMAC, false)
 	require.NoError(t, err)
 
 	clientConn, serverConn := net.Pipe()
@@ -1513,7 +1527,7 @@ func TestRFC2136AXFRSingleMessageTsig(t *testing.T) {
 	}()
 
 	var records []dns.RR
-	for envelope := range readSignedAXFR(&dns.Conn{Conn: clientConn}, query.Id, requestMAC, secret, tsig.HMAC{keyName: secret}) {
+	for envelope := range readSignedAXFR(&dns.Conn{Conn: clientConn}, query.Id, requestMAC, provider) {
 		require.NoError(t, envelope.Error)
 		records = append(records, envelope.RR...)
 	}

@@ -340,20 +340,25 @@ func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
-	if r.shouldSignAXFR() {
-		return r.signedIncomeTransfer(m, nameserver)
-	}
-
 	t := new(dns.Transfer)
 
-	c, err := makeClient(r, nameserver)
+	client, err := makeClient(r, nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
-	conn, err := c.Dial(nameserver)
+	conn, err := client.Dial(nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
+	if r.shouldSignAXFR() {
+		provider := tsig.HMAC{r.tsigKeyName: r.tsigSecret}
+		requestMAC, err := signAndSendAXFRRequest(conn, m, provider)
+		if err != nil {
+			return nil, err
+		}
+		return readSignedAXFR(conn, m.Id, requestMAC, provider), nil
+	}
+
 	t.Conn = conn
 	return t.In(m, nameserver)
 }
