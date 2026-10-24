@@ -34,6 +34,7 @@ type Config struct {
 	excludeTargetNets   []string
 	minTTL              time.Duration
 	preferAlias         bool
+	domainFilter        endpoint.DomainFilterInterface
 	ptrSupported        bool             // PTR is in --managed-record-types
 	createPTR           bool             // --create-ptr default for all A/AAAA records
 	sourceWrappers      sets.Set[string] // set of source wrappers, e.g. "targetfilter", "nat64"
@@ -118,6 +119,13 @@ func WithCreatePTR(enabled bool) Option {
 	}
 }
 
+// WithDomainFilter sets the domain filter that scopes the CNAME conflict source wrapper.
+func WithDomainFilter(input endpoint.DomainFilterInterface) Option {
+	return func(o *Config) {
+		o.domainFilter = input
+	}
+}
+
 // addSourceWrapper registers a source wrapper by name in the Config.
 // It initializes the sourceWrappers map if it is nil.
 func (o *Config) addSourceWrapper(name string) {
@@ -152,6 +160,8 @@ func wrapSources(
 		}
 		opts.addSourceWrapper("nat64")
 	}
+	combinedSource = NewCNAMEConflictSource(combinedSource, opts.domainFilter)
+	opts.addSourceWrapper("cname-conflict")
 	targetFilter := endpoint.NewTargetNetFilterWithExclusions(opts.targetNetFilter, opts.excludeTargetNets)
 	if targetFilter.IsEnabled() {
 		combinedSource = NewTargetFilterSource(combinedSource, targetFilter)

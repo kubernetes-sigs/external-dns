@@ -140,6 +140,23 @@ func TestWrapSources_PTRSupportedButDefaultOff(t *testing.T) {
 	assert.Len(t, result, 1, "no PTR should be generated when createPTR is false and no annotation overrides")
 }
 
+func TestWrapSources_CNAMEConflict(t *testing.T) {
+	eps := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, "a.elb.example.com"),
+		endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, "b.elb.example.com"),
+	}
+	cfg := NewConfig(WithDomainFilter(endpoint.NewDomainFilter([]string{"example.org"})))
+	src, err := wrapSources([]source.Source{testutils.NewMockSource(eps...)}, cfg)
+	require.NoError(t, err)
+	assert.True(t, cfg.isSourceWrapperInstrumented("cname-conflict"))
+
+	invalidEndpoints.Reset()
+	result, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, result, len(eps))
+	testutils.TestHelperVerifyMetricsGaugeVectorWithLabels(t, 1, invalidEndpoints.Gauge, map[string]string{"record_type": "cname"})
+}
+
 func TestWithDefaultTargets(t *testing.T) {
 	cfg := &Config{}
 	opt := WithDefaultTargets([]string{"1.2.3.4"})

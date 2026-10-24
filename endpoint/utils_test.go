@@ -478,39 +478,19 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 }
 
 func TestMergeEndpointsLogging(t *testing.T) {
-	t.Run("warns on CNAME conflict", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-		MergeEndpoints([]*Endpoint{
+	t.Run("CNAMEs with different targets are not merged", func(t *testing.T) {
+		result := MergeEndpoints([]*Endpoint{
 			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
 			NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
 		})
 
-		logtest.TestHelperLogContainsWithLogLevel("Only one CNAME per name", log.WarnLevel, hook, t)
-		logtest.TestHelperLogContains("example.com CNAME a.elb.com", hook, t)
-		logtest.TestHelperLogContains("example.com CNAME b.elb.com", hook, t)
-	})
-
-	t.Run("no warning for identical CNAMEs", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-		})
-
-		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
-	})
-
-	t.Run("no warning for same DNSName with different SetIdentifier", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com").WithSetIdentifier("weight-1"),
-			NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com").WithSetIdentifier("weight-2"),
-		})
-
-		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
+		require.Len(t, result, 2)
+		targets := make([]string, 0, len(result))
+		for _, ep := range result {
+			require.Len(t, ep.Targets, 1)
+			targets = append(targets, ep.Targets[0])
+		}
+		assert.ElementsMatch(t, []string{"a.elb.com", "b.elb.com"}, targets)
 	})
 
 	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
