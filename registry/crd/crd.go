@@ -435,10 +435,6 @@ func buildCacheOptions(namespace string) (crcache.Options, error) {
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
 	}
-	// metav1.AddToGroupVersion registers ListOptions (and other meta types) so
-	// that watch/list requests for this group can be encoded.
-	metav1.AddToGroupVersion(scheme, apiv1alpha1.GroupVersion)
-
 	return crcache.Options{
 		Scheme: scheme,
 		ByObject: map[client.Object]crcache.ByObject{
