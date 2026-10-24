@@ -111,7 +111,7 @@ func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 	} else if k, ok := resourceKinds[strings.ToLower(kind)]; ok {
 		kind = k
 	}
-	return events.NewObjectReferenceFromParts(kind, "", namespace, name, "", registrySource)
+	return endpoint.NewObjectRef(kind, "", namespace, name, "", registrySource)
 }
 
 // StatusReporter receives each sync's outcome, which only exists after

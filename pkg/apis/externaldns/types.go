@@ -566,7 +566,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
-	b.StringsVar("exclude-target-net", "Exclude target nets (optional)", nil, &cfg.ExcludeTargetNets)
+	b.StringsVar("exclude-target-net", "Exclude target nets. Only applies to A/AAAA records. (optional)", nil, &cfg.ExcludeTargetNets)
 	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
 	b.BoolVar("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)", false, &cfg.ExposeInternalIPV6)
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
@@ -588,7 +588,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)", false, &cfg.PublishHostIP)
 	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
-	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)", nil, &cfg.TargetNetFilter)
+	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets. Only applies to A/AAAA records. (optional)", nil, &cfg.TargetNetFilter)
 	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
 	b.BoolVar("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group", defaultConfig.TraefikDisableNew, &cfg.TraefikDisableNew)
 

@@ -189,6 +189,7 @@ func newGatewayRouteSource(
 	lsInformerFactory := gwInformerFactory
 	if cfg.GatewayListenerSets {
 		// Gateway filters should apply only to Gateways, not ListenerSets.
+		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
 		if cfg.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
 			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
 		}
@@ -198,7 +199,6 @@ func newGatewayRouteSource(
 			informers.TransformRemoveLastAppliedConfig(),
 		))
 		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
-			informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
 			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
 		))
 	}
