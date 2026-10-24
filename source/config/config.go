@@ -133,13 +133,13 @@ func (cfg *Config) SetClientGen(gen any) {
 // EnsureClientGen returns the stored client factory, lazily initializing it
 // with init once if none was injected. The sync.Once guarantees a single
 // construction even under concurrent access.
-func (cfg *Config) EnsureClientGen(init func() any) any {
+func (cfg *Config) EnsureClientGen[T any](init func() T) T {
 	cfg.clientGenOnce.Do(func() {
 		if cfg.clientGen == nil {
 			cfg.clientGen = init()
 		}
 	})
-	return cfg.clientGen
+	return cfg.clientGen.(T)
 }
 
 // OverrideConfigOption configures a Config.
