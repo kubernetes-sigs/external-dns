@@ -110,3 +110,7 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return sdr.provider.AdjustEndpoints(endpoints)
 }
+
+func (sdr *AWSSDRegistry) Kind() string {
+	return externaldns.RegistryAWSSD
+}

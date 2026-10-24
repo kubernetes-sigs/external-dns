@@ -117,6 +117,9 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
 		OldOwnerID:     c.TXTOwnerOld,
+		Metadata: plan.Metadata{
+			plan.MetaKeyRegistryType: []byte(c.Registry.Kind()),
+		},
 	}
 
 	plan = plan.Calculate()

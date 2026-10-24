@@ -53,6 +53,12 @@ type Plan struct {
 	OwnerID string
 	// Old owner ID we migrate from
 	OldOwnerID string
+	// Additional Metadata about the Plan.
+	//
+	// At present used to check the Registry related operations
+	// can be used to avoid GOD structs. 
+	// In future we can replace existing fields like (OwnerID, OldOwnerID).
+	Metadata Metadata
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -336,8 +342,12 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 		return true
 	}
 
-	if current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey] {
-		return true
+	if !isRegistryNoOp(p.Metadata) {
+		// NOTE(ep0ll): Resource label must move with the owning source so delete-event
+		// attribution (#6766) stays correct.
+		if current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey] {
+			return true
+		}
 	}
 
 	return false

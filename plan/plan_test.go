@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 type PlanTestSuite struct {
@@ -1195,39 +1196,35 @@ func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 // claim the same name+target and one of them disappears, the resource label
 // is updated to the remaining source.
 func (suite *PlanTestSuite) TestResourceLabelMovesToRemainingSource() {
-	// Current record was created by the first source
 	current := &endpoint.Endpoint{
 		DNSName:    "app.example.com",
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		RecordType: endpoint.RecordTypeA,
 		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "service/default/a", // original owner
+			endpoint.ResourceLabelKey: "service/default/a",
 			endpoint.OwnerLabelKey:    "pwner",
 		},
 	}
 
-	// Only the second source is still claiming the name (same target)
 	desired := &endpoint.Endpoint{
 		DNSName:    "app.example.com",
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		RecordType: endpoint.RecordTypeA,
 		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/b", // remaining source
+			endpoint.ResourceLabelKey: "ingress/default/b",
 		},
 	}
 
-	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{current}
 	expectedUpdateNew := []*endpoint.Endpoint{{
 		DNSName:    "app.example.com",
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		RecordType: endpoint.RecordTypeA,
 		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/b", // must move
-			endpoint.OwnerLabelKey:    "pwner",             // owner is inherited
+			endpoint.ResourceLabelKey: "ingress/default/b",
+			endpoint.OwnerLabelKey:    "pwner",
 		},
 	}}
-	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
 		Policies:       []Policy{&SyncPolicy{}},
@@ -1238,8 +1235,86 @@ func (suite *PlanTestSuite) TestResourceLabelMovesToRemainingSource() {
 	}
 
 	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.Create, nil)
 	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
 	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
+	validateEntries(suite.T(), changes.Delete, nil)
+}
+
+// TestResourceLabelNoChurnWhenBothSourcesPresent verifies that no update is
+// emitted when the current resource label still matches one of the candidates.
+func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenBothSourcesPresent() {
+	current := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "service/default/a",
+			endpoint.OwnerLabelKey:    "pwner",
+		},
+	}
+
+	// Both sources still claim the name; resolver keeps the current one.
+	desiredA := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "service/default/a",
+		},
+	}
+	desiredB := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/b",
+		},
+	}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desiredA, desiredB},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
+
+	changes := p.Calculate().Changes
+	suite.False(changes.HasChanges())
+}
+
+// TestResourceLabelNoChurnWhenCurrentHasNoLabels verifies that a current
+// record with empty labels (typical of the noop registry) does not produce
+// perpetual updates when OwnerID is also empty.
+func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenCurrentHasNoLabels() {
+	current := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		// no Labels
+	}
+
+	desired := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "service/default/a",
+		},
+	}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "",
+		Metadata: Metadata{
+			MetaKeyRegistryType: []byte(externaldns.RegistryNoop),
+		},
+	}
+
+	changes := p.Calculate().Changes
+	suite.False(changes.HasChanges())
 }

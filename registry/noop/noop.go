@@ -67,3 +67,7 @@ func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes)
 func (im *NoopRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
 }
+
+func (sdr *NoopRegistry) Kind() string {
+	return externaldns.RegistryNoop
+}

@@ -453,6 +453,10 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 	return im.provider.AdjustEndpoints(endpoints)
 }
 
+func (sdr *TXTRegistry) Kind() string {
+	return externaldns.RegistryTXT
+}
+
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
 	if im.recordsCache != nil {
 		im.recordsCache = append(im.recordsCache, ep)

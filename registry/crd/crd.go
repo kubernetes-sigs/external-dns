@@ -428,6 +428,10 @@ func (cr *CRDRegistry) updateDNSRecordWithEndpointLabels(ctx context.Context, dn
 	return nil
 }
 
+func (sdr *CRDRegistry) Kind() string {
+	return externaldns.RegistryCRD
+}
+
 // buildCacheOptions constructs the controller-runtime cache options scoped to
 // the given namespace, with the DNSRecord type registered in the scheme.
 func buildCacheOptions(namespace string) (crcache.Options, error) {
