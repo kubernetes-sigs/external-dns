@@ -38,6 +38,7 @@ import (
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -63,6 +64,7 @@ var ErrSourceNotFound = errors.New("source not found")
 type Config struct {
 	Namespaces                     []string
 	AnnotationFilter               labels.Selector
+	Schema                         *schema.Schema
 	LabelFilter                    labels.Selector
 	IngressClassNames              []string
 	TemplateEngine                 template.Engine
@@ -159,8 +161,12 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		return nil, err
 	}
 	c := &Config{
-		Namespaces:                     externaldns.NormalizeNamespaces(cfg.Namespaces),
-		AnnotationFilter:               annotationSelector,
+		Namespaces:       externaldns.NormalizeNamespaces(cfg.Namespaces),
+		AnnotationFilter: annotationSelector,
+		Schema: schema.New(schema.Options{
+			Mode:                     schema.Mode(cfg.AnnotationValidationMode),
+			IgnoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		}),
 		LabelFilter:                    labelSelector,
 		IngressClassNames:              cfg.IngressClassNames,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,

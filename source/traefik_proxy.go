@@ -101,6 +101,7 @@ var (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
+// +externaldns:source:validation=annotation
 type traefikSource struct {
 	dynamicKubeClient          dynamic.Interface
 	kubeClient                 kubernetes.Interface
@@ -131,6 +132,7 @@ func NewTraefikSource(
 	indexerOpts := informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.TraefikProxy)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	)
 	if !cfg.TraefikDisableNew {
