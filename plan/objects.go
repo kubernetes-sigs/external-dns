@@ -18,12 +18,11 @@ package plan
 
 import (
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 // PlannedObject is a Kubernetes object behind desired endpoints of a plan.
 type PlannedObject struct {
-	Ref *events.ObjectReference
+	Ref *endpoint.ObjectRef
 	// Endpoints is how many of its endpoints are in Plan.Planned.
 	Endpoints int
 	// Changed is set when one of its endpoints is in the batch sent to the
