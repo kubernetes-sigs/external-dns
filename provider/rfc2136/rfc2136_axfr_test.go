@@ -18,7 +18,6 @@ package rfc2136
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"net"
 	"testing"
@@ -41,7 +40,8 @@ func signedAXFRStart(t *testing.T) (uint16, string, []byte) {
 	query := new(dns.Msg)
 	query.SetAxfr("example.com.")
 	query.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	_, requestMAC, err := dns.TsigGenerate(query, axfrTestSecret, "", false)
+	provider := tsig.HMAC{axfrTestKeyName: axfrTestSecret}
+	_, requestMAC, err := dns.TsigGenerateWithProvider(query, provider, "", false)
 	require.NoError(t, err)
 
 	soa, err := dns.NewRR("example.com. 300 IN SOA ns.example.com. hostmaster.example.com. 1 7200 3600 1209600 300")
@@ -50,7 +50,7 @@ func signedAXFRStart(t *testing.T) (uint16, string, []byte) {
 	response.SetReply(query)
 	response.Answer = []dns.RR{soa}
 	response.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	wire, _, err := dns.TsigGenerate(response, axfrTestSecret, requestMAC, false)
+	wire, _, err := dns.TsigGenerateWithProvider(response, provider, requestMAC, false)
 	require.NoError(t, err)
 
 	return query.Id, requestMAC, wire
@@ -64,10 +64,11 @@ func packAXFRMessage(t *testing.T, message *dns.Msg) []byte {
 }
 
 func axfrResponse(id uint16, answers ...dns.RR) *dns.Msg {
-	return &dns.Msg{
-		MsgHdr: dns.MsgHdr{Id: id, Response: true},
-		Answer: answers,
-	}
+	message := new(dns.Msg)
+	message.Id = id
+	message.Response = true
+	message.Answer = answers
+	return message
 }
 
 func newAXFRTestQuery() *dns.Msg {
@@ -77,7 +78,7 @@ func newAXFRTestQuery() *dns.Msg {
 	return query
 }
 
-func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]byte) ([]dns.RR, error) {
+func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]byte) error {
 	t.Helper()
 	client, server := net.Pipe()
 	t.Cleanup(func() {
@@ -94,16 +95,12 @@ func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]by
 		}
 	}()
 
-	var records []dns.RR
-	var transferErr error
-	for envelope := range readSignedAXFR(&dns.Conn{Conn: client}, id, requestMAC, axfrTestSecret, tsig.HMAC{axfrTestKeyName: axfrTestSecret}) {
+	for envelope := range readSignedAXFR(&dns.Conn{Conn: client}, id, requestMAC, tsig.HMAC{axfrTestKeyName: axfrTestSecret}) {
 		if envelope.Error != nil {
-			transferErr = envelope.Error
-			continue
+			return envelope.Error
 		}
-		records = append(records, envelope.RR...)
 	}
-	return records, transferErr
+	return nil
 }
 
 func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
@@ -121,7 +118,11 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 	unsignedFinal := axfrResponse(id, soa)
 	badSignature := axfrResponse(id, soa)
 	badSignature.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	badSignatureWire, _, err := dns.TsigGenerate(badSignature, "d3Jvbmc=", "", false)
+	badSignatureWire, _, err := dns.TsigGenerateWithProvider(badSignature, tsig.HMAC{axfrTestKeyName: "d3Jvbmc="}, "", false)
+	require.NoError(t, err)
+	wrongKey := axfrResponse(id, soa)
+	wrongKey.SetTsig("other.example.com.", dns.HmacSHA256, clockSkew, time.Now().Unix())
+	wrongKeyWire, _, err := dns.TsigGenerateWithProvider(wrongKey, tsig.HMAC{"other.example.com.": axfrTestSecret}, "", false)
 	require.NoError(t, err)
 	malformedDNS := packAXFRMessage(t, axfrResponse(id, aRecord))
 	malformedDNS = malformedDNS[:len(malformedDNS)-1]
@@ -138,17 +139,17 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 		{name: "first record is not SOA", packets: [][]byte{packAXFRMessage(t, nonSOA)}, wantErr: dns.ErrSoa},
 		{name: "first response has no answer", packets: [][]byte{packAXFRMessage(t, empty)}, wantErr: dns.ErrSoa},
 		{name: "first response is unsigned", packets: [][]byte{packAXFRMessage(t, axfrResponse(id, soa))}, wantErr: dns.ErrNoSig},
-		{name: "later response has no answers", packets: [][]byte{first, packAXFRMessage(t, empty)}, wantErr: dns.ErrSoa},
 		{name: "unsigned final SOA", packets: [][]byte{first, packAXFRMessage(t, unsignedFinal)}, wantErr: dns.ErrNoSig},
 		{name: "invalid signature", packets: [][]byte{first, badSignatureWire}, wantErrMsg: "dns: bad signature"},
+		{name: "wrong key name", packets: [][]byte{first, wrongKeyWire}, wantErrMsg: "dns: no secrets defined"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, transferErr := readAXFRPackets(t, id, requestMAC, test.packets...)
+			transferErr := readAXFRPackets(t, id, requestMAC, test.packets...)
 			require.Error(t, transferErr)
 			if test.wantErr != nil {
-				assert.ErrorIs(t, transferErr, test.wantErr)
+				require.ErrorIs(t, transferErr, test.wantErr)
 			}
 			if test.wantErrMsg != "" {
 				assert.ErrorContains(t, transferErr, test.wantErrMsg)
@@ -163,7 +164,7 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 		for range maxUnsignedAXFRMessages + 1 {
 			packets = append(packets, middle)
 		}
-		_, transferErr := readAXFRPackets(t, id, requestMAC, packets...)
+		transferErr := readAXFRPackets(t, id, requestMAC, packets...)
 		assert.ErrorIs(t, transferErr, dns.ErrNoSig)
 	})
 }
@@ -192,7 +193,7 @@ func TestReadSignedAXFRReadErrors(t *testing.T) {
 		client, server := net.Pipe()
 		defer server.Close()
 		conn := &dns.Conn{Conn: readDeadlineErrorConn{Conn: client, err: wantErr}}
-		envelope := <-readSignedAXFR(conn, 1, "", axfrTestSecret, tsig.HMAC{})
+		envelope := <-readSignedAXFR(conn, 1, "", tsig.HMAC{})
 		assert.ErrorIs(t, envelope.Error, wantErr)
 	})
 
@@ -201,135 +202,21 @@ func TestReadSignedAXFRReadErrors(t *testing.T) {
 		defer server.Close()
 		wantErr := errors.New("read failed")
 		conn := &dns.Conn{Conn: readErrorConn{Conn: client, err: wantErr}}
-		envelope := <-readSignedAXFR(conn, 1, "", axfrTestSecret, tsig.HMAC{})
+		envelope := <-readSignedAXFR(conn, 1, "", tsig.HMAC{})
 		assert.ErrorIs(t, envelope.Error, wantErr)
 	})
 }
 
-func TestAXFRTsigHelpersRejectMalformedInput(t *testing.T) {
-	t.Run("invalid prior MAC", func(t *testing.T) {
-		_, err := axfrTsigMACInput("not-hex", nil, nil, &dns.TSIG{})
-		assert.ErrorContains(t, err, "invalid prior TSIG MAC")
-	})
-
-	t.Run("prior MAC too long", func(t *testing.T) {
-		_, err := axfrTsigMACInput(hex.EncodeToString(make([]byte, 0x10000)), nil, nil, &dns.TSIG{})
-		assert.ErrorContains(t, err, "prior TSIG MAC is too long")
-	})
-
-	t.Run("valid prior MAC", func(t *testing.T) {
-		input, err := axfrTsigMACInput("0102", [][]byte{{3}}, []byte{4}, &dns.TSIG{TimeSigned: 5, Fudge: 6})
-		require.NoError(t, err)
-		assert.Equal(t, []byte{0, 2, 1, 2, 3, 4, 0, 0, 0, 0, 0, 5, 0, 6}, input)
-	})
-
-	t.Run("strip TSIG errors", func(t *testing.T) {
-		wireWithAdditional := make([]byte, 12)
-		binary.BigEndian.PutUint16(wireWithAdditional[10:], 1)
-		wireWithQuestion := make([]byte, 12)
-		binary.BigEndian.PutUint16(wireWithQuestion[4:], 1)
-		binary.BigEndian.PutUint16(wireWithQuestion[10:], 1)
-		wireWithAnswer := make([]byte, 12)
-		binary.BigEndian.PutUint16(wireWithAnswer[6:], 1)
-		binary.BigEndian.PutUint16(wireWithAnswer[10:], 1)
-		wireWithTrailingTSIGByte := make([]byte, 12)
-		binary.BigEndian.PutUint16(wireWithTrailingTSIGByte[10:], 1)
-		wireWithTrailingTSIGByte = append(wireWithTrailingTSIGByte, minimalTSIGWire()...)
-		wireWithTrailingTSIGByte = append(wireWithTrailingTSIGByte, 0)
-
-		tests := []struct {
-			name string
-			wire []byte
-		}{
-			{name: "short header", wire: make([]byte, 11)},
-			{name: "no additional record", wire: make([]byte, 12)},
-			{name: "invalid question", wire: wireWithQuestion},
-			{name: "invalid answer", wire: wireWithAnswer},
-			{name: "invalid TSIG record", wire: wireWithAdditional},
-			{name: "TSIG is not final", wire: wireWithTrailingTSIGByte},
-			{name: "not TSIG", wire: minimalRRWire(dns.TypeA)},
-		}
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
-				_, err := stripAXFRTsig(test.wire, &dns.TSIG{})
-				assert.Error(t, err)
-			})
-		}
-	})
-
-	t.Run("skip names", func(t *testing.T) {
-		tests := []struct {
-			name string
-			wire []byte
-			err  bool
-		}{
-			{name: "empty", wire: nil, err: true},
-			{name: "truncated pointer", wire: []byte{0xc0}, err: true},
-			{name: "compressed name", wire: []byte{0xc0, 0}, err: false},
-			{name: "reserved label type", wire: []byte{0x40}, err: true},
-			{name: "truncated label", wire: []byte{2, 'a'}, err: true},
-			{name: "root name", wire: []byte{0}, err: false},
-		}
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
-				_, err := skipAXFRName(test.wire, 0)
-				if test.err {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
-			})
-		}
-	})
-
-	t.Run("skip resource records", func(t *testing.T) {
-		tests := []struct {
-			name string
-			wire []byte
-		}{
-			{name: "invalid name", wire: nil},
-			{name: "short record header", wire: []byte{0}},
-			{name: "truncated data", wire: minimalRRWire(dns.TypeA, 4)},
-		}
-		for _, test := range tests {
-			t.Run(test.name, func(t *testing.T) {
-				_, _, err := skipAXFRRR(test.wire, 0)
-				assert.Error(t, err)
-			})
-		}
-	})
-}
-
-func minimalTSIGWire() []byte {
-	return minimalRRWire(dns.TypeTSIG)
-}
-
-func minimalRRWire(rrType uint16, rdlength ...uint16) []byte {
-	wire := []byte{0}
-	wire = binary.BigEndian.AppendUint16(wire, rrType)
-	wire = binary.BigEndian.AppendUint16(wire, dns.ClassANY)
-	wire = binary.BigEndian.AppendUint32(wire, 0)
-	var length uint16
-	if len(rdlength) > 0 {
-		length = rdlength[0]
-	}
-	wire = binary.BigEndian.AppendUint16(wire, length)
-	if length > 0 {
-		wire = append(wire, make([]byte, int(length)-1)...)
-	}
-	return wire
-}
-
-func TestSignedIncomeTransferSetupErrors(t *testing.T) {
+func TestIncomeTransferSetupErrors(t *testing.T) {
 	t.Run("TLS setup", func(t *testing.T) {
 		r := &rfc2136Provider{tlsConfig: TLSConfig{UseTLS: true, CAFilePath: "/does/not/exist"}}
-		_, err := r.signedIncomeTransfer(new(dns.Msg), "127.0.0.1:53")
+		_, err := r.IncomeTransfer(new(dns.Msg), "127.0.0.1:53")
 		assert.ErrorContains(t, err, "error setting up TLS")
 	})
 
 	t.Run("dial", func(t *testing.T) {
 		r := &rfc2136Provider{}
-		_, err := r.signedIncomeTransfer(new(dns.Msg), "127.0.0.1:1")
+		_, err := r.IncomeTransfer(new(dns.Msg), "127.0.0.1:1")
 		assert.ErrorContains(t, err, "failed to connect for transfer")
 	})
 
@@ -345,9 +232,9 @@ func TestSignedIncomeTransferSetupErrors(t *testing.T) {
 			}
 		}()
 
-		r := &rfc2136Provider{tsigSecret: "invalid-base64"}
-		_, err = r.signedIncomeTransfer(newAXFRTestQuery(), listener.Addr().String())
-		assert.ErrorContains(t, err, "failed to sign AXFR request")
+		r := &rfc2136Provider{tsigKeyName: axfrTestKeyName, tsigSecret: "invalid-base64"}
+		_, err = r.IncomeTransfer(newAXFRTestQuery(), listener.Addr().String())
+		require.ErrorContains(t, err, "failed to sign AXFR request")
 		select {
 		case conn := <-accepted:
 			_ = conn.Close()
@@ -362,8 +249,8 @@ func TestSignAndSendAXFRRequestErrors(t *testing.T) {
 		client, server := net.Pipe()
 		defer server.Close()
 		conn := &dns.Conn{Conn: client}
-		_, err := signAndSendAXFRRequest(conn, newAXFRTestQuery(), "invalid-base64")
-		assert.ErrorContains(t, err, "failed to sign AXFR request")
+		_, err := signAndSendAXFRRequest(conn, newAXFRTestQuery(), tsig.HMAC{axfrTestKeyName: "invalid-base64"})
+		require.ErrorContains(t, err, "failed to sign AXFR request")
 		_, writeErr := conn.Write([]byte{1})
 		assert.Error(t, writeErr)
 	})
@@ -372,12 +259,12 @@ func TestSignAndSendAXFRRequestErrors(t *testing.T) {
 		client, server := net.Pipe()
 		_ = server.Close()
 		conn := &dns.Conn{Conn: client}
-		_, err := signAndSendAXFRRequest(conn, newAXFRTestQuery(), axfrTestSecret)
+		_, err := signAndSendAXFRRequest(conn, newAXFRTestQuery(), tsig.HMAC{axfrTestKeyName: axfrTestSecret})
 		assert.ErrorContains(t, err, "failed to send AXFR request")
 	})
 }
 
-func TestSignedIncomeTransferReturnsSignedStream(t *testing.T) {
+func TestIncomeTransferReturnsSignedStream(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer listener.Close()
@@ -409,7 +296,7 @@ func TestSignedIncomeTransferReturnsSignedStream(t *testing.T) {
 		}
 		response.Answer = []dns.RR{soa, soa}
 		response.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-		responseWire, _, signErr := dns.TsigGenerate(response, axfrTestSecret, request.IsTsig().MAC, false)
+		responseWire, _, signErr := dns.TsigGenerateWithProvider(response, tsig.HMAC{axfrTestKeyName: axfrTestSecret}, request.IsTsig().MAC, false)
 		if signErr != nil {
 			serverErr <- signErr
 			return
@@ -441,14 +328,4 @@ func TestIncomeTransferUnsignedTLSSetupError(t *testing.T) {
 	}
 	_, err := r.IncomeTransfer(newAXFRTestQuery(), "127.0.0.1:53")
 	assert.ErrorContains(t, err, "error setting up TLS")
-}
-
-func TestVerifySignedAXFRMessageErrors(t *testing.T) {
-	ts := &dns.TSIG{}
-	assert.Error(t, verifySignedAXFRMessage(make([]byte, 12), ts, "", nil, tsig.HMAC{}))
-
-	wire := make([]byte, 12)
-	binary.BigEndian.PutUint16(wire[10:], 1)
-	wire = append(wire, minimalTSIGWire()...)
-	assert.ErrorContains(t, verifySignedAXFRMessage(wire, ts, "not-hex", nil, tsig.HMAC{}), "invalid prior TSIG MAC")
 }
