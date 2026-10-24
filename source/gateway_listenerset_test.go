@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,8 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/source/annotations"
 )
 
 func lsParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
@@ -308,6 +311,69 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err)
 	require.Empty(t, endpoints, "expected no endpoints when ListenerSet support is disabled")
+}
+
+// TestGatewayTCPRouteWithListenerSetDisabled checks that a route attached to a ListenerSet
+// logs a warning naming --gateway-listener-sets when ListenerSet support is disabled.
+// It captures the global logger, so it must not run in parallel.
+func TestGatewayTCPRouteWithListenerSetDisabled(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{Name: "default"}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	gw := &v1.Gateway{
+		Name: "gw", Namespace: "default",
+		Spec:   v1.GatewaySpec{AllowedListeners: allowAllListenerSets(), Listeners: []v1.Listener{{Protocol: v1.TCPProtocolType, Port: 80}}},
+		Status: gatewayStatus("10.0.0.1"),
+	}
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		Name: "ls", Namespace: "default",
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "gw"},
+			Listeners: []v1.ListenerEntry{{
+				Name: "app", Port: 8080, Protocol: v1.TCPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+			}},
+		},
+		Status: listenerSetAcceptedStatus("app"),
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1.TCPRoute{
+		Name: "rt", Namespace: "default",
+		Annotations: map[string]string{
+			annotations.HostnameKey: "app.example.com",
+		},
+		Spec:   v1.TCPRouteSpec{CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}}},
+		Status: v1.TCPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+	}
+	_, err = gwClient.GatewayV1().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayTCPRouteSource(ctx, clients, &Config{GatewayListenerSets: false})
+	require.NoError(t, err)
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	require.Empty(t, endpoints, "expected no endpoints when ListenerSet support is disabled")
+	logtest.TestHelperLogContainsWithLogLevel("ListenerSet default/ls not found for TCPRoute default/rt", log.WarnLevel, hook, t)
+	logtest.TestHelperLogContainsWithLogLevel("--gateway-listener-sets", log.WarnLevel, hook, t)
 }
 
 func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
