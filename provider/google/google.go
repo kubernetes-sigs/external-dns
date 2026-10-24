@@ -302,6 +302,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 	// separate into per-zone change sets to be passed to the API.
 	changes := separateChange(zones, change)
 
+	submitted := false
 	for zone, change := range changes {
 		for batch, c := range batchChange(change, p.batchChangeSize) {
 			log.Infof("Change zone: %v batch #%d", zone, batch)
@@ -316,17 +317,20 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 				continue
 			}
 
+			if submitted {
+				timer := time.NewTimer(p.batchChangeInterval)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return provider.NewSoftErrorf("change submission canceled: %w", ctx.Err())
+				case <-timer.C:
+				}
+			}
+
 			if _, err := p.changesClient.Create(p.project, zone, c).Context(ctx).Do(); err != nil {
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
-
-			timer := time.NewTimer(p.batchChangeInterval)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return ctx.Err()
-			case <-timer.C:
-			}
+			submitted = true
 		}
 	}
 

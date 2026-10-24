@@ -192,7 +192,7 @@ func (c *Controller) Run(ctx context.Context) error {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
 				if ctx.Err() != nil {
-					log.Info("Terminating main controller loop")
+					log.Infof("Terminating main controller loop after error: %v", err)
 					return nil
 				}
 				if errors.Is(err, provider.SoftError) {

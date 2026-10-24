@@ -24,6 +24,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -129,13 +130,15 @@ func (m *mockResourceRecordSetsClient) List(project string, managedZone string) 
 }
 
 type mockChangesCreateCall struct {
-	project     string
-	managedZone string
-	change      *dns.Change
-	ctx         context.Context
-	doStarted   chan struct{}
-	doCompleted chan struct{}
-	waitForCtx  bool
+	project       string
+	managedZone   string
+	change        *dns.Change
+	ctx           context.Context
+	doStarted     chan struct{}
+	doCompleted   chan struct{}
+	waitForCtx    bool
+	startedOnce   sync.Once
+	completedOnce sync.Once
 }
 
 func (m *mockChangesCreateCall) Context(ctx context.Context) changesCreateCallInterface {
@@ -145,7 +148,7 @@ func (m *mockChangesCreateCall) Context(ctx context.Context) changesCreateCallIn
 
 func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
 	if m.doStarted != nil {
-		close(m.doStarted)
+		m.startedOnce.Do(func() { close(m.doStarted) })
 	}
 	if m.waitForCtx {
 		<-m.ctx.Done()
@@ -185,7 +188,7 @@ func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, erro
 	}
 
 	if m.doCompleted != nil {
-		close(m.doCompleted)
+		m.completedOnce.Do(func() { close(m.doCompleted) })
 	}
 
 	return m.change, nil
@@ -703,14 +706,23 @@ func TestSubmitChangeCancelsBatchInterval(t *testing.T) {
 	defer cancel()
 	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
 	p.batchChangeInterval = time.Hour
+	p.batchChangeSize = 1
 	completed := make(chan struct{})
 	p.changesClient = &mockChangesClient{createCall: &mockChangesCreateCall{doCompleted: completed}}
-	change := &dns.Change{Additions: []*dns.ResourceRecordSet{{
-		Name:    "record.zone-1.ext-dns-test-2.gcp.zalan.do.",
-		Type:    endpoint.RecordTypeA,
-		Ttl:     defaultTTL,
-		Rrdatas: []string{"192.0.2.1"},
-	}}}
+	change := &dns.Change{Additions: []*dns.ResourceRecordSet{
+		{
+			Name:    "record.zone-1.ext-dns-test-2.gcp.zalan.do.",
+			Type:    endpoint.RecordTypeA,
+			Ttl:     defaultTTL,
+			Rrdatas: []string{"192.0.2.1"},
+		},
+		{
+			Name:    "record-2.zone-1.ext-dns-test-2.gcp.zalan.do.",
+			Type:    endpoint.RecordTypeA,
+			Ttl:     defaultTTL,
+			Rrdatas: []string{"192.0.2.2"},
+		},
+	}}
 	result := make(chan error, 1)
 	go func() {
 		result <- p.submitChange(ctx, change)
@@ -725,9 +737,42 @@ func TestSubmitChangeCancelsBatchInterval(t *testing.T) {
 
 	select {
 	case err := <-result:
+		require.ErrorIs(t, err, provider.SoftError)
 		require.ErrorIs(t, err, context.Canceled)
 	case <-time.After(5 * time.Second):
 		t.Fatal("submitChange did not stop after cancellation")
+	}
+}
+
+func TestSubmitChangeDoesNotWaitAfterFinalBatch(t *testing.T) {
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+	p.batchChangeSize = 1
+	p.batchChangeInterval = 0
+	p.changesClient = &mockChangesClient{createCall: &mockChangesCreateCall{doCompleted: make(chan struct{})}}
+	change := &dns.Change{Additions: []*dns.ResourceRecordSet{
+		{
+			Name:    "record.zone-1.ext-dns-test-2.gcp.zalan.do.",
+			Type:    endpoint.RecordTypeA,
+			Ttl:     defaultTTL,
+			Rrdatas: []string{"192.0.2.1"},
+		},
+		{
+			Name:    "record-2.zone-1.ext-dns-test-2.gcp.zalan.do.",
+			Type:    endpoint.RecordTypeA,
+			Ttl:     defaultTTL,
+			Rrdatas: []string{"192.0.2.2"},
+		},
+	}}
+	result := make(chan error, 1)
+	go func() {
+		result <- p.submitChange(t.Context(), change)
+	}()
+
+	select {
+	case err := <-result:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("submitChange waited after the final batch")
 	}
 }
 
