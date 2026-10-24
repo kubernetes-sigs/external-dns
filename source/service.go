@@ -69,6 +69,7 @@ var (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type serviceSource struct {
 	client         kubernetes.Interface
 	templateEngine template.Engine
@@ -116,6 +117,7 @@ func NewServiceSource(
 	serviceInformers.MustAddIndexers(informers.IndexerWithOptions[*v1.Service](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Service)),
 		informers.IndexSelectorWithConditions(
 			sTypesFilter.predicate,
 			annotations.IsControllerMatch[*v1.Service],

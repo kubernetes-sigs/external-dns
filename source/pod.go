@@ -50,6 +50,7 @@ import (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type podSource struct {
 	client         kubernetes.Interface
 	namespace      string
@@ -79,6 +80,7 @@ func NewPodSource(
 	informers.MustAddIndexers(podInformer.Informer(), informers.IndexerWithOptions[*v1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 		informers.IndexSelectorWithLabelSelector(labelSelector),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Pod)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Pod]),
 	))
 	informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
