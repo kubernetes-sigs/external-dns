@@ -559,7 +559,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
-	b.EnumVar("annotation-validation-mode", "Validation mode for all annotations (default: off, options: off, warn, strict)", defaultConfig.AnnotationValidationMode, &cfg.AnnotationValidationMode, "off", "warn", "strict")
+	b.EnumVar("annotation-validation-mode", "Validation mode for all annotations (default: warn, options: off, warn, strict)", defaultConfig.AnnotationValidationMode, &cfg.AnnotationValidationMode, "off", "warn", "strict")
 	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the legacy prefix external-dns.alpha.kubernetes.io/ (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
