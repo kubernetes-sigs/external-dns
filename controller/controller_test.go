@@ -58,6 +58,17 @@ type filteredMockProvider struct {
 	ApplyChangesCalls []*plan.Changes
 }
 
+type cancelableApplyProvider struct {
+	fakes.MockProvider
+	applyStarted chan struct{}
+}
+
+func (p *cancelableApplyProvider) ApplyChanges(ctx context.Context, _ *plan.Changes) error {
+	close(p.applyStarted)
+	<-ctx.Done()
+	return ctx.Err()
+}
+
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
@@ -644,5 +655,43 @@ func TestRun_HardError(t *testing.T) {
 	require.ErrorContains(t, err, "failed to do run once")
 	require.ErrorContains(t, err, "simulated hard error")
 
+	source.AssertExpectations(t)
+}
+
+func TestRun_CanceledDuringRunOnce(t *testing.T) {
+	cfg := getTestConfig()
+	dnsProvider := &cancelableApplyProvider{applyStarted: make(chan struct{})}
+	r, err := registryfactory.Select(cfg, dnsProvider)
+	require.NoError(t, err)
+
+	source := getTestSource()
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+	}
+	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	runResult := make(chan error, 1)
+	go func() {
+		runResult <- ctrl.Run(ctx)
+	}()
+
+	select {
+	case <-dnsProvider.applyStarted:
+		cancel()
+	case <-time.After(5 * time.Second):
+		t.Fatal("provider ApplyChanges did not start")
+	}
+
+	select {
+	case err := <-runResult:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("controller did not stop after cancellation")
+	}
 	source.AssertExpectations(t)
 }
