@@ -43,10 +43,7 @@ var (
 
 func addKnownTypes(s *runtime.Scheme) error {
 	s.AddKnownTypes(GroupVersion, &DNSEndpoint{}, &DNSEndpointList{}, &DNSRecord{}, &DNSRecordList{})
-	// Register the standard Kubernetes metadata types (e.g. metav1.CreateOptions)
-	// for this group version so client-go's parameter codec can convert them.
-	// Unlike sigs.k8s.io/controller-runtime's scheme.Builder (used before PR #6407),
-	// runtime.NewSchemeBuilder does not do this automatically.
+	// runtime.NewSchemeBuilder does not register meta types
 	metav1.AddToGroupVersion(s, GroupVersion)
 	return nil
 }
