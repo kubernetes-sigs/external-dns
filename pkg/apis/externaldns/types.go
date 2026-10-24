@@ -589,7 +589,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.", defaultConfig.OCPRouterName, &cfg.OCPRouterName)
 	b.StringVar("pod-source-domain", "Domain to use for pods records (optional)", defaultConfig.PodSourceDomain, &cfg.PodSourceDomain)
 	b.BoolVar("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)", false, &cfg.PublishHostIP)
-	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
+	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services and internal Istio targets (optional)", false, &cfg.PublishInternal)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
 	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets. Only applies to A/AAAA records. (optional)", nil, &cfg.TargetNetFilter)
 	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
