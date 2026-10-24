@@ -258,7 +258,7 @@ OuterLoop:
 			rrValues = []string{rr.(*dns.AAAA).AAAA.String()}
 			rrType = "AAAA"
 		case dns.TypeTXT:
-			rrValues = (rr.(*dns.TXT).Txt)
+			rrValues = []string{txtTarget(rr.(*dns.TXT))}
 			rrType = "TXT"
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
@@ -310,16 +310,63 @@ func tlsaTarget(rr *dns.TLSA) string {
 	return tlsa.String()
 }
 
+// txtTarget returns the text a TXT RR contains. AXFR hands Txt back escaped and
+// split into 255-byte strings. Keeping them would make desired and current targets never compare equal.
+func txtTarget(rr *dns.TXT) string {
+	var b strings.Builder
+	for _, s := range rr.Txt {
+		b.WriteString(unescapeTXT(s))
+	}
+	return b.String()
+}
+
+// unescapeTXT decodes the \X and \DDD escapes of TXT presentation.
+func unescapeTXT(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	b := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 == len(s) {
+			b = append(b, s[i])
+			continue
+		}
+		if i+3 < len(s) && isDigit(s[i+1]) && isDigit(s[i+2]) && isDigit(s[i+3]) {
+			if n := int(s[i+1]-'0')*100 + int(s[i+2]-'0')*10 + int(s[i+3]-'0'); n <= 255 {
+				b = append(b, byte(n))
+				i += 3
+				continue
+			}
+		}
+		b = append(b, s[i+1])
+		i++
+	}
+	return string(b)
+}
+
+func isDigit(c byte) bool {
+	return '0' <= c && c <= '9'
+}
+
 // Canonicalize targets to avoid reconciliation when not needed.
 func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range eps {
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			// Records() returns TXT values unquoted, so a quoted target would never match it.
+			for i, target := range ep.Targets {
+				if isQuotedTXT(target) {
+					ep.Targets[i] = unescapeTXT(target[1 : len(target)-1])
+				}
+			}
+			continue
+		}
 		if ep.RecordType != endpoint.RecordTypeTLSA {
 			continue
 		}
 		for i, target := range ep.Targets {
 			tlsa, err := endpoint.NewTLSARecord(target)
 			if err != nil {
-				// AddRecord reports this as a hard error when the change is applied.
+				// AddRecord reports this as an error when the change is applied.
 				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
 				continue
 			}
@@ -593,9 +640,21 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
+// txtEscaper escapes a TXT value for use inside a quoted character-string.
+var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
 // rrTargetFor renders an endpoint target for the RR text that is handed to
-// dns.NewRR. Handles validation and canonicalisation.
+// dns.NewRR. Handles validation, canonicalisation and quoting.
 func rrTargetFor(recordType, target string) (string, error) {
+	if recordType == endpoint.RecordTypeTXT {
+		// TXT registry labels arrive pre-quoted.
+		if isQuotedTXT(target) {
+			return target, nil
+		}
+		// Unquoted, the zone-file parser treats ';' as a comment and splits on whitespace.
+		return `"` + txtEscaper.Replace(target) + `"`, nil
+	}
+
 	if recordType != endpoint.RecordTypeTLSA {
 		return target, nil
 	}
@@ -606,6 +665,10 @@ func rrTargetFor(recordType, target string) (string, error) {
 	}
 
 	return tlsa.String(), nil
+}
+
+func isQuotedTXT(target string) bool {
+	return len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`)
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given
