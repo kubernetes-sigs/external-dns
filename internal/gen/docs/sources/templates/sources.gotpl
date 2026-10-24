@@ -22,10 +22,10 @@ Sources are responsible for:
 
 ## Available Sources
 
-| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.ProviderSpecific "Provider Specific" }} | {{ padRight .ColWidths.Category "Category" }} | {{ padRight .ColWidths.Resources "Resources" }} |
-|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.ProviderSpecific }}|:{{ leftSep .ColWidths.Category }}|:{{ leftSep .ColWidths.Resources }}|
+| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.ProviderSpecific "Provider Specific" }} | {{ padRight .ColWidths.Validation "Validation" }} | {{ padRight .ColWidths.Category "Category" }} | {{ padRight .ColWidths.Resources "Resources" }} |
+|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.ProviderSpecific }}|:{{ leftSep .ColWidths.Validation }}|:{{ leftSep .ColWidths.Category }}|:{{ leftSep .ColWidths.Resources }}|
 {{- range .Sources }}
-| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Filters .Filters }} | {{ padRight $.ColWidths.Namespace .Namespace }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplate }} | {{ padRight $.ColWidths.Events .Events }} | {{ padRight $.ColWidths.ProviderSpecific .ProviderSpecific }} | {{ padRight $.ColWidths.Category (lower .Category) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} |
+| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Filters .Filters }} | {{ padRight $.ColWidths.Namespace .Namespace }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplate }} | {{ padRight $.ColWidths.Events .Events }} | {{ padRight $.ColWidths.ProviderSpecific .ProviderSpecific }} | {{ padRight $.ColWidths.Validation .ValidationCell }} | {{ padRight $.ColWidths.Category (lower .Category) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} |
 {{- end }}
 
 ## Usage
@@ -51,3 +51,5 @@ Multiple sources can be combined to watch different resource types simultaneousl
 - **Wrappers**: Source wrappers that modify or combine other sources
 - **Special**: Special purpose sources (connector, empty)
 - **Testing**: Sources used for testing purposes
+
+[^val-annotation]: Controlled by the {{backtick 1}}--annotation-validation-mode{{backtick 1}} flag. Set to {{backtick 1}}warn{{backtick 1}} to log invalid or source-unsupported annotations, {{backtick 1}}strict{{backtick 1}} to additionally exclude affected objects from the informer index. Defaults to {{backtick 1}}off{{backtick 1}} (disabled).

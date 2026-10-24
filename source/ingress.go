@@ -61,6 +61,7 @@ const (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type ingressSource struct {
 	client                   kubernetes.Interface
 	ingressClassNames        []string
@@ -94,6 +95,7 @@ func NewIngressSource(
 	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Ingress)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkv1.Ingress]),
 	))
 

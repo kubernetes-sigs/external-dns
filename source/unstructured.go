@@ -52,6 +52,7 @@ import (
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=false
+// +externaldns:source:validation=annotation
 type unstructuredSource struct {
 	templateEngine template.Engine
 	informers      []kubeinformers.GenericInformer
@@ -86,6 +87,7 @@ func NewUnstructuredFQDNSource(
 		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Unstructured)),
 			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 		))
 		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
