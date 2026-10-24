@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -464,7 +465,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				&Config{
+				&config.Config{
 					AnnotationFilter:      parseAnnotationFilterOrNil(tt.cfg.annotationFilter),
 					LabelFilter:           labelSelector,
 					UnstructuredResources: tt.cfg.resources,
@@ -618,7 +619,7 @@ func TestProcessEndpoint_Unstructured_RefObjectExist(t *testing.T) {
 		t.Context(),
 		dynamicClient,
 		kubeClient,
-		&Config{
+		&config.Config{
 			LabelFilter:           labels.Everything(),
 			UnstructuredResources: resources,
 		},
@@ -749,7 +750,7 @@ func TestAddEventHandler_Unstructured(t *testing.T) {
 		t.Context(),
 		dynamicClient,
 		kubeClient,
-		&Config{
+		&config.Config{
 			LabelFilter:           labels.Everything(),
 			UnstructuredResources: resources,
 		},
@@ -809,7 +810,7 @@ func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
 			kubeClient := fake.NewClientset()
 			kubeClient.Discovery().(*discoveryfake.FakeDiscovery).Resources = tt.discovery
 
-			_, err := NewUnstructuredFQDNSource(tt.ctx(), tt.dynamicClient, kubeClient, &Config{
+			_, err := NewUnstructuredFQDNSource(tt.ctx(), tt.dynamicClient, kubeClient, &config.Config{
 				LabelFilter:           labels.Everything(),
 				UnstructuredResources: tt.resources,
 			})
@@ -911,7 +912,7 @@ func TestUnstructuredSource_TemplateErrors(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				&Config{
+				&config.Config{
 					LabelFilter:           labels.Everything(),
 					UnstructuredResources: resources,
 					TemplateEngine:        templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, false),

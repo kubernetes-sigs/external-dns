@@ -27,235 +27,48 @@ import (
 	log "github.com/sirupsen/logrus"
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/pkg/crd"
-	"sigs.k8s.io/external-dns/source/annotations"
-	"sigs.k8s.io/external-dns/source/annotations/schema"
-	"sigs.k8s.io/external-dns/source/template"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
 // ErrSourceNotFound is returned when a requested source doesn't exist.
 var ErrSourceNotFound = errors.New("source not found")
 
-// Config holds shared configuration options for all Sources.
-// This struct centralizes all source-related configuration to avoid parameter proliferation
-// in individual source constructors. It follows the configuration pattern where a single
-// config object is passed rather than individual parameters.
-//
-// Common Configuration Fields:
-// - Namespaces: Target namespaces for source operations, empty for all of them
-// - AnnotationFilter: Filter sources by annotation selector
-// - LabelFilter: Filter sources by label selectors
-// - FQDNTemplate: Template for generating fully qualified domain names
-// - CombineFQDNAndAnnotation: Whether to combine FQDN template with annotations
-// - IgnoreHostnameAnnotation: Whether to ignore hostname annotations
-//
-// The config is created from externaldns.Config via NewSourceConfig() which handles
-// type conversions and validation.
-type Config struct {
-	Namespaces                     []string
-	AnnotationFilter               labels.Selector
-	Schema                         *schema.Schema
-	LabelFilter                    labels.Selector
-	IngressClassNames              []string
-	TemplateEngine                 template.Engine
-	IgnoreHostnameAnnotation       bool
-	IgnoreNonHostNetworkPods       bool
-	IgnoreIngressTLSSpec           bool
-	IgnoreIngressRulesSpec         bool
-	ListenEndpointEvents           bool
-	GatewayName                    string
-	GatewayNamespace               string
-	GatewayLabelFilter             string
-	GatewayListenerSets            bool
-	Compatibility                  string
-	Provider                       string
-	PodSourceDomain                string
-	PublishInternal                bool
-	PublishHostIP                  bool
-	AlwaysPublishNotReadyAddresses bool
-	ConnectorServer                string
-	CRDSourceAPIVersion            string
-	CRDSourceKind                  string
-	KubeConfig                     string
-	APIServerURL                   string
-	ServiceTypeFilter              []string
-	GlooNamespaces                 []string
-	KubeAPIRequestTimeout          time.Duration
-	KubeAPIQPS                     int
-	KubeAPIBurst                   int
-	DefaultTargets                 []string
-	ForceDefaultTargets            bool
-	OCPRouterName                  string
-	UpdateEvents                   bool
-	ResolveLoadBalancerHostname    bool
-	TraefikEnableLegacy            bool
-	TraefikDisableNew              bool
-	ExcludeUnschedulable           bool
-	ExposeInternalIPv6             bool
-	ExcludeTargetNets              []string
-	TargetNetFilter                []string
-	NAT64Networks                  []string
-	MinTTL                         time.Duration
-	UnstructuredResources          []string
-	PreferAlias                    bool
-	PTRSupported                   bool
-	CreatePTR                      bool
-
-	sources []string
-
-	// clientGen is lazily initialized on first access for efficiency.
-	// It may be overridden at construction time via WithClientGenerator.
-	clientGen     ClientGenerator
-	clientGenOnce sync.Once
-
-	// crdClients lets callers outside this package reuse the crd source's client
-	// instead of building a second one.
-	crdClients *crd.CRDClients
-}
-
-// CRDClients returns the reader/writer built for the crd source, or nil if the
-// crd source was not built.
-func (cfg *Config) CRDClients() *crd.CRDClients {
-	return cfg.crdClients
-}
-
-// OverrideConfigOption configures a Config.
-type OverrideConfigOption func(*Config)
+// Config aliases config.Config so the source package's existing *Config
+// signatures keep working after the shared config moved to source/config.
+type Config = config.Config
 
 // WithClientGenerator sets a custom ClientGenerator, overriding the default
 // SingletonClientGenerator. Intended for testing.
-func WithClientGenerator(gen ClientGenerator) OverrideConfigOption {
+func WithClientGenerator(gen ClientGenerator) config.OverrideConfigOption {
 	return func(cfg *Config) {
-		cfg.clientGen = gen
+		cfg.SetClientGen(gen)
 	}
 }
 
-// WithCRDClients overrides the crd source's clients. Intended for testing.
-func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
-	return func(cfg *Config) {
-		cfg.crdClients = cc
-	}
-}
-
-func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Config, error) {
-	labelSelector, err := labels.Parse(cfg.LabelFilter)
-	if err != nil {
-		return nil, fmt.Errorf("label filter: %w", err)
-	}
-	annotationSelector, err := annotations.ParseFilter(cfg.AnnotationFilter)
-	if err != nil {
-		return nil, fmt.Errorf("annotation filter: %w", err)
-	}
-	tmpls, err := template.NewEngine(cfg.FQDNTemplate, cfg.TargetTemplate, cfg.FQDNTargetTemplate, cfg.CombineFQDNAndAnnotation)
-	if err != nil {
-		return nil, err
-	}
-	c := &Config{
-		Namespaces:       externaldns.NormalizeNamespaces(cfg.Namespaces),
-		AnnotationFilter: annotationSelector,
-		Schema: schema.New(schema.Options{
-			Mode:                     schema.Mode(cfg.AnnotationValidationMode),
-			IgnoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		}),
-		LabelFilter:                    labelSelector,
-		IngressClassNames:              cfg.IngressClassNames,
-		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
-		IgnoreNonHostNetworkPods:       cfg.IgnoreNonHostNetworkPods,
-		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
-		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
-		ListenEndpointEvents:           cfg.ListenEndpointEvents,
-		GatewayName:                    cfg.GatewayName,
-		GatewayNamespace:               cfg.GatewayNamespace,
-		GatewayLabelFilter:             cfg.GatewayLabelFilter,
-		GatewayListenerSets:            cfg.GatewayListenerSets,
-		Compatibility:                  cfg.Compatibility,
-		PodSourceDomain:                cfg.PodSourceDomain,
-		PublishInternal:                cfg.PublishInternal,
-		PublishHostIP:                  cfg.PublishHostIP,
-		Provider:                       cfg.Provider,
-		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
-		ConnectorServer:                cfg.ConnectorSourceServer,
-		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
-		CRDSourceKind:                  cfg.CRDSourceKind,
-		KubeConfig:                     cfg.KubeConfig,
-		APIServerURL:                   cfg.APIServerURL,
-		ServiceTypeFilter:              cfg.ServiceTypeFilter,
-		GlooNamespaces:                 cfg.GlooNamespaces,
-		KubeAPIRequestTimeout:          cfg.KubeAPIRequestTimeout,
-		KubeAPIQPS:                     cfg.KubeAPIQPS,
-		KubeAPIBurst:                   cfg.KubeAPIBurst,
-		DefaultTargets:                 cfg.DefaultTargets,
-		ForceDefaultTargets:            cfg.ForceDefaultTargets,
-		OCPRouterName:                  cfg.OCPRouterName,
-		UpdateEvents:                   cfg.UpdateEvents,
-		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
-		TraefikEnableLegacy:            cfg.TraefikEnableLegacy,
-		TraefikDisableNew:              cfg.TraefikDisableNew,
-		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
-		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
-		ExcludeTargetNets:              cfg.ExcludeTargetNets,
-		TargetNetFilter:                cfg.TargetNetFilter,
-		NAT64Networks:                  cfg.NAT64Networks,
-		MinTTL:                         cfg.MinTTL,
-		UnstructuredResources:          cfg.UnstructuredResources,
-		TemplateEngine:                 tmpls,
-		PreferAlias:                    cfg.PreferAlias,
-		PTRSupported:                   cfg.IsPTRSupported(),
-		CreatePTR:                      cfg.CreatePTR,
-		sources:                        cfg.Sources,
-	}
-	for _, opt := range opts {
-		opt(c)
-	}
-	return c, nil
-}
-
-// Namespace returns the namespace watched by sources supporting a single one,
-// which ValidateConfig guarantees. Empty means all namespaces.
-func (cfg *Config) Namespace() string {
-	if len(cfg.Namespaces) == 0 {
-		return v1.NamespaceAll
-	}
-	return cfg.Namespaces[0]
-}
-
-// ClientGenerator returns the ClientGenerator for this Config.
-// If one was not provided via WithClientGenerator, a SingletonClientGenerator is
-// lazily created from the Config's connection settings.
-//
-// The timeout behavior is special-cased: when UpdateEvents is true, the timeout is set to 0
-// (no timeout) to allow long-running watch operations for event-driven source updates.
-func (cfg *Config) ClientGenerator() ClientGenerator {
-	cfg.clientGenOnce.Do(func() {
-		// nil-check is intentional: WithClientGenerator may have pre-set clientGen
-		// at construction time. sync.Once ensures thread-safe lazy init for the
-		// default case without overwriting an injected generator.
-		if cfg.clientGen == nil {
-			cfg.clientGen = &SingletonClientGenerator{
-				KubeConfig:   cfg.KubeConfig,
-				APIServerURL: cfg.APIServerURL,
-				RequestTimeout: func() time.Duration {
-					if cfg.UpdateEvents {
-						return 0
-					}
-					return cfg.KubeAPIRequestTimeout
-				}(),
-				QPS:   cfg.KubeAPIQPS,
-				Burst: cfg.KubeAPIBurst,
-			}
+// ClientGeneratorFor returns cfg's ClientGenerator, lazily building a SingletonClientGenerator if none was injected.
+func ClientGeneratorFor(cfg *Config) ClientGenerator {
+	return cfg.EnsureClientGen(func() ClientGenerator {
+		return &SingletonClientGenerator{
+			KubeConfig:   cfg.KubeConfig,
+			APIServerURL: cfg.APIServerURL,
+			RequestTimeout: func() time.Duration {
+				if cfg.UpdateEvents {
+					return 0
+				}
+				return cfg.KubeAPIRequestTimeout
+			}(),
+			QPS:   cfg.KubeAPIQPS,
+			Burst: cfg.KubeAPIBurst,
 		}
 	})
-	return cfg.clientGen
 }
 
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
@@ -408,8 +221,8 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
-	sources := make([]Source, 0, len(cfg.sources))
-	for _, name := range cfg.sources {
+	sources := make([]Source, 0, len(cfg.Sources))
+	for _, name := range cfg.Sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err
@@ -682,7 +495,7 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 // so it can be exercised without needing a working REST config in tests.
 func stashCRDClients(cfg *Config, src Source) {
 	if cs, ok := src.(*crdSource); ok {
-		cfg.crdClients = crd.NewCRDClients(cs.crReader, cs.crWriter)
+		cfg.SetCRDClients(crd.NewCRDClients(cs.crReader, cs.crWriter))
 	}
 }
 

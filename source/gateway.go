@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 )
@@ -150,18 +151,18 @@ type gatewayRouteSource struct {
 func newGatewayRouteSource(
 	ctx context.Context,
 	clients ClientGenerator,
-	config *Config,
+	cfg *config.Config,
 	kind string,
 	newInformerFn newGatewayRouteInformerFunc) (Source, error) {
-	gwLabels, err := annotations.ParseFilter(config.GatewayLabelFilter)
+	gwLabels, err := annotations.ParseFilter(cfg.GatewayLabelFilter)
 	if err != nil {
 		return nil, err
 	}
-	rtLabels := config.LabelFilter
+	rtLabels := cfg.LabelFilter
 	if rtLabels == nil {
 		rtLabels = labels.Everything()
 	}
-	rtAnnotations := config.AnnotationFilter
+	rtAnnotations := cfg.AnnotationFilter
 	if rtAnnotations == nil {
 		rtAnnotations = labels.Everything()
 	}
@@ -171,7 +172,7 @@ func newGatewayRouteSource(
 		return nil, err
 	}
 
-	gwInformerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
+	gwInformerFactory := newGatewayInformerFactory(client, cfg.GatewayNamespace, gwLabels)
 	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
 
 	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
@@ -186,10 +187,10 @@ func newGatewayRouteSource(
 
 	var lsInformer informers_v1.ListenerSetInformer
 	lsInformerFactory := gwInformerFactory
-	if config.GatewayListenerSets {
+	if cfg.GatewayListenerSets {
 		// Gateway filters should apply only to Gateways, not ListenerSets.
 		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
-		if config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
+		if cfg.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
 			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
 		}
 		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
@@ -202,9 +203,9 @@ func newGatewayRouteSource(
 		))
 	}
 
-	rtNamespace := config.Namespace()
+	rtNamespace := cfg.Namespace()
 	rtInformerFactory := gwInformerFactory
-	if rtNamespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
+	if rtNamespace != cfg.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
 		rtInformerFactory = newGatewayInformerFactory(client, rtNamespace, rtLabels)
 	}
 	rtInformer := newInformerFn(rtInformerFactory)
@@ -257,7 +258,7 @@ func newGatewayRouteSource(
 	}
 
 	src := &gatewayRouteSource{
-		gwName:     config.GatewayName,
+		gwName:     cfg.GatewayName,
 		gwInformer: gwInformer,
 		lsInformer: lsInformer,
 
@@ -266,8 +267,8 @@ func newGatewayRouteSource(
 
 		nsInformer: nsInformer,
 
-		templateEngine:           config.TemplateEngine,
-		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
+		templateEngine:           cfg.TemplateEngine,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 	}
 	return src, nil
 }

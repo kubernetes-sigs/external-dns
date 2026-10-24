@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -119,7 +120,7 @@ func NewTraefikSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.

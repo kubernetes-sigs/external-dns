@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -316,7 +317,7 @@ func TestOpenShiftFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewOcpRouteSource(
 				t.Context(),
 				kubeClient,
-				&Config{
+				&config.Config{
 					Namespaces:       nil,
 					AnnotationFilter: nil,
 					TemplateEngine:   templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),

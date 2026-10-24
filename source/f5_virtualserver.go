@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -68,7 +69,7 @@ func NewF5VirtualServerSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace(), nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)

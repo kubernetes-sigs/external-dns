@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -66,7 +67,7 @@ type podSource struct {
 func NewPodSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	namespace := cfg.Namespace()
 	annotationFilter := cfg.AnnotationFilter

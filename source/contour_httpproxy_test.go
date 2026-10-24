@@ -38,6 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	sourcetypes "sigs.k8s.io/external-dns/source/types"
 )
@@ -96,7 +97,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 	suite.source, err = NewContourHTTPProxySource(
 		context.TODO(),
 		fakeDynamicClient,
-		&Config{
+		&config.Config{
 			Namespaces:     []string{"default"},
 			LabelFilter:    labels.Everything(),
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
@@ -1025,7 +1026,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			httpProxySource, err := NewContourHTTPProxySource(
 				t.Context(),
 				fakeDynamicClient,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:              labelFilter,
@@ -1054,7 +1055,7 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 	src, err := NewContourHTTPProxySource(
 		t.Context(),
 		fakeDynamicClient,
-		&Config{
+		&config.Config{
 			LabelFilter:    labels.Everything(),
 			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 		},
@@ -1162,7 +1163,7 @@ func TestContourHTTPProxyLabelFilter(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{
+	src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &config.Config{
 		Namespaces:     []string{"default"},
 		LabelFilter:    labels.SelectorFromSet(labels.Set{"app": "relevant"}),
 		TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
@@ -1185,7 +1186,7 @@ func TestContourHTTPProxySource_InformerTransform(t *testing.T) {
 
 	fakeDynamicClient, _ := newContourDynamicKubernetesClient()
 
-	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{LabelFilter: labels.Everything()})
+	source, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &httpProxySource{}, source)
 
@@ -1303,7 +1304,7 @@ func TestContourHTTPProxyIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &Config{
+			src, err := NewContourHTTPProxySource(t.Context(), fakeDynamicClient, &config.Config{
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
 			})

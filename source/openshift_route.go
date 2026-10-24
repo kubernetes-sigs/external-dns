@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -62,7 +63,7 @@ type ocpRouteSource struct {
 func NewOcpRouteSource(
 	ctx context.Context,
 	ocpClient versioned.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.

@@ -34,7 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
-	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -110,8 +110,8 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 		types.Service, types.Ingress, types.IstioGateway, types.ContourHTTPProxy,
 		types.KongTCPIngress, types.F5VirtualServer, types.F5TransportServer, types.TraefikProxy, types.Fake,
 	}
-	sources, err := ByNames(context.TODO(), &Config{
-		sources: ss,
+	sources, err := ByNames(context.TODO(), &config.Config{
+		Sources: ss,
 	}, mockClientGenerator)
 	suite.Require().NoError(err, "should not generate errors")
 	suite.Len(sources, 9, "should generate all nine sources")
@@ -121,8 +121,8 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 	mockClientGenerator := new(testutils.MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewClientset(), nil)
 
-	sources, err := ByNames(context.TODO(), &Config{
-		sources: []string{types.Fake},
+	sources, err := ByNames(context.TODO(), &config.Config{
+		Sources: []string{types.Fake},
 	}, mockClientGenerator)
 	suite.Require().NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate fake source")
@@ -132,8 +132,8 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 func (suite *ByNamesTestSuite) TestSourceNotFound() {
 	mockClientGenerator := new(testutils.MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewClientset(), nil)
-	sources, err := ByNames(context.TODO(), &Config{
-		sources: []string{"foo"},
+	sources, err := ByNames(context.TODO(), &config.Config{
+		Sources: []string{"foo"},
 	}, mockClientGenerator)
 	suite.Equal(err, ErrSourceNotFound, "should return source not found")
 	suite.Empty(sources, "should not returns any source")
@@ -151,8 +151,8 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	}
 
 	for _, source := range sourceUnderTest {
-		_, err := ByNames(context.TODO(), &Config{
-			sources: []string{source},
+		_, err := ByNames(context.TODO(), &config.Config{
+			Sources: []string{source},
 		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if kubernetes client cannot be created")
 	}
@@ -167,8 +167,8 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	sourcesDependentOnIstioClient := []string{types.IstioGateway, types.IstioVirtualService}
 
 	for _, source := range sourcesDependentOnIstioClient {
-		_, err := ByNames(context.TODO(), &Config{
-			sources: []string{source},
+		_, err := ByNames(context.TODO(), &config.Config{
+			Sources: []string{source},
 		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if istio client cannot be created")
 	}
@@ -186,8 +186,8 @@ func (suite *ByNamesTestSuite) TestDynamicKubernetesClientFails() {
 	}
 
 	for _, source := range sourcesDependentOnDynamicKubernetesClient {
-		_, err := ByNames(context.TODO(), &Config{
-			sources: []string{source},
+		_, err := ByNames(context.TODO(), &config.Config{
+			Sources: []string{source},
 		}, mockClientGenerator)
 		suite.Error(err, source+" should return an error if dynamic kubernetes client cannot be created")
 	}
@@ -200,7 +200,7 @@ func TestByNames(t *testing.T) {
 func TestBuildWithConfig_InvalidSource(t *testing.T) {
 	ctx := t.Context()
 	p := testutils.StubClientGenerator{}
-	cfg := &Config{LabelFilter: labels.NewSelector()}
+	cfg := &config.Config{LabelFilter: labels.NewSelector()}
 
 	src, err := BuildWithConfig(ctx, "not-a-source", p, cfg)
 	if src != nil {
@@ -216,7 +216,7 @@ func TestBuildWithConfig_ScopesTemplateEngineToSource(t *testing.T) {
 	p := testutils.StubClientGenerator{}
 	engine, err := template.NewEngine([]string{`{{ if isSource "fake" }}yes{{ else }}no{{ end }}.example.com`}, nil, nil, false)
 	require.NoError(t, err)
-	cfg := &Config{TemplateEngine: engine}
+	cfg := &config.Config{TemplateEngine: engine}
 
 	src, err := BuildWithConfig(ctx, types.Fake, p, cfg)
 	require.NoError(t, err)
@@ -237,14 +237,14 @@ func TestBuildWithConfig_ScopesTemplateEngineToSource(t *testing.T) {
 }
 
 func TestConfig_ClientGenerator_Caching(t *testing.T) {
-	cfg := &Config{
+	cfg := &config.Config{
 		KubeConfig:            "/path/to/kubeconfig",
 		APIServerURL:          "https://api.example.com",
 		KubeAPIRequestTimeout: 30 * time.Second,
 	}
 
-	gen1 := cfg.ClientGenerator()
-	gen2 := cfg.ClientGenerator()
+	gen1 := ClientGeneratorFor(cfg)
+	gen2 := ClientGeneratorFor(cfg)
 
 	assert.Same(t, gen1, gen2, "ClientGenerator should return the same cached instance")
 }
@@ -300,9 +300,9 @@ func TestSingletonClientGenerator_RESTConfig_TimeoutPropagation(t *testing.T) {
 // TestConfig_ClientGenerator_RESTConfig_Integration verifies Config → ClientGenerator → RESTConfig flow
 func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 	t.Run("normal timeout is propagated", func(t *testing.T) {
-		cfg := &Config{KubeAPIRequestTimeout: 45 * time.Second}
+		cfg := &config.Config{KubeAPIRequestTimeout: 45 * time.Second}
 
-		config, err := cfg.ClientGenerator().RESTConfig()
+		config, err := ClientGeneratorFor(cfg).RESTConfig()
 		if err == nil {
 			require.NotNil(t, config)
 			assert.Equal(t, 45*time.Second, config.Timeout, "RESTConfig should propagate the timeout")
@@ -310,9 +310,9 @@ func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 	})
 
 	t.Run("UpdateEvents sets timeout to zero", func(t *testing.T) {
-		cfg := &Config{KubeAPIRequestTimeout: 45 * time.Second, UpdateEvents: true}
+		cfg := &config.Config{KubeAPIRequestTimeout: 45 * time.Second, UpdateEvents: true}
 
-		config, err := cfg.ClientGenerator().RESTConfig()
+		config, err := ClientGeneratorFor(cfg).RESTConfig()
 		if err == nil {
 			require.NotNil(t, config)
 			assert.Equal(t, time.Duration(0), config.Timeout, "RESTConfig should have zero timeout for watch operations")
@@ -387,136 +387,15 @@ func TestSingletonClientGenerator_ErrorPersistence(t *testing.T) {
 	}
 }
 
-func TestNewSourceConfig(t *testing.T) {
-	tests := []struct {
-		name           string
-		cfg            *externaldns.Config
-		wantConfigured bool
-		wantCombining  bool
-		wantErr        bool
-		errContains    string
-	}{
-		{
-			name: "no templates configured",
-			cfg:  &externaldns.Config{},
-		},
-		{
-			name: "fqdn template only",
-			cfg: &externaldns.Config{
-				FQDNTemplate: []string{"{{.Name}}.example.com"},
-			},
-			wantConfigured: true,
-		},
-		{
-			name: "fqdn template with combine",
-			cfg: &externaldns.Config{
-				FQDNTemplate:             []string{"{{.Name}}.example.com"},
-				CombineFQDNAndAnnotation: true,
-			},
-			wantConfigured: true,
-			wantCombining:  true,
-		},
-		{
-			name: "all three templates configured",
-			cfg: &externaldns.Config{
-				FQDNTemplate:             []string{"{{.Name}}.example.com"},
-				TargetTemplate:           []string{"{{.Name}}.targets.example.com"},
-				FQDNTargetTemplate:       []string{"{{.Name}}.example.com:{{.Name}}.targets.example.com"},
-				CombineFQDNAndAnnotation: true,
-			},
-			wantConfigured: true,
-			wantCombining:  true,
-		},
-		{
-			name: "multiple fqdn templates",
-			cfg: &externaldns.Config{
-				FQDNTemplate: []string{"{{.Name}}.a.example.com", "{{.Name}}.b.example.com"},
-			},
-			wantConfigured: true,
-		},
-		{
-			name:        "invalid fqdn template",
-			cfg:         &externaldns.Config{FQDNTemplate: []string{"{{.Name"}},
-			wantErr:     true,
-			errContains: `--fqdn-template[0]`,
-		},
-		{
-			name:        "invalid target template",
-			cfg:         &externaldns.Config{TargetTemplate: []string{"{{.Status.LoadBalancer.Ingress"}},
-			wantErr:     true,
-			errContains: `--target-template[0]`,
-		},
-		{
-			name:        "invalid fqdn-target template",
-			cfg:         &externaldns.Config{FQDNTargetTemplate: []string{"{{.Name}}.example.com:{{.Status"}},
-			wantErr:     true,
-			errContains: `--fqdn-target-template[0]`,
-		},
-		{
-			name: "duplicate define block in fqdn templates",
-			cfg: &externaldns.Config{
-				FQDNTemplate: []string{
-					`{{ define "zone" }}example.com{{ end }}{{.Name}}.{{ template "zone" }}`,
-					`{{ define "zone" }}other.com{{ end }}{{.Name}}.{{ template "zone" }}`,
-				},
-			},
-			wantErr:     true,
-			errContains: `--fqdn-template[1]`,
-		},
-		{
-			name:        "invalid label filter",
-			cfg:         &externaldns.Config{LabelFilter: "#invalid-selector"},
-			wantErr:     true,
-			errContains: `Invalid value: "#invalid-selector"`,
-		},
-		{
-			name:        "invalid annotation filter",
-			cfg:         &externaldns.Config{AnnotationFilter: "kubernetes.io/gateway.name in (a b)"},
-			wantErr:     true,
-			errContains: `couldn't parse the selector string`,
-		},
+func TestClientGeneratorFor_WiresQPSAndBurstIntoSingleton(t *testing.T) {
+	cfg := &config.Config{
+		KubeAPIQPS:   15,
+		KubeAPIBurst: 30,
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewSourceConfig(tt.cfg)
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errContains != "" {
-					require.ErrorContains(t, err, tt.errContains)
-				}
-				return
-			}
-			require.NoError(t, err)
-			tmpl := got.TemplateEngine
-			assert.Equal(t, tt.wantConfigured, tmpl.IsConfigured(), "IsConfigured")
-			assert.Equal(t, tt.wantCombining, tmpl.Combining(), "Combining")
-		})
-	}
-}
-
-func TestKubeAPIRateLimitPropagation(t *testing.T) {
-	t.Run("NewSourceConfig propagates QPS and burst", func(t *testing.T) {
-		cfg := &externaldns.Config{
-			KubeAPIQPS:   20,
-			KubeAPIBurst: 40,
-		}
-		got, err := NewSourceConfig(cfg)
-		require.NoError(t, err)
-		assert.Equal(t, 20, got.KubeAPIQPS)
-		assert.Equal(t, 40, got.KubeAPIBurst)
-	})
-
-	t.Run("ClientGenerator wires QPS and burst into SingletonClientGenerator", func(t *testing.T) {
-		cfg := &Config{
-			KubeAPIQPS:   15,
-			KubeAPIBurst: 30,
-		}
-		scg, ok := cfg.ClientGenerator().(*SingletonClientGenerator)
-		require.True(t, ok)
-		assert.Equal(t, 15, scg.QPS)
-		assert.Equal(t, 30, scg.Burst)
-	})
+	scg, ok := ClientGeneratorFor(cfg).(*SingletonClientGenerator)
+	require.True(t, ok)
+	assert.Equal(t, 15, scg.QPS)
+	assert.Equal(t, 30, scg.Burst)
 }
 
 func TestStashCRDClients(t *testing.T) {
@@ -525,7 +404,7 @@ func TestStashCRDClients(t *testing.T) {
 		cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil)
 		require.NoError(t, err)
 
-		cfg := &Config{}
+		cfg := &config.Config{}
 		stashCRDClients(cfg, cs)
 
 		cc := cfg.CRDClients()
@@ -535,7 +414,7 @@ func TestStashCRDClients(t *testing.T) {
 	})
 
 	t.Run("non-crdSource leaves CRDClients nil", func(t *testing.T) {
-		cfg := &Config{}
+		cfg := &config.Config{}
 		stashCRDClients(cfg, NewEmptySource())
 
 		assert.Nil(t, cfg.CRDClients())

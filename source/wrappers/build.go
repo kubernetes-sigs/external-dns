@@ -20,13 +20,14 @@ import (
 	"context"
 
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/config"
 )
 
 // Build creates all named sources using cfg's ClientGenerator and wraps them
 // with the standard pipeline (dedup, optional NAT64, optional target filter,
 // post-processor). Inject a custom ClientGenerator via source.WithClientGenerator.
-func Build(ctx context.Context, cfg *source.Config) (source.Source, error) {
-	sources, err := source.ByNames(ctx, cfg, cfg.ClientGenerator())
+func Build(ctx context.Context, cfg *config.Config) (source.Source, error) {
+	sources, err := source.ByNames(ctx, cfg, source.ClientGeneratorFor(cfg))
 	if err != nil {
 		return nil, err
 	}

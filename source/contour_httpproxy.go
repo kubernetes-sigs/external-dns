@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	kubeinformers "k8s.io/client-go/informers"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -59,7 +60,7 @@ type httpProxySource struct {
 func NewContourHTTPProxySource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of HTTPProxys in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.

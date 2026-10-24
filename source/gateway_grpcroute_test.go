@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -90,7 +91,7 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 	_, err = gwClient.GatewayV1().GRPCRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create GRPCRoute")
 
-	src, err := NewGatewayGRPCRouteSource(ctx, clients, &Config{
+	src, err := NewGatewayGRPCRouteSource(ctx, clients, &config.Config{
 		TemplateEngine: templatetest.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway GRPCRoute Source")
@@ -121,7 +122,7 @@ func TestGatewayGRPCRouteSource_InformerTransform(t *testing.T) {
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
 
-	source, err := NewGatewayGRPCRouteSource(t.Context(), clients, &Config{})
+	source, err := NewGatewayGRPCRouteSource(t.Context(), clients, &config.Config{})
 	require.NoError(t, err)
 	require.IsType(t, &gatewayRouteSource{}, source)
 
@@ -257,7 +258,7 @@ func TestGatewayGRPCRouteIndexer(t *testing.T) {
 			clients.On("GatewayClient").Return(gwClient, nil)
 			clients.On("KubeClient").Return(kubeClient, nil)
 
-			src, err := NewGatewayGRPCRouteSource(ctx, clients, &Config{
+			src, err := NewGatewayGRPCRouteSource(ctx, clients, &config.Config{
 				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
 			})

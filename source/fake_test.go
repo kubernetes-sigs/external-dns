@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -61,7 +62,7 @@ func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
 var _ Source = &fakeSource{}
 
 func TestFakeSourceEndpoints(t *testing.T) {
-	sc, err := NewFakeSource(&Config{})
+	sc, err := NewFakeSource(&config.Config{})
 	require.NoError(t, err)
 
 	endpoints, err := sc.Endpoints(t.Context())
@@ -205,7 +206,7 @@ func TestFakeSource_FQDNTemplate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sc, err := NewFakeSource(&Config{
+			sc, err := NewFakeSource(&config.Config{
 				TemplateEngine: templatetest.MustEngine(t, tt.template, "", "", false),
 			})
 			require.NoError(t, err)
@@ -227,7 +228,7 @@ func TestFakeSource_FQDNTemplate(t *testing.T) {
 
 func TestFakeSource_FQDNTemplate_MultiDomain(t *testing.T) {
 	domains := []string{"one.example.com", "two.example.com", "three.example.com"}
-	sc, err := NewFakeSource(&Config{
+	sc, err := NewFakeSource(&config.Config{
 		TemplateEngine: templatetest.MustEngine(t, strings.Join(domains, ","), "", "", false),
 	})
 	require.NoError(t, err)
@@ -248,14 +249,14 @@ func TestFakeSource_FQDNTemplate_MultiDomain(t *testing.T) {
 }
 
 func TestFakeSource_AddEventHandler(t *testing.T) {
-	sc, err := NewFakeSource(&Config{})
+	sc, err := NewFakeSource(&config.Config{})
 	require.NoError(t, err)
 	sc.AddEventHandler(t.Context(), func() {})
 }
 
 func TestFakeSource_NewFakeSource_TemplateError(t *testing.T) {
 	// Verify that a template which parses successfully but fails at execution is caught during NewFakeSource.
-	_, err := NewFakeSource(&Config{
+	_, err := NewFakeSource(&config.Config{
 		TemplateEngine: templatetest.MustEngine(t, "{{call .Name}}", "", "", false),
 	})
 	require.Error(t, err)
@@ -263,7 +264,7 @@ func TestFakeSource_NewFakeSource_TemplateError(t *testing.T) {
 }
 
 func TestFakeSource_generateEndpointForType_UnknownType(t *testing.T) {
-	sc, err := NewFakeSource(&Config{})
+	sc, err := NewFakeSource(&config.Config{})
 	require.NoError(t, err)
 	fs := sc.(*fakeSource)
 	_, err = fs.generateEndpointForType("UNKNOWN", defaultFQDNTemplate)
@@ -278,7 +279,7 @@ func TestFakePodName_Truncation(t *testing.T) {
 
 func mustGenerateEndpointForType(t *testing.T, recordType string) *endpoint.Endpoint {
 	t.Helper()
-	sc, err := NewFakeSource(&Config{})
+	sc, err := NewFakeSource(&config.Config{})
 	require.NoError(t, err)
 	fs := sc.(*fakeSource)
 	ep, err := fs.generateEndpointForType(recordType, defaultFQDNTemplate)
