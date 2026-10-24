@@ -220,7 +220,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.23.0
+  registry.k8s.io/external-dns/external-dns:v0.24.0
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -344,8 +344,8 @@ and a private address, both are published. To control which addresses end up in 
 - use `--target-net-filter` / `--exclude-target-net`, described below.
 
 Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
-using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to every source,
-and an endpoint whose targets are all filtered out is dropped.
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to A and AAAA endpoints from every source;
+an endpoint left with no targets is dropped. Other record types pass unfiltered.
 
 ## Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
