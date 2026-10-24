@@ -47,6 +47,62 @@ import (
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
 var _ Source = &virtualServiceSource{}
 
+func TestVirtualServiceIngressAnnotationRespectsCustomPrefix(t *testing.T) {
+	// Do not run in parallel: the annotation prefix is process-global.
+	prefix := annotations.AnnotationKeyPrefix
+	t.Cleanup(func() { annotations.SetAnnotationPrefix(prefix) })
+	annotations.SetAnnotationPrefix("custom.io/")
+
+	fakeKubernetesClient := fake.NewClientset()
+	ingress := (fakeIngress{
+		name:      "ingress1",
+		namespace: "testing1",
+		ips:       []string{"8.8.8.8"},
+		hostnames: []string{"lb.com"},
+	}).Ingress()
+	_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	fakeIstioClient := istiofake.NewSimpleClientset()
+	gateway := (fakeGatewayConfig{
+		name:      "fake1",
+		namespace: "testing1",
+		dnsnames:  [][]string{{"example.org"}},
+		annotations: map[string]string{
+			"custom.io/ingress": "testing1/ingress1",
+		},
+	}).Config()
+	_, err = fakeIstioClient.NetworkingV1().Gateways(gateway.Namespace).Create(t.Context(), gateway, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	virtualService := (fakeVirtualServiceConfig{
+		name:      "fake-vs",
+		namespace: "testing1",
+		gateways:  []string{"fake1"},
+		dnsnames:  []string{"example.org"},
+	}).Config()
+	_, err = fakeIstioClient.NetworkingV1().VirtualServices(virtualService.Namespace).Create(t.Context(), virtualService, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioVirtualServiceSource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&Config{
+			Namespaces:     []string{"testing1"},
+			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+		},
+	)
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
+		{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.com"}},
+	})
+}
+
 type VirtualServiceSuite struct {
 	suite.Suite
 	source     Source
@@ -584,7 +640,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				name:     "mygw",
 				dnsnames: [][]string{{"*"}},
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 			},
 			vsconfig: fakeVirtualServiceConfig{
@@ -617,7 +673,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				name:     "mygw",
 				dnsnames: [][]string{{"*"}},
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress/ingress2",
+					annotations.Ingress: "ingress/ingress2",
 				},
 			},
 			vsconfig: fakeVirtualServiceConfig{
@@ -791,7 +847,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"example.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						annotations.Ingress: "ingress1",
 					},
 				},
 				{
@@ -799,7 +855,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"new.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						annotations.Ingress: "ingress1",
 					},
 				},
 			},
@@ -1064,7 +1120,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
+						annotations.Ingress: "ingress1",
 					},
 				},
 			},
@@ -1298,7 +1354,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress2",
+						annotations.Ingress: "ingress2",
 					},
 				},
 			},
@@ -1603,8 +1659,8 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					namespace: namespace,
 					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
-						annotations.TargetKey:     "gateway-target.com",
-						IstioGatewayIngressSource: "ingress1",
+						annotations.TargetKey: "gateway-target.com",
+						annotations.Ingress:   "ingress1",
 					},
 				},
 			},
@@ -1958,7 +2014,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 						"app": "igw4",
 					},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "testing1/ingress1",
+						annotations.Ingress: "testing1/ingress1",
 					},
 				},
 			},
