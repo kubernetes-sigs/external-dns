@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 type PlanTestSuite struct {
@@ -1184,7 +1183,7 @@ func TestOwnerMismatchLogsDebug(t *testing.T) {
 func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 	old := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4")
 	updated := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4").
-		WithRefObject(events.NewObjectReferenceFromParts("Service", "v1", "default", "svc", "", "service"))
+		WithRefObject(endpoint.NewObjectRef("Service", "v1", "default", "svc", "", "service"))
 	changes := &Changes{
 		UpdateOld: []*endpoint.Endpoint{old},
 		UpdateNew: []*endpoint.Endpoint{updated},

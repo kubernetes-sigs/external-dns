@@ -150,6 +150,7 @@ from the usage of any externally developed webhook.
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
 | deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | DigitalOcean          | https://github.com/amoniacou/external-dns-digitalocean-webhook       |
+| DNScale               | https://github.com/dnscaleou/external-dns-webhook-dnscale            |
 | Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
