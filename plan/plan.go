@@ -56,7 +56,7 @@ type Plan struct {
 	// Additional Metadata about the Plan.
 	//
 	// At present used to check the Registry related operations
-	// can be used to avoid GOD structs. 
+	// can be used to avoid GOD structs.
 	// In future we can replace existing fields like (OwnerID, OldOwnerID).
 	Metadata Metadata
 }
