@@ -44,6 +44,7 @@ const (
 	RecordTypeSuffix            = "record-type"
 	SetIdentifierSuffix         = "set-identifier"
 	TargetSuffix                = "target"
+	TargetFromSuffix            = "target-from"
 	TtlSuffix                   = "ttl"
 )
 
@@ -69,6 +70,8 @@ var (
 	AliasKey         = AnnotationKeyPrefix + AliasSuffix
 	RecordTypeKey    = AnnotationKeyPrefix + RecordTypeSuffix
 	TargetKey        = AnnotationKeyPrefix + TargetSuffix
+	// TargetFromKey references a field on another resource to use as the record's targets
+	TargetFromKey = AnnotationKeyPrefix + TargetFromSuffix
 	// ControllerKey The annotation used for figuring out which controller is responsible
 	ControllerKey = AnnotationKeyPrefix + ControllerSuffix
 	// HostnameKey The annotation used for defining the desired hostname
@@ -112,6 +115,7 @@ func SetAnnotationPrefix(prefix string) {
 	AliasKey = AnnotationKeyPrefix + AliasSuffix
 	RecordTypeKey = AnnotationKeyPrefix + RecordTypeSuffix
 	TargetKey = AnnotationKeyPrefix + TargetSuffix
+	TargetFromKey = AnnotationKeyPrefix + TargetFromSuffix
 	ControllerKey = AnnotationKeyPrefix + ControllerSuffix
 	HostnameKey = AnnotationKeyPrefix + HostnameSuffix
 	AccessKey = AnnotationKeyPrefix + AccessSuffix
