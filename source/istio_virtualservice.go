@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/template"
 )
 
@@ -68,6 +69,7 @@ type virtualServiceSource struct {
 	vServiceInformers        *informers.Informers[networkingv1informer.VirtualServiceInformer]
 	gatewayInformers         *informers.Informers[networkingv1informer.GatewayInformer]
 	ingressInformers         *informers.Informers[netinformers.IngressInformer]
+	targetFrom               *targetfrom.Resolver
 }
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
@@ -146,6 +148,7 @@ func NewIstioVirtualServiceSource(
 		vServiceInformers:        virtualServiceInformers,
 		gatewayInformers:         gatewayInformers,
 		ingressInformers:         ingressInformers,
+		targetFrom:               cfg.targetFromResolver(ctx),
 	}, nil
 }
 
@@ -189,6 +192,7 @@ func (sc *virtualServiceSource) AddEventHandler(_ context.Context, handler func(
 	log.Debug("Adding event handler for Istio VirtualService")
 
 	sc.vServiceInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	sc.targetFrom.AddEventHandler(handler)
 }
 
 func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string, virtualService *networkingv1.VirtualService) (*networkingv1.Gateway, error) {
@@ -266,7 +270,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(vService, gw, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gw)
+		tgs, err := sc.targetsFromGateway(ctx, gw)
 		if err != nil {
 			return targets, err
 		}
@@ -289,6 +293,10 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 	ttl := annotations.TTLFromAnnotations(vService.Annotations, resource)
 
 	targetsFromAnnotation := annotations.TargetsFromTargetAnnotation(vService.Annotations)
+	pinned := len(targetsFromAnnotation) > 0
+	if !pinned {
+		targetsFromAnnotation, pinned = sc.targetFrom.TargetsFromAnnotations(ctx, types.IstioVirtualService, vService)
+	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(vService.Annotations)
 
@@ -306,7 +314,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 		}
 
 		targets := targetsFromAnnotation
-		if len(targets) == 0 {
+		if !pinned {
 			targets, err = sc.targetsFromVirtualService(ctx, vService, host)
 			if err != nil {
 				return endpoints, err
@@ -321,7 +329,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 		hostnameList := annotations.HostnamesFromAnnotations(vService.Annotations)
 		for _, hostname := range hostnameList {
 			targets := targetsFromAnnotation
-			if len(targets) == 0 {
+			if !pinned {
 				targets, err = sc.targetsFromVirtualService(ctx, vService, hostname)
 				if err != nil {
 					return endpoints, err
@@ -425,9 +433,13 @@ func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *n
 	return targets, nil
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway) (endpoint.Targets, error) {
+func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
 	targets := annotations.TargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
+		return targets, nil
+	}
+
+	if targets, ok := sc.targetFrom.TargetsFromAnnotations(ctx, types.IstioGateway, gateway); ok {
 		return targets, nil
 	}
 
