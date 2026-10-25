@@ -159,7 +159,6 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 // +externaldns:source:description=Creates DNS entries from Gloo Proxy resources
 // +externaldns:source:resources=Proxy.gloo.solo.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
