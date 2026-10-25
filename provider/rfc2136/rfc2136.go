@@ -331,8 +331,8 @@ func unescapeTXT(s string) string {
 			b = append(b, s[i])
 			continue
 		}
-		if i+3 < len(s) && isDigit(s[i+1]) && isDigit(s[i+2]) && isDigit(s[i+3]) {
-			if n := int(s[i+1]-'0')*100 + int(s[i+2]-'0')*10 + int(s[i+3]-'0'); n <= 255 {
+		if i+3 < len(s) {
+			if n, err := strconv.ParseUint(s[i+1:i+4], 10, 8); err == nil {
 				b = append(b, byte(n))
 				i += 3
 				continue
@@ -342,10 +342,6 @@ func unescapeTXT(s string) string {
 		i++
 	}
 	return string(b)
-}
-
-func isDigit(c byte) bool {
-	return '0' <= c && c <= '9'
 }
 
 // Canonicalize targets to avoid reconciliation when not needed.

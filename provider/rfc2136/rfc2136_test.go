@@ -1663,6 +1663,34 @@ func TestRfc2136GetRecordsTXTJoinsAndUnescapes(t *testing.T) {
 	}, targets)
 }
 
+func TestTxtTarget(t *testing.T) {
+	tests := []struct {
+		name     string
+		txt      []string
+		expected string
+	}{
+		{"single", []string{"v=spf1 -all"}, "v=spf1 -all"},
+		{"two parts", []string{"part1", "part2"}, "part1part2"},
+		{"three parts", []string{"a", "b", "c"}, "abc"},
+		{"empty slice", []string{}, ""},
+		{"raw quote byte", []string{`say "hi"`}, `say "hi"`},
+		{"raw high byte", []string{"gr\xc3\xbc\xc3\x9fe"}, "grüße"},
+		{"escaped quote", []string{`say \"hi\"`}, `say "hi"`},
+		{"escaped backslash", []string{`a\\b`}, `a\b`},
+		{"decimal escapes", []string{`gr\195\188\195\159e`}, "grüße"},
+		{"control byte", []string{`tab\009here`}, "tab\there"},
+		{"escapes in several parts", []string{`\"a`, `b\"`}, `"ab"`},
+		{"not a decimal escape", []string{`\256`}, "256"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rr := &dns.TXT{Txt: tt.txt}
+			assert.Equal(t, tt.expected, txtTarget(rr))
+		})
+	}
+}
+
 func TestRfc2136AdjustEndpointsUnwrapsQuotedTXT(t *testing.T) {
 	stub := newStub()
 	p, err := createRfc2136StubProvider(stub)
