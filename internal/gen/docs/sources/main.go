@@ -117,7 +117,11 @@ func (s Source) NamespaceCell() string {
 	if s.Namespace == "" {
 		return ""
 	}
-	return s.Namespace + "[^namespace]"
+	footnote := "[^namespace]"
+	if strings.Contains(s.Namespace, "multiple") {
+		footnote = "[^namespaces]"
+	}
+	return s.Namespace + footnote
 }
 
 type Sources []Source

@@ -42,7 +42,6 @@ import (
 // +externaldns:source:description=Creates DNS entries based on Kubernetes Node resources
 // +externaldns:source:resources=Node
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
