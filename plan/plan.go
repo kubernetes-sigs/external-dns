@@ -343,6 +343,14 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 	}
 
 	if !isRegistryNoOp(p.Metadata) {
+		if isRegistryAWSSD(p.Metadata) {
+			// NOTE(ep0ll): Resource label must move with the owning source so delete-event
+			// attribution (#6766) stays correct.
+			if current.Labels[endpoint.AWSSDDescriptionLabel] != desired.Labels[endpoint.AWSSDDescriptionLabel] {
+				return true
+			}
+			return false
+		}
 		// NOTE(ep0ll): Resource label must move with the owning source so delete-event
 		// attribution (#6766) stays correct.
 		if current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey] {

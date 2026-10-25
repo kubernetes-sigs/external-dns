@@ -45,3 +45,12 @@ func isRegistryNoOp(meta Metadata) bool {
 
 	return string(v) == externaldns.RegistryNoop
 }
+
+func isRegistryAWSSD(meta Metadata) bool {
+	v, ok := meta[MetaKeyRegistryType]
+	if !ok {
+		return false
+	}
+
+	return string(v) == externaldns.RegistryAWSSD
+}

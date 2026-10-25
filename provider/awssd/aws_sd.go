@@ -370,23 +370,31 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				}
 				// update a local list of services
 				services[*srv.Name] = srv
-			} else if ch.RecordTTL.IsConfigured() {
+			} else {
 				if srv.DnsConfig == nil || len(srv.DnsConfig.DnsRecords) == 0 {
 					return provider.NewSoftErrorf("service %q has no DNS records to update", srvName)
 				}
 
-				needsTTLUpdate := false
-				for _, record := range srv.DnsConfig.DnsRecords {
-					if record.TTL == nil || *record.TTL != int64(ch.RecordTTL) {
-						needsTTLUpdate = true
-						break
+				needsUpdate := false
+
+				if ch.RecordTTL.IsConfigured() {
+					for _, record := range srv.DnsConfig.DnsRecords {
+						if record.TTL == nil || *record.TTL != int64(ch.RecordTTL) {
+							needsUpdate = true
+							break
+						}
 					}
 				}
 
-				if needsTTLUpdate {
-					// update service when TTL differs
-					err = p.UpdateService(ctx, srv, ch)
-					if err != nil {
+				// Description holds owner/resource labels for the aws-sd registry.
+				// Without this, a resource-label-only change never calls UpdateService
+				// and RegisterInstance churns every sync.
+				if ch.Labels[endpoint.AWSSDDescriptionLabel] != aws.ToString(srv.Description) {
+					needsUpdate = true
+				}
+
+				if needsUpdate {
+					if err = p.UpdateService(ctx, srv, ch); err != nil {
 						return err
 					}
 				}

@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -1948,4 +1949,101 @@ func TestAWSSDProvider_Records_FailedReadKeepsRecordTypeSnapshot(t *testing.T) {
 	_, err = sdProvider.AdjustEndpoints([]*endpoint.Endpoint{desiredAliasEndpoint(true)})
 	require.NoError(t, err)
 	logtest.TestHelperLogContainsWithLogLevel("has record types [A] but desired types are [A AAAA]", log.WarnLevel, logs, t)
+}
+
+// TestAWSSDProvider_ResourceLabelNoChurn verifies that a change to only the
+// Description (resource/owner labels) triggers UpdateService even when TTL is
+// unchanged, so the new label sticks and subsequent syncs plan no updates.
+//
+// Round 1: create with Description "resource=a"
+// Round 2: desired Description "resource=b", same targets/TTL → one update, label sticks
+// Round 3: same desired → zero updates (no churn)
+func TestAWSSDProvider_ResourceLabelNoChurn(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	p := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "owner")
+
+	const descA = "heritage=external-dns,external-dns/owner=owner,external-dns/resource=service/default/a"
+	const descB = "heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/b"
+
+	createEP := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		RecordTTL:  300,
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: descA,
+		},
+	}
+
+	ctx := t.Context()
+
+	// --- Round 1: create ---
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{createEP}}))
+
+	current, err := p.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	assert.Equal(t, descA, current[0].Labels[endpoint.AWSSDDescriptionLabel])
+
+	desired := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		RecordTTL:  300,
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: descB,
+		},
+	}
+
+	round := func(name string) int {
+		cur, err := p.Records(ctx)
+		require.NoError(t, err)
+
+		pl := &plan.Plan{
+			Policies:       []plan.Policy{&plan.SyncPolicy{}},
+			Current:        cur,
+			Desired:        []*endpoint.Endpoint{desired},
+			ManagedRecords: []string{endpoint.RecordTypeA},
+			Metadata: plan.Metadata{
+				plan.MetaKeyRegistryType: []byte(externaldns.RegistryAWSSD),
+			},
+		}
+		changes := pl.Calculate().Changes
+		n := len(changes.UpdateNew)
+
+		t.Logf("%s: updates=%d create=%d delete=%d",
+			name, n, len(changes.Create), len(changes.Delete))
+
+		if changes.HasChanges() {
+			require.NoError(t, p.ApplyChanges(ctx, changes))
+		}
+		return n
+	}
+
+	// --- Round 2: Description-only change must produce one update ---
+	n2 := round("round 2")
+	assert.Equal(t, 1, n2, "expected an update when only Description/resource label changes")
+
+	current, err = p.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	assert.Equal(t, descB, current[0].Labels[endpoint.AWSSDDescriptionLabel],
+		"Description must be persisted by UpdateService")
+
+	// --- Round 3: label stuck → no further updates ---
+	n3 := round("round 3")
+	assert.Equal(t, 0, n3, "resource label stuck; must not churn")
 }
