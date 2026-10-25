@@ -35,8 +35,4 @@ type Registry interface {
 	GetDomainFilter() endpoint.DomainFilterInterface
 	// OwnerID returns the owner identifier used to claim DNS records.
 	OwnerID() string
-	// Kind returns the Registry Kind (eg: aws-sd, txt, noop, crd, dynamodb)
-	//
-	// TODO(ep0ll): should we consider passing Kind from *endpoint.Endpoint.Labels instead?
-	Kind() string
 }

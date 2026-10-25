@@ -53,12 +53,6 @@ type Plan struct {
 	OwnerID string
 	// Old owner ID we migrate from
 	OldOwnerID string
-	// Additional Metadata about the Plan.
-	//
-	// At present used to check the Registry related operations
-	// can be used to avoid GOD structs.
-	// In future we can replace existing fields like (OwnerID, OldOwnerID).
-	Metadata Metadata
 }
 
 // Changes holds lists of actions to be executed by dns providers

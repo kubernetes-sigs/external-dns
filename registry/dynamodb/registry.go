@@ -381,10 +381,6 @@ func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*
 	return im.provider.AdjustEndpoints(endpoints)
 }
 
-func (sdr *DynamoDBRegistry) Kind() string {
-	return externaldns.RegistryDynamoDB
-}
-
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
 	table, err := im.dynamodbAPI.DescribeTable(ctx, &awsdynamodb.DescribeTableInput{
 		TableName: aws.String(im.table),
