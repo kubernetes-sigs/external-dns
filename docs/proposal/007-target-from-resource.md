@@ -4,7 +4,7 @@ title: "Generic target-from resource dereference annotation"
 version: v1alpha1
 authors: "@mloiseleur"
 creation-date: 2026-07-04
-status: draft
+status: partially-implemented
 ---
 ```
 

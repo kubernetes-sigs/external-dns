@@ -858,3 +858,23 @@ func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 		assert.Empty(t, eps)
 	})
 }
+
+func TestExecUnstructured(t *testing.T) {
+	content := map[string]any{"status": map[string]any{
+		"addresses": []any{map[string]any{"value": "1.2.3.4"}, map[string]any{"value": " lb.example.com. "}, map[string]any{"value": "1.2.3.4"}},
+	}}
+
+	got, err := ExecUnstructured(`{{ range .status.addresses }}{{ .value }},{{ end }}`, content)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"1.2.3.4", "lb.example.com"}, got)
+
+	_, err = ExecUnstructured(`{{ .status.hostname }}`, content)
+	require.ErrorContains(t, err, `map has no entry for key "hostname"`)
+
+	got, err = ExecUnstructured(`{{ with index .status "hostname" }}{{ . }}{{ end }}`, content)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	_, err = ExecUnstructured(`{{ .status`, content)
+	require.Error(t, err)
+}
