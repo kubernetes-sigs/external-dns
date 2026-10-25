@@ -473,7 +473,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			source, err := newTestGatewaySource(t, ti.lbServices, ti.ingresses)
 			require.NoError(t, err)
 			hostnames := source.hostNamesFromGateway(gatewayCfg)
-			endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg)
+			endpoints, err := source.endpointsFromGateway(t.Context(), hostnames, gatewayCfg)
 			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})

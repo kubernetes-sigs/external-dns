@@ -177,6 +177,9 @@ However, in some setups, the Gateway's Service is of type ClusterIP, with all pu
 
 - **The Solution**: The annotation on the Istio/GlooEdge Gateway tells ExternalDNS to ignore the Gateway's Service IP. Instead, it directs ExternalDNS to a specified Ingress resource to find the target LoadBalancer IP address.
 
+> [!TIP]
+> On Istio, [`target-from`](#external-dnskubernetesiotarget-from) covers this case and any other resource.
+
 ### Use Cases for `external-dns.kubernetes.io/ingress` annotation
 
 #### Getting target from Ingress backed Gloo Gateway
@@ -324,6 +327,45 @@ Specifies a comma-separated list of values to override the resource's DNS record
 Targets that parse as IPv4 addresses are published as A records and
 targets that parse as IPv6 addresses are published as AAAA records. All other targets
 are published as CNAME records.
+
+## external-dns.kubernetes.io/target-from
+
+Reads the record's targets from a field on another resource, for setups where the public
+entry point (load balancer, accelerator, shared gateway) lives in a separate resource's `status`.
+Supported on `Ingress`, Istio `Gateway` and Istio `VirtualService`.
+
+```text
+<resource>[.<group>]/[<namespace>/]<name>#<template>
+```
+
+- `<resource>`: plural lowercase name (`services`, `gateways`). `<group>` is omitted for core resources.
+- `<namespace>`: defaults to the annotated resource's namespace. Must be omitted for cluster-scoped resources.
+- `<template>`: everything after the first `#`, a Go template evaluated against the referenced object,
+  with the same functions as `--fqdn-template`. Its output is split on `,`, trimmed and de-duplicated.
+  A missing map key is an error: use `with index . "<key>"` for optional fields.
+
+The API version is the preferred one served by the cluster, like `kubectl`.
+
+```yaml
+# Gateway API Gateway in a shared namespace
+external-dns.kubernetes.io/target-from: "gateways.gateway.networking.k8s.io/istio-ingress/central-gateway#{{ range .status.addresses }}{{ .value }},{{ end }}"
+# AWS Global Accelerator
+external-dns.kubernetes.io/target-from: "globalaccelerators.aga.k8s.aws/my-accelerator#{{ .status.dnsName }}"
+# Shared LoadBalancer Service, hostname or IPv4
+external-dns.kubernetes.io/target-from: "services/lb-ns/shared-lb#{{ range .status.loadBalancer.ingress }}{{ with index . "hostname" }}{{ . }},{{ end }}{{ with index . "ip" }}{{ if isIPv4 . }}{{ . }},{{ end }}{{ end }}{{ end }}"
+```
+
+The `target` annotation takes precedence. When `target-from` is set, the source's own discovery
+(load balancer status, gateway Services) is never used: if the reference cannot be resolved
+(object or field missing, empty output, a value that is neither an IP nor a hostname, unknown resource,
+missing RBAC), ExternalDNS logs a warning and the resource gets no record.
+Under `--policy=sync` an existing record is then deleted.
+
+ExternalDNS reads referenced resources with its own ServiceAccount. Grant `get`, `list` and `watch`
+on them; with `get` only, records are still resolved but not updated when the referenced resource changes.
+A `Role` in the referenced namespace is enough.
+
+To create records from a resource's fields without a primary source, see the [unstructured source](../sources/unstructured.md).
 
 ## external-dns.kubernetes.io/ttl
 
