@@ -55,7 +55,12 @@ licensecheck:
 
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint validate-json-yaml
+lint: licensecheck go-lint validate-json-yaml webhook-deps
+
+#? webhook-deps: Check webhook-facing packages stay free of the Kubernetes client stack
+.PHONY: webhook-deps
+webhook-deps:
+	@./scripts/webhook-deps.sh
 
 #? validate-json-yaml: Validate JSON and YAML files
 .PHONY: validate-json-yaml

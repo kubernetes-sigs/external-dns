@@ -45,33 +45,6 @@ linters:
           deny:
             - pkg: k8s.io/utils/set
               desc: use sigs.k8s.io/external-dns/internal/sets instead
-        # Packages imported by out-of-tree webhook providers, and everything
-        # they import from this repo. Keep the Kubernetes client stack out.
-        webhook-provider-deps:
-          files:
-            - "**/endpoint/*.go"
-            - "**/plan/*.go"
-            - "**/provider/*.go"
-            - "**/provider/webhook/api/*.go"
-            - "**/pkg/metrics/*.go"
-            - "**/pkg/version/*.go"
-            - "**/internal/idna/*.go"
-            - "**/internal/sets/*.go"
-          deny:
-            - pkg: sigs.k8s.io/external-dns/pkg/events
-              desc: pulls client-go into webhook providers; use endpoint.ObjectRef
-            - pkg: sigs.k8s.io/external-dns/pkg/apis
-              desc: pulls the Kubernetes client stack into webhook providers
-            - pkg: sigs.k8s.io/external-dns/source
-              desc: pulls the Kubernetes client stack into webhook providers
-            - pkg: k8s.io/client-go
-              desc: pulls the Kubernetes client stack into webhook providers
-            - pkg: k8s.io/api/
-              desc: pulls the Kubernetes client stack into webhook providers
-            - pkg: k8s.io/apimachinery/pkg/apis
-              desc: pulls the Kubernetes client stack into webhook providers
-            - pkg: sigs.k8s.io/controller-runtime
-              desc: pulls the Kubernetes client stack into webhook providers
     exhaustive:
       default-signifies-exhaustive: false
     misspell:
