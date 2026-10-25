@@ -323,7 +323,7 @@ Each webhook in a pod needs its own contract port, in addition to the probe port
 
 ### Future Work
 
-None of the following is committed by this proposal.
+None of the following is committed by this proposal, but each could be or should be considered.
 
 - Change notifications, advertised through negotiation, to make `AddEventHandler` meaningful: server-sent events over HTTP and a server-streaming `Watch` RPC over gRPC.
 - Conditional requests (`ETag` and `If-None-Match`) so unchanged state is cheap to poll at short intervals.
