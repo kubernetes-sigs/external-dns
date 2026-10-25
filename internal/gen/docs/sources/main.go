@@ -83,6 +83,47 @@ func (s Source) ValidationCell() string {
 	return strings.Join(parts, ",")
 }
 
+// EventsCell links the Events value to the --events-emit footnote.
+func (s Source) EventsCell() string {
+	if s.Events == "true" {
+		return "true[^events-emit]"
+	}
+	return s.Events
+}
+
+// FQDNTemplateCell links the FQDN Template value to the --fqdn-template footnote.
+func (s Source) FQDNTemplateCell() string {
+	if s.FQDNTemplate == "true" {
+		return "true[^fqdn-template]"
+	}
+	return s.FQDNTemplate
+}
+
+// FiltersCell links each filter kind to its controlling-flag footnote.
+func (s Source) FiltersCell() string {
+	if s.Filters == "" {
+		return ""
+	}
+	parts := strings.Split(s.Filters, ",")
+	for i, p := range parts {
+		p = strings.TrimSpace(p)
+		parts[i] = fmt.Sprintf("%s[^filter-%s]", p, p)
+	}
+	return strings.Join(parts, ",")
+}
+
+// NamespaceCell links the Namespace value to the --namespace footnote.
+func (s Source) NamespaceCell() string {
+	if s.Namespace == "" {
+		return ""
+	}
+	footnote := "[^namespace]"
+	if strings.Contains(s.Namespace, "multiple") {
+		footnote = "[^namespaces]"
+	}
+	return s.Namespace + footnote
+}
+
 type Sources []Source
 
 // main generates a markdown file with the supported sources
@@ -139,10 +180,10 @@ func computeColumnWidths(sources Sources) columnWidths {
 	return columnWidths{
 		Name:             render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
 		Resources:        render.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
-		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
-		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
-		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
-		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
+		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.FiltersCell() }),
+		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.NamespaceCell() }),
+		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplateCell() }),
+		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.EventsCell() }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
 		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.ValidationCell() }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
