@@ -338,7 +338,6 @@ None of the following is committed by this proposal.
 3. **`DNSEndpoint` CRs written by a separate controller.**
    Works today and stays the right choice for Kubernetes-native producers,
    and wins on visibility (`kubectl get`, status) and RBAC-scoped writes.
-   The webhook source wins when the producer is not in Kubernetes,
-   or when a CR round trip and an extra controller are unwanted.
+   The webhook source wins when custom functionality is required that may not be in scope for ExternalDNS to support in-tree.
 4. **Generic resource dereferencing ([proposal 007](007-target-from-resource.md)) and the `unstructured` source.** Both solve Kubernetes resource indirection, not non-Kubernetes data sources. Complementary.
 5. **Exec or plugin binaries.** Needs a writable runtime and execution trust inside the ExternalDNS image.
