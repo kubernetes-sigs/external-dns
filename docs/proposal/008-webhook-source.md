@@ -89,7 +89,9 @@ A webhook source gives those systems a language-agnostic, versioned way to feed 
 
 - A platform team keeps hostnames in an internal service registry or CMDB. They run a small sidecar that serves the registry as endpoints, with no CRs or extra controller.
 - An infrastructure team publishes DNS names for resources that do not exist in Kubernetes (for example VMs or load balancers managed by another control plane) and wants ExternalDNS to own those records.
-- A cert-manager webhook solver holds ACME DNS-01 challenge records and serves them as TXT endpoints, instead of creating and deleting `DNSEndpoint` objects (the integration discussed in [#6777](https://github.com/kubernetes-sigs/external-dns/pull/6777)). Records appear within one `--interval`, which this use case has to tolerate.
+- A cert-manager webhook solver holds ACME DNS-01 challenge records and serves them as TXT endpoints,
+  instead of creating and deleting `DNSEndpoint` objects (the integration discussed in [#6777](https://github.com/kubernetes-sigs/external-dns/pull/6777)).
+  Records appear within one `--interval`, which this use case has to tolerate.
 - A team writes its source in Python or Java because the Go-only `connector` is not an option.
 - A service that already exposes gRPC inside the cluster serves its endpoints over the same protocol, with typed messages and no JSON mapping layer.
 - A test suite serves deterministic endpoints from a stub server to exercise a full ExternalDNS pipeline.
@@ -101,7 +103,7 @@ The transport is chosen by the scheme of `--webhook-source-url`: `http://` or `h
 
 The HTTP/JSON transport uses its own media type, distinct from the provider one:
 
-```
+```text
 application/external.dns.webhook.source+json;version=1
 ```
 
@@ -208,7 +210,11 @@ The default contract port differs from the provider webhook (`8888`) so both can
 
 The contract is published twice, and both documents describe the same operations and semantics:
 
-- `api/webhook-source.yaml`, an OpenAPI 3.0 document next to `api/webhook.yaml`. It defines `/`, `/ready` (optional), and `/endpoints` with the source media type, and the `200`, `503`, and `5xx` responses described under Behavior. The `endpoint` schema is referenced from `webhook.yaml` (`webhook.yaml#/components/schemas/endpoint`) rather than copied, so the two HTTP contracts cannot drift apart. In that schema `targets` is an array of strings.
+- `api/webhook-source.yaml`, an OpenAPI 3.0 document next to `api/webhook.yaml`.
+  It defines `/`, `/ready` (optional), and `/endpoints` with the source media type,
+  and the `200`, `503`, and `5xx` responses described under Behavior.
+  The `endpoint` schema is referenced from `webhook.yaml` (`webhook.yaml#/components/schemas/endpoint`) rather than copied,
+  so the two HTTP contracts cannot drift apart. In that schema `targets` is an array of strings.
 - `api/webhook-source.proto`, the protobuf definition shown above.
 
 The spec files are normative for webhook authors, and the Go client is the reference consumer.
@@ -284,9 +290,6 @@ The default URL applies only when no URL is given. Duplicate URLs are rejected a
 The timeout and body size settings apply to every instance.
 Each webhook in a pod needs its own contract port, in addition to the probe port discussed under Exposed Endpoints.
 
-Registration touches `source/types`, `AllowedSources` in `pkg/apis/externaldns/types.go`, and `BuildWithConfig` in `source/store.go`.
-`google.golang.org/grpc` and `google.golang.org/protobuf` are already in `go.mod` as indirect dependencies and become direct ones.
-
 ### Security Considerations
 
 - A webhook source decides which DNS records ExternalDNS creates, so a compromised webhook can publish arbitrary names. Operators should keep `--domain-filter` set and use `--policy=upsert-only` while adopting a new webhook.
@@ -330,9 +333,12 @@ None of the following is committed by this proposal.
 
 ## Alternatives
 
-1. **Extend `connector`.** Adds versioning and events to a gob/TCP protocol that is Go-only and plaintext. Diverges from the provider webhook. Rejected.
-2. **gRPC only.** A better schema and streaming story, but HTTP/JSON is the easiest for authors and keeps symmetry with the provider webhook. Rejected as the sole transport; gRPC is offered alongside HTTP/JSON.
-3. **`DNSEndpoint` CRs written by a separate controller.** Works today and stays the right choice for Kubernetes-native producers, and wins on visibility (`kubectl get`, status) and RBAC-scoped writes. The webhook source wins when the producer is not in Kubernetes, or when a CR round trip and an extra controller are unwanted.
+1. **Extend `connector`.** Adds versioning and events to a gob/TCP protocol that is Go-only and plaintext. Diverges from the provider webhook.
+2. **gRPC only.** A better schema and streaming story, but HTTP/JSON is the easiest for authors and keeps symmetry with the provider webhook.
+3. **`DNSEndpoint` CRs written by a separate controller.**
+   Works today and stays the right choice for Kubernetes-native producers,
+   and wins on visibility (`kubectl get`, status) and RBAC-scoped writes.
+   The webhook source wins when the producer is not in Kubernetes,
+   or when a CR round trip and an extra controller are unwanted.
 4. **Generic resource dereferencing ([proposal 007](007-target-from-resource.md)) and the `unstructured` source.** Both solve Kubernetes resource indirection, not non-Kubernetes data sources. Complementary.
-5. **Exec or plugin binaries.** Needs a writable runtime and execution trust inside the ExternalDNS image. Rejected.
-6. **Status quo.** Every new integration lands in-tree or is declined.
+5. **Exec or plugin binaries.** Needs a writable runtime and execution trust inside the ExternalDNS image.
