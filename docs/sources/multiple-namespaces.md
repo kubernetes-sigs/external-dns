@@ -8,7 +8,7 @@ namespaces. Repeat it or pass a comma-separated list:
 --namespace=team-a,team-b
 ```
 
-Sources marked `multiple` in the Namespace column of [Supported Sources](../sources/index.md)
+Sources marked `multiple` in the Namespace column of [Supported Sources](index.md)
 accept several values. With any other source, ExternalDNS refuses to start when given
 more than one namespace.
 
