@@ -1063,6 +1063,113 @@ func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }
 
+func TestCalculateAliasTargetConflicts(t *testing.T) {
+	endpointFor := func(name, recordType, target, resource, setIdentifier string) *endpoint.Endpoint {
+		ep := endpoint.NewEndpoint(name, recordType, target)
+		if resource != "" {
+			ep.WithLabel(endpoint.ResourceLabelKey, resource)
+		}
+		if setIdentifier != "" {
+			ep.WithSetIdentifier(setIdentifier)
+		}
+		return ep
+	}
+
+	caseA := endpointFor("App.example.org", endpoint.RecordTypeCNAME, "a.example.net", "service/default/a", "")
+	caseB := endpointFor("app.example.org", endpoint.RecordTypeCNAME, "b.example.net", "service/default/b", "")
+	dnameA := endpointFor("dname.example.org", endpoint.RecordTypeDNAME, "a.example.net", "service/default/a", "")
+	dnameB := endpointFor("dname.example.org", endpoint.RecordTypeDNAME, "b.example.net", "service/default/b", "")
+	setOne := endpointFor("weighted.example.org", endpoint.RecordTypeCNAME, "a.example.net", "service/default/a", "one")
+	setTwo := endpointFor("weighted.example.org", endpoint.RecordTypeCNAME, "b.example.net", "service/default/b", "two")
+	sameA := endpointFor("same.example.org", endpoint.RecordTypeCNAME, "a.example.net", "service/default/a", "")
+	sameB := endpointFor("same.example.org", endpoint.RecordTypeCNAME, "a.example.net", "service/default/b", "")
+	outsideA := endpointFor("app.example.com", endpoint.RecordTypeCNAME, "a.example.net", "service/default/a", "")
+	outsideB := endpointFor("app.example.com", endpoint.RecordTypeCNAME, "b.example.net", "service/default/b", "")
+
+	tests := []struct {
+		name           string
+		current        []*endpoint.Endpoint
+		desired        []*endpoint.Endpoint
+		domainFilter   endpoint.MatchAllDomainFilters
+		managedRecords []string
+		excludeRecords []string
+		wantCreate     []*endpoint.Endpoint
+		wantUpdateOld  []*endpoint.Endpoint
+		wantUpdateNew  []*endpoint.Endpoint
+		wantWarning    string
+	}{
+		{
+			name:           "case-insensitive names form one CNAME group",
+			desired:        []*endpoint.Endpoint{caseB, caseA},
+			managedRecords: []string{endpoint.RecordTypeCNAME},
+			wantCreate:     []*endpoint.Endpoint{caseA},
+			wantWarning:    "Domain App.example.org has conflicting CNAME targets; keeping a.example.net",
+		},
+		{
+			name:           "DNAME group creates only the selected target",
+			desired:        []*endpoint.Endpoint{dnameB, dnameA},
+			managedRecords: []string{endpoint.RecordTypeDNAME},
+			wantCreate:     []*endpoint.Endpoint{dnameA},
+			wantWarning:    "Domain dname.example.org has conflicting DNAME targets; keeping a.example.net",
+		},
+		{
+			name:           "different set identifiers remain separate groups",
+			desired:        []*endpoint.Endpoint{setOne, setTwo},
+			managedRecords: []string{endpoint.RecordTypeCNAME},
+			wantCreate:     []*endpoint.Endpoint{setOne, setTwo},
+		},
+		{
+			name:           "same targets do not conflict",
+			desired:        []*endpoint.Endpoint{sameA, sameB},
+			managedRecords: []string{endpoint.RecordTypeCNAME},
+			wantCreate:     []*endpoint.Endpoint{sameA},
+		},
+		{
+			name:         "outside the domain filter is ignored",
+			desired:      []*endpoint.Endpoint{outsideA, outsideB},
+			domainFilter: endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"example.org"})},
+			managedRecords: []string{
+				endpoint.RecordTypeCNAME,
+			},
+		},
+		{
+			name:           "unmanaged aliases are ignored",
+			desired:        []*endpoint.Endpoint{caseA, caseB},
+			managedRecords: []string{endpoint.RecordTypeA},
+		},
+		{
+			name:           "excluded aliases are ignored",
+			desired:        []*endpoint.Endpoint{caseA, caseB},
+			managedRecords: []string{endpoint.RecordTypeCNAME},
+			excludeRecords: []string{endpoint.RecordTypeCNAME},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			changes := (&Plan{
+				Policies:       []Policy{&SyncPolicy{}},
+				Current:        tt.current,
+				Desired:        tt.desired,
+				DomainFilter:   tt.domainFilter,
+				ManagedRecords: tt.managedRecords,
+				ExcludeRecords: tt.excludeRecords,
+			}).Calculate().Changes
+
+			validateEntries(t, changes.Create, tt.wantCreate)
+			validateEntries(t, changes.UpdateOld, tt.wantUpdateOld)
+			validateEntries(t, changes.UpdateNew, tt.wantUpdateNew)
+			validateEntries(t, changes.Delete, nil)
+			if tt.wantWarning == "" {
+				logtest.TestHelperLogNotContains("has conflicting", hook, t)
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(tt.wantWarning, log.WarnLevel, hook, t)
+			}
+		})
+	}
+}
+
 // validateEntries validates that the list of entries matches expected.
 func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(entries, expected) {

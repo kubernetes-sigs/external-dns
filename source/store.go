@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/rest"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/pkg/crd"
@@ -109,8 +108,6 @@ type Config struct {
 	PreferAlias                    bool
 	PTRSupported                   bool
 	CreatePTR                      bool
-	// DomainFilter is built from the domain filter flags. The source wrappers and the provider share it.
-	DomainFilter *endpoint.DomainFilter
 
 	sources []string
 
@@ -209,13 +206,7 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		PreferAlias:                    cfg.PreferAlias,
 		PTRSupported:                   cfg.IsPTRSupported(),
 		CreatePTR:                      cfg.CreatePTR,
-		DomainFilter: endpoint.NewDomainFilterWithOptions(
-			endpoint.WithDomainFilter(cfg.DomainFilter),
-			endpoint.WithDomainExclude(cfg.DomainExclude),
-			endpoint.WithRegexDomainFilter(cfg.RegexDomainFilter),
-			endpoint.WithRegexDomainExclude(cfg.RegexDomainExclude),
-		),
-		sources: cfg.Sources,
+		sources:                        cfg.Sources,
 	}
 	for _, opt := range opts {
 		opt(c)

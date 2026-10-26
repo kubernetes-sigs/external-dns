@@ -495,14 +495,6 @@ func TestNewSourceConfig(t *testing.T) {
 	}
 }
 
-func TestNewSourceConfigDomainFilter(t *testing.T) {
-	got, err := NewSourceConfig(&externaldns.Config{DomainFilter: []string{"example.org"}, DomainExclude: []string{"internal.example.org"}})
-	require.NoError(t, err)
-	assert.True(t, got.DomainFilter.Match("app.example.org"))
-	assert.False(t, got.DomainFilter.Match("app.example.com"))
-	assert.False(t, got.DomainFilter.Match("app.internal.example.org"))
-}
-
 func TestKubeAPIRateLimitPropagation(t *testing.T) {
 	t.Run("NewSourceConfig propagates QPS and burst", func(t *testing.T) {
 		cfg := &externaldns.Config{
