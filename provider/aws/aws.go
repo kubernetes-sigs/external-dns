@@ -960,31 +960,9 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.hostedZoneID = cleanZoneID(prop)
 	}
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
-		evalTargetHealth := p.evaluateTargetHealth
-		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
-			evalTargetHealth = prop
-		}
-		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
-			DNSName:              aws.String(ep.Targets[0]),
-			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
-			EvaluateTargetHealth: evalTargetHealth,
-		}
-		change.sizeBytes += len([]byte(ep.Targets[0]))
-		change.sizeValues += 1
+		p.applyAliasTarget(change, ep, targetHostedZone)
 	} else {
-		if !ep.RecordTTL.IsConfigured() {
-			change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
-		} else {
-			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
-		}
-		change.ResourceRecordSet.ResourceRecords = make([]route53types.ResourceRecord, len(ep.Targets))
-		for idx, val := range ep.Targets {
-			change.ResourceRecordSet.ResourceRecords[idx] = route53types.ResourceRecord{
-				Value: aws.String(val),
-			}
-			change.sizeBytes += len([]byte(val))
-			change.sizeValues += 1
-		}
+		applyResourceRecords(change, ep)
 	}
 
 	if action == route53types.ChangeActionUpsert {
@@ -994,6 +972,58 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues *= 2
 	}
 
+	applySetProperties(change, ep)
+	applyGeolocation(change, ep)
+	withChangeForGeoProximityEndpoint(change, ep)
+
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
+		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
+	}
+
+	if ownedRecord, ok := ep.Labels[endpoint.OwnedRecordLabelKey]; ok {
+		change.OwnedRecord = ownedRecord
+	}
+
+	return change
+}
+
+// applyAliasTarget sets the AliasTarget field on the change for alias records
+// and accounts for their size.
+func (p *AWSProvider) applyAliasTarget(change *Route53Change, ep *endpoint.Endpoint, targetHostedZone string) {
+	evalTargetHealth := p.evaluateTargetHealth
+	if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+		evalTargetHealth = prop
+	}
+	change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
+		DNSName:              aws.String(ep.Targets[0]),
+		HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
+		EvaluateTargetHealth: evalTargetHealth,
+	}
+	change.sizeBytes += len([]byte(ep.Targets[0]))
+	change.sizeValues += 1
+}
+
+// applyResourceRecords sets the TTL and ResourceRecords fields on the change
+// for non-alias records and accounts for their size.
+func applyResourceRecords(change *Route53Change, ep *endpoint.Endpoint) {
+	if !ep.RecordTTL.IsConfigured() {
+		change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
+	} else {
+		change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
+	}
+	change.ResourceRecordSet.ResourceRecords = make([]route53types.ResourceRecord, len(ep.Targets))
+	for idx, val := range ep.Targets {
+		change.ResourceRecordSet.ResourceRecords[idx] = route53types.ResourceRecord{
+			Value: aws.String(val),
+		}
+		change.sizeBytes += len([]byte(val))
+		change.sizeValues += 1
+	}
+}
+
+// applySetProperties copies the weighted, regional, failover and
+// multi-value-answer provider specific properties onto the change.
+func applySetProperties(change *Route53Change, ep *endpoint.Endpoint) {
 	if ep.SetIdentifier != "" {
 		change.ResourceRecordSet.SetIdentifier = aws.String(ep.SetIdentifier)
 	}
@@ -1014,7 +1044,11 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
 		change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
 	}
+}
 
+// applyGeolocation copies the geolocation provider specific properties onto
+// the change; the field is left unset when no property is present.
+func applyGeolocation(change *Route53Change, ep *endpoint.Endpoint) {
 	geolocation := &route53types.GeoLocation{}
 	useGeolocation := false
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
@@ -1033,18 +1067,6 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	if useGeolocation {
 		change.ResourceRecordSet.GeoLocation = geolocation
 	}
-
-	withChangeForGeoProximityEndpoint(change, ep)
-
-	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
-		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
-	}
-
-	if ownedRecord, ok := ep.Labels[endpoint.OwnedRecordLabelKey]; ok {
-		change.OwnedRecord = ownedRecord
-	}
-
-	return change
 }
 
 func newGeoProximity(ep *endpoint.Endpoint) *geoProximity {
