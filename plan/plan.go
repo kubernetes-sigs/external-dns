@@ -336,10 +336,34 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 		return true
 	}
 
-	if !isRegistryNoOp(p.Metadata) {
-		// NOTE(ep0ll): Resource label must move with the owning source so delete-event
-		// attribution (#6766) stays correct.
-		if current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey] {
+	// NOTE(ep0ll): NoopRegistry may return endpoints without a resource label.
+	// As of this writing, no in-tree provider is known to populate
+	// endpoint.ResourceLabelKey when using NoopRegistry.
+	//
+	// Some sources also do not expose resource labels. If such a source and
+	// another source emit endpoints with the same DNS name and targets, the
+	// record may be created with an empty or incomplete resource label,
+	// depending on which endpoint wins deduplication.
+	//
+	// For example, if both Pod and Service sources emit the same endpoint and
+	// the Pod endpoint wins, the record may lack a resource label. When the
+	// Pod is later deleted, we cannot reliably detect the ownership change
+	// from the current resource label, potentially leaving the record stale.
+	//
+	// Known source-specific considerations as of this writing:
+	//   - "connector": resource-label behavior is unknown.
+	//   - "empty": emits no endpoints, so there is no resource label to inspect.
+	//   - "gloo-proxy": does not appear to set the resource label; unverified.
+	//   - "pod": does not appear to set the resource label; unverified.
+	//   - "webhook": resource-label availability depends on whether the webhook
+	//     provider manages the label.
+	//   - Other in-tree sources are expected to provide the resource label,
+	//     except where noted above.
+	if clb := current.Labels[endpoint.ResourceLabelKey]; clb != "" {
+		// Keep the resource label in sync with the desired owner. This ensures
+		// that subsequent deletion events are attributed to the correct source
+		// (see #6766).
+		if clb != desired.Labels[endpoint.ResourceLabelKey] {
 			return true
 		}
 	}

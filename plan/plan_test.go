@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 type PlanTestSuite struct {
@@ -1292,7 +1291,7 @@ func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenCurrentHasNoLabels() {
 		DNSName:    "app.example.com",
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		RecordType: endpoint.RecordTypeA,
-		// no Labels
+		// no resource label
 	}
 
 	desired := &endpoint.Endpoint{
@@ -1310,9 +1309,6 @@ func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenCurrentHasNoLabels() {
 		Desired:        []*endpoint.Endpoint{desired},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		OwnerID:        "",
-		Metadata: Metadata{
-			MetaKeyRegistryType: []byte(externaldns.RegistryNoop),
-		},
 	}
 
 	changes := p.Calculate().Changes
