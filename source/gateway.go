@@ -222,7 +222,7 @@ func newGatewayRouteSource(
 	))
 	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
 
-	if err := startAndSyncInformers(ctx, gwInformerFactory, lsInformerFactory, rtInformerFactory, lsInformer, kubeInformerFactory); err != nil {
+	if err := startAndSyncInformers(ctx, gwInformerFactory, lsInformerFactory, rtInformerFactory, kubeInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -263,7 +263,7 @@ func newListenerSetInformer(client gateway.Interface, gwInformerFactory gwinform
 	return lsInformer, lsInformerFactory
 }
 
-func startAndSyncInformers(ctx context.Context, gwInformerFactory, lsInformerFactory, rtInformerFactory gwinformers.SharedInformerFactory, lsInformer informers_v1.ListenerSetInformer, kubeInformerFactory kubeinformers.SharedInformerFactory) error {
+func startAndSyncInformers(ctx context.Context, gwInformerFactory, lsInformerFactory, rtInformerFactory gwinformers.SharedInformerFactory, kubeInformerFactory kubeinformers.SharedInformerFactory) error {
 	gwInformerFactory.Start(ctx.Done())
 	if lsInformerFactory != gwInformerFactory {
 		lsInformerFactory.Start(ctx.Done())
@@ -275,7 +275,7 @@ func startAndSyncInformers(ctx context.Context, gwInformerFactory, lsInformerFac
 	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
 		return err
 	}
-	if lsInformer != nil && lsInformerFactory != gwInformerFactory {
+	if lsInformerFactory != gwInformerFactory {
 		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
 			return err
 		}
