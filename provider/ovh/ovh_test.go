@@ -429,6 +429,75 @@ func TestOvhNewChange(t *testing.T) {
 	})
 }
 
+func TestOvhNewChangeUpdate(t *testing.T) {
+	provider := &OVHProvider{}
+
+	for _, ti := range []struct {
+		title     string
+		old       []*endpoint.Endpoint
+		new       []*endpoint.Endpoint
+		existing  []ovhRecord
+		expected  []ovhChange
+		expectErr bool
+	}{
+		{
+			title: "replaced target becomes an update of an existing record",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1", "2.2.2.2")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 30, "2.2.2.2", "3.3.3.3")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 30, Target: "3.3.3.3", FieldType: "A", ID: 1, Zone: "example.net", Action: ovhUpdate},
+			},
+		},
+		{
+			title: "more new targets than freed records become an update then a create",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 0, "1.1.1.1", "2.2.2.2")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 0, "1.1.1.1", "3.3.3.3", "4.4.4.4")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 0, Target: "3.3.3.3", FieldType: "A", ID: 2, Zone: "example.net", Action: ovhUpdate},
+				{SubDomain: "sub", TTL: 0, Target: "4.4.4.4", FieldType: "A", Zone: "example.net", Action: ovhCreate},
+			},
+		},
+		{
+			title: "removed target becomes a delete change",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1", "2.2.2.2")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net", Action: ovhDelete},
+			},
+		},
+		{
+			title:     "missing endpoint in the new set is an unrecoverable error",
+			old:       []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1")},
+			new:       []*endpoint.Endpoint{},
+			existing:  []ovhRecord{{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"}},
+			expectErr: true,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			changes, err := provider.newOvhChangeUpdate(ti.old, ti.new, "example.net", ti.existing)
+			if ti.expectErr {
+				require.Error(t, err)
+				require.Nil(t, changes)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, ti.expected, changes)
+		})
+	}
+}
+
 func TestOvhApplyChanges(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
