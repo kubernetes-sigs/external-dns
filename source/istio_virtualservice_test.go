@@ -321,6 +321,63 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 			vsHost:   "foo.bar",
 			expected: false,
 		},
+		{
+			title: "matching exportTo . in the same namespace",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "istio-system",
+				exportTo:  ".",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "matching exact host in the gateway namespace",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "myns",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "not matching exact host",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "myns",
+			},
+			vsHost:   "bar.foo",
+			expected: false,
+		},
+		{
+			title: "invalid host is skipped",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"a/b/c", "*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "invalid host only",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"a/b/c"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
