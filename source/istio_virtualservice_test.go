@@ -335,7 +335,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 			expected: true,
 		},
 		{
-			title: "matching exact host in the gateway namespace",
+			title: "matching host <namespace>/<host>",
 			gwconfig: fakeGatewayConfig{
 				namespace: "istio-system",
 				dnsnames:  [][]string{{"myns/foo.bar"}},
@@ -347,7 +347,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 			expected: true,
 		},
 		{
-			title: "not matching exact host",
+			title: "not matching host <namespace>/<host>",
 			gwconfig: fakeGatewayConfig{
 				namespace: "istio-system",
 				dnsnames:  [][]string{{"myns/foo.bar"}},
@@ -375,6 +375,18 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 				dnsnames:  [][]string{{"a/b/c"}},
 			},
 			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching host <namespace>/",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"ns/"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "ns",
+			},
 			vsHost:   "foo.bar",
 			expected: false,
 		},

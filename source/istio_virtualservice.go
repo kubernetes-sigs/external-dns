@@ -326,8 +326,7 @@ func virtualServiceBindsToGateway(vService *networkingv1.VirtualService, gateway
 	return gatewayServerHostMatches(vService, gateway, vsHost)
 }
 
-// virtualServiceExportedToNamespace reports whether the virtual service's
-// exportTo allows it to be visible in the given namespace.
+// Empty exportTo means visible in every namespace.
 func virtualServiceExportedToNamespace(vService *networkingv1.VirtualService, namespace string) bool {
 	if len(vService.Spec.ExportTo) == 0 {
 		return true
@@ -340,13 +339,11 @@ func virtualServiceExportedToNamespace(vService *networkingv1.VirtualService, na
 	return false
 }
 
-// gatewayServerHostMatches reports whether any of the gateway's server hosts
-// matches the given virtual service host.
 func gatewayServerHostMatches(vService *networkingv1.VirtualService, gateway *networkingv1.Gateway, vsHost string) bool {
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
-			namespace, hostPattern := splitGatewayHost(host)
-			if hostPattern == "" {
+			namespace, hostPattern, ok := splitGatewayHost(host)
+			if !ok {
 				log.Debugf("Gateway %s/%s has invalid host %s", gateway.Namespace, gateway.Name, host)
 				continue
 			}
@@ -360,22 +357,20 @@ func gatewayServerHostMatches(vService *networkingv1.VirtualService, gateway *ne
 	return false
 }
 
-// splitGatewayHost splits a server host of the form "namespace/host" into its
-// parts. A host without a slash applies to all namespaces. An empty pattern
-// is returned for hosts with more than one slash.
-func splitGatewayHost(host string) (string, string) {
+// splitGatewayHost splits "namespace/host"; a bare host means "*/host".
+func splitGatewayHost(host string) (string, string, bool) {
 	parts := strings.Split(host, "/")
-	if len(parts) == 2 {
-		return parts[0], parts[1]
+	switch len(parts) {
+	case 2:
+		return parts[0], parts[1], true
+	case 1:
+		return "*", host, true
+	default:
+		return "", "", false
 	}
-	if len(parts) != 1 {
-		return "", ""
-	}
-	return "*", host
 }
 
-// hostPatternMatches reports whether the host pattern matches the given host,
-// supporting the "*" and "*.domain" wildcards.
+// hostPatternMatches supports exact, "*" and "*.domain" patterns.
 func hostPatternMatches(hostPattern, vsHost string) bool {
 	if hostPattern == "*" {
 		return true
