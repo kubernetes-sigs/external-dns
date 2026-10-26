@@ -527,79 +527,12 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 			}
 
 			for _, r := range resp.ResourceRecordSets {
-				newEndpoints := make([]*endpoint.Endpoint, 0)
-
 				if !p.SupportedRecordType(r.Type) {
 					continue
 				}
 
-				name := convertOctalToAscii(wildcardUnescape(*r.Name))
-
-				var ttl endpoint.TTL
-				if r.TTL != nil {
-					ttl = endpoint.TTL(*r.TTL)
-				}
-
-				if len(r.ResourceRecords) > 0 {
-					targets := make([]string, len(r.ResourceRecords))
-					for idx, rr := range r.ResourceRecords {
-						targets[idx] = *rr.Value
-					}
-
-					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
-					if r.Type == endpoint.RecordTypeCNAME {
-						ep = ep.WithAliasProperty(endpoint.AliasFalse)
-					}
-					newEndpoints = append(newEndpoints, ep)
-				}
-
-				if r.AliasTarget != nil {
-					// Alias records don't have TTLs so provide the default to match the TXT generation
-					if ttl == 0 {
-						ttl = defaultTTL
-					}
-					aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
-					ep := endpoint.
-						NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
-						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
-						WithAliasProperty(endpoint.AliasTrue)
-					newEndpoints = append(newEndpoints, ep)
-				}
-
-				for _, ep := range newEndpoints {
-					if r.SetIdentifier != nil {
-						ep.SetIdentifier = *r.SetIdentifier
-						switch {
-						case r.Weight != nil:
-							ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", *r.Weight))
-						case r.Region != "":
-							ep.WithProviderSpecific(providerSpecificRegion, string(r.Region))
-						case r.Failover != "":
-							ep.WithProviderSpecific(providerSpecificFailover, string(r.Failover))
-						case r.MultiValueAnswer != nil && *r.MultiValueAnswer:
-							ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
-						case r.GeoLocation != nil:
-							if r.GeoLocation.ContinentCode != nil {
-								ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, *r.GeoLocation.ContinentCode)
-							} else {
-								if r.GeoLocation.CountryCode != nil {
-									ep.WithProviderSpecific(providerSpecificGeolocationCountryCode, *r.GeoLocation.CountryCode)
-								}
-								if r.GeoLocation.SubdivisionCode != nil {
-									ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, *r.GeoLocation.SubdivisionCode)
-								}
-							}
-						case r.GeoProximityLocation != nil:
-							handleGeoProximityLocationRecord(&r, ep)
-						default:
-							// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
-						}
-					}
-
-					if r.HealthCheckId != nil {
-						ep.WithProviderSpecific(providerSpecificHealthCheckID, *r.HealthCheckId)
-					}
-
+				for _, ep := range newEndpointsFromResourceRecordSet(&r) {
+					applyRecordMetadata(&r, ep)
 					endpoints = append(endpoints, ep)
 				}
 			}
@@ -607,6 +540,88 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	}
 
 	return endpoints, nil
+}
+
+func newEndpointsFromResourceRecordSet(r *route53types.ResourceRecordSet) []*endpoint.Endpoint {
+	newEndpoints := make([]*endpoint.Endpoint, 0)
+
+	name := convertOctalToAscii(wildcardUnescape(*r.Name))
+
+	var ttl endpoint.TTL
+	if r.TTL != nil {
+		ttl = endpoint.TTL(*r.TTL)
+	}
+
+	if len(r.ResourceRecords) > 0 {
+		targets := make([]string, len(r.ResourceRecords))
+		for idx, rr := range r.ResourceRecords {
+			targets[idx] = *rr.Value
+		}
+
+		ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
+		if r.Type == endpoint.RecordTypeCNAME {
+			ep = ep.WithAliasProperty(endpoint.AliasFalse)
+		}
+		newEndpoints = append(newEndpoints, ep)
+	}
+
+	if r.AliasTarget != nil {
+		// Alias records don't have TTLs so provide the default to match the TXT generation
+		if ttl == 0 {
+			ttl = defaultTTL
+		}
+		aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
+		ep := endpoint.
+			NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
+			WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
+			WithAliasProperty(endpoint.AliasTrue)
+		newEndpoints = append(newEndpoints, ep)
+	}
+
+	return newEndpoints
+}
+
+func applyRecordMetadata(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	if r.SetIdentifier != nil {
+		ep.SetIdentifier = *r.SetIdentifier
+		applySetIdentifierProperties(r, ep)
+	}
+
+	if r.HealthCheckId != nil {
+		ep.WithProviderSpecific(providerSpecificHealthCheckID, *r.HealthCheckId)
+	}
+}
+
+func applySetIdentifierProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	switch {
+	case r.Weight != nil:
+		ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", *r.Weight))
+	case r.Region != "":
+		ep.WithProviderSpecific(providerSpecificRegion, string(r.Region))
+	case r.Failover != "":
+		ep.WithProviderSpecific(providerSpecificFailover, string(r.Failover))
+	case r.MultiValueAnswer != nil && *r.MultiValueAnswer:
+		ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
+	case r.GeoLocation != nil:
+		applyGeoLocationProperties(r, ep)
+	case r.GeoProximityLocation != nil:
+		handleGeoProximityLocationRecord(r, ep)
+	default:
+		// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
+	}
+}
+
+func applyGeoLocationProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	if r.GeoLocation.ContinentCode != nil {
+		ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, *r.GeoLocation.ContinentCode)
+	} else {
+		if r.GeoLocation.CountryCode != nil {
+			ep.WithProviderSpecific(providerSpecificGeolocationCountryCode, *r.GeoLocation.CountryCode)
+		}
+		if r.GeoLocation.SubdivisionCode != nil {
+			ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, *r.GeoLocation.SubdivisionCode)
+		}
+	}
 }
 
 func handleGeoProximityLocationRecord(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {

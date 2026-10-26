@@ -817,6 +817,35 @@ func TestAWSRecordsSoftError(t *testing.T) {
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
+func TestAWSRecordsAliasWithoutTTLAndBareSetIdentifier(t *testing.T) {
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, false, []route53types.ResourceRecordSet{
+		{
+			Name: aws.String("alias-no-ttl.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: route53types.RRTypeA,
+			AliasTarget: &route53types.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: false,
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+		{
+			Name:            aws.String("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("bare-set-1"),
+		},
+	})
+
+	records, err := provider.Records(t.Context())
+	require.NoError(t, err)
+
+	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("alias-no-ttl.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithAliasProperty(endpoint.AliasTrue),
+		endpoint.NewEndpointWithTTL("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("bare-set-1"),
+	})
+}
+
 func TestAWSAdjustEndpoints(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, false, nil)
 
