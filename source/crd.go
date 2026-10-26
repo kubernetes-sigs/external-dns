@@ -55,6 +55,7 @@ import (
 // +externaldns:source:fqdn-template=false
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
+// +externaldns:source:validation=spec
 type crdSource struct {
 	crReader         client.Reader
 	crWriter         client.Client // status writes
