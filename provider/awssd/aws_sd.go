@@ -414,18 +414,18 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 }
 
 func resourceLabelChanged(current, desired string) bool {
-    currentLabels, currentErr := endpoint.NewLabelsFromStringPlain(current)
-    desiredLabels, desiredErr := endpoint.NewLabelsFromStringPlain(desired)
+	currentLabels, currentErr := endpoint.NewLabelsFromStringPlain(current)
+	desiredLabels, desiredErr := endpoint.NewLabelsFromStringPlain(desired)
 
-    if desiredErr != nil {
-        return false
-    }
-    if currentErr != nil {
-        return true
-    }
+	if desiredErr != nil {
+		return false
+	}
+	if currentErr != nil {
+		return true
+	}
 
-    return currentLabels[endpoint.ResourceLabelKey] !=
-        desiredLabels[endpoint.ResourceLabelKey]
+	return currentLabels[endpoint.ResourceLabelKey] !=
+		desiredLabels[endpoint.ResourceLabelKey]
 }
 
 func (p *AWSSDProvider) submitDeletes(ctx context.Context, namespaces []*sdtypes.NamespaceSummary, changes []*endpoint.Endpoint) error {
