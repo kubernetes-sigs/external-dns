@@ -987,8 +987,6 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	return change
 }
 
-// applyAliasTarget sets the AliasTarget field on the change for alias records
-// and accounts for their size.
 func (p *AWSProvider) applyAliasTarget(change *Route53Change, ep *endpoint.Endpoint, targetHostedZone string) {
 	evalTargetHealth := p.evaluateTargetHealth
 	if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
@@ -1003,8 +1001,6 @@ func (p *AWSProvider) applyAliasTarget(change *Route53Change, ep *endpoint.Endpo
 	change.sizeValues += 1
 }
 
-// applyResourceRecords sets the TTL and ResourceRecords fields on the change
-// for non-alias records and accounts for their size.
 func applyResourceRecords(change *Route53Change, ep *endpoint.Endpoint) {
 	if !ep.RecordTTL.IsConfigured() {
 		change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
@@ -1021,8 +1017,8 @@ func applyResourceRecords(change *Route53Change, ep *endpoint.Endpoint) {
 	}
 }
 
-// applySetProperties copies the weighted, regional, failover and
-// multi-value-answer provider specific properties onto the change.
+// applySetProperties sets the routing policy fields: set identifier, weight,
+// region, failover and multi-value answer.
 func applySetProperties(change *Route53Change, ep *endpoint.Endpoint) {
 	if ep.SetIdentifier != "" {
 		change.ResourceRecordSet.SetIdentifier = aws.String(ep.SetIdentifier)
@@ -1046,8 +1042,8 @@ func applySetProperties(change *Route53Change, ep *endpoint.Endpoint) {
 	}
 }
 
-// applyGeolocation copies the geolocation provider specific properties onto
-// the change; the field is left unset when no property is present.
+// applyGeolocation: continent takes precedence because Route53 rejects
+// ContinentCode combined with CountryCode or SubdivisionCode.
 func applyGeolocation(change *Route53Change, ep *endpoint.Endpoint) {
 	geolocation := &route53types.GeoLocation{}
 	useGeolocation := false

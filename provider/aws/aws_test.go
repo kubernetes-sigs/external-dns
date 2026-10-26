@@ -2808,6 +2808,26 @@ func TestAWSNewChange(t *testing.T) {
 			},
 		},
 		{
+			name:   "geolocation continent code takes precedence over country and subdivision codes",
+			action: route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").
+				WithProviderSpecific(providerSpecificGeolocationContinentCode, "AF").
+				WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE").
+				WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "BY"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					GeoLocation:     &route53types.GeoLocation{ContinentCode: aws.String("AF")},
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
 			name:     "health check id",
 			action:   route53types.ChangeActionCreate,
 			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").WithProviderSpecific(providerSpecificHealthCheckID, "hc-123"),
