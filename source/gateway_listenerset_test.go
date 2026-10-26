@@ -170,6 +170,89 @@ func TestGatewayHTTPRouteWithListenerSetParentRef(t *testing.T) {
 	})
 }
 
+func TestGatewayHTTPRouteWithListenerSetScopedGatewayNamespace(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	ns := &corev1.Namespace{Name: "default"}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	ips := []string{"10.64.0.1", "10.64.0.2"}
+	gw := &v1.Gateway{
+		Name: "my-gateway", Namespace: "default",
+		Spec: v1.GatewaySpec{
+			AllowedListeners: allowAllListenerSets(),
+			Listeners: []v1.Listener{{
+				Name:     "base",
+				Protocol: v1.HTTPProtocolType,
+				Port:     80,
+			}},
+		},
+		Status: gatewayStatus(ips...),
+	}
+	_, err = gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	hostname := v1.Hostname("*.example.com")
+	fromAll := v1.NamespacesFromAll
+	ls := &v1.ListenerSet{
+		Name: "my-listenerset", Namespace: "default",
+		Spec: v1.ListenerSetSpec{
+			ParentRef: v1.ParentGatewayReference{Name: "my-gateway"},
+			Listeners: []v1.ListenerEntry{{
+				Name:     "app",
+				Hostname: &hostname,
+				Port:     8080,
+				Protocol: v1.HTTPProtocolType,
+				AllowedRoutes: &v1.AllowedRoutes{
+					Namespaces: &v1.RouteNamespaces{From: &fromAll},
+				},
+			}},
+		},
+		Status: listenerSetAcceptedStatus("app"),
+	}
+	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1.HTTPRoute{
+		Name: "my-route", Namespace: "default",
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{
+					lsParentRef("default", "my-listenerset"),
+				},
+			},
+		},
+		Status: v1.HTTPRouteStatus{
+			RouteStatus: gwRouteStatus(lsParentRef("default", "my-listenerset")),
+		},
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		GatewayNamespace:    "default",
+		GatewayListenerSets: true,
+	})
+	require.NoError(t, err)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("app.example.com", ips...),
+	})
+}
+
 func TestGatewayHTTPRouteWithListenerSetWildcardHostnameIntersection(t *testing.T) {
 	t.Parallel()
 
