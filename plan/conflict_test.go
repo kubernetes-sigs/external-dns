@@ -364,6 +364,72 @@ func TestPerResource_ResolveRecordTypes_LogsWarning(t *testing.T) {
 	}
 }
 
+func TestPerResource_ResolveAliasTargetConflicts(t *testing.T) {
+	endpointFor := func(recordType, target, resource string) *endpoint.Endpoint {
+		return endpoint.NewEndpoint("app.example.org", recordType, target).
+			WithLabel(endpoint.ResourceLabelKey, resource)
+	}
+
+	cnameA := endpointFor(endpoint.RecordTypeCNAME, "a.example.net", "service/default/a")
+	cnameB := endpointFor(endpoint.RecordTypeCNAME, "b.example.net", "service/default/b")
+	dnameA := endpointFor(endpoint.RecordTypeDNAME, "a.example.net", "service/default/a")
+	dnameB := endpointFor(endpoint.RecordTypeDNAME, "b.example.net", "service/default/b")
+	current := endpointFor(endpoint.RecordTypeCNAME, "old.example.net", "service/default/b")
+	cnameUpper := endpointFor(endpoint.RecordTypeCNAME, "A.EXAMPLE.NET", "service/default/upper")
+
+	tests := []struct {
+		name        string
+		current     *endpoint.Endpoint
+		candidates  []*endpoint.Endpoint
+		want        *endpoint.Endpoint
+		wantWarning string
+	}{
+		{
+			name:        "create keeps the minimum CNAME target",
+			candidates:  []*endpoint.Endpoint{cnameB, cnameA},
+			want:        cnameA,
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; keeping a.example.net",
+		},
+		{
+			name:        "create keeps the minimum DNAME target",
+			candidates:  []*endpoint.Endpoint{dnameB, dnameA},
+			want:        dnameA,
+			wantWarning: "Domain app.example.org has conflicting DNAME targets; keeping a.example.net",
+		},
+		{
+			name:        "update keeps the current resource target",
+			current:     current,
+			candidates:  []*endpoint.Endpoint{cnameA, cnameB},
+			want:        cnameB,
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; keeping b.example.net",
+		},
+		{
+			name:       "target names differing only in case do not conflict",
+			candidates: []*endpoint.Endpoint{cnameUpper, cnameA},
+			want:       cnameUpper,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			var got *endpoint.Endpoint
+			if tt.current == nil {
+				got = PerResource{}.ResolveCreate(tt.candidates)
+			} else {
+				got = PerResource{}.ResolveUpdate(tt.current, tt.candidates)
+			}
+			if got != tt.want {
+				t.Fatalf("Resolve returned %v, want %v", got, tt.want)
+			}
+			if tt.wantWarning == "" {
+				logtest.TestHelperLogNotContains("has conflicting", hook, t)
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(tt.wantWarning, log.WarnLevel, hook, t)
+			}
+		})
+	}
+}
 func TestConflictResolver(t *testing.T) {
 	suite.Run(t, new(ResolverSuite))
 }

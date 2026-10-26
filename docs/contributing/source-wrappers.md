@@ -25,15 +25,14 @@ Wrappers solve these key challenges:
 
 ## Built In Wrappers
 
-|        Wrapper        | Purpose                                 | Use Case                                            |
-|:---------------------:|:----------------------------------------|:----------------------------------------------------|
-|     `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
-|     `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
-| `TargetFilterSource`  | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
-|     `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
-|    `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
-|      `PTRSource`      | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
-| `CNAMEConflictSource` | Warn about CNAME conflicts.             | Only for names within the domain filter.            |
+|       Wrapper        | Purpose                                 | Use Case                                            |
+|:--------------------:|:----------------------------------------|:----------------------------------------------------|
+|    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
+|    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
+| `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
+|    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
+|   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
+|    `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
 
 ### Use Cases
 
@@ -73,13 +72,6 @@ Applies post-processing to all endpoints after they are collected from sources.
 --provider=aws
 --prefer-alias
 ```
-
-### 4.1 `CNAMEConflictSource`
-
-Always enabled. For names that match the domain filter (`--domain-filter` and related flags), it
-warns about `CNAME` or `DNAME` endpoints that share a name and set identifier but have different
-targets, and counts them in `external_dns_source_invalid_endpoints`. Names outside the domain filter
-are not reported. Endpoints are not changed or dropped.
 
 ---
 
@@ -125,7 +117,6 @@ Wrappers are often composed like this:
 source := NewMultiSource(actualSources, defaultTargets)
 source = NewDedupSource(source)
 source = NewNAT64Source(source, cfg.NAT64Networks)
-source = NewCNAMEConflictSource(source, domainFilter)
 source = NewTargetFilterSource(source, targetFilter)
 source = NewPostProcessor(source, WithTTL(minTTL), WithPostProcessorPreferAlias(preferAlias))
 source = NewPTRSource(source, createPTR)

@@ -38,7 +38,9 @@ type PerResource struct{}
 // ResolveCreate is invoked when dns name is not owned by any resource
 // ResolveCreate takes "minimal" (string comparison of Target) endpoint to acquire the DNS record
 func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint {
-	return slices.MinFunc(candidates, compareEndpoints)
+	kept := slices.MinFunc(candidates, compareEndpoints)
+	warnConflictingAliasTargets(candidates, kept)
+	return kept
 }
 
 // ResolveUpdate is invoked when dns name is already owned by "current" endpoint
@@ -49,10 +51,25 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 	slices.SortStableFunc(candidates, compareEndpoints)
 	for _, ep := range candidates {
 		if ep.Labels[endpoint.ResourceLabelKey] == currentResource {
+			warnConflictingAliasTargets(candidates, ep)
 			return ep
 		}
 	}
 	return s.ResolveCreate(candidates)
+}
+
+func warnConflictingAliasTargets(candidates []*endpoint.Endpoint, kept *endpoint.Endpoint) {
+	if kept.RecordType != endpoint.RecordTypeCNAME && kept.RecordType != endpoint.RecordTypeDNAME {
+		return
+	}
+	for _, candidate := range candidates {
+		if candidate.Targets.Same(kept.Targets) {
+			continue
+		}
+		log.Warnf("Domain %s has conflicting %s targets; keeping %s",
+			kept.DNSName, kept.RecordType, kept.Targets.String())
+		return
+	}
 }
 
 // ResolveRecordTypes attempts to detect and resolve record type conflicts in desired
