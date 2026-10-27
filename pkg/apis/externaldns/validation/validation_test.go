@@ -544,9 +544,9 @@ func TestValidateNamespaces(t *testing.T) {
 		},
 		{
 			name:        "several namespaces report every unsupported source once",
-			sources:     []string{"node", "gateway-httproute", "pod", "gateway-httproute"},
+			sources:     []string{"node", "gateway-httproute", "gateway-grpcroute", "gateway-httproute"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: gateway-httproute, pod",
+			expectedErr: "--namespace accepts a single value with the following sources: gateway-httproute, gateway-grpcroute",
 		},
 	}
 
