@@ -33,7 +33,9 @@ ExternalDNS uses this annotation to determine what services should be registered
 Traefik `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` resources do
 not expose a load balancer IP or hostname in their status. Because of that,
 the `traefik-proxy` source requires an explicit
-`external-dns.kubernetes.io/target` annotation. Without it, no endpoint is
+`external-dns.kubernetes.io/target` annotation, or
+[`external-dns.kubernetes.io/target-from`](../annotations/annotations.md#external-dnskubernetesiotarget-from)
+to read it from Traefik's own LoadBalancer Service. Without either, no endpoint is
 generated and `--default-targets` cannot apply.
 
 If you want to use `--default-targets`, use the `crd` source with
