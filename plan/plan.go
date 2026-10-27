@@ -338,11 +338,29 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 
 	// NoopRegistry records lack resource labels, so ignore missing current labels to avoid perpetual updates.
 	// When both labels exist, detect changes to preserve correct delete attribution (#6766).
-	if clb, ulb := current.Labels[endpoint.ResourceLabelKey], desired.Labels[endpoint.ResourceLabelKey]; clb != "" && ulb != "" && clb != ulb {
+	if resourceChanged(current, desired) {
 		return true
 	}
 
 	return false
+}
+
+// isNoopRegistry infers NoopRegistry from the current endpoint: it never stores a resource label.
+func isNoopRegistry(current *endpoint.Endpoint) bool {
+	return current.Labels[endpoint.ResourceLabelKey] == ""
+}
+
+// isSourceWithoutResourceLabel infers a Pod/gloo-proxy style source from the desired
+// endpoint: those sources never set a resource label.
+func isSourceWithoutResourceLabel(desired *endpoint.Endpoint) bool {
+	return desired.Labels[endpoint.ResourceLabelKey] == ""
+}
+
+func resourceChanged(current, desired *endpoint.Endpoint) bool {
+	if isNoopRegistry(current) || isSourceWithoutResourceLabel(desired) {
+		return false
+	}
+	return current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey]
 }
 
 func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {

@@ -1661,6 +1661,9 @@ func TestAWSSDProvider_ApplyChanges_MissingDNSRecordsReturnsError(t *testing.T) 
 					Targets: endpoint.Targets{
 						"load-balancer.us-east-1.elb.amazonaws.com",
 					},
+					Labels: endpoint.Labels{
+						endpoint.AWSSDDescriptionLabel: "heritage=external-dns,external-dns/owner=external-dns,external-dns/resource=service/default/my-service",
+					},
 				},
 			},
 		},
