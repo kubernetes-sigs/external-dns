@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 )
 
 const (
@@ -114,6 +115,7 @@ type traefikSource struct {
 	oldIngressRouteTcpInformers *informers.Informers[kubeinformers.GenericInformer]
 	oldIngressRouteUdpInformers *informers.Informers[kubeinformers.GenericInformer]
 	unstructuredConverter       *unstructuredConverter
+	targetFrom                  *targetfrom.Resolver
 }
 
 func NewTraefikSource(
@@ -183,49 +185,50 @@ func NewTraefikSource(
 		oldIngressRouteUdpInformers: oldIngressRouteUdpInformers,
 		kubeClient:                  kubeClient,
 		unstructuredConverter:       uc,
+		targetFrom:                  cfg.targetFromResolver(ctx),
 	}, nil
 }
 
-func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	if ts.ingressRouteInformers != nil {
-		ingressRouteEndpoints, err := ts.ingressRouteEndpoints()
+		ingressRouteEndpoints, err := ts.ingressRouteEndpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
 		endpoints = append(endpoints, ingressRouteEndpoints...)
 	}
 	if ts.oldIngressRouteInformers != nil {
-		oldIngressRouteEndpoints, err := ts.oldIngressRouteEndpoints()
+		oldIngressRouteEndpoints, err := ts.oldIngressRouteEndpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
 		endpoints = append(endpoints, oldIngressRouteEndpoints...)
 	}
 	if ts.ingressRouteTcpInformers != nil {
-		ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints()
+		ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
 		endpoints = append(endpoints, ingressRouteTcpEndpoints...)
 	}
 	if ts.oldIngressRouteTcpInformers != nil {
-		oldIngressRouteTcpEndpoints, err := ts.oldIngressRouteTCPEndpoints()
+		oldIngressRouteTcpEndpoints, err := ts.oldIngressRouteTCPEndpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
 		endpoints = append(endpoints, oldIngressRouteTcpEndpoints...)
 	}
 	if ts.ingressRouteUdpInformers != nil {
-		ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints()
+		ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
 		endpoints = append(endpoints, ingressRouteUdpEndpoints...)
 	}
 	if ts.oldIngressRouteUdpInformers != nil {
-		oldIngressRouteUdpEndpoints, err := ts.oldIngressRouteUDPEndpoints()
+		oldIngressRouteUdpEndpoints, err := ts.oldIngressRouteUDPEndpoints(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -236,8 +239,10 @@ func (ts *traefikSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 }
 
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects
-func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) ingressRouteEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
+		ctx,
+		ts.targetFrom,
 		ts.ingressRouteInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
 			typed := &IngressRoute{}
@@ -248,8 +253,10 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 }
 
 // ingressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
-func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) ingressRouteTCPEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
+		ctx,
+		ts.targetFrom,
 		ts.ingressRouteTcpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
 			typed := &IngressRouteTCP{}
@@ -260,8 +267,10 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 }
 
 // ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
-func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) ingressRouteUDPEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
+		ctx,
+		ts.targetFrom,
 		ts.ingressRouteUdpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
@@ -272,8 +281,10 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 }
 
 // oldIngressRouteEndpoints extracts endpoints from all IngressRoute objects
-func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) oldIngressRouteEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
+		ctx,
+		ts.targetFrom,
 		ts.oldIngressRouteInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
 			typed := &IngressRoute{}
@@ -284,8 +295,10 @@ func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error
 }
 
 // oldIngressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
-func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) oldIngressRouteTCPEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
+		ctx,
+		ts.targetFrom,
 		ts.oldIngressRouteTcpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
 			typed := &IngressRouteTCP{}
@@ -296,8 +309,10 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, er
 }
 
 // oldIngressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
-func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) oldIngressRouteUDPEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return extractEndpoints(
+		ctx,
+		ts.targetFrom,
 		ts.oldIngressRouteUdpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
@@ -417,6 +432,7 @@ func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	if ts.oldIngressRouteUdpInformers != nil {
 		ts.oldIngressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	}
+	ts.targetFrom.AddEventHandler(handler)
 }
 
 // newTraefikUnstructuredConverter returns a new unstructuredConverter initialized
@@ -796,9 +812,11 @@ func (in *IngressRouteUDP) GetAnnotations() map[string]string {
 // 3. Generates endpoints for each object using the generateEndpoints function.
 // Returns a list of generated endpoints or an error if any step fails.
 func extractEndpoints[T interface {
-	annotations.AnnotatedObject
+	metav1.Object
 	runtime.Object
 }](
+	ctx context.Context,
+	targetFrom *targetfrom.Resolver,
 	indexers []cache.Indexer,
 	convertFunc func(*unstructured.Unstructured) (T, error),
 	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
@@ -813,6 +831,9 @@ func extractEndpoints[T interface {
 		typed.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 
 		targets := annotations.TargetsFromTargetAnnotation(typed.GetAnnotations())
+		if len(targets) == 0 {
+			targets, _ = targetFrom.TargetsFromAnnotations(ctx, types.TraefikProxy, typed)
+		}
 		name := getObjectFullName(typed)
 
 		ingressEndpoints, err := generateEndpoints(typed, targets)

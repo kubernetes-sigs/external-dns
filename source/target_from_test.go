@@ -217,3 +217,52 @@ func TestIstioVirtualServiceGatewayTargetFrom(t *testing.T) {
 		endpoint.NewEndpoint("vs.example.org", endpoint.RecordTypeA, sharedLBAddress).WithLabel(endpoint.ResourceLabelKey, "virtualservice/apps/vs"),
 	})
 }
+
+func TestTraefikTargetFrom(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		annotations map[string]any
+		expected    []*endpoint.Endpoint
+	}{
+		{
+			name:        "resolved reference",
+			annotations: map[string]any{annotations.TargetFromKey: sharedLBRef},
+			expected:    []*endpoint.Endpoint{endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeA, sharedLBAddress).WithLabel(endpoint.ResourceLabelKey, "ingressroute/apps/app")},
+		},
+		{
+			name: "target annotation wins",
+			annotations: map[string]any{
+				annotations.TargetKey:     "198.51.100.1",
+				annotations.TargetFromKey: sharedLBRef,
+			},
+			expected: []*endpoint.Endpoint{endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeA, "198.51.100.1").WithLabel(endpoint.ResourceLabelKey, "ingressroute/apps/app")},
+		},
+		{
+			name:        "unresolved reference",
+			annotations: map[string]any{annotations.TargetFromKey: missingLBRef},
+			expected:    []*endpoint.Endpoint{},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ir := &unstructured.Unstructured{Object: map[string]any{
+				"apiVersion": ingressRouteGVR.GroupVersion().String(),
+				"kind":       "IngressRoute",
+				"metadata":   map[string]any{"namespace": "apps", "name": "app", "annotations": tt.annotations},
+				"spec":       map[string]any{"routes": []any{map[string]any{"match": "Host(`app.example.org`)"}}},
+			}}
+			dyn := fakedynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+				ingressRouteGVR:    "IngressRouteList",
+				ingressRouteTCPGVR: "IngressRouteTCPList",
+				ingressRouteUDPGVR: "IngressRouteUDPList",
+			})
+			require.NoError(t, dyn.Tracker().Create(ingressRouteGVR, ir, "apps"))
+
+			src, err := NewTraefikSource(t.Context(), dyn, fake.NewClientset(), newTargetFromConfig(t))
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
