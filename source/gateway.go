@@ -189,23 +189,7 @@ func newGatewayRouteSource(
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
 	))
 
-	var lsInformer informers_v1.ListenerSetInformer
-	lsInformerFactory := gwInformerFactory
-	if config.GatewayListenerSets {
-		// Gateway filters should apply only to Gateways, not ListenerSets.
-		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
-		if config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
-			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
-		}
-		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
-		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
-			informers.TransformRemoveManagedFields(),
-			informers.TransformRemoveLastAppliedConfig(),
-		))
-		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
-			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
-		))
-	}
+	lsInformer, lsInformerFactory := newListenerSetInformer(client, gwInformerFactory, config, gwLabels)
 
 	rtNamespace := config.Namespace()
 	rtInformerFactory := gwInformerFactory
@@ -238,26 +222,7 @@ func newGatewayRouteSource(
 	))
 	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
 
-	gwInformerFactory.Start(ctx.Done())
-	if lsInformerFactory != gwInformerFactory {
-		lsInformerFactory.Start(ctx.Done())
-	}
-	kubeInformerFactory.Start(ctx.Done())
-	if rtInformerFactory != gwInformerFactory {
-		rtInformerFactory.Start(ctx.Done())
-	}
-	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
-		return nil, err
-	}
-	if lsInformer != nil && lsInformerFactory != gwInformerFactory {
-		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
-			return nil, err
-		}
-	}
-	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
-		return nil, err
-	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := startAndSyncInformers(ctx, gwInformerFactory, lsInformerFactory, rtInformerFactory, kubeInformerFactory); err != nil {
 		return nil, err
 	}
 
@@ -275,6 +240,53 @@ func newGatewayRouteSource(
 		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
 	}
 	return src, nil
+}
+
+func newListenerSetInformer(client gateway.Interface, gwInformerFactory gwinformers.SharedInformerFactory, config *Config, gwLabels labels.Selector) (informers_v1.ListenerSetInformer, gwinformers.SharedInformerFactory) {
+	var lsInformer informers_v1.ListenerSetInformer
+	lsInformerFactory := gwInformerFactory
+	if config.GatewayListenerSets {
+		// Gateway filters should apply only to Gateways, not ListenerSets.
+		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
+		if config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
+			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
+		}
+		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
+		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
+			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
+		))
+	}
+	return lsInformer, lsInformerFactory
+}
+
+func startAndSyncInformers(ctx context.Context, gwInformerFactory, lsInformerFactory, rtInformerFactory gwinformers.SharedInformerFactory, kubeInformerFactory kubeinformers.SharedInformerFactory) error {
+	gwInformerFactory.Start(ctx.Done())
+	if lsInformerFactory != gwInformerFactory {
+		lsInformerFactory.Start(ctx.Done())
+	}
+	kubeInformerFactory.Start(ctx.Done())
+	if rtInformerFactory != gwInformerFactory {
+		rtInformerFactory.Start(ctx.Done())
+	}
+	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
+		return err
+	}
+	if lsInformerFactory != gwInformerFactory {
+		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
+			return err
+		}
+	}
+	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+		return err
+	}
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
