@@ -456,6 +456,8 @@ var multiNamespaceSources = []string{
 	"fake",
 	"gloo-proxy",
 	"ingress",
+	"istio-gateway",
+	"istio-virtualservice",
 	"kong-tcpingress",
 	"node",
 	"openshift-route",
