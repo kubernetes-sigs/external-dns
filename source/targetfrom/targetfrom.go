@@ -131,7 +131,7 @@ func (r *Resolver) Resolve(ctx context.Context, ownerNamespace, value string) (e
 	}
 	values, err := template.ExecUnstructured(ref.Template, obj.Object)
 	if err != nil {
-		return nil, fmt.Errorf("template: %w", err)
+		return nil, err
 	}
 	if len(values) == 0 {
 		return nil, errors.New("template rendered no targets, the field may not be populated yet")
@@ -193,12 +193,13 @@ func (r *Resolver) get(ctx context.Context, ref annotations.TargetFromReference,
 // so a CRD graduating to a new version does not break references.
 func (r *Resolver) lookup(gr schema.GroupResource) (schema.GroupVersionResource, bool, error) {
 	gvr, err := r.mapper.ResourceFor(gr.WithVersion(""))
+	if meta.IsNoMatchError(err) {
+		// The discovery cache never expires, and the mapper only retries on an
+		// unpopulated one: reset it so a CRD installed after startup is found.
+		r.mapper.Reset()
+		gvr, err = r.mapper.ResourceFor(gr.WithVersion(""))
+	}
 	if err != nil {
-		if meta.IsNoMatchError(err) {
-			// The discovery cache never expires by itself; reset it so a CRD
-			// installed after startup is found on the next sync.
-			r.mapper.Reset()
-		}
 		return schema.GroupVersionResource{}, false, err
 	}
 	gvk, err := r.mapper.KindFor(gvr)
