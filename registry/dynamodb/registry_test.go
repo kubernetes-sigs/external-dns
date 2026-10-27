@@ -1114,6 +1114,121 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	}
 }
 
+func TestDynamoDBRegistryApplyChanges_NoCache(t *testing.T) {
+	api, p := newDynamoDBAPIStub(t, &DynamoDBStubConfig{
+		ExpectInsert: map[string]map[string]string{
+			"new.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new-ingress"},
+		},
+		ExpectUpdate: map[string]map[string]string{
+			"bar.test-zone.example.org#CNAME#": {endpoint.ResourceLabelKey: "ingress/default/new-ingress"},
+		},
+		ExpectDelete: sets.New("baz.test-zone.example.org#A#set-2", "quux.test-zone.example.org#A#set-2"),
+	})
+
+	ctx := t.Context()
+	r, err := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, 0)
+	require.NoError(t, err)
+
+	_, err = r.Records(ctx)
+	require.NoError(t, err)
+
+	err = r.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:       "new.test-zone.example.org",
+				Targets:       endpoint.Targets{"new.loadbalancer.com"},
+				RecordType:    endpoint.RecordTypeCNAME,
+				SetIdentifier: "set-new",
+				Labels: map[string]string{
+					endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+				},
+			},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "bar.test-zone.example.org",
+				Targets:    endpoint.Targets{"my-domain.com"},
+				RecordType: endpoint.RecordTypeCNAME,
+				Labels: map[string]string{
+					endpoint.OwnerLabelKey:    "test-owner",
+					endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+				},
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "bar.test-zone.example.org",
+				Targets:    endpoint.Targets{"new-domain.com"},
+				RecordType: endpoint.RecordTypeCNAME,
+				Labels: map[string]string{
+					endpoint.OwnerLabelKey:    "test-owner",
+					endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+				},
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:       "baz.test-zone.example.org",
+				Targets:       endpoint.Targets{"2.2.2.2"},
+				RecordType:    endpoint.RecordTypeA,
+				SetIdentifier: "set-2",
+				Labels: map[string]string{
+					endpoint.OwnerLabelKey:    "test-owner",
+					endpoint.ResourceLabelKey: "ingress/default/other-ingress",
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	assert.Empty(t, api.stubConfig.ExpectInsert, "all expected inserts made")
+	assert.Empty(t, api.stubConfig.ExpectUpdate, "all expected updates made")
+	assert.Empty(t, api.stubConfig.ExpectDelete, "all expected deletes made")
+	assert.Empty(t, r.orphanedLabels)
+
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(records, []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:       "new.test-zone.example.org",
+			Targets:       endpoint.Targets{"new.loadbalancer.com"},
+			RecordType:    endpoint.RecordTypeCNAME,
+			SetIdentifier: "set-new",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey:    "test-owner",
+				endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+			},
+		},
+		{
+			DNSName:    "bar.test-zone.example.org",
+			Targets:    endpoint.Targets{"new-domain.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey:    "test-owner",
+				endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+			},
+		},
+		{
+			DNSName:       "baz.test-zone.example.org",
+			Targets:       endpoint.Targets{"1.1.1.1"},
+			RecordType:    endpoint.RecordTypeA,
+			SetIdentifier: "set-1",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey:    "test-owner",
+				endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+			},
+		},
+	}))
+}
+
 // DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
 type DynamoDBStub struct {
 	t                *testing.T
