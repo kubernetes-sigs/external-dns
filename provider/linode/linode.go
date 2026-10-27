@@ -281,41 +281,58 @@ func getPriority() *int {
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	recordsByZoneID := make(map[string][]linodego.DomainRecord)
-
 	zones, err := p.fetchZones(ctx)
 	if err != nil {
 		return err
 	}
 
-	zonesByID := make(map[string]linodego.Domain)
+	recordsByZoneID, err := p.fetchRecordsByZone(ctx, zones)
+	if err != nil {
+		return err
+	}
 
+	zonesByID, zoneNameIDMapper := zoneLookup(zones)
+
+	linodeChanges := &LinodeChanges{}
+	if err := generateCreates(linodeChanges, zonesByID, recordsByZoneID, endpointsByZone(zoneNameIDMapper, changes.Create)); err != nil {
+		return err
+	}
+	if err := generateUpdates(linodeChanges, zonesByID, recordsByZoneID, endpointsByZone(zoneNameIDMapper, changes.UpdateNew)); err != nil {
+		return err
+	}
+	if err := generateDeletes(linodeChanges, zonesByID, recordsByZoneID, endpointsByZone(zoneNameIDMapper, changes.Delete)); err != nil {
+		return err
+	}
+
+	return p.submitChanges(ctx, *linodeChanges)
+}
+
+// zoneLookup builds the zone ID to Domain map and the zone name to ID mapper.
+func zoneLookup(zones []linodego.Domain) (map[string]linodego.Domain, provider.ZoneIDName) {
+	zonesByID := make(map[string]linodego.Domain, len(zones))
 	zoneNameIDMapper := provider.ZoneIDName{}
-
 	for _, z := range zones {
 		zoneNameIDMapper.Add(strconv.Itoa(z.ID), z.Domain)
 		zonesByID[strconv.Itoa(z.ID)] = z
 	}
+	return zonesByID, zoneNameIDMapper
+}
 
-	// Fetch records for each zone
+// fetchRecordsByZone fetches the existing records of every zone.
+func (p *LinodeProvider) fetchRecordsByZone(ctx context.Context, zones []linodego.Domain) (map[string][]linodego.DomainRecord, error) {
+	recordsByZoneID := make(map[string][]linodego.DomainRecord, len(zones))
 	for _, zone := range zones {
 		records, err := p.fetchRecords(ctx, zone.ID)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		recordsByZoneID[strconv.Itoa(zone.ID)] = append(recordsByZoneID[strconv.Itoa(zone.ID)], records...)
+		recordsByZoneID[strconv.Itoa(zone.ID)] = records
 	}
+	return recordsByZoneID, nil
+}
 
-	createsByZone := endpointsByZone(zoneNameIDMapper, changes.Create)
-	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
-	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
-
-	var linodeCreates []LinodeChangeCreate
-	var linodeUpdates []LinodeChangeUpdate
-	var linodeDeletes []LinodeChangeDelete
-
-	// Generate Creates
+// generateCreates adds the LinodeChangeCreate entries for the created endpoints.
+func generateCreates(linodeChanges *LinodeChanges, zonesByID map[string]linodego.Domain, recordsByZoneID map[string][]linodego.DomainRecord, createsByZone map[string][]endpoint.Endpoint) error {
 	for zoneID, creates := range createsByZone {
 		zone := zonesByID[zoneID]
 
@@ -330,41 +347,55 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		records := recordsByZoneID[zoneID]
 
 		for _, ep := range creates {
-			matchedRecords := getRecordID(records, zone, ep)
-
-			if len(matchedRecords) != 0 {
-				log.WithFields(log.Fields{
-					logFieldZoneID:     zoneID,
-					logFieldZoneName:   zone.Domain,
-					logFieldDNSName:    ep.DNSName,
-					logFieldRecordType: ep.RecordType,
-				}).Warn("Records found which should not exist. Not touching it.")
-				continue
-			}
-
-			recordType, err := convertRecordType(ep.RecordType)
-			if err != nil {
+			if err := createEndpoint(linodeChanges, zoneID, zone, records, ep); err != nil {
 				return err
-			}
-
-			for _, target := range ep.Targets {
-				linodeCreates = append(linodeCreates, LinodeChangeCreate{
-					Domain: zone,
-					Options: linodego.DomainRecordCreateOptions{
-						Target:   target,
-						Name:     getStrippedRecordName(zone, ep),
-						Type:     recordType,
-						Weight:   getWeight(recordType),
-						Port:     getPort(),
-						Priority: getPriority(),
-						TTLSec:   int(ep.RecordTTL),
-					},
-				})
 			}
 		}
 	}
 
-	// Generate Updates
+	return nil
+}
+
+// createEndpoint adds the LinodeChangeCreate entries for a single endpoint.
+func createEndpoint(linodeChanges *LinodeChanges, zoneID string, zone linodego.Domain, records []linodego.DomainRecord, ep endpoint.Endpoint) error {
+	matchedRecords := getRecordID(records, zone, ep)
+
+	if len(matchedRecords) != 0 {
+		log.WithFields(log.Fields{
+			logFieldZoneID:     zoneID,
+			logFieldZoneName:   zone.Domain,
+			logFieldDNSName:    ep.DNSName,
+			logFieldRecordType: ep.RecordType,
+		}).Warn("Records found which should not exist. Not touching it.")
+		return nil
+	}
+
+	recordType, err := convertRecordType(ep.RecordType)
+	if err != nil {
+		return err
+	}
+
+	for _, target := range ep.Targets {
+		linodeChanges.Creates = append(linodeChanges.Creates, LinodeChangeCreate{
+			Domain: zone,
+			Options: linodego.DomainRecordCreateOptions{
+				Target:   target,
+				Name:     getStrippedRecordName(zone, ep),
+				Type:     recordType,
+				Weight:   getWeight(recordType),
+				Port:     getPort(),
+				Priority: getPriority(),
+				TTLSec:   int(ep.RecordTTL),
+			},
+		})
+	}
+
+	return nil
+}
+
+// generateUpdates adds the LinodeChangeUpdate, LinodeChangeCreate and
+// LinodeChangeDelete entries for the updated endpoints.
+func generateUpdates(linodeChanges *LinodeChanges, zonesByID map[string]linodego.Domain, recordsByZoneID map[string][]linodego.DomainRecord, updatesByZone map[string][]endpoint.Endpoint) error {
 	for zoneID, updates := range updatesByZone {
 		zone := zonesByID[zoneID]
 
@@ -379,97 +410,118 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		records := recordsByZoneID[zoneID]
 
 		for _, ep := range updates {
-			matchedRecords := getRecordID(records, zone, ep)
-
-			if len(matchedRecords) == 0 {
-				log.WithFields(log.Fields{
-					logFieldZoneID:     zoneID,
-					logFieldDNSName:    ep.DNSName,
-					logFieldZoneName:   zone.Domain,
-					logFieldRecordType: ep.RecordType,
-				}).Warn("Update Records not found.")
-			}
-
-			recordType, err := convertRecordType(ep.RecordType)
-			if err != nil {
+			if err := updateEndpoint(linodeChanges, zoneID, zone, records, ep); err != nil {
 				return err
-			}
-
-			matchedRecordsByTarget := make(map[string]linodego.DomainRecord)
-
-			for _, record := range matchedRecords {
-				matchedRecordsByTarget[record.Target] = record
-			}
-
-			for _, target := range ep.Targets {
-				if record, ok := matchedRecordsByTarget[target]; ok {
-					log.WithFields(log.Fields{
-						logFieldZoneID:     zoneID,
-						logFieldDNSName:    ep.DNSName,
-						logFieldZoneName:   zone.Domain,
-						logFieldRecordType: ep.RecordType,
-						logFieldTarget:     target,
-					}).Warn("Updating Existing Target")
-
-					linodeUpdates = append(linodeUpdates, LinodeChangeUpdate{
-						Domain:       zone,
-						DomainRecord: record,
-						Options: linodego.DomainRecordUpdateOptions{
-							Target:   target,
-							Name:     getStrippedRecordName(zone, ep),
-							Type:     recordType,
-							Weight:   getWeight(recordType),
-							Port:     getPort(),
-							Priority: getPriority(),
-							TTLSec:   int(ep.RecordTTL),
-						},
-					})
-
-					delete(matchedRecordsByTarget, target)
-				} else {
-					// Record did not previously exist, create new 'target'
-					log.WithFields(log.Fields{
-						logFieldZoneID:     zoneID,
-						logFieldDNSName:    ep.DNSName,
-						logFieldZoneName:   zone.Domain,
-						logFieldRecordType: ep.RecordType,
-						logFieldTarget:     target,
-					}).Warn("Creating New Target")
-
-					linodeCreates = append(linodeCreates, LinodeChangeCreate{
-						Domain: zone,
-						Options: linodego.DomainRecordCreateOptions{
-							Target:   target,
-							Name:     getStrippedRecordName(zone, ep),
-							Type:     recordType,
-							Weight:   getWeight(recordType),
-							Port:     getPort(),
-							Priority: getPriority(),
-							TTLSec:   int(ep.RecordTTL),
-						},
-					})
-				}
-			}
-
-			// Any remaining records have been removed, delete them
-			for _, record := range matchedRecordsByTarget {
-				log.WithFields(log.Fields{
-					logFieldZoneID:     zoneID,
-					logFieldDNSName:    ep.DNSName,
-					logFieldZoneName:   zone.Domain,
-					logFieldRecordType: ep.RecordType,
-					logFieldTarget:     record.Target,
-				}).Warn("Deleting Target")
-
-				linodeDeletes = append(linodeDeletes, LinodeChangeDelete{
-					Domain:       zone,
-					DomainRecord: record,
-				})
 			}
 		}
 	}
 
-	// Generate Deletes
+	return nil
+}
+
+// updateEndpoint adds the LinodeChangeUpdate, LinodeChangeCreate and
+// LinodeChangeDelete entries for a single updated endpoint.
+func updateEndpoint(linodeChanges *LinodeChanges, zoneID string, zone linodego.Domain, records []linodego.DomainRecord, ep endpoint.Endpoint) error {
+	matchedRecords := getRecordID(records, zone, ep)
+
+	if len(matchedRecords) == 0 {
+		log.WithFields(log.Fields{
+			logFieldZoneID:     zoneID,
+			logFieldDNSName:    ep.DNSName,
+			logFieldZoneName:   zone.Domain,
+			logFieldRecordType: ep.RecordType,
+		}).Warn("Update Records not found.")
+	}
+
+	recordType, err := convertRecordType(ep.RecordType)
+	if err != nil {
+		return err
+	}
+
+	matchedRecordsByTarget := make(map[string]linodego.DomainRecord)
+
+	for _, record := range matchedRecords {
+		matchedRecordsByTarget[record.Target] = record
+	}
+
+	endpointTargetChanges(linodeChanges, zoneID, zone, recordType, ep, matchedRecordsByTarget)
+
+	// Any remaining records have been removed, delete them
+	for _, record := range matchedRecordsByTarget {
+		log.WithFields(log.Fields{
+			logFieldZoneID:     zoneID,
+			logFieldDNSName:    ep.DNSName,
+			logFieldZoneName:   zone.Domain,
+			logFieldRecordType: ep.RecordType,
+			logFieldTarget:     record.Target,
+		}).Warn("Deleting Target")
+
+		linodeChanges.Deletes = append(linodeChanges.Deletes, LinodeChangeDelete{
+			Domain:       zone,
+			DomainRecord: record,
+		})
+	}
+
+	return nil
+}
+
+// endpointTargetChanges adds the LinodeChangeUpdate entries for the targets
+// that already exist and the LinodeChangeCreate entries for the new targets,
+// removing the handled records from matchedRecordsByTarget.
+func endpointTargetChanges(linodeChanges *LinodeChanges, zoneID string, zone linodego.Domain, recordType linodego.DomainRecordType, ep endpoint.Endpoint, matchedRecordsByTarget map[string]linodego.DomainRecord) {
+	for _, target := range ep.Targets {
+		if record, ok := matchedRecordsByTarget[target]; ok {
+			log.WithFields(log.Fields{
+				logFieldZoneID:     zoneID,
+				logFieldDNSName:    ep.DNSName,
+				logFieldZoneName:   zone.Domain,
+				logFieldRecordType: ep.RecordType,
+				logFieldTarget:     target,
+			}).Warn("Updating Existing Target")
+
+			linodeChanges.Updates = append(linodeChanges.Updates, LinodeChangeUpdate{
+				Domain:       zone,
+				DomainRecord: record,
+				Options: linodego.DomainRecordUpdateOptions{
+					Target:   target,
+					Name:     getStrippedRecordName(zone, ep),
+					Type:     recordType,
+					Weight:   getWeight(recordType),
+					Port:     getPort(),
+					Priority: getPriority(),
+					TTLSec:   int(ep.RecordTTL),
+				},
+			})
+
+			delete(matchedRecordsByTarget, target)
+		} else {
+			// Record did not previously exist, create new 'target'
+			log.WithFields(log.Fields{
+				logFieldZoneID:     zoneID,
+				logFieldDNSName:    ep.DNSName,
+				logFieldZoneName:   zone.Domain,
+				logFieldRecordType: ep.RecordType,
+				logFieldTarget:     target,
+			}).Warn("Creating New Target")
+
+			linodeChanges.Creates = append(linodeChanges.Creates, LinodeChangeCreate{
+				Domain: zone,
+				Options: linodego.DomainRecordCreateOptions{
+					Target:   target,
+					Name:     getStrippedRecordName(zone, ep),
+					Type:     recordType,
+					Weight:   getWeight(recordType),
+					Port:     getPort(),
+					Priority: getPriority(),
+					TTLSec:   int(ep.RecordTTL),
+				},
+			})
+		}
+	}
+}
+
+// generateDeletes adds the LinodeChangeDelete entries for the deleted endpoints.
+func generateDeletes(linodeChanges *LinodeChanges, zonesByID map[string]linodego.Domain, recordsByZoneID map[string][]linodego.DomainRecord, deletesByZone map[string][]endpoint.Endpoint) error {
 	for zoneID, deletes := range deletesByZone {
 		zone := zonesByID[zoneID]
 
@@ -484,31 +536,32 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		records := recordsByZoneID[zoneID]
 
 		for _, ep := range deletes {
-			matchedRecords := getRecordID(records, zone, ep)
-
-			if len(matchedRecords) == 0 {
-				log.WithFields(log.Fields{
-					logFieldZoneID:     zoneID,
-					logFieldDNSName:    ep.DNSName,
-					logFieldZoneName:   zone.Domain,
-					logFieldRecordType: ep.RecordType,
-				}).Warn("Records to Delete not found.")
-			}
-
-			for _, record := range matchedRecords {
-				linodeDeletes = append(linodeDeletes, LinodeChangeDelete{
-					Domain:       zone,
-					DomainRecord: record,
-				})
-			}
+			deleteEndpoint(linodeChanges, zoneID, zone, records, ep)
 		}
 	}
 
-	return p.submitChanges(ctx, LinodeChanges{
-		Creates: linodeCreates,
-		Deletes: linodeDeletes,
-		Updates: linodeUpdates,
-	})
+	return nil
+}
+
+// deleteEndpoint adds the LinodeChangeDelete entries for a single endpoint.
+func deleteEndpoint(linodeChanges *LinodeChanges, zoneID string, zone linodego.Domain, records []linodego.DomainRecord, ep endpoint.Endpoint) {
+	matchedRecords := getRecordID(records, zone, ep)
+
+	if len(matchedRecords) == 0 {
+		log.WithFields(log.Fields{
+			logFieldZoneID:     zoneID,
+			logFieldDNSName:    ep.DNSName,
+			logFieldZoneName:   zone.Domain,
+			logFieldRecordType: ep.RecordType,
+		}).Warn("Records to Delete not found.")
+	}
+
+	for _, record := range matchedRecords {
+		linodeChanges.Deletes = append(linodeChanges.Deletes, LinodeChangeDelete{
+			Domain:       zone,
+			DomainRecord: record,
+		})
+	}
 }
 
 func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]endpoint.Endpoint {

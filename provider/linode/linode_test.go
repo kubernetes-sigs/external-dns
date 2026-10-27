@@ -539,3 +539,49 @@ func TestLinodeApplyChangesNoChanges(t *testing.T) {
 
 	mockDomainClient.AssertExpectations(t)
 }
+
+func TestLinodeApplyChangesUnsupportedRecordType(t *testing.T) {
+	mockDomainClient := MockDomainClient{}
+
+	provider := &LinodeProvider{
+		Client:       &mockDomainClient,
+		domainFilter: endpoint.NewDomainFilter([]string{}),
+		DryRun:       false,
+	}
+
+	mockDomainClient.On(
+		"ListDomains",
+		mock.Anything,
+		mock.Anything,
+	).Return(createZones(), nil).Once()
+
+	mockDomainClient.On(
+		"ListDomainRecords",
+		mock.Anything,
+		1,
+		mock.Anything,
+	).Return([]linodego.DomainRecord{}, nil).Once()
+	mockDomainClient.On(
+		"ListDomainRecords",
+		mock.Anything,
+		2,
+		mock.Anything,
+	).Return([]linodego.DomainRecord{}, nil).Once()
+	mockDomainClient.On(
+		"ListDomainRecords",
+		mock.Anything,
+		3,
+		mock.Anything,
+	).Return([]linodego.DomainRecord{}, nil).Once()
+
+	err := provider.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{{
+			DNSName:    "foo.com",
+			RecordType: "MX",
+			Targets:    []string{"10 mail.foo.com"},
+		}},
+	})
+	require.EqualError(t, err, "invalid Record Type: MX")
+
+	mockDomainClient.AssertExpectations(t)
+}
