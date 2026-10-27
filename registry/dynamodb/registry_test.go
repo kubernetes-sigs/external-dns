@@ -259,6 +259,32 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
+func TestDynamoDBRegistryRecordsUsesFreshCache(t *testing.T) {
+	api, p := newDynamoDBAPIStub(t, nil)
+
+	ctx := t.Context()
+	r, _ := newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
+
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	// Seed a new record directly in the DNS provider, bypassing the registry,
+	// so that a non-cached read would return it.
+	rawProvider := p.(*wrappedProvider).Provider
+	require.NoError(t, rawProvider.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("cached-out.test-zone.example.org", endpoint.RecordTypeA, "9.9.9.9"),
+		},
+	}))
+
+	cached, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	// Within the cache interval the second read must return the cached records
+	// and must not see the newly seeded record.
+	assert.True(t, testutils.SameEndpoints(records, cached))
+}
+
 func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	for _, tc := range []struct {
 		name            string

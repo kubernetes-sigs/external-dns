@@ -139,15 +139,13 @@ func (im *DynamoDBRegistry) OwnerID() string {
 func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
-	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
+	if cached, ok := im.cachedRecords(); ok {
 		log.Debug("Using cached records.")
-		return im.recordsCache, nil
+		return cached, nil
 	}
 
-	if im.labels == nil {
-		if err := im.readLabels(ctx); err != nil {
-			return nil, err
-		}
+	if err := im.ensureLabels(ctx); err != nil {
+		return nil, err
 	}
 
 	records, err := im.provider.Records(ctx)
@@ -156,6 +154,40 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	}
 
 	orphanedLabels := sets.NewFromMapKeys(im.labels)
+	endpoints, labelMap, txtRecordsMap := im.indexRecords(records, orphanedLabels)
+	im.orphanedLabels = orphanedLabels
+
+	// Migrate label data from TXT registry.
+	if len(labelMap) > 0 {
+		im.migrateTXTLabels(endpoints, labelMap, txtRecordsMap)
+	}
+
+	endpoints = im.collectTXTRecords(endpoints, txtRecordsMap)
+
+	im.refreshRecordsCache(endpoints)
+
+	return endpoints, nil
+}
+
+// cachedRecords returns the cached records if they are still fresh.
+func (im *DynamoDBRegistry) cachedRecords() ([]*endpoint.Endpoint, bool) {
+	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
+		return im.recordsCache, true
+	}
+	return nil, false
+}
+
+// ensureLabels loads the labels from the registry if they have not been loaded yet.
+func (im *DynamoDBRegistry) ensureLabels(ctx context.Context) error {
+	if im.labels == nil {
+		return im.readLabels(ctx)
+	}
+	return nil
+}
+
+// indexRecords assigns labels to the provider records, separating the plain
+// endpoints from the TXT registry ownership records.
+func (im *DynamoDBRegistry) indexRecords(records []*endpoint.Endpoint, orphanedLabels sets.Set[endpoint.EndpointKey]) ([]*endpoint.Endpoint, map[endpoint.EndpointKey]endpoint.Labels, map[endpoint.EndpointKey]*endpoint.Endpoint) {
 	endpoints := make([]*endpoint.Endpoint, 0, len(records))
 	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
 	txtRecordsMap := map[endpoint.EndpointKey]*endpoint.Endpoint{}
@@ -167,57 +199,81 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		} else {
 			record.Labels = endpoint.NewLabels()
 
-			if record.RecordType == endpoint.RecordTypeTXT {
-				// We simply assume that TXT records for the TXT registry will always have only one target.
-				if labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey); err == nil {
-					endpointName, recordType := im.mapper.ToEndpointName(record.DNSName)
-					key := endpoint.EndpointKey{
-						DNSName:       endpointName,
-						SetIdentifier: record.SetIdentifier,
-					}
-					if recordType == endpoint.RecordTypeAAAA {
-						key.RecordType = recordType
-					}
-					labelMap[key] = labels
-					txtRecordsMap[key] = record
-					continue
-				}
+			if key, labels, ok := im.parseTXTRegistryRecord(record); ok {
+				labelMap[key] = labels
+				txtRecordsMap[key] = record
+				continue
 			}
 		}
 
 		endpoints = append(endpoints, record)
 	}
+	return endpoints, labelMap, txtRecordsMap
+}
 
-	im.orphanedLabels = orphanedLabels
+// parseTXTRegistryRecord extracts the labels carried by an unlabeled TXT
+// registry record. It returns the owning endpoint key and the labels, or
+// false when the record does not carry valid registry labels.
+func (im *DynamoDBRegistry) parseTXTRegistryRecord(record *endpoint.Endpoint) (endpoint.EndpointKey, endpoint.Labels, bool) {
+	if record.RecordType != endpoint.RecordTypeTXT {
+		return endpoint.EndpointKey{}, nil, false
+	}
+	// We simply assume that TXT records for the TXT registry will always have only one target.
+	labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
+	if err != nil {
+		return endpoint.EndpointKey{}, nil, false
+	}
+	endpointName, recordType := im.mapper.ToEndpointName(record.DNSName)
+	key := endpoint.EndpointKey{
+		DNSName:       endpointName,
+		SetIdentifier: record.SetIdentifier,
+	}
+	if recordType == endpoint.RecordTypeAAAA {
+		key.RecordType = recordType
+	}
+	return key, labels, true
+}
 
-	// Migrate label data from TXT registry.
-	if len(labelMap) > 0 {
-		for _, ep := range endpoints {
-			if _, ok := im.labels[ep.Key()]; ok {
-				continue
-			}
+// endpointKeyFromDNSName builds the endpoint key for an endpoint, replacing a
+// leading asterisk with the configured wildcard replacement and keeping the
+// record type for AAAA endpoints.
+func (im *DynamoDBRegistry) endpointKeyFromDNSName(ep *endpoint.Endpoint) endpoint.EndpointKey {
+	dnsNameSplit := strings.Split(ep.DNSName, ".")
+	// If specified, replace a leading asterisk in the generated txt record name with some other string
+	if im.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
+		dnsNameSplit[0] = im.wildcardReplacement
+	}
+	dnsName := strings.Join(dnsNameSplit, ".")
+	key := endpoint.EndpointKey{
+		DNSName:       dnsName,
+		SetIdentifier: ep.SetIdentifier,
+	}
+	if ep.RecordType == endpoint.RecordTypeAAAA {
+		key.RecordType = ep.RecordType
+	}
+	return key
+}
 
-			dnsNameSplit := strings.Split(ep.DNSName, ".")
-			// If specified, replace a leading asterisk in the generated txt record name with some other string
-			if im.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
-				dnsNameSplit[0] = im.wildcardReplacement
-			}
-			dnsName := strings.Join(dnsNameSplit, ".")
-			key := endpoint.EndpointKey{
-				DNSName:       dnsName,
-				SetIdentifier: ep.SetIdentifier,
-			}
-			if ep.RecordType == endpoint.RecordTypeAAAA {
-				key.RecordType = ep.RecordType
-			}
-			if labels, ok := labelMap[key]; ok {
-				maps.Copy(ep.Labels, labels)
-				ep.SetProviderSpecificProperty(dynamodbAttributeMigrate, "true")
-				delete(txtRecordsMap, key)
-			}
+// migrateTXTLabels copies label data from the parsed TXT registry records to
+// the matching endpoints and removes the migrated records from txtRecords.
+func (im *DynamoDBRegistry) migrateTXTLabels(endpoints []*endpoint.Endpoint, labelMap map[endpoint.EndpointKey]endpoint.Labels, txtRecords map[endpoint.EndpointKey]*endpoint.Endpoint) {
+	for _, ep := range endpoints {
+		if _, ok := im.labels[ep.Key()]; ok {
+			continue
+		}
+
+		key := im.endpointKeyFromDNSName(ep)
+		if labels, ok := labelMap[key]; ok {
+			maps.Copy(ep.Labels, labels)
+			ep.SetProviderSpecificProperty(dynamodbAttributeMigrate, "true")
+			delete(txtRecords, key)
 		}
 	}
+}
 
+// collectTXTRecords adds the TXT ownership records to the endpoints, marking
+// them with the owner ID.
+func (im *DynamoDBRegistry) collectTXTRecords(endpoints []*endpoint.Endpoint, txtRecordsMap map[endpoint.EndpointKey]*endpoint.Endpoint) []*endpoint.Endpoint {
 	// Remove any unused TXT ownership records owned by us
 	if len(txtRecordsMap) > 0 && !plan.IsManagedRecord(endpoint.RecordTypeTXT, im.managedRecordTypes, im.excludeRecordTypes) {
 		log.Infof("Old TXT ownership records will not be deleted because \"TXT\" is not in the set of managed record types.")
@@ -226,14 +282,15 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		record.Labels[endpoint.OwnerLabelKey] = im.ownerID
 		endpoints = append(endpoints, record)
 	}
+	return endpoints
+}
 
-	// Update the cache.
+// refreshRecordsCache stores the endpoints in the records cache.
+func (im *DynamoDBRegistry) refreshRecordsCache(endpoints []*endpoint.Endpoint) {
 	if im.cacheInterval > 0 {
 		im.recordsCache = endpoints
 		im.recordsCacheRefreshTime = time.Now()
 	}
-
-	return endpoints, nil
 }
 
 // ApplyChanges updates the DNS provider and DynamoDB table with the changes.
