@@ -177,6 +177,7 @@ func NewGlooSource(
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	cfg *Config) (Source, error) {
+	log.Warn("The gloo-proxy source is deprecated and will be removed after Gloo OSS end of life (2026-12-31). Migrate to kgateway with the gateway-* sources.")
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()
