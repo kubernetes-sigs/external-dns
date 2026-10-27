@@ -45,6 +45,11 @@ subjects:
 Cluster-scoped resources still need a `ClusterRoleBinding`, for example nodes for the
 `service` source with `NodePort` services.
 
+## Referenced Objects
+
+Objects referenced across namespaces are only found when their namespace is watched.
+For instance, with Istio sources, you may want to watch the ingress gateway namespace (often `istio-system`).
+
 ## Cost
 
 Each source opens one watch per namespace for each resource type it reads. Watching
