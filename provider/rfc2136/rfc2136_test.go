@@ -902,6 +902,36 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 
 }
 
+func TestRfc2136ApplyChangesAllFilteredSendsNothing(t *testing.T) {
+	stub := newStub()
+	provider, err := createRfc2136StubProviderWithZonesFilters(stub)
+	require.NoError(t, err)
+
+	p := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "filtered-out.foo.bar",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:    "filtered-out.foo.bar",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+			},
+		},
+	}
+
+	err = provider.ApplyChanges(t.Context(), p)
+	require.NoError(t, err)
+
+	assert.Empty(t, stub.createMsgs)
+	assert.Empty(t, stub.updateMsgs)
+}
+
 func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	stub := newStub()
 
