@@ -1666,7 +1666,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		kClient := fake.NewClientset(svc)
 		gs := newSource(t, kClient, istiofake.NewSimpleClientset())
 
-		retrieved, err := gs.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+		retrieved, err := informerFor(t, gs.serviceInformers, svc.Namespace).Lister().Services(svc.Namespace).Get(svc.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, svc.Name, retrieved.Name)
@@ -1703,7 +1703,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		kClient := fake.NewClientset(ingress)
 		gs := newSource(t, kClient, istiofake.NewSimpleClientset())
 
-		retrieved, err := gs.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+		retrieved, err := informerFor(t, gs.ingressInformers, ingress.Namespace).Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, ingress.Name, retrieved.Name)
@@ -1735,7 +1735,7 @@ func TestTransformerInIstioGatewaySource(t *testing.T) {
 		require.NoError(t, err)
 		gs := newSource(t, fake.NewClientset(), istioClient)
 
-		retrieved, err := gs.gatewayInformer.Lister().Gateways(gw.Namespace).Get(gw.Name)
+		retrieved, err := informerFor(t, gs.gatewayInformers, gw.Namespace).Lister().Gateways(gw.Namespace).Get(gw.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, gw.Name, retrieved.Name)
@@ -2001,4 +2001,48 @@ func (c fakeGatewayConfig) Config() *networkingv1.Gateway {
 	gw.Spec.Servers = servers
 
 	return gw
+}
+
+func TestIstioGatewaySourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	selector := map[string]string{"istio": "ingressgateway"}
+	kubeClient := fake.NewClientset(&v1.Service{
+		Namespace: "team-a",
+		Name:      "ingressgateway",
+		Spec:      v1.ServiceSpec{Selector: selector},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{Ingress: []v1.LoadBalancerIngress{{IP: "1.2.3.4"}}},
+		},
+	})
+
+	istioClient := istiofake.NewSimpleClientset()
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		_, err := istioClient.NetworkingV1().Gateways(namespace).Create(t.Context(), &networkingv1.Gateway{
+			Namespace: namespace,
+			Name:      "gw",
+			Spec: istionetworking.Gateway{
+				Selector: selector,
+				Servers:  []*istionetworking.Server{{Hosts: []string{namespace + ".example.org"}}},
+			},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	// The team-b gateway resolves its selector against services in every watched namespace.
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "1.2.3.4").
+			WithLabel(endpoint.ResourceLabelKey, "gateway/team-a/gw"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "1.2.3.4").
+			WithLabel(endpoint.ResourceLabelKey, "gateway/team-b/gw"),
+	})
 }

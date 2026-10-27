@@ -28,6 +28,7 @@ import (
 	networkingv1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -56,17 +57,16 @@ var IstioGatewayIngressSource = annotations.Ingress
 // +externaldns:source:description=Creates DNS entries from Istio Gateway resources
 // +externaldns:source:resources=Gateway.networking.istio.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type gatewaySource struct {
-	namespace                string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	serviceInformer          coreinformers.ServiceInformer
-	gatewayInformer          networkingv1informer.GatewayInformer
-	ingressInformer          netinformers.IngressInformer
+	serviceInformers         *informers.Informers[coreinformers.ServiceInformer]
+	gatewayInformers         *informers.Informers[networkingv1informer.GatewayInformer]
+	ingressInformers         *informers.Informers[netinformers.IngressInformer]
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -78,64 +78,71 @@ func NewIstioGatewaySource(
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	namespace := cfg.Namespace()
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
-	gatewayInformer := istioInformerFactory.Networking().V1().Gateways()
-	ingressInformer := informerFactory.Networking().V1().Ingresses()
+	kubeFactories := informers.NewFactories(cfg.Namespaces, func(namespace string) kubeinformers.SharedInformerFactory {
+		return kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	})
+	istioFactories := informers.NewFactories(cfg.Namespaces, func(namespace string) istioinformers.SharedInformerFactory {
+		return istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
+	})
+	serviceInformers := informers.Map(kubeFactories, func(_ string, factory kubeinformers.SharedInformerFactory) coreinformers.ServiceInformer {
+		return factory.Core().V1().Services()
+	})
+	gatewayInformers := informers.Map(istioFactories, func(_ string, factory istioinformers.SharedInformerFactory) networkingv1informer.GatewayInformer {
+		return factory.Networking().V1().Gateways()
+	})
+	ingressInformers := informers.Map(kubeFactories, func(_ string, factory kubeinformers.SharedInformerFactory) netinformers.IngressInformer {
+		return factory.Networking().V1().Ingresses()
+	})
 
-	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*corev1.Service](
+	serviceInformers.MustSetTransform(informers.TransformerWithOptions[*corev1.Service](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
-	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+	ingressInformers.MustSetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
-	informers.MustSetTransform(gatewayInformer.Informer(), informers.TransformerWithOptions[*networkingv1.Gateway](
+	gatewayInformers.MustSetTransform(informers.TransformerWithOptions[*networkingv1.Gateway](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
-	informers.MustAddIndexers(gatewayInformer.Informer(), informers.IndexerWithOptions[*networkingv1.Gateway](
+	gatewayInformers.MustAddIndexers(informers.IndexerWithOptions[*networkingv1.Gateway](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.Gateway]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
-	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
-	informers.MustAddEventHandler(gatewayInformer.Informer(), informers.DefaultEventHandler())
+	serviceInformers.MustAddEventHandler(informers.DefaultEventHandler())
+	ingressInformers.MustAddEventHandler(informers.DefaultEventHandler())
+	gatewayInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
-	istioInformerFactory.Start(ctx.Done())
+	kubeFactories.Start(ctx.Done())
+	istioFactories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, kubeFactories); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSyncAll(ctx, istioFactories); err != nil {
 		return nil, err
 	}
 
 	return &gatewaySource{
-		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		serviceInformer:          serviceInformer,
-		gatewayInformer:          gatewayInformer,
-		ingressInformer:          ingressInformer,
+		serviceInformers:         serviceInformers,
+		gatewayInformers:         gatewayInformers,
+		ingressInformers:         ingressInformers,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	indexer := sc.gatewayInformer.Informer().GetIndexer()
-	objs := informers.ListIndexed[*networkingv1.Gateway](indexer)
+	objs := informers.ListIndexedAll[*networkingv1.Gateway](sc.gatewayInformers.Indexers()...)
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
@@ -181,7 +188,16 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 func (sc *gatewaySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
-	informers.MustAddEventHandler(sc.gatewayInformer.Informer(), eventHandlerFunc(handler))
+	sc.gatewayInformers.MustAddEventHandler(eventHandlerFunc(handler))
+}
+
+// getIngress returns NotFound for an unwatched namespace, as a namespaced lister does.
+func getIngress(ingressInformers *informers.Informers[netinformers.IngressInformer], namespace, name string) (*networkv1.Ingress, error) {
+	ingressInformer, ok := ingressInformers.For(namespace)
+	if !ok {
+		return nil, errors.NewNotFound(networkv1.Resource("ingresses"), name)
+	}
+	return ingressInformer.Lister().Ingresses(namespace).Get(name)
 }
 
 func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
@@ -195,7 +211,7 @@ func (sc *gatewaySource) targetsFromIngress(ingressStr string, gateway *networki
 
 	targets := make(endpoint.Targets, 0)
 
-	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
+	ingress, err := getIngress(sc.ingressInformers, namespace, name)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -221,7 +237,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endp
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
-	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	return endpointTargetsFromServiceInformers(sc.serviceInformers, gateway.Spec.Selector)
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
