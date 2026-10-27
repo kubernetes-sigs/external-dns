@@ -1191,9 +1191,6 @@ func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 	suite.False(changes.HasChanges())
 }
 
-// TestResourceLabelMovesToRemainingSource verifies that when multiple sources
-// claim the same name+target and one of them disappears, the resource label
-// is updated to the remaining source.
 func (suite *PlanTestSuite) TestResourceLabelMovesToRemainingSource() {
 	current := &endpoint.Endpoint{
 		DNSName:    "app.example.com",
@@ -1240,8 +1237,6 @@ func (suite *PlanTestSuite) TestResourceLabelMovesToRemainingSource() {
 	validateEntries(suite.T(), changes.Delete, nil)
 }
 
-// TestResourceLabelNoChurnWhenBothSourcesPresent verifies that no update is
-// emitted when the current resource label still matches one of the candidates.
 func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenBothSourcesPresent() {
 	current := &endpoint.Endpoint{
 		DNSName:    "app.example.com",
@@ -1283,9 +1278,7 @@ func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenBothSourcesPresent() {
 	suite.False(changes.HasChanges())
 }
 
-// TestResourceLabelNoChurnWhenCurrentHasNoLabels verifies that a current
-// record with empty labels (typical of the noop registry) does not produce
-// perpetual updates when OwnerID is also empty.
+// verifies that the NoopRegistry does not trigger updates for missing resource labels when OwnerID is empty.
 func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenCurrentHasNoLabels() {
 	current := &endpoint.Endpoint{
 		DNSName:    "app.example.com",
