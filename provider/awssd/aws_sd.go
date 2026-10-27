@@ -374,7 +374,7 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				needsUpdate := false
 
 				if ch.RecordTTL.IsConfigured() && srv.DnsConfig != nil &&
-    				len(srv.DnsConfig.DnsRecords) > 0 {
+					len(srv.DnsConfig.DnsRecords) > 0 {
 					for _, record := range srv.DnsConfig.DnsRecords {
 						if record.TTL == nil || *record.TTL != int64(ch.RecordTTL) {
 							needsUpdate = true
@@ -385,7 +385,7 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 
 				// Description holds owner/resource labels for the aws-sd registry.
 				// Without this, a resource-label-only change never calls UpdateService
-				// and RegisterInstance churns every sync.
+				// churns every sync.
 				if aws.ToString(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
 					needsUpdate = true
 				}

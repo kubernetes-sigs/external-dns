@@ -1949,3 +1949,92 @@ func TestAWSSDProvider_Records_FailedReadKeepsRecordTypeSnapshot(t *testing.T) {
 	require.NoError(t, err)
 	logtest.TestHelperLogContainsWithLogLevel("has record types [A] but desired types are [A AAAA]", log.WarnLevel, logs, t)
 }
+
+// Verifies that changes to TTL or endpoint.AWSSDDescriptionLabel trigger
+// UpdateService, while changes to neither field do not cause unnecessary updates.
+func TestAWSSDProvider_ResourceLabelNoChurn(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}
+
+	p := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"owner",
+	)
+
+	const descA = "heritage=external-dns,external-dns/owner=owner,external-dns/resource=service/default/a"
+	const descB = "heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/b"
+
+	createEP := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		RecordTTL:  300,
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: descA,
+		},
+	}
+
+	desired := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		RecordTTL:  300,
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: descB,
+		},
+	}
+
+	ctx := t.Context()
+
+	// Round 1: create the service with the original description.
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{createEP},
+	}))
+
+	current, err := p.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	assert.Equal(t, descA, current[0].Labels[endpoint.AWSSDDescriptionLabel])
+
+	// Round 2: submit an update when endpoint.AWSSDDescriptionLabel changes
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{desired},
+		UpdateOld: current,
+	}))
+
+	current, err = p.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	assert.Equal(t, descB, current[0].Labels[endpoint.AWSSDDescriptionLabel],
+		"Description must be persisted by UpdateService")
+
+	// Round 3: verify the updated state is stable and produces no planned
+	// changes on the next reconciliation.
+	current, err = p.Records(ctx)
+	require.NoError(t, err)
+
+	pl := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA},
+	}
+
+	changes := pl.Calculate().Changes
+	assert.Empty(t, changes.UpdateNew, "resource label must not trigger repeated updates")
+	assert.Empty(t, changes.Create, "resource label must not trigger repeated creates")
+	assert.Empty(t, changes.Delete, "resource label must not trigger repeated deletes")
+}

@@ -338,8 +338,7 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 
 	// NoopRegistry records lack resource labels, so ignore missing current labels to avoid perpetual updates.
 	// When both labels exist, detect changes to preserve correct delete attribution (#6766).
-	if clb, ulb := current.Labels[endpoint.ResourceLabelKey], desired.Labels[endpoint.ResourceLabelKey]; 
-		clb != "" && ulb != "" && clb != ulb {
+	if clb, ulb := current.Labels[endpoint.ResourceLabelKey], desired.Labels[endpoint.ResourceLabelKey]; clb != "" && ulb != "" && clb != ulb {
 		return true
 	}
 
