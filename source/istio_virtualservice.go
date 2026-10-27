@@ -320,50 +320,65 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 // checks if the given VirtualService should actually bind to the given gateway
 // see requirements here: https://istio.io/docs/reference/config/networking/gateway/#Server
 func virtualServiceBindsToGateway(vService *networkingv1.VirtualService, gateway *networkingv1.Gateway, vsHost string) bool {
-	isValid := false
-	if len(vService.Spec.ExportTo) == 0 {
-		isValid = true
-	} else {
-		for _, ns := range vService.Spec.ExportTo {
-			if ns == "*" || ns == gateway.Namespace || (ns == "." && gateway.Namespace == vService.Namespace) {
-				isValid = true
-			}
-		}
-	}
-	if !isValid {
+	if !virtualServiceExportedToNamespace(vService, gateway.Namespace) {
 		return false
 	}
+	return gatewayServerHostMatches(vService, gateway, vsHost)
+}
 
+// Empty exportTo means visible in every namespace.
+func virtualServiceExportedToNamespace(vService *networkingv1.VirtualService, namespace string) bool {
+	if len(vService.Spec.ExportTo) == 0 {
+		return true
+	}
+	for _, ns := range vService.Spec.ExportTo {
+		if ns == "*" || ns == namespace || (ns == "." && namespace == vService.Namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+func gatewayServerHostMatches(vService *networkingv1.VirtualService, gateway *networkingv1.Gateway, vsHost string) bool {
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
-			namespace := "*"
-			parts := strings.Split(host, "/")
-			if len(parts) == 2 {
-				namespace = parts[0]
-				host = parts[1]
-			} else if len(parts) != 1 {
+			namespace, hostPattern, ok := splitGatewayHost(host)
+			if !ok {
 				log.Debugf("Gateway %s/%s has invalid host %s", gateway.Namespace, gateway.Name, host)
 				continue
 			}
-
 			if namespace == "*" || namespace == vService.Namespace || (namespace == "." && vService.Namespace == gateway.Namespace) {
-				if host == "*" {
-					return true
-				}
-
-				suffixMatch := false
-				if strings.HasPrefix(host, "*.") {
-					suffixMatch = true
-				}
-
-				if host == vsHost || (suffixMatch && strings.HasSuffix(vsHost, host[1:])) {
+				if hostPatternMatches(hostPattern, vsHost) {
 					return true
 				}
 			}
 		}
 	}
-
 	return false
+}
+
+// splitGatewayHost splits "namespace/host"; a bare host means "*/host".
+func splitGatewayHost(host string) (string, string, bool) {
+	parts := strings.Split(host, "/")
+	switch len(parts) {
+	case 2:
+		return parts[0], parts[1], true
+	case 1:
+		return "*", host, true
+	default:
+		return "", "", false
+	}
+}
+
+// hostPatternMatches supports exact, "*" and "*.domain" patterns.
+func hostPatternMatches(hostPattern, vsHost string) bool {
+	if hostPattern == "*" {
+		return true
+	}
+
+	suffixMatch := strings.HasPrefix(hostPattern, "*.")
+
+	return hostPattern == vsHost || (suffixMatch && strings.HasSuffix(vsHost, hostPattern[1:]))
 }
 
 func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
