@@ -461,6 +461,7 @@ var multiNamespaceSources = []string{
 	"kong-tcpingress",
 	"node",
 	"openshift-route",
+	"pod",
 	"service",
 	"skipper-routegroup",
 	"traefik-proxy",
