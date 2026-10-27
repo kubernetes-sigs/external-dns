@@ -371,13 +371,10 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				// update a local list of services
 				services[*srv.Name] = srv
 			} else {
-				if srv.DnsConfig == nil || len(srv.DnsConfig.DnsRecords) == 0 {
-					return provider.NewSoftErrorf("service %q has no DNS records to update", srvName)
-				}
-
 				needsUpdate := false
 
-				if ch.RecordTTL.IsConfigured() {
+				if ch.RecordTTL.IsConfigured() && srv.DnsConfig != nil &&
+    				len(srv.DnsConfig.DnsRecords) > 0 {
 					for _, record := range srv.DnsConfig.DnsRecords {
 						if record.TTL == nil || *record.TTL != int64(ch.RecordTTL) {
 							needsUpdate = true
@@ -389,10 +386,7 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				// Description holds owner/resource labels for the aws-sd registry.
 				// Without this, a resource-label-only change never calls UpdateService
 				// and RegisterInstance churns every sync.
-				if resourceLabelChanged(
-					aws.ToString(srv.Description),
-					ch.Labels[endpoint.AWSSDDescriptionLabel],
-				) {
+				if aws.ToString(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
 					needsUpdate = true
 				}
 
@@ -411,21 +405,6 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 	}
 
 	return nil
-}
-
-func resourceLabelChanged(current, desired string) bool {
-	currentLabels, currentErr := endpoint.NewLabelsFromStringPlain(current)
-	desiredLabels, desiredErr := endpoint.NewLabelsFromStringPlain(desired)
-
-	if desiredErr != nil {
-		return false
-	}
-	if currentErr != nil {
-		return true
-	}
-
-	return currentLabels[endpoint.ResourceLabelKey] !=
-		desiredLabels[endpoint.ResourceLabelKey]
 }
 
 func (p *AWSSDProvider) submitDeletes(ctx context.Context, namespaces []*sdtypes.NamespaceSummary, changes []*endpoint.Endpoint) error {
