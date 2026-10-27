@@ -91,6 +91,9 @@ type serviceSource struct {
 
 	// process Services with legacy annotations
 	compatibility string
+
+	// lookupIP resolves load balancer hostnames; swapped in tests so they don't depend on real DNS.
+	lookupIP func(host string) ([]net.IP, error)
 }
 
 // NewServiceSource creates a new serviceSource with the given cfg.
@@ -207,6 +210,7 @@ func NewServiceSource(
 		listenEndpointEvents:           cfg.ListenEndpointEvents,
 		exposeInternalIPv6:             cfg.ExposeInternalIPv6,
 		excludeUnschedulable:           cfg.ExcludeUnschedulable,
+		lookupIP:                       net.LookupIP,
 	}, nil
 }
 
@@ -555,7 +559,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			if useClusterIP {
 				targets = extractServiceIps(svc)
 			} else {
-				targets = extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname)
+				targets = extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname, sc.lookupIP)
 			}
 		case v1.ServiceTypeClusterIP:
 			if svc.Spec.ClusterIP == v1.ClusterIPNone {
@@ -602,7 +606,7 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
-func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
+func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool, lookupIP func(string) ([]net.IP, error)) endpoint.Targets {
 	if len(svc.Spec.ExternalIPs) > 0 {
 		return svc.Spec.ExternalIPs
 	}
@@ -615,7 +619,7 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 		}
 		if lb.Hostname != "" {
 			if resolveLoadBalancerHostname {
-				ips, err := net.LookupIP(lb.Hostname)
+				ips, err := lookupIP(lb.Hostname)
 				if err != nil {
 					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
 					continue

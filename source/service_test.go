@@ -117,12 +117,14 @@ func testServiceSourceImplementsSource(t *testing.T) {
 
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
-	exampleDotComIP4, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip4", "example.com")
-	require.NoError(t, err)
-	exampleDotComIP6, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip6", "example.com")
-	require.NoError(t, err)
-
 	t.Parallel()
+
+	fakeLookupIP := func(host string) ([]net.IP, error) {
+		if host == "example.com" {
+			return []net.IP{net.ParseIP("192.0.2.1"), net.ParseIP("2001:db8::1")}, nil
+		}
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
 
 	for _, tc := range []struct {
 		title                       string
@@ -363,12 +365,12 @@ func testServiceSourceEndpoints(t *testing.T) {
 				annotations.HostnameKey: "foo.example.org.",
 			},
 			externalIPs:                 []string{},
-			lbs:                         []string{"example.com"}, // Use a resolvable hostname for testing.
+			lbs:                         []string{"example.com"},
 			serviceTypesFilter:          []string{},
 			resolveLoadBalancerHostname: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP4)},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP6)},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.0.2.1"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 		},
 		{
@@ -1212,6 +1214,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			)
 
 			require.NoError(t, err)
+			client.(*serviceSource).lookupIP = fakeLookupIP
 
 			res, err := client.Endpoints(t.Context())
 			if tc.expectError {
