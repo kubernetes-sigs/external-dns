@@ -38,7 +38,7 @@ require (
 	github.com/linode/linodego v1.69.1
 	github.com/maxatome/go-testdeep v1.16.0
 	github.com/miekg/dns v1.1.73
-	github.com/openshift/api v0.0.0-20260819011109-af5c920502e2
+	github.com/openshift/api v0.0.0-20261027123455-77c45d1bcab3
 	github.com/openshift/client-go v0.0.0-20260810202730-ddca5e0b7146
 	github.com/oracle/oci-go-sdk/v65 v65.127.0
 	github.com/ovh/go-ovh v1.9.0
