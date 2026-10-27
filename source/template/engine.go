@@ -321,9 +321,8 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 	return splitValues(buf.String()), nil
 }
 
-// ExecUnstructured parses text and executes it against the content of an unstructured object,
-// returning the comma-separated output split, trimmed and de-duplicated like the flag templates.
-// A missing map key is an error, so an absent field cannot silently render empty.
+// ExecUnstructured renders text against an unstructured object's content, split like the flag
+// templates. A missing key is an error, so an absent field cannot render empty.
 func ExecUnstructured(text string, content map[string]any) ([]string, error) {
 	tmpl, err := parseTemplate(text)
 	if err != nil {

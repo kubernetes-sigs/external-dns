@@ -124,6 +124,14 @@ var defaultSpecs = []AnnotationSpec{
 		Documentation: "Comma-separated list of desired hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
+		KeySuffix:        annotations.TargetFromSuffix,
+		SupportedSources: []string{types.Ingress, types.IstioGateway, types.IstioVirtualService},
+		Validators:       []Validator{ValidateTargetFrom},
+		WarnMessage:      "the reference cannot be resolved and the resource gets no record",
+		StrictMessage:    defaultStrictMessage,
+		Documentation:    "Reads the record's targets from another resource: <resource>[.<group>]/[<namespace>/]<name>#<template>. See docs/annotations/annotations.md.",
+	},
+	{
 		KeySuffix:        annotations.InternalHostnameSuffix,
 		SupportedSources: []string{types.Pod, types.Service},
 		Validators:       []Validator{ValidateHostnames},

@@ -330,8 +330,8 @@ are published as CNAME records.
 
 ## external-dns.kubernetes.io/target-from
 
-Reads the record's targets from a field on another resource, for setups where the public
-entry point (load balancer, accelerator, shared gateway) lives in a separate resource's `status`.
+Reads the record's targets from a field on another resource, such as a load balancer,
+accelerator or shared gateway status.
 Supported on `Ingress`, Istio `Gateway` and Istio `VirtualService`.
 
 ```text
@@ -355,15 +355,13 @@ external-dns.kubernetes.io/target-from: "globalaccelerators.aga.k8s.aws/my-accel
 external-dns.kubernetes.io/target-from: "services/lb-ns/shared-lb#{{ range .status.loadBalancer.ingress }}{{ with index . "hostname" }}{{ . }},{{ end }}{{ with index . "ip" }}{{ if isIPv4 . }}{{ . }},{{ end }}{{ end }}{{ end }}"
 ```
 
-The `target` annotation takes precedence. When `target-from` is set, the source's own discovery
-(load balancer status, gateway Services) is never used: if the reference cannot be resolved
-(object or field missing, empty output, a value that is neither an IP nor a hostname, unknown resource,
-missing RBAC), ExternalDNS logs a warning and the resource gets no record.
-Under `--policy=sync` an existing record is then deleted.
+`target` takes precedence. With `target-from`, the source's own discovery is never used:
+an unresolved reference (missing object or field, empty or invalid output, unknown resource, missing RBAC)
+logs a warning and produces no record, so `--policy=sync` deletes an existing one.
 
-ExternalDNS reads referenced resources with its own ServiceAccount. Grant `get`, `list` and `watch`
-on them; with `get` only, records are still resolved but not updated when the referenced resource changes.
-A `Role` in the referenced namespace is enough.
+ExternalDNS reads referenced resources with its own ServiceAccount: grant `get`, `list` and `watch`,
+a `Role` in the referenced namespace is enough. With `get` only, records still resolve on each sync,
+but a change to the referenced resource does not trigger one.
 
 To create records from a resource's fields without a primary source, see the [unstructured source](../sources/unstructured.md).
 
