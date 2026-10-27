@@ -599,11 +599,11 @@ func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endp
 	var changes []ovhChange
 
 	for key := range oldEndpoints {
-		endpoint, ok := newEndpoints[key]
+		e, ok := newEndpoints[key]
 		if !ok {
 			return nil, errors.New("unrecoverable error: couldn't find the matching record in the update.New")
 		}
-		changes = append(changes, p.ovhChangesForUpdatedEndpoint(endpoint, key, zone, existingRecords)...)
+		changes = append(changes, p.ovhChangesForUpdatedEndpoint(e, key, zone, existingRecords)...)
 	}
 
 	return changes, nil
@@ -628,8 +628,7 @@ func recordsMatchingKey(key string, existingRecords []ovhRecord) []ovhRecord {
 	return records
 }
 
-// splitUpdateTargets removes from the record pool every record whose target is kept by
-// the new endpoint and returns the targets that have no matching record to be inserted.
+// splitUpdateTargets drops one record per target it already serves; returns the unused records and the unmatched targets.
 func splitUpdateTargets(targets []string, records []ovhRecord) ([]ovhRecord, []string) {
 	kept := slices.Clone(records)
 	var toInsert []string
@@ -650,28 +649,17 @@ func splitUpdateTargets(targets []string, records []ovhRecord) ([]ovhRecord, []s
 	return kept, toInsert
 }
 
-func endpointRecordTTL(e *endpoint.Endpoint) int64 {
+func (p *OVHProvider) updateChanges(e *endpoint.Endpoint, records []ovhRecord, targets []string) []ovhChange {
+	ttl := int64(defaultTTL)
 	if e.RecordTTL.IsConfigured() {
-		return int64(e.RecordTTL)
+		ttl = int64(e.RecordTTL)
 	}
-	return defaultTTL
-}
 
-func (p *OVHProvider) updateChangesForInsertTargets(e *endpoint.Endpoint, freedRecords []ovhRecord, insertTargets []string) ([]ovhChange, []string, []ovhRecord) {
 	var changes []ovhChange
-	unconvertedTargets := make([]string, 0, len(insertTargets))
-	remainingRecords := slices.Clone(freedRecords)
-
-	for _, target := range insertTargets {
-		if len(remainingRecords) == 0 {
-			unconvertedTargets = append(unconvertedTargets, target)
-			continue
-		}
-
-		record := remainingRecords[0]
-		remainingRecords = slices.Delete(remainingRecords, 0, 1)
-		record.Target = target
-		record.TTL = endpointRecordTTL(e)
+	for i := range records {
+		record := records[i]
+		record.Target = targets[i]
+		record.TTL = ttl
 
 		change := ovhChange{
 			Action:    ovhUpdate,
@@ -680,19 +668,23 @@ func (p *OVHProvider) updateChangesForInsertTargets(e *endpoint.Endpoint, freedR
 		p.formatCNAMETarget(&change)
 		changes = append(changes, change)
 	}
-
-	return changes, unconvertedTargets, remainingRecords
+	return changes
 }
 
-func (p *OVHProvider) createChangesForInsertTargets(e *endpoint.Endpoint, zone string, insertTargets []string) []ovhChange {
+func (p *OVHProvider) createChanges(e *endpoint.Endpoint, zone string, targets []string) []ovhChange {
+	ttl := int64(defaultTTL)
+	if e.RecordTTL.IsConfigured() {
+		ttl = int64(e.RecordTTL)
+	}
+
 	var changes []ovhChange
-	for _, target := range insertTargets {
+	for _, target := range targets {
 		change := ovhChange{
 			Action:    ovhCreate,
 			Zone:      zone,
 			FieldType: e.RecordType,
 			SubDomain: convertDNSNameIntoSubDomain(e.DNSName, zone),
-			TTL:       endpointRecordTTL(e),
+			TTL:       ttl,
 			Target:    target,
 		}
 		p.formatCNAMETarget(&change)
@@ -701,7 +693,7 @@ func (p *OVHProvider) createChangesForInsertTargets(e *endpoint.Endpoint, zone s
 	return changes
 }
 
-func deleteChangesForRecords(records []ovhRecord) []ovhChange {
+func deleteChanges(records []ovhRecord) []ovhChange {
 	var changes []ovhChange
 	for i := range records {
 		changes = append(changes, ovhChange{
@@ -714,9 +706,10 @@ func deleteChangesForRecords(records []ovhRecord) []ovhChange {
 
 func (p *OVHProvider) ovhChangesForUpdatedEndpoint(e *endpoint.Endpoint, key, zone string, existingRecords []ovhRecord) []ovhChange {
 	freedRecords, insertTargets := splitUpdateTargets(e.Targets, recordsMatchingKey(key, existingRecords))
-	changes, unconvertedTargets, remainingRecords := p.updateChangesForInsertTargets(e, freedRecords, insertTargets)
-	changes = append(changes, p.createChangesForInsertTargets(e, zone, unconvertedTargets)...)
-	changes = append(changes, deleteChangesForRecords(remainingRecords)...)
+	n := min(len(freedRecords), len(insertTargets))
+	changes := p.updateChanges(e, freedRecords[:n], insertTargets[:n])
+	changes = append(changes, p.createChanges(e, zone, insertTargets[n:])...)
+	changes = append(changes, deleteChanges(freedRecords[n:])...)
 	return changes
 }
 

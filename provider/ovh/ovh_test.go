@@ -466,15 +466,30 @@ func TestOvhNewChangeUpdate(t *testing.T) {
 			},
 		},
 		{
-			title: "removed target becomes a delete change",
-			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1", "2.2.2.2")},
-			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1")},
+			title: "cname targets get a trailing dot on update and create",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeCNAME, 10, "target1.example.org")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeCNAME, 10, "target2.example.org", "target3.example.org")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "target1.example.org", FieldType: "CNAME", ID: 1, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 10, Target: "target2.example.org.", FieldType: "CNAME", ID: 1, Zone: "example.net", Action: ovhUpdate},
+				{SubDomain: "sub", TTL: 10, Target: "target3.example.org.", FieldType: "CNAME", Zone: "example.net", Action: ovhCreate},
+			},
+		},
+		{
+			title: "more freed records than new targets become an update then deletes",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1", "2.2.2.2", "3.3.3.3")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "9.9.9.9")},
 			existing: []ovhRecord{
 				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
 				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "3.3.3.3", FieldType: "A", ID: 3, Zone: "example.net"},
 			},
 			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 10, Target: "9.9.9.9", FieldType: "A", ID: 1, Zone: "example.net", Action: ovhUpdate},
 				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net", Action: ovhDelete},
+				{SubDomain: "sub", TTL: 10, Target: "3.3.3.3", FieldType: "A", ID: 3, Zone: "example.net", Action: ovhDelete},
 			},
 		},
 		{
