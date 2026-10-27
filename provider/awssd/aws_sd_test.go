@@ -1661,9 +1661,6 @@ func TestAWSSDProvider_ApplyChanges_MissingDNSRecordsReturnsError(t *testing.T) 
 					Targets: endpoint.Targets{
 						"load-balancer.us-east-1.elb.amazonaws.com",
 					},
-					Labels: endpoint.Labels{
-						endpoint.AWSSDDescriptionLabel: "heritage=external-dns,external-dns/owner=external-dns,external-dns/resource=service/default/my-service",
-					},
 				},
 			},
 		},
@@ -1953,8 +1950,17 @@ func TestAWSSDProvider_Records_FailedReadKeepsRecordTypeSnapshot(t *testing.T) {
 	logtest.TestHelperLogContainsWithLogLevel("has record types [A] but desired types are [A AAAA]", log.WarnLevel, logs, t)
 }
 
-// Verifies that changes to TTL or endpoint.AWSSDDescriptionLabel trigger
-// UpdateService, while changes to neither field do not cause unnecessary updates.
+type updateCountingStub struct {
+	*AWSSDClientStub
+	updates int
+}
+
+func (s *updateCountingStub) UpdateService(ctx context.Context, input *sd.UpdateServiceInput, opts ...func(*sd.Options)) (*sd.UpdateServiceOutput, error) {
+	s.updates++
+	return s.AWSSDClientStub.UpdateService(ctx, input, opts...)
+}
+
+// A label-only change must rewrite Description once, then stop calling UpdateService.
 func TestAWSSDProvider_ResourceLabelNoChurn(t *testing.T) {
 	namespaces := map[string]*sdtypes.Namespace{
 		"private": {
@@ -1964,11 +1970,11 @@ func TestAWSSDProvider_ResourceLabelNoChurn(t *testing.T) {
 		},
 	}
 
-	api := &AWSSDClientStub{
+	api := &updateCountingStub{AWSSDClientStub: &AWSSDClientStub{
 		namespaces: namespaces,
 		services:   make(map[string]map[string]*sdtypes.Service),
 		instances:  make(map[string]map[string]*sdtypes.Instance),
-	}
+	}}
 
 	p := newTestAWSSDProvider(
 		api,
@@ -2018,26 +2024,11 @@ func TestAWSSDProvider_ResourceLabelNoChurn(t *testing.T) {
 		UpdateOld: current,
 	}))
 
-	current, err = p.Records(ctx)
-	require.NoError(t, err)
-	require.Len(t, current, 1)
-	assert.Equal(t, descB, current[0].Labels[endpoint.AWSSDDescriptionLabel],
-		"Description must be persisted by UpdateService")
-
-	// Round 3: verify the updated state is stable and produces no planned
-	// changes on the next reconciliation.
-	current, err = p.Records(ctx)
-	require.NoError(t, err)
-
-	pl := &plan.Plan{
-		Policies:       []plan.Policy{&plan.SyncPolicy{}},
-		Current:        current,
-		Desired:        []*endpoint.Endpoint{desired},
-		ManagedRecords: []string{endpoint.RecordTypeA},
-	}
-
-	changes := pl.Calculate().Changes
-	assert.Empty(t, changes.UpdateNew, "resource label must not trigger repeated updates")
-	assert.Empty(t, changes.Create, "resource label must not trigger repeated creates")
-	assert.Empty(t, changes.Delete, "resource label must not trigger repeated deletes")
+	assert.Equal(t, 1, api.updates)
+	// Round 3: Description already matches, so UpdateService must not run again.
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{desired},
+		UpdateOld: current,
+	}))
+	assert.Equal(t, 1, api.updates, "unchanged Description must not call UpdateService")
 }

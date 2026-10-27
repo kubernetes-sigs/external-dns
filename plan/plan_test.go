@@ -1278,13 +1278,12 @@ func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenBothSourcesPresent() {
 	suite.False(changes.HasChanges())
 }
 
-// verifies that the NoopRegistry does not trigger updates for missing resource labels when OwnerID is empty.
+// Records without a resource label (e.g. noop registry) must not update every sync.
 func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenCurrentHasNoLabels() {
 	current := &endpoint.Endpoint{
 		DNSName:    "app.example.com",
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		RecordType: endpoint.RecordTypeA,
-		// no resource label
 	}
 
 	desired := &endpoint.Endpoint{
@@ -1304,6 +1303,33 @@ func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenCurrentHasNoLabels() {
 		OwnerID:        "",
 	}
 
+	changes := p.Calculate().Changes
+	suite.False(changes.HasChanges())
+}
+
+// Pod and gloo-proxy endpoints carry no resource label; that must not update a labelled record.
+func (suite *PlanTestSuite) TestResourceLabelNoChurnWhenDesiredHasNoLabel() {
+	current := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "service/default/a",
+			endpoint.OwnerLabelKey:    "pwner",
+		},
+	}
+	desired := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
+	}
 	changes := p.Calculate().Changes
 	suite.False(changes.HasChanges())
 }

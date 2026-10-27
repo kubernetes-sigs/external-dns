@@ -345,22 +345,13 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 	return false
 }
 
-// isNoopRegistry infers NoopRegistry from the current endpoint: it never stores a resource label.
-func isNoopRegistry(current *endpoint.Endpoint) bool {
-	return current.Labels[endpoint.ResourceLabelKey] == ""
-}
-
-// isSourceWithoutResourceLabel infers a Pod/gloo-proxy style source from the desired
-// endpoint: those sources never set a resource label.
-func isSourceWithoutResourceLabel(desired *endpoint.Endpoint) bool {
-	return desired.Labels[endpoint.ResourceLabelKey] == ""
-}
-
 func resourceChanged(current, desired *endpoint.Endpoint) bool {
-	if isNoopRegistry(current) || isSourceWithoutResourceLabel(desired) {
+	cur, des := current.Labels[endpoint.ResourceLabelKey], desired.Labels[endpoint.ResourceLabelKey]
+
+	if cur == "" || des == "" {
 		return false
 	}
-	return current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey]
+	return cur != des
 }
 
 func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {

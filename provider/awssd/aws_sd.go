@@ -371,25 +371,15 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				// update a local list of services
 				services[*srv.Name] = srv
 			} else {
-				needsUpdate := false
-
-				if ch.RecordTTL.IsConfigured() && srv.DnsConfig != nil &&
-					len(srv.DnsConfig.DnsRecords) > 0 {
-					for _, record := range srv.DnsConfig.DnsRecords {
-						if record.TTL == nil || *record.TTL != int64(ch.RecordTTL) {
-							needsUpdate = true
-							break
-						}
-					}
+				// Description stores the aws-sd registry labels; rewrite it on label-only changes.
+				needsUpdate := aws.ToString(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel]
+				if ch.RecordTTL.IsConfigured() {
+					// No DNS records: let UpdateService return its soft error, as before.
+					needsUpdate = needsUpdate || srv.DnsConfig == nil || len(srv.DnsConfig.DnsRecords) == 0 ||
+						slices.ContainsFunc(srv.DnsConfig.DnsRecords, func(r sdtypes.DnsRecord) bool {
+							return r.TTL == nil || *r.TTL != int64(ch.RecordTTL)
+						})
 				}
-
-				// Description holds owner/resource labels for the aws-sd registry.
-				// Without this, a resource-label-only change never calls UpdateService
-				// churns every sync.
-				if aws.ToString(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
-					needsUpdate = true
-				}
-
 				if needsUpdate {
 					if err = p.UpdateService(ctx, srv, ch); err != nil {
 						return err
