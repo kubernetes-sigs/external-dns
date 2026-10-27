@@ -65,6 +65,7 @@ type virtualServiceSource struct {
 	namespace                string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
+	publishInternal          bool
 	serviceInformer          coreinformers.ServiceInformer
 	vServiceInformer         networkingv1informer.VirtualServiceInformer
 	gatewayInformer          networkingv1informer.GatewayInformer
@@ -133,6 +134,7 @@ func NewIstioVirtualServiceSource(
 		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		publishInternal:          cfg.PublishInternal,
 		serviceInformer:          serviceInformer,
 		vServiceInformer:         virtualServiceInformer,
 		gatewayInformer:          gatewayInformer,
@@ -419,5 +421,5 @@ func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
-	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector, sc.publishInternal)
 }

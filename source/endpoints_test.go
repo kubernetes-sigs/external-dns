@@ -28,12 +28,13 @@ import (
 
 func TestEndpointTargetsFromServices(t *testing.T) {
 	tests := []struct {
-		name      string
-		services  []*corev1.Service
-		namespace string
-		selector  map[string]string
-		expected  endpoint.Targets
-		wantErr   bool
+		name            string
+		services        []*corev1.Service
+		namespace       string
+		selector        map[string]string
+		publishInternal bool
+		expected        endpoint.Targets
+		wantErr         bool
 	}{
 		{
 			name:      "no services",
@@ -132,6 +133,49 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 			namespace: corev1.NamespaceDefault,
 			selector:  map[string]string{"app": "nginx"},
 			expected:  endpoint.Targets{"lb.example.com"},
+		},
+		{
+			name: "matching service with internal targets enabled",
+			services: []*corev1.Service{
+				{
+					Name:      "svc-internal",
+					Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIP:  "10.96.0.10",
+						ClusterIPs: []string{"10.96.0.10", "fd00::10"},
+						Ports: []corev1.ServicePort{
+							{NodePort: 30080},
+							{NodePort: 30081},
+						},
+					},
+				},
+			},
+			namespace:       corev1.NamespaceDefault,
+			selector:        map[string]string{"app": "nginx"},
+			publishInternal: true,
+			expected:        endpoint.Targets{"10.96.0.10", "fd00::10"},
+		},
+		{
+			name: "matching service with internal targets disabled",
+			services: []*corev1.Service{
+				{
+					Name:      "svc-internal",
+					Namespace: corev1.NamespaceDefault,
+					Spec: corev1.ServiceSpec{
+						Selector:   map[string]string{"app": "nginx"},
+						ClusterIP:  "10.96.0.10",
+						ClusterIPs: []string{"10.96.0.10", "fd00::10"},
+						Ports: []corev1.ServicePort{
+							{NodePort: 30080},
+							{NodePort: 30081},
+						},
+					},
+				},
+			},
+			namespace: corev1.NamespaceDefault,
+			selector:  map[string]string{"app": "nginx"},
+			expected:  endpoint.Targets{},
 		},
 		{
 			name: "no matching services",
@@ -295,7 +339,7 @@ func TestEndpointTargetsFromServices(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			result, err := EndpointTargetsFromServices(serviceInformer, tt.namespace, tt.selector)
+			result, err := EndpointTargetsFromServices(serviceInformer, tt.namespace, tt.selector, tt.publishInternal)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
@@ -312,7 +356,7 @@ func TestEndpointTargetsFromServicesWithFixtures(t *testing.T) {
 
 	sel := map[string]string{"app": "nginx", "env": "prod"}
 
-	targets, err := EndpointTargetsFromServices(svcInformer, corev1.NamespaceDefault, sel)
+	targets, err := EndpointTargetsFromServices(svcInformer, corev1.NamespaceDefault, sel, false)
 	require.NoError(t, err)
 	assert.Equal(t, 2, targets.Len())
 }
