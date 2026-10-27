@@ -180,6 +180,31 @@ func TestResolve(t *testing.T) {
 	}
 }
 
+// A CRD installed once the discovery cache is populated resolves on the first
+// reference, not the next sync.
+func TestResolveCRDInstalledLater(t *testing.T) {
+	svc := newObject(serviceGVR, "Service", "apps", "shared-lb", map[string]any{"ip": "10.0.0.1"})
+	ga := newObject(gaGVR, "GlobalAccelerator", "", "accel", map[string]any{"dnsName": "a1.awsglobalaccelerator.com"})
+	_, client := newTestResolver(t, svc, ga)
+	disc := &fakediscovery.FakeDiscovery{Fake: &clienttesting.Fake{Resources: []*metav1.APIResourceList{
+		{GroupVersion: "v1", APIResources: []metav1.APIResource{{Name: "services", Kind: "Service", Namespaced: true}}},
+	}}}
+	r := NewResolver(t.Context(), func() (dynamic.Interface, discovery.DiscoveryInterface, error) {
+		return client, disc, nil
+	})
+
+	_, err := r.Resolve(t.Context(), "apps", "services/shared-lb#{{ .status.ip }}")
+	require.NoError(t, err)
+
+	disc.Resources = append(disc.Resources, &metav1.APIResourceList{
+		GroupVersion: "aga.k8s.aws/v1beta1",
+		APIResources: []metav1.APIResource{{Name: "globalaccelerators", Kind: "GlobalAccelerator"}},
+	})
+	got, err := r.Resolve(t.Context(), "apps", "globalaccelerators.aga.k8s.aws/accel#{{ .status.dnsName }}")
+	require.NoError(t, err)
+	assert.Equal(t, endpoint.Targets{"a1.awsglobalaccelerator.com"}, got)
+}
+
 func TestResolveNilResolver(t *testing.T) {
 	var r *Resolver
 	_, err := r.Resolve(t.Context(), "apps", "services/a#{{ .x }}")
