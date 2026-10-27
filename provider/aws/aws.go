@@ -531,10 +531,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					continue
 				}
 
-				for _, ep := range newEndpointsFromResourceRecordSet(&r) {
-					applyRecordMetadata(&r, ep)
-					endpoints = append(endpoints, ep)
-				}
+				endpoints = append(endpoints, newEndpointsFromResourceRecordSet(&r)...)
 			}
 		}
 	}
@@ -578,10 +575,14 @@ func newEndpointsFromResourceRecordSet(r *route53types.ResourceRecordSet) []*end
 		newEndpoints = append(newEndpoints, ep)
 	}
 
+	for _, ep := range newEndpoints {
+		applyRoutingProperties(r, ep)
+	}
+
 	return newEndpoints
 }
 
-func applyRecordMetadata(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+func applyRoutingProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
 	if r.SetIdentifier != nil {
 		ep.SetIdentifier = *r.SetIdentifier
 		applySetIdentifierProperties(r, ep)
@@ -603,7 +604,7 @@ func applySetIdentifierProperties(r *route53types.ResourceRecordSet, ep *endpoin
 	case r.MultiValueAnswer != nil && *r.MultiValueAnswer:
 		ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
 	case r.GeoLocation != nil:
-		applyGeoLocationProperties(r, ep)
+		applyGeolocationProperties(r, ep)
 	case r.GeoProximityLocation != nil:
 		handleGeoProximityLocationRecord(r, ep)
 	default:
@@ -611,7 +612,8 @@ func applySetIdentifierProperties(r *route53types.ResourceRecordSet, ep *endpoin
 	}
 }
 
-func applyGeoLocationProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+// Route53 rejects ContinentCode combined with CountryCode or SubdivisionCode.
+func applyGeolocationProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
 	if r.GeoLocation.ContinentCode != nil {
 		ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, *r.GeoLocation.ContinentCode)
 	} else {

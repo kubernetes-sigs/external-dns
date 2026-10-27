@@ -642,6 +642,15 @@ func TestAWSRecords(t *testing.T) {
 			Weight:          aws.Int64(20),
 		},
 		{
+			Name:            aws.String("weight-region-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-3"),
+			Weight:          aws.Int64(10),
+			Region:          route53types.ResourceRecordSetRegionUsEast1,
+		},
+		{
 			Name:            aws.String("latency-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeA,
 			TTL:             aws.Int64(defaultTTL),
@@ -664,6 +673,13 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords:  []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
 			SetIdentifier:    aws.String("test-set"),
 			MultiValueAnswer: aws.Bool(true),
+		},
+		{
+			Name:            aws.String("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("bare-set-1"),
 		},
 		{
 			Name:            aws.String("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
@@ -692,6 +708,28 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
 			SetIdentifier:   aws.String("test-set-1"),
 			GeoLocation: &route53types.GeoLocation{
+				SubdivisionCode: aws.String("NY"),
+			},
+		},
+		{
+			Name:            aws.String("geolocation-continent-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoLocation: &route53types.GeoLocation{
+				ContinentCode: aws.String("EU"),
+				CountryCode:   aws.String("DE"),
+			},
+		},
+		{
+			Name:            aws.String("geolocation-country-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-2"),
+			GeoLocation: &route53types.GeoLocation{
+				CountryCode:     aws.String("US"),
 				SubdivisionCode: aws.String("NY"),
 			},
 		},
@@ -785,12 +823,16 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("prefix-*.wildcard.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, endpoint.TTL(defaultTTL), "random"),
 		endpoint.NewEndpointWithTTL("weight-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10"),
 		endpoint.NewEndpointWithTTL("weight-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20"),
+		endpoint.NewEndpointWithTTL("weight-region-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-3").WithProviderSpecific(providerSpecificWeight, "10"),
 		endpoint.NewEndpointWithTTL("latency-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificRegion, "us-east-1"),
 		endpoint.NewEndpointWithTTL("failover-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificFailover, "PRIMARY"),
 		endpoint.NewEndpointWithTTL("multi-value-answer-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificMultiValueAnswer, ""),
+		endpoint.NewEndpointWithTTL("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("bare-set-1"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
 		endpoint.NewEndpointWithTTL("geolocation-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
+		endpoint.NewEndpointWithTTL("geolocation-continent-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
+		endpoint.NewEndpointWithTTL("geolocation-country-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "US").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
 		endpoint.NewEndpointWithTTL("geoproximitylocation-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 		endpoint.NewEndpointWithTTL("geoproximitylocation-localzone.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-pdx1-az1").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 		endpoint.NewEndpointWithTTL("geoproximitylocation-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, "90,90").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "0"),
@@ -815,35 +857,6 @@ func TestAWSRecordsSoftError(t *testing.T) {
 	_, err := pvd.Records(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
-}
-
-func TestAWSRecordsAliasWithoutTTLAndBareSetIdentifier(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, false, []route53types.ResourceRecordSet{
-		{
-			Name: aws.String("alias-no-ttl.zone-1.ext-dns-test-2.teapot.zalan.do."),
-			Type: route53types.RRTypeA,
-			AliasTarget: &route53types.AliasTarget{
-				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
-				EvaluateTargetHealth: false,
-				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
-			},
-		},
-		{
-			Name:            aws.String("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do."),
-			Type:            route53types.RRTypeA,
-			TTL:             aws.Int64(defaultTTL),
-			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
-			SetIdentifier:   aws.String("bare-set-1"),
-		},
-	})
-
-	records, err := provider.Records(t.Context())
-	require.NoError(t, err)
-
-	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("alias-no-ttl.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false").WithAliasProperty(endpoint.AliasTrue),
-		endpoint.NewEndpointWithTTL("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("bare-set-1"),
-	})
 }
 
 func TestAWSAdjustEndpoints(t *testing.T) {
