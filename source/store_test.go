@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	externaldns "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	annotationschema "sigs.k8s.io/external-dns/source/annotations/schema"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -234,6 +235,36 @@ func TestBuildWithConfig_ScopesTemplateEngineToSource(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "expected an NS endpoint")
+}
+
+func TestBuildWithConfig_KubeBackedSources(t *testing.T) {
+	ctx := t.Context()
+	p := testutils.NewFakeClientGenerator(fakeKube.NewSimpleClientset())
+	cfg := &Config{
+		LabelFilter: labels.NewSelector(),
+		Schema:      annotationschema.New(annotationschema.Options{}),
+	}
+
+	for _, source := range []string{types.Node, types.Service, types.Ingress, types.Pod} {
+		t.Run(source, func(t *testing.T) {
+			src, err := BuildWithConfig(ctx, source, p, cfg)
+			require.NoError(t, err)
+			require.NotNil(t, src)
+		})
+	}
+}
+
+func TestBuildWithConfig_Connector(t *testing.T) {
+	ctx := t.Context()
+	p := testutils.StubClientGenerator{}
+	cfg := &Config{
+		LabelFilter:     labels.NewSelector(),
+		ConnectorServer: "http://connector:8080",
+	}
+
+	src, err := BuildWithConfig(ctx, types.Connector, p, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, src)
 }
 
 func TestConfig_ClientGenerator_Caching(t *testing.T) {

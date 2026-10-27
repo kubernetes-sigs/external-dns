@@ -458,59 +458,58 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return nil, err
 	}
 
-	switch source {
-	case types.Node:
-		return buildNodeSource(ctx, p, cfg)
-	case types.Service:
-		return buildServiceSource(ctx, p, cfg)
-	case types.Ingress:
-		return buildIngressSource(ctx, p, cfg)
-	case types.Pod:
-		return buildPodSource(ctx, p, cfg)
-	case types.GatewayHttpRoute:
-		return NewGatewayHTTPRouteSource(ctx, p, cfg)
-	case types.GatewayGrpcRoute:
-		return NewGatewayGRPCRouteSource(ctx, p, cfg)
-	case types.GatewayTlsRoute:
-		return NewGatewayTLSRouteSource(ctx, p, cfg)
-	case types.GatewayTcpRoute:
-		return NewGatewayTCPRouteSource(ctx, p, cfg)
-	case types.GatewayUdpRoute:
-		return NewGatewayUDPRouteSource(ctx, p, cfg)
-	case types.IstioGateway:
-		return buildIstioGatewaySource(ctx, p, cfg)
-	case types.IstioVirtualService:
-		return buildIstioVirtualServiceSource(ctx, p, cfg)
-	case types.AmbassadorHost:
-		return buildAmbassadorHostSource(ctx, p, cfg)
-	case types.ContourHTTPProxy:
-		return buildContourHTTPProxySource(ctx, p, cfg)
-	case types.GlooProxy:
-		return buildGlooProxySource(ctx, p, cfg)
-	case types.TraefikProxy:
-		return buildTraefikProxySource(ctx, p, cfg)
-	case types.OpenShiftRoute:
-		return buildOpenShiftRouteSource(ctx, p, cfg)
-	case types.Fake:
-		return NewFakeSource(cfg)
-	case types.Empty:
-		return NewEmptySource(), nil
-	case types.Connector:
-		return NewConnectorSource(cfg.ConnectorServer)
-	case types.CRD:
-		return buildCRDSource(ctx, p, cfg)
-	case types.SkipperRouteGroup:
-		return buildSkipperRouteGroupSource(ctx, p, cfg)
-	case types.KongTCPIngress:
-		return buildKongTCPIngressSource(ctx, p, cfg)
-	case types.F5VirtualServer:
-		return buildF5VirtualServerSource(ctx, p, cfg)
-	case types.F5TransportServer:
-		return buildF5TransportServerSource(ctx, p, cfg)
-	case types.Unstructured:
-		return buildUnstructuredSource(ctx, p, cfg)
+	builder, ok := sourceBuilders[source]
+	if !ok {
+		return nil, ErrSourceNotFound
 	}
-	return nil, ErrSourceNotFound
+	return builder(ctx, p, cfg)
+}
+
+// sourceBuilder creates a Source from the client generator and source config.
+type sourceBuilder func(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error)
+
+// sourceBuilders maps source names to the builders that create them.
+var sourceBuilders = map[string]sourceBuilder{
+	types.Node:                buildNodeSource,
+	types.Service:             buildServiceSource,
+	types.Ingress:             buildIngressSource,
+	types.Pod:                 buildPodSource,
+	types.GatewayHttpRoute:    NewGatewayHTTPRouteSource,
+	types.GatewayGrpcRoute:    NewGatewayGRPCRouteSource,
+	types.GatewayTlsRoute:     NewGatewayTLSRouteSource,
+	types.GatewayTcpRoute:     NewGatewayTCPRouteSource,
+	types.GatewayUdpRoute:     NewGatewayUDPRouteSource,
+	types.IstioGateway:        buildIstioGatewaySource,
+	types.IstioVirtualService: buildIstioVirtualServiceSource,
+	types.AmbassadorHost:      buildAmbassadorHostSource,
+	types.ContourHTTPProxy:    buildContourHTTPProxySource,
+	types.GlooProxy:           buildGlooProxySource,
+	types.TraefikProxy:        buildTraefikProxySource,
+	types.OpenShiftRoute:      buildOpenShiftRouteSource,
+	types.Fake:                buildFakeSource,
+	types.Empty:               buildEmptySource,
+	types.Connector:           buildConnectorSource,
+	types.CRD:                 buildCRDSource,
+	types.SkipperRouteGroup:   buildSkipperRouteGroupSource,
+	types.KongTCPIngress:      buildKongTCPIngressSource,
+	types.F5VirtualServer:     buildF5VirtualServerSource,
+	types.F5TransportServer:   buildF5TransportServerSource,
+	types.Unstructured:        buildUnstructuredSource,
+}
+
+// buildFakeSource creates a Fake source for testing.
+func buildFakeSource(_ context.Context, _ ClientGenerator, cfg *Config) (Source, error) {
+	return NewFakeSource(cfg)
+}
+
+// buildEmptySource creates an Empty source that returns no endpoints.
+func buildEmptySource(_ context.Context, _ ClientGenerator, _ *Config) (Source, error) {
+	return NewEmptySource(), nil
+}
+
+// buildConnectorSource creates a Connector source that fetches endpoints from an external system.
+func buildConnectorSource(_ context.Context, _ ClientGenerator, cfg *Config) (Source, error) {
+	return NewConnectorSource(cfg.ConnectorServer)
 }
 
 // Source Builder Functions
