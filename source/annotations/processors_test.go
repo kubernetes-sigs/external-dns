@@ -214,6 +214,47 @@ func TestTTLFromAnnotations(t *testing.T) {
 	}
 }
 
+func TestNodePortFilterFromAnnotations(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		value      *string // nil: annotation absent
+		matches    map[string]string
+		notMatches map[string]string
+	}{
+		{name: "absent selects everything", matches: map[string]string{"karpenter.sh/nodepool": "video"}},
+		{name: "empty selects everything", value: new(""), matches: map[string]string{"karpenter.sh/nodepool": "video"}},
+		{name: "whitespace selects everything", value: new("  "), matches: map[string]string{"karpenter.sh/nodepool": "video"}},
+		{name: "not-exists", value: new("!karpenter.sh/nodepool"), matches: map[string]string{"role": "edge"}, notMatches: map[string]string{"karpenter.sh/nodepool": "video"}},
+		{name: "equality", value: new("role=edge"), matches: map[string]string{"role": "edge"}, notMatches: map[string]string{"role": "core"}},
+		{name: "set-based", value: new("env in (prod),!spot"), matches: map[string]string{"env": "prod"}, notMatches: map[string]string{"env": "prod", "spot": "true"}},
+		{name: "invalid selects everything", value: new("env in prod"), matches: map[string]string{"karpenter.sh/nodepool": "video"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			input := map[string]string{}
+			if tt.value != nil {
+				input[NodePortFilterKey] = *tt.value
+			}
+			sel := NodePortFilterFromAnnotations(input, "service/testing/foo")
+			assert.True(t, sel.Matches(labels.Set(tt.matches)))
+			if tt.notMatches != nil {
+				assert.False(t, sel.Matches(labels.Set(tt.notMatches)))
+			}
+		})
+	}
+}
+
+// Not parallel: the log hook is global.
+func TestNodePortFilterFromAnnotationsWarnsOnInvalid(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	NodePortFilterFromAnnotations(map[string]string{NodePortFilterKey: "env in prod"}, "service/testing/foo")
+	logtest.TestHelperLogContains(`service/testing/foo: "env in prod" is not a valid external-dns.kubernetes.io/nodeport-filter value`, hook, t)
+
+	hook.Reset()
+	NodePortFilterFromAnnotations(map[string]string{NodePortFilterKey: ""}, "service/testing/foo")
+	NodePortFilterFromAnnotations(map[string]string{NodePortFilterKey: "  "}, "service/testing/foo")
+	logtest.TestHelperLogNotContains("nodeport-filter", hook, t)
+}
+
 func TestGetAliasFromAnnotations(t *testing.T) {
 	tests := []struct {
 		name        string

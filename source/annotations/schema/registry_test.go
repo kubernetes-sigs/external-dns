@@ -22,6 +22,7 @@ import (
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func makePod(annotations map[string]string) *corev1.Pod {
@@ -241,4 +242,25 @@ func TestIgnoreHostnameAnnotation(t *testing.T) {
 			assert.Equal(t, tt.wantValid, s.IsValid(makePod(tt.annotations)))
 		})
 	}
+}
+
+func makeService(annotations map[string]string) *corev1.Service {
+	s := &corev1.Service{}
+	s.SetName("test-service")
+	s.SetNamespace("default")
+	s.SetAnnotations(annotations)
+	return s
+}
+
+// An invalid nodeport-filter falls back to publishing every node, so even strict mode must keep the
+// service: excluding it would delete its records under --policy=sync.
+// Not parallel: the log hook is global.
+func TestNodePortFilterAnnotationNeverExcludesService(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+	svc := makeService(map[string]string{annotations.NodePortFilterKey: "env in prod"})
+	for _, mode := range []Mode{ModeWarn, ModeStrict} {
+		assert.True(t, New(Options{Mode: mode}).WithSource(types.Service).IsValid(svc), mode)
+	}
+	// Unregistered keys are skipped silently, so the warning shows the annotation is validated.
+	logtest.TestHelperLogContains(`"env in prod" is not a valid external-dns.kubernetes.io/nodeport-filter value`, hook, t)
 }

@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -141,6 +142,12 @@ func ValidateHostnames(value string) error {
 		}
 	}
 	return nil
+}
+
+// ValidateLabelSelector validates a Kubernetes label selector, as parsed by annotations.NodePortFilterFromAnnotations.
+func ValidateLabelSelector(value string) error {
+	_, err := labels.Parse(value)
+	return err
 }
 
 func validateDNSName(name string) error {

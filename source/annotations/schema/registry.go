@@ -132,6 +132,14 @@ var defaultSpecs = []AnnotationSpec{
 		Documentation:    "Comma-separated list of desired internal hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
+		KeySuffix:        annotations.NodePortFilterSuffix,
+		SupportedSources: []string{types.Service},
+		Validators:       []Validator{ValidateLabelSelector},
+		WarnMessage:      "the service's NodePort records are not filtered by node labels",
+		// No StrictMessage: an invalid selector falls back to every node, so even strict mode keeps the service.
+		Documentation: "Kubernetes label selector limiting which Nodes a NodePort service's records point at, e.g. \"!karpenter.sh/nodepool\".",
+	},
+	{
 		KeySuffix:        annotations.IngressHostnameSourceSuffix,
 		SupportedSources: []string{types.Ingress},
 		Validators:       []Validator{ValidateOneOfFold("defined-hosts-only", "annotation-only")},

@@ -347,6 +347,24 @@ Some loadbalancer implementations assign multiple IP addresses as external addre
 using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to A and AAAA endpoints from every source;
 an endpoint left with no targets is dropped. Other record types pass unfiltered.
 
+## How do I publish only some Nodes' IPs for a NodePort Service?
+
+Set the `external-dns.kubernetes.io/nodeport-filter` annotation on the `Service` to a label selector. Only Nodes whose
+labels match it are used for the `Service`'s records.
+
+One use case is a cluster whose Nodes come and go, with the Cluster Autoscaler or Karpenter. Without the annotation,
+every Node is published, so clients can resolve to a Node that was just removed and their connections fail. With it,
+you can publish only the Nodes that are not going to be removed, for example a node group the autoscaler doesn't
+manage. Karpenter labels every Node it launches with `karpenter.sh/nodepool`, so this keeps all of them out:
+
+```yml
+external-dns.kubernetes.io/nodeport-filter: "!karpenter.sh/nodepool"
+```
+
+This applies to the [Service source](sources/service.md) only. See
+[the annotation](annotations/annotations.md#external-dnskubernetesionodeport-filter) for how it combines with
+`externalTrafficPolicy` and `--exclude-unschedulable`.
+
 ## Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
 Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
