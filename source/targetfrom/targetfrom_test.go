@@ -24,10 +24,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/dynamic"
@@ -45,49 +47,6 @@ var (
 )
 
 const addressesTmpl = "{{ range .status.addresses }}{{ .value }},{{ end }}"
-
-func TestParse(t *testing.T) {
-	for _, tt := range []struct {
-		value   string
-		want    Reference
-		wantErr bool
-	}{
-		{
-			value: "gateways.gateway.networking.k8s.io/istio-ingress/central#" + addressesTmpl,
-			want: Reference{
-				Resource:  schema.GroupResource{Group: "gateway.networking.k8s.io", Resource: "gateways"},
-				Namespace: "istio-ingress", Name: "central", Template: addressesTmpl,
-			},
-		},
-		{
-			value: "services/shared-lb#{{ .spec.clusterIP }}",
-			want:  Reference{Resource: schema.GroupResource{Resource: "services"}, Name: "shared-lb", Template: "{{ .spec.clusterIP }}"},
-		},
-		{
-			// Only the first '#' splits; the template keeps any later '#' and '/'.
-			value: `services/a#{{ "x#y/z" }}`,
-			want:  Reference{Resource: schema.GroupResource{Resource: "services"}, Name: "a", Template: `{{ "x#y/z" }}`},
-		},
-		{value: "services/a", wantErr: true},
-		{value: "services/a#", wantErr: true},
-		{value: "services/a#  ", wantErr: true},
-		{value: "a#{{ . }}", wantErr: true},
-		{value: "/a#{{ . }}", wantErr: true},
-		{value: "services/#{{ . }}", wantErr: true},
-		{value: "services//a#{{ . }}", wantErr: true},
-		{value: "services/ns/a/b#{{ . }}", wantErr: true},
-	} {
-		t.Run(tt.value, func(t *testing.T) {
-			got, err := Parse(tt.value)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
 
 func newObject(gvr schema.GroupVersionResource, kind, namespace, name string, status map[string]any) *unstructured.Unstructured {
 	u := &unstructured.Unstructured{Object: map[string]any{"status": status}}
@@ -293,4 +252,40 @@ func TestResolverInformer(t *testing.T) {
 		return err == nil && len(got) == 1 && got[0] == "10.0.0.2"
 	}, 5*time.Second, 10*time.Millisecond)
 	assert.GreaterOrEqual(t, calls.Load(), int32(2), "initial add and update should both trigger a sync")
+}
+
+// Without list or watch, no informer is started and every read is direct.
+func TestResolverWatchForbidden(t *testing.T) {
+	forbidden := func(clienttesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierrors.NewForbidden(serviceGVR.GroupResource(), "", errors.New("denied"))
+	}
+	for _, tt := range []struct {
+		name  string
+		setup func(*fakedynamic.FakeDynamicClient)
+	}{
+		{"list", func(c *fakedynamic.FakeDynamicClient) { c.PrependReactor("list", "services", forbidden) }},
+		{"watch", func(c *fakedynamic.FakeDynamicClient) {
+			c.PrependWatchReactor("services", func(clienttesting.Action) (bool, watch.Interface, error) {
+				return true, nil, apierrors.NewForbidden(serviceGVR.GroupResource(), "", errors.New("denied"))
+			})
+		}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := newObject(serviceGVR, "Service", "apps", "shared-lb", map[string]any{"ip": "10.0.0.1"})
+			r, client := newTestResolver(t, svc)
+			tt.setup(client)
+			r.AddEventHandler(func() {})
+
+			value := "services/shared-lb#{{ .status.ip }}"
+			for range 2 {
+				got, err := r.Resolve(t.Context(), "apps", value)
+				require.NoError(t, err)
+				assert.Equal(t, endpoint.Targets{"10.0.0.1"}, got)
+			}
+
+			inf, ok := r.informers[informerKey{gvr: serviceGVR, namespace: "apps"}]
+			assert.True(t, ok)
+			assert.Nil(t, inf)
+		})
+	}
 }
