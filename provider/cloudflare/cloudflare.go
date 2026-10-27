@@ -591,8 +591,7 @@ func logZoneChanges(zoneID string, zoneChanges []*cloudFlareChange) {
 	}
 }
 
-// submitRegionalHostnameChangesForZone applies the zone's desired regional hostnames
-// and reports whether any of them failed.
+// submitRegionalHostnameChangesForZone reports a soft failure as true; err is fatal.
 func (p *CloudFlareProvider) submitRegionalHostnameChangesForZone(ctx context.Context, zoneID string, zoneChanges []*cloudFlareChange) (bool, error) {
 	if !p.RegionalServicesConfig.Enabled {
 		return false, nil
@@ -609,14 +608,10 @@ func (p *CloudFlareProvider) submitRegionalHostnameChangesForZone(ctx context.Co
 		return false, fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
 	}
 	regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
-	if !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges) {
-		return true, nil
-	}
-	return false, nil
+	return !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges), nil
 }
 
-// submitLiveZoneChanges applies a zone's DNS record and custom hostname changes
-// and reports whether any of them failed.
+// submitLiveZoneChanges reports a soft failure as true; err is fatal.
 func (p *CloudFlareProvider) submitLiveZoneChanges(ctx context.Context, zoneID string, zoneChanges []*cloudFlareChange) (bool, error) {
 	// Fetch the zone's current DNS records and custom hostnames once, rather
 	// than once per change, to avoid O(n) API calls for n changes.
@@ -624,9 +619,9 @@ func (p *CloudFlareProvider) submitLiveZoneChanges(ctx context.Context, zoneID s
 	if err != nil {
 		return false, fmt.Errorf("could not fetch records from zone, %w", err)
 	}
-	chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
-	if chErr != nil {
-		return false, fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
+	chs, err := p.listCustomHostnamesWithPagination(ctx, zoneID)
+	if err != nil {
+		return false, fmt.Errorf("could not fetch custom hostnames from zone, %w", err)
 	}
 
 	// Apply custom hostname side-effects (separate Cloudflare API), then
