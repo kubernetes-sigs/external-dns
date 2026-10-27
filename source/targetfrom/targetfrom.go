@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -46,48 +47,6 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 )
-
-// Reference is a parsed target-from annotation value:
-// <resource>[.<group>]/[<namespace>/]<name>#<template>.
-type Reference struct {
-	Resource schema.GroupResource
-	// Namespace is empty when omitted; it then defaults to the annotated
-	// object's namespace for namespaced resources.
-	Namespace string
-	Name      string
-	Template  string
-}
-
-// Parse parses a target-from annotation value. The template is everything
-// after the first '#', taken verbatim, so it needs no escaping.
-func Parse(value string) (Reference, error) {
-	ref, tmpl, ok := strings.Cut(value, "#")
-	if !ok {
-		return Reference{}, fmt.Errorf("missing '#<template>' in %q", value)
-	}
-	if strings.TrimSpace(tmpl) == "" {
-		return Reference{}, fmt.Errorf("empty template in %q", value)
-	}
-	parts := strings.Split(ref, "/")
-	var r Reference
-	switch len(parts) {
-	case 2:
-		r.Name = parts[1]
-	case 3:
-		r.Namespace, r.Name = parts[1], parts[2]
-		if r.Namespace == "" {
-			return Reference{}, fmt.Errorf("empty namespace in %q", value)
-		}
-	default:
-		return Reference{}, fmt.Errorf("expected <resource>[.<group>]/[<namespace>/]<name>#<template>, got %q", value)
-	}
-	r.Resource = schema.ParseGroupResource(parts[0])
-	if r.Resource.Resource == "" || r.Name == "" {
-		return Reference{}, fmt.Errorf("empty resource or name in %q", value)
-	}
-	r.Template = tmpl
-	return r, nil
-}
 
 // ClientsFunc returns the Resolver's clients. Called once, on first reference.
 type ClientsFunc func() (dynamic.Interface, discovery.DiscoveryInterface, error)
@@ -131,6 +90,9 @@ func (r *Resolver) AddEventHandler(handler func()) {
 	defer r.mu.Unlock()
 	r.handlers = append(r.handlers, handler)
 	for _, inf := range r.informers {
+		if inf == nil {
+			continue
+		}
 		informers.MustAddEventHandler(inf.Informer(), eventHandler(handler))
 	}
 }
@@ -156,7 +118,7 @@ func (r *Resolver) Resolve(ctx context.Context, ownerNamespace, value string) (e
 	if r == nil {
 		return nil, errors.New("target-from is not supported by this source")
 	}
-	ref, err := Parse(value)
+	ref, err := annotations.ParseTargetFrom(value)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +138,8 @@ func (r *Resolver) Resolve(ctx context.Context, ownerNamespace, value string) (e
 	}
 	for _, v := range values {
 		if !isValidTarget(v) {
-			return nil, fmt.Errorf("rendered value %q is neither an IP address nor a hostname", v)
+			// Not echoed: it can come from any field ExternalDNS can read.
+			return nil, errors.New("rendered a value that is neither an IP address nor a hostname")
 		}
 	}
 	return values, nil
@@ -193,7 +156,7 @@ func (r *Resolver) initClients() error {
 	return r.clientErr
 }
 
-func (r *Resolver) get(ctx context.Context, ref Reference, ownerNamespace string) (*unstructured.Unstructured, error) {
+func (r *Resolver) get(ctx context.Context, ref annotations.TargetFromReference, ownerNamespace string) (*unstructured.Unstructured, error) {
 	gvr, namespaced, err := r.lookup(ref.Resource)
 	if err != nil {
 		return nil, err
@@ -206,10 +169,8 @@ func (r *Resolver) get(ctx context.Context, ref Reference, ownerNamespace string
 		namespace = ownerNamespace
 	}
 
-	inf := r.informerFor(informerKey{gvr: gvr, namespace: namespace})
-	if !inf.Informer().HasSynced() {
-		// Not synced yet, or never will be without list+watch RBAC: a direct
-		// read keeps resolution working, without change-driven syncs.
+	inf := r.informerFor(ctx, informerKey{gvr: gvr, namespace: namespace})
+	if inf == nil || !inf.Informer().HasSynced() {
 		return r.client.Resource(gvr).Namespace(namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	}
 	var obj runtime.Object
@@ -251,11 +212,19 @@ func (r *Resolver) lookup(gr schema.GroupResource) (schema.GroupVersionResource,
 	return gvr, mapping.Scope.Name() == meta.RESTScopeNameNamespace, nil
 }
 
-func (r *Resolver) informerFor(key informerKey) kubeinformers.GenericInformer {
+// informerFor returns nil when list or watch is forbidden, as a reflector
+// would log the denial forever.
+func (r *Resolver) informerFor(ctx context.Context, key informerKey) kubeinformers.GenericInformer {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if inf, ok := r.informers[key]; ok {
 		return inf
+	}
+	if err := r.canWatch(ctx, key); apierrors.IsForbidden(err) {
+		log.Warnf("%s: not watching %s in namespace %q, changes will not trigger a sync until list and watch are granted and ExternalDNS restarts: %v",
+			annotations.TargetFromKey, key.gvr, key.namespace, err)
+		r.informers[key] = nil
+		return nil
 	}
 	inf := dynamicinformer.NewFilteredDynamicInformer(r.client, key.gvr, key.namespace, 0,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, nil)
@@ -270,6 +239,21 @@ func (r *Resolver) informerFor(key informerKey) kubeinformers.GenericInformer {
 	r.informers[key] = inf
 	log.Debugf("Started target-from informer for %s in namespace %q", key.gvr, key.namespace)
 	return inf
+}
+
+func (r *Resolver) canWatch(ctx context.Context, key informerKey) error {
+	res := r.client.Resource(key.gvr).Namespace(key.namespace)
+	list, err := res.List(ctx, metav1.ListOptions{Limit: 1})
+	if err != nil {
+		return err
+	}
+	// From the list's version, so existing objects are not replayed.
+	w, err := res.Watch(ctx, metav1.ListOptions{ResourceVersion: list.GetResourceVersion()})
+	if err != nil {
+		return err
+	}
+	w.Stop()
+	return nil
 }
 
 func isValidTarget(v string) bool {
