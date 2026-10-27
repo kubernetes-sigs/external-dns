@@ -125,7 +125,7 @@ var defaultSpecs = []AnnotationSpec{
 	},
 	{
 		KeySuffix:        annotations.TargetFromSuffix,
-		SupportedSources: []string{types.Ingress, types.IstioGateway, types.IstioVirtualService},
+		SupportedSources: []string{types.Ingress, types.IstioGateway, types.IstioVirtualService, types.TraefikProxy},
 		Validators:       []Validator{ValidateTargetFrom},
 		WarnMessage:      "the reference cannot be resolved and the resource gets no record",
 		StrictMessage:    defaultStrictMessage,
