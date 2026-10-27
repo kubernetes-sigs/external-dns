@@ -43,7 +43,7 @@ subjects:
 ```
 
 Cluster-scoped resources still need a `ClusterRoleBinding`, for example nodes for the
-`service` source with `NodePort` services.
+`pod` source and for the `service` source with `NodePort` services.
 
 ## Referenced Objects
 
