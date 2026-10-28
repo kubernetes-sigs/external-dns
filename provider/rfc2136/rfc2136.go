@@ -433,9 +433,15 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	var errs []error
-	errs = append(errs, r.applyCreateBatches(changes.Create)...)
-	errs = append(errs, r.applyUpdateBatches(changes.UpdateOld, changes.UpdateNew)...)
-	errs = append(errs, r.applyDeleteBatches(changes.Delete)...)
+	errs = append(errs, r.applyBatches("create", changes.Create, func(m *dns.Msg, _ int, ep *endpoint.Endpoint) error {
+		return r.AddRecord(m, ep)
+	})...)
+	errs = append(errs, r.applyBatches("update", changes.UpdateNew, func(m *dns.Msg, idx int, ep *endpoint.Endpoint) error {
+		return r.UpdateRecord(m, changes.UpdateOld[idx], ep)
+	})...)
+	errs = append(errs, r.applyBatches("delete", changes.Delete, func(m *dns.Msg, _ int, ep *endpoint.Endpoint) error {
+		return r.RemoveRecord(m, ep)
+	})...)
 
 	if len(errs) > 0 {
 		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %v", errs)
@@ -444,7 +450,6 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	return nil
 }
 
-// newBatchMsgs creates the DNS message map for a batch of records, one per zone.
 func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
 	m := make(map[string]*dns.Msg)
 	m["."] = new(dns.Msg) // Add the root zone
@@ -455,7 +460,6 @@ func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
 	return m
 }
 
-// acceptsEndpoint reports whether the endpoint matches the provider's domain filter.
 func (r *rfc2136Provider) acceptsEndpoint(ep *endpoint.Endpoint) bool {
 	if !r.domainFilter.Match(ep.DNSName) {
 		log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
@@ -464,7 +468,6 @@ func (r *rfc2136Provider) acceptsEndpoint(ep *endpoint.Endpoint) bool {
 	return true
 }
 
-// sendBatchMsgs sends every message that contains records, returning the send errors.
 func (r *rfc2136Provider) sendBatchMsgs(action string, m map[string]*dns.Msg) []error {
 	var errs []error
 	for _, z := range m {
@@ -478,34 +481,10 @@ func (r *rfc2136Provider) sendBatchMsgs(action string, m map[string]*dns.Msg) []
 	return errs
 }
 
-// applyCreateBatches adds the created endpoints, batch by batch.
-func (r *rfc2136Provider) applyCreateBatches(create []*endpoint.Endpoint) []error {
+func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, apply func(m *dns.Msg, idx int, ep *endpoint.Endpoint) error) []error {
 	var errs []error
-	for c, chunk := range chunkBy(create, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of create changes", c)
-
-		m := r.newBatchMsgs()
-		for _, ep := range chunk {
-			if !r.acceptsEndpoint(ep) {
-				continue
-			}
-
-			zone := findMsgZone(ep, r.zoneNames)
-			m[zone].SetUpdate(zone)
-
-			r.AddRecord(m[zone], ep)
-		}
-
-		errs = append(errs, r.sendBatchMsgs("create", m)...)
-	}
-	return errs
-}
-
-// applyUpdateBatches updates the changed endpoints, batch by batch.
-func (r *rfc2136Provider) applyUpdateBatches(updateOld, updateNew []*endpoint.Endpoint) []error {
-	var errs []error
-	for c, chunk := range chunkBy(updateNew, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of update changes", c)
+	for c, chunk := range chunkBy(eps, r.batchChangeSize) {
+		log.Debugf("Processing batch %d of %s changes", c, action)
 
 		m := r.newBatchMsgs()
 		for i, ep := range chunk {
@@ -516,35 +495,13 @@ func (r *rfc2136Provider) applyUpdateBatches(updateOld, updateNew []*endpoint.En
 			zone := findMsgZone(ep, r.zoneNames)
 			m[zone].SetUpdate(zone)
 
-			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
-			j := (c * r.batchChangeSize) + i
-			r.UpdateRecord(m[zone], updateOld[j], ep)
-		}
-
-		errs = append(errs, r.sendBatchMsgs("update", m)...)
-	}
-	return errs
-}
-
-// applyDeleteBatches removes the deleted endpoints, batch by batch.
-func (r *rfc2136Provider) applyDeleteBatches(deletes []*endpoint.Endpoint) []error {
-	var errs []error
-	for c, chunk := range chunkBy(deletes, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of delete changes", c)
-
-		m := r.newBatchMsgs()
-		for _, ep := range chunk {
-			if !r.acceptsEndpoint(ep) {
-				continue
+			// idx is the position of ep in the unsplitted list, so the closure can pair it with the matching entry of a parallel slice.
+			if err := apply(m[zone], c*r.batchChangeSize+i, ep); err != nil {
+				errs = append(errs, err)
 			}
-
-			zone := findMsgZone(ep, r.zoneNames)
-			m[zone].SetUpdate(zone)
-
-			r.RemoveRecord(m[zone], ep)
 		}
 
-		errs = append(errs, r.sendBatchMsgs("delete", m)...)
+		errs = append(errs, r.sendBatchMsgs(action, m)...)
 	}
 	return errs
 }
