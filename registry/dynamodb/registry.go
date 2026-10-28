@@ -246,9 +246,11 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 
 	statements := im.planCreateStatements(filteredChanges)
-	im.removeDeletedFromState(filteredChanges)
-	oldLabels, needMigration := im.collectOldLabels(filteredChanges)
-	statements = im.planUpdateStatements(statements, filteredChanges, oldLabels, needMigration)
+	for _, r := range filteredChanges.Delete {
+		delete(im.labels, r.Key())
+		im.removeFromCache(r)
+	}
+	statements = im.planUpdateStatements(statements, filteredChanges)
 
 	err := im.executeStatements(ctx, statements, func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
 		return im.insertUpdateStatementError(filteredChanges, request, response)
@@ -274,8 +276,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	return im.executeStatements(ctx, statements, im.deleteStatementError)
 }
 
-// planCreateStatements builds the DynamoDB statements for the created records and
-// updates the label and records caches.
+// Also writes im.labels and the records cache.
 func (im *DynamoDBRegistry) planCreateStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
 	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Create)+len(changes.UpdateNew))
 	for _, r := range changes.Create {
@@ -294,26 +295,13 @@ func (im *DynamoDBRegistry) planCreateStatements(changes *plan.Changes) []dynamo
 		}
 
 		im.labels[key] = r.Labels
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
+		im.addToCache(r)
 	}
 	return statements
 }
 
-// removeDeletedFromState removes the deleted records from the label and records caches.
-func (im *DynamoDBRegistry) removeDeletedFromState(changes *plan.Changes) {
-	for _, r := range changes.Delete {
-		delete(im.labels, r.Key())
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
-	}
-}
-
-// collectOldLabels stores the labels of the old record versions, collects the keys
-// that need a label migration and removes the old versions from the cache.
-func (im *DynamoDBRegistry) collectOldLabels(changes *plan.Changes) (map[endpoint.EndpointKey]endpoint.Labels, sets.Set[endpoint.EndpointKey]) {
+// Also writes im.labels and the records cache.
+func (im *DynamoDBRegistry) planUpdateStatements(statements []dynamodbtypes.BatchStatementRequest, changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
 	oldLabels := make(map[endpoint.EndpointKey]endpoint.Labels, len(changes.UpdateOld))
 	needMigration := sets.New[endpoint.EndpointKey]()
 	for _, r := range changes.UpdateOld {
@@ -323,17 +311,9 @@ func (im *DynamoDBRegistry) collectOldLabels(changes *plan.Changes) (map[endpoin
 			needMigration.Insert(r.Key())
 		}
 
-		// remove old version of record from cache
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
+		im.removeFromCache(r)
 	}
-	return oldLabels, needMigration
-}
 
-// planUpdateStatements builds the DynamoDB statements for the updated records and
-// updates the label and records caches.
-func (im *DynamoDBRegistry) planUpdateStatements(statements []dynamodbtypes.BatchStatementRequest, changes *plan.Changes, oldLabels map[endpoint.EndpointKey]endpoint.Labels, needMigration sets.Set[endpoint.EndpointKey]) []dynamodbtypes.BatchStatementRequest {
 	for _, r := range changes.UpdateNew {
 		key := r.Key()
 		if needMigration.Has(key) {
@@ -344,17 +324,13 @@ func (im *DynamoDBRegistry) planUpdateStatements(statements []dynamodbtypes.Batc
 			statements = im.appendUpdate(statements, key, oldLabels[key], r.Labels)
 		}
 
-		// add new version of record to caches
 		im.labels[key] = r.Labels
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
+		im.addToCache(r)
 	}
 	return statements
 }
 
-// planDeleteStatements builds the DynamoDB statements for the deleted records and
-// the orphaned ownership records, and drops the orphaned labels.
+// Also clears im.orphanedLabels.
 func (im *DynamoDBRegistry) planDeleteStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
 	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Delete)+len(im.orphanedLabels))
 	for _, r := range changes.Delete {
@@ -368,8 +344,6 @@ func (im *DynamoDBRegistry) planDeleteStatements(changes *plan.Changes) []dynamo
 	return statements
 }
 
-// insertUpdateStatementError reports an error from an INSERT or UPDATE batch statement.
-// Duplicate INSERTs are ownership races and are skipped, not reported.
 func (im *DynamoDBRegistry) insertUpdateStatementError(changes *plan.Changes, request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
 	var context string
 	if strings.HasPrefix(*request.Statement, "INSERT") {
@@ -398,7 +372,7 @@ func (im *DynamoDBRegistry) insertUpdateStatementError(changes *plan.Changes, re
 	} else {
 		var record string
 		if err := attributevalue.Unmarshal(request.Parameters[1], &record); err != nil {
-			return fmt.Errorf("inserting dynamodb record: %w", err)
+			return fmt.Errorf("updating dynamodb record: %w", err)
 		}
 		context = fmt.Sprintf("updating dynamodb record %q", record)
 	}

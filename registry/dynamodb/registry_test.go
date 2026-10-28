@@ -18,6 +18,7 @@ package dynamodb
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"testing"
 	"time"
@@ -1068,165 +1069,61 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			originalMaxBatchSize := dynamodbMaxBatchSize
-			if tc.maxBatchSize > 0 {
-				dynamodbMaxBatchSize = tc.maxBatchSize
-			}
+		for _, cacheInterval := range []struct {
+			name  string
+			value time.Duration
+		}{
+			{"cached", time.Hour},
+			{"no-cache", 0},
+		} {
+			t.Run(tc.name+"_"+cacheInterval.name, func(t *testing.T) {
+				originalMaxBatchSize := dynamodbMaxBatchSize
+				if tc.maxBatchSize > 0 {
+					dynamodbMaxBatchSize = tc.maxBatchSize
+				}
 
-			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
-			if len(tc.addRecords) > 0 {
-				_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
-					Create: tc.addRecords,
-				})
-			}
+				// The stub consumes the Expect* maps, so each run needs a fresh copy.
+				stubConfig := cloneStubConfig(tc.stubConfig)
 
-			ctx := t.Context()
+				api, p := newDynamoDBAPIStub(t, &stubConfig)
+				if len(tc.addRecords) > 0 {
+					_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
+						Create: tc.addRecords,
+					})
+				}
 
-			r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
-			_, err := r.Records(ctx)
-			require.NoError(t, err)
+				ctx := t.Context()
 
-			err = r.ApplyChanges(ctx, &tc.changes)
-			if tc.expectedError == "" {
+				r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, cacheInterval.value)
+				_, err := r.Records(ctx)
 				require.NoError(t, err)
-			} else {
-				require.EqualError(t, err, tc.expectedError)
-			}
 
-			assert.Empty(t, tc.stubConfig.ExpectInsert, "all expected inserts made")
-			assert.Empty(t, tc.stubConfig.ExpectDelete, "all expected deletions made")
+				err = r.ApplyChanges(ctx, &tc.changes)
+				if tc.expectedError == "" {
+					require.NoError(t, err)
+				} else {
+					require.EqualError(t, err, tc.expectedError)
+				}
 
-			records, err := r.Records(ctx)
-			require.NoError(t, err)
-			assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
+				assert.Empty(t, stubConfig.ExpectInsert, "all expected inserts made")
+				assert.Empty(t, stubConfig.ExpectDelete, "all expected deletions made")
 
-			r.recordsCache = nil
-			records, err = r.Records(ctx)
-			require.NoError(t, err)
-			assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
-			if tc.expectedError == "" {
-				assert.Empty(t, r.orphanedLabels)
-			}
+				records, err := r.Records(ctx)
+				require.NoError(t, err)
+				assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
 
-			dynamodbMaxBatchSize = originalMaxBatchSize
-		})
+				r.recordsCache = nil
+				records, err = r.Records(ctx)
+				require.NoError(t, err)
+				assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
+				if tc.expectedError == "" {
+					assert.Empty(t, r.orphanedLabels)
+				}
+
+				dynamodbMaxBatchSize = originalMaxBatchSize
+			})
+		}
 	}
-}
-
-func TestDynamoDBRegistryApplyChanges_NoCache(t *testing.T) {
-	api, p := newDynamoDBAPIStub(t, &DynamoDBStubConfig{
-		ExpectInsert: map[string]map[string]string{
-			"new.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new-ingress"},
-		},
-		ExpectUpdate: map[string]map[string]string{
-			"bar.test-zone.example.org#CNAME#": {endpoint.ResourceLabelKey: "ingress/default/new-ingress"},
-		},
-		ExpectDelete: sets.New("baz.test-zone.example.org#A#set-2", "quux.test-zone.example.org#A#set-2"),
-	})
-
-	ctx := t.Context()
-	r, err := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, 0)
-	require.NoError(t, err)
-
-	_, err = r.Records(ctx)
-	require.NoError(t, err)
-
-	err = r.ApplyChanges(ctx, &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			{
-				DNSName:       "new.test-zone.example.org",
-				Targets:       endpoint.Targets{"new.loadbalancer.com"},
-				RecordType:    endpoint.RecordTypeCNAME,
-				SetIdentifier: "set-new",
-				Labels: map[string]string{
-					endpoint.ResourceLabelKey: "ingress/default/new-ingress",
-				},
-			},
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			{
-				DNSName:    "bar.test-zone.example.org",
-				Targets:    endpoint.Targets{"my-domain.com"},
-				RecordType: endpoint.RecordTypeCNAME,
-				Labels: map[string]string{
-					endpoint.OwnerLabelKey:    "test-owner",
-					endpoint.ResourceLabelKey: "ingress/default/my-ingress",
-				},
-			},
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			{
-				DNSName:    "bar.test-zone.example.org",
-				Targets:    endpoint.Targets{"new-domain.com"},
-				RecordType: endpoint.RecordTypeCNAME,
-				Labels: map[string]string{
-					endpoint.OwnerLabelKey:    "test-owner",
-					endpoint.ResourceLabelKey: "ingress/default/new-ingress",
-				},
-			},
-		},
-		Delete: []*endpoint.Endpoint{
-			{
-				DNSName:       "baz.test-zone.example.org",
-				Targets:       endpoint.Targets{"2.2.2.2"},
-				RecordType:    endpoint.RecordTypeA,
-				SetIdentifier: "set-2",
-				Labels: map[string]string{
-					endpoint.OwnerLabelKey:    "test-owner",
-					endpoint.ResourceLabelKey: "ingress/default/other-ingress",
-				},
-			},
-		},
-	})
-	require.NoError(t, err)
-
-	assert.Empty(t, api.stubConfig.ExpectInsert, "all expected inserts made")
-	assert.Empty(t, api.stubConfig.ExpectUpdate, "all expected updates made")
-	assert.Empty(t, api.stubConfig.ExpectDelete, "all expected deletes made")
-	assert.Empty(t, r.orphanedLabels)
-
-	records, err := r.Records(ctx)
-	require.NoError(t, err)
-	assert.True(t, testutils.SameEndpoints(records, []*endpoint.Endpoint{
-		{
-			DNSName:    "foo.test-zone.example.org",
-			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
-			RecordType: endpoint.RecordTypeCNAME,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:       "new.test-zone.example.org",
-			Targets:       endpoint.Targets{"new.loadbalancer.com"},
-			RecordType:    endpoint.RecordTypeCNAME,
-			SetIdentifier: "set-new",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey:    "test-owner",
-				endpoint.ResourceLabelKey: "ingress/default/new-ingress",
-			},
-		},
-		{
-			DNSName:    "bar.test-zone.example.org",
-			Targets:    endpoint.Targets{"new-domain.com"},
-			RecordType: endpoint.RecordTypeCNAME,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey:    "test-owner",
-				endpoint.ResourceLabelKey: "ingress/default/new-ingress",
-			},
-		},
-		{
-			DNSName:       "baz.test-zone.example.org",
-			Targets:       endpoint.Targets{"1.1.1.1"},
-			RecordType:    endpoint.RecordTypeA,
-			SetIdentifier: "set-1",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey:    "test-owner",
-				endpoint.ResourceLabelKey: "ingress/default/my-ingress",
-			},
-		},
-	}))
 }
 
 // DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
@@ -1243,6 +1140,23 @@ type DynamoDBStubConfig struct {
 	ExpectUpdate      map[string]map[string]string
 	ExpectUpdateError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
 	ExpectDelete      sets.Set[string]
+}
+
+func cloneStubConfig(cfg DynamoDBStubConfig) DynamoDBStubConfig {
+	cfg.ExpectInsert = cloneLabelMap(cfg.ExpectInsert)
+	cfg.ExpectInsertError = maps.Clone(cfg.ExpectInsertError)
+	cfg.ExpectUpdate = cloneLabelMap(cfg.ExpectUpdate)
+	cfg.ExpectUpdateError = maps.Clone(cfg.ExpectUpdateError)
+	cfg.ExpectDelete = sets.NewFromMapKeys(cfg.ExpectDelete)
+	return cfg
+}
+
+func cloneLabelMap(m map[string]map[string]string) map[string]map[string]string {
+	cloned := make(map[string]map[string]string, len(m))
+	for k, v := range m {
+		cloned[k] = maps.Clone(v)
+	}
+	return cloned
 }
 
 type wrappedProvider struct {
