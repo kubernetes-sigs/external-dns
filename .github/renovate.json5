@@ -24,7 +24,7 @@
     },
     {
       // v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data.
-      // https://github.com/cloudflare/cloudflare-go/issues/4300
+      // https://github.com/cloudflare/cloudflare-go/issues/4353
       matchPackageNames: ['github.com/cloudflare/cloudflare-go/v7'],
       allowedVersions: '<7.8.0',
     },
