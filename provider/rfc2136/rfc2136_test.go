@@ -55,6 +55,25 @@ type rfc2136Stub struct {
 	m                     *dns.Msg
 }
 
+func TestFindMsgZone(t *testing.T) {
+	tests := []struct {
+		name     string
+		dnsName  string
+		wantZone string
+	}{
+		{name: "exact zone", dnsName: "example.com", wantZone: "example.com."},
+		{name: "subdomain", dnsName: "www.example.com", wantZone: "example.com."},
+		{name: "suffix without label boundary", dnsName: "notexample.com", wantZone: "."},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := findMsgZone(&endpoint.Endpoint{DNSName: tt.dnsName}, []string{"example.com"})
+			assert.Equal(t, tt.wantZone, got)
+		})
+	}
+}
+
 func newStub() *rfc2136Stub {
 	return &rfc2136Stub{
 		output:                make([]*dns.Envelope, 0),
