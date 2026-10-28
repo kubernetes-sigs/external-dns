@@ -51,6 +51,7 @@ import (
 // testPodSource tests that various services generate the correct endpoints.
 func TestPodSource(t *testing.T) {
 	t.Parallel()
+	deletionTime := metav1.Now()
 
 	for _, tc := range []struct {
 		title                    string
@@ -88,6 +89,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -103,6 +105,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -129,6 +132,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -159,6 +163,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -174,6 +179,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -204,6 +210,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::1",
 					},
 				},
@@ -219,6 +226,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::2",
 					},
 				},
@@ -249,6 +257,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::1",
 					},
 				},
@@ -264,6 +273,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "2001:DB8::2",
 					},
 				},
@@ -295,6 +305,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -311,6 +322,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -362,6 +374,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -376,6 +389,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -407,6 +421,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -422,6 +437,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.2",
 					},
 				},
@@ -452,6 +468,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -468,6 +485,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.2",
 					},
 				},
@@ -506,6 +524,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -535,6 +554,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.1",
 					},
 				},
@@ -547,6 +567,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.2",
 					},
 				},
@@ -575,6 +596,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.1",
 					},
 				},
@@ -603,6 +625,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "192.168.1.1",
 					},
 				},
@@ -636,6 +659,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -652,6 +676,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.2",
 					},
 				},
@@ -678,6 +703,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "missing-node",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -707,6 +733,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -736,8 +763,171 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
+				},
+			},
+		},
+		{
+			"empty PodIP with internal hostname does not create a CNAME",
+			"",
+			"",
+			false,
+			"",
+			nil,
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:        "pending-pod",
+					Namespace:   "kube-system",
+					Annotations: map[string]string{annotations.InternalHostnameKey: "internal.example.org"},
+					Status:      corev1.PodStatus{Phase: corev1.PodPending},
+				},
+			},
+		},
+		{
+			"empty PodIP with pod source domain does not create a CNAME",
+			"",
+			"",
+			false,
+			"example.org",
+			nil,
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:      "pending-pod",
+					Namespace: "kube-system",
+					Status:    corev1.PodStatus{Phase: corev1.PodPending},
+				},
+			},
+		},
+		{
+			"empty PodIP with kops internal hostname does not create a CNAME",
+			"",
+			"kops-dns-controller",
+			false,
+			"",
+			nil,
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:        "pending-pod",
+					Namespace:   "kube-system",
+					Annotations: map[string]string{kopsDNSControllerInternalHostnameAnnotationKey: "internal.example.org"},
+					Status:      corev1.PodStatus{Phase: corev1.PodPending},
+				},
+			},
+		},
+		{
+			"empty PodIP with explicit target still creates a record",
+			"",
+			"",
+			false,
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.example.org", Targets: endpoint.Targets{"192.0.2.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:        "pending-pod",
+					Namespace:   "kube-system",
+					Annotations: map[string]string{annotations.InternalHostnameKey: "internal.example.org", annotations.TargetKey: "192.0.2.1"},
+					Status:      corev1.PodStatus{Phase: corev1.PodPending},
+				},
+			},
+		},
+		{
+			"pending pod with an assigned IP keeps explicit and node targets",
+			"",
+			"",
+			false,
+			"example.org",
+			[]*endpoint.Endpoint{
+				{DNSName: "external.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.example.org", Targets: endpoint.Targets{"192.0.2.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "pending-pod.example.org", Targets: endpoint.Targets{"192.0.2.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			nodesFixturesIPv4(),
+			[]*corev1.Pod{
+				{
+					Name:      "pending-pod",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						annotations.InternalHostnameKey: "internal.example.org",
+						annotations.TargetKey:           "192.0.2.1",
+					},
+					Status: corev1.PodStatus{Phase: corev1.PodPending, PodIP: "10.0.1.1"},
+				},
+				{
+					Name:        "pending-node-pod",
+					Namespace:   "kube-system",
+					Annotations: map[string]string{annotations.HostnameKey: "external.example.org"},
+					Spec:        corev1.PodSpec{NodeName: "my-node1"},
+					Status:      corev1.PodStatus{Phase: corev1.PodPending, PodIP: "10.0.1.1"},
+				},
+			},
+		},
+		{
+			"pending pod with an assigned IP does not create PodIP records",
+			"",
+			"kops-dns-controller",
+			false,
+			"example.org",
+			nil,
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:      "pending-pod",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						annotations.InternalHostnameKey:                "internal.example.org",
+						kopsDNSControllerInternalHostnameAnnotationKey: "kops.example.org",
+					},
+					Status: corev1.PodStatus{Phase: corev1.PodPending, PodIP: "10.0.1.1"},
+				},
+			},
+		},
+		{
+			"succeeded pod with an assigned IP does not create a record",
+			"",
+			"",
+			false,
+			"example.org",
+			nil,
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:      "succeeded-pod",
+					Namespace: "kube-system",
+					Status:    corev1.PodStatus{Phase: corev1.PodSucceeded, PodIP: "10.0.1.1"},
+				},
+			},
+		},
+		{
+			"terminating running pod does not create a PodIP record",
+			"",
+			"",
+			false,
+			"",
+			nil,
+			false,
+			nil,
+			[]*corev1.Pod{
+				{
+					Name:              "terminating-pod",
+					Namespace:         "kube-system",
+					DeletionTimestamp: &deletionTime,
+					Annotations:       map[string]string{annotations.InternalHostnameKey: "internal.example.org"},
+					Status:            corev1.PodStatus{Phase: corev1.PodRunning, PodIP: "10.0.1.1"},
 				},
 			},
 		},
@@ -763,6 +953,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -846,6 +1037,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.1",
 					},
 				},
@@ -869,6 +1061,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "missing-node",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -894,6 +1087,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -908,6 +1102,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "100.0.1.2",
 					},
 				},
@@ -922,6 +1117,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "missing-node",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.3",
 					},
 				},
@@ -951,6 +1147,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
@@ -978,6 +1175,7 @@ func TestPodSourceLogs(t *testing.T) {
 						NodeName:    "my-node1",
 					},
 					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
 						PodIP: "10.0.1.1",
 					},
 				},
