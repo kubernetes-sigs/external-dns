@@ -17,6 +17,7 @@ limitations under the License.
 package wrappers
 
 import (
+	"fmt"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -767,4 +768,110 @@ func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
 		t, 1.0, invalidEndpoints.Gauge,
 		map[string]string{"record_type": "srv", "source_type": "unknown"},
 	)
+}
+
+// withResource sets the resource label on ep; an empty resource leaves it unlabeled.
+func withResource(ep *endpoint.Endpoint, resource string) *endpoint.Endpoint {
+	if resource == "" {
+		return ep
+	}
+	if ep.Labels == nil {
+		ep.Labels = endpoint.Labels{}
+	}
+	ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingress/default/%s", resource)
+	return ep
+}
+
+func newARecord(dnsName, target, resource string) *endpoint.Endpoint {
+	return withResource(endpoint.NewEndpoint(dnsName, endpoint.RecordTypeA, target), resource)
+}
+
+func dedup(t *testing.T, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
+	t.Helper()
+	mockSource := new(testutils.MockSource)
+	mockSource.On("Endpoints").Return(eps, nil)
+
+	result, err := NewDedupSource(mockSource).Endpoints(t.Context())
+	require.NoError(t, err)
+	return result
+}
+
+// Among duplicates, the smallest resource label wins, empty labels lose to any
+// label, and ties go to the earliest endpoint.
+func TestDedupSource_WinnerByResourceLabel(t *testing.T) {
+	tests := []struct {
+		name      string
+		resources []string // one duplicate endpoint per entry, in input order
+		wantIdx   int      // index of the expected winner
+	}{
+		{
+			name:      "single endpoint",
+			resources: []string{"b"},
+			wantIdx:   0,
+		},
+		{
+			name:      "smallest label wins",
+			resources: []string{"b", "a", "c"},
+			wantIdx:   1,
+		},
+		{
+			name:      "smallest label is first",
+			resources: []string{"a", "b", "c"},
+			wantIdx:   0,
+		},
+		{
+			name:      "smallest label is last",
+			resources: []string{"c", "b", "a"},
+			wantIdx:   2,
+		},
+		{
+			name:      "labeled beats unlabeled when unlabeled is first",
+			resources: []string{"", "a"},
+			wantIdx:   1,
+		},
+		{
+			name:      "labeled beats unlabeled when unlabeled is last",
+			resources: []string{"a", ""},
+			wantIdx:   0,
+		},
+		{
+			name:      "all unlabeled, first wins",
+			resources: []string{"", "", ""},
+			wantIdx:   0,
+		},
+		{
+			name:      "equal labels, first wins",
+			resources: []string{"a", "a"},
+			wantIdx:   0,
+		},
+		{
+			name:      "equal smallest labels, first of them wins",
+			resources: []string{"b", "a", "a"},
+			wantIdx:   1,
+		},
+		{
+			name:      "unlabeled interleaved",
+			resources: []string{"", "z", "", "m", ""},
+			wantIdx:   3,
+		},
+		{
+			name:      "namespaced labels compare lexically",
+			resources: []string{"service/default/b", "ingress/default/z", "service/default/a"},
+			wantIdx:   1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			eps := make([]*endpoint.Endpoint, len(tt.resources))
+			for i, r := range tt.resources {
+				eps[i] = newARecord("example.org", "1.2.3.4", r)
+			}
+
+			result := dedup(t, eps)
+
+			require.Len(t, result, 1)
+			require.Same(t, eps[tt.wantIdx], result[0])
+		})
+	}
 }
