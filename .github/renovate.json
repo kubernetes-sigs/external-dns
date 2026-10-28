@@ -5,6 +5,11 @@
   "postUpdateOptions": ["gomodTidy"],
   "packageRules": [
     {
+      "description": "Release PRs bump the image tag",
+      "matchManagers": ["kustomize"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["gomod"],
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "groupName": "go dependencies",
