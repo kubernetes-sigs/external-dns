@@ -53,6 +53,7 @@ type rfc2136Stub struct {
 	lastNameserver        string
 	loadBalancingStrategy string
 	m                     *dns.Msg
+	sendCount             int
 }
 
 func newStub() *rfc2136Stub {
@@ -106,6 +107,7 @@ func getSortedChanges(msgs []*dns.Msg) []string {
 }
 
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
+	r.sendCount++
 	r.lastNameserver = r.getNextNameserver()
 	log.Info("Sending message to nameserver: ", r.lastNameserver)
 	zone := extractZoneFromMessage(msg.String())
@@ -819,6 +821,22 @@ func TestRfc2136ApplyChangesAllFilteredSendsNothing(t *testing.T) {
 				RecordTTL:  endpoint.TTL(400),
 			},
 		},
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "filtered-out.foo.bar",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "filtered-out.foo.bar",
+				RecordType: "A",
+				Targets:    []string{"5.6.7.8"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+		},
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "filtered-out.foo.bar",
@@ -831,6 +849,7 @@ func TestRfc2136ApplyChangesAllFilteredSendsNothing(t *testing.T) {
 	err = provider.ApplyChanges(t.Context(), p)
 	require.NoError(t, err)
 
+	assert.Zero(t, stub.sendCount)
 	assert.Empty(t, stub.createMsgs)
 	assert.Empty(t, stub.updateMsgs)
 }
