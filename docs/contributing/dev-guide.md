@@ -47,8 +47,7 @@ Update Go tools to their latest versions:
 make update-tools-deps
 ```
 
-> **Note:** Updates are done manually because Dependabot does not yet support `go.tool.mod`
-> ([dependabot-core#12050](https://github.com/dependabot/dependabot-core/issues/12050)).
+> **Note:** Renovate does not track `go.tool.mod`, so update it by hand.
 
 ## First Steps
 

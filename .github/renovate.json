@@ -1,3 +1,47 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "labels": ["dependencies", "ok-to-test", "release-note-none"],
+  "postUpdateOptions": ["gomodTidy"],
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "go dependencies",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "schedule": ["before 6am on the first day of the month"]
+    },
+    {
+      "matchManagers": ["pip_requirements"],
+      "groupName": "docs python dependencies",
+      "schedule": ["before 6am on the first day of the month"]
+    },
+    {
+      "description": "v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data. See https://github.com/cloudflare/cloudflare-go/issues/4300",
+      "matchPackageNames": ["github.com/cloudflare/cloudflare-go/v7"],
+      "allowedVersions": "<7.8.0"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "registry.k8s.io/external-dns/external-dns:<version> in docs",
+      "managerFilePatterns": ["/\\.md$/"],
+      "matchStrings": ["(?<depName>registry\\.k8s\\.io/external-dns/external-dns):(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "kubernetes-sigs/external-dns",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "# renovate: datasource=... depName=... annotations above *_VERSION= lines",
+      "managerFilePatterns": ["/^scripts/.+\\.sh$/"],
+      "matchStrings": ["datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?_VERSION=(?<currentValue>.*)\\s"],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ]
 }
