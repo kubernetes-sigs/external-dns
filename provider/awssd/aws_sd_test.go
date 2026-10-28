@@ -2131,7 +2131,7 @@ func TestAWSSDProvider_CreateKeepsUnownedServiceDescription(t *testing.T) {
 			DNSName:    "app.private.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"1.2.3.4"},
-			RecordTTL: 300,
+			RecordTTL:  300,
 			Labels: map[string]string{
 				endpoint.AWSSDDescriptionLabel: "heritage=external-dns,external-dns/owner=owner,external-dns/resource=service/default/a",
 			},
