@@ -422,7 +422,6 @@ var ProviderNames = []string{
 	ProviderGoDaddy,
 	ProviderGoogle,
 	ProviderInMemory,
-	ProviderLinode,
 	ProviderNS1,
 	ProviderOCI,
 	ProviderOVH,

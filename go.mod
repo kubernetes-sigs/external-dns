@@ -35,7 +35,6 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/joeig/go-powerdns/v3 v3.23.0
-	github.com/linode/linodego v1.69.1
 	github.com/maxatome/go-testdeep v1.16.0
 	github.com/miekg/dns v1.1.73
 	github.com/openshift/api v0.0.0-20260819011109-af5c920502e2
@@ -120,7 +119,6 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.30.3 // indirect
-	github.com/go-resty/resty/v2 v2.17.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
