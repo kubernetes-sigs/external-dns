@@ -371,7 +371,8 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				// update a local list of services
 				services[*srv.Name] = srv
 			} else {
-				// Description stores the aws-sd registry labels; rewrite it on label-only changes.
+				// Rewrite Description when registry labels change.
+				// Services with a nil Description are excluded from Records().
 				needsUpdate := aws.ToString(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel]
 				if ch.RecordTTL.IsConfigured() {
 					// No DNS records: let UpdateService return its soft error, as before.
@@ -380,7 +381,7 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 							return r.TTL == nil || *r.TTL != int64(ch.RecordTTL)
 						})
 				}
-				if needsUpdate {
+				if needsUpdate && srv.Description != nil {
 					if err = p.UpdateService(ctx, srv, ch); err != nil {
 						return err
 					}
@@ -529,11 +530,6 @@ func (p *AWSSDProvider) CreateService(ctx context.Context, namespaceID *string, 
 func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Service, ep *endpoint.Endpoint) error {
 	log.Infof("Updating service \"%s\"", *service.Name)
 
-	ttl := int64(defaultTTL)
-	if ep.RecordTTL.IsConfigured() {
-		ttl = int64(ep.RecordTTL)
-	}
-
 	if p.dryRun {
 		return nil
 	}
@@ -542,12 +538,17 @@ func (p *AWSSDProvider) UpdateService(ctx context.Context, service *sdtypes.Serv
 		return provider.NewSoftErrorf("service %q has no DNS records to update", aws.ToString(service.Name))
 	}
 
+	records := service.DnsConfig.DnsRecords
+	if ep.RecordTTL.IsConfigured() {
+		records = dnsRecords(recordTypes(records), int64(ep.RecordTTL))
+	}
+
 	_, err := p.client.UpdateService(ctx, &sd.UpdateServiceInput{
 		Id: service.Id,
 		Service: &sdtypes.ServiceChange{
 			Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 			DnsConfig: &sdtypes.DnsConfigChange{
-				DnsRecords: dnsRecords(recordTypes(service.DnsConfig.DnsRecords), ttl),
+				DnsRecords: records,
 			},
 		},
 	})
