@@ -85,4 +85,5 @@ The chart needs to be released in response to an ExternalDNS image release or on
 
 - Create a PR to update _Chart.yaml_ with the ExternalDNS version in `appVersion`, agreed on chart release version in `version` and `annotations` showing the changes
 - Validate that the chart linting is successful
-- Merge the PR to trigger a GitHub action to release the chart
+- Merge the PR to trigger a GitHub action to release the chart and [Prow](https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns) to package and push the OCI chart to `gcr.io/k8s-staging-external-dns/charts/external-dns`
+- Create a PR in the [k8s.io repo](https://github.com/kubernetes/k8s.io/blob/main/registry.k8s.io/images/k8s-staging-external-dns/images.yaml) to promote the staged Helm OCI chart (`charts/external-dns`) by digest to `registry.k8s.io`

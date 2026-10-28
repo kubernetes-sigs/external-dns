@@ -217,6 +217,26 @@ helm-lint:
 	scripts/helm-tools.sh --schema
 	scripts/helm-tools.sh --docs
 
+HELM            ?= helm
+HELM_CHART_DIR  ?= charts/external-dns
+HELM_CHART_REPO ?= gcr.io/k8s-staging-external-dns/charts
+
+.PHONY: helm
+helm:
+	@command -v $(HELM) >/dev/null 2>&1 || go install helm.sh/helm/v3/cmd/helm@latest
+
+.PHONY: helm-package
+#? helm-package: Package the Helm chart
+helm-package: helm
+	mkdir -p build
+	$(HELM) package $(HELM_CHART_DIR) -d build
+
+.PHONY: helm-push
+#? helm-push: Package and push the Helm chart to an OCI registry
+helm-push: helm-package
+	chart_version=$$(grep -E '^version: ' $(HELM_CHART_DIR)/Chart.yaml | cut -d' ' -f2); \
+	$(HELM) push build/external-dns-$${chart_version}.tgz oci://$(HELM_CHART_REPO)
+
 .PHONY: go-dependency
 #? go-dependency: Dependency maintenance
 go-dependency:
