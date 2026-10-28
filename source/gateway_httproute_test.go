@@ -2084,7 +2084,7 @@ func TestGatewayHTTPRouteSource_FullyNamespacedSkipsNamespaceInformer(t *testing
 	fromSame := v1.NamespacesFromSame
 
 	gw := &v1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{Name: "gw", Namespace: gwNS},
+		Name: "gw", Namespace: gwNS,
 		Spec: v1.GatewaySpec{
 			Listeners: []v1.Listener{{
 				Protocol: v1.HTTPProtocolType,
@@ -2100,7 +2100,7 @@ func TestGatewayHTTPRouteSource_FullyNamespacedSkipsNamespaceInformer(t *testing
 	require.NoError(t, err)
 
 	rt := &v1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "rt", Namespace: ns},
+		Name: "rt", Namespace: ns,
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"app.example.com"},
 			CommonRouteSpec: v1.CommonRouteSpec{
@@ -2129,7 +2129,7 @@ func TestGatewayHTTPRouteSource_FullyNamespacedSkipsNamespaceInformer(t *testing
 
 	// Same namespace: should generate endpoints without Namespace informer.
 	rtSame := &v1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{Name: "rt-same", Namespace: gwNS},
+		Name: "rt-same", Namespace: gwNS,
 		Spec: v1.HTTPRouteSpec{
 			Hostnames: []v1.Hostname{"same.example.com"},
 			CommonRouteSpec: v1.CommonRouteSpec{
@@ -2153,4 +2153,63 @@ func TestGatewayHTTPRouteSource_FullyNamespacedSkipsNamespaceInformer(t *testing
 	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
 		newTestEndpoint("same.example.com", "10.0.0.1"),
 	})
+}
+
+// Not parallel: the log hook is global.
+func TestGatewayHTTPRouteSource_FullyNamespacedWarnsOnNamespaceSelector(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+
+	gwNS := "infra"
+	fromSelector := v1.NamespacesFromSelector
+	gw := &v1.Gateway{
+		Name: "gw", Namespace: gwNS,
+		Spec: v1.GatewaySpec{
+			Listeners: []v1.Listener{{
+				Name:     "http",
+				Protocol: v1.HTTPProtocolType,
+				Port:     80,
+				AllowedRoutes: &v1.AllowedRoutes{
+					Namespaces: &v1.RouteNamespaces{
+						From:     &fromSelector,
+						Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"team": "a"}},
+					},
+				},
+			}},
+		},
+		Status: gatewayStatus("10.0.0.1"),
+	}
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	rt := &v1.HTTPRoute{
+		Name: "rt", Namespace: gwNS,
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{gwParentRef(gwNS, "gw")},
+			},
+		},
+		Status: httpRouteStatus(gwParentRef(gwNS, "gw")),
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+		Namespaces:       []string{gwNS},
+		GatewayNamespace: gwNS,
+	})
+	require.NoError(t, err)
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	require.Empty(t, endpoints)
+	logtest.TestHelperLogContainsWithLogLevel(`Listener "http" uses NamespacesFromSelector, which needs cluster-scoped Namespace access`, log.WarnLevel, hook, t)
+	clients.AssertNotCalled(t, "KubeClient")
 }

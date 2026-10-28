@@ -21,15 +21,18 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
 func lsParentRef(namespace, name string, options ...gwParentRefOption) v1.ParentReference {
@@ -1617,4 +1620,111 @@ func TestGatewayListenerSetSource_InformerTransform(t *testing.T) {
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
+}
+
+func newFullyNamespacedListenerSetFixture(t *testing.T, ctx context.Context, allowed *v1.AllowedListeners) *testutils.MockClientGenerator {
+	t.Helper()
+	gwClient := gatewayfake.NewSimpleClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+
+	gw := &v1.Gateway{
+		Name: "my-gateway", Namespace: "infra",
+		Spec: v1.GatewaySpec{
+			AllowedListeners: allowed,
+			Listeners:        []v1.Listener{{Name: "base", Protocol: v1.HTTPProtocolType, Port: 80}},
+		},
+		Status: gatewayStatus("10.0.0.1"),
+	}
+	_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	hostname := v1.Hostname("*.example.com")
+	fromAll := v1.NamespacesFromAll
+	for _, ns := range []string{"infra", "other"} {
+		ls := &v1.ListenerSet{
+			Name: "my-listenerset", Namespace: ns,
+			Spec: v1.ListenerSetSpec{
+				ParentRef: v1.ParentGatewayReference{Name: "my-gateway", Namespace: new(v1.Namespace("infra"))},
+				Listeners: []v1.ListenerEntry{{
+					Name:          "app",
+					Hostname:      &hostname,
+					Port:          8080,
+					Protocol:      v1.HTTPProtocolType,
+					AllowedRoutes: &v1.AllowedRoutes{Namespaces: &v1.RouteNamespaces{From: &fromAll}},
+				}},
+			},
+			Status: listenerSetAcceptedStatus("app"),
+		}
+		_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	rt := &v1.HTTPRoute{
+		Name: "my-route", Namespace: "infra",
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{
+				ParentRefs: []v1.ParentReference{lsParentRef("infra", "my-listenerset")},
+			},
+		},
+		Status: v1.HTTPRouteStatus{
+			RouteStatus: gwRouteStatus(lsParentRef("infra", "my-listenerset")),
+		},
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+	return clients
+}
+
+func fullyNamespacedListenerSetConfig() *Config {
+	return &Config{
+		Namespaces:          []string{"infra"},
+		GatewayNamespace:    "infra",
+		GatewayListenerSets: true,
+	}
+}
+
+func TestGatewayListenerSetFullyNamespacedScopesListenerSets(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	clients := newFullyNamespacedListenerSetFixture(t, ctx, allowAllListenerSets())
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, fullyNamespacedListenerSetConfig())
+	require.NoError(t, err)
+	clients.AssertNotCalled(t, "KubeClient")
+
+	// A cluster-wide ListenerSet watch would need cluster RBAC and would also see "other".
+	listenerSets, err := src.(*gatewayRouteSource).lsInformer.Lister().List(labels.Everything())
+	require.NoError(t, err)
+	require.Len(t, listenerSets, 1)
+	require.Equal(t, "infra", listenerSets[0].Namespace)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("app.example.com", "10.0.0.1"),
+	})
+}
+
+// Not parallel: the log hook is global.
+func TestGatewayListenerSetFullyNamespacedWarnsOnAllowedListenersSelector(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	clients := newFullyNamespacedListenerSetFixture(t, ctx,
+		allowListenerSetsFromSelector(&metav1.LabelSelector{MatchLabels: map[string]string{"team": "a"}}))
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, fullyNamespacedListenerSetConfig())
+	require.NoError(t, err)
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	require.Empty(t, endpoints)
+	logtest.TestHelperLogContainsWithLogLevel("Gateway infra/my-gateway AllowedListeners uses a namespace selector", log.WarnLevel, hook, t)
 }

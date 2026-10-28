@@ -152,6 +152,14 @@ type gatewayRouteSource struct {
 	ignoreHostnameAnnotation bool
 }
 
+// isGatewayFullyNamespaced reports whether both Routes and Gateways are limited to a
+// single namespace (--namespace and --gateway-namespace). In that mode the Helm chart
+// grants only a namespaced Role, so the source must not list cluster-scoped Namespaces
+// or watch ListenerSets cluster-wide.
+func isGatewayFullyNamespaced(config *Config) bool {
+	return config.Namespace() != "" && config.GatewayNamespace != ""
+}
+
 func newGatewayRouteSource(
 	ctx context.Context,
 	clients ClientGenerator,
@@ -208,15 +216,12 @@ func newGatewayRouteSource(
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[informers.Object]),
 	))
 
-	// Fully namespaced mode (--namespace and --gateway-namespace both set) must not watch
-	// cluster-scoped Namespace objects: Helm skips Namespace ClusterRole in that mode, and
-	// Namespaces cannot be granted via a namespaced Role. Route attachment still works for
-	// NamespacesFromAll / NamespacesFromSame without a Namespace informer; NamespacesFromSelector
-	// requires cluster-scoped Namespace list/get and is unsupported in fully namespaced mode.
-	fullyNamespaced := config.Namespace() != "" && config.GatewayNamespace != ""
+	// Namespaces are cluster-scoped and cannot be granted by a namespaced Role.
+	// Without this informer, NamespacesFromAll and NamespacesFromSame still work;
+	// NamespacesFromSelector cannot be evaluated and is skipped with a warning.
 	var nsInformer coreinformers.NamespaceInformer
 	var kubeInformerFactory kubeinformers.SharedInformerFactory
-	if !fullyNamespaced {
+	if !isGatewayFullyNamespaced(config) {
 		kubeClient, err := clients.KubeClient()
 		if err != nil {
 			return nil, err
@@ -257,12 +262,9 @@ func newListenerSetInformer(client gateway.Interface, gwInformerFactory gwinform
 	if config.GatewayListenerSets {
 		// Gateway filters should apply only to Gateways, not ListenerSets.
 		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
-		// In fully namespaced mode (--namespace and --gateway-namespace), keep ListenerSets
-		// scoped to gatewayNamespace so namespaced Role RBAC can sync. Otherwise, when
-		// GatewayNamespace or gateway labels are set, watch ListenerSets cluster-wide so
-		// cross-namespace AllowedListeners still work (requires cluster RBAC).
-		fullyNamespaced := config.Namespace() != "" && config.GatewayNamespace != ""
-		if !fullyNamespaced && (config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty())) {
+		// Watching ListenerSets cluster-wide lets cross-namespace AllowedListeners work, but needs
+		// cluster RBAC. In fully namespaced mode they stay in --gateway-namespace with the Gateways.
+		if !isGatewayFullyNamespaced(config) && (config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty())) {
 			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
 		}
 		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
@@ -407,10 +409,14 @@ type resolvedParent struct {
 }
 
 func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {
-	// Create Namespace lookup table.
-	nss := make(map[string]*corev1.Namespace, len(namespaces))
-	for _, ns := range namespaces {
-		nss[ns.Name] = ns
+	// A nil table means Namespaces are not watched (fully namespaced mode), which the
+	// selector checks report differently from a Namespace that does not exist.
+	var nss map[string]*corev1.Namespace
+	if src.nsInformer != nil {
+		nss = make(map[string]*corev1.Namespace, len(namespaces))
+		for _, ns := range namespaces {
+			nss[ns.Name] = ns
+		}
 	}
 
 	objects := make(map[objectRef]*listenerObject, len(gateways)+len(listenerSets))
@@ -652,9 +658,8 @@ func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Lis
 			log.Debugf("Listener %q has invalid namespace selector: %v", lis.Name, err)
 			return false
 		}
-		// Get namespace. Fully namespaced mode has no Namespace informer (cluster-scoped).
 		if c.nss == nil {
-			log.Debugf("Listener %q uses NamespacesFromSelector which requires cluster-scoped Namespace access; skipping %s %s/%s", lis.Name, c.src.rtKind, meta.Namespace, meta.Name)
+			log.Warnf("Listener %q uses NamespacesFromSelector, which needs cluster-scoped Namespace access and is not supported with --namespace and --gateway-namespace; skipping %s %s/%s", lis.Name, c.src.rtKind, meta.Namespace, meta.Name)
 			return false
 		}
 		ns, ok := c.nss[meta.Namespace]
@@ -800,7 +805,7 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 			return false
 		}
 		if namespaces == nil {
-			log.Debugf("Gateway %s/%s AllowedListeners selector requires cluster-scoped Namespace access; denying ListenerSet %s/%s in namespaced mode", gw.Namespace, gw.Name, ls.Namespace, ls.Name)
+			log.Warnf("Gateway %s/%s AllowedListeners uses a namespace selector, which needs cluster-scoped Namespace access and is not supported with --namespace and --gateway-namespace; skipping ListenerSet %s/%s", gw.Namespace, gw.Name, ls.Namespace, ls.Name)
 			return false
 		}
 		ns, ok := namespaces[ls.Namespace]
