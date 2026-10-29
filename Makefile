@@ -72,7 +72,7 @@ validate-json-yaml:
 crd:
 	@./scripts/generate-crd.sh
 
-# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
+# go.tool.mod is not tracked by Renovate; update it by hand
 #? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
 update-tools-deps:
 	@go get -modfile=go.tool.mod tool
