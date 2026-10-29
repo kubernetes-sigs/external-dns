@@ -1,11 +1,17 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: ['config:recommended'],
+  // The preset sets `fix` on direct Go deps, which overrides semanticCommitType.
+  ignorePresets: [':semanticPrefixFixDepsChoreOthers'],
   semanticCommitType: 'chore',
   labels: ['dependencies', 'ok-to-test', 'release-note-none'],
-  postUpdateOptions: ['gomodTidy'],
+  postUpdateOptions: ['gomodTidy', 'gomodUpdateImportPaths'],
   // No kustomize or docs image refs: release PRs bump the image tag there.
-  enabledManagers: ['gomod', 'github-actions', 'pip_requirements', 'custom.regex'],
+  enabledManagers: ['gomod', 'github-actions', 'pip-compile', 'custom.regex'],
+  // Re-runs pip-compile so new transitive dependencies get pinned with hashes.
+  'pip-compile': {
+    managerFilePatterns: ['/^docs/scripts/requirements\\.txt$/'],
+  },
   packageRules: [
     {
       matchManagers: ['gomod'],
@@ -26,7 +32,7 @@
       schedule: ['before 6am on the first day of the month'],
     },
     {
-      matchManagers: ['pip_requirements'],
+      matchManagers: ['pip-compile'],
       groupName: 'docs python dependencies',
       schedule: ['before 6am on the first day of the month'],
     },

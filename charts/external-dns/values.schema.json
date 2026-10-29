@@ -83,6 +83,19 @@
       "description": "[Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container.",
       "type": "array"
     },
+    "eventsEmit": {
+      "description": "_Kubernetes_ events to emit; valid values are `RecordReady`, `RecordDeleted` \u0026 `RecordError`. Setting this also grants the RBAC permission to create `events.k8s.io` events.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "RecordReady",
+          "RecordDeleted",
+          "RecordError"
+        ]
+      }
+    },
     "excludeDomains": {
       "description": "Intentionally exclude domains from being managed.",
       "type": "array"
