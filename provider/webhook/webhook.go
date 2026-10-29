@@ -35,19 +35,20 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
-	"github.com/cenkalti/backoff/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
 	acceptHeader = "Accept"
-	maxRetries   = 5
 
 	webhookProviderSubsystem = "webhook_provider"
 )
 
 var (
+	retryBackoff = wait.Backoff{Duration: 500 * time.Millisecond, Factor: 1.5, Jitter: 0.5, Steps: 5}
+
 	recordsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Subsystem: webhookProviderSubsystem,
@@ -191,39 +192,48 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 }
 
 func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
-	resp, err := backoff.Retry(req.Context(), func() (*http.Response, error) {
+	var resp *http.Response
+	var lastErr error
+	err := wait.ExponentialBackoffWithContext(req.Context(), retryBackoff, func(context.Context) (bool, error) {
 		// Reset the body before each attempt so retries send the full payload.
 		// GetBody is set automatically by http.NewRequest for in-memory body types;
 		// it is nil for GET requests (no body), so the block is safely skipped.
 		if req.GetBody != nil {
 			body, err := req.GetBody()
 			if err != nil {
-				return nil, backoff.Permanent(fmt.Errorf("failed to reset request body: %w", err))
+				return false, fmt.Errorf("failed to reset request body: %w", err)
 			}
 			req.Body = body
 		}
 
-		resp, err := client.Do(req)
+		r, err := client.Do(req)
 		if err != nil {
 			log.Debugf("Failed to connect to webhook: %v", err)
-			return nil, err
+			lastErr = err
+			return false, nil
 		}
 		// 5xx: retryable server error
-		if resp.StatusCode >= http.StatusInternalServerError {
-			extdnshttp.DrainAndClose(resp.Body)
-			return nil, fmt.Errorf("server error: status code %d", resp.StatusCode)
+		if r.StatusCode >= http.StatusInternalServerError {
+			extdnshttp.DrainAndClose(r.Body)
+			lastErr = fmt.Errorf("server error: status code %d", r.StatusCode)
+			return false, nil
 		}
 		// 3xx/4xx: permanent error, not worth retrying.
 		// Note: http.Client follows redirects automatically, so a 3xx here means
 		// either a non-redirect 3xx (e.g. 304) or a custom CheckRedirect policy;
 		// it does not mean a normal redirect was left unhandled.
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
-		if resp.StatusCode >= http.StatusMultipleChoices {
-			extdnshttp.DrainAndClose(resp.Body)
-			return nil, backoff.Permanent(fmt.Errorf("unexpected status code %d", resp.StatusCode))
+		if r.StatusCode >= http.StatusMultipleChoices {
+			extdnshttp.DrainAndClose(r.Body)
+			return false, fmt.Errorf("unexpected status code %d", r.StatusCode)
 		}
-		return resp, nil
-	}, backoff.WithMaxTries(maxRetries))
+		resp = r
+		return true, nil
+	})
+	// wait reports exhausted retries as a generic timeout; the last failure says more.
+	if wait.Interrupted(err) && req.Context().Err() == nil {
+		return nil, lastErr
+	}
 	return resp, err
 }
 

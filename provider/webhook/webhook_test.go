@@ -635,6 +635,28 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 	require.Equal(t, 3, attempts)
 }
 
+func TestRequestWithRetry_RetriesExhausted(t *testing.T) {
+	defaultBackoff := retryBackoff
+	retryBackoff.Duration = time.Millisecond
+	t.Cleanup(func() { retryBackoff = defaultBackoff })
+
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req)
+	require.EqualError(t, err, "server error: status code 503")
+	require.Nil(t, resp)
+	require.Equal(t, retryBackoff.Steps, attempts)
+}
+
 func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
