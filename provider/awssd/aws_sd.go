@@ -362,7 +362,8 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 			srvName := strings.TrimSuffix(hostname, "."+nsName)
 
 			srv := services[srvName]
-			if srv == nil {
+			switch {
+			case srv == nil:
 				// when service is missing create a new one
 				srv, err = p.CreateService(ctx, &nsID, &srvName, ch)
 				if err != nil {
@@ -370,8 +371,11 @@ func (p *AWSSDProvider) submitCreates(ctx context.Context, namespaces []*sdtypes
 				}
 				// update a local list of services
 				services[*srv.Name] = srv
-			} else if srv.Description != nil {
-				// Services with a nil Description are unmanaged records by ExternalDNS; do not adopt them.
+			case srv.Description == nil:
+				// Records() skips services without a Description, so instances registered here could never be deleted.
+				log.Warnf("Skipping %q: service %q exists but is not owned by ExternalDNS", ch.DNSName, srvName)
+				continue
+			default:
 				needsUpdate := aws.ToString(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel]
 				if ch.RecordTTL.IsConfigured() {
 					// No DNS records: let UpdateService return its soft error, as before.

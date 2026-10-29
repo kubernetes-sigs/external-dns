@@ -1963,11 +1963,7 @@ func (s *updateCountingStub) UpdateService(ctx context.Context, input *sd.Update
 	return s.AWSSDClientStub.UpdateService(ctx, input, opts...)
 }
 
-const (
-	testPrivateNS = "private"
-	testAppHost   = "app.private.com"
-	testOwnerID   = "owner"
-)
+const testOwnerID = "owner"
 
 func withResourceLabel(resource string) string {
 	return "heritage=external-dns,external-dns/owner=" + testOwnerID + ",external-dns/resource=" + resource
@@ -2060,7 +2056,7 @@ func TestAWSSDProvider_LabelUpdateKeepsUnconfiguredTTL(t *testing.T) {
 					Id:          aws.String("app"),
 					Name:        aws.String("app"),
 					NamespaceId: aws.String("private"),
-					Description: aws.String("heritage=external-dns,external-dns/owner=owner,external-dns/resource=service/default/a"),
+					Description: aws.String(withResourceLabel("service/default/a")),
 					DnsConfig: &sdtypes.DnsConfig{
 						DnsRecords: []sdtypes.DnsRecord{
 							{
@@ -2086,7 +2082,7 @@ func TestAWSSDProvider_LabelUpdateKeepsUnconfiguredTTL(t *testing.T) {
 		RecordType: endpoint.RecordTypeA,
 		Targets:    endpoint.Targets{"1.2.3.4"},
 		Labels: map[string]string{
-			endpoint.AWSSDDescriptionLabel: "heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/b",
+			endpoint.AWSSDDescriptionLabel: withResourceLabel("ingress/default/b"),
 		},
 	}
 	require.NoError(t, p.ApplyChanges(t.Context(),
@@ -2133,11 +2129,12 @@ func TestAWSSDProvider_CreateKeepsUnownedServiceDescription(t *testing.T) {
 			Targets:    endpoint.Targets{"1.2.3.4"},
 			RecordTTL:  300,
 			Labels: map[string]string{
-				endpoint.AWSSDDescriptionLabel: "heritage=external-dns,external-dns/owner=owner,external-dns/resource=service/default/a",
+				endpoint.AWSSDDescriptionLabel: withResourceLabel("service/default/a"),
 			},
 		}},
 	}))
 
 	assert.Nil(t, api.services["private"]["app"].Description)
 	assert.Equal(t, int64(60), *api.services["private"]["app"].DnsConfig.DnsRecords[0].TTL)
+	assert.Empty(t, api.instances["app"])
 }
