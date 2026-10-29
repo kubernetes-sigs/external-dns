@@ -57,19 +57,47 @@ type rfc2136Stub struct {
 
 func TestFindMsgZone(t *testing.T) {
 	tests := []struct {
-		name     string
-		dnsName  string
-		wantZone string
+		name      string
+		dnsName   string
+		zoneNames []string
+		expected  string
 	}{
-		{name: "exact zone", dnsName: "example.com", wantZone: "example.com."},
-		{name: "subdomain", dnsName: "www.example.com", wantZone: "example.com."},
-		{name: "suffix without label boundary", dnsName: "notexample.com", wantZone: "."},
+		{
+			name:      "exact zone match",
+			dnsName:   "example.com",
+			zoneNames: []string{"example.com"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "subdomain of zone matches",
+			dnsName:   "foo.example.com",
+			zoneNames: []string{"example.com"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "domain sharing a suffix but not a dot boundary does not match",
+			dnsName:   "fooexample.com",
+			zoneNames: []string{"example.com"},
+			expected:  ".",
+		},
+		{
+			name:      "no configured zone matches falls back to root",
+			dnsName:   "foo.other.com",
+			zoneNames: []string{"example.com"},
+			expected:  ".",
+		},
+		{
+			name:      "most specific zone wins when zones are nested",
+			dnsName:   "foo.sub.example.com",
+			zoneNames: []string{"sub.example.com", "example.com"},
+			expected:  "sub.example.com.",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := findMsgZone(&endpoint.Endpoint{DNSName: tt.dnsName}, []string{"example.com"})
-			assert.Equal(t, tt.wantZone, got)
+			ep := &endpoint.Endpoint{DNSName: tt.dnsName}
+			assert.Equal(t, tt.expected, findMsgZone(ep, tt.zoneNames))
 		})
 	}
 }
