@@ -63,12 +63,11 @@ type resourceRecordSetsClientInterface interface {
 }
 
 type changesCreateCallInterface interface {
-	Context(ctx context.Context) changesCreateCallInterface
 	Do(opts ...googleapi.CallOption) (*dns.Change, error)
 }
 
 type changesServiceInterface interface {
-	Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface
+	Create(ctx context.Context, project string, managedZone string, change *dns.Change) changesCreateCallInterface
 }
 
 type resourceRecordSetsService struct {
@@ -95,20 +94,8 @@ type changesService struct {
 	service *dns.ChangesService
 }
 
-func (c changesService) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return changesCreateCall{call: c.service.Create(project, managedZone, change)}
-}
-
-type changesCreateCall struct {
-	call *dns.ChangesCreateCall
-}
-
-func (c changesCreateCall) Context(ctx context.Context) changesCreateCallInterface {
-	return changesCreateCall{call: c.call.Context(ctx)}
-}
-
-func (c changesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, error) {
-	return c.call.Do(opts...)
+func (c changesService) Create(ctx context.Context, project string, managedZone string, change *dns.Change) changesCreateCallInterface {
+	return c.service.Create(project, managedZone, change).Context(ctx)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
@@ -327,7 +314,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 				}
 			}
 
-			if _, err := p.changesClient.Create(p.project, zone, c).Context(ctx).Do(); err != nil {
+			if _, err := p.changesClient.Create(ctx, p.project, zone, c).Do(); err != nil {
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
 			submitted = true

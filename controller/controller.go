@@ -191,10 +191,6 @@ func (c *Controller) Run(ctx context.Context) error {
 	for {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
-				if ctx.Err() != nil {
-					log.Infof("Terminating main controller loop after error: %v", err)
-					return nil
-				}
 				if errors.Is(err, provider.SoftError) {
 					softErrorCount++
 					consecutiveSoftErrors.Gauge.Set(float64(softErrorCount))
