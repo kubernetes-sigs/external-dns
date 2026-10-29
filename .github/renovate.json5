@@ -2,7 +2,7 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: ['config:recommended'],
   labels: ['dependencies', 'ok-to-test', 'release-note-none'],
-  postUpdateOptions: ['gomodTidy'],
+  postUpdateOptions: ['gomodTidy', 'gomodUpdateImportPaths'],
   // No kustomize or docs image refs: release PRs bump the image tag there.
   enabledManagers: ['gomod', 'github-actions', 'pip_requirements', 'custom.regex'],
   packageRules: [
