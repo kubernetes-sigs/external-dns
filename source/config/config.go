@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package config holds the Source configuration passed to source
-// constructors. The Kubernetes-client factory lives in the source package so
-// its typed interface stays colocated with the implementations that use it;
-// Config stores the generator as an opaque any to avoid an import cycle.
+// Package config holds the configuration passed to source constructors.
 package config
 
 import (
@@ -102,9 +99,8 @@ type Config struct {
 
 	Sources []string
 
-	// clientGen stores an injected or lazily initialized Kubernetes client
-	// factory. The concrete type is source.ClientGenerator; it is held as
-	// any here so this package has no dependency on client-go.
+	// clientGen holds a source.ClientGenerator. 
+	// It is any to keep unnecessary clientsets out of this package.
 	clientGen     any
 	clientGenOnce sync.Once
 
@@ -119,23 +115,18 @@ func (cfg *Config) CRDClients() *crd.CRDClients {
 	return cfg.crdClients
 }
 
-// SetCRDClients records the clients built by the crd source so later callers
-// can reuse them. The source package invokes this after constructing the crd
-// source; direct callers should prefer WithCRDClients at construction time.
+// SetCRDClients records the crd source's clients for reuse by CRDClients.
 func (cfg *Config) SetCRDClients(cc *crd.CRDClients) {
 	cfg.crdClients = cc
 }
 
-// SetClientGen stores a Kubernetes client factory on the config.
-// The source package uses this through its typed WithClientGenerator option
-// (ClientGenerator remains defined in that package to avoid an import cycle).
+// SetClientGen sets the Kubernetes client factory. gen must be a source.ClientGenerator.
 func (cfg *Config) SetClientGen(gen any) {
 	cfg.clientGen = gen
 }
 
-// EnsureClientGen returns the stored client factory, lazily initializing it
-// with init once if none was injected. The sync.Once guarantees a single
-// construction even under concurrent access.
+// EnsureClientGen returns the client factory, building it with init on the
+// first call if none was set. It panics if the stored value is not a T.
 func (cfg *Config) EnsureClientGen[T any](init func() T) T {
 	cfg.clientGenOnce.Do(func() {
 		if cfg.clientGen == nil {
