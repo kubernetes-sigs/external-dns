@@ -169,7 +169,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
-	resp, err := requestWithRetry(client, req)
+	resp, err := requestWithRetry(client, req, retryBackoff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
@@ -192,10 +192,10 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}, nil
 }
 
-func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
+func requestWithRetry(client *http.Client, req *http.Request, backoff wait.Backoff) (*http.Response, error) {
 	var resp *http.Response
 	var lastErr error
-	err := wait.ExponentialBackoffWithContext(req.Context(), retryBackoff, func(context.Context) (bool, error) {
+	err := wait.ExponentialBackoffWithContext(req.Context(), backoff, func(context.Context) (bool, error) {
 		// Reset the body before each attempt so retries send the full payload.
 		// GetBody is set automatically by http.NewRequest for in-memory body types;
 		// it is nil for GET requests (no body), so the block is safely skipped.
