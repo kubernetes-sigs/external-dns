@@ -422,7 +422,6 @@ var ProviderNames = []string{
 	ProviderGoDaddy,
 	ProviderGoogle,
 	ProviderInMemory,
-	ProviderLinode,
 	ProviderNS1,
 	ProviderOCI,
 	ProviderOVH,
@@ -446,13 +445,26 @@ func sortedAllowedSources() []string {
 // multiNamespaceSources watch every --namespace value.
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
+	"ambassador-host",
 	"connector",
+	"contour-httpproxy",
 	"crd",
 	"empty",
+	"f5-transportserver",
+	"f5-virtualserver",
 	"fake",
 	"gloo-proxy",
+	"ingress",
+	"istio-gateway",
+	"istio-virtualservice",
+	"kong-tcpingress",
 	"node",
+	"openshift-route",
+	"pod",
 	"service",
+	"skipper-routegroup",
+	"traefik-proxy",
+	"unstructured",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -553,7 +565,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
 	// Flags related to Gloo
-	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
+	b.StringsVar("gloo-namespace", "[DEPRECATED: gloo-proxy source is deprecated] The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
 
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)

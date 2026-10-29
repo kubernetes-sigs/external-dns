@@ -1,5 +1,10 @@
 # Gloo Proxy Source
 
+!!! warning "Deprecated"
+    The `gloo-proxy` source and the `--gloo-namespace` flag are deprecated and will be
+    removed after [Gloo OSS end of life](https://github.com/solo-io/gloo) on 2026-12-31.
+    Migrate to [kgateway](https://kgateway.dev) and the [Gateway API sources](gateway-api.md).
+
 This tutorial describes how to configure ExternalDNS to use the Gloo Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
 

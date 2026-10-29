@@ -57,7 +57,6 @@ TTL must be a positive value.
 | `GoDaddy`      |    Yes    |
 | `Google GCP`   |    Yes    |
 | `InMemory`     |    No     |
-| `Linode`       |    No     |
 | `NS1`          |    No     |
 | `OCI`          |    Yes    |
 | `OVH`          |    No     |
@@ -126,10 +125,6 @@ This value is a constant in the provider code.
 
 For the moment, it is impossible to use a TTL value of 0 with the AWS or Google Providers.
 This behavior may change in the future.
-
-### Linode Provider
-
-The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
 
 ## Use Cases for `external-dns.kubernetes.io/ttl` annotation and `--min-ttl` flag`
 

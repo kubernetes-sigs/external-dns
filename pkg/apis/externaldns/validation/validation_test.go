@@ -513,12 +513,12 @@ func TestValidateNamespaces(t *testing.T) {
 	}{
 		{
 			name:       "no namespace",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: nil,
 		},
 		{
 			name:       "single namespace with a source watching one",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: []string{"team-a"},
 		},
 		{
@@ -528,25 +528,25 @@ func TestValidateNamespaces(t *testing.T) {
 		},
 		{
 			name:       "duplicated namespace with a source watching one",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: []string{"team-a", "team-a"},
 		},
 		{
 			name:       "all namespaces subsuming another with a source watching one",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: []string{"team-a", ""},
 		},
 		{
 			name:        "several namespaces with a source watching one",
-			sources:     []string{"istio-gateway"},
+			sources:     []string{"gateway-httproute"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway",
+			expectedErr: "--namespace accepts a single value with the following sources: gateway-httproute",
 		},
 		{
 			name:        "several namespaces report every unsupported source once",
-			sources:     []string{"node", "istio-gateway", "pod", "istio-gateway"},
+			sources:     []string{"node", "gateway-httproute", "gateway-grpcroute", "gateway-httproute"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway, pod",
+			expectedErr: "--namespace accepts a single value with the following sources: gateway-httproute, gateway-grpcroute",
 		},
 	}
 

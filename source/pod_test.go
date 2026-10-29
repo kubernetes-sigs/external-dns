@@ -29,7 +29,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -41,6 +43,7 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/annotations/schema"
+	"sigs.k8s.io/external-dns/source/informers"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -1032,13 +1035,46 @@ func TestPodSourceLogs(t *testing.T) {
 	}
 }
 
+func TestPodSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	elements := []runtime.Object{&corev1.Node{
+		Name: "node1",
+		Status: corev1.NodeStatus{
+			Addresses: []corev1.NodeAddress{{Type: corev1.NodeExternalIP, Address: "54.10.11.1"}},
+		},
+	}}
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		elements = append(elements, &corev1.Pod{
+			Namespace:   namespace,
+			Name:        "pod",
+			Annotations: map[string]string{annotations.HostnameKey: namespace + ".example.org"},
+			Spec:        corev1.PodSpec{HostNetwork: true, NodeName: "node1"},
+		})
+	}
+
+	src, err := NewPodSource(t.Context(), fake.NewClientset(elements...), &config.Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "54.10.11.1"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "54.10.11.1"),
+	})
+}
+
 func TestPodSource_AddEventHandler(t *testing.T) {
 	fakeInformer := new(fakePodInformer)
 	inf := testInformer{}
 	fakeInformer.On("Informer").Return(&inf)
 
 	pSource := &podSource{
-		podInformer: fakeInformer,
+		podInformers: informers.Single[coreinformers.PodInformer](fakeInformer),
 	}
 
 	handlerCalled := false
@@ -1247,7 +1283,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
 
-		retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
+		retrieved, err := informerFor(t, ps.podInformers, "test-ns").Lister().Pods("test-ns").Get("test-name")
 		require.NoError(t, err)
 
 		// Metadata
@@ -1327,7 +1363,7 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
 
-		retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
+		retrieved, err := informerFor(t, ps.podInformers, "test-ns").Lister().Pods("test-ns").Get("test-name")
 		require.NoError(t, err)
 
 		// Metadata

@@ -38,6 +38,8 @@ external-dns --source=service --source=ingress
 
 Multiple sources can be combined to watch different resource types simultaneously.
 
+To restrict sources to a subset of namespaces, see [Watching Multiple Namespaces](multiple-namespaces.md).
+
 ## Source Categories
 
 - **Kubernetes Core**: Native Kubernetes resources (Service, Ingress, Pod, Node)
