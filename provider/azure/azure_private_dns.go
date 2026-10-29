@@ -25,7 +25,7 @@ import (
 	"time"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
