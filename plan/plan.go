@@ -336,22 +336,13 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 		return true
 	}
 
-	// NoopRegistry records lack resource labels, so ignore missing current labels to avoid perpetual updates.
-	// When both labels exist, detect changes to preserve correct delete attribution (#6766).
-	if resourceChanged(current, desired) {
-		return true
-	}
-
-	return false
-}
-
-func resourceChanged(current, desired *endpoint.Endpoint) bool {
-	cur, des := current.Labels[endpoint.ResourceLabelKey], desired.Labels[endpoint.ResourceLabelKey]
-
-	if cur == "" || des == "" {
+	// Skip resource label checks for NoopRegistry to avoid perpetual reconciliation (#6766).
+	if p.OwnerID == "" {
 		return false
 	}
-	return cur != des
+
+	// detect label changes to preserve correct delete attribution (#6766).
+	return current.Labels[endpoint.ResourceLabelKey] != desired.Labels[endpoint.ResourceLabelKey]
 }
 
 func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {
