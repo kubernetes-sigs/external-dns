@@ -47,7 +47,8 @@ const (
 )
 
 var (
-	retryBackoff = wait.Backoff{Duration: 500 * time.Millisecond, Factor: 1.5, Jitter: 0.5, Steps: 5}
+	// wait.Jitter only adds delay: 250ms with Jitter 2 gives cenkalti's 500ms ±50%.
+	retryBackoff = wait.Backoff{Duration: 250 * time.Millisecond, Factor: 1.5, Jitter: 2, Steps: 5}
 
 	recordsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
