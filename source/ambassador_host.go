@@ -68,7 +68,7 @@ var (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=false
-// +externaldns:source:events=false
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface

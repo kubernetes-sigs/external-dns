@@ -51,8 +51,8 @@ import (
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=false
-// +externaldns:source:events=false
 // +externaldns:source:validation=annotation
 type unstructuredSource struct {
 	templateEngine template.Engine
