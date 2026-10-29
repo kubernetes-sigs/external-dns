@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@ limitations under the License.
 */
 
 // Package config holds the Source configuration passed to source
-// constructors. The Kubernetes-client factory lives in the source package to
-// keep this one free of client-go.
+// constructors. The Kubernetes-client factory lives in the source package so
+// its typed interface stays colocated with the implementations that use it;
+// Config stores the generator as an opaque any to avoid an import cycle.
 package config
 
 import (

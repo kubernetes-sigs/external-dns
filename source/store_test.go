@@ -302,20 +302,20 @@ func TestConfig_ClientGenerator_RESTConfig_Integration(t *testing.T) {
 	t.Run("normal timeout is propagated", func(t *testing.T) {
 		cfg := &config.Config{KubeAPIRequestTimeout: 45 * time.Second}
 
-		config, err := ClientGeneratorFor(cfg).RESTConfig()
+		restCfg, err := ClientGeneratorFor(cfg).RESTConfig()
 		if err == nil {
-			require.NotNil(t, config)
-			assert.Equal(t, 45*time.Second, config.Timeout, "RESTConfig should propagate the timeout")
+			require.NotNil(t, restCfg)
+			assert.Equal(t, 45*time.Second, restCfg.Timeout, "RESTConfig should propagate the timeout")
 		}
 	})
 
 	t.Run("UpdateEvents sets timeout to zero", func(t *testing.T) {
 		cfg := &config.Config{KubeAPIRequestTimeout: 45 * time.Second, UpdateEvents: true}
 
-		config, err := ClientGeneratorFor(cfg).RESTConfig()
+		restCfg, err := ClientGeneratorFor(cfg).RESTConfig()
 		if err == nil {
-			require.NotNil(t, config)
-			assert.Equal(t, time.Duration(0), config.Timeout, "RESTConfig should have zero timeout for watch operations")
+			require.NotNil(t, restCfg)
+			assert.Equal(t, time.Duration(0), restCfg.Timeout, "RESTConfig should have zero timeout for watch operations")
 		}
 	})
 }

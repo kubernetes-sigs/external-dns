@@ -41,20 +41,16 @@ import (
 // ErrSourceNotFound is returned when a requested source doesn't exist.
 var ErrSourceNotFound = errors.New("source not found")
 
-// Config aliases config.Config so the source package's existing *Config
-// signatures keep working after the shared config moved to source/config.
-type Config = config.Config
-
 // WithClientGenerator sets a custom ClientGenerator, overriding the default
 // SingletonClientGenerator. Intended for testing.
 func WithClientGenerator(gen ClientGenerator) config.OverrideConfigOption {
-	return func(cfg *Config) {
+	return func(cfg *config.Config) {
 		cfg.SetClientGen(gen)
 	}
 }
 
 // ClientGeneratorFor returns cfg's ClientGenerator, lazily building a SingletonClientGenerator if none was injected.
-func ClientGeneratorFor(cfg *Config) ClientGenerator {
+func ClientGeneratorFor(cfg *config.Config) ClientGenerator {
 	return cfg.EnsureClientGen(func() ClientGenerator {
 		return &SingletonClientGenerator{
 			KubeConfig:   cfg.KubeConfig,
@@ -220,7 +216,7 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 }
 
 // ByNames returns multiple Sources given multiple names.
-func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, error) {
+func ByNames(ctx context.Context, cfg *config.Config, p ClientGenerator) ([]Source, error) {
 	sources := make([]Source, 0, len(cfg.Sources))
 	for _, name := range cfg.Sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)
@@ -264,7 +260,7 @@ func ByNames(ctx context.Context, cfg *Config, p ClientGenerator) ([]Source, err
 //
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
 // because they have simpler initialization requirements.
-func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
+func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *config.Config) (Source, error) {
 	// Scope the template engine to this source so templates can use isSource "name".
 	var err error
 	if cfg.TemplateEngine, err = cfg.TemplateEngine.WithSource(source); err != nil {
@@ -333,7 +329,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 //
 // Standardized Function Signature Pattern:
 //
-//	func buildXXXSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error)
+//	func buildXXXSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error)
 //
 // Standardized Constructor Parameter Pattern (where applicable):
 //  1. ctx (context.Context) - Always first when supported by the source constructor
@@ -356,7 +352,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 // (e.g., RouteGroupSource doesn't use ClientGenerator, GlooSource doesn't accept context)
 // buildNodeSource creates a Node source for exposing node information as DNS records.
 // Follows standard pattern: ctx, client, annotationFilter, fqdnTemplate, labelFilter, ...other
-func buildNodeSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildNodeSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	client, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -366,7 +362,7 @@ func buildNodeSource(ctx context.Context, p ClientGenerator, cfg *Config) (Sourc
 
 // buildServiceSource creates a Service source for exposing Kubernetes services as DNS records.
 // Follows standard pattern: ctx, client, namespace, annotationFilter, fqdnTemplate, ...other
-func buildServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildServiceSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	client, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -376,7 +372,7 @@ func buildServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 
 // buildIngressSource creates an Ingress source for exposing Kubernetes ingresses as DNS records.
 // Follows standard pattern: ctx, client, namespace, annotationFilter, fqdnTemplate, ...other
-func buildIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildIngressSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	client, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -386,7 +382,7 @@ func buildIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (So
 
 // buildPodSource creates a Pod source for exposing Kubernetes pods as DNS records.
 // Follows standard pattern: ctx, client, namespace, ...other (no annotation/label filters)
-func buildPodSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildPodSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	client, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -396,7 +392,7 @@ func buildPodSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 
 // buildIstioGatewaySource creates an Istio Gateway source for exposing Istio gateways as DNS records.
 // Requires both Kubernetes and Istio clients. Follows standard parameter pattern.
-func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -410,7 +406,7 @@ func buildIstioGatewaySource(ctx context.Context, p ClientGenerator, cfg *Config
 
 // buildIstioVirtualServiceSource creates an Istio VirtualService source for exposing virtual services as DNS records.
 // Requires both Kubernetes and Istio clients. Follows standard parameter pattern.
-func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -422,7 +418,7 @@ func buildIstioVirtualServiceSource(ctx context.Context, p ClientGenerator, cfg 
 	return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg)
 }
 
-func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -434,7 +430,7 @@ func buildAmbassadorHostSource(ctx context.Context, p ClientGenerator, cfg *Conf
 	return NewAmbassadorHostSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-func buildContourHTTPProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildContourHTTPProxySource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	dynamicClient, err := p.DynamicKubernetesClient()
 	if err != nil {
 		return nil, err
@@ -445,7 +441,7 @@ func buildContourHTTPProxySource(ctx context.Context, p ClientGenerator, cfg *Co
 // buildGlooProxySource creates a Gloo source for exposing Gloo proxies as DNS records.
 // Requires both dynamic and standard Kubernetes clients.
 // Note: Does not accept context parameter in constructor (legacy design).
-func buildGlooProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildGlooProxySource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -457,7 +453,7 @@ func buildGlooProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (
 	return NewGlooSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-func buildTraefikProxySource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildTraefikProxySource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -469,7 +465,7 @@ func buildTraefikProxySource(ctx context.Context, p ClientGenerator, cfg *Config
 	return NewTraefikSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-func buildOpenShiftRouteSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildOpenShiftRouteSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	ocpClient, err := p.OpenShiftClient()
 	if err != nil {
 		return nil, err
@@ -478,7 +474,7 @@ func buildOpenShiftRouteSource(ctx context.Context, p ClientGenerator, cfg *Conf
 }
 
 // buildCRDSource creates a CRD source for exposing DNSEndpoint custom resources as DNS records.
-func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	restConfig, err := p.RESTConfig()
 	if err != nil {
 		return nil, err
@@ -493,14 +489,14 @@ func buildCRDSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source
 
 // stashCRDClients records src's client on cfg for reuse if src is a *crdSource,
 // so it can be exercised without needing a working REST config in tests.
-func stashCRDClients(cfg *Config, src Source) {
+func stashCRDClients(cfg *config.Config, src Source) {
 	if cs, ok := src.(*crdSource); ok {
 		cfg.SetCRDClients(crd.NewCRDClients(cs.crReader, cs.crWriter))
 	}
 }
 
 // buildSkipperRouteGroupSource creates a Skipper RouteGroup source for exposing route groups as DNS records.
-func buildSkipperRouteGroupSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildSkipperRouteGroupSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	restConfig, err := p.RESTConfig()
 	if err != nil {
 		return nil, err
@@ -512,7 +508,7 @@ func buildSkipperRouteGroupSource(ctx context.Context, p ClientGenerator, cfg *C
 	return NewRouteGroupSource(ctx, rgClient, cfg)
 }
 
-func buildKongTCPIngressSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildKongTCPIngressSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -524,7 +520,7 @@ func buildKongTCPIngressSource(ctx context.Context, p ClientGenerator, cfg *Conf
 	return NewKongTCPIngressSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-func buildF5VirtualServerSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildF5VirtualServerSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -536,7 +532,7 @@ func buildF5VirtualServerSource(ctx context.Context, p ClientGenerator, cfg *Con
 	return NewF5VirtualServerSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubernetesClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err
@@ -548,7 +544,7 @@ func buildF5TransportServerSource(ctx context.Context, p ClientGenerator, cfg *C
 	return NewF5TransportServerSource(ctx, dynamicClient, kubernetesClient, cfg)
 }
 
-func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *Config) (Source, error) {
+func buildUnstructuredSource(ctx context.Context, p ClientGenerator, cfg *config.Config) (Source, error) {
 	kubeClient, err := p.KubeClient()
 	if err != nil {
 		return nil, err

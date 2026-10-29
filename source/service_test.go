@@ -4578,7 +4578,7 @@ func TestServiceSourceMultipleNamespaces(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(ctx, fakeClient, &Config{
+	src, err := NewServiceSource(ctx, fakeClient, &config.Config{
 		Namespaces:           []string{"team-a", "team-b"},
 		LabelFilter:          labels.Everything(),
 		ExcludeUnschedulable: true,
@@ -4637,7 +4637,7 @@ func TestServiceSourceMultipleNamespacesHeadless(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(ctx, fakeClient, &Config{
+	src, err := NewServiceSource(ctx, fakeClient, &config.Config{
 		Namespaces:                     []string{"team-a", "team-b"},
 		LabelFilter:                    labels.Everything(),
 		ExcludeUnschedulable:           true,

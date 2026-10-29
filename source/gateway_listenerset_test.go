@@ -557,7 +557,7 @@ func TestGatewayHTTPRouteWithListenerSetRouteAnnotationFilter(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &Config{
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &config.Config{
 		AnnotationFilter:    parseAnnotationFilterOrNil("foo=bar"),
 		GatewayListenerSets: true,
 	})
