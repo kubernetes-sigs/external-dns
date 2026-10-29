@@ -67,10 +67,15 @@ webhook-deps:
 validate-json-yaml:
 	bash scripts/validate-json-yaml.sh
 
-#? crd: Generates CRD using controller-gen and copy it into chart
+#? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd:
 	@./scripts/generate-crd.sh
+
+#? crd-chart: Generates CRD and copies it into the chart, once a release supports it
+.PHONY: crd-chart
+crd-chart:
+	@./scripts/generate-crd.sh --chart
 
 # go.tool.mod is not tracked by Renovate; update it by hand
 #? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
