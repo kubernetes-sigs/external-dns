@@ -44,5 +44,9 @@ The targets of the DNS entries created from an Ingress are sourced from the foll
 1. If the Ingress has an `external-dns.kubernetes.io/target` annotation, uses
 the values from that.
 
-2. Otherwise, iterates over the Ingress's `status.loadBalancer.ingress`,
+2. Otherwise, if the Ingress has an
+[`external-dns.kubernetes.io/target-from`](../annotations/annotations.md#external-dnskubernetesiotarget-from)
+annotation, reads them from the referenced resource. Status is never used as a fallback.
+
+3. Otherwise, iterates over the Ingress's `status.loadBalancer.ingress`,
 adding each non-empty `ip` and `hostname`.

@@ -20,6 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -207,4 +211,16 @@ func TestValidateHostNames(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateTargetFrom(t *testing.T) {
+	require.NoError(t, ValidateTargetFrom("services/lb-ns/shared-lb#{{ .status.loadBalancer }}"))
+	require.Error(t, ValidateTargetFrom("services/lb-ns/shared-lb"))
+}
+
+func TestTargetFromSupportedSources(t *testing.T) {
+	s := New(Options{Mode: ModeStrict})
+	obj := &metav1.ObjectMeta{Annotations: map[string]string{annotations.TargetFromKey: "services/shared-lb#{{ .status }}"}}
+	assert.True(t, s.WithSource(types.Ingress).IsValid(obj))
+	assert.False(t, s.WithSource(types.Service).IsValid(obj))
 }

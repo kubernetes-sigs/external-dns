@@ -261,7 +261,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ingressTargets(t.Context(), nil, realIngress), ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
 		})
 	}
 }
@@ -360,7 +360,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ingressTargets(t.Context(), nil, realIngress), false, false, false), ti.expected)
 		})
 	}
 }

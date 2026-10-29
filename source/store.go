@@ -29,6 +29,7 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -39,6 +40,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/annotations/schema"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -121,6 +123,34 @@ type Config struct {
 	// crdClients lets callers outside this package reuse the crd source's client
 	// instead of building a second one.
 	crdClients *crd.CRDClients
+
+	// targetFrom is shared by all sources so a resource referenced from several
+	// of them is watched once.
+	targetFrom     *targetfrom.Resolver
+	targetFromOnce sync.Once
+}
+
+// targetFromResolver returns the shared target-from resolver. Its clients are
+// built on the first reference, so sources pay nothing unless it is used.
+func (cfg *Config) targetFromResolver(ctx context.Context) *targetfrom.Resolver {
+	cfg.targetFromOnce.Do(func() {
+		if cfg.targetFrom != nil {
+			return
+		}
+		gen := cfg.ClientGenerator()
+		cfg.targetFrom = targetfrom.NewResolver(ctx, func() (dynamic.Interface, discovery.DiscoveryInterface, error) {
+			dyn, err := gen.DynamicKubernetesClient()
+			if err != nil {
+				return nil, nil, err
+			}
+			kube, err := gen.KubeClient()
+			if err != nil {
+				return nil, nil, err
+			}
+			return dyn, kube.Discovery(), nil
+		})
+	})
+	return cfg.targetFrom
 }
 
 // CRDClients returns the reader/writer built for the crd source, or nil if the
