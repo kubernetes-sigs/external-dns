@@ -85,10 +85,7 @@
     },
     "eventsEmit": {
       "description": "_Kubernetes_ events to emit; valid values are `RecordReady`, `RecordDeleted` \u0026 `RecordError`. Setting this also grants the RBAC permission to create `events.k8s.io` events.",
-      "type": [
-        "array",
-        "null"
-      ],
+      "type": "array",
       "uniqueItems": true,
       "items": {
         "type": "string",

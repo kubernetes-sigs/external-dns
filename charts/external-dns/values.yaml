@@ -220,7 +220,7 @@ triggerLoopOnEvent: false
 
 # -- _Kubernetes_ events to emit; valid values are `RecordReady`, `RecordDeleted` & `RecordError`.
 # Setting this also grants the RBAC permission to create `events.k8s.io` events.
-eventsEmit: []  # @schema type: [array, null]; item: string; itemEnum: [RecordReady, RecordDeleted, RecordError]; uniqueItems: true
+eventsEmit: []  # @schema type: [array]; item: string; itemEnum: [RecordReady, RecordDeleted, RecordError]; uniqueItems: true
 
 # -- if `true`, _ExternalDNS_ will run in a namespaced scope (`Role`` and `Rolebinding`` will be namespaced too).
 namespaced: false
