@@ -758,7 +758,7 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 
 func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 	for _, zone := range zoneNames {
-		if ep.DNSName == zone || strings.HasSuffix(ep.DNSName, "."+zone) {
+		if ep.DNSName == zone || dns.IsSubDomain(dns.Fqdn(zone), dns.Fqdn(ep.DNSName)) {
 			return dns.Fqdn(zone)
 		}
 	}
