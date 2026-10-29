@@ -10,13 +10,14 @@ babel==2.18.0 \
     # via
     #   mkdocs-git-revision-date-localized-plugin
     #   mkdocs-material
-backrefs==7.0 \
-    --hash=sha256:4989bb9e1e99eb23647c7160ed51fb21d0b41b5d200f2d3017da41e023097e82 \
-    --hash=sha256:a0fa7360c63509e9e077e174ef4e6d3c21c8db94189b9d957289ae6d794b9475 \
-    --hash=sha256:a6448b28180e3ca01134c9cf09dcebafad8531072e09903c5451748a05f24bc9 \
-    --hash=sha256:b57cd227ea556b0aed3dc9b8da4628db4eabc0402c6d7fcfc69283a93955f7e9 \
-    --hash=sha256:ca42ce6a49ace3d75684dfa9937f3373902a63284ecb385ce36d15e5dcb41c12 \
-    --hash=sha256:f2c52955d631b9e1ac4cd56209f0a3a946d592b98e7790e77699339ae01c102a
+backrefs==8.1 \
+    --hash=sha256:11f61846e446fa8637af2f5c073f1083aa58dbb7460b019fd51689f564e44f7e \
+    --hash=sha256:1e857c32e91b8fe46ddb359ac21021a37b090fa4239566a61e9856123e334041 \
+    --hash=sha256:438bd38dc7fa0cded52786a1351a2dad9efc2cda95d047284c41d916a22312a8 \
+    --hash=sha256:9c8fe3e2eaae4301a9ce787341d986e5ba25a887d89da6de0de5d58eca26a949 \
+    --hash=sha256:b472c76082769f86a97ffccfd1f2599b2b706610c6154955664fffe67e909035 \
+    --hash=sha256:db577dbae1c61187534d35fc9bfbd0c01158fff6239a66fecf7590e5b17879a9 \
+    --hash=sha256:f86d9312df3ebae1241758af80809a319cafa1d8f32189edfb242c9aa55573b6
     # via mkdocs-material
 certifi==2026.10.19 \
     --hash=sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae \
@@ -387,17 +388,17 @@ pygments==2.20.0 \
     --hash=sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f \
     --hash=sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176
     # via mkdocs-material
-pymdown-extensions==11.0.1 \
-    --hash=sha256:db3943a62bab7e03af1364f0c4083e64b91fb097675a4b6cceccfbe9a77e5eb2 \
-    --hash=sha256:dd2905ae6fc5b75582fafb139a1266ffc754705efa902aa50067fa7ff4f94ec0
+pymdown-extensions==12.3 \
+    --hash=sha256:345493a8e3497e24382902903a1c43a28e34a52f2b7571a1c9641429b820ca74 \
+    --hash=sha256:a7f2a4e0bc60c6e6babfa7922cfb3b01cd640eb00fb208f3c582e12bae00ea67
     # via mkdocs-material
 pyparsing==3.3.2 \
     --hash=sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d \
     --hash=sha256:c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc
     # via mike
-python-dateutil==2.9.0.post0 \
-    --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
-    --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
+python-dateutil==3.0.0 \
+    --hash=sha256:3c79630202e4152c6add678446984236efe4f57e84d8e892aab0637bab82e9fd \
+    --hash=sha256:7ebcb3c29a92f3ceafe79a7a48a5c45677e9e004bbeec5742ac0bbb00560b7a2
     # via
     #   ghp-import
     #   mkdocs-macros-plugin
