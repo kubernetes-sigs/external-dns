@@ -1,5 +1,10 @@
 # Gloo Proxy Source
 
+!!! warning "Deprecated"
+    The `gloo-proxy` source and the `--gloo-namespace` flag are deprecated and will be
+    removed after [Gloo OSS end of life](https://github.com/solo-io/gloo) on 2026-12-31.
+    Migrate to [kgateway](https://kgateway.dev) and the [Gateway API sources](gateway-api.md).
+
 This tutorial describes how to configure ExternalDNS to use the Gloo Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
 
@@ -24,7 +29,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=gloo-proxy
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
@@ -97,7 +102,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=gloo-proxy
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)

@@ -1205,3 +1205,14 @@ func TestOwnerMismatchLogsDebug(t *testing.T) {
 	p.Calculate()
 	logtest.TestHelperLogContainsWithLogLevel(wantMsg, log.DebugLevel, hook, t)
 }
+
+func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
+	old := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4")
+	updated := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4").
+		WithRefObject(endpoint.NewObjectRef("Service", "v1", "default", "svc", "", "service"))
+	changes := &Changes{
+		UpdateOld: []*endpoint.Endpoint{old},
+		UpdateNew: []*endpoint.Endpoint{updated},
+	}
+	suite.False(changes.HasChanges())
+}

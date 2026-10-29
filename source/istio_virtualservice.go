@@ -57,17 +57,17 @@ const IstioMeshGateway = "mesh"
 // +externaldns:source:description=Creates DNS entries from Istio VirtualService resources
 // +externaldns:source:resources=VirtualService.networking.istio.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type virtualServiceSource struct {
-	namespace                string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	serviceInformer          coreinformers.ServiceInformer
-	vServiceInformer         networkingv1informer.VirtualServiceInformer
-	gatewayInformer          networkingv1informer.GatewayInformer
-	ingressInformer          netinformers.IngressInformer
+	serviceInformers         *informers.Informers[coreinformers.ServiceInformer]
+	vServiceInformers        *informers.Informers[networkingv1informer.VirtualServiceInformer]
+	gatewayInformers         *informers.Informers[networkingv1informer.GatewayInformer]
+	ingressInformers         *informers.Informers[netinformers.IngressInformer]
 }
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
@@ -79,71 +79,80 @@ func NewIstioVirtualServiceSource(
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	namespace := cfg.Namespace()
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
-	virtualServiceInformer := istioInformerFactory.Networking().V1().VirtualServices()
-	gatewayInformer := istioInformerFactory.Networking().V1().Gateways()
-	ingressInformer := informerFactory.Networking().V1().Ingresses()
+	kubeFactories := informers.NewFactories(cfg.Namespaces, func(namespace string) kubeinformers.SharedInformerFactory {
+		return kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	})
+	istioFactories := informers.NewFactories(cfg.Namespaces, func(namespace string) istioinformers.SharedInformerFactory {
+		return istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
+	})
+	serviceInformers := informers.Map(kubeFactories, func(_ string, factory kubeinformers.SharedInformerFactory) coreinformers.ServiceInformer {
+		return factory.Core().V1().Services()
+	})
+	virtualServiceInformers := informers.Map(istioFactories, func(_ string, factory istioinformers.SharedInformerFactory) networkingv1informer.VirtualServiceInformer {
+		return factory.Networking().V1().VirtualServices()
+	})
+	gatewayInformers := informers.Map(istioFactories, func(_ string, factory istioinformers.SharedInformerFactory) networkingv1informer.GatewayInformer {
+		return factory.Networking().V1().Gateways()
+	})
+	ingressInformers := informers.Map(kubeFactories, func(_ string, factory kubeinformers.SharedInformerFactory) netinformers.IngressInformer {
+		return factory.Networking().V1().Ingresses()
+	})
 
-	informers.MustSetTransform(serviceInformer.Informer(), informers.TransformerWithOptions[*corev1.Service](
+	serviceInformers.MustSetTransform(informers.TransformerWithOptions[*corev1.Service](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
 	))
-	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+	ingressInformers.MustSetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
-	informers.MustSetTransform(virtualServiceInformer.Informer(), informers.TransformerWithOptions[*networkingv1.VirtualService](
+	virtualServiceInformers.MustSetTransform(informers.TransformerWithOptions[*networkingv1.VirtualService](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
-	informers.MustSetTransform(gatewayInformer.Informer(), informers.TransformerWithOptions[*networkingv1.Gateway](
+	gatewayInformers.MustSetTransform(informers.TransformerWithOptions[*networkingv1.Gateway](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
-	informers.MustAddIndexers(virtualServiceInformer.Informer(), informers.IndexerWithOptions[*networkingv1.VirtualService](
+	virtualServiceInformers.MustAddIndexers(informers.IndexerWithOptions[*networkingv1.VirtualService](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkingv1.VirtualService]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
-	informers.MustAddEventHandler(serviceInformer.Informer(), informers.DefaultEventHandler())
-	informers.MustAddEventHandler(virtualServiceInformer.Informer(), informers.DefaultEventHandler())
-	informers.MustAddEventHandler(gatewayInformer.Informer(), informers.DefaultEventHandler())
+	ingressInformers.MustAddEventHandler(informers.DefaultEventHandler())
+	serviceInformers.MustAddEventHandler(informers.DefaultEventHandler())
+	virtualServiceInformers.MustAddEventHandler(informers.DefaultEventHandler())
+	gatewayInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
-	istioInformerFactory.Start(ctx.Done())
+	kubeFactories.Start(ctx.Done())
+	istioFactories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, kubeFactories); err != nil {
 		return nil, err
 	}
-	if err := informers.WaitForCacheSync(ctx, istioInformerFactory); err != nil {
+	if err := informers.WaitForCacheSyncAll(ctx, istioFactories); err != nil {
 		return nil, err
 	}
 
 	return &virtualServiceSource{
-		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		serviceInformer:          serviceInformer,
-		vServiceInformer:         virtualServiceInformer,
-		gatewayInformer:          gatewayInformer,
-		ingressInformer:          ingressInformer,
+		serviceInformers:         serviceInformers,
+		vServiceInformers:        virtualServiceInformers,
+		gatewayInformers:         gatewayInformers,
+		ingressInformers:         ingressInformers,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	indexer := sc.vServiceInformer.Informer().GetIndexer()
-	objs := informers.ListIndexed[*networkingv1.VirtualService](indexer)
+	objs := informers.ListIndexedAll[*networkingv1.VirtualService](sc.vServiceInformers.Indexers()...)
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(objs))
 
@@ -162,7 +171,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			return nil, err
 		}
 
-		if endpoint.HasNoEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
+		if endpoint.IsEmptyEndpoints(gwEndpoints, types.IstioVirtualService, vService) {
 			continue
 		}
 
@@ -179,7 +188,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 func (sc *virtualServiceSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio VirtualService")
 
-	informers.MustAddEventHandler(sc.vServiceInformer.Informer(), eventHandlerFunc(handler))
+	sc.vServiceInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string, virtualService *networkingv1.VirtualService) (*networkingv1.Gateway, error) {
@@ -195,7 +204,7 @@ func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string,
 	}
 	namespace = cmp.Or(namespace, virtualService.Namespace)
 
-	gateway, err := sc.gatewayInformer.Lister().Gateways(namespace).Get(name)
+	gateway, err := sc.lookupGateway(namespace, name)
 	if errors.IsNotFound(err) {
 		log.Warnf("VirtualService (%s/%s) references non-existent gateway: %s ", virtualService.Namespace, virtualService.Name, gatewayStr)
 		return gateway, nil
@@ -208,6 +217,15 @@ func (sc *virtualServiceSource) getGateway(_ context.Context, gatewayStr string,
 		return gateway, nil
 	}
 	return gateway, nil
+}
+
+// lookupGateway returns NotFound for an unwatched namespace, as a namespaced lister does.
+func (sc *virtualServiceSource) lookupGateway(namespace, name string) (*networkingv1.Gateway, error) {
+	gatewayInformer, ok := sc.gatewayInformers.For(namespace)
+	if !ok {
+		return nil, errors.NewNotFound(networkingv1.Resource("gateways"), name)
+	}
+	return gatewayInformer.Lister().Gateways(namespace).Get(name)
 }
 
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1.VirtualService) ([]*endpoint.Endpoint, error) {
@@ -319,50 +337,65 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 // checks if the given VirtualService should actually bind to the given gateway
 // see requirements here: https://istio.io/docs/reference/config/networking/gateway/#Server
 func virtualServiceBindsToGateway(vService *networkingv1.VirtualService, gateway *networkingv1.Gateway, vsHost string) bool {
-	isValid := false
-	if len(vService.Spec.ExportTo) == 0 {
-		isValid = true
-	} else {
-		for _, ns := range vService.Spec.ExportTo {
-			if ns == "*" || ns == gateway.Namespace || (ns == "." && gateway.Namespace == vService.Namespace) {
-				isValid = true
-			}
-		}
-	}
-	if !isValid {
+	if !virtualServiceExportedToNamespace(vService, gateway.Namespace) {
 		return false
 	}
+	return gatewayServerHostMatches(vService, gateway, vsHost)
+}
 
+// Empty exportTo means visible in every namespace.
+func virtualServiceExportedToNamespace(vService *networkingv1.VirtualService, namespace string) bool {
+	if len(vService.Spec.ExportTo) == 0 {
+		return true
+	}
+	for _, ns := range vService.Spec.ExportTo {
+		if ns == "*" || ns == namespace || (ns == "." && namespace == vService.Namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+func gatewayServerHostMatches(vService *networkingv1.VirtualService, gateway *networkingv1.Gateway, vsHost string) bool {
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
-			namespace := "*"
-			parts := strings.Split(host, "/")
-			if len(parts) == 2 {
-				namespace = parts[0]
-				host = parts[1]
-			} else if len(parts) != 1 {
+			namespace, hostPattern, ok := splitGatewayHost(host)
+			if !ok {
 				log.Debugf("Gateway %s/%s has invalid host %s", gateway.Namespace, gateway.Name, host)
 				continue
 			}
-
 			if namespace == "*" || namespace == vService.Namespace || (namespace == "." && vService.Namespace == gateway.Namespace) {
-				if host == "*" {
-					return true
-				}
-
-				suffixMatch := false
-				if strings.HasPrefix(host, "*.") {
-					suffixMatch = true
-				}
-
-				if host == vsHost || (suffixMatch && strings.HasSuffix(vsHost, host[1:])) {
+				if hostPatternMatches(hostPattern, vsHost) {
 					return true
 				}
 			}
 		}
 	}
-
 	return false
+}
+
+// splitGatewayHost splits "namespace/host"; a bare host means "*/host".
+func splitGatewayHost(host string) (string, string, bool) {
+	parts := strings.Split(host, "/")
+	switch len(parts) {
+	case 2:
+		return parts[0], parts[1], true
+	case 1:
+		return "*", host, true
+	default:
+		return "", "", false
+	}
+}
+
+// hostPatternMatches supports exact, "*" and "*.domain" patterns.
+func hostPatternMatches(hostPattern, vsHost string) bool {
+	if hostPattern == "*" {
+		return true
+	}
+
+	suffixMatch := strings.HasPrefix(hostPattern, "*.")
+
+	return hostPattern == vsHost || (suffixMatch && strings.HasSuffix(vsHost, hostPattern[1:]))
 }
 
 func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *networkingv1.Gateway) (endpoint.Targets, error) {
@@ -374,7 +407,7 @@ func (sc *virtualServiceSource) targetsFromIngress(ingressStr string, gateway *n
 		namespace = gateway.Namespace
 	}
 
-	ingress, err := sc.ingressInformer.Lister().Ingresses(namespace).Get(name)
+	ingress, err := getIngress(sc.ingressInformers, namespace, name)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -403,5 +436,5 @@ func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1.Gateway
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}
 
-	return EndpointTargetsFromServices(sc.serviceInformer, sc.namespace, gateway.Spec.Selector)
+	return endpointTargetsFromServiceInformers(sc.serviceInformers, gateway.Spec.Selector)
 }

@@ -159,8 +159,8 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 // +externaldns:source:description=Creates DNS entries from Gloo Proxy resources
 // +externaldns:source:resources=Proxy.gloo.solo.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
@@ -177,6 +177,7 @@ func NewGlooSource(
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	cfg *Config) (Source, error) {
+	log.Warn("The gloo-proxy source is deprecated and will be removed after Gloo OSS end of life (2026-12-31). Migrate to kgateway with the gateway-* sources.")
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()

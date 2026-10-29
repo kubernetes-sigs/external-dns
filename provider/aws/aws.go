@@ -81,6 +81,10 @@ const (
 	maxLatitude  = 90.0
 	minLongitude = -180.0
 	maxLongitude = 180.0
+	// Route53 geoproximity bias valid range.
+	// https://docs.aws.amazon.com/Route53/latest/APIReference/API_GeoProximityLocation.html
+	minBias = -99
+	maxBias = 99
 )
 
 // see elb: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -624,96 +628,11 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 			}
 
 			for _, r := range resp.ResourceRecordSets {
-				newEndpoints := make([]*endpoint.Endpoint, 0)
-
 				if !p.SupportedRecordType(r.Type) {
 					continue
 				}
 
-				name := convertOctalToAscii(wildcardUnescape(*r.Name))
-
-				var ttl endpoint.TTL
-				if r.TTL != nil {
-					ttl = endpoint.TTL(*r.TTL)
-				}
-
-				if len(r.ResourceRecords) > 0 {
-					targets := make([]string, len(r.ResourceRecords))
-					for idx, rr := range r.ResourceRecords {
-						targets[idx] = *rr.Value
-					}
-
-					ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
-					if r.Type == endpoint.RecordTypeCNAME {
-						ep = ep.WithAliasProperty(endpoint.AliasFalse)
-					}
-					newEndpoints = append(newEndpoints, ep)
-				}
-
-				if r.AliasTarget != nil {
-					// Alias records don't have TTLs so provide the default to match the TXT generation
-					if ttl == 0 {
-						ttl = defaultTTL
-					}
-					aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
-					ep := endpoint.
-						NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
-						WithProviderSpecific(providerSpecificTargetHostedZone, cleanZoneID(aws.ToString(r.AliasTarget.HostedZoneId))).
-						WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
-						WithAliasProperty(endpoint.AliasTrue)
-					newEndpoints = append(newEndpoints, ep)
-				}
-
-				for _, ep := range newEndpoints {
-					if r.SetIdentifier != nil {
-						ep.SetIdentifier = *r.SetIdentifier
-						switch {
-						case r.Weight != nil:
-							ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", *r.Weight))
-						case r.Region != "":
-							ep.WithProviderSpecific(providerSpecificRegion, string(r.Region))
-						case r.Failover != "":
-							ep.WithProviderSpecific(providerSpecificFailover, string(r.Failover))
-						case r.MultiValueAnswer != nil && *r.MultiValueAnswer:
-							ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
-						case r.GeoLocation != nil:
-							if r.GeoLocation.ContinentCode != nil {
-								ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, *r.GeoLocation.ContinentCode)
-							} else {
-								if r.GeoLocation.CountryCode != nil {
-									ep.WithProviderSpecific(providerSpecificGeolocationCountryCode, *r.GeoLocation.CountryCode)
-								}
-								if r.GeoLocation.SubdivisionCode != nil {
-									ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, *r.GeoLocation.SubdivisionCode)
-								}
-							}
-						case r.GeoProximityLocation != nil:
-							handleGeoProximityLocationRecord(&r, ep)
-						default:
-							// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
-						}
-					}
-
-					if r.HealthCheckId != nil {
-						ep.WithProviderSpecific(providerSpecificHealthCheckID, *r.HealthCheckId)
-					}
-
-					endpoints = append(endpoints, ep)
-					if zone, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
-						if key, ok := aliasKey(ep); ok {
-							aliasRecords[key] = append(aliasRecords[key], ep)
-							if aliasZonesBySource[key] == nil {
-								aliasZonesBySource[key] = make(map[string]string)
-							}
-							aliasZonesBySource[key][cleanZoneID(aws.ToString(z.zone.Id))] = zone
-							if previous, exists := aliasZones[key]; !exists {
-								aliasZones[key] = zone
-							} else if previous != zone {
-								aliasZones[key] = ""
-							}
-						}
-					}
-				}
+				endpoints = append(endpoints, newEndpointsFromResourceRecordSet(&r)...)
 			}
 		}
 	}
@@ -733,6 +652,93 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	}
 
 	return endpoints, nil
+}
+
+func newEndpointsFromResourceRecordSet(r *route53types.ResourceRecordSet) []*endpoint.Endpoint {
+	newEndpoints := make([]*endpoint.Endpoint, 0)
+
+	name := convertOctalToAscii(wildcardUnescape(*r.Name))
+
+	var ttl endpoint.TTL
+	if r.TTL != nil {
+		ttl = endpoint.TTL(*r.TTL)
+	}
+
+	if len(r.ResourceRecords) > 0 {
+		targets := make([]string, len(r.ResourceRecords))
+		for idx, rr := range r.ResourceRecords {
+			targets[idx] = *rr.Value
+		}
+
+		ep := endpoint.NewEndpointWithTTL(name, string(r.Type), ttl, targets...)
+		if r.Type == endpoint.RecordTypeCNAME {
+			ep = ep.WithAliasProperty(endpoint.AliasFalse)
+		}
+		newEndpoints = append(newEndpoints, ep)
+	}
+
+	if r.AliasTarget != nil {
+		// Alias records don't have TTLs so provide the default to match the TXT generation
+		if ttl == 0 {
+			ttl = defaultTTL
+		}
+		aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
+		ep := endpoint.
+			NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
+			WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
+			WithAliasProperty(endpoint.AliasTrue)
+		newEndpoints = append(newEndpoints, ep)
+	}
+
+	for _, ep := range newEndpoints {
+		applyRoutingProperties(r, ep)
+	}
+
+	return newEndpoints
+}
+
+func applyRoutingProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	if r.SetIdentifier != nil {
+		ep.SetIdentifier = *r.SetIdentifier
+		applySetIdentifierProperties(r, ep)
+	}
+
+	if r.HealthCheckId != nil {
+		ep.WithProviderSpecific(providerSpecificHealthCheckID, *r.HealthCheckId)
+	}
+}
+
+func applySetIdentifierProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	switch {
+	case r.Weight != nil:
+		ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", *r.Weight))
+	case r.Region != "":
+		ep.WithProviderSpecific(providerSpecificRegion, string(r.Region))
+	case r.Failover != "":
+		ep.WithProviderSpecific(providerSpecificFailover, string(r.Failover))
+	case r.MultiValueAnswer != nil && *r.MultiValueAnswer:
+		ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
+	case r.GeoLocation != nil:
+		applyGeolocationProperties(r, ep)
+	case r.GeoProximityLocation != nil:
+		handleGeoProximityLocationRecord(r, ep)
+	default:
+		// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
+	}
+}
+
+// Route53 rejects ContinentCode combined with CountryCode or SubdivisionCode.
+func applyGeolocationProperties(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
+	if r.GeoLocation.ContinentCode != nil {
+		ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, *r.GeoLocation.ContinentCode)
+	} else {
+		if r.GeoLocation.CountryCode != nil {
+			ep.WithProviderSpecific(providerSpecificGeolocationCountryCode, *r.GeoLocation.CountryCode)
+		}
+		if r.GeoLocation.SubdivisionCode != nil {
+			ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, *r.GeoLocation.SubdivisionCode)
+		}
+	}
 }
 
 func handleGeoProximityLocationRecord(r *route53types.ResourceRecordSet, ep *endpoint.Endpoint) {
@@ -1099,34 +1105,9 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.hostedZoneID = cleanZoneID(prop)
 	}
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
-		if _, explicit := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); !explicit && p.aliasZones != nil {
-			change.aliasTargetZones = p.aliasZones.targetZones(ep)
-		}
-		evalTargetHealth := p.evaluateTargetHealth
-		if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
-			evalTargetHealth = prop
-		}
-		change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
-			DNSName:              aws.String(ep.Targets[0]),
-			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
-			EvaluateTargetHealth: evalTargetHealth,
-		}
-		change.sizeBytes += len([]byte(ep.Targets[0]))
-		change.sizeValues += 1
+		p.applyAliasTarget(change, ep, targetHostedZone)
 	} else {
-		if !ep.RecordTTL.IsConfigured() {
-			change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
-		} else {
-			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
-		}
-		change.ResourceRecordSet.ResourceRecords = make([]route53types.ResourceRecord, len(ep.Targets))
-		for idx, val := range ep.Targets {
-			change.ResourceRecordSet.ResourceRecords[idx] = route53types.ResourceRecord{
-				Value: aws.String(val),
-			}
-			change.sizeBytes += len([]byte(val))
-			change.sizeValues += 1
-		}
+		applyResourceRecords(change, ep)
 	}
 
 	if action == route53types.ChangeActionUpsert {
@@ -1136,6 +1117,54 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		change.sizeValues *= 2
 	}
 
+	applySetProperties(change, ep)
+	applyGeolocation(change, ep)
+	withChangeForGeoProximityEndpoint(change, ep)
+
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
+		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
+	}
+
+	if ownedRecord, ok := ep.Labels[endpoint.OwnedRecordLabelKey]; ok {
+		change.OwnedRecord = ownedRecord
+	}
+
+	return change
+}
+
+func (p *AWSProvider) applyAliasTarget(change *Route53Change, ep *endpoint.Endpoint, targetHostedZone string) {
+	evalTargetHealth := p.evaluateTargetHealth
+	if prop, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {
+		evalTargetHealth = prop
+	}
+	change.ResourceRecordSet.AliasTarget = &route53types.AliasTarget{
+		DNSName:              aws.String(ep.Targets[0]),
+		HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
+		EvaluateTargetHealth: evalTargetHealth,
+	}
+	change.sizeBytes += len([]byte(ep.Targets[0]))
+	change.sizeValues += 1
+}
+
+func applyResourceRecords(change *Route53Change, ep *endpoint.Endpoint) {
+	if !ep.RecordTTL.IsConfigured() {
+		change.ResourceRecordSet.TTL = aws.Int64(defaultTTL)
+	} else {
+		change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
+	}
+	change.ResourceRecordSet.ResourceRecords = make([]route53types.ResourceRecord, len(ep.Targets))
+	for idx, val := range ep.Targets {
+		change.ResourceRecordSet.ResourceRecords[idx] = route53types.ResourceRecord{
+			Value: aws.String(val),
+		}
+		change.sizeBytes += len([]byte(val))
+		change.sizeValues += 1
+	}
+}
+
+// applySetProperties sets the routing policy fields: set identifier, weight,
+// region, failover and multi-value answer.
+func applySetProperties(change *Route53Change, ep *endpoint.Endpoint) {
 	if ep.SetIdentifier != "" {
 		change.ResourceRecordSet.SetIdentifier = aws.String(ep.SetIdentifier)
 	}
@@ -1156,7 +1185,11 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
 		change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
 	}
+}
 
+// applyGeolocation: continent takes precedence because Route53 rejects
+// ContinentCode combined with CountryCode or SubdivisionCode.
+func applyGeolocation(change *Route53Change, ep *endpoint.Endpoint) {
 	geolocation := &route53types.GeoLocation{}
 	useGeolocation := false
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
@@ -1175,18 +1208,6 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 	if useGeolocation {
 		change.ResourceRecordSet.GeoLocation = geolocation
 	}
-
-	withChangeForGeoProximityEndpoint(change, ep)
-
-	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
-		change.ResourceRecordSet.HealthCheckId = aws.String(prop)
-	}
-
-	if ownedRecord, ok := ep.Labels[endpoint.OwnedRecordLabelKey]; ok {
-		change.OwnedRecord = ownedRecord
-	}
-
-	return change
 }
 
 func newGeoProximity(ep *endpoint.Endpoint) *geoProximity {
@@ -1218,9 +1239,16 @@ func (gp *geoProximity) withLocalZoneGroup() *geoProximity {
 func (gp *geoProximity) withBias() *geoProximity {
 	if prop, ok := gp.endpoint.GetProviderSpecificProperty(providerSpecificGeoProximityLocationBias); ok {
 		bias, err := strconv.ParseInt(prop, 10, 32)
-		if err != nil {
+		switch {
+		case err != nil:
 			log.Warnf("Failed parsing value of %s: %s: %v; using bias of 0", providerSpecificGeoProximityLocationBias, prop, err)
 			bias = 0
+		case bias < minBias:
+			log.Warnf("Value of %s: %s is below the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, minBias)
+			bias = minBias
+		case bias > maxBias:
+			log.Warnf("Value of %s: %s is above the valid range [%d, %d]; clamping to %d", providerSpecificGeoProximityLocationBias, prop, minBias, maxBias, maxBias)
+			bias = maxBias
 		}
 		gp.location.Bias = aws.Int32(int32(bias))
 		gp.isSet = true

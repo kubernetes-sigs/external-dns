@@ -226,10 +226,10 @@ func (r *Route53APIStub) ChangeResourceRecordSets(_ context.Context, input *rout
 		// Work on a copy so canonicalization, or a later rejected change in the same
 		// batch, does not mutate the caller's request. The real Route 53 client does not.
 		rrs := *change.ResourceRecordSet
-		rrs.Name = aws.String(wildcardEscape(provider.EnsureTrailingDot(*rrs.Name)))
+		rrs.Name = aws.String(canonicalStubDNSName(*rrs.Name))
 		if rrs.AliasTarget != nil {
 			alias := *rrs.AliasTarget
-			alias.DNSName = aws.String(wildcardEscape(provider.EnsureTrailingDot(*alias.DNSName)))
+			alias.DNSName = aws.String(canonicalStubDNSName(*alias.DNSName))
 			rrs.AliasTarget = &alias
 		}
 
@@ -275,14 +275,19 @@ func equalResourceRecordSet(a, b route53types.ResourceRecordSet) bool {
 	return reflect.DeepEqual(canonicalResourceRecordSet(a), canonicalResourceRecordSet(b))
 }
 
+// canonicalStubDNSName renders a DNS name the way Route 53 stores it.
+func canonicalStubDNSName(name string) string {
+	return wildcardEscape(provider.EnsureTrailingDot(strings.ToLower(name)))
+}
+
 func canonicalResourceRecordSet(rrs route53types.ResourceRecordSet) route53types.ResourceRecordSet {
 	if rrs.Name != nil {
-		rrs.Name = aws.String(wildcardEscape(provider.EnsureTrailingDot(*rrs.Name)))
+		rrs.Name = aws.String(canonicalStubDNSName(*rrs.Name))
 	}
 	if rrs.AliasTarget != nil {
 		alias := *rrs.AliasTarget
 		if alias.DNSName != nil {
-			alias.DNSName = aws.String(wildcardEscape(provider.EnsureTrailingDot(*alias.DNSName)))
+			alias.DNSName = aws.String(canonicalStubDNSName(*alias.DNSName))
 		}
 		rrs.AliasTarget = &alias
 	}
@@ -297,8 +302,6 @@ func canonicalResourceRecordSet(rrs route53types.ResourceRecordSet) route53types
 	return rrs
 }
 
-// validateNoCNAMEConflict rejects a batch whose result would leave a CNAME sharing a name
-// with any other record type, which Route 53 does not allow.
 // rejectInvalidZones makes the stub enforce a Route 53 constraint the lenient stub
 // skips: a CNAME cannot share a name with another record type. A reconcile loop turns
 // it on so it cannot settle on a zone Route 53 would refuse. The record-reading tests
@@ -307,6 +310,8 @@ func (r *Route53APIStub) rejectInvalidZones() {
 	r.rejectCNAMEConflicts = true
 }
 
+// validateNoCNAMEConflict rejects a batch whose result would leave a CNAME sharing a name
+// with any other record type, which Route 53 does not allow.
 func validateNoCNAMEConflict(recordSets map[string][]route53types.ResourceRecordSet, zone string) error {
 	byName := make(map[string]map[route53types.RRType]bool, len(recordSets))
 	for _, rrsets := range recordSets {
@@ -637,6 +642,15 @@ func TestAWSRecords(t *testing.T) {
 			Weight:          aws.Int64(20),
 		},
 		{
+			Name:            aws.String("weight-region-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-3"),
+			Weight:          aws.Int64(10),
+			Region:          route53types.ResourceRecordSetRegionUsEast1,
+		},
+		{
 			Name:            aws.String("latency-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeA,
 			TTL:             aws.Int64(defaultTTL),
@@ -659,6 +673,13 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords:  []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
 			SetIdentifier:    aws.String("test-set"),
 			MultiValueAnswer: aws.Bool(true),
+		},
+		{
+			Name:            aws.String("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("bare-set-1"),
 		},
 		{
 			Name:            aws.String("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
@@ -687,6 +708,28 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
 			SetIdentifier:   aws.String("test-set-1"),
 			GeoLocation: &route53types.GeoLocation{
+				SubdivisionCode: aws.String("NY"),
+			},
+		},
+		{
+			Name:            aws.String("geolocation-continent-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-1"),
+			GeoLocation: &route53types.GeoLocation{
+				ContinentCode: aws.String("EU"),
+				CountryCode:   aws.String("DE"),
+			},
+		},
+		{
+			Name:            aws.String("geolocation-country-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            route53types.RRTypeA,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			SetIdentifier:   aws.String("test-set-2"),
+			GeoLocation: &route53types.GeoLocation{
+				CountryCode:     aws.String("US"),
 				SubdivisionCode: aws.String("NY"),
 			},
 		},
@@ -780,12 +823,16 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("prefix-*.wildcard.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, endpoint.TTL(defaultTTL), "random"),
 		endpoint.NewEndpointWithTTL("weight-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10"),
 		endpoint.NewEndpointWithTTL("weight-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20"),
+		endpoint.NewEndpointWithTTL("weight-region-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-3").WithProviderSpecific(providerSpecificWeight, "10"),
 		endpoint.NewEndpointWithTTL("latency-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificRegion, "us-east-1"),
 		endpoint.NewEndpointWithTTL("failover-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificFailover, "PRIMARY"),
 		endpoint.NewEndpointWithTTL("multi-value-answer-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificMultiValueAnswer, ""),
+		endpoint.NewEndpointWithTTL("bare-set.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("bare-set-1"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
 		endpoint.NewEndpointWithTTL("geolocation-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
+		endpoint.NewEndpointWithTTL("geolocation-continent-precedence-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
+		endpoint.NewEndpointWithTTL("geolocation-country-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "US").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
 		endpoint.NewEndpointWithTTL("geoproximitylocation-region.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationAWSRegion, "us-west-2").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 		endpoint.NewEndpointWithTTL("geoproximitylocation-localzone.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationLocalZoneGroup, "usw2-pdx1-az1").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "10"),
 		endpoint.NewEndpointWithTTL("geoproximitylocation-coordinates.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeoProximityLocationCoordinates, "90,90").WithProviderSpecific(providerSpecificGeoProximityLocationBias, "0"),
@@ -1954,6 +2001,57 @@ func TestRoute53APIStubDeleteMatchesFullRRSet(t *testing.T) {
 	}
 }
 
+// TestRoute53APIStubStoresDNSNamesLowercased checks the stub stores and matches names lowercased, as Route 53 does.
+func TestRoute53APIStubStoresDNSNamesLowercased(t *testing.T) {
+	ctx := t.Context()
+	stub := NewRoute53APIStub(t)
+	stub.zones[stubZoneID] = &route53types.HostedZone{Id: aws.String(stubZoneID), Name: aws.String("example.com.")}
+	stub.rejectInvalidZones()
+
+	aRecord := route53types.ResourceRecordSet{
+		Name:            aws.String("App.Example.com."),
+		Type:            route53types.RRTypeA,
+		TTL:             aws.Int64(300),
+		ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+	}
+	_, err := stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionCreate, &aRecord))
+	require.NoError(t, err)
+
+	stored := stub.recordSets[stubZoneID]["app.example.com.::A::"]
+	require.Len(t, stored, 1, "the stub keys the record by its lowercased name")
+	require.Equal(t, "app.example.com.", *stored[0].Name)
+
+	// Route 53 stores the letters lowercased, so this CNAME shares a name with the A record.
+	conflicting := route53types.ResourceRecordSet{
+		Name:            aws.String("APP.example.com."),
+		Type:            route53types.RRTypeCname,
+		TTL:             aws.Int64(300),
+		ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("lb.example.net.")}},
+	}
+	_, err = stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionCreate, &conflicting))
+	require.Error(t, err, "a CNAME may not share a name with an A record in any case")
+
+	// A delete has to find the record whichever case the name is sent in.
+	upperCased := aRecord
+	upperCased.Name = aws.String("APP.example.com.")
+	_, err = stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionDelete, &upperCased))
+	require.NoError(t, err)
+	require.Empty(t, stub.recordSets[stubZoneID])
+
+	// An alias target is a name as well, so it is stored lowercased too.
+	aliased := route53types.ResourceRecordSet{
+		Name:        aws.String("alias.example.com."),
+		Type:        route53types.RRTypeA,
+		AliasTarget: &route53types.AliasTarget{DNSName: aws.String("LB.Example.com."), HostedZoneId: aws.String(stubZoneID)},
+	}
+	_, err = stub.ChangeResourceRecordSets(ctx, changeInput(route53types.ChangeActionCreate, &aliased))
+	require.NoError(t, err)
+
+	storedAlias := stub.recordSets[stubZoneID]["alias.example.com.::A::"]
+	require.Len(t, storedAlias, 1, "the stub keys the alias record by its lowercased name")
+	require.Equal(t, "lb.example.com.", *storedAlias[0].AliasTarget.DNSName)
+}
+
 // TestRoute53APIStubChangeBatchIsAtomic checks that a batch with a valid change and an invalid
 // delete applies none of it, the way Route 53 rolls a failed ChangeBatch back as one transaction.
 func TestRoute53APIStubChangeBatchIsAtomic(t *testing.T) {
@@ -2506,6 +2604,313 @@ func TestAWSisAWSAlias(t *testing.T) {
 			ep = ep.WithProviderSpecific(providerSpecificTargetHostedZone, tc.hz)
 		}
 		assert.Equal(t, tc.hz, isAWSAlias(ep), "%v", tc)
+	}
+}
+
+func TestAWSNewChange(t *testing.T) {
+	p := &AWSProvider{evaluateTargetHealth: defaultEvaluateTargetHealth}
+	aliasTarget := "bar.eu-central-1.elb.amazonaws.com"
+
+	for _, tc := range []struct {
+		name     string
+		action   route53types.ChangeAction
+		endpoint *endpoint.Endpoint
+		expected *Route53Change
+	}{
+		{
+			name:     "A record with default TTL",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "A record with configured TTL",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 120, "1.1.1.1"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(120),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "A record with multiple targets",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1", "2.2.2.2"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}, {Value: aws.String("2.2.2.2")}},
+				},
+				sizeBytes:  14,
+				sizeValues: 2,
+			},
+		},
+		{
+			name:     "alias to a canonical hosted zone",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("alias.example.org", endpoint.RecordTypeA, 0, aliasTarget).WithAliasProperty(endpoint.AliasTrue),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String("alias.example.org"),
+					Type: route53types.RRTypeA,
+					AliasTarget: &route53types.AliasTarget{
+						DNSName:              aws.String(aliasTarget),
+						HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+						EvaluateTargetHealth: defaultEvaluateTargetHealth,
+					},
+				},
+				sizeBytes:  len(aliasTarget),
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "alias with evaluate-target-health set to false",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("alias.example.org", endpoint.RecordTypeA, 0, aliasTarget).WithAliasProperty(endpoint.AliasTrue).WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name: aws.String("alias.example.org"),
+					Type: route53types.RRTypeA,
+					AliasTarget: &route53types.AliasTarget{
+						DNSName:              aws.String(aliasTarget),
+						HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+						EvaluateTargetHealth: false,
+					},
+				},
+				sizeBytes:  len(aliasTarget),
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "hosted zone id property",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").WithProviderSpecific(providerSpecificHostedZoneID, "/hostedzone/Z123"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				hostedZoneID: "Z123",
+				sizeBytes:    7,
+				sizeValues:   1,
+			},
+		},
+		{
+			name:     "upsert doubles the sizes",
+			action:   route53types.ChangeActionUpsert,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionUpsert,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  14,
+				sizeValues: 2,
+			},
+		},
+		{
+			name:   "set identifier",
+			action: route53types.ChangeActionCreate,
+			endpoint: func() *endpoint.Endpoint {
+				ep := endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1")
+				ep.SetIdentifier = "primary"
+				return ep
+			}(),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					SetIdentifier:   aws.String("primary"),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "weight",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").WithProviderSpecific(providerSpecificWeight, "53"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					Weight:          aws.Int64(53),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "invalid weight falls back to 0",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").WithProviderSpecific(providerSpecificWeight, "not-a-number"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					Weight:          aws.Int64(0),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:   "region, failover and multi-value answer",
+			action: route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").
+				WithProviderSpecific(providerSpecificRegion, "eu-west-1").
+				WithProviderSpecific(providerSpecificFailover, "PRIMARY").
+				WithProviderSpecific(providerSpecificMultiValueAnswer, "true"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:             aws.String("record.example.org"),
+					Type:             route53types.RRTypeA,
+					TTL:              aws.Int64(defaultTTL),
+					Region:           route53types.ResourceRecordSetRegion("eu-west-1"),
+					Failover:         route53types.ResourceRecordSetFailover("PRIMARY"),
+					MultiValueAnswer: aws.Bool(true),
+					ResourceRecords:  []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "geolocation continent code",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "AF"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					GeoLocation:     &route53types.GeoLocation{ContinentCode: aws.String("AF")},
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:   "geolocation country and subdivision codes",
+			action: route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").
+				WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE").
+				WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "BY"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					GeoLocation:     &route53types.GeoLocation{CountryCode: aws.String("DE"), SubdivisionCode: aws.String("BY")},
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:   "geolocation continent code takes precedence over country and subdivision codes",
+			action: route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").
+				WithProviderSpecific(providerSpecificGeolocationContinentCode, "AF").
+				WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE").
+				WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "BY"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					GeoLocation:     &route53types.GeoLocation{ContinentCode: aws.String("AF")},
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:     "health check id",
+			action:   route53types.ChangeActionCreate,
+			endpoint: endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1").WithProviderSpecific(providerSpecificHealthCheckID, "hc-123"),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					HealthCheckId:   aws.String("hc-123"),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				sizeBytes:  7,
+				sizeValues: 1,
+			},
+		},
+		{
+			name:   "owned record label",
+			action: route53types.ChangeActionCreate,
+			endpoint: func() *endpoint.Endpoint {
+				ep := endpoint.NewEndpointWithTTL("record.example.org", endpoint.RecordTypeA, 0, "1.1.1.1")
+				ep.Labels = map[string]string{endpoint.OwnedRecordLabelKey: "owner"}
+				return ep
+			}(),
+			expected: &Route53Change{
+				Action: route53types.ChangeActionCreate,
+				ResourceRecordSet: &route53types.ResourceRecordSet{
+					Name:            aws.String("record.example.org"),
+					Type:            route53types.RRTypeA,
+					TTL:             aws.Int64(defaultTTL),
+					ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("1.1.1.1")}},
+				},
+				OwnedRecord: "owner",
+				sizeBytes:   7,
+				sizeValues:  1,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, p.newChange(tc.action, tc.endpoint))
+		})
 	}
 }
 
@@ -3078,6 +3483,20 @@ func TestGeoProximityWithBias(t *testing.T) {
 			hasBias:      true,
 			expectedSet:  true,
 			expectedBias: -99,
+		},
+		{
+			name:         "out-of-range positive bias",
+			bias:         "100",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: 99, // clamped to max when above [-99, 99]
+		},
+		{
+			name:         "out-of-range negative bias",
+			bias:         "-100",
+			hasBias:      true,
+			expectedSet:  true,
+			expectedBias: -99, // clamped to min when below [-99, 99]
 		},
 		{
 			name:         "invalid bias - non-numeric",

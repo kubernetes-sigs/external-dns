@@ -1,4 +1,4 @@
-defaultBaseImage: gcr.io/distroless/static-debian12:latest
+defaultBaseImage: gcr.io/distroless/static-debian13:latest
 builds:
 - env:
   - CGO_ENABLED=0
@@ -7,4 +7,5 @@ builds:
   ldflags:
   - -s
   - -w
-  - -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version={{.Env.VERSION}}
+  - -X sigs.k8s.io/external-dns/pkg/version.Version={{.Env.VERSION}}
+  - -X sigs.k8s.io/external-dns/pkg/version.GitCommit={{.Git.ShortCommit}}

@@ -34,8 +34,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	providerfactory "sigs.k8s.io/external-dns/provider/factory"
@@ -92,7 +94,7 @@ func execute(ctx context.Context) {
 	// external-dns uses logrus for all logging, so controller-runtime's logr output is discarded here.
 	crlog.SetLogger(logr.Discard())
 
-	log.Info(externaldns.Banner())
+	log.Info(version.Banner())
 
 	go serveMetrics(cfg.MetricsAddress)
 
@@ -189,6 +191,11 @@ func buildController(
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
 	}
+	// A typed-nil *StatusWriter would make the interface non-nil.
+	var statusReporter StatusReporter
+	if cc := sCfg.CRDClients(); cc != nil {
+		statusReporter = crd.NewStatusWriter(cc)
+	}
 
 	return &Controller{
 		Source:               src,
@@ -201,8 +208,8 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
-		CrdClients:           sCfg.CRDClients(),
 		CRDSourceKind:        cfg.CRDSourceKind,
+		StatusReporter:       statusReporter,
 	}, nil
 }
 

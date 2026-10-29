@@ -55,7 +55,12 @@ licensecheck:
 
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint validate-json-yaml
+lint: licensecheck go-lint validate-json-yaml webhook-deps
+
+#? webhook-deps: Check webhook-facing packages stay free of the Kubernetes client stack
+.PHONY: webhook-deps
+webhook-deps:
+	@./scripts/webhook-deps.sh
 
 #? validate-json-yaml: Validate JSON and YAML files
 .PHONY: validate-json-yaml
@@ -67,7 +72,7 @@ validate-json-yaml:
 crd:
 	@./scripts/generate-crd.sh
 
-# Required as long as dependabot does not support go.tool.mod https://github.com/dependabot/dependabot-core/issues/12050
+# go.tool.mod is not tracked by Renovate; update it by hand
 #? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
 update-tools-deps:
 	@go get -modfile=go.tool.mod tool
@@ -97,8 +102,8 @@ GIT_REVISION  ?= $(shell git rev-parse HEAD)
 GIT_COMMIT    ?= $(shell git rev-parse --short HEAD)
 GIT_COMMIT    := $(or $(GIT_COMMIT),$(shell echo "$(GIT_REVISION)" | cut -c1-7))
 BUILD_FLAGS   ?= -v
-LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-LDFLAGS       += -X sigs.k8s.io/external-dns/pkg/apis/externaldns.GitCommit=$(GIT_COMMIT)
+LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/version.Version=$(VERSION) -w -s
+LDFLAGS       += -X sigs.k8s.io/external-dns/pkg/version.GitCommit=$(GIT_COMMIT)
 ARCH          ?= amd64
 SHELL          = /bin/bash
 IMG_PLATFORM  ?= linux/amd64,linux/arm64,linux/arm/v7

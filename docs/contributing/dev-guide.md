@@ -16,7 +16,7 @@ The `external-dns` is the work of thousands of contributors, and is maintained b
 Building and/or testing `external-dns` requires additional tooling.
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.25+](https://golang.org/dl/)
+- [Go 1.27.3+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [ko](https://ko.build/)
@@ -47,8 +47,7 @@ Update Go tools to their latest versions:
 make update-tools-deps
 ```
 
-> **Note:** Updates are done manually because Dependabot does not yet support `go.tool.mod`
-> ([dependabot-core#12050](https://github.com/dependabot/dependabot-core/issues/12050)).
+> **Note:** Renovate does not track `go.tool.mod`, so update it by hand.
 
 ## First Steps
 

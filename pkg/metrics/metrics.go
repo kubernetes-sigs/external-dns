@@ -18,13 +18,13 @@ package metrics
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/version"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 )
 
 const (
@@ -44,11 +44,11 @@ func init() {
 			Namespace,
 		),
 		ConstLabels: prometheus.Labels{
-			"version":    cfg.Version,
-			"revision":   version.GetRevision(),
-			"go_version": version.GoVersion,
-			"os":         version.GoOS,
-			"arch":       version.GoArch,
+			"version":    version.Version,
+			"revision":   version.GitCommit,
+			"go_version": runtime.Version(),
+			"os":         runtime.GOOS,
+			"arch":       runtime.GOARCH,
 		},
 	}))
 }

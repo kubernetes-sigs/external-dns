@@ -37,6 +37,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -1874,7 +1875,7 @@ func TestTransformerInIngressSource(t *testing.T) {
 	is, ok := src.(*ingressSource)
 	require.True(t, ok)
 
-	retrieved, err := is.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+	retrieved, err := informerFor(t, is.ingressInformers, ingress.Namespace).Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
 	require.NoError(t, err)
 
 	assert.Equal(t, ingress.Name, retrieved.Name)
@@ -1924,6 +1925,42 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	endpoints, err := client.Endpoints(t.Context())
 	require.NoError(t, err)
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
+}
+
+func TestIngressSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	var elements []runtime.Object
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		elements = append(elements, &networkv1.Ingress{
+			Namespace: namespace,
+			Name:      "ing",
+			Spec: networkv1.IngressSpec{
+				Rules: []networkv1.IngressRule{{Host: namespace + ".example.org"}},
+			},
+			Status: networkv1.IngressStatus{
+				LoadBalancer: networkv1.IngressLoadBalancerStatus{
+					Ingress: []networkv1.IngressLoadBalancerIngress{{Hostname: "lb.example.org"}},
+				},
+			},
+		})
+	}
+
+	src, err := NewIngressSource(t.Context(), fake.NewClientset(elements...), &Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "ingress/team-a/ing"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "ingress/team-b/ing"),
+	})
 }
 
 func TestNewIngressSource_Errors(t *testing.T) {
@@ -1987,11 +2024,12 @@ func TestIngressSource_AddEventHandler(t *testing.T) {
 
 func TestIngressIndexer(t *testing.T) {
 	tests := []struct {
-		name             string
-		annotationFilter string
-		labelFilter      string
-		ingresses        []*networkv1.Ingress
-		expectedCount    int
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		annotationValidationMode schema.Mode
+		ingresses                []*networkv1.Ingress
+		expectedCount            int
 	}{
 		{
 			name:          "no filters returns all ingresses",
@@ -2065,6 +2103,22 @@ func TestIngressIndexer(t *testing.T) {
 			expectedCount:    3,
 			ingresses:        createTestIngresses(3),
 		},
+		{
+			name:                     "invalid ingress-hostname-source annotation yields zero endpoints even in warn mode",
+			annotationValidationMode: schema.ModeWarn,
+			expectedCount:            4,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				ings[0].Annotations[annotations.IngressHostnameSourceKey] = "bogus"
+			}),
+		},
+		{
+			name:                     "invalid ingress-hostname-source annotation in strict mode excludes ingress",
+			annotationValidationMode: schema.ModeStrict,
+			expectedCount:            4,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				ings[0].Annotations[annotations.IngressHostnameSourceKey] = "bogus"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -2091,6 +2145,7 @@ func TestIngressIndexer(t *testing.T) {
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+				Schema:           schema.New(schema.Options{Mode: tt.annotationValidationMode}),
 			})
 			require.NoError(t, err)
 

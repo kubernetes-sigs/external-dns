@@ -321,6 +321,75 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 			vsHost:   "foo.bar",
 			expected: false,
 		},
+		{
+			title: "matching exportTo . in the same namespace",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "istio-system",
+				exportTo:  ".",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "matching host <namespace>/<host>",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "myns",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "not matching host <namespace>/<host>",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "myns",
+			},
+			vsHost:   "bar.foo",
+			expected: false,
+		},
+		{
+			title: "invalid host is skipped",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"a/b/c", "*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "invalid host only",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"a/b/c"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching host <namespace>/",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"ns/"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "ns",
+			},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
@@ -2431,7 +2500,7 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		}
 		vs := newSource(t, fake.NewClientset(svc), istiofake.NewSimpleClientset())
 
-		retrieved, err := vs.serviceInformer.Lister().Services(svc.Namespace).Get(svc.Name)
+		retrieved, err := informerFor(t, vs.serviceInformers, svc.Namespace).Lister().Services(svc.Namespace).Get(svc.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, svc.Name, retrieved.Name)
@@ -2467,7 +2536,7 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		}
 		vs := newSource(t, fake.NewClientset(ingress), istiofake.NewSimpleClientset())
 
-		retrieved, err := vs.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+		retrieved, err := informerFor(t, vs.ingressInformers, ingress.Namespace).Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, ingress.Name, retrieved.Name)
@@ -2499,7 +2568,7 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		require.NoError(t, err)
 		vs := newSource(t, fake.NewClientset(), istioClient)
 
-		retrieved, err := vs.vServiceInformer.Lister().VirtualServices(vsObj.Namespace).Get(vsObj.Name)
+		retrieved, err := informerFor(t, vs.vServiceInformers, vsObj.Namespace).Lister().VirtualServices(vsObj.Namespace).Get(vsObj.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, vsObj.Name, retrieved.Name)
@@ -2529,7 +2598,7 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		require.NoError(t, err)
 		vs := newSource(t, fake.NewClientset(), istioClient)
 
-		retrieved, err := vs.gatewayInformer.Lister().Gateways(gw.Namespace).Get(gw.Name)
+		retrieved, err := informerFor(t, vs.gatewayInformers, gw.Namespace).Lister().Gateways(gw.Namespace).Get(gw.Name)
 		require.NoError(t, err)
 
 		assert.Equal(t, gw.Name, retrieved.Name)
@@ -2538,5 +2607,55 @@ func TestTransformerInIstioGatewayVirtualServiceSource(t *testing.T) {
 		assert.Empty(t, retrieved.ManagedFields)
 		assert.NotContains(t, retrieved.Annotations, v1.LastAppliedConfigAnnotation)
 		assert.Contains(t, retrieved.Annotations, "user-annotation")
+	})
+}
+
+func TestIstioVirtualServiceSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	newGateway := func(namespace string) *networkingv1.Gateway {
+		return &networkingv1.Gateway{
+			Namespace:   namespace,
+			Name:        "gw",
+			Annotations: map[string]string{annotations.TargetKey: "lb-" + namespace + ".example.org"},
+			Spec: istionetworking.Gateway{
+				Servers: []*istionetworking.Server{{Hosts: []string{"*"}}},
+			},
+		}
+	}
+	newVirtualService := func(namespace, host, gateway string) *networkingv1.VirtualService {
+		return &networkingv1.VirtualService{
+			Namespace: namespace,
+			Name:      host,
+			Spec: istionetworking.VirtualService{
+				Hosts:    []string{host + ".example.org"},
+				Gateways: []string{gateway},
+			},
+		}
+	}
+
+	istioClient := istiofake.NewSimpleClientset(
+		newVirtualService("team-b", "watched", "team-a/gw"),
+		newVirtualService("team-b", "unwatched-gateway", "team-c/gw"),
+		newVirtualService("team-c", "unwatched", "team-a/gw"),
+	)
+	// The fake tracker guesses "gatewaies" as plural, so gateways go through Create.
+	for _, namespace := range []string{"team-a", "team-c"} {
+		_, err := istioClient.NetworkingV1().Gateways(namespace).Create(t.Context(), newGateway(namespace), metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+
+	src, err := NewIstioVirtualServiceSource(t.Context(), fake.NewClientset(), istioClient, &Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("watched.example.org", endpoint.RecordTypeCNAME, "lb-team-a.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "virtualservice/team-b/watched"),
 	})
 }

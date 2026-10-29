@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/idna"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -140,7 +141,7 @@ func newProvider(
 		return nil, err
 	}
 
-	client.UserAgent = externaldns.UserAgent()
+	client.UserAgent = version.UserAgent()
 
 	return &OVHProvider{
 		client:                    client,
@@ -592,123 +593,124 @@ func normalizeDNSName(dnsName string) string {
 }
 
 func (p *OVHProvider) newOvhChangeUpdate(endpointsOld []*endpoint.Endpoint, endpointsNew []*endpoint.Endpoint, zone string, existingRecords []ovhRecord) ([]ovhChange, error) {
-	zoneNameIDMapper := provider.ZoneIDName{}
-	zoneNameIDMapper.Add(zone, zone)
-
-	oldEndpointByTypeAndName := map[string]*endpoint.Endpoint{}
-	newEndpointByTypeAndName := map[string]*endpoint.Endpoint{}
-	oldRecordsInZone := map[string][]ovhRecord{}
-
-	for _, e := range endpointsOld {
-		sub := convertDNSNameIntoSubDomain(e.DNSName, zone)
-		oldEndpointByTypeAndName[normalizeDNSName(e.RecordType+"//"+sub)] = e
-	}
-	for _, e := range endpointsNew {
-		sub := convertDNSNameIntoSubDomain(e.DNSName, zone)
-		newEndpointByTypeAndName[normalizeDNSName(e.RecordType+"//"+sub)] = e
-	}
-
-	for id := range oldEndpointByTypeAndName {
-		for _, record := range existingRecords {
-			if id == normalizeDNSName(record.FieldType+"//"+record.SubDomain) {
-				oldRecordsInZone[id] = append(oldRecordsInZone[id], record)
-			}
-		}
-	}
+	oldEndpoints := endpointIndexByTypeAndName(endpointsOld, zone)
+	newEndpoints := endpointIndexByTypeAndName(endpointsNew, zone)
 
 	var changes []ovhChange
 
-	for id := range oldEndpointByTypeAndName {
-		oldRecords := slices.Clone(oldRecordsInZone[id])
-		endpointsNew, ok := newEndpointByTypeAndName[id]
+	for key := range oldEndpoints {
+		e, ok := newEndpoints[key]
 		if !ok {
 			return nil, errors.New("unrecoverable error: couldn't find the matching record in the update.New")
 		}
-
-		var toInsertTarget []string
-
-		for _, target := range endpointsNew.Targets {
-			var toDelete = -1
-
-			for i, record := range oldRecords {
-				if target == record.Target {
-					toDelete = i
-					break
-				}
-			}
-
-			if toDelete >= 0 {
-				oldRecords = slices.Delete(oldRecords, toDelete, toDelete+1)
-			} else {
-				toInsertTarget = append(toInsertTarget, target)
-			}
-		}
-
-		createChangeConvertedToUpdateChange := []int{}
-		for i, target := range toInsertTarget {
-			if len(oldRecords) == 0 {
-				break
-			}
-
-			record := oldRecords[0]
-			oldRecords = slices.Delete(oldRecords, 0, 1)
-			record.Target = target
-
-			if endpointsNew.RecordTTL.IsConfigured() {
-				record.TTL = int64(endpointsNew.RecordTTL)
-			} else {
-				record.TTL = defaultTTL
-			}
-
-			change := ovhChange{
-				Action:    ovhUpdate,
-				ovhRecord: record,
-			}
-			p.formatCNAMETarget(&change)
-			changes = append(changes, change)
-			createChangeConvertedToUpdateChange = append(createChangeConvertedToUpdateChange, i)
-		}
-
-		newToInsertTarget := make([]string, 0, len(toInsertTarget)-len(createChangeConvertedToUpdateChange))
-		for i := range toInsertTarget {
-			if slices.Contains(createChangeConvertedToUpdateChange, i) {
-				continue
-			}
-			newToInsertTarget = append(newToInsertTarget, toInsertTarget[i])
-		}
-		toInsertTarget = newToInsertTarget
-
-		if len(toInsertTarget) > 0 {
-			for _, target := range toInsertTarget {
-				recordTTL := int64(defaultTTL)
-				if endpointsNew.RecordTTL.IsConfigured() {
-					recordTTL = int64(endpointsNew.RecordTTL)
-				}
-
-				change := ovhChange{
-					Action:    ovhCreate,
-					Zone:      zone,
-					FieldType: endpointsNew.RecordType,
-					SubDomain: convertDNSNameIntoSubDomain(endpointsNew.DNSName, zone),
-					TTL:       recordTTL,
-					Target:    target,
-				}
-				p.formatCNAMETarget(&change)
-				changes = append(changes, change)
-			}
-		}
-
-		if len(oldRecords) > 0 {
-			for i := range oldRecords {
-				changes = append(changes, ovhChange{
-					Action:    ovhDelete,
-					ovhRecord: oldRecords[i],
-				})
-			}
-		}
+		changes = append(changes, p.ovhChangesForUpdatedEndpoint(e, key, zone, existingRecords)...)
 	}
 
 	return changes, nil
+}
+
+func endpointIndexByTypeAndName(endpoints []*endpoint.Endpoint, zone string) map[string]*endpoint.Endpoint {
+	index := map[string]*endpoint.Endpoint{}
+	for _, e := range endpoints {
+		sub := convertDNSNameIntoSubDomain(e.DNSName, zone)
+		index[normalizeDNSName(e.RecordType+"//"+sub)] = e
+	}
+	return index
+}
+
+func recordsMatchingKey(key string, existingRecords []ovhRecord) []ovhRecord {
+	var records []ovhRecord
+	for _, record := range existingRecords {
+		if key == normalizeDNSName(record.FieldType+"//"+record.SubDomain) {
+			records = append(records, record)
+		}
+	}
+	return records
+}
+
+// splitUpdateTargets drops one record per target it already serves; returns the unused records and the unmatched targets.
+func splitUpdateTargets(targets []string, records []ovhRecord) ([]ovhRecord, []string) {
+	kept := slices.Clone(records)
+	var toInsert []string
+	for _, target := range targets {
+		toDelete := -1
+		for i, record := range kept {
+			if target == record.Target {
+				toDelete = i
+				break
+			}
+		}
+		if toDelete >= 0 {
+			kept = slices.Delete(kept, toDelete, toDelete+1)
+		} else {
+			toInsert = append(toInsert, target)
+		}
+	}
+	return kept, toInsert
+}
+
+func (p *OVHProvider) updateChanges(e *endpoint.Endpoint, records []ovhRecord, targets []string) []ovhChange {
+	ttl := int64(defaultTTL)
+	if e.RecordTTL.IsConfigured() {
+		ttl = int64(e.RecordTTL)
+	}
+
+	var changes []ovhChange
+	for i := range records {
+		record := records[i]
+		record.Target = targets[i]
+		record.TTL = ttl
+
+		change := ovhChange{
+			Action:    ovhUpdate,
+			ovhRecord: record,
+		}
+		p.formatCNAMETarget(&change)
+		changes = append(changes, change)
+	}
+	return changes
+}
+
+func (p *OVHProvider) createChanges(e *endpoint.Endpoint, zone string, targets []string) []ovhChange {
+	ttl := int64(defaultTTL)
+	if e.RecordTTL.IsConfigured() {
+		ttl = int64(e.RecordTTL)
+	}
+
+	var changes []ovhChange
+	for _, target := range targets {
+		change := ovhChange{
+			Action:    ovhCreate,
+			Zone:      zone,
+			FieldType: e.RecordType,
+			SubDomain: convertDNSNameIntoSubDomain(e.DNSName, zone),
+			TTL:       ttl,
+			Target:    target,
+		}
+		p.formatCNAMETarget(&change)
+		changes = append(changes, change)
+	}
+	return changes
+}
+
+func deleteChanges(records []ovhRecord) []ovhChange {
+	var changes []ovhChange
+	for i := range records {
+		changes = append(changes, ovhChange{
+			Action:    ovhDelete,
+			ovhRecord: records[i],
+		})
+	}
+	return changes
+}
+
+func (p *OVHProvider) ovhChangesForUpdatedEndpoint(e *endpoint.Endpoint, key, zone string, existingRecords []ovhRecord) []ovhChange {
+	freedRecords, insertTargets := splitUpdateTargets(e.Targets, recordsMatchingKey(key, existingRecords))
+	n := min(len(freedRecords), len(insertTargets))
+	changes := p.updateChanges(e, freedRecords[:n], insertTargets[:n])
+	changes = append(changes, p.createChanges(e, zone, insertTargets[n:])...)
+	changes = append(changes, deleteChanges(freedRecords[n:])...)
+	return changes
 }
 
 func (c *ovhChange) String() string {
