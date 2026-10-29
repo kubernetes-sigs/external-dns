@@ -19,3 +19,4 @@ substitutions:
   _GIT_TAG: "12345"
   _PULL_BASE_SHA: ""
   _PULL_BASE_REF: 'master'
+serviceAccount: projects/k8s-staging-images/serviceAccounts/external-dns-sa@k8s-staging-images.iam.gserviceaccount.com

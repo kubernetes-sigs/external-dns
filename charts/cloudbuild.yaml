@@ -7,3 +7,4 @@ steps:
     entrypoint: make
     args:
       - helm-push
+serviceAccount: projects/k8s-staging-images/serviceAccounts/external-dns-sa@k8s-staging-images.iam.gserviceaccount.com

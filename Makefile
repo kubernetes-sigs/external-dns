@@ -94,7 +94,7 @@ go-test:
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
-IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
+IMAGE_STAGING  = us-central1-docker.pkg.dev/k8s-staging-images/external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
 IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
@@ -219,7 +219,7 @@ helm-lint:
 
 HELM            ?= helm
 HELM_CHART_DIR  ?= charts/external-dns
-HELM_CHART_REPO ?= gcr.io/k8s-staging-external-dns/charts
+HELM_CHART_REPO ?= us-central1-docker.pkg.dev/k8s-staging-images/external-dns/charts
 
 .PHONY: helm
 helm:
