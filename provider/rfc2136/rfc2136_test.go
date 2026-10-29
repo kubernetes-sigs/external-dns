@@ -854,6 +854,38 @@ func TestRfc2136ApplyChangesAllFilteredSendsNothing(t *testing.T) {
 	assert.Empty(t, stub.updateMsgs)
 }
 
+func TestRfc2136ApplyChangesInvalidTargetSendsNothing(t *testing.T) {
+	stub := newStub()
+	providerInstance, err := createRfc2136StubProviderWithZonesFilters(stub)
+	require.NoError(t, err)
+
+	p := &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "txt.foo.com",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "txt.foo.com",
+				RecordType: "TXT",
+				Targets:    []string{`"unbalanced`},
+				RecordTTL:  endpoint.TTL(400),
+			},
+		},
+	}
+
+	err = providerInstance.ApplyChanges(t.Context(), p)
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
+	assert.Contains(t, err.Error(), "txt.foo.com")
+	// A partial update (delete without add) must not reach the nameserver.
+	assert.Zero(t, stub.sendCount)
+}
+
 func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	stub := newStub()
 

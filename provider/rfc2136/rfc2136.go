@@ -445,7 +445,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 
 func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
 	m := make(map[string]*dns.Msg)
-	m["."] = new(dns.Msg) // Add the root zone
+	m["."] = new(dns.Msg)
 	for _, z := range r.zoneNames {
 		z = dns.Fqdn(z)
 		m[z] = new(dns.Msg)
@@ -486,12 +486,20 @@ func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, 
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			m[zone].SetUpdate(zone)
 
-			// idx is the position of ep in the unsplitted list, so the closure can pair it with the matching entry of a parallel slice.
-			if err := apply(m[zone], c*r.batchChangeSize+i, ep); err != nil {
-				errs = append(errs, err)
+			// Build into a scratch message and merge only on success, so a
+			// failed endpoint does not leave a partial update in the batch.
+			scratch := new(dns.Msg)
+			scratch.SetUpdate(zone)
+
+			// idx is ep's index in the unsplitted list, so the closure can index a parallel slice.
+			if err := apply(scratch, c*r.batchChangeSize+i, ep); err != nil {
+				errs = append(errs, fmt.Errorf("RFC2136 %s %s: %w", action, ep.DNSName, err))
+				continue
 			}
+
+			m[zone].SetUpdate(zone)
+			m[zone].Ns = append(m[zone].Ns, scratch.Ns...)
 		}
 
 		errs = append(errs, r.sendBatchMsgs(action, m)...)
