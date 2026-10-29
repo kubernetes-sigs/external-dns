@@ -99,7 +99,7 @@ type Config struct {
 
 	Sources []string
 
-	// clientGen holds a source.ClientGenerator. 
+	// clientGen holds a source.ClientGenerator.
 	// It is any to keep unnecessary clientsets out of this package.
 	clientGen     any
 	clientGenOnce sync.Once
