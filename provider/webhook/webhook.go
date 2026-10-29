@@ -230,8 +230,11 @@ func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, e
 		resp = r
 		return true, nil
 	})
-	// wait reports exhausted retries as a generic timeout; the last failure says more.
-	if wait.Interrupted(err) && req.Context().Err() == nil {
+	// wait returns ErrWaitTimeout on exhaustion, even if ctx ended during the last attempt.
+	if wait.Interrupted(err) {
+		if cerr := context.Cause(req.Context()); cerr != nil {
+			return nil, cerr
+		}
 		return nil, lastErr
 	}
 	return resp, err
