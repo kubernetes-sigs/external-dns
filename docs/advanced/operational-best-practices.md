@@ -306,9 +306,10 @@ See [Available Metrics](../monitoring/metrics.md) for the full list.
 
 ### Kubernetes Events for invalid endpoints
 
-Invalid endpoints — CNAME self-references, malformed MX/SRV records, unsupported alias types —
-are silently dropped by the dedup layer with only a log warning at default log levels. Without
-structured observability, the only way to discover them is to grep logs.
+Invalid endpoints — CNAME self-references, malformed MX/SRV/TLSA/NAPTR records, CNAME/NS/DNAME
+or alias targets that are not valid domain names, unsupported alias types — are silently
+dropped by the dedup layer with only a log warning at default log levels. Without structured
+observability, the only way to discover them is to grep logs.
 
 Enable `RecordError` events to surface invalid endpoints directly on the responsible Kubernetes
 resource:
