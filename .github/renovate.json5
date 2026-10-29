@@ -13,6 +13,13 @@
       schedule: ['before 6am on monday'],
     },
     {
+      // Indirect deps are skipped by default; keep otel contrib on the same release as otel core.
+      matchManagers: ['gomod'],
+      matchDepTypes: ['indirect'],
+      matchPackageNames: ['go.opentelemetry.io/**'],
+      enabled: true,
+    },
+    {
       matchManagers: ['github-actions'],
       groupName: 'github actions',
       schedule: ['before 6am on the first day of the month'],
