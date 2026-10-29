@@ -69,9 +69,21 @@ func TestFindMsgZone(t *testing.T) {
 			expected:  "example.com.",
 		},
 		{
+			name:      "exact zone match with different case",
+			dnsName:   "eXaMpLe.com",
+			zoneNames: []string{"ExAmPlE.com"},
+			expected:  "example.com.",
+		},
+		{
 			name:      "subdomain of zone matches",
 			dnsName:   "foo.example.com",
 			zoneNames: []string{"example.com"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "subdomain of zone matches with different case",
+			dnsName:   "FOO.example.com",
+			zoneNames: []string{"example.COM"},
 			expected:  "example.com.",
 		},
 		{
