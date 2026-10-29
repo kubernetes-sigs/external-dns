@@ -18,7 +18,6 @@ package webhook
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -657,27 +656,13 @@ func TestRequestWithRetry_RetriesExhausted(t *testing.T) {
 	require.Equal(t, testBackoff.Steps, attempts)
 }
 
-func TestRequestWithRetry_CancelledOnLastAttempt(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	attempts := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		attempts++
-		if attempts == testBackoff.Steps {
-			cancel()
-		}
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}))
-	defer server.Close()
-
-	client := &http.Client{Timeout: 2 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
+func TestRequestWithRetry_NoSteps(t *testing.T) {
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1", nil)
 	require.NoError(t, err)
 
-	resp, err := requestWithRetry(client, req, testBackoff)
-	require.ErrorIs(t, err, context.Canceled)
+	resp, err := requestWithRetry(http.DefaultClient, req, wait.Backoff{})
+	require.Error(t, err)
 	require.Nil(t, resp)
-	require.Equal(t, testBackoff.Steps, attempts)
 }
 
 func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {

@@ -47,7 +47,7 @@ const (
 )
 
 var (
-	// wait.Jitter only adds delay: 250ms with Jitter 2 gives cenkalti's 500ms ±50%.
+	// wait.Jitter only adds delay: first wait 250-750ms, then x1.5 per step.
 	retryBackoff = wait.Backoff{Duration: 250 * time.Millisecond, Factor: 1.5, Jitter: 2, Steps: 5}
 
 	recordsErrorsGauge = metrics.NewGaugeWithOpts(
@@ -231,11 +231,8 @@ func requestWithRetry(client *http.Client, req *http.Request, backoff wait.Backo
 		resp = r
 		return true, nil
 	})
-	// wait returns ErrWaitTimeout on exhaustion, even if ctx ended during the last attempt.
-	if wait.Interrupted(err) {
-		if cerr := context.Cause(req.Context()); cerr != nil {
-			return nil, cerr
-		}
+	// The last attempt's error says why the webhook is unreachable; the timeout or cancel does not.
+	if wait.Interrupted(err) && lastErr != nil {
 		return nil, lastErr
 	}
 	return resp, err
