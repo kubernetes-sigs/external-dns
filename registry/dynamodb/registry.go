@@ -153,7 +153,6 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 	endpoints, labelMap, txtRecordsMap := im.indexRecords(records)
 	im.migrateTXTLabels(endpoints, labelMap, txtRecordsMap)
-
 	endpoints = im.collectTXTRecords(endpoints, txtRecordsMap)
 	im.refreshRecordsCache(endpoints)
 
