@@ -25,6 +25,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -709,9 +710,16 @@ func (e *Endpoint) CheckEndpoint() bool {
 
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeA, RecordTypeAAAA:
-		if !e.isAlias() {
-			return e.Targets.ValidateIPRecord(recordType)
+		if e.isAlias() {
+			return e.Targets.ValidateHostnameRecord(recordType)
 		}
+		return e.Targets.ValidateIPRecord(recordType)
+	case RecordTypeCNAME, RecordTypeNS, RecordTypeDNAME:
+		return e.Targets.ValidateHostnameRecord(recordType)
+	case RecordTypeTLSA:
+		return e.Targets.ValidateTLSARecord()
+	case RecordTypeNAPTR:
+		return e.Targets.ValidateNAPTRRecord()
 	case RecordTypeMX:
 		return e.Targets.ValidateMXRecord()
 	case RecordTypeSRV:
@@ -869,6 +877,55 @@ func (t Targets) ValidateSRVRecord() bool {
 		}
 	}
 	return true
+}
+
+// ValidateHostnameRecord reports whether all targets are domain names, as required
+// for CNAME, NS, DNAME and alias records.
+func (t Targets) ValidateHostnameRecord(recordType string) bool {
+	for _, target := range t {
+		if !isValidDomainName(target) {
+			log.Debugf("Invalid %s record target: %q is not a valid domain name", recordType, target)
+			return false
+		}
+	}
+	return true
+}
+
+// ValidateTLSARecord reports whether all targets are valid TLSA record values.
+func (t Targets) ValidateTLSARecord() bool {
+	for _, target := range t {
+		if _, err := NewTLSARecord(target); err != nil {
+			log.Debugf("Invalid TLSA record target: %s. %v", target, err)
+			return false
+		}
+	}
+	return true
+}
+
+// ValidateNAPTRRecord reports whether all targets are valid NAPTR record values
+// (order preference flags service regexp replacement).
+func (t Targets) ValidateNAPTRRecord() bool {
+	for _, target := range t {
+		if _, err := dns.NewRR(". IN NAPTR " + target); err != nil {
+			log.Debugf("Invalid NAPTR record target: %s. %v", target, err)
+			return false
+		}
+	}
+	return true
+}
+
+// isValidDomainName rejects whitespace and empty labels, which dns.IsDomainName
+// accepts because a label may hold any octet on the wire.
+func isValidDomainName(name string) bool {
+	if name == "" || strings.ContainsFunc(name, unicode.IsSpace) {
+		return false
+	}
+	trimmed := strings.TrimSuffix(name, ".")
+	if trimmed == "" || slices.Contains(strings.Split(trimmed, "."), "") {
+		return false
+	}
+	_, ok := dns.IsDomainName(name)
+	return ok
 }
 
 // ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name

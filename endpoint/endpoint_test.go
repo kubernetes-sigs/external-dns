@@ -1542,6 +1542,189 @@ func TestCheckEndpoint(t *testing.T) {
 			},
 			expected: false,
 		},
+		{
+			description: "Valid CNAME record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"target.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid CNAME record target with trailing dot",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"target.example.com."},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid CNAME record target with underscore label",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"_acme-challenge.example.net"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid CNAME record target with whitespace",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"bad target"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record target with empty label",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"target..example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record target with label over 63 octets",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid CNAME record with one bad target among valid ones",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeCNAME,
+				Targets:    Targets{"ok.example.com", "bad target"},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid NS record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeNS,
+				Targets:    Targets{"ns1.example.com"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid NS record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeNS,
+				Targets:    Targets{"ns1 example.com"},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid DNAME record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeDNAME,
+				Targets:    Targets{"example.net"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid DNAME record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeDNAME,
+				Targets:    Targets{"."},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid alias A record target",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"my-lb-123.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid alias A record target",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeA,
+				Targets:          Targets{"bad target"},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid alias CNAME record target",
+			endpoint: Endpoint{
+				DNSName:          "example.com",
+				RecordType:       RecordTypeCNAME,
+				Targets:          Targets{"my-lb-123.elb.amazonaws.com"},
+				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
+			},
+			expected: true,
+		},
+		{
+			description: "Valid TLSA record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTLSA,
+				Targets:    Targets{"3 1 1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid TLSA record target with short digest",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTLSA,
+				Targets:    Targets{"3 1 1 abcd"},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid TLSA record target with missing fields",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeTLSA,
+				Targets:    Targets{"3 1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			expected: false,
+		},
+		{
+			description: "Valid NAPTR record target",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeNAPTR,
+				Targets:    Targets{"100 10 \"S\" \"SIP+D2U\" \"\" _sip._udp.example.com."},
+			},
+			expected: true,
+		},
+		{
+			description: "Invalid NAPTR record target with missing replacement",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeNAPTR,
+				Targets:    Targets{"100 10 \"S\" \"SIP+D2U\" \"\""},
+			},
+			expected: false,
+		},
+		{
+			description: "Invalid NAPTR record target with non-numeric order",
+			endpoint: Endpoint{
+				DNSName:    "example.com",
+				RecordType: RecordTypeNAPTR,
+				Targets:    Targets{"first 10 \"S\" \"SIP+D2U\" \"\" _sip._udp.example.com."},
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
