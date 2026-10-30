@@ -260,6 +260,31 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
+func TestDynamoDBRegistryRecordsUsesFreshCache(t *testing.T) {
+	api, p := newDynamoDBAPIStub(t, nil)
+
+	ctx := t.Context()
+	r, _ := newRegistry(p, "test-owner", api, "test-table", "", "", "", []string{}, []string{}, nil, time.Hour)
+
+	_, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	// Bypass the registry: only a cache miss sees this record.
+	rawProvider := p.(*wrappedProvider).Provider
+	require.NoError(t, rawProvider.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("cached-out.test-zone.example.org", endpoint.RecordTypeA, "9.9.9.9"),
+		},
+	}))
+
+	cached, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	for _, ep := range cached {
+		assert.NotEqual(t, "cached-out.test-zone.example.org", ep.DNSName)
+	}
+}
+
 func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
