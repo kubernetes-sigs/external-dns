@@ -47,9 +47,6 @@ const (
 )
 
 var (
-	// wait.Jitter only adds delay: first wait 250-750ms, then x1.5 per step.
-	retryBackoff = wait.Backoff{Duration: 250 * time.Millisecond, Factor: 1.5, Jitter: 2, Steps: 5}
-
 	recordsErrorsGauge = metrics.NewGaugeWithOpts(
 		prometheus.GaugeOpts{
 			Subsystem: webhookProviderSubsystem,
@@ -169,7 +166,9 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
-	resp, err := requestWithRetry(client, req, retryBackoff)
+	// wait.Jitter only adds delay: first wait 250-750ms, then x1.5 per step.
+	backoff := wait.Backoff{Duration: 250 * time.Millisecond, Factor: 1.5, Jitter: 2, Steps: 5}
+	resp, err := requestWithRetry(client, req, backoff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
@@ -231,9 +230,13 @@ func requestWithRetry(client *http.Client, req *http.Request, backoff wait.Backo
 		resp = r
 		return true, nil
 	})
-	// The last attempt's error says why the webhook is unreachable; the timeout or cancel does not.
-	if wait.Interrupted(err) && lastErr != nil {
-		return nil, lastErr
+	if wait.Interrupted(err) {
+		if cause := context.Cause(req.Context()); cause != nil {
+			return nil, cause
+		}
+		if lastErr != nil {
+			return nil, lastErr
+		}
 	}
 	return resp, err
 }

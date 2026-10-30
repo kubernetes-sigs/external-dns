@@ -18,7 +18,9 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -654,6 +656,25 @@ func TestRequestWithRetry_RetriesExhausted(t *testing.T) {
 	require.EqualError(t, err, "server error: status code 503")
 	require.Nil(t, resp)
 	require.Equal(t, testBackoff.Steps, attempts)
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestRequestWithRetry_CancelledAfterServerError(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cause := errors.New("shutting down")
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		cancel(cause)
+		return &http.Response{StatusCode: http.StatusServiceUnavailable, Body: http.NoBody, Request: r}, nil
+	})}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://webhook", nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req, wait.Backoff{Duration: time.Minute, Steps: 2})
+	require.ErrorIs(t, err, cause)
+	require.Nil(t, resp)
 }
 
 func TestRequestWithRetry_NoSteps(t *testing.T) {
