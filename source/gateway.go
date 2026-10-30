@@ -573,6 +573,9 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
+				// The flag wins, which leaves the route with no hostnames at all, so make that visible.
+				log.Warnf("%q is %q on %s %s/%s, but --ignore-hostname-annotation is set, so the route has no hostnames.",
+					annotations.GatewayHostnameSourceKey, hostNameAnnotation, c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
 				return []string{}, nil
 			}
 			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
