@@ -135,9 +135,10 @@ func InternalHostnamesFromAnnotations(input map[string]string) []string {
 }
 
 // SplitHostnameAnnotation splits a comma-separated hostname annotation string into a slice of hostnames.
-// It trims any leading or trailing whitespace and removes any spaces within the anno
+// It trims any leading or trailing whitespace, removes any spaces within the annotation and drops
+// empty entries, so an empty value or a stray comma yields no hostname.
 func SplitHostnameAnnotation(input string) []string {
-	return strings.Split(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), ",")
+	return strings.FieldsFunc(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), func(r rune) bool { return r == ',' })
 }
 
 func extractHostnamesFromAnnotations(input map[string]string, key string) []string {
