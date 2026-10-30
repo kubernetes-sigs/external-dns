@@ -317,6 +317,50 @@ spec:
 
 > ExternalDNS will create an internal DNS record for `my-pod.internal.example.com` targeting the Pod `Status.PodIP`.
 
+## external-dns.kubernetes.io/nodeport-filter
+
+Limits which Nodes the records of a `Service` of type `NodePort` point at. The value is a Kubernetes
+[label selector](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors) matched
+against the Nodes' labels, such as `role=edge`, `!karpenter.sh/nodepool` or `env in (prod),!spot`.
+
+- With `spec.externalTrafficPolicy: Cluster`, only the Nodes matching the selector are used.
+- With `spec.externalTrafficPolicy: Local`, Nodes that don't match are dropped before the pod readiness tiers are
+  compared, so the records point at the best tier among the matching Nodes running the `Service`'s pods.
+- `--exclude-unschedulable` still applies to the matching Nodes, and `external-dns.kubernetes.io/access` still picks
+  which of their addresses are used.
+
+If no matching Node is left (with `Local`: no matching Node runs one of the `Service`'s pods), no A or AAAA record is
+produced for the `Service`. Under `--policy=sync` this deletes the existing records.
+
+An invalid selector logs a warning and is ignored: every Node is used, as if the annotation were not set. The `Service`
+is kept even with `--annotation-validation-mode=strict`.
+
+This annotation is read only by the Service source.
+
+### Use Cases for `external-dns.kubernetes.io/nodeport-filter` annotation
+
+#### Keep short-lived Nodes out of the records
+
+Nodes launched by an autoscaler such as Karpenter can disappear at any time, and clients that resolved to them get
+errors until the next synchronization. Karpenter labels every Node it launches with `karpenter.sh/nodepool`, so this
+selector keeps them out:
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  annotations:
+    external-dns.kubernetes.io/hostname: my-service.example.com
+    # Quoted: an unquoted value starting with "!" is a YAML tag.
+    external-dns.kubernetes.io/nodeport-filter: "!karpenter.sh/nodepool"
+spec:
+  type: NodePort
+  ...
+```
+
+> ExternalDNS will create records for `my-service.example.com` targeting every Node except those launched by Karpenter.
+
 ## external-dns.kubernetes.io/target
 
 Specifies a comma-separated list of values to override the resource's DNS record targets (RDATA).
