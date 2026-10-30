@@ -758,13 +758,13 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 
 func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 	for _, zone := range zoneNames {
-		if ep.DNSName == zone || dns.IsSubDomain(dns.Fqdn(zone), dns.Fqdn(ep.DNSName)) {
+		if dns.IsSubDomain(dns.Fqdn(zone), dns.Fqdn(ep.DNSName)) {
 			return strings.ToLower(dns.Fqdn(zone))
 		}
 	}
 
 	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
-	return strings.ToLower(dns.Fqdn("."))
+	return "."
 }
 
 func makeClient(r *rfc2136Provider, nameserver string) (*dns.Client, error) {
