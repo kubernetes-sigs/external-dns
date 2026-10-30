@@ -155,7 +155,6 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	im.migrateTXTLabels(endpoints, labelMap, txtRecordsMap)
 
 	endpoints = im.collectTXTRecords(endpoints, txtRecordsMap)
-
 	im.refreshRecordsCache(endpoints)
 
 	return endpoints, nil
