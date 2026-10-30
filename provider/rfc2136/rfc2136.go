@@ -433,7 +433,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -466,7 +466,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 
@@ -502,7 +502,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {

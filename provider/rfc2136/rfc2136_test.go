@@ -789,6 +789,23 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	assert.Contains(t, updateMsgs[1], "v2.foobar.com")
 }
 
+func TestRfc2136ApplyChangesWithMixedCaseZone(t *testing.T) {
+	stub := newStub()
+	provider, err := createRfc2136StubProvider(stub, "EXAMPLE.COM")
+	require.NoError(t, err)
+
+	err = provider.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{{
+			DNSName:    "www.example.com",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    []string{"192.0.2.1"},
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, stub.createMsgs, 1)
+	assert.Equal(t, "example.com.", stub.createMsgs[0].Question[0].Name)
+}
+
 // These tests use the foo.com and foobar.com zones and with filters set to both zones
 // createMsgs and updateMsgs need sorted when are used
 func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
