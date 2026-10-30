@@ -445,7 +445,12 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	if im.cacheInterval > 0 {
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
 	}
-	return im.provider.ApplyChanges(ctx, filteredChanges)
+	if err := im.provider.ApplyChanges(ctx, filteredChanges); err != nil {
+		// A failed provider call may have applied only some changes; the cached view is no longer reliable.
+		im.recordsCache = nil
+		return err
+	}
+	return nil
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
