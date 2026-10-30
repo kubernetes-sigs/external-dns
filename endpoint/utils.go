@@ -180,9 +180,14 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			singleTargets[singleKey] = ep.Targets[0]
 		}
 		if existing, ok := endpointMap[key]; ok {
-			existing.Targets = append(existing.Targets, ep.Targets...)
-			for _, ref := range ep.refObjects {
-				existing.WithRefObject(ref)
+			kept, merged := existing, ep
+			if resourceBefore(ep, existing) {
+				kept, merged = ep, existing
+				endpointMap[key] = kept
+			}
+			kept.Targets = append(kept.Targets, merged.Targets...)
+			for _, ref := range merged.refObjects {
+				kept.WithRefObject(ref)
 			}
 		} else {
 			endpointMap[key] = ep
@@ -197,4 +202,11 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	}
 
 	return result
+}
+
+// resourceBefore picks the same base endpoint on every sync: sources list objects in
+// informer order, which changes between calls, and the base's labels reach the registry.
+func resourceBefore(a, b *Endpoint) bool {
+	ra, rb := a.Labels[ResourceLabelKey], b.Labels[ResourceLabelKey]
+	return ra != "" && rb != "" && ra < rb
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -767,4 +768,74 @@ func TestDedupSource_InvalidEndpointsMetric(t *testing.T) {
 		t, 1.0, invalidEndpoints.Gauge,
 		map[string]string{"record_type": "srv", "source_type": "unknown"},
 	)
+}
+
+func TestDedupSource_KeepsLowestResource(t *testing.T) {
+	withResource := func(resource string, ttl endpoint.TTL) *endpoint.Endpoint {
+		ep := endpoint.NewEndpointWithTTL("app.example.com", endpoint.RecordTypeA, ttl, "192.168.1.1")
+		if resource != "" {
+			ep.WithLabel(endpoint.ResourceLabelKey, resource)
+		}
+		return ep
+	}
+
+	tests := []struct {
+		name         string
+		input        []*endpoint.Endpoint
+		wantResource string
+		wantTTL      endpoint.TTL
+	}{
+		{
+			name:         "lowest resource listed first",
+			input:        []*endpoint.Endpoint{withResource("ingress/default/a", 300), withResource("ingress/default/b", 60)},
+			wantResource: "ingress/default/a",
+			wantTTL:      300,
+		},
+		{
+			name:         "lowest resource listed last",
+			input:        []*endpoint.Endpoint{withResource("ingress/default/b", 60), withResource("ingress/default/c", 30), withResource("ingress/default/a", 300)},
+			wantResource: "ingress/default/a",
+			wantTTL:      300,
+		},
+		{
+			name:         "first kept when a duplicate has no resource label",
+			input:        []*endpoint.Endpoint{withResource("ingress/default/b", 60), withResource("", 300)},
+			wantResource: "ingress/default/b",
+			wantTTL:      60,
+		},
+		{
+			name:         "first kept across resource kinds",
+			input:        []*endpoint.Endpoint{withResource("service/default/b", 60), withResource("ingress/default/a", 300)},
+			wantResource: "service/default/b",
+			wantTTL:      60,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := NewDedupSource(testutils.NewMockSource(tt.input...)).Endpoints(t.Context())
+			require.NoError(t, err)
+			require.Len(t, result, 1)
+			assert.Equal(t, tt.wantResource, result[0].Labels[endpoint.ResourceLabelKey])
+			assert.Equal(t, tt.wantTTL, result[0].RecordTTL)
+		})
+	}
+}
+
+func TestDedupSource_KeepsRefObjectsWhenLowerResourceArrivesLast(t *testing.T) {
+	newEndpoint := func(name string) *endpoint.Endpoint {
+		ep := testutils.NewEndpointWithRef("app.example.com", "192.168.1.1", &networkingv1.Ingress{
+			Name: name, Namespace: "default", UID: k8stypes.UID("uid-" + name),
+		}, types.Ingress)
+		return ep.WithLabel(endpoint.ResourceLabelKey, "ingress/default/"+name)
+	}
+
+	result, err := NewDedupSource(testutils.NewMockSource(newEndpoint("b"), newEndpoint("c"), newEndpoint("a"))).Endpoints(t.Context())
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+
+	refs := result[0].RefObjects()
+	require.Len(t, refs, 3)
+	assert.Equal(t, "a", refs[0].Name())
+	assert.ElementsMatch(t, []string{"a", "b", "c"}, []string{refs[0].Name(), refs[1].Name(), refs[2].Name()})
 }
