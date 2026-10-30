@@ -587,12 +587,7 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	}
 
 	if !c.src.ignoreHostnameAnnotation {
-		// Skip empty values so an empty annotation does not gate the template below.
-		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
-			if hostname != "" {
-				hostnames = append(hostnames, hostname)
-			}
-		}
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
 	if err != nil {

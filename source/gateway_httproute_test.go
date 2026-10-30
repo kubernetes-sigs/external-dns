@@ -1938,6 +1938,74 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			// An empty entry would act as the listener-fallback sentinel and publish the wildcard.
+			title:      "OnlyAnnotationHostTrailingCommaWildcardListener",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("*.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "app.example.internal,",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("app.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "OnlyAnnotationHostEmptyValue",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("listener.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("listener.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: nil,
+		},
+		{
 			title:      "InvalidSourceAnnotation",
 			config:     &config.Config{},
 			namespaces: namespaces("default"),
