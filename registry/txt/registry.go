@@ -181,9 +181,9 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		oldOwnerID:          oldOwnerID,
-		existingTXTs:          newExistingTXTs(),
-		obsoleteTXTWarned:     sets.New[string](),
-		crossOwnerTXTWarned:   sets.New[string](),
+		existingTXTs:        newExistingTXTs(),
+		obsoleteTXTWarned:   sets.New[string](),
+		crossOwnerTXTWarned: sets.New[string](),
 	}, nil
 }
 
