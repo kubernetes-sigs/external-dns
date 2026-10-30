@@ -18,7 +18,9 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +31,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -38,6 +41,8 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
+
+var testBackoff = wait.Backoff{Duration: time.Millisecond, Factor: 1.5, Steps: 5}
 
 const (
 	testReadTimeout  = 5 * time.Second
@@ -590,7 +595,7 @@ func TestRequestWithRetry_Success(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 	require.NoError(t, err)
 
-	resp, err := requestWithRetry(client, req)
+	resp, err := requestWithRetry(client, req, testBackoff)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -606,7 +611,7 @@ func TestRequestWithRetry_NonRetriableStatus(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 	require.NoError(t, err)
 
-	resp, err := requestWithRetry(client, req)
+	resp, err := requestWithRetry(client, req, testBackoff)
 	require.Error(t, err)
 	require.Nil(t, resp)
 }
@@ -628,11 +633,57 @@ func TestRequestWithRetry_ServerErrorRetried(t *testing.T) {
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
 	require.NoError(t, err)
 
-	resp, err := requestWithRetry(client, req)
+	resp, err := requestWithRetry(client, req, testBackoff)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, 3, attempts)
+}
+
+func TestRequestWithRetry_RetriesExhausted(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	client := &http.Client{Timeout: 2 * time.Second}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req, testBackoff)
+	require.EqualError(t, err, "server error: status code 503")
+	require.Nil(t, resp)
+	require.Equal(t, testBackoff.Steps, attempts)
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestRequestWithRetry_CancelledAfterServerError(t *testing.T) {
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cause := errors.New("shutting down")
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		cancel(cause)
+		return &http.Response{StatusCode: http.StatusServiceUnavailable, Body: http.NoBody, Request: r}, nil
+	})}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://webhook", nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(client, req, wait.Backoff{Duration: time.Minute, Steps: 2})
+	require.ErrorIs(t, err, cause)
+	require.Nil(t, resp)
+}
+
+func TestRequestWithRetry_NoSteps(t *testing.T) {
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1", nil)
+	require.NoError(t, err)
+
+	resp, err := requestWithRetry(http.DefaultClient, req, wait.Backoff{})
+	require.Error(t, err)
+	require.Nil(t, resp)
 }
 
 func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
