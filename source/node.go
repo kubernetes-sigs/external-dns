@@ -26,6 +26,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -59,7 +60,7 @@ type nodeSource struct {
 func NewNodeSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg *Config) (Source, error) {
+	cfg *config.Config) (Source, error) {
 	// Use shared informers to listen for add/update/delete of nodes.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)

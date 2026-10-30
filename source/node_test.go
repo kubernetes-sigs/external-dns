@@ -29,6 +29,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -401,7 +402,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			client, err := NewNodeSource(
 				t.Context(),
 				kubeClient,
-				&Config{
+				&config.Config{
 					AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
@@ -513,7 +514,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		client, err := NewNodeSource(
 			t.Context(),
 			kubeClient,
-			&Config{
+			&config.Config{
 				AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
@@ -569,7 +570,7 @@ func TestTransformerInNodeSource(t *testing.T) {
 	_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewNodeSource(t.Context(), kubeClient, &Config{LabelFilter: labels.Everything()})
+	src, err := NewNodeSource(t.Context(), kubeClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	ns, ok := src.(*nodeSource)
 	require.True(t, ok)
@@ -607,7 +608,7 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		kubeClient,
-		&Config{
+		&config.Config{
 			LabelFilter: labels.Everything(),
 		},
 	)
@@ -646,7 +647,7 @@ func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			LabelFilter: labels.Everything(),
 		},
 	)
@@ -850,7 +851,7 @@ func TestNodeIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewNodeSource(t.Context(), client, &Config{
+			src, err := NewNodeSource(t.Context(), client, &config.Config{
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),

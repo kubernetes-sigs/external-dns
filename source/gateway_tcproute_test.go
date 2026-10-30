@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -89,7 +90,7 @@ func TestGatewayTCPRouteSourceEndpoints(t *testing.T) {
 	_, err = gwClient.GatewayV1().TCPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create TCPRoute")
 
-	src, err := NewGatewayTCPRouteSource(ctx, clients, &Config{
+	src, err := NewGatewayTCPRouteSource(ctx, clients, &config.Config{
 		TemplateEngine: templatetest.MustEngine(t, "{{.Name}}-template.foobar.internal", "", "", true),
 	})
 	require.NoError(t, err, "failed to create Gateway TCPRoute Source")
@@ -119,7 +120,7 @@ func TestGatewayTCPRouteSource_InformerTransform(t *testing.T) {
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
 
-	source, err := NewGatewayTCPRouteSource(t.Context(), clients, &Config{})
+	source, err := NewGatewayTCPRouteSource(t.Context(), clients, &config.Config{})
 	require.NoError(t, err)
 	require.IsType(t, &gatewayRouteSource{}, source)
 
@@ -255,7 +256,7 @@ func TestGatewayTCPRouteIndexer(t *testing.T) {
 			clients.On("GatewayClient").Return(gwClient, nil)
 			clients.On("KubeClient").Return(kubeClient, nil)
 
-			src, err := NewGatewayTCPRouteSource(ctx, clients, &Config{
+			src, err := NewGatewayTCPRouteSource(ctx, clients, &config.Config{
 				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
 			})

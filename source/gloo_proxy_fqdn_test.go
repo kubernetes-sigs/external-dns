@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -282,7 +283,7 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			fakeDynamicClient := newGlooDynamicClient(&proxyObj)
 			fakeKubernetesClient := fakeKube.NewSimpleClientset(&tt.svc)
 
-			src, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+			src, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{
 				GlooNamespaces: []string{ns},
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 			})

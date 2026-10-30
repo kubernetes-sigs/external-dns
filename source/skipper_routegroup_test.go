@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -53,7 +54,7 @@ func createTestRouteGroup(ns, name string, anns map[string]string, hosts []strin
 	}
 }
 
-func newTestRouteGroupSource(t *testing.T, cfg *Config, rgs ...*rgv1.RouteGroup) Source {
+func newTestRouteGroupSource(t *testing.T, cfg *config.Config, rgs ...*rgv1.RouteGroup) Source {
 	t.Helper()
 	objects := make([]runtime.Object, len(rgs))
 	for i, rg := range rgs {
@@ -71,7 +72,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 	t.Run("creates source successfully", func(t *testing.T) {
 		t.Parallel()
 		fakeClient := rgfake.NewSimpleClientset()
-		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{})
+		src, err := NewRouteGroupSource(t.Context(), fakeClient, &config.Config{})
 		require.NoError(t, err)
 		_, ok := src.(*routeGroupSource)
 		require.True(t, ok)
@@ -84,7 +85,7 @@ func TestNewRouteGroupSource(t *testing.T) {
 			return true, nil, apierrors.NewNotFound(rgv1.Resource("routegroups"), "")
 		})
 
-		_, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{})
+		_, err := NewRouteGroupSource(t.Context(), fakeClient, &config.Config{})
 		require.ErrorContains(t, err, "requires the RouteGroup CRD")
 	})
 
@@ -95,14 +96,14 @@ func TestNewRouteGroupSource(t *testing.T) {
 			return true, nil, apierrors.NewForbidden(rgv1.Resource("routegroups"), "", errors.New("no permission"))
 		})
 
-		_, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{})
+		_, err := NewRouteGroupSource(t.Context(), fakeClient, &config.Config{})
 		require.ErrorContains(t, err, "failed to list RouteGroups")
 	})
 
 	t.Run("respects namespace", func(t *testing.T) {
 		t.Parallel()
 		fakeClient := rgfake.NewSimpleClientset()
-		src, err := NewRouteGroupSource(t.Context(), fakeClient, &Config{Namespaces: []string{"test-ns"}})
+		src, err := NewRouteGroupSource(t.Context(), fakeClient, &config.Config{Namespaces: []string{"test-ns"}})
 		require.NoError(t, err)
 		require.NotNil(t, src)
 	})
@@ -379,7 +380,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
 		rgs         []*rgv1.RouteGroup
-		cfg         *Config
+		cfg         *config.Config
 		templates   string
 		combineFQDN bool
 		want        []*endpoint.Endpoint
@@ -717,7 +718,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		},
 		{
 			name: "multiple routegroups with filter annotations should return only filtered endpoints",
-			cfg:  &Config{AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=skipper")},
+			cfg:  &config.Config{AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=skipper")},
 			rgs: []*rgv1.RouteGroup{
 				createTestRouteGroup(
 					"namespace1",
@@ -780,7 +781,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		},
 		{
 			name: "multiple routegroups with set operation annotation filter should return only filtered endpoints",
-			cfg:  &Config{AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class in (nginx, skipper)")},
+			cfg:  &config.Config{AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class in (nginx, skipper)")},
 			rgs: []*rgv1.RouteGroup{
 				createTestRouteGroup(
 					"namespace1",
@@ -848,7 +849,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		},
 		{
 			name: "multiple routegroups with matching label filter returns only labeled endpoints",
-			cfg:  &Config{LabelFilter: labels.SelectorFromSet(labels.Set{"app": "test"})},
+			cfg:  &config.Config{LabelFilter: labels.SelectorFromSet(labels.Set{"app": "test"})},
 			rgs: []*rgv1.RouteGroup{
 				{
 					Namespace: "namespace1",
@@ -883,7 +884,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		},
 		{
 			name: "multiple routegroups with non-matching label filter returns no endpoints",
-			cfg:  &Config{LabelFilter: labels.SelectorFromSet(labels.Set{"app": "test"})},
+			cfg:  &config.Config{LabelFilter: labels.SelectorFromSet(labels.Set{"app": "test"})},
 			rgs: []*rgv1.RouteGroup{
 				{
 					Namespace: "namespace1",
@@ -957,7 +958,7 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfg
 			if cfg == nil {
-				cfg = &Config{}
+				cfg = &config.Config{}
 			}
 			if tt.templates != "" {
 				cfg.TemplateEngine = templatetest.MustEngine(t, tt.templates, "", "", tt.combineFQDN)
@@ -988,7 +989,7 @@ func TestRouteGroupSourceMultipleNamespaces(t *testing.T) {
 			[]rgv1.RouteGroupLoadBalancer{{Hostname: "lb.example.org"}},
 		))
 	}
-	src := newTestRouteGroupSource(t, &Config{Namespaces: []string{"team-a", "team-b"}}, rgs...)
+	src := newTestRouteGroupSource(t, &config.Config{Namespaces: []string{"team-a", "team-b"}}, rgs...)
 
 	got, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -1002,7 +1003,7 @@ func TestRouteGroupSourceMultipleNamespaces(t *testing.T) {
 }
 
 func TestResourceLabelIsSet(t *testing.T) {
-	src := newTestRouteGroupSource(t, &Config{},
+	src := newTestRouteGroupSource(t, &config.Config{},
 		createTestRouteGroup(
 			"namespace1",
 			"rg1",
@@ -1040,7 +1041,7 @@ func TestRouteGroupSourceLegacyAnnotationPrefix(t *testing.T) {
 		[]rgv1.RouteGroupLoadBalancer{{Hostname: "lb.example.org"}},
 	)
 	rgv.UID = k8stypes.UID("skipper-rg-uid-1234")
-	source := newTestRouteGroupSource(t, &Config{}, rgv)
+	source := newTestRouteGroupSource(t, &config.Config{}, rgv)
 
 	got, err := source.Endpoints(t.Context())
 	require.NoError(t, err)
@@ -1086,7 +1087,7 @@ func TestRouteGroupSourceLegacyAnnotationFilter(t *testing.T) {
 	)
 	rg2.UID = k8stypes.UID("uid-2")
 
-	source := newTestRouteGroupSource(t, &Config{
+	source := newTestRouteGroupSource(t, &config.Config{
 		AnnotationFilter: selector,
 	},
 		rg1,
@@ -1110,7 +1111,7 @@ func TestRouteGroupSourceLegacyAnnotationFilter(t *testing.T) {
 func TestRouteGroupAddEventHandler(t *testing.T) {
 	t.Parallel()
 
-	src := newTestRouteGroupSource(t, &Config{})
+	src := newTestRouteGroupSource(t, &config.Config{})
 	called := false
 	src.(*routeGroupSource).AddEventHandler(t.Context(), func() { called = true })
 	assert.False(t, called, "handler should not be called immediately")

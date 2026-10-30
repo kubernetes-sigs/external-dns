@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -176,7 +177,7 @@ func NewGlooSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config) (Source, error) {
+	cfg *config.Config) (Source, error) {
 	log.Warn("The gloo-proxy source is deprecated and will be removed after Gloo OSS end of life (2026-12-31). Migrate to kgateway with the gateway-* sources.")
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()

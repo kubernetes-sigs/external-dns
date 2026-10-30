@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	f5 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
@@ -438,7 +439,7 @@ func TestF5TransportServerEndpoints(t *testing.T) {
 				labelFilter = labels.Everything()
 			}
 			source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-				&Config{
+				&config.Config{
 					Namespaces:       []string{defaultF5TransportServerNamespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(tc.annotationFilter),
 					LabelFilter:      labelFilter,
@@ -468,7 +469,7 @@ func TestF5TransportServerSource_InformerTransform(t *testing.T) {
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{LabelFilter: labels.Everything()})
+	source, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &f5TransportServerSource{}, source)
 
@@ -593,7 +594,7 @@ func TestF5TransportServerIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+			src, err := NewF5TransportServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{
 				Namespaces:       []string{defaultF5TransportServerNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),

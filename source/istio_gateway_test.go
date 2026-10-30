@@ -38,6 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
@@ -103,7 +104,7 @@ func (suite *GatewaySuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
@@ -1495,7 +1496,7 @@ func testGatewayEndpoints(t *testing.T) {
 				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{targetNamespace},
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1606,7 +1607,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
-				&Config{},
+				&config.Config{},
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -1622,7 +1623,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 func TestTransformerInIstioGatewaySource(t *testing.T) {
 	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *gatewaySource {
 		t.Helper()
-		src, err := NewIstioGatewaySource(t.Context(), kClient, istioClient, &Config{})
+		src, err := NewIstioGatewaySource(t.Context(), kClient, istioClient, &config.Config{})
 		require.NoError(t, err)
 		gs, ok := src.(*gatewaySource)
 		require.True(t, ok)
@@ -1873,7 +1874,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		t.Context(),
 		fakeKubeClient,
 		fakeIstioClient,
-		&Config{},
+		&config.Config{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, src)
@@ -1910,7 +1911,7 @@ func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewaySer
 		t.Context(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "{{.FQDN}}", "", "", false),
 		},
 	)
@@ -2029,7 +2030,7 @@ func TestIstioGatewaySourceMultipleNamespaces(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &Config{
+	src, err := NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &config.Config{
 		Namespaces:  []string{"team-a", "team-b"},
 		LabelFilter: labels.Everything(),
 	})
