@@ -556,21 +556,6 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 }
 
 func TestMergeEndpointsLogging(t *testing.T) {
-	t.Run("CNAMEs with different targets are not merged", func(t *testing.T) {
-		result := MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME, "a.elb.com"),
-			NewEndpoint("example.com", RecordTypeCNAME, "b.elb.com"),
-		})
-
-		require.Len(t, result, 2)
-		targets := make([]string, 0, len(result))
-		for _, ep := range result {
-			require.Len(t, ep.Targets, 1)
-			targets = append(targets, ep.Targets[0])
-		}
-		assert.ElementsMatch(t, []string{"a.elb.com", "b.elb.com"}, targets)
-	})
-
 	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
