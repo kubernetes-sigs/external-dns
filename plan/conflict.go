@@ -17,7 +17,9 @@ limitations under the License.
 package plan
 
 import (
+	"fmt"
 	"slices"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -62,14 +64,22 @@ func warnConflictingAliasTargets(candidates []*endpoint.Endpoint, kept *endpoint
 	if kept.RecordType != endpoint.RecordTypeCNAME && kept.RecordType != endpoint.RecordTypeDNAME {
 		return
 	}
+	discarded := make([]string, 0, len(candidates)-1)
 	for _, candidate := range candidates {
-		if candidate.Targets.Same(kept.Targets) {
+		if candidate == kept || slices.Clone(candidate.Targets).Same(slices.Clone(kept.Targets)) {
 			continue
 		}
-		log.Warnf("Domain %s has conflicting %s targets; keeping %s",
-			kept.DNSName, kept.RecordType, kept.Targets.String())
+		discarded = append(discarded, fmt.Sprintf("%s (%s)",
+			candidate.Targets.String(), candidate.Labels[endpoint.ResourceLabelKey]))
+	}
+	if len(discarded) == 0 {
 		return
 	}
+	slices.Sort(discarded)
+	// This runs after the plan's domain/record filters; MergeEndpoints sees unfiltered, per-source endpoints (#6529).
+	// TODO: add metric for CNAME/DNAME conflicts
+	log.Warnf("Domain %s has conflicting %s targets; selected %s (%s), discarded %s",
+		kept.DNSName, kept.RecordType, kept.Targets.String(), kept.Labels[endpoint.ResourceLabelKey], strings.Join(discarded, ", "))
 }
 
 // ResolveRecordTypes attempts to detect and resolve record type conflicts in desired

@@ -1077,6 +1077,7 @@ func TestCalculateAliasTargetConflicts(t *testing.T) {
 
 	caseA := endpointFor("App.example.org", endpoint.RecordTypeCNAME, "a.example.net", "service/default/a", "")
 	caseB := endpointFor("app.example.org", endpoint.RecordTypeCNAME, "b.example.net", "service/default/b", "")
+	currentB := endpointFor("app.example.org", endpoint.RecordTypeCNAME, "old.example.net", "service/default/b", "")
 	dnameA := endpointFor("dname.example.org", endpoint.RecordTypeDNAME, "a.example.net", "service/default/a", "")
 	dnameB := endpointFor("dname.example.org", endpoint.RecordTypeDNAME, "b.example.net", "service/default/b", "")
 	setOne := endpointFor("weighted.example.org", endpoint.RecordTypeCNAME, "a.example.net", "service/default/a", "one")
@@ -1103,14 +1104,23 @@ func TestCalculateAliasTargetConflicts(t *testing.T) {
 			desired:        []*endpoint.Endpoint{caseB, caseA},
 			managedRecords: []string{endpoint.RecordTypeCNAME},
 			wantCreate:     []*endpoint.Endpoint{caseA},
-			wantWarning:    "Domain App.example.org has conflicting CNAME targets; keeping a.example.net",
+			wantWarning:    "Domain App.example.org has conflicting CNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b)",
+		},
+		{
+			name:           "existing CNAME owner selects its resource target",
+			current:        []*endpoint.Endpoint{currentB},
+			desired:        []*endpoint.Endpoint{caseB, caseA},
+			managedRecords: []string{endpoint.RecordTypeCNAME},
+			wantUpdateOld:  []*endpoint.Endpoint{currentB},
+			wantUpdateNew:  []*endpoint.Endpoint{caseB},
+			wantWarning:    "Domain app.example.org has conflicting CNAME targets; selected b.example.net (service/default/b), discarded a.example.net (service/default/a)",
 		},
 		{
 			name:           "DNAME group creates only the selected target",
 			desired:        []*endpoint.Endpoint{dnameB, dnameA},
 			managedRecords: []string{endpoint.RecordTypeDNAME},
 			wantCreate:     []*endpoint.Endpoint{dnameA},
-			wantWarning:    "Domain dname.example.org has conflicting DNAME targets; keeping a.example.net",
+			wantWarning:    "Domain dname.example.org has conflicting DNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b)",
 		},
 		{
 			name:           "different set identifiers remain separate groups",

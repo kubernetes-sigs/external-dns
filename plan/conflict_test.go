@@ -372,41 +372,59 @@ func TestPerResource_ResolveAliasTargetConflicts(t *testing.T) {
 
 	cnameA := endpointFor(endpoint.RecordTypeCNAME, "a.example.net", "service/default/a")
 	cnameB := endpointFor(endpoint.RecordTypeCNAME, "b.example.net", "service/default/b")
+	cnameC := endpointFor(endpoint.RecordTypeCNAME, "c.example.net", "service/default/c")
 	dnameA := endpointFor(endpoint.RecordTypeDNAME, "a.example.net", "service/default/a")
 	dnameB := endpointFor(endpoint.RecordTypeDNAME, "b.example.net", "service/default/b")
 	current := endpointFor(endpoint.RecordTypeCNAME, "old.example.net", "service/default/b")
 	cnameUpper := endpointFor(endpoint.RecordTypeCNAME, "A.EXAMPLE.NET", "service/default/upper")
+	multiCNAME := endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, "google.com", "facebook.com").
+		WithLabel(endpoint.ResourceLabelKey, "service/default/multi-cname")
+	multiDNAME := endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeDNAME, "google.com", "facebook.com").
+		WithLabel(endpoint.ResourceLabelKey, "service/default/multi-dname")
 
 	tests := []struct {
 		name        string
 		current     *endpoint.Endpoint
 		candidates  []*endpoint.Endpoint
 		want        *endpoint.Endpoint
+		wantTargets endpoint.Targets
 		wantWarning string
 	}{
 		{
 			name:        "create keeps the minimum CNAME target",
-			candidates:  []*endpoint.Endpoint{cnameB, cnameA},
+			candidates:  []*endpoint.Endpoint{cnameC, cnameB, cnameA},
 			want:        cnameA,
-			wantWarning: "Domain app.example.org has conflicting CNAME targets; keeping a.example.net",
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b), c.example.net (service/default/c)",
 		},
 		{
 			name:        "create keeps the minimum DNAME target",
 			candidates:  []*endpoint.Endpoint{dnameB, dnameA},
 			want:        dnameA,
-			wantWarning: "Domain app.example.org has conflicting DNAME targets; keeping a.example.net",
+			wantWarning: "Domain app.example.org has conflicting DNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b)",
 		},
 		{
 			name:        "update keeps the current resource target",
 			current:     current,
 			candidates:  []*endpoint.Endpoint{cnameA, cnameB},
 			want:        cnameB,
-			wantWarning: "Domain app.example.org has conflicting CNAME targets; keeping b.example.net",
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; selected b.example.net (service/default/b), discarded a.example.net (service/default/a)",
 		},
 		{
 			name:       "target names differing only in case do not conflict",
 			candidates: []*endpoint.Endpoint{cnameUpper, cnameA},
 			want:       cnameUpper,
+		},
+		{
+			name:        "single multi-target CNAME retains target order",
+			candidates:  []*endpoint.Endpoint{multiCNAME},
+			want:        multiCNAME,
+			wantTargets: endpoint.Targets{"google.com", "facebook.com"},
+		},
+		{
+			name:        "single multi-target DNAME retains target order",
+			candidates:  []*endpoint.Endpoint{multiDNAME},
+			want:        multiDNAME,
+			wantTargets: endpoint.Targets{"google.com", "facebook.com"},
 		},
 	}
 
@@ -421,6 +439,9 @@ func TestPerResource_ResolveAliasTargetConflicts(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Fatalf("Resolve returned %v, want %v", got, tt.want)
+			}
+			if tt.wantTargets != nil && !reflect.DeepEqual(got.Targets, tt.wantTargets) {
+				t.Fatalf("Resolve targets = %v, want %v", got.Targets, tt.wantTargets)
 			}
 			if tt.wantWarning == "" {
 				logtest.TestHelperLogNotContains("has conflicting", hook, t)
