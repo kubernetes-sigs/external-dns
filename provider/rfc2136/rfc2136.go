@@ -440,7 +440,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -473,7 +473,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 
@@ -509,7 +509,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -765,13 +765,13 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 
 func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 	for _, zone := range zoneNames {
-		if strings.HasSuffix(ep.DNSName, zone) {
-			return dns.Fqdn(zone)
+		if dns.IsSubDomain(dns.Fqdn(zone), dns.Fqdn(ep.DNSName)) {
+			return strings.ToLower(dns.Fqdn(zone))
 		}
 	}
 
 	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
-	return dns.Fqdn(".")
+	return "."
 }
 
 func makeClient(r *rfc2136Provider, nameserver string) (*dns.Client, error) {
