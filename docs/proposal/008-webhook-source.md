@@ -256,7 +256,7 @@ Server-side TLS does not help here, because nothing authenticates the caller, so
 
 None of the following is committed by this proposal, but each could be or should be considered.
 
-- gRPC transport, when a concrete need appears (for example server-streaming change notifications, or an in-cluster service that already exposes gRPC). Adding gRPC today would double the contract (OpenAPI + proto + parity test), pull in protobuf tooling and CI, and work against the binary-size effort, so it is deferred until there is a real demand it answers.
+- gRPC transport, when a concrete need appears (for example server-streaming change notifications, or an in-cluster gRPC service). Adding it today would double the contract (OpenAPI + proto + parity test), pull in protobuf tooling, and fight the binary-size effort, so it waits for real demand.
 - `unix://` socket transport on a shared `emptyDir`, where file permissions give real access control without needing network-level authentication.
 - Client authentication (bearer token or mTLS) so webhooks reachable off loopback become safe; once that lands the loopback restriction can be relaxed.
 - Change notifications, advertised through negotiation, to make `AddEventHandler` meaningful: server-sent events over HTTP (and a server-streaming RPC if gRPC is added).
