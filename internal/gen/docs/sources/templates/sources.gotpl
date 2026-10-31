@@ -22,10 +22,10 @@ Sources are responsible for:
 
 ## Available Sources
 
-| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.ProviderSpecific "Provider Specific" }} | {{ padRight .ColWidths.Category "Category" }} | {{ padRight .ColWidths.Resources "Resources" }} |
-|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.ProviderSpecific }}|:{{ leftSep .ColWidths.Category }}|:{{ leftSep .ColWidths.Resources }}|
+| {{ padRight .ColWidths.Name "**Source Name**" }} | {{ padRight .ColWidths.Filters "Filters" }} | {{ padRight .ColWidths.Namespace "Namespace" }} | {{ padRight .ColWidths.FQDNTemplate "FQDN Template" }} | {{ padRight .ColWidths.Events "Events" }} | {{ padRight .ColWidths.ProviderSpecific "Provider Specific" }} | {{ padRight .ColWidths.Validation "Validation" }} | {{ padRight .ColWidths.Category "Category" }} | {{ padRight .ColWidths.Resources "Resources" }} |
+|:{{ leftSep .ColWidths.Name }}|:{{ leftSep .ColWidths.Filters }}|:{{ leftSep .ColWidths.Namespace }}|:{{ leftSep .ColWidths.FQDNTemplate }}|:{{ leftSep .ColWidths.Events }}|:{{ leftSep .ColWidths.ProviderSpecific }}|:{{ leftSep .ColWidths.Validation }}|:{{ leftSep .ColWidths.Category }}|:{{ leftSep .ColWidths.Resources }}|
 {{- range .Sources }}
-| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Filters .Filters }} | {{ padRight $.ColWidths.Namespace .Namespace }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplate }} | {{ padRight $.ColWidths.Events .Events }} | {{ padRight $.ColWidths.ProviderSpecific .ProviderSpecific }} | {{ padRight $.ColWidths.Category (lower .Category) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} |
+| {{ padRight $.ColWidths.Name (.Name | bold) }} | {{ padRight $.ColWidths.Filters .FiltersCell }} | {{ padRight $.ColWidths.Namespace .NamespaceCell }} | {{ padRight $.ColWidths.FQDNTemplate .FQDNTemplateCell }} | {{ padRight $.ColWidths.Events .EventsCell }} | {{ padRight $.ColWidths.ProviderSpecific .ProviderSpecific }} | {{ padRight $.ColWidths.Validation .ValidationCell }} | {{ padRight $.ColWidths.Category (lower .Category) }} | {{ padRight $.ColWidths.Resources (replace .Resources "," "<br/>") }} |
 {{- end }}
 
 ## Usage
@@ -37,6 +37,8 @@ external-dns --source=service --source=ingress
 {{backtick 3}}
 
 Multiple sources can be combined to watch different resource types simultaneously.
+
+To restrict sources to a subset of namespaces, see [Watching Multiple Namespaces](multiple-namespaces.md).
 
 ## Source Categories
 
@@ -51,3 +53,11 @@ Multiple sources can be combined to watch different resource types simultaneousl
 - **Wrappers**: Source wrappers that modify or combine other sources
 - **Special**: Special purpose sources (connector, empty)
 - **Testing**: Sources used for testing purposes
+
+[^events-emit]: Controlled by the {{backtick 1}}--events-emit{{backtick 1}} flag. Set to one or more of {{backtick 1}}RecordReady{{backtick 1}}, {{backtick 1}}RecordDeleted{{backtick 1}}, {{backtick 1}}RecordError{{backtick 1}} (repeat the flag for multiple). Defaults to none (events disabled).
+[^filter-annotation]: Controlled by the {{backtick 1}}--annotation-filter{{backtick 1}} flag. Filters resources queried for endpoints by annotation using label-selector semantics. Defaults to empty (no annotation filtering).
+[^filter-label]: Controlled by the {{backtick 1}}--label-filter{{backtick 1}} flag. Filters resources queried for endpoints by label selector. Defaults to empty (all resources).
+[^namespace]: Controlled by the {{backtick 1}}--namespace{{backtick 1}} flag. Accepts a single value to limit resources to one namespace. Defaults to empty (all namespaces).
+[^namespaces]: Controlled by the {{backtick 1}}--namespace{{backtick 1}} flag. Comma-separated or repeated to limit resources to specific namespaces. Defaults to empty (all namespaces).
+[^fqdn-template]: Controlled by the {{backtick 1}}--fqdn-template{{backtick 1}} flag. A templated string that generates DNS names for sources that don't define a hostname themselves. Repeat the flag for multiple templates. See [FQDN templating](../advanced/fqdn-templating.md).
+[^val-annotation]: Controlled by the {{backtick 1}}--annotation-validation-mode{{backtick 1}} flag. Set to {{backtick 1}}warn{{backtick 1}} to log invalid or source-unsupported annotations, {{backtick 1}}strict{{backtick 1}} to additionally exclude affected objects from the informer index. Defaults to {{backtick 1}}off{{backtick 1}} (disabled).

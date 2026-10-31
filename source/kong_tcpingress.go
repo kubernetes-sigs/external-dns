@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -53,13 +54,14 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 // +externaldns:source:description=Creates DNS entries from Kong TCPIngress resources
 // +externaldns:source:resources=TCPIngress.configuration.konghq.com
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type kongTCPIngressSource struct {
 	ignoreHostnameAnnotation bool
 	dynamicKubeClient        dynamic.Interface
-	kongTCPIngressInformer   kubeinformers.GenericInformer
+	kongTCPIngressInformers  *informers.Informers[kubeinformers.GenericInformer]
 	kubeClient               kubernetes.Interface
 	unstructuredConverter    *unstructuredConverter
 }
@@ -68,31 +70,35 @@ type kongTCPIngressSource struct {
 func NewKongTCPIngressSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, cfg.Namespace(), nil)
-	kongTCPIngressInformer := informerFactory.ForResource(kongGroupdVersionResource)
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	})
+	kongTCPIngressInformers := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+		return factory.ForResource(kongGroupdVersionResource)
+	})
 
-	informers.MustSetTransform(kongTCPIngressInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+	kongTCPIngressInformers.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
-	informers.MustAddIndexers(kongTCPIngressInformer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+	kongTCPIngressInformers.MustAddIndexers(informers.IndexerWithOptions[*unstructured.Unstructured](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(kongTCPIngressInformer.Informer(), informers.DefaultEventHandler())
+	kongTCPIngressInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -104,7 +110,7 @@ func NewKongTCPIngressSource(
 	return &kongTCPIngressSource{
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		dynamicKubeClient:        dynamicKubeClient,
-		kongTCPIngressInformer:   kongTCPIngressInformer,
+		kongTCPIngressInformers:  kongTCPIngressInformers,
 		kubeClient:               kubeClient,
 		unstructuredConverter:    uc,
 	}, nil
@@ -113,7 +119,7 @@ func NewKongTCPIngressSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all TCPIngresses in the source's namespace(s).
 func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	tis := informers.ListIndexed[*unstructured.Unstructured](sc.kongTCPIngressInformer.Informer().GetIndexer())
+	tis := informers.ListIndexedAll[*unstructured.Unstructured](sc.kongTCPIngressInformers.Indexers()...)
 
 	var tcpIngresses []*TCPIngress
 	for _, tiObj := range tis {
@@ -141,7 +147,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 		fullname := fmt.Sprintf("%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
 		ingressEndpoints := sc.endpointsFromTCPIngress(tcpIngress, targets)
-		if endpoint.HasNoEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
+		if endpoint.IsEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}
 
@@ -187,7 +193,7 @@ func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func(
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.kongTCPIngressInformer.Informer(), eventHandlerFunc(handler))
+	sc.kongTCPIngressInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized

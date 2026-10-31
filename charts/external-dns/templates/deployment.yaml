@@ -103,6 +103,9 @@ spec:
             {{- if .Values.triggerLoopOnEvent }}
             - --events
             {{- end }}
+            {{- range .Values.eventsEmit }}
+            - --events-emit={{ . }}
+            {{- end }}
             {{- range .Values.sources }}
             - --source={{ . }}
             {{- end }}

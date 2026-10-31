@@ -89,3 +89,12 @@ tests:
       fqdnTemplates: null
     asserts:
       - notFailedTemplate: {}
+  - it: should throw an error when 'eventsEmit' contains an unknown event
+    set:
+      eventsEmit:
+        - RecordReady
+        - RecordBogus
+    asserts:
+      - failedTemplate:
+          # Accept Helm/JSONSchema error message variations across versions
+          errorPattern: "(eventsEmit\\.1 must be one of the following|at '/eventsEmit/1': value must be one of)"

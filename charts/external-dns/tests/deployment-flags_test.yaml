@@ -71,6 +71,26 @@ tests:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--source=crd"
 
+  - it: should configure 'eventsEmit'
+    set:
+      eventsEmit:
+        - RecordReady
+        - RecordError
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          value:
+            - --log-level=info
+            - --log-format=text
+            - --interval=1m
+            - --events-emit=RecordReady
+            - --events-emit=RecordError
+            - --source=service
+            - --source=ingress
+            - --policy=upsert-only
+            - --registry=txt
+            - --provider=aws
+
   - it: should be able to configure in single namespace
     set:
       namespaced: true

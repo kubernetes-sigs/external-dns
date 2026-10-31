@@ -550,82 +550,22 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 	var failedZones []string
 	for zoneID, zoneChanges := range changesByZone {
-		var failedChange bool
+		logZoneChanges(zoneID, zoneChanges)
 
-		for _, change := range zoneChanges {
-			logFields := log.Fields{
-				logFieldRecord: change.ResourceRecord.Name,
-				logFieldType:   change.ResourceRecord.Type,
-				logFieldTTL:    change.ResourceRecord.TTL,
-				logFieldAction: change.Action.String(),
-				logFieldZone:   zoneID,
-			}
-			log.WithFields(logFields).Info("Changing record.")
-		}
-
+		var (
+			failedChange bool
+			err          error
+		)
 		if p.DryRun {
 			// In dry-run mode, skip all DNS record mutations but still process
 			// regional hostname changes (which have their own dry-run logging).
-			if p.RegionalServicesConfig.Enabled {
-				desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
-				if err != nil {
-					return fmt.Errorf("failed to build desired regional hostnames: %w", err)
-				}
-				if len(desiredRegionalHostnames) > 0 {
-					regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
-					if err != nil {
-						return fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
-					}
-					regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
-					if !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges) {
-						failedChange = true
-					}
-				}
-			}
-			if failedChange {
-				failedZones = append(failedZones, zoneID)
-			}
-			continue
+			failedChange, err = p.submitRegionalHostnameChangesForZone(ctx, zoneID, zoneChanges)
+		} else {
+			failedChange, err = p.submitLiveZoneChanges(ctx, zoneID, zoneChanges)
 		}
-
-		// Fetch the zone's current DNS records and custom hostnames once, rather
-		// than once per change, to avoid O(n) API calls for n changes.
-		records, err := p.getDNSRecordsMap(ctx, zoneID)
 		if err != nil {
-			return fmt.Errorf("could not fetch records from zone, %w", err)
+			return err
 		}
-		chs, chErr := p.listCustomHostnamesWithPagination(ctx, zoneID)
-		if chErr != nil {
-			return fmt.Errorf("could not fetch custom hostnames from zone, %w", chErr)
-		}
-
-		// Apply custom hostname side-effects (separate Cloudflare API), then
-		// classify DNS record changes into batch collections.
-		if p.processCustomHostnameChanges(ctx, zoneID, zoneChanges, chs) {
-			failedChange = true
-		}
-		bc := p.buildBatchCollections(zoneID, zoneChanges, records)
-
-		if p.submitDNSRecordChanges(ctx, zoneID, bc, records) {
-			failedChange = true
-		}
-		if p.RegionalServicesConfig.Enabled {
-			desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
-			if err != nil {
-				return fmt.Errorf("failed to build desired regional hostnames: %w", err)
-			}
-			if len(desiredRegionalHostnames) > 0 {
-				regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
-				if err != nil {
-					return fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
-				}
-				regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
-				if !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges) {
-					failedChange = true
-				}
-			}
-		}
-
 		if failedChange {
 			failedZones = append(failedZones, zoneID)
 		}
@@ -636,6 +576,69 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	}
 
 	return nil
+}
+
+func logZoneChanges(zoneID string, zoneChanges []*cloudFlareChange) {
+	for _, change := range zoneChanges {
+		logFields := log.Fields{
+			logFieldRecord: change.ResourceRecord.Name,
+			logFieldType:   change.ResourceRecord.Type,
+			logFieldTTL:    change.ResourceRecord.TTL,
+			logFieldAction: change.Action.String(),
+			logFieldZone:   zoneID,
+		}
+		log.WithFields(logFields).Info("Changing record.")
+	}
+}
+
+// submitRegionalHostnameChangesForZone reports a soft failure as true; err is fatal.
+func (p *CloudFlareProvider) submitRegionalHostnameChangesForZone(ctx context.Context, zoneID string, zoneChanges []*cloudFlareChange) (bool, error) {
+	if !p.RegionalServicesConfig.Enabled {
+		return false, nil
+	}
+	desiredRegionalHostnames, err := desiredRegionalHostnames(zoneChanges)
+	if err != nil {
+		return false, fmt.Errorf("failed to build desired regional hostnames: %w", err)
+	}
+	if len(desiredRegionalHostnames) == 0 {
+		return false, nil
+	}
+	regionalHostnames, err := p.listDataLocalisationRegionalHostnames(ctx, zoneID)
+	if err != nil {
+		return false, fmt.Errorf("could not fetch regional hostnames from zone, %w", err)
+	}
+	regionalHostnamesChanges := regionalHostnamesChanges(desiredRegionalHostnames, regionalHostnames)
+	return !p.submitRegionalHostnameChanges(ctx, zoneID, regionalHostnamesChanges), nil
+}
+
+// submitLiveZoneChanges reports a soft failure as true; err is fatal.
+func (p *CloudFlareProvider) submitLiveZoneChanges(ctx context.Context, zoneID string, zoneChanges []*cloudFlareChange) (bool, error) {
+	// Fetch the zone's current DNS records and custom hostnames once, rather
+	// than once per change, to avoid O(n) API calls for n changes.
+	records, err := p.getDNSRecordsMap(ctx, zoneID)
+	if err != nil {
+		return false, fmt.Errorf("could not fetch records from zone, %w", err)
+	}
+	chs, err := p.listCustomHostnamesWithPagination(ctx, zoneID)
+	if err != nil {
+		return false, fmt.Errorf("could not fetch custom hostnames from zone, %w", err)
+	}
+
+	// Apply custom hostname side-effects (separate Cloudflare API), then
+	// classify DNS record changes into batch collections.
+	failedChange := p.processCustomHostnameChanges(ctx, zoneID, zoneChanges, chs)
+	bc := p.buildBatchCollections(zoneID, zoneChanges, records)
+
+	if p.submitDNSRecordChanges(ctx, zoneID, bc, records) {
+		failedChange = true
+	}
+
+	regionalFailed, err := p.submitRegionalHostnameChangesForZone(ctx, zoneID, zoneChanges)
+	if err != nil {
+		return false, err
+	}
+
+	return failedChange || regionalFailed, nil
 }
 
 // parseTagsAnnotation is the single helper method to handle tags from the annotation string.

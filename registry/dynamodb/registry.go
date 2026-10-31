@@ -245,100 +245,15 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
-	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
-		key := r.Key()
-		oldLabels := im.labels[key]
-		if oldLabels == nil {
-			statements = im.appendInsert(statements, key, r.Labels)
-		} else {
-			im.orphanedLabels.Delete(key)
-			statements = im.appendUpdate(statements, key, oldLabels, r.Labels)
-		}
-
-		im.labels[key] = r.Labels
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
-
+	statements := im.planCreateStatements(filteredChanges)
 	for _, r := range filteredChanges.Delete {
 		delete(im.labels, r.Key())
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
+		im.removeFromCache(r)
 	}
-
-	oldLabels := make(map[endpoint.EndpointKey]endpoint.Labels, len(filteredChanges.UpdateOld))
-	needMigration := sets.New[endpoint.EndpointKey]()
-	for _, r := range filteredChanges.UpdateOld {
-		oldLabels[r.Key()] = r.Labels
-
-		if _, ok := r.GetProviderSpecificProperty(dynamodbAttributeMigrate); ok {
-			needMigration.Insert(r.Key())
-		}
-
-		// remove old version of record from cache
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
-	}
-
-	for _, r := range filteredChanges.UpdateNew {
-		key := r.Key()
-		if needMigration.Has(key) {
-			statements = im.appendInsert(statements, key, r.Labels)
-			// Invalidate the records cache so the next sync deletes the TXT ownership record
-			im.recordsCache = nil
-		} else {
-			statements = im.appendUpdate(statements, key, oldLabels[key], r.Labels)
-		}
-
-		// add new version of record to caches
-		im.labels[key] = r.Labels
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
+	statements = im.planUpdateStatements(statements, filteredChanges)
 
 	err := im.executeStatements(ctx, statements, func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
-		var context string
-		if strings.HasPrefix(*request.Statement, "INSERT") {
-			if response.Error.Code == dynamodbtypes.BatchStatementErrorCodeEnumDuplicateItem {
-				// We lost a race with a different owner or another owner has an orphaned ownership record.
-				key, err := fromDynamoKey(request.Parameters[0])
-				if err != nil {
-					return err
-				}
-				for i, ep := range filteredChanges.Create {
-					if ep.Key() == key {
-						log.Infof("Skipping endpoint %v because owner does not match", ep)
-						filteredChanges.Create = append(filteredChanges.Create[:i], filteredChanges.Create[i+1:]...)
-						// The dynamodb insertion failed; remove from our cache.
-						im.removeFromCache(ep)
-						delete(im.labels, key)
-						return nil
-					}
-				}
-			}
-			var record string
-			if err := attributevalue.Unmarshal(request.Parameters[0], &record); err != nil {
-				return fmt.Errorf("inserting dynamodb record: %w", err)
-			}
-			context = fmt.Sprintf("inserting dynamodb record %q", record)
-		} else {
-			var record string
-			if err := attributevalue.Unmarshal(request.Parameters[1], &record); err != nil {
-				return fmt.Errorf("inserting dynamodb record: %w", err)
-			}
-			context = fmt.Sprintf("updating dynamodb record %q", record)
-		}
-		return fmt.Errorf("%s: %s: %s", context, response.Error.Code, *response.Error.Message)
+		return im.insertUpdateStatementError(filteredChanges, request, response)
 	})
 	if err != nil {
 		im.recordsCache = nil
@@ -357,8 +272,68 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	statements = make([]dynamodbtypes.BatchStatementRequest, 0, len(filteredChanges.Delete)+len(im.orphanedLabels))
-	for _, r := range filteredChanges.Delete {
+	statements = im.planDeleteStatements(filteredChanges)
+	return im.executeStatements(ctx, statements, im.deleteStatementError)
+}
+
+// Also writes im.labels and the records cache.
+func (im *DynamoDBRegistry) planCreateStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
+	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Create)+len(changes.UpdateNew))
+	for _, r := range changes.Create {
+		if r.Labels == nil {
+			r.Labels = make(map[string]string)
+		}
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+
+		key := r.Key()
+		oldLabels := im.labels[key]
+		if oldLabels == nil {
+			statements = im.appendInsert(statements, key, r.Labels)
+		} else {
+			im.orphanedLabels.Delete(key)
+			statements = im.appendUpdate(statements, key, oldLabels, r.Labels)
+		}
+
+		im.labels[key] = r.Labels
+		im.addToCache(r)
+	}
+	return statements
+}
+
+// Also writes im.labels and the records cache.
+func (im *DynamoDBRegistry) planUpdateStatements(statements []dynamodbtypes.BatchStatementRequest, changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
+	oldLabels := make(map[endpoint.EndpointKey]endpoint.Labels, len(changes.UpdateOld))
+	needMigration := sets.New[endpoint.EndpointKey]()
+	for _, r := range changes.UpdateOld {
+		oldLabels[r.Key()] = r.Labels
+
+		if _, ok := r.GetProviderSpecificProperty(dynamodbAttributeMigrate); ok {
+			needMigration.Insert(r.Key())
+		}
+
+		im.removeFromCache(r)
+	}
+
+	for _, r := range changes.UpdateNew {
+		key := r.Key()
+		if needMigration.Has(key) {
+			statements = im.appendInsert(statements, key, r.Labels)
+			// Invalidate the records cache so the next sync deletes the TXT ownership record
+			im.recordsCache = nil
+		} else {
+			statements = im.appendUpdate(statements, key, oldLabels[key], r.Labels)
+		}
+
+		im.labels[key] = r.Labels
+		im.addToCache(r)
+	}
+	return statements
+}
+
+// Also clears im.orphanedLabels.
+func (im *DynamoDBRegistry) planDeleteStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
+	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Delete)+len(im.orphanedLabels))
+	for _, r := range changes.Delete {
 		statements = im.appendDelete(statements, r.Key())
 	}
 	for r := range im.orphanedLabels {
@@ -366,14 +341,52 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		delete(im.labels, r)
 	}
 	im.orphanedLabels = nil
-	return im.executeStatements(ctx, statements, func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
-		im.labels = nil
-		record, err := fromDynamoKey(request.Parameters[0])
-		if err != nil {
-			return fmt.Errorf("deleting dynamodb record: %w", err)
+	return statements
+}
+
+func (im *DynamoDBRegistry) insertUpdateStatementError(changes *plan.Changes, request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
+	var context string
+	if strings.HasPrefix(*request.Statement, "INSERT") {
+		if response.Error.Code == dynamodbtypes.BatchStatementErrorCodeEnumDuplicateItem {
+			// We lost a race with a different owner or another owner has an orphaned ownership record.
+			key, err := fromDynamoKey(request.Parameters[0])
+			if err != nil {
+				return err
+			}
+			for i, ep := range changes.Create {
+				if ep.Key() == key {
+					log.Infof("Skipping endpoint %v because owner does not match", ep)
+					changes.Create = append(changes.Create[:i], changes.Create[i+1:]...)
+					// The dynamodb insertion failed; remove from our cache.
+					im.removeFromCache(ep)
+					delete(im.labels, key)
+					return nil
+				}
+			}
 		}
-		return fmt.Errorf("deleting dynamodb record %v: %s: %s", record, response.Error.Code, *response.Error.Message)
-	})
+		var record string
+		if err := attributevalue.Unmarshal(request.Parameters[0], &record); err != nil {
+			return fmt.Errorf("inserting dynamodb record: %w", err)
+		}
+		context = fmt.Sprintf("inserting dynamodb record %q", record)
+	} else {
+		var record string
+		if err := attributevalue.Unmarshal(request.Parameters[1], &record); err != nil {
+			return fmt.Errorf("updating dynamodb record: %w", err)
+		}
+		context = fmt.Sprintf("updating dynamodb record %q", record)
+	}
+	return fmt.Errorf("%s: %s: %s", context, response.Error.Code, *response.Error.Message)
+}
+
+// deleteStatementError reports an error from a DELETE batch statement.
+func (im *DynamoDBRegistry) deleteStatementError(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
+	im.labels = nil
+	record, err := fromDynamoKey(request.Parameters[0])
+	if err != nil {
+		return fmt.Errorf("deleting dynamodb record: %w", err)
+	}
+	return fmt.Errorf("deleting dynamodb record %v: %s: %s", record, response.Error.Code, *response.Error.Message)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider.

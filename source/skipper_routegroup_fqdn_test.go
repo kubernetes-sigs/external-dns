@@ -23,6 +23,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -155,7 +156,7 @@ func TestRouteGroupFQDNTemplate(t *testing.T) {
 		t.Run(tt.title, func(t *testing.T) {
 			t.Parallel()
 
-			src := newTestRouteGroupSource(t, &Config{
+			src := newTestRouteGroupSource(t, &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, "", "", tt.combine),
 			}, tt.routeGroup)
 

@@ -18,6 +18,7 @@ package dynamodb
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"testing"
 	"time"
@@ -1068,49 +1069,60 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			originalMaxBatchSize := dynamodbMaxBatchSize
-			if tc.maxBatchSize > 0 {
-				dynamodbMaxBatchSize = tc.maxBatchSize
-			}
+		for _, cacheInterval := range []struct {
+			name  string
+			value time.Duration
+		}{
+			{"cached", time.Hour},
+			{"no-cache", 0},
+		} {
+			t.Run(tc.name+"_"+cacheInterval.name, func(t *testing.T) {
+				originalMaxBatchSize := dynamodbMaxBatchSize
+				if tc.maxBatchSize > 0 {
+					dynamodbMaxBatchSize = tc.maxBatchSize
+				}
 
-			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
-			if len(tc.addRecords) > 0 {
-				_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
-					Create: tc.addRecords,
-				})
-			}
+				// The stub consumes the Expect* maps, so each run needs a fresh copy.
+				stubConfig := cloneStubConfig(tc.stubConfig)
 
-			ctx := t.Context()
+				api, p := newDynamoDBAPIStub(t, &stubConfig)
+				if len(tc.addRecords) > 0 {
+					_ = p.(*wrappedProvider).Provider.ApplyChanges(t.Context(), &plan.Changes{
+						Create: tc.addRecords,
+					})
+				}
 
-			r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
-			_, err := r.Records(ctx)
-			require.NoError(t, err)
+				ctx := t.Context()
 
-			err = r.ApplyChanges(ctx, &tc.changes)
-			if tc.expectedError == "" {
+				r, _ := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, cacheInterval.value)
+				_, err := r.Records(ctx)
 				require.NoError(t, err)
-			} else {
-				require.EqualError(t, err, tc.expectedError)
-			}
 
-			assert.Empty(t, tc.stubConfig.ExpectInsert, "all expected inserts made")
-			assert.Empty(t, tc.stubConfig.ExpectDelete, "all expected deletions made")
+				err = r.ApplyChanges(ctx, &tc.changes)
+				if tc.expectedError == "" {
+					require.NoError(t, err)
+				} else {
+					require.EqualError(t, err, tc.expectedError)
+				}
 
-			records, err := r.Records(ctx)
-			require.NoError(t, err)
-			assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
+				assert.Empty(t, stubConfig.ExpectInsert, "all expected inserts made")
+				assert.Empty(t, stubConfig.ExpectDelete, "all expected deletions made")
 
-			r.recordsCache = nil
-			records, err = r.Records(ctx)
-			require.NoError(t, err)
-			assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
-			if tc.expectedError == "" {
-				assert.Empty(t, r.orphanedLabels)
-			}
+				records, err := r.Records(ctx)
+				require.NoError(t, err)
+				assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
 
-			dynamodbMaxBatchSize = originalMaxBatchSize
-		})
+				r.recordsCache = nil
+				records, err = r.Records(ctx)
+				require.NoError(t, err)
+				assert.True(t, testutils.SameEndpoints(records, tc.expectedRecords))
+				if tc.expectedError == "" {
+					assert.Empty(t, r.orphanedLabels)
+				}
+
+				dynamodbMaxBatchSize = originalMaxBatchSize
+			})
+		}
 	}
 }
 
@@ -1128,6 +1140,23 @@ type DynamoDBStubConfig struct {
 	ExpectUpdate      map[string]map[string]string
 	ExpectUpdateError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
 	ExpectDelete      sets.Set[string]
+}
+
+func cloneStubConfig(cfg DynamoDBStubConfig) DynamoDBStubConfig {
+	cfg.ExpectInsert = cloneLabelMap(cfg.ExpectInsert)
+	cfg.ExpectInsertError = maps.Clone(cfg.ExpectInsertError)
+	cfg.ExpectUpdate = cloneLabelMap(cfg.ExpectUpdate)
+	cfg.ExpectUpdateError = maps.Clone(cfg.ExpectUpdateError)
+	cfg.ExpectDelete = sets.NewFromMapKeys(cfg.ExpectDelete)
+	return cfg
+}
+
+func cloneLabelMap(m map[string]map[string]string) map[string]map[string]string {
+	cloned := make(map[string]map[string]string, len(m))
+	for k, v := range m {
+		cloned[k] = maps.Clone(v)
+	}
+	return cloned
 }
 
 type wrappedProvider struct {

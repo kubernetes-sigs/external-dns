@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -45,16 +46,16 @@ import (
 // +externaldns:source:description=Creates DNS entries based on Kubernetes Pod resources
 // +externaldns:source:resources=Pod
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type podSource struct {
 	client         kubernetes.Interface
-	namespace      string
 	templateEngine template.Engine
 
-	podInformer              coreinformers.PodInformer
+	podInformers             *informers.Informers[coreinformers.PodInformer]
 	nodeInformer             coreinformers.NodeInformer
 	compatibility            string
 	ignoreNonHostNetworkPods bool
@@ -65,22 +66,29 @@ type podSource struct {
 func NewPodSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
-	namespace := cfg.Namespace()
 	annotationFilter := cfg.AnnotationFilter
 	labelSelector := cfg.LabelFilter
 
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	podInformer := informerFactory.Core().V1().Pods()
-	nodeInformer := informerFactory.Core().V1().Nodes()
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) kubeinformers.SharedInformerFactory {
+		return kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	})
+	podInformers := informers.Map(factories, func(_ string, factory kubeinformers.SharedInformerFactory) coreinformers.PodInformer {
+		return factory.Core().V1().Pods()
+	})
 
-	informers.MustAddIndexers(podInformer.Informer(), informers.IndexerWithOptions[*v1.Pod](
+	// Nodes are cluster-scoped, so they get their own factory.
+	nodeFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+	nodeInformer := nodeFactory.Core().V1().Nodes()
+
+	podInformers.MustAddIndexers(informers.IndexerWithOptions[*v1.Pod](
 		informers.IndexSelectorWithAnnotationFilter(annotationFilter),
 		informers.IndexSelectorWithLabelSelector(labelSelector),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Pod)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Pod]),
 	))
-	informers.MustSetTransform(podInformer.Informer(), informers.TransformerWithOptions[*v1.Pod](
+	podInformers.MustSetTransform(informers.TransformerWithOptions[*v1.Pod](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 		informers.TransformRemoveStatusConditions(),
@@ -91,21 +99,24 @@ func NewPodSource(
 		informers.TransformRemoveStatusConditions(),
 	))
 
-	informers.MustAddEventHandler(podInformer.Informer(), informers.DefaultEventHandler())
+	podInformers.MustAddEventHandler(informers.DefaultEventHandler())
 	informers.MustAddEventHandler(nodeInformer.Informer(), informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
+	nodeFactory.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
+		return nil, err
+	}
+	if err := informers.WaitForCacheSync(ctx, nodeFactory); err != nil {
 		return nil, err
 	}
 
 	return &podSource{
 		client:                   kubeClient,
-		podInformer:              podInformer,
+		podInformers:             podInformers,
 		nodeInformer:             nodeInformer,
-		namespace:                namespace,
 		compatibility:            cfg.Compatibility,
 		ignoreNonHostNetworkPods: cfg.IgnoreNonHostNetworkPods,
 		podSourceDomain:          cfg.PodSourceDomain,
@@ -114,11 +125,11 @@ func NewPodSource(
 }
 
 func (ps *podSource) AddEventHandler(_ context.Context, handler func()) {
-	informers.MustAddEventHandler(ps.podInformer.Informer(), eventHandlerFunc(handler))
+	ps.podInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
 func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	pods := informers.ListIndexed[*v1.Pod](ps.podInformer.Informer().GetIndexer())
+	pods := informers.ListIndexedAll[*v1.Pod](ps.podInformers.Indexers()...)
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(pods))
 	for _, pod := range pods {

@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -479,7 +480,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				labelFilter = labels.Everything()
 			}
 			source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{defaultKongNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=kong"),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -509,14 +510,14 @@ func TestKongTCPIngressSource_InformerTransform(t *testing.T) {
 	fakeClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &Config{LabelFilter: labels.Everything()})
+	source, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	require.IsType(t, &kongTCPIngressSource{}, source)
 
 	testDynamicInformerTransformHelper(t,
 		kongGroupdVersionResource,
 		fakeDynamicClient,
-		source.(*kongTCPIngressSource).kongTCPIngressInformer,
+		informerFor(t, source.(*kongTCPIngressSource).kongTCPIngressInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)
@@ -636,7 +637,7 @@ func TestKongTCPIngressIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+			src, err := NewKongTCPIngressSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{
 				Namespaces:       []string{defaultKongNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),

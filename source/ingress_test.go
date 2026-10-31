@@ -33,10 +33,12 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -65,7 +67,7 @@ func (suite *IngressSuite) SetupTest() {
 	suite.sc, err = NewIngressSource(
 		context.TODO(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 			LabelFilter:    labels.Everything(),
 		},
@@ -124,7 +126,7 @@ func TestNewIngressSource(t *testing.T) {
 			_, err := NewIngressSource(
 				t.Context(),
 				fake.NewClientset(),
-				&Config{
+				&config.Config{
 					AnnotationFilter:  parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:    templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IngressClassNames: ti.ingressClassNames,
@@ -1422,7 +1424,7 @@ func testIngressEndpoints(t *testing.T) {
 			source, _ := NewIngressSource(
 				t.Context(),
 				fakeClient,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{ti.targetNamespace},
 					AnnotationFilter:         parseAnnotationFilterOrNil(ti.annotationFilter),
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
@@ -1506,7 +1508,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 	for _, tt := range []struct {
 		title     string
 		ingresses []*networkv1.Ingress
-		cfg       *Config
+		cfg       *config.Config
 		expected  []*endpoint.Endpoint
 	}{
 		{
@@ -1541,7 +1543,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 		},
 		{
 			title: "ingress with spec.tls with wildcard domains and tls not ignored",
-			cfg: &Config{
+			cfg: &config.Config{
 				IgnoreIngressTLSSpec: false,
 			},
 			ingresses: []*networkv1.Ingress{
@@ -1576,7 +1578,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 		},
 		{
 			title: "ingress with spec.tls with wildcard domains and tls is ignored",
-			cfg: &Config{
+			cfg: &config.Config{
 				IgnoreIngressTLSSpec: true,
 			},
 			ingresses: []*networkv1.Ingress{
@@ -1822,7 +1824,7 @@ func TestIngressWithConfiguration(t *testing.T) {
 			}
 
 			if tt.cfg == nil {
-				tt.cfg = &Config{}
+				tt.cfg = &config.Config{}
 			}
 			tt.cfg.LabelFilter = labels.Everything()
 
@@ -1869,12 +1871,12 @@ func TestTransformerInIngressSource(t *testing.T) {
 
 	fakeClient := fake.NewClientset(ingress)
 
-	src, err := NewIngressSource(t.Context(), fakeClient, &Config{LabelFilter: labels.Everything()})
+	src, err := NewIngressSource(t.Context(), fakeClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	is, ok := src.(*ingressSource)
 	require.True(t, ok)
 
-	retrieved, err := is.ingressInformer.Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
+	retrieved, err := informerFor(t, is.ingressInformers, ingress.Namespace).Lister().Ingresses(ingress.Namespace).Get(ingress.Name)
 	require.NoError(t, err)
 
 	assert.Equal(t, ingress.Name, retrieved.Name)
@@ -1915,7 +1917,7 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	client, err := NewIngressSource(
 		t.Context(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			LabelFilter: labels.Everything(),
 		},
 	)
@@ -1926,17 +1928,53 @@ func TestProcessEndpoint_Ingress_RefObjectExist(t *testing.T) {
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Ingress, len(elements))
 }
 
+func TestIngressSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	var elements []runtime.Object
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		elements = append(elements, &networkv1.Ingress{
+			Namespace: namespace,
+			Name:      "ing",
+			Spec: networkv1.IngressSpec{
+				Rules: []networkv1.IngressRule{{Host: namespace + ".example.org"}},
+			},
+			Status: networkv1.IngressStatus{
+				LoadBalancer: networkv1.IngressLoadBalancerStatus{
+					Ingress: []networkv1.IngressLoadBalancerIngress{{Hostname: "lb.example.org"}},
+				},
+			},
+		})
+	}
+
+	src, err := NewIngressSource(t.Context(), fake.NewClientset(elements...), &config.Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "ingress/team-a/ing"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeCNAME, "lb.example.org").
+			WithLabel(endpoint.ResourceLabelKey, "ingress/team-b/ing"),
+	})
+}
+
 func TestNewIngressSource_Errors(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
 		title   string
-		cfg     *Config
+		cfg     *config.Config
 		ctx     func() context.Context
 		wantErr string
 	}{
 		{
 			title: "WaitForCacheSync error propagates",
-			cfg: &Config{
+			cfg: &config.Config{
 				LabelFilter: labels.Everything(),
 			},
 			ctx: func() context.Context {
@@ -1968,7 +2006,7 @@ func TestIngressSource_Errors(t *testing.T) {
 			Name: "foo", Namespace: "default",
 		}
 		fakeClient := fake.NewClientset(ing)
-		sc, err := NewIngressSource(t.Context(), fakeClient, &Config{
+		sc, err := NewIngressSource(t.Context(), fakeClient, &config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "{{index . 0}}", "", "", false),
 			LabelFilter:    labels.Everything(),
 		})
@@ -1980,18 +2018,19 @@ func TestIngressSource_Errors(t *testing.T) {
 
 func TestIngressSource_AddEventHandler(t *testing.T) {
 	t.Parallel()
-	sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &Config{LabelFilter: labels.Everything()})
+	sc, err := NewIngressSource(t.Context(), fake.NewClientset(), &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	sc.AddEventHandler(t.Context(), func() {})
 }
 
 func TestIngressIndexer(t *testing.T) {
 	tests := []struct {
-		name             string
-		annotationFilter string
-		labelFilter      string
-		ingresses        []*networkv1.Ingress
-		expectedCount    int
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		annotationValidationMode schema.Mode
+		ingresses                []*networkv1.Ingress
+		expectedCount            int
 	}{
 		{
 			name:          "no filters returns all ingresses",
@@ -2065,6 +2104,22 @@ func TestIngressIndexer(t *testing.T) {
 			expectedCount:    3,
 			ingresses:        createTestIngresses(3),
 		},
+		{
+			name:                     "invalid ingress-hostname-source annotation yields zero endpoints even in warn mode",
+			annotationValidationMode: schema.ModeWarn,
+			expectedCount:            4,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				ings[0].Annotations[annotations.IngressHostnameSourceKey] = "bogus"
+			}),
+		},
+		{
+			name:                     "invalid ingress-hostname-source annotation in strict mode excludes ingress",
+			annotationValidationMode: schema.ModeStrict,
+			expectedCount:            4,
+			ingresses: createTestIngresses(5, func(ings []*networkv1.Ingress) {
+				ings[0].Annotations[annotations.IngressHostnameSourceKey] = "bogus"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -2087,10 +2142,11 @@ func TestIngressIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewIngressSource(t.Context(), client, &Config{
+			src, err := NewIngressSource(t.Context(), client, &config.Config{
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
+				Schema:           schema.New(schema.Options{Mode: tt.annotationValidationMode}),
 			})
 			require.NoError(t, err)
 
@@ -2138,7 +2194,7 @@ func TestIngressSourceLegacyAnnotationPrefix(t *testing.T) {
 	source, err := NewIngressSource(
 		t.Context(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
 			LabelFilter:    labels.Everything(),
 		},

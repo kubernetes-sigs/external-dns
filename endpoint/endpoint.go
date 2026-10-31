@@ -30,7 +30,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -285,8 +284,6 @@ func (ep EndpointKey) String() string {
 	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
 }
 
-type ObjectRef = events.ObjectReference
-
 // This schema also validates the DNSRecord objects the crd registry writes, where
 // external-dns is the author: a rejected write is not user feedback, it aborts
 // ApplyChanges before the provider is called.
@@ -356,6 +353,17 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
+// OverlongDNSLabel returns the first label in dnsName exceeding the RFC 1035 63-character
+// limit, or "" if none do.
+func OverlongDNSLabel(dnsName string) string {
+	for label := range strings.SplitSeq(dnsName, ".") {
+		if len(label) > 63 {
+			return label
+		}
+	}
+	return ""
+}
+
 // NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
 // Unparseable targets pass through; the null MX "0 ." (RFC 7505) keeps its dot, which is the host.
 func NormalizeMXTarget(target string) string {
@@ -387,11 +395,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		}
 	}
 
-	for label := range strings.SplitSeq(dnsName, ".") {
-		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
-		}
+	if label := OverlongDNSLabel(dnsName); label != "" {
+		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		return nil
 	}
 
 	return &Endpoint{
@@ -555,12 +561,12 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 
 // WithRefObject adds obj to the endpoint's set of reference objects, deduplicating by Key().
 // Calling it multiple times with the same object is safe — it is added at most once.
-func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+func (e *Endpoint) WithRefObject(obj *ObjectRef) *Endpoint {
 	if obj == nil {
 		return e
 	}
 	key := obj.Key()
-	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+	if slices.ContainsFunc(e.refObjects, func(r *ObjectRef) bool {
 		return r.Key() == key
 	}) {
 		return e
@@ -570,7 +576,7 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 }
 
 // RefObjects returns all Kubernetes object references associated with this endpoint.
-func (e *Endpoint) RefObjects() []*events.ObjectReference {
+func (e *Endpoint) RefObjects() []*ObjectRef {
 	return e.refObjects
 }
 
