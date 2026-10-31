@@ -38,7 +38,8 @@ Providers can already live out of tree through the webhook mechanism (`provider/
 Sources cannot.
 
 This proposes a `webhook` source: a client, built into ExternalDNS, that fetches `[]*endpoint.Endpoint` from a separate process over HTTP/JSON, mirroring the provider webhook (a negotiated, versioned media type, JSON bodies reusing `endpoint.Endpoint`).
-In v1 the webhook must be reachable on loopback only, which keeps the stance identical to the provider webhook: sidecar-only, no client authentication. Lifting this restriction, so ExternalDNS can trust webhooks running elsewhere in the cluster, is a planned follow-up and depends on client authentication (see Future Work).
+In v1 the webhook must be reachable on loopback only, which keeps the stance identical to the provider webhook: sidecar-only, no client authentication.
+Lifting that restriction, so ExternalDNS can trust webhooks running elsewhere in the cluster, is a planned follow-up and depends on client authentication (see Future Work).
 The source is polled once per reconcile loop, so its cadence is controlled by the existing `--interval` flag.
 
 ## Motivation
