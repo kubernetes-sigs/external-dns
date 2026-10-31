@@ -84,9 +84,7 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 Specifies additional domains for the resource's DNS records.
 
 Multiple hostnames can be specified through a comma-separated list, e.g.
-`svc.mydomain1.com,svc.mydomain2.com`. Empty entries are ignored, so an empty value or a stray
-comma (`svc.mydomain1.com,`) contributes no hostname. The same applies to the `internal-hostname`
-and `target` annotations.
+`svc.mydomain1.com,svc.mydomain2.com`. Empty entries (`svc.mydomain1.com,`) are ignored, also for `internal-hostname`.
 
 For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
 
@@ -321,7 +319,7 @@ spec:
 
 ## external-dns.kubernetes.io/target
 
-Specifies a comma-separated list of values to override the resource's DNS record targets (RDATA).
+Specifies a comma-separated list of values to override the resource's DNS record targets (RDATA). Empty entries are ignored.
 
 Targets that parse as IPv4 addresses are published as A records and
 targets that parse as IPv6 addresses are published as AAAA records. All other targets
