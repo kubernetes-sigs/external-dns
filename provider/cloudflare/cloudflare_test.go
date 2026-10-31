@@ -973,7 +973,7 @@ func TestCloudflareProvider(t *testing.T) {
 		cfAPITokenEnvKey: "",
 	})
 
-	tokenFile := "/tmp/cf_api_token"
+	tokenFile := filepath.Join(t.TempDir(), "cf_api_token")
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
 	}
@@ -1020,7 +1020,7 @@ func TestCloudflareProvider(t *testing.T) {
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key: cfAPITokenEnvKey, Value: "file:/tmp/cf_api_token"},
+				{Key: cfAPITokenEnvKey, Value: "file:" + tokenFile},
 			},
 			ShouldFail: false,
 		},
