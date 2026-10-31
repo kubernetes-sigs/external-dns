@@ -38,7 +38,7 @@ Providers can already live out of tree through the webhook mechanism (`provider/
 Sources cannot.
 
 This proposes a `webhook` source: a client, built into ExternalDNS, that fetches `[]*endpoint.Endpoint` from a separate process over HTTP/JSON, mirroring the provider webhook (a negotiated, versioned media type, JSON bodies reusing `endpoint.Endpoint`).
-In v1 the webhook must be reachable on loopback only, which keeps the stance identical to the provider webhook: sidecar-only, no client authentication.
+In v1 the webhook must be reachable on loopback only, which keeps the stance identical to the provider webhook: sidecar-only, no client authentication. Lifting this restriction, so ExternalDNS can trust webhooks running elsewhere in the cluster, is a planned follow-up and depends on client authentication (see Future Work).
 The source is polled once per reconcile loop, so its cadence is controlled by the existing `--interval` flag.
 
 ## Motivation
@@ -223,7 +223,7 @@ Each webhook in a pod needs its own contract port, in addition to the probe port
 ### Security Considerations
 
 Loopback-only is the whole security story for v1, and it is enforced at start-up.
-A compromised webhook source decides which DNS records ExternalDNS creates, and with `--policy=sync` an empty list deletes every owned record it owns. For a cert-manager style use case the webhook can also create DNS-01 TXT records and get certificates issued for any name in the zone.
+A compromised webhook source decides which DNS records ExternalDNS creates, and with `--policy=sync` an empty list deletes every record it owns. For a cert-manager style use case the webhook can also create DNS-01 TXT records and get certificates issued for any name in the zone.
 Server-side TLS does not help here, because nothing authenticates the caller, so lifting the loopback restriction is deferred until client authentication exists.
 
 - Enforced at start-up: `--webhook-source-url` must use `http://` and a loopback host (`localhost`, `127.0.0.0/8`, `::1`); any other value fails fast with a clear error.
@@ -250,7 +250,7 @@ Server-side TLS does not help here, because nothing authenticates the caller, so
 - Empty-but-valid responses can delete records; the safety rests partly on webhook authors returning an error status correctly.
 - No Kubernetes object references, so no per-object events.
 - No change notifications, so reaction time is bounded by `--interval`.
-- Loopback-only limits deployment topology (one webhook per cluster node, or one per ExternalDNS replica). Shared or centralized webhook services are not possible until client authentication lands.
+- Loopback-only is a v1 safety stance, not a permanent design. It forces one webhook per ExternalDNS replica (sidecar) and rules out shared or remote webhook services until client authentication lands (see Future Work).
 
 ### Future Work
 
@@ -258,11 +258,12 @@ None of the following is committed by this proposal, but each could be or should
 
 - gRPC transport, when a concrete need appears (for example server-streaming change notifications, or an in-cluster gRPC service). Adding it today would double the contract (OpenAPI + proto + parity test), pull in protobuf tooling, and fight the binary-size effort, so it waits for real demand.
 - `unix://` socket transport on a shared `emptyDir`, where file permissions give real access control without needing network-level authentication.
-- Client authentication (bearer token or mTLS) so webhooks reachable off loopback become safe; once that lands the loopback restriction can be relaxed.
+- Client authentication (bearer token or mTLS). Once it lands the loopback restriction can be relaxed, which unlocks the deployment shapes v1 forbids: a webhook in a different pod, in a different namespace, or in a different cluster from ExternalDNS, and a single webhook serving several ExternalDNS instances.
 - Change notifications, advertised through negotiation, to make `AddEventHandler` meaningful: server-sent events over HTTP (and a server-streaming RPC if gRPC is added).
 - Conditional requests (`ETag` and `If-None-Match`) so unchanged state is cheap to poll at short intervals.
 - A `--webhook-server` style mode that serves in-tree sources over this contract.
 - Webhook-supplied labels, limited to a safe subset (for example a reserved prefix), once there is a concrete need. Accepting arbitrary labels would let one webhook impersonate another source's `resource` and win conflicts, so v1 does not.
+- Extend `RefObjects` to carry a webhook-supplied origin, so an out-of-cluster reference (URL, URN, external resource id) can surface in events and logs. v1 drops the field because its current shape (`ObjectReference`) is Kubernetes-only; a webhook-friendly reference type is a separate design decision.
 
 ## Alternatives
 
