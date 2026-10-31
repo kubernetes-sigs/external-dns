@@ -107,10 +107,8 @@ func readSignedAXFR(conn *dns.Conn, id uint16, requestMAC string, provider dns.T
 				envelopes <- &dns.Envelope{Error: err}
 				return
 			}
-			if ts != nil {
-				priorMAC = ts.MAC
-				unsignedMessages = nil
-			}
+			priorMAC = ts.MAC
+			unsignedMessages = nil
 			first = false
 
 			// Hold records until the next signed message authenticates intervening packets.
