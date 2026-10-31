@@ -38,6 +38,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -444,7 +445,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	})...)
 
 	if len(errs) > 0 {
-		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %v", errs)
+		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %w", errors.Join(errs...))
 	}
 
 	return nil
@@ -458,14 +459,6 @@ func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
 		m[z] = new(dns.Msg)
 	}
 	return m
-}
-
-func (r *rfc2136Provider) acceptsEndpoint(ep *endpoint.Endpoint) bool {
-	if !r.domainFilter.Match(ep.DNSName) {
-		log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
-		return false
-	}
-	return true
 }
 
 func (r *rfc2136Provider) sendBatchMsgs(action string, m map[string]*dns.Msg) []error {
@@ -487,8 +480,10 @@ func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, 
 		log.Debugf("Processing batch %d of %s changes", c, action)
 
 		m := r.newBatchMsgs()
+		prepared := sets.New[string]()
 		for i, ep := range chunk {
-			if !r.acceptsEndpoint(ep) {
+			if !r.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
 
@@ -505,7 +500,10 @@ func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, 
 				continue
 			}
 
-			m[zone].SetUpdate(zone)
+			if !prepared.Has(zone) {
+				m[zone].SetUpdate(zone)
+				prepared.Insert(zone)
+			}
 			m[zone].Ns = append(m[zone].Ns, scratch.Ns...)
 		}
 
