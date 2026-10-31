@@ -76,11 +76,11 @@ To restrict sources to a subset of namespaces, see [Watching Multiple Namespaces
 - **Special**: Special purpose sources (connector, empty)
 - **Testing**: Sources used for testing purposes
 
-[^events-emit]: Controlled by the `--events-emit` flag. Set to one or more of `RecordReady`, `RecordDeleted`, `RecordError`, `RecordInvalid` (repeat the flag for multiple). Defaults to none (events disabled).
+[^events-emit]: Controlled by the `--events-emit` flag. Set to one or more of `RecordReady`, `RecordDeleted`, `RecordError` (repeat the flag for multiple). Defaults to none (events disabled).
 [^filter-annotation]: Controlled by the `--annotation-filter` flag. Filters resources queried for endpoints by annotation using label-selector semantics. Defaults to empty (no annotation filtering).
 [^filter-label]: Controlled by the `--label-filter` flag. Filters resources queried for endpoints by label selector. Defaults to empty (all resources).
 [^namespace]: Controlled by the `--namespace` flag. Accepts a single value to limit resources to one namespace. Defaults to empty (all namespaces).
 [^namespaces]: Controlled by the `--namespace` flag. Comma-separated or repeated to limit resources to specific namespaces. Defaults to empty (all namespaces).
 [^fqdn-template]: Controlled by the `--fqdn-template` flag. A templated string that generates DNS names for sources that don't define a hostname themselves. Repeat the flag for multiple templates. See [FQDN templating](../advanced/fqdn-templating.md).
 [^val-annotation]: Controlled by the `--annotation-validation-mode` flag. Set to `warn` to log invalid or source-unsupported annotations, `strict` to additionally exclude affected objects from the informer index. Defaults to `off` (disabled).
-[^val-spec]: Always on. Each endpoint is checked when external-dns reads the object; an invalid one is left out of the plan and reported as `Accepted=False` in its status (and as a `RecordInvalid` event when enabled). See [CRD validation](crd.md#validation).
+[^val-spec]: Always on. Invalid endpoints are left out of the plan and reported in the object status. See [CRD validation](crd.md#validation).

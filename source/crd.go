@@ -63,7 +63,6 @@ type crdSource struct {
 	informer         crcache.Informer
 	listOpts         []client.ListOption
 	annotationFilter labels.Selector
-	emitter          events.EventEmitter // events.Discard unless --events-emit is set
 	// defaultTargets is set when --default-targets can fill an endpoint without
 	// targets; otherwise dedupSource drops it and it must be rejected here.
 	defaultTargets bool
@@ -88,7 +87,7 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *config.Conf
 		return nil, err
 	}
 
-	cs, err := newCrdSource(ctx, crReader, crWriter, cfg.Namespaces, cfg.LabelFilter, cfg.AnnotationFilter, cfg.EventEmitter)
+	cs, err := newCrdSource(ctx, crReader, crWriter, cfg.Namespaces, cfg.LabelFilter, cfg.AnnotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +132,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 // validateEndpoints splits spec into endpoints for the plan and one rejection per
-// dropped endpoint. Rejections surface in Accepted and RecordInvalid, so they are
-// written for `kubectl describe`, not for a log line.
+// dropped endpoint. Rejections are shown to users in status conditions.
 func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool) ([]*endpoint.Endpoint, []string) {
 	var (
 		accepted   []*endpoint.Endpoint
@@ -250,8 +248,8 @@ func rfcViolationReason(ep *endpoint.Endpoint) string {
 	return fmt.Sprintf("a %s record does not support the %q provider-specific property", ep.RecordType, endpoint.ProviderSpecificAlias)
 }
 
-// reportAccepted records whether external-dns understood the spec, and why it
-// refused any endpoint.
+// reportAccepted follows Gateway API: an object with some valid endpoints stays
+// Accepted, and PartiallyInvalid lists the dropped ones.
 func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, accepted int, rejections []string) {
 	condition := metav1.Condition{
 		Type:               apiv1alpha1.AcceptedCondition,
@@ -260,29 +258,34 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 		Message:            fmt.Sprintf("%d endpoint(s) accepted", accepted),
 		ObservedGeneration: dnsEndpoint.Generation,
 	}
+	var partial *metav1.Condition
 
 	if len(rejections) > 0 {
-		condition.Status = metav1.ConditionFalse
-		condition.Reason = apiv1alpha1.InvalidReason
-		condition.Message = truncateConditionMessage(strings.Join(rejections, "; "))
-		// Events are never collapsed into a series: emitting on every sync would
-		// create one Event per interval, forever, for an untouched spec.
-		if verdictChanged(dnsEndpoint.Status.Conditions, condition) {
-			cs.emit(dnsEndpoint, condition.Message, events.ActionRejected, events.RecordInvalid)
+		message := strings.Join(rejections, "; ")
+		if accepted == 0 {
+			condition.Status = metav1.ConditionFalse
+			condition.Reason = apiv1alpha1.InvalidReason
+			condition.Message = truncateConditionMessage(message)
+		} else {
+			partial = &metav1.Condition{
+				Type:               apiv1alpha1.PartiallyInvalidCondition,
+				Status:             metav1.ConditionTrue,
+				Reason:             apiv1alpha1.InvalidReason,
+				Message:            truncateConditionMessage("Dropped endpoint(s): " + message),
+				ObservedGeneration: dnsEndpoint.Generation,
+			}
 		}
 	}
 
 	cs.updateStatus(ctx, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
 		status.ObservedGeneration = dnsEndpoint.Generation
 		meta.SetStatusCondition(&status.Conditions, condition)
+		if partial != nil {
+			meta.SetStatusCondition(&status.Conditions, *partial)
+		} else {
+			meta.RemoveStatusCondition(&status.Conditions, apiv1alpha1.PartiallyInvalidCondition)
+		}
 	})
-}
-
-// verdictChanged reports whether condition says anything stored does not already say.
-func verdictChanged(stored []metav1.Condition, condition metav1.Condition) bool {
-	current := meta.FindStatusCondition(stored, condition.Type)
-
-	return current == nil || current.Status != condition.Status || current.Reason != condition.Reason || current.Message != condition.Message
 }
 
 // updateStatus writes the mutated status only if it changed. The cached copy may
@@ -312,16 +315,6 @@ func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 	}
 }
 
-// emit sends a Kubernetes event on the DNSEndpoint. It is a no-op unless the
-// matching reason was enabled with --events-emit.
-func (cs *crdSource) emit(dnsEndpoint *apiv1alpha1.DNSEndpoint, msg string, action events.Action, reason events.Reason) {
-	if cs.emitter == nil {
-		return
-	}
-	ref := events.NewObjectReference(dnsEndpoint, types.CRD)
-	cs.emitter.Add(events.NewWarningEvent(ref, msg, action, reason))
-}
-
 // truncateConditionMessage fits the API server's 32768-character limit on
 // Condition.Message, cutting on a rune boundary since it quotes user input.
 func truncateConditionMessage(msg string) string {
@@ -341,8 +334,7 @@ func newCrdSource(
 	c crcache.Cache,
 	crWriter client.Client,
 	namespaces []string,
-	labelSelector, annotationFilter labels.Selector,
-	emitter events.EventEmitter) (*crdSource, error) {
+	labelSelector, annotationFilter labels.Selector) (*crdSource, error) {
 	inf, err := c.GetInformer(ctx, &apiv1alpha1.DNSEndpoint{})
 	if err != nil {
 		return nil, err
@@ -366,7 +358,6 @@ func newCrdSource(
 		informer:         inf,
 		listOpts:         listOpts,
 		annotationFilter: annotationFilter,
-		emitter:          emitter,
 	}
 
 	if err := startAndSync(ctx, c); err != nil {

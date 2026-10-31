@@ -23,11 +23,15 @@ import (
 )
 
 const (
-	// AcceptedCondition reports whether every endpoint in spec passed validation,
-	// before any provider call.
+	// AcceptedCondition reports, before any provider call, whether at least one
+	// endpoint in spec passed validation, or spec is empty.
 	AcceptedCondition string = "Accepted"
 
-	// InvalidReason marks a spec with at least one endpoint external-dns refused.
+	// PartiallyInvalidCondition is True when some endpoints were dropped and the
+	// others are published, as in Gateway API. It is never False.
+	PartiallyInvalidCondition string = "PartiallyInvalid"
+
+	// InvalidReason marks endpoints external-dns refused.
 	InvalidReason string = "Invalid"
 
 	// PendingReason is the schema default for Accepted, shown until an
@@ -79,7 +83,8 @@ type DNSEndpointStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood).
+	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
+	// and PartiallyInvalid (some endpoints were dropped).
 	// They start as Accepted=Unknown (Pending) until external-dns reads the object.
 	// +optional
 	// +kubebuilder:default={{type: "Accepted", status: "Unknown", reason: "Pending", message: "Waiting for external-dns", lastTransitionTime: "1970-01-01T00:00:00Z"}}

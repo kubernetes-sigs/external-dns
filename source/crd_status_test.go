@@ -32,18 +32,14 @@ import (
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/events"
-	eventsfake "sigs.k8s.io/external-dns/pkg/events/fake"
 )
 
-// Every DNSEndpoint in this file uses the same name and namespace.
 const (
 	testDNSEndpointNamespace = "foo"
 	testDNSEndpointName      = "test"
 )
 
-// readDNSEndpoint fetches the stored copy of obj, so assertions run against what
-// was actually written to the API rather than the in-memory object.
+// readDNSEndpoint reads what was written to the API, not the in-memory object.
 func readDNSEndpoint(t *testing.T, c client.Client) *apiv1alpha1.DNSEndpoint {
 	t.Helper()
 	got := &apiv1alpha1.DNSEndpoint{}
@@ -59,6 +55,8 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 		wantStatus      metav1.ConditionStatus
 		wantReason      string
 		wantMessagePart string
+		// "" means PartiallyInvalid must be absent.
+		wantPartial string
 	}{
 		{
 			title: "all endpoints valid",
@@ -71,14 +69,24 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			wantMessagePart: "2 endpoint(s) accepted",
 		},
 		{
-			title: "one endpoint rejected reports the offending index and a fix",
+			title: "mixed spec stays accepted and lists the dropped endpoint",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "bad.example.org", Targets: endpoint.Targets{"1.2.3.4."}, RecordType: endpoint.RecordTypeA},
 			},
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      apiv1alpha1.AcceptedReason,
+			wantMessagePart: "1 endpoint(s) accepted",
+			wantPartial:     `Dropped endpoint(s): spec.endpoints[1] (A bad.example.org): target "1.2.3.4." must not end with a dot`,
+		},
+		{
+			title: "every endpoint rejected reports the offending index and a fix",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "bad.example.org", Targets: endpoint.Targets{"1.2.3.4."}, RecordType: endpoint.RecordTypeA},
+			},
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.InvalidReason,
-			wantMessagePart: `spec.endpoints[1] (A bad.example.org): target "1.2.3.4." must not end with a dot`,
+			wantMessagePart: `spec.endpoints[0] (A bad.example.org): target "1.2.3.4." must not end with a dot`,
 		},
 		{
 			title: "SRV target with a relative host is reported",
@@ -113,9 +121,10 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 				nil,
 				{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
 			},
-			wantStatus:      metav1.ConditionFalse,
-			wantReason:      apiv1alpha1.InvalidReason,
-			wantMessagePart: "spec.endpoints[0]: entry is null",
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      apiv1alpha1.AcceptedReason,
+			wantMessagePart: "1 endpoint(s) accepted",
+			wantPartial:     "spec.endpoints[0]: entry is null",
 		},
 		{
 			title: "endpoint without targets is reported when --default-targets is unset",
@@ -151,7 +160,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			}
 
 			fakeCache := newFakeCRDCache(t, nil, obj)
-			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil, nil)
+			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil)
 			require.NoError(t, err)
 			cs.defaultTargets = ti.defaultTargets
 
@@ -167,13 +176,21 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			assert.Equal(t, ti.wantReason, cond.Reason)
 			assert.Equal(t, int64(3), cond.ObservedGeneration)
 			assert.Contains(t, cond.Message, ti.wantMessagePart)
+
+			partial := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.PartiallyInvalidCondition)
+			if ti.wantPartial == "" {
+				assert.Nil(t, partial)
+				return
+			}
+			require.NotNil(t, partial)
+			assert.Equal(t, metav1.ConditionTrue, partial.Status)
+			assert.Equal(t, apiv1alpha1.InvalidReason, partial.Reason)
+			assert.Contains(t, partial.Message, ti.wantPartial)
 		})
 	}
 }
 
-// A DNSEndpoint that has not changed must not cost an API write on every
-// reconcile — external-dns re-lists on a timer, so a write per pass would be a
-// write per minute per object.
+// An unchanged DNSEndpoint must not cost one API write per sync.
 func TestCRDSourceStatusIsNotRewrittenWhenUnchanged(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
@@ -199,7 +216,7 @@ func TestCRDSourceStatusIsNotRewrittenWhenUnchanged(t *testing.T) {
 		},
 	})
 
-	cs, err := newCrdSource(t.Context(), fakeCache, countingWriter, nil, nil, nil, nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, countingWriter, nil, nil, nil)
 	require.NoError(t, err)
 
 	_, err = cs.Endpoints(t.Context())
@@ -213,9 +230,8 @@ func TestCRDSourceStatusIsNotRewrittenWhenUnchanged(t *testing.T) {
 	assert.Equal(t, 1, writes, "unchanged status must not be rewritten")
 }
 
-// The status write goes out on the copy the source already holds. Re-reading
-// first would double the round trips of the reconcile after an upgrade, where
-// every DNSEndpoint's status changes at once.
+// Re-reading before each write would double the API calls of the first sync after
+// an upgrade, when every DNSEndpoint's status changes.
 func TestCRDSourceStatusWriteDoesNotReReadWithoutAConflict(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
@@ -245,7 +261,7 @@ func TestCRDSourceStatusWriteDoesNotReReadWithoutAConflict(t *testing.T) {
 		},
 	})
 
-	cs, err := newCrdSource(t.Context(), fakeCache, counting, nil, nil, nil, nil)
+	cs, err := newCrdSource(t.Context(), fakeCache, counting, nil, nil, nil)
 	require.NoError(t, err)
 
 	_, err = cs.Endpoints(t.Context())
@@ -255,82 +271,32 @@ func TestCRDSourceStatusWriteDoesNotReReadWithoutAConflict(t *testing.T) {
 	assert.Equal(t, 0, gets, "an uncontended status write costs one round trip")
 }
 
-func TestCRDSourceEmitsEventOnRejectedEndpoint(t *testing.T) {
-	obj := &apiv1alpha1.DNSEndpoint{
-		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
-		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
-			{DNSName: "bad.example.org", Targets: endpoint.Targets{"1.2.3.4."}, RecordType: endpoint.RecordTypeA},
-		}},
-	}
-
-	fakeCache := newFakeCRDCache(t, nil, obj)
-	emitter := eventsfake.NewFakeEventEmitter()
-
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil, emitter)
-	require.NoError(t, err)
-
-	_, err = cs.Endpoints(t.Context())
-	require.NoError(t, err)
-
-	emitter.AssertNumberOfCalls(t, "Add", 1)
-	emitted, ok := emitter.Calls[0].Arguments.Get(0).(events.Event)
-	require.True(t, ok)
-	assert.Equal(t, events.RecordInvalid, emitted.Reason())
-	assert.Equal(t, events.ActionRejected, emitted.Action())
-	assert.Equal(t, events.EventTypeWarning, emitted.EventType())
-}
-
-// See reportAccepted: one event per verdict, not per sync.
-func TestCRDSourceEmitsRejectionEventOnlyWhenTheVerdictChanges(t *testing.T) {
-	obj := &apiv1alpha1.DNSEndpoint{
-		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
-		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
-			{DNSName: "bad.example.org", Targets: endpoint.Targets{"1.2.3.4."}, RecordType: endpoint.RecordTypeA},
-		}},
-	}
-
-	fakeCache := newFakeCRDCache(t, nil, obj)
-	emitter := eventsfake.NewFakeEventEmitter()
-
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil, emitter)
-	require.NoError(t, err)
-
-	for range 4 {
-		_, err = cs.Endpoints(t.Context())
-		require.NoError(t, err)
-	}
-
-	emitter.AssertNumberOfCalls(t, "Add", 1)
-
-	// A different rejection is news again.
-	stored := readDNSEndpoint(t, fakeCache.Client)
-	stored.Spec.Endpoints[0].Targets = endpoint.Targets{"5.6.7.8."}
-	require.NoError(t, fakeCache.Client.Update(t.Context(), stored))
-
-	_, err = cs.Endpoints(t.Context())
-	require.NoError(t, err)
-
-	emitter.AssertNumberOfCalls(t, "Add", 2)
-}
-
-func TestCRDSourceEmitsNoEventWhenAllEndpointsValid(t *testing.T) {
+func TestCRDSourcePartiallyInvalidIsRemovedOnceFixed(t *testing.T) {
 	obj := &apiv1alpha1.DNSEndpoint{
 		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
 		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
 			{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+			{DNSName: "bad.example.org", Targets: endpoint.Targets{"1.2.3.4."}, RecordType: endpoint.RecordTypeA},
 		}},
 	}
 
 	fakeCache := newFakeCRDCache(t, nil, obj)
-	emitter := eventsfake.NewFakeEventEmitter()
-
-	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil, emitter)
+	cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil)
 	require.NoError(t, err)
 
 	_, err = cs.Endpoints(t.Context())
 	require.NoError(t, err)
+	stored := readDNSEndpoint(t, fakeCache.Client)
+	require.NotNil(t, meta.FindStatusCondition(stored.Status.Conditions, apiv1alpha1.PartiallyInvalidCondition))
 
-	emitter.AssertNumberOfCalls(t, "Add", 0)
+	stored.Spec.Endpoints[1].Targets = endpoint.Targets{"1.2.3.5"}
+	require.NoError(t, fakeCache.Client.Update(t.Context(), stored))
+
+	_, err = cs.Endpoints(t.Context())
+	require.NoError(t, err)
+	got := readDNSEndpoint(t, fakeCache.Client)
+	assert.Nil(t, meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.PartiallyInvalidCondition))
+	assert.True(t, meta.IsStatusConditionTrue(got.Status.Conditions, apiv1alpha1.AcceptedCondition))
 }
 
 func TestTruncateConditionMessage(t *testing.T) {

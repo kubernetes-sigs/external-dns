@@ -33,7 +33,7 @@ You can observe External-DNS events using:
 kubectl describe service <name>
 kubectl get events --field-selector involvedObject.kind=Service
 kubectl get events --field-selector type=Normal|Warning
-kubectl get events --field-selector reason=RecordReady|RecordDeleted|RecordError|RecordInvalid
+kubectl get events --field-selector reason=RecordReady|RecordDeleted|RecordError
 kubectl get events --field-selector reportingComponent=external-dns
 ```
 
@@ -46,7 +46,7 @@ Or integrate with tools like:
 ### Practices for Understanding Events
 
 - **Action field**: Events include a short label describing the `Action`, such as `Created`, `Updated`, `Deleted`, or `FailedSync`
-- **Reason field**: Events include a short label `Reason` is why the action was taken, such as `RecordReady`, `RecordDeleted`, `RecordError`, or `RecordInvalid`.
+- **Reason field**: Events include a short label `Reason` is why the action was taken, such as `RecordReady`, `RecordDeleted`, or `RecordError`.
 - **Type field**:
   - `Normal` means the operation succeeded (e.g., a DNS record was created).
   - `Warning`  indicates a problem (e.g., DNS sync failed due to configuration or provider issues).

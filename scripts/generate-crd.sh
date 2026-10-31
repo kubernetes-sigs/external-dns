@@ -36,8 +36,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${PROJECT_ROOT}"
 
-# The chart only ships a CRD change once an ExternalDNS release supports it, so
-# copying into the chart is a separate step, run by the chart PR after release.
+# The chart gets a CRD change only after the release that supports it.
 COPY_TO_CHART=false
 if [[ "${1:-}" == "--chart" ]]; then
     COPY_TO_CHART=true

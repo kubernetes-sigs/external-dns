@@ -155,7 +155,8 @@ spec:
                       status: Unknown
                       type: Accepted
                   description: |-
-                    Conditions observe the DNSEndpoint state: Accepted (the spec was understood).
+                    Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
+                    and PartiallyInvalid (some endpoints were dropped).
                     They start as Accepted=Unknown (Pending) until external-dns reads the object.
                   items:
                     description: Condition contains details for one aspect of the current state of this API Resource.
