@@ -1214,7 +1214,9 @@ func testServiceSourceEndpoints(t *testing.T) {
 			)
 
 			require.NoError(t, err)
-			client.(*serviceSource).lookupIP = fakeLookupIP
+			if tc.resolveLoadBalancerHostname {
+				client.(*serviceSource).lookupIP = fakeLookupIP
+			}
 
 			res, err := client.Endpoints(t.Context())
 			if tc.expectError {

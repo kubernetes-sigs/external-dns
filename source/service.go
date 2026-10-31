@@ -78,7 +78,6 @@ type serviceSource struct {
 	publishInternal                bool
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
-	resolveLoadBalancerHostname    bool
 	listenEndpointEvents           bool
 	serviceInformers               *informers.Informers[coreinformers.ServiceInformer]
 	endpointSlicesInformers        *informers.Informers[discoveryinformers.EndpointSliceInformer]
@@ -92,7 +91,7 @@ type serviceSource struct {
 	// process Services with legacy annotations
 	compatibility string
 
-	// lookupIP resolves load balancer hostnames; swapped in tests so they don't depend on real DNS.
+	// lookupIP resolves load balancer hostnames; nil disables resolution. Swapped in tests so they don't depend on real DNS.
 	lookupIP func(host string) ([]net.IP, error)
 }
 
@@ -193,6 +192,11 @@ func NewServiceSource(
 		}
 	}
 
+	var lookupIP func(string) ([]net.IP, error)
+	if cfg.ResolveLoadBalancerHostname {
+		lookupIP = net.LookupIP
+	}
+
 	return &serviceSource{
 		client:                         kubeClient,
 		compatibility:                  cfg.Compatibility,
@@ -206,11 +210,10 @@ func NewServiceSource(
 		podInformers:                   podInformers,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
-		resolveLoadBalancerHostname:    cfg.ResolveLoadBalancerHostname,
 		listenEndpointEvents:           cfg.ListenEndpointEvents,
 		exposeInternalIPv6:             cfg.ExposeInternalIPv6,
 		excludeUnschedulable:           cfg.ExcludeUnschedulable,
-		lookupIP:                       net.LookupIP,
+		lookupIP:                       lookupIP,
 	}, nil
 }
 
@@ -559,7 +562,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			if useClusterIP {
 				targets = extractServiceIps(svc)
 			} else {
-				targets = extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname, sc.lookupIP)
+				targets = extractLoadBalancerTargets(svc, sc.lookupIP)
 			}
 		case v1.ServiceTypeClusterIP:
 			if svc.Spec.ClusterIP == v1.ClusterIPNone {
@@ -606,7 +609,7 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
-func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool, lookupIP func(string) ([]net.IP, error)) endpoint.Targets {
+func extractLoadBalancerTargets(svc *v1.Service, lookupIP func(string) ([]net.IP, error)) endpoint.Targets {
 	if len(svc.Spec.ExternalIPs) > 0 {
 		return svc.Spec.ExternalIPs
 	}
@@ -618,7 +621,7 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 			targets = append(targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			if resolveLoadBalancerHostname {
+			if lookupIP != nil {
 				ips, err := lookupIP(lb.Hostname)
 				if err != nil {
 					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
