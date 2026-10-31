@@ -17,8 +17,13 @@ limitations under the License.
 package rfc2136
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -78,7 +83,7 @@ func newAXFRTestQuery() *dns.Msg {
 	return query
 }
 
-func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]byte) error {
+func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]byte) ([]dns.RR, error) {
 	t.Helper()
 	client, server := net.Pipe()
 	t.Cleanup(func() {
@@ -95,12 +100,54 @@ func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]by
 		}
 	}()
 
+	var records []dns.RR
 	for envelope := range readSignedAXFR(&dns.Conn{Conn: client}, id, requestMAC, tsig.HMAC{axfrTestKeyName: axfrTestSecret}) {
 		if envelope.Error != nil {
-			return envelope.Error
+			return records, envelope.Error
 		}
+		records = append(records, envelope.RR...)
 	}
-	return nil
+	return records, nil
+}
+
+func signAXFRMessageWithHMAC(t *testing.T, message *dns.Msg, priorMAC string, unsignedMessages [][]byte) []byte {
+	t.Helper()
+
+	tsig := message.IsTsig()
+	require.NotNil(t, tsig)
+	messageExtra := message.Extra
+	message.Extra = message.Extra[:len(message.Extra)-1]
+	currentMessage, err := message.Pack()
+	message.Extra = messageExtra
+	require.NoError(t, err)
+
+	priorMACBytes, err := hex.DecodeString(priorMAC)
+	require.NoError(t, err)
+	secret, err := base64.StdEncoding.DecodeString(axfrTestSecret)
+	require.NoError(t, err)
+	macInputSize := 2 + len(priorMACBytes) + len(currentMessage) + 8
+	for _, unsignedMessage := range unsignedMessages {
+		macInputSize += len(unsignedMessage)
+	}
+	macInput := make([]byte, 0, macInputSize)
+	macLength := []byte{byte(len(priorMACBytes) >> 8), byte(len(priorMACBytes))}
+	macInput = append(macInput, macLength...)
+	macInput = append(macInput, priorMACBytes...)
+	for _, unsignedMessage := range unsignedMessages {
+		macInput = append(macInput, unsignedMessage...)
+	}
+	macInput = append(macInput, currentMessage...)
+	var timers [8]byte
+	binary.BigEndian.PutUint64(timers[:], tsig.TimeSigned)
+	macInput = append(macInput, timers[2:]...)
+	macInput = append(macInput, byte(tsig.Fudge>>8), byte(tsig.Fudge))
+
+	mac := hmac.New(sha256.New, secret)
+	_, err = mac.Write(macInput)
+	require.NoError(t, err)
+	tsig.MAC = hex.EncodeToString(mac.Sum(nil))
+	tsig.MACSize = uint16(len(tsig.MAC) / 2)
+	return packAXFRMessage(t, message)
 }
 
 func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
@@ -115,14 +162,17 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 	badRcode.Rcode = dns.RcodeNameError
 	nonSOA := axfrResponse(id, aRecord)
 	empty := axfrResponse(id)
+	firstMessage := new(dns.Msg)
+	require.NoError(t, firstMessage.Unpack(first))
+	priorMAC := firstMessage.IsTsig().MAC
 	unsignedFinal := axfrResponse(id, soa)
 	badSignature := axfrResponse(id, soa)
 	badSignature.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
-	badSignatureWire, _, err := dns.TsigGenerateWithProvider(badSignature, tsig.HMAC{axfrTestKeyName: "d3Jvbmc="}, "", false)
+	badSignatureWire, _, err := dns.TsigGenerateWithProvider(badSignature, tsig.HMAC{axfrTestKeyName: "d3Jvbmc="}, priorMAC, true)
 	require.NoError(t, err)
 	wrongKey := axfrResponse(id, soa)
 	wrongKey.SetTsig("other.example.com.", dns.HmacSHA256, clockSkew, time.Now().Unix())
-	wrongKeyWire, _, err := dns.TsigGenerateWithProvider(wrongKey, tsig.HMAC{"other.example.com.": axfrTestSecret}, "", false)
+	wrongKeyWire, _, err := dns.TsigGenerateWithProvider(wrongKey, tsig.HMAC{"other.example.com.": axfrTestSecret}, priorMAC, true)
 	require.NoError(t, err)
 	malformedDNS := packAXFRMessage(t, axfrResponse(id, aRecord))
 	malformedDNS = malformedDNS[:len(malformedDNS)-1]
@@ -146,7 +196,7 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			transferErr := readAXFRPackets(t, id, requestMAC, test.packets...)
+			_, transferErr := readAXFRPackets(t, id, requestMAC, test.packets...)
 			require.Error(t, transferErr)
 			if test.wantErr != nil {
 				require.ErrorIs(t, transferErr, test.wantErr)
@@ -164,7 +214,7 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 		for range maxUnsignedAXFRMessages + 1 {
 			packets = append(packets, middle)
 		}
-		transferErr := readAXFRPackets(t, id, requestMAC, packets...)
+		_, transferErr := readAXFRPackets(t, id, requestMAC, packets...)
 		assert.ErrorIs(t, transferErr, dns.ErrNoSig)
 	})
 }
@@ -205,6 +255,69 @@ func TestReadSignedAXFRReadErrors(t *testing.T) {
 		envelope := <-readSignedAXFR(conn, 1, "", tsig.HMAC{})
 		assert.ErrorIs(t, envelope.Error, wantErr)
 	})
+}
+
+func TestReadSignedAXFRVerifiesMultiMessageTsig(t *testing.T) {
+	id, requestMAC, firstWire := signedAXFRStart(t)
+	firstMessage := new(dns.Msg)
+	require.NoError(t, firstMessage.Unpack(firstWire))
+	priorMAC := firstMessage.IsTsig().MAC
+
+	soa, err := dns.NewRR("example.com. 300 IN SOA ns.example.com. hostmaster.example.com. 1 7200 3600 1209600 300")
+	require.NoError(t, err)
+	aRecord, err := dns.NewRR("www.example.com. 300 IN A 192.0.2.1")
+	require.NoError(t, err)
+
+	middle := axfrResponse(id, aRecord)
+	middleWire := packAXFRMessage(t, middle)
+	emptyWire := packAXFRMessage(t, axfrResponse(id))
+	last := axfrResponse(id, soa)
+	last.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
+	lastWire := signAXFRMessageWithHMAC(t, last, priorMAC, [][]byte{middleWire, emptyWire})
+
+	for _, tamperMiddle := range []bool{false, true} {
+		t.Run(fmt.Sprintf("tamper-middle-%t", tamperMiddle), func(t *testing.T) {
+			middleMessage := append([]byte(nil), middleWire...)
+			if tamperMiddle {
+				middleMessage[len(middleMessage)-1] ^= 0xff
+			}
+			records, transferErr := readAXFRPackets(t, id, requestMAC, firstWire, middleMessage, emptyWire, lastWire)
+			if tamperMiddle {
+				require.Error(t, transferErr)
+				require.Len(t, records, 1)
+				assert.Equal(t, soa.String(), records[0].String())
+				return
+			}
+			require.NoError(t, transferErr)
+			assert.Len(t, records, 3)
+		})
+	}
+}
+
+func TestReadSignedAXFRWithEveryMessageSigned(t *testing.T) {
+	id, requestMAC, firstWire := signedAXFRStart(t)
+	firstMessage := new(dns.Msg)
+	require.NoError(t, firstMessage.Unpack(firstWire))
+	priorMAC := firstMessage.IsTsig().MAC
+	provider := tsig.HMAC{axfrTestKeyName: axfrTestSecret}
+
+	aRecord, err := dns.NewRR("www.example.com. 300 IN A 192.0.2.1")
+	require.NoError(t, err)
+	middle := axfrResponse(id, aRecord)
+	middle.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
+	middleWire, priorMAC, err := dns.TsigGenerateWithProvider(middle, provider, priorMAC, true)
+	require.NoError(t, err)
+
+	soa, err := dns.NewRR("example.com. 300 IN SOA ns.example.com. hostmaster.example.com. 1 7200 3600 1209600 300")
+	require.NoError(t, err)
+	last := axfrResponse(id, soa)
+	last.SetTsig(axfrTestKeyName, dns.HmacSHA256, clockSkew, time.Now().Unix())
+	lastWire, _, err := dns.TsigGenerateWithProvider(last, provider, priorMAC, true)
+	require.NoError(t, err)
+
+	records, transferErr := readAXFRPackets(t, id, requestMAC, firstWire, middleWire, lastWire)
+	require.NoError(t, transferErr)
+	assert.Len(t, records, 3)
 }
 
 func TestIncomeTransferSetupErrors(t *testing.T) {
