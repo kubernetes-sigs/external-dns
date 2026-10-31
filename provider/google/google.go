@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -62,12 +63,14 @@ type resourceRecordSetsClientInterface interface {
 	List(project string, managedZone string) resourceRecordSetsListCallInterface
 }
 
-type changesCreateCallInterface interface {
-	Do(opts ...googleapi.CallOption) (*dns.Change, error)
+type changesClientInterface interface {
+	Create(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error)
 }
 
-type changesServiceInterface interface {
-	Create(ctx context.Context, project string, managedZone string, change *dns.Change) changesCreateCallInterface
+type changesClientFunc func(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error)
+
+func (f changesClientFunc) Create(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error) {
+	return f(ctx, project, managedZone, change)
 }
 
 type resourceRecordSetsService struct {
@@ -88,14 +91,6 @@ func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone
 
 func (m managedZonesService) List(project string) managedZonesListCallInterface {
 	return m.service.List(project)
-}
-
-type changesService struct {
-	service *dns.ChangesService
-}
-
-func (c changesService) Create(ctx context.Context, project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return c.service.Create(project, managedZone, change).Context(ctx)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
@@ -119,8 +114,8 @@ type GoogleProvider struct {
 	resourceRecordSetsClient resourceRecordSetsClientInterface
 	// A client for managing hosted zones
 	managedZonesClient managedZonesServiceInterface
-	// A client for managing change sets
-	changesClient changesServiceInterface
+	// A client for managing change sets.
+	changesClient changesClientInterface
 	// The context parameter to be passed for gcloud API calls.
 	ctx context.Context
 }
@@ -140,7 +135,7 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 	gcloud.Timeout = requestTimeout
 	gcloud = extdnshttp.NewInstrumentedClient(gcloud)
 
-	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud))
+	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud), option.WithUserAgent(version.UserAgent()))
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +161,10 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 		zoneIDFilter:             zoneIDFilter,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
-		changesClient:            changesService{dnsClient.Changes},
-		ctx:                      ctx,
+		changesClient: changesClientFunc(func(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error) {
+			return dnsClient.Changes.Create(project, managedZone, change).Context(ctx).Do()
+		}),
+		ctx: ctx,
 	}, nil
 }
 
@@ -275,6 +272,22 @@ func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*d
 }
 
 // submitChange takes a zone and a Change and sends it to Google.
+func waitForNextBatch(ctx context.Context, interval time.Duration) error {
+	if interval <= 0 {
+		return nil
+	}
+
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return provider.NewSoftErrorf("change submission canceled: %w", ctx.Err())
+	case <-timer.C:
+		return nil
+	}
+}
+
 func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) error {
 	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
 		log.Info("All records are already up to date")
@@ -283,7 +296,7 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return err
+		return provider.NewSoftErrorf("failed to list zones before applying changes: %w", err)
 	}
 
 	// separate into per-zone change sets to be passed to the API.
@@ -305,16 +318,12 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 			}
 
 			if submitted {
-				timer := time.NewTimer(p.batchChangeInterval)
-				select {
-				case <-ctx.Done():
-					timer.Stop()
-					return provider.NewSoftErrorf("change submission canceled: %w", ctx.Err())
-				case <-timer.C:
+				if err := waitForNextBatch(ctx, p.batchChangeInterval); err != nil {
+					return err
 				}
 			}
 
-			if _, err := p.changesClient.Create(ctx, p.project, zone, c).Do(); err != nil {
+			if _, err := p.changesClient.Create(ctx, p.project, zone, c); err != nil {
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
 			submitted = true

@@ -128,20 +128,16 @@ func (m *mockResourceRecordSetsClient) List(project string, managedZone string) 
 	return &mockResourceRecordSetsListCall{project: project, managedZone: managedZone, recordsListSoftErr: m.recordsErr}
 }
 
-type mockChangesCreateCall struct {
-	ctx         context.Context
-	project     string
-	managedZone string
-	change      *dns.Change
-	afterDo     func()
+type mockChangesClient struct {
+	afterDo func()
 }
 
-func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
-	if err := m.ctx.Err(); err != nil {
+func (m *mockChangesClient) Create(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error) {
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	zoneKey := zoneKey(m.project, m.managedZone)
+	zoneKey := zoneKey(project, managedZone)
 
 	if _, ok := testZones[zoneKey]; !ok {
 		return nil, &googleapi.Error{Code: http.StatusNotFound}
@@ -151,7 +147,7 @@ func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, erro
 		testRecords[zoneKey] = make(map[string]*dns.ResourceRecordSet)
 	}
 
-	for _, c := range append(m.change.Additions, m.change.Deletions...) {
+	for _, c := range append(change.Additions, change.Deletions...) {
 		if !isValidRecordSet(c) {
 			return nil, &googleapi.Error{
 				Code:    http.StatusBadRequest,
@@ -160,12 +156,12 @@ func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, erro
 		}
 	}
 
-	for _, del := range m.change.Deletions {
+	for _, del := range change.Deletions {
 		recordKey := recordKey(del.Type, del.Name)
 		delete(testRecords[zoneKey], recordKey)
 	}
 
-	for _, add := range m.change.Additions {
+	for _, add := range change.Additions {
 		recordKey := recordKey(add.Type, add.Name)
 		testRecords[zoneKey][recordKey] = add
 	}
@@ -174,15 +170,7 @@ func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, erro
 		m.afterDo()
 	}
 
-	return m.change, nil
-}
-
-type mockChangesClient struct {
-	afterDo func()
-}
-
-func (m *mockChangesClient) Create(ctx context.Context, project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return &mockChangesCreateCall{ctx: ctx, project: project, managedZone: managedZone, change: change, afterDo: m.afterDo}
+	return change, nil
 }
 
 func zoneKey(project, zoneName string) string {
@@ -658,6 +646,20 @@ func testBatchChange(n int) *dns.Change {
 	return change
 }
 
+func TestWaitForNextBatch(t *testing.T) {
+	t.Run("zero interval", func(t *testing.T) {
+		require.NoError(t, waitForNextBatch(t.Context(), 0))
+	})
+
+	t.Run("canceled ctx", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		err := waitForNextBatch(ctx, time.Hour)
+		require.ErrorIs(t, err, provider.SoftError)
+		require.ErrorIs(t, err, context.Canceled)
+	})
+}
+
 func TestSubmitChangeCancellation(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -897,7 +899,7 @@ func clearGoogleRecords(t *testing.T, provider *GoogleProvider, zone string) {
 	if len(recordSets) != 0 {
 		_, err := provider.changesClient.Create(t.Context(), provider.project, zone, &dns.Change{
 			Deletions: recordSets,
-		}).Do()
+		})
 		require.NoError(t, err)
 	}
 }
