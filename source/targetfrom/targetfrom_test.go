@@ -62,7 +62,10 @@ func newObject(gvr schema.GroupVersionResource, kind, namespace, name string, st
 func newTestResolver(t *testing.T, objs ...*unstructured.Unstructured) (*Resolver, *fakedynamic.FakeDynamicClient) {
 	t.Helper()
 	disc := &fakediscovery.FakeDiscovery{Fake: &clienttesting.Fake{Resources: []*metav1.APIResourceList{
-		{GroupVersion: "v1", APIResources: []metav1.APIResource{{Name: "services", Kind: "Service", Namespaced: true}}},
+		{GroupVersion: "v1", APIResources: []metav1.APIResource{
+			{Name: "services", Kind: "Service", Namespaced: true},
+			{Name: "secrets", SingularName: "secret", Kind: "Secret", Namespaced: true},
+		}},
 		{GroupVersion: "gateway.networking.k8s.io/v1", APIResources: []metav1.APIResource{{Name: "gateways", Kind: "Gateway", Namespaced: true}}},
 		{GroupVersion: "aga.k8s.aws/v1beta1", APIResources: []metav1.APIResource{{Name: "globalaccelerators", Kind: "GlobalAccelerator"}}},
 	}}}
@@ -162,6 +165,16 @@ func TestResolve(t *testing.T) {
 			wantErr: "unclosed action",
 		},
 		{
+			name:    "secrets are refused",
+			value:   "secrets/token#{{ .data.token }}.example.com",
+			wantErr: "secrets cannot be referenced",
+		},
+		{
+			name:    "secrets are refused by singular name",
+			value:   "secret/token#{{ .data.token }}.example.com",
+			wantErr: "secrets cannot be referenced",
+		},
+		{
 			name:    "no template",
 			value:   "services/shared-lb",
 			wantErr: "missing '#<template>'",
@@ -203,6 +216,19 @@ func TestResolveCRDInstalledLater(t *testing.T) {
 	got, err := r.Resolve(t.Context(), "apps", "globalaccelerators.aga.k8s.aws/accel#{{ .status.dnsName }}")
 	require.NoError(t, err)
 	assert.Equal(t, endpoint.Targets{"a1.awsglobalaccelerator.com"}, got)
+}
+
+func TestResolveMapperResetThrottled(t *testing.T) {
+	r, _ := newTestResolver(t)
+	value := "widgets.example.com/a#{{ .status }}"
+	_, err := r.Resolve(t.Context(), "apps", value)
+	require.ErrorContains(t, err, "no matches")
+	first := r.lastReset
+	require.False(t, first.IsZero())
+
+	_, err = r.Resolve(t.Context(), "apps", value)
+	require.ErrorContains(t, err, "no matches")
+	assert.Equal(t, first, r.lastReset, "a second miss within the interval must not reset")
 }
 
 func TestResolveNilResolver(t *testing.T) {
@@ -249,8 +275,6 @@ func TestTargetsFromAnnotations(t *testing.T) {
 	assert.Empty(t, targets)
 }
 
-// After the first direct read, the informer serves reads and its events
-// trigger the registered handlers.
 func TestResolverInformer(t *testing.T) {
 	svc := newObject(serviceGVR, "Service", "apps", "shared-lb", map[string]any{"ip": "10.0.0.1"})
 	r, client := newTestResolver(t, svc)
@@ -279,7 +303,6 @@ func TestResolverInformer(t *testing.T) {
 	assert.GreaterOrEqual(t, calls.Load(), int32(2), "initial add and update should both trigger a sync")
 }
 
-// Without list or watch, no informer is started and every read is direct.
 func TestResolverWatchForbidden(t *testing.T) {
 	forbidden := func(clienttesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierrors.NewForbidden(serviceGVR.GroupResource(), "", errors.New("denied"))
@@ -303,9 +326,8 @@ func TestResolverWatchForbidden(t *testing.T) {
 
 			value := "services/shared-lb#{{ .status.ip }}"
 			for range 2 {
-				got, err := r.Resolve(t.Context(), "apps", value)
-				require.NoError(t, err)
-				assert.Equal(t, endpoint.Targets{"10.0.0.1"}, got)
+				_, err := r.Resolve(t.Context(), "apps", value)
+				require.ErrorContains(t, err, "not granted")
 			}
 
 			inf, ok := r.informers[informerKey{gvr: serviceGVR, namespace: "apps"}]
