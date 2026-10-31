@@ -359,9 +359,9 @@ external-dns.kubernetes.io/target-from: "services/lb-ns/shared-lb#{{ range .stat
 an unresolved reference (missing object or field, empty or invalid output, unknown resource, missing RBAC)
 logs a warning and produces no record, so `--policy=sync` deletes an existing one.
 
-ExternalDNS reads referenced resources with its own ServiceAccount: grant `get`, `list` and `watch`,
-a `Role` in the referenced namespace is enough. With `get` only, records still resolve on each sync,
-but a change to the referenced resource does not trigger one.
+ExternalDNS reads referenced resources with its own ServiceAccount: grant `list` and `watch`,
+a `Role` in the referenced namespace is enough. Access is checked once per resource and namespace,
+so restart ExternalDNS after granting it. `secrets` cannot be referenced.
 
 To create records from a resource's fields without a primary source, see the [unstructured source](../sources/unstructured.md).
 

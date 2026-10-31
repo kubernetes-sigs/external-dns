@@ -25,6 +25,7 @@ import (
 	"net/netip"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,6 +49,13 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
+const (
+	// Each reset re-runs full discovery.
+	mapperResetInterval = 30 * time.Second
+	// Bounds a reconcile blocked on a reflector that cannot list.
+	informerSyncTimeout = 30 * time.Second
+)
+
 // ClientsFunc returns the Resolver's clients. Called once, on first reference.
 type ClientsFunc func() (dynamic.Interface, discovery.DiscoveryInterface, error)
 
@@ -69,6 +77,7 @@ type Resolver struct {
 	mu        sync.Mutex
 	informers map[informerKey]kubeinformers.GenericInformer
 	handlers  []func()
+	lastReset time.Time
 }
 
 // NewResolver returns a Resolver whose informers live until ctx is done.
@@ -170,8 +179,13 @@ func (r *Resolver) get(ctx context.Context, ref annotations.TargetFromReference,
 	}
 
 	inf := r.informerFor(ctx, informerKey{gvr: gvr, namespace: namespace})
-	if inf == nil || !inf.Informer().HasSynced() {
-		return r.client.Resource(gvr).Namespace(namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	if inf == nil {
+		return nil, fmt.Errorf("list and watch on %s in namespace %q are not granted, restart ExternalDNS once they are", gvr, namespace)
+	}
+	syncCtx, cancel := context.WithTimeout(ctx, informerSyncTimeout)
+	defer cancel()
+	if !cache.WaitForCacheSync(syncCtx.Done(), inf.Informer().HasSynced) {
+		return nil, fmt.Errorf("informer for %s in namespace %q has not synced", gvr, namespace)
 	}
 	var obj runtime.Object
 	if namespaced {
@@ -193,7 +207,7 @@ func (r *Resolver) get(ctx context.Context, ref annotations.TargetFromReference,
 // so a CRD graduating to a new version does not break references.
 func (r *Resolver) lookup(gr schema.GroupResource) (schema.GroupVersionResource, bool, error) {
 	gvr, err := r.mapper.ResourceFor(gr.WithVersion(""))
-	if meta.IsNoMatchError(err) {
+	if meta.IsNoMatchError(err) && r.allowReset() {
 		// The discovery cache never expires, and the mapper only retries on an
 		// unpopulated one: reset it so a CRD installed after startup is found.
 		r.mapper.Reset()
@@ -201,6 +215,10 @@ func (r *Resolver) lookup(gr schema.GroupResource) (schema.GroupVersionResource,
 	}
 	if err != nil {
 		return schema.GroupVersionResource{}, false, err
+	}
+	// A template can rewrite any string into a tenant hostname: a Secret would leak through DNS.
+	if gvr.Group == "" && gvr.Resource == "secrets" {
+		return schema.GroupVersionResource{}, false, errors.New("secrets cannot be referenced")
 	}
 	gvk, err := r.mapper.KindFor(gvr)
 	if err != nil {
@@ -213,6 +231,16 @@ func (r *Resolver) lookup(gr schema.GroupResource) (schema.GroupVersionResource,
 	return gvr, mapping.Scope.Name() == meta.RESTScopeNameNamespace, nil
 }
 
+func (r *Resolver) allowReset() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if time.Since(r.lastReset) < mapperResetInterval {
+		return false
+	}
+	r.lastReset = time.Now()
+	return true
+}
+
 // informerFor returns nil when list or watch is forbidden, as a reflector
 // would log the denial forever.
 func (r *Resolver) informerFor(ctx context.Context, key informerKey) kubeinformers.GenericInformer {
@@ -222,8 +250,6 @@ func (r *Resolver) informerFor(ctx context.Context, key informerKey) kubeinforme
 		return inf
 	}
 	if err := r.canWatch(ctx, key); apierrors.IsForbidden(err) {
-		log.Warnf("%s: not watching %s in namespace %q, changes will not trigger a sync until list and watch are granted and ExternalDNS restarts: %v",
-			annotations.TargetFromKey, key.gvr, key.namespace, err)
 		r.informers[key] = nil
 		return nil
 	}

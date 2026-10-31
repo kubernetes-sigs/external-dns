@@ -157,7 +157,7 @@ Changes to referenced resources trigger a sync via the normal event path (no pol
 Informers are **not bound by `--namespace`**, which scopes only primary sources.
 
 RBAC needs `list`+`watch` only in referenced namespaces, so a namespace-scoped `Role` is enough.
-With only `get`, resolution works via direct reads but loses change-driven sync.
+Without them the reference is unresolved: an uncached `get` fallback would compete with sources for client QPS.
 
 **Empty / not-found / missing-field (critical)** — an unresolved reference (object not found, field absent, empty list) must **not** fall through to native discovery.
 
@@ -195,13 +195,11 @@ All three produce an unresolved reference, never a garbage target.
 **RBAC is the boundary**: resolution uses ExternalDNS's own ServiceAccount and reads only what that account is granted, per namespace; no grant means fail closed (unresolved).
 
 No new default RBAC for arbitrary CRDs ships.
-Only a resolved field *value* is used, as a DNS target string — a value a tenant could already set via the literal `target` annotation.
 
-So there is no privilege escalation and no exposure of resource content beyond that field.
+A template can turn any readable string into a hostname under a tenant's domain (`slice`, `replace`), so it leaks through public DNS.
+`secrets` are refused whatever the RBAC: no DNS target lives in a Secret.
 
 The caveat: a grant made for a *primary* source also covers `target-from` (cluster-wide `services` read lets any tenant reference any Service).
-
-Residual risk is narrow: an unintended field surfaced as a DNS record the tenant controls.
 Operators wanting a hard guardrail can use namespace-scoped RBAC; see also the allowlist under [Alternatives](#alternatives).
 
 ### Implementation Steps
