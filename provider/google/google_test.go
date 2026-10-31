@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/time/rate"
 	dns "google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
 
@@ -646,36 +647,25 @@ func testBatchChange(n int) *dns.Change {
 	return change
 }
 
-func TestWaitForNextBatch(t *testing.T) {
-	t.Run("zero interval", func(t *testing.T) {
-		require.NoError(t, waitForNextBatch(t.Context(), 0))
-	})
-
-	t.Run("canceled ctx", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-		err := waitForNextBatch(ctx, time.Hour)
-		require.ErrorIs(t, err, provider.SoftError)
-		require.ErrorIs(t, err, context.Canceled)
-	})
-}
-
 func TestSubmitChangeCancellation(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		records int
+		name     string
+		records  int
+		interval time.Duration
 		// cancelAt is the Create call after which ctx is canceled; 0 cancels before the first one.
 		cancelAt int
 		wantErr  error
 	}{
-		{name: "create call", records: 1, cancelAt: 0, wantErr: context.Canceled},
-		{name: "batch interval", records: 2, cancelAt: 1, wantErr: context.Canceled},
-		{name: "no wait after final batch", records: 1, cancelAt: -1},
+		{name: "create call", records: 1, interval: time.Hour, cancelAt: 0, wantErr: context.Canceled},
+		{name: "batch interval", records: 2, interval: time.Hour, cancelAt: 1, wantErr: context.Canceled},
+		{name: "no wait after final batch", records: 1, interval: time.Hour, cancelAt: -1},
+		{name: "zero interval", records: 2, interval: 0, cancelAt: -1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
-			// Any regression back to an uncancellable or trailing wait blocks for an hour.
-			p.batchChangeInterval = time.Hour
+			// Any regression back to an uncancellable wait blocks for an hour.
+			p.batchChangeInterval = tc.interval
+			p.batchChangeLimiter = rate.NewLimiter(rate.Every(tc.interval), 1)
 			p.batchChangeSize = 1
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
@@ -691,6 +681,11 @@ func TestSubmitChangeCancellation(t *testing.T) {
 			}
 
 			err := p.submitChange(ctx, testBatchChange(tc.records))
+			wantCalls := tc.records
+			if tc.cancelAt >= 0 {
+				wantCalls = tc.cancelAt
+			}
+			require.Equal(t, wantCalls, calls)
 			if tc.wantErr == nil {
 				require.NoError(t, err)
 				return
@@ -812,10 +807,11 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFil
 
 func newGoogleProvider(t *testing.T, domainFilter *endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint, zonesErr, recordsErr error) *GoogleProvider {
 	provider := &GoogleProvider{
-		project:      "zalando-external-dns-test",
-		dryRun:       false,
-		domainFilter: domainFilter,
-		zoneIDFilter: zoneIDFilter,
+		project:            "zalando-external-dns-test",
+		dryRun:             false,
+		batchChangeLimiter: rate.NewLimiter(rate.Every(0), 1),
+		domainFilter:       domainFilter,
+		zoneIDFilter:       zoneIDFilter,
 		resourceRecordSetsClient: &mockResourceRecordSetsClient{
 			recordsErr: recordsErr,
 		},

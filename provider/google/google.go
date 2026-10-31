@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/time/rate"
 	dns "google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
@@ -104,6 +105,7 @@ type GoogleProvider struct {
 	batchChangeSize int
 	// Interval between batch updates.
 	batchChangeInterval time.Duration
+	batchChangeLimiter  *rate.Limiter
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter *endpoint.DomainFilter
 	// filter for zones based on visibility
@@ -156,6 +158,7 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 		dryRun:                   dryRun,
 		batchChangeSize:          batchChangeSize,
 		batchChangeInterval:      batchChangeInterval,
+		batchChangeLimiter:       rate.NewLimiter(rate.Every(batchChangeInterval), 1),
 		domainFilter:             domainFilter,
 		zoneTypeFilter:           zoneTypeFilter,
 		zoneIDFilter:             zoneIDFilter,
@@ -272,22 +275,6 @@ func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*d
 }
 
 // submitChange takes a zone and a Change and sends it to Google.
-func waitForNextBatch(ctx context.Context, interval time.Duration) error {
-	if interval <= 0 {
-		return nil
-	}
-
-	timer := time.NewTimer(interval)
-	defer timer.Stop()
-
-	select {
-	case <-ctx.Done():
-		return provider.NewSoftErrorf("change submission canceled: %w", ctx.Err())
-	case <-timer.C:
-		return nil
-	}
-}
-
 func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) error {
 	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
 		log.Info("All records are already up to date")
@@ -302,7 +289,6 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 	// separate into per-zone change sets to be passed to the API.
 	changes := separateChange(zones, change)
 
-	submitted := false
 	for zone, change := range changes {
 		for batch, c := range batchChange(change, p.batchChangeSize) {
 			log.Infof("Change zone: %v batch #%d", zone, batch)
@@ -317,16 +303,15 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 				continue
 			}
 
-			if submitted {
-				if err := waitForNextBatch(ctx, p.batchChangeInterval); err != nil {
-					return err
+			if p.batchChangeInterval > 0 {
+				if err := p.batchChangeLimiter.Wait(ctx); err != nil {
+					return provider.NewSoftErrorf("change submission canceled: %w", err)
 				}
 			}
 
 			if _, err := p.changesClient.Create(ctx, p.project, zone, c); err != nil {
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
-			submitted = true
 		}
 	}
 
