@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-PREV_TAG=$1
-NEW_TAG=$2
+PREV_TAG=${1:?PREV_TAG is required}
+NEW_TAG=${2:?NEW_TAG is required}
 
 sed -i.bak -e "s/newTag: .*/newTag: ${NEW_TAG}/g" kustomize/kustomization.yaml
 rm -f kustomize/kustomization.yaml.bak
@@ -25,4 +25,3 @@ rm -f docs/release.md.bak
 git add docs/release.md
 
 git commit -sm "chore(release): updates kustomize & docs with ${NEW_TAG}"
-
