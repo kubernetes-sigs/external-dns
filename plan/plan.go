@@ -336,7 +336,7 @@ func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
 		return true
 	}
 
-	// Skip resource label checks for NoopRegistry to avoid perpetual reconciliation (#6766).
+	// NoopRegistry has no owner and stores no labels; comparing them would update on every sync.
 	if p.OwnerID == "" {
 		return false
 	}
