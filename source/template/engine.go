@@ -318,16 +318,34 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 			return nil, fmt.Errorf("%w (unstructured retry also failed: %w)", wrapTemplateErr(obj, err), err2)
 		}
 	}
-	hosts := strings.Split(buf.String(), ",")
-	hostnames := make(sets.Set[string], len(hosts))
-	for _, name := range hosts {
-		name = strings.TrimSpace(name)
-		name = strings.TrimSuffix(name, ".")
-		if name != "" {
-			hostnames.Insert(name)
+	return splitValues(buf.String()), nil
+}
+
+// ExecUnstructured renders text against an unstructured object's content, split like the flag
+// templates. A missing key is an error, so an absent field cannot render empty.
+func ExecUnstructured(text string, content map[string]any) ([]string, error) {
+	tmpl, err := parseTemplate(text)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Option("missingkey=error").Execute(&buf, content); err != nil {
+		return nil, err
+	}
+	return splitValues(buf.String()), nil
+}
+
+func splitValues(s string) []string {
+	parts := strings.Split(s, ",")
+	values := make(sets.Set[string], len(parts))
+	for _, v := range parts {
+		v = strings.TrimSpace(v)
+		v = strings.TrimSuffix(v, ".")
+		if v != "" {
+			values.Insert(v)
 		}
 	}
-	return sets.Sorted(hostnames), nil
+	return sets.Sorted(values)
 }
 
 func wrapTemplateErr(obj kubeObject, err error) error {
