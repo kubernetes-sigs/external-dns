@@ -289,12 +289,16 @@ func TestMergeEndpoints(t *testing.T) {
 			},
 		},
 		{
-			name: "CNAME with no targets is skipped",
+			name: "CNAME and DNAME with no targets are kept",
 			input: []*Endpoint{
 				NewEndpoint("example.com", RecordTypeCNAME),
+				NewEndpoint("example.com", RecordTypeCNAME),
+				NewEndpoint("sub.example.com", RecordTypeDNAME),
 				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 			expected: []*Endpoint{
+				NewEndpoint("example.com", RecordTypeCNAME),
+				NewEndpoint("sub.example.com", RecordTypeDNAME),
 				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 		},
@@ -349,16 +353,6 @@ func TestMergeEndpoints(t *testing.T) {
 			expected: []*Endpoint{
 				NewEndpoint("example.com", RecordTypeDNAME, "a.example.net"),
 				NewEndpoint("example.com", RecordTypeDNAME, "b.example.net"),
-			},
-		},
-		{
-			name: "DNAME with no targets is skipped",
-			input: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeDNAME),
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
-			},
-			expected: []*Endpoint{
-				NewEndpoint("example.com", RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -511,17 +505,6 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		})
 
 		logtest.TestHelperLogNotContains("Only one CNAME per name", hook, t)
-	})
-
-	t.Run("debug log for CNAME with no targets", func(t *testing.T) {
-		hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-
-		MergeEndpoints([]*Endpoint{
-			NewEndpoint("example.com", RecordTypeCNAME),
-		})
-
-		logtest.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)
-		logtest.TestHelperLogContains("example.com", hook, t)
 	})
 }
 

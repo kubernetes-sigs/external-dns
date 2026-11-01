@@ -165,11 +165,8 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			RecordTTL:     ep.RecordTTL,
 		}
 		// CNAME and DNAME records can only have one target per DNS spec, and they should not be merged.
-		if ep.RecordType == RecordTypeCNAME || ep.RecordType == RecordTypeDNAME {
-			if len(ep.Targets) == 0 {
-				log.Debugf("Skipping %s endpoint %q with no targets", ep.RecordType, ep.DNSName)
-				continue
-			}
+		// One without targets is kept for --default-targets to fill; CheckEndpoint drops it if nothing does.
+		if (ep.RecordType == RecordTypeCNAME || ep.RecordType == RecordTypeDNAME) && len(ep.Targets) > 0 {
 			key.Target = ep.Targets[0]
 			singleKey := ep.RecordType + "/" + ep.DNSName + "/" + ep.SetIdentifier
 			// This will be caught by the provider when it tries to create the record, but log a warning here to make it more obvious.

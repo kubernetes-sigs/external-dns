@@ -172,6 +172,12 @@ are still published. The rejection is reported in the object's [status condition
   where both forms are valid (RFC 1035 §5.1).
 * `targets` may be empty only when `--default-targets` is configured.
 
+Each endpoint takes the default targets that match its `recordType`: IPv4 addresses for `A`, IPv6 addresses for `AAAA`, hostnames for `CNAME`.
+For example, with `--default-targets=192.0.2.1 --default-targets=lb.example.net`, an `A` endpoint gets `192.0.2.1` and a `CNAME` endpoint gets `lb.example.net`.
+If no default target matches, ExternalDNS logs a warning and skips the endpoint.
+`--force-default-targets` follows the same rule, but keeps the source targets when no default target matches.
+Other record types are never filled.
+
 ### Status
 
 external-dns reports on each `DNSEndpoint` whether it understood the spec:
