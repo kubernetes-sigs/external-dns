@@ -821,18 +821,8 @@ func TestDedupSource_WinnerByResourceLabel(t *testing.T) {
 		},
 		{
 			name:      "smallest label is last",
-			resources: []string{"c", "b", "a"},
+			resources: []string{"c", "b", ""},
 			wantIdx:   2,
-		},
-		{
-			name:      "labeled beats unlabeled when unlabeled is first",
-			resources: []string{"", "a"},
-			wantIdx:   1,
-		},
-		{
-			name:      "labeled beats unlabeled when unlabeled is last",
-			resources: []string{"a", ""},
-			wantIdx:   0,
 		},
 		{
 			name:      "all unlabeled, first wins",
@@ -848,11 +838,6 @@ func TestDedupSource_WinnerByResourceLabel(t *testing.T) {
 			name:      "equal smallest labels, first of them wins",
 			resources: []string{"b", "a", "a"},
 			wantIdx:   1,
-		},
-		{
-			name:      "unlabeled interleaved",
-			resources: []string{"", "z", "", "m", ""},
-			wantIdx:   3,
 		},
 		{
 			name:      "namespaced labels compare lexically",

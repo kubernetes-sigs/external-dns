@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -2210,4 +2211,39 @@ func TestIngressSourceLegacyAnnotationPrefix(t *testing.T) {
 			RecordTTL:  endpoint.TTL(60),
 		},
 	})
+}
+
+func TestIngressSharedHostNoResourceLabelChurn(t *testing.T) {
+	client := fake.NewClientset()
+	for _, fi := range []fakeIngress{
+		{name: "a", namespace: "default", dnsnames: []string{"app.example.com"}, ips: []string{"1.1.1.1"}},
+		{name: "b", namespace: "default", dnsnames: []string{"app.example.com"}, ips: []string{"2.2.2.2"}},
+		{name: "c", namespace: "other", dnsnames: []string{"app.example.com"}, ips: []string{"3.3.3.3"}},
+	} {
+		ing := fi.Ingress()
+		_, err := client.NetworkingV1().Ingresses(ing.Namespace).Create(t.Context(), ing, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+	src, err := NewIngressSource(t.Context(), client, &Config{
+		TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+		LabelFilter:    labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	eps, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	current := eps[0]
+	current.Labels[endpoint.OwnerLabelKey] = "owner"
+
+	for range 50 {
+		desired, err := src.Endpoints(t.Context())
+		require.NoError(t, err)
+		changes := (&plan.Plan{
+			Current:        []*endpoint.Endpoint{current},
+			Desired:        desired,
+			ManagedRecords: []string{endpoint.RecordTypeA},
+			OwnerID:        "owner",
+		}).Calculate().Changes
+		require.Empty(t, changes.UpdateNew, "shared host must not be updated on every sync")
+	}
 }
