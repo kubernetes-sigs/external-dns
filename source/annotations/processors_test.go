@@ -216,31 +216,52 @@ func TestTTLFromAnnotations(t *testing.T) {
 
 func TestGetAliasFromAnnotations(t *testing.T) {
 	tests := []struct {
-		name        string
-		annotations map[string]string
-		expected    bool
+		name          string
+		annotations   map[string]string
+		expectedAlias endpoint.AliasType
+		expectedOK    bool
 	}{
 		{
-			name:        "alias annotation exists and is true",
-			annotations: map[string]string{AliasKey: "true"},
-			expected:    true,
+			name:          "alias annotation exists and is true",
+			annotations:   map[string]string{AliasKey: "true"},
+			expectedAlias: endpoint.AliasTrue,
+			expectedOK:    true,
+		},
+		{
+			name:          "alias annotation requests A only",
+			annotations:   map[string]string{AliasKey: "A"},
+			expectedAlias: endpoint.AliasA,
+			expectedOK:    true,
+		},
+		{
+			name:          "alias annotation requests AAAA only",
+			annotations:   map[string]string{AliasKey: "AAAA"},
+			expectedAlias: endpoint.AliasAAAA,
+			expectedOK:    true,
 		},
 		{
 			name:        "alias annotation exists and is false",
 			annotations: map[string]string{AliasKey: "false"},
-			expected:    false,
+		},
+		{
+			name:        "alias annotation has lowercase record type",
+			annotations: map[string]string{AliasKey: "a"},
+		},
+		{
+			name:        "alias annotation has unknown value",
+			annotations: map[string]string{AliasKey: "yes"},
 		},
 		{
 			name:        "alias annotation does not exist",
 			annotations: map[string]string{},
-			expected:    false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := hasAliasFromAnnotations(tt.annotations)
-			assert.Equal(t, tt.expected, result)
+			alias, ok := aliasFromAnnotations(tt.annotations)
+			assert.Equal(t, tt.expectedOK, ok)
+			assert.Equal(t, tt.expectedAlias, alias)
 		})
 	}
 }
