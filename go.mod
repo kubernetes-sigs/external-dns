@@ -21,7 +21,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6
 	github.com/aws/smithy-go v1.28.7
 	github.com/bodgit/tsig v1.3.1
-	github.com/cenkalti/backoff/v5 v5.0.3
+	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/civo/civogo v0.7.5
 	// pinned: v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data
 	// See https://github.com/cloudflare/cloudflare-go/issues/4300
