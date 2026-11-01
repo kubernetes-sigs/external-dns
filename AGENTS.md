@@ -91,14 +91,26 @@ guide.
 
 ## Data Flow and Layering
 
-Three concerns, kept separate:
+Reconcile pipeline (one `RunOnce()`):
+
+```text
+Source → source wrappers → Registry.AdjustEndpoints → Plan → Registry.ApplyChanges → Provider.ApplyChanges → DNS
+                                                       ↑
+                                       Registry.Records (current state)
+```
+
+Source wrappers live in `source/`: `multi`, `dedup`, `nat64`, `ptr`,
+`target-filter`, `post-processor` — see
+[source-wrappers.md](docs/contributing/source-wrappers.md).
+
+Three layering concerns, kept separate:
 
 - **Domain** (`endpoint/`) — pure functions on `Endpoint`. Validation,
   normalization, labels. No I/O, no logging.
-- **Writer** (`pkg/<kind>/status.go`) — formats and writes status conditions,
-  events and metrics. Owns the K8s client calls on that path.
 - **Source** (`source/`) — produces `[]*endpoint.Endpoint`. Iterates spec,
   calls domain ops, hands results to the writer. No K8s writes of its own.
+- **Writer** (`pkg/<kind>/status.go`) — formats and writes status conditions,
+  events and metrics. Owns the K8s client calls on that path.
 
 Rules of thumb: validation and normalization live on `endpoint.*`, not
 duplicated in sources; sources produce, they do not write; writers take
@@ -108,8 +120,8 @@ Signals the rule is being broken: a `validateX` helper inside a `source/`
 file, a source that calls the K8s API to patch status, a `switch RecordType`
 in a source doing per-type normalization.
 
-Full rules and examples in `docs/contributing/sources-and-providers.md`,
-"Data Flow and Layering".
+Full rules and examples in
+[`docs/contributing/sources-and-providers.md#data-flow-and-layering`](docs/contributing/sources-and-providers.md#data-flow-and-layering).
 
 ## Refactoring
 

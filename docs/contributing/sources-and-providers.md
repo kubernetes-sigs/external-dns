@@ -169,41 +169,69 @@ factory.Start(ctx.Done())                                    // 4. start — Mus
 
 ## Data Flow and Layering
 
-ExternalDNS keeps three concerns separate: pure domain operations on
-endpoints, the Source that produces endpoints from Kubernetes objects, and
-the writer that reports status back to those objects.
+### The reconcile pipeline
 
+Each `controller.RunOnce()` moves endpoints through a fixed pipeline:
+
+```text
+Source  ──▶  source wrappers  ──▶  Registry.AdjustEndpoints  ──┐
+(k8s objects)                                                  │
+                                                               ▼
+                                                             Plan  ──▶  Registry.ApplyChanges  ──▶  Provider.ApplyChanges  ──▶  DNS
+                                                               ▲
+Registry.Records (current DNS state) ─────────────────────────┘
 ```
-desired state:   Source.Endpoints() ──> Plan ──> Provider.ApplyChanges() ──> DNS
-status:          Source (validation) ──> StatusWriter ──> source object (Accepted, PartiallyInvalid)
-                 Provider (future)    ──> StatusWriter ──> source object (Programmed)
+
+Status flows out of band, from the Source back to the Kubernetes object it
+read:
+
+```text
+Source (validation) ──▶ StatusWriter ──▶ source object (Accepted, PartiallyInvalid, ...)
 ```
+
+Each stage has one job:
+
+| Stage                      | Package     | Does                                                                                                 |
+|----------------------------|-------------|------------------------------------------------------------------------------------------------------|
+| `Source.Endpoints`         | `source/`   | Kubernetes object → `[]*endpoint.Endpoint`.                                                          |
+| Source wrappers            | `source/`   | `multi`, `dedup`, `nat64`, `ptr`, `target-filter`, `post-processor`. See [source-wrappers.md](source-wrappers.md). |
+| `Registry.Records`         | `registry/` | Current DNS state from the provider, annotated with ownership (TXT, AWS SD, DynamoDB).               |
+| `Registry.AdjustEndpoints` | `registry/` | Normalize desired endpoints for the registry's view (ownership labels, naming rules).                |
+| `plan.Plan`                | `plan/`     | Diff current and desired → `Create`, `UpdateOld`, `UpdateNew`, `Delete`.                             |
+| `Registry.ApplyChanges`    | `registry/` | Wrap the diff with ownership bookkeeping, forward to the provider.                                   |
+| `Provider.ApplyChanges`    | `provider/` | Translate the diff to DNS backend calls (Route53, Cloud DNS, Cloudflare, ...).                       |
+
+### Layering (producer side)
+
+The pipeline above names every package. This section covers the stratification
+*within* the producer side — how code around a Source splits by side-effect
+purity. Within one `RunOnce()`:
+
+| Layer  | Package                                                                     | Responsibility                                                                                                        |
+|--------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| Domain | `endpoint/`                                                                 | Pure functions on `Endpoint`. No I/O, no logging, no formatting. Validation, normalization, labels.                   |
+| Source | `source/`                                                                   | Produces `[]*endpoint.Endpoint`. Thin coordinator — iterates spec, calls domain ops, hands results to the writer.     |
+| Writer | `pkg/<kind>/status.go` (conditions), `pkg/events/` (`Normal`/`Warning` events) | Takes orchestration output (counts, reasons) and writes conditions, events, metrics. Owns the K8s client calls.    |
+
+The other packages belong to the pipeline shown above: `controller/`
+sequences `RunOnce`, `plan/` is a pure diff, `registry/` layers ownership on
+top of a provider, and `provider/` abstracts the DNS backend. None of them
+belong inside a Source.
 
 ### Why this shape
 
 * **One source of truth for invariants.** `endpoint.Validate` and
-  `endpoint.Normalize` are defined once; every Source agrees. No per-source
-  drift.
+  `endpoint.Normalize` are defined once; every Source and wrapper agrees. A
+  bug in a validation rule lives in one file; there is no per-source drift to
+  chase.
 * **Pure domain functions are testable without a cluster.** `Validate(ep)`
   takes an endpoint and returns an error — no fake client, no reconcile loop.
-* **Side effects are bounded.** Only `StatusWriter` writes back to Kubernetes.
-  It can be stubbed in tests, swapped for a metrics-only sink, or disabled,
-  without touching Sources.
+* **The write path is swappable.** A dedicated writer is the only path back
+  to Kubernetes. Tests stub it; alternate deployments can replace it
+  (metrics-only, dry-run, structured-log) or disable it — none of that
+  reaches the producer.
 * **Sources stay thin.** Adding a new Source means a loop and two function
   calls, not a copy of the validation rules and a status-writing routine.
-* **Blast radius matches intent.** A bug in a validation rule is in one file;
-  a bug in status reporting is in one file. Nothing crosses the layer line.
-* **The producer / writer split survives future work.** `Provider.ApplyChanges`
-  will eventually report `Programmed` through the same `StatusWriter` — no
-  second status pipeline, same shape.
-
-### The three layers
-
-| Layer  | Package                    | Responsibility                                                                                                        |
-|--------|----------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| Domain | `endpoint/`                | Pure functions on `Endpoint`. No I/O, no logging, no formatting. Validation, normalization, labels.                   |
-| Writer | `pkg/<kind>/status.go` (e.g. `pkg/crd/status.go`) | Takes orchestration output (counts, reasons) and writes conditions, events, metrics. Owns the K8s client calls.       |
-| Source | `source/`                  | Produces `[]*endpoint.Endpoint`. Thin coordinator — iterates spec, calls domain ops, hands results to the writer.     |
 
 ### Rules
 
@@ -565,21 +593,22 @@ No single metric is the goal — not cyclomatic complexity, not function length,
 not cognitive complexity, not parameter count, not nesting depth. The goal is
 *overall* complexity: coupling, cohesion, signature width, hidden state,
 call-order, locality. A refactor that lowers one axis while raising any of the
-others is a loss. Leave the code inline.
+others is a loss.
 
 ### Signature smells
 
 If a proposed helper hits any of these, do not extract it; either leave the
 code inline, or introduce a type so the shared state is visible:
 
-- Takes one argument and returns three or more values. If the outputs travel
+* Takes one argument and returns three or more values. If the outputs travel
   together, they are a struct.
-- Mutates a parameter *and* returns a value — pick one.
-- Mutates receiver state while reading as pure. If the write is load-bearing,
-  name it (`populateOrphanedLabels`); otherwise don't extract.
-- Paired with another helper by a comment that says "must match X" or
+* Mutates a parameter *and* returns a value — pick one.
+* Mutates receiver state while reading as pure. If the write is load-bearing,
+  give it a verb that signals the mutation (`populate...`, `register...`);
+  otherwise don't extract.
+* Paired with another helper by a comment that says "must match X" or
   "inverse of Y". Shared invariants need a shared type, not prose.
-- One-line wrapper used from exactly one call site — the `if` was clearer.
+* One-line wrapper used from exactly one call site — the `if` was clearer.
 
 ### Call-order and locality
 
