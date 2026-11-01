@@ -143,21 +143,25 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 }
 
 // MergeEndpoints merges endpoints with the same key (DNSName + RecordType + SetIdentifier + RecordTTL)
-// by combining their targets. CNAME endpoints are not merged (per DNS spec) but are deduplicated.
+// by combining their targets. CNAME and DNAME endpoints are not merged (per DNS spec) but are deduplicated.
 // This is useful when multiple resources (e.g., pods, nodes) contribute targets to the same DNS record.
 //
-// When several endpoints merge into one, the first endpoint's scalar metadata (TTL, ProviderSpecific,
-// Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
+// When several endpoints merge into one, the one that sorts first by ResourceLabelKey is the base
+// and its scalar metadata (TTL, ProviderSpecific, Labels, ...) is retained, so the result does not
+// depend on input order. RefObjects from all contributing endpoints are accumulated, so the merged
 // record references every source object that contributed to it. "First" follows the input slice order.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
 	}
 
-	endpointMap := make(map[EndpointKey]*Endpoint)
-	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
+	groups := NewOrderedMap[EndpointKey](len(endpoints))
+	singleTargets := make(map[string]string) // recordType/DNSName/SetIdentifier -> first target seen
 
 	for _, ep := range endpoints {
+		if ep == nil {
+			continue
+		}
 		key := EndpointKey{
 			DNSName:       ep.DNSName,
 			RecordType:    ep.RecordType,
@@ -179,22 +183,24 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			}
 			singleTargets[singleKey] = ep.Targets[0]
 		}
-		if existing, ok := endpointMap[key]; ok {
-			existing.Targets = append(existing.Targets, ep.Targets...)
-			for _, ref := range ep.refObjects {
-				existing.WithRefObject(ref)
-			}
-		} else {
-			endpointMap[key] = ep
+		groups.Append(key, ep)
+	}
+
+	result := make([]*Endpoint, 0, len(endpoints))
+	for _, eps := range groups.All() {
+		SortByResource(eps)
+
+		winner, losers := eps[0], eps[1:]
+		for _, loser := range losers {
+			winner.Targets = append(winner.Targets, loser.Targets...)
 		}
+		AbsorbRefObjects(winner, losers...)
+
+		slices.Sort(winner.Targets)
+		winner.Targets = slices.Compact(winner.Targets)
+		result = append(result, winner)
 	}
 
-	result := make([]*Endpoint, 0, len(endpointMap))
-	for _, ep := range endpointMap {
-		slices.Sort(ep.Targets)
-		ep.Targets = slices.Compact(ep.Targets)
-		result = append(result, ep)
-	}
-
+	SortByResource(result)
 	return result
 }
