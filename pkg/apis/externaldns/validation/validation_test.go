@@ -18,6 +18,7 @@ package validation
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -183,6 +184,30 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	require.NoError(t, ValidateConfig(cfg))
 
 	return cfg
+}
+
+func TestValidateGoogleProviderConfig(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.Provider = externaldns.ProviderGoogle
+	cfg.GoogleBatchChangeSize = 1
+	cfg.GoogleBatchChangeInterval = time.Second
+	cfg.GoogleRequestTimeout = time.Minute
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg.GoogleBatchChangeInterval = 0
+	cfg.GoogleRequestTimeout = 0
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg.GoogleBatchChangeSize = -1
+	require.ErrorContains(t, ValidateConfig(cfg), "--google-batch-change-size")
+
+	cfg.GoogleBatchChangeSize = 1
+	cfg.GoogleBatchChangeInterval = -time.Second
+	require.ErrorContains(t, ValidateConfig(cfg), "--google-batch-change-interval")
+
+	cfg.GoogleBatchChangeInterval = time.Second
+	cfg.GoogleRequestTimeout = -time.Second
+	require.ErrorContains(t, ValidateConfig(cfg), "--google-request-timeout")
 }
 
 func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
