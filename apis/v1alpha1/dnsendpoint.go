@@ -33,10 +33,6 @@ const (
 
 	// InvalidReason marks endpoints external-dns refused.
 	InvalidReason string = "Invalid"
-
-	// PendingReason is the schema default for Accepted, shown until an
-	// external-dns instance has read the object.
-	PendingReason string = "Pending"
 )
 
 // +genclient

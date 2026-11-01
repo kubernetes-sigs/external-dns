@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -118,6 +119,11 @@ func TestNewCRDSourceCopiesDefaultTargets(t *testing.T) {
 			cfg:      &config.Config{DefaultTargets: []string{"192.0.2.10"}},
 			expected: []string{"targetless.example.com"},
 		},
+		{
+			title:    "force without default targets is ignored",
+			cfg:      &config.Config{ForceDefaultTargets: true},
+			expected: nil,
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			restConfig := startFakeDNSEndpointAPIServer(t, []apiv1alpha1.DNSEndpoint{targetless})
@@ -131,6 +137,7 @@ func TestNewCRDSourceCopiesDefaultTargets(t *testing.T) {
 			cs, ok := src.(*crdSource)
 			require.True(t, ok)
 			assert.Equal(t, len(tt.cfg.DefaultTargets) > 0, cs.defaultTargets)
+			assert.Equal(t, len(tt.cfg.DefaultTargets) > 0 && tt.cfg.ForceDefaultTargets, cs.forceDefaultTargets)
 
 			endpoints, err := src.Endpoints(ctx)
 			require.NoError(t, err)
@@ -193,6 +200,10 @@ func startFakeDNSEndpointAPIServer(t *testing.T, items []apiv1alpha1.DNSEndpoint
 				Kind:       "DNSEndpoint",
 				Verbs:      metav1.Verbs{"get", "list", "watch"},
 			}}})
+		case r.Method == http.MethodPut:
+			// echo, as an API server whose CRD has every status field
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.Copy(w, r.Body)
 		case r.URL.Query().Get("watch") == "true":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)

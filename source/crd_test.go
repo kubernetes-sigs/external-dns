@@ -633,7 +633,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			wantWarning: `target "_sip._udp.example.org" must be absolute for a NAPTR record — use "_sip._udp.example.org."`,
 		},
 		{
-			title: "CNAME with empty targets produces no warning under --default-targets",
+			title: "CNAME with empty targets is rejected under --default-targets",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
@@ -642,7 +642,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			wantWarning: ``,
+			wantWarning: `no targets: a CNAME record needs one target`,
 		},
 		{
 			title: "SRV target with trailing dot produces no warning (#6357)",

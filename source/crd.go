@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -65,6 +66,9 @@ type crdSource struct {
 	// defaultTargets is set when --default-targets can fill an endpoint without
 	// targets; otherwise dedupSource drops it and it must be rejected here.
 	defaultTargets bool
+	// forceDefaultTargets: the multi-source replaces every target, so spec
+	// targets are not checked.
+	forceDefaultTargets bool
 }
 
 // NewCRDSource creates a new crdSource backed by a controller-runtime cache.
@@ -91,6 +95,7 @@ func NewCRDSource(ctx context.Context, restConfig *rest.Config, cfg *config.Conf
 		return nil, err
 	}
 	cs.defaultTargets = len(cfg.DefaultTargets) > 0
+	cs.forceDefaultTargets = cs.defaultTargets && cfg.ForceDefaultTargets
 
 	return cs, nil
 }
@@ -119,12 +124,14 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpoints := make([]*endpoint.Endpoint, 0, len(filtered))
 	for _, dnsEndpoint := range filtered {
-		crdEndpoints, rejections := validateEndpoints(dnsEndpoint, cs.defaultTargets)
+		crdEndpoints, rejections := cs.validateEndpoints(dnsEndpoint)
 
 		endpoint.AttachRefObject(crdEndpoints, events.NewObjectReference(dnsEndpoint, types.CRD))
 		endpoints = append(endpoints, crdEndpoints...)
 
-		cs.reportAccepted(ctx, dnsEndpoint, len(crdEndpoints), rejections)
+		if err := cs.reportAccepted(ctx, dnsEndpoint, len(crdEndpoints), rejections); err != nil {
+			return nil, err
+		}
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
@@ -132,7 +139,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 // validateEndpoints splits spec into endpoints for the plan and one rejection per
 // dropped endpoint. Rejections are shown to users in status conditions.
-func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool) ([]*endpoint.Endpoint, []string) {
+func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]*endpoint.Endpoint, []string) {
 	var (
 		accepted   []*endpoint.Endpoint
 		rejections []string
@@ -157,7 +164,7 @@ func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool
 			}
 		}
 
-		if reason := rejectionReason(ep, defaultTargets); reason != "" {
+		if reason := cs.rejectionReason(ep); reason != "" {
 			log.Warnf("Endpoint %s/%s with DNSName %s rejected: %s",
 				dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, reason)
 			rejections = append(rejections, fmt.Sprintf("spec.endpoints[%d] (%s %s): %s", idx, ep.RecordType, ep.DNSName, reason))
@@ -173,15 +180,21 @@ func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool
 
 // rejectionReason explains why ep cannot be planned, or returns "".
 //
-// It must cover everything dedupSource would later drop with only a log line
-// (CheckEndpoint), or Accepted would lie. Empty targets pass with defaultTargets:
-// the multi-source fills them before dedupSource runs.
-func rejectionReason(ep *endpoint.Endpoint, defaultTargets bool) string {
+// It must cover what later stages drop with only a log line (MergeEndpoints,
+// CheckEndpoint), or Accepted would lie. Default targets apply in between.
+func (cs *crdSource) rejectionReason(ep *endpoint.Endpoint) string {
 	if len(ep.Targets) == 0 {
-		if defaultTargets {
+		switch {
+		case ep.RecordType == endpoint.RecordTypeCNAME || ep.RecordType == endpoint.RecordTypeDNAME:
+			// MergeEndpoints drops these before the multi-source can fill them.
+			return fmt.Sprintf("no targets: a %s record needs one target", ep.RecordType)
+		case cs.defaultTargets:
 			return ""
 		}
 		return "no targets: set targets, or start external-dns with --default-targets"
+	}
+	if cs.forceDefaultTargets {
+		return ""
 	}
 	if reason := illegalTargetReason(ep); reason != "" {
 		return reason
@@ -253,7 +266,7 @@ func rfcViolationReason(ep *endpoint.Endpoint) string {
 
 // reportAccepted follows Gateway API: an object with some valid endpoints stays
 // Accepted, and PartiallyInvalid lists the dropped ones.
-func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, accepted int, rejections []string) {
+func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, accepted int, rejections []string) error {
 	condition := metav1.Condition{
 		Type:               apiv1alpha1.AcceptedCondition,
 		Status:             metav1.ConditionTrue,
@@ -280,7 +293,7 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 		}
 	}
 
-	cs.updateStatus(ctx, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
+	return cs.updateStatus(ctx, dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
 		status.ObservedGeneration = dnsEndpoint.Generation
 		meta.SetStatusCondition(&status.Conditions, condition)
 		if partial != nil {
@@ -293,11 +306,13 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 
 // updateStatus writes the mutated status only if it changed. A conflict means
 // the cached copy is stale: no retry, the next sync reads the fresh object.
-func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, mutate func(*apiv1alpha1.DNSEndpointStatus)) {
+// It fails when the API server prunes the conditions (CRD older than this
+// binary): else every sync rewrites every object.
+func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, mutate func(*apiv1alpha1.DNSEndpointStatus)) error {
 	status := dnsEndpoint.Status.DeepCopy()
 	mutate(status)
 	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, status) {
-		return
+		return nil
 	}
 
 	updated := dnsEndpoint.DeepCopy()
@@ -310,7 +325,12 @@ func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.
 	case err != nil:
 		log.Warnf("Could not update status of [%s/%s/%s]: %v",
 			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)
+	case meta.FindStatusCondition(updated.Status.Conditions, apiv1alpha1.AcceptedCondition) == nil:
+		return errors.New("the installed DNSEndpoint CRD has no status.conditions: " +
+			"apply config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml from the release of this binary")
 	}
+
+	return nil
 }
 
 // truncateConditionMessage fits the API server's 32768-character limit on

@@ -52,6 +52,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 		title           string
 		endpoints       []*endpoint.Endpoint
 		defaultTargets  bool
+		forceDefaults   bool
 		wantStatus      metav1.ConditionStatus
 		wantReason      string
 		wantMessagePart string
@@ -146,6 +147,36 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			wantMessagePart: "1 endpoint(s) accepted",
 		},
 		{
+			title: "CNAME without targets is reported without the --default-targets hint",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME},
+			},
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      apiv1alpha1.InvalidReason,
+			wantMessagePart: "spec.endpoints[0] (CNAME example.org): no targets: a CNAME record needs one target",
+		},
+		{
+			title: "CNAME without targets is reported even when --default-targets is set",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME},
+			},
+			defaultTargets:  true,
+			wantStatus:      metav1.ConditionFalse,
+			wantReason:      apiv1alpha1.InvalidReason,
+			wantMessagePart: "spec.endpoints[0] (CNAME example.org): no targets: a CNAME record needs one target",
+		},
+		{
+			title: "targets are not checked when --force-default-targets replaces them",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "example.org", Targets: endpoint.Targets{"foo.example.com"}, RecordType: endpoint.RecordTypeA},
+			},
+			defaultTargets:  true,
+			forceDefaults:   true,
+			wantStatus:      metav1.ConditionTrue,
+			wantReason:      apiv1alpha1.AcceptedReason,
+			wantMessagePart: "1 endpoint(s) accepted",
+		},
+		{
 			title:           "empty spec is accepted with zero endpoints",
 			endpoints:       nil,
 			wantStatus:      metav1.ConditionTrue,
@@ -163,6 +194,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil)
 			require.NoError(t, err)
 			cs.defaultTargets = ti.defaultTargets
+			cs.forceDefaultTargets = ti.forceDefaults
 
 			_, err = cs.Endpoints(t.Context())
 			require.NoError(t, err)
@@ -311,4 +343,36 @@ func TestTruncateConditionMessage(t *testing.T) {
 	multibyte := truncateConditionMessage(strings.Repeat("é", 40000))
 	assert.Equal(t, 32768, utf8.RuneCountInString(multibyte))
 	assert.True(t, utf8.ValidString(multibyte), "truncation must not split a rune")
+}
+
+// An outdated CRD prunes the conditions, so every sync would write every object
+// again: fail instead, until the CRD is applied.
+func TestCRDSourceFailsWhenCRDPrunesConditions(t *testing.T) {
+	obj := &apiv1alpha1.DNSEndpoint{
+		Name: testDNSEndpointName, Namespace: testDNSEndpointNamespace, Generation: 1,
+		Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{
+			{DNSName: "example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA},
+		}},
+	}
+	fakeCache := newFakeCRDCache(t, nil, obj)
+
+	pruning := interceptor.NewClient(fakeCache.Client.(client.WithWatch), interceptor.Funcs{
+		SubResourceUpdate: func(
+			ctx context.Context,
+			c client.Client,
+			subResource string,
+			o client.Object,
+			opts ...client.SubResourceUpdateOption) error {
+			if subResource == "status" {
+				o.(*apiv1alpha1.DNSEndpoint).Status.Conditions = nil
+			}
+			return c.Status().Update(ctx, o, opts...)
+		},
+	})
+
+	cs, err := newCrdSource(t.Context(), fakeCache, pruning, nil, nil, nil)
+	require.NoError(t, err)
+
+	_, err = cs.Endpoints(t.Context())
+	require.ErrorContains(t, err, "has no status.conditions")
 }
