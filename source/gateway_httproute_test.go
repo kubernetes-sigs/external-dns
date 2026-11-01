@@ -1123,6 +1123,41 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "IgnoreHostnameAnnotationWithAnnotationOnly",
+			config: &config.Config{
+				IgnoreHostnameAnnotation: true,
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotation-only-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "annotation.with-hostname.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("with-hostname.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: nil,
+			logExpectations: []string{
+				`"external-dns.kubernetes.io/gateway-hostname-source" is "annotation-only" on HTTPRoute default/annotation-only-route, but --ignore-hostname-annotation is set, so the route has no hostnames.`,
+			},
+		},
+		{
 			title: "FQDNTemplate",
 			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ", "", "", false),
