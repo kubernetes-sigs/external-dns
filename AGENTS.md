@@ -89,6 +89,61 @@ Full details in `docs/contributing/sources-and-providers.md` ("Error Handling").
 When you learn something non-obvious about a source or provider, update that
 guide.
 
+## Data Flow and Layering
+
+Reconcile pipeline (one `RunOnce()`):
+
+```text
+Source → source wrappers → Registry.AdjustEndpoints → Plan → Registry.ApplyChanges → Provider.ApplyChanges → DNS
+                                                       ↑
+                                       Registry.Records (current state)
+```
+
+Source wrappers live in `source/`: `multi`, `dedup`, `nat64`, `ptr`,
+`target-filter`, `post-processor` — see
+[source-wrappers.md](docs/contributing/source-wrappers.md).
+
+Three layering concerns, kept separate:
+
+- **Domain** (`endpoint/`) — pure functions on `Endpoint`. Validation,
+  normalization, labels. No I/O, no logging.
+- **Source** (`source/`) — produces `[]*endpoint.Endpoint`. Iterates spec,
+  calls domain ops, hands results to the writer. No K8s writes of its own.
+- **Writer** (`pkg/<kind>/status.go`) — formats and writes status conditions,
+  events and metrics. Owns the K8s client calls on that path.
+
+Rules of thumb: validation and normalization live on `endpoint.*`, not
+duplicated in sources; sources produce, they do not write; writers take
+orchestration output (counts, reasons), not raw objects.
+
+Signals the rule is being broken: a `validateX` helper inside a `source/`
+file, a source that calls the K8s API to patch status, a `switch RecordType`
+in a source doing per-type normalization.
+
+Full rules and examples in
+[`docs/contributing/sources-and-providers.md#data-flow-and-layering`](docs/contributing/sources-and-providers.md#data-flow-and-layering).
+
+## Refactoring
+
+No single metric is the goal — not cyclomatic complexity, function length,
+cognitive complexity, nesting depth, or parameter count. Overall complexity
+is: coupling, cohesion, signature width, hidden state, call-order, locality.
+A refactor that lowers one axis while raising any of the others is a loss.
+
+Watch for the shapes a metric-chase produces:
+
+- Helpers that take one argument and return three values.
+- Helpers that mutate a parameter and return a value.
+- Pure-looking helpers that write receiver state.
+- Pairs bound only by a "must match X" or "inverse of Y" comment.
+- One-line wrappers used from exactly one call site.
+- Chains of helpers that must run in a fixed order through caller-held maps.
+
+If any appear, leave the code inline or introduce a type that makes the
+shared state visible.
+
+Full rules in `docs/contributing/sources-and-providers.md`, "Refactoring".
+
 ## Commit and PR Titles
 
 PR titles must follow Conventional Commits: `type(scope): imperative summary`
@@ -110,6 +165,12 @@ Self-check the change against this guide before handing it back:
 - Comments explain *why*, not *what* — no prose mirroring an `if` condition.
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
+- Data flow: validation and normalization on `endpoint.*`, status writes
+  through a writer type — not duplicated in sources. See
+  [Data Flow and Layering](#data-flow-and-layering).
+- Refactors follow the rules in [Refactoring](#refactoring) — no helpers with
+  the signature or call-order smells listed there, and no reshape driven by a
+  single metric.
 - Ran `make go-lint` locally, and `go test -race ./<pkg>/...` for every package
   you touched (`make test` for cross-cutting changes). Both green.
 - PR title follows Conventional Commits.
