@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 package endpoint
 
 import (
@@ -25,8 +24,8 @@ import (
 )
 
 // resourceEP builds an endpoint with the given ResourceLabelKey label (unset when empty).
-func resourceEP(name, recordType, resource string, targets ...string) *Endpoint {
-	ep := NewEndpoint(name, recordType, targets...)
+func resourceEP(name, resource string, targets ...string) *Endpoint {
+	ep := NewEndpoint(name, RecordTypeA, targets...)
 	if resource != "" {
 		ep.Labels[ResourceLabelKey] = resource
 	}
@@ -43,9 +42,9 @@ func resourceEPNames(eps []*Endpoint) []string {
 
 func TestOrderedMap_KeepsFirstSeenKeyOrder(t *testing.T) {
 	om := NewOrderedMap[string](3)
-	b1, a1, b2 := resourceEP("b1.example.com", RecordTypeA, "", "1.1.1.1"),
-		resourceEP("a1.example.com", RecordTypeA, "", "1.1.1.1"),
-		resourceEP("b2.example.com", RecordTypeA, "", "1.1.1.1")
+	b1, a1, b2 := resourceEP("b1.example.com", "", "1.1.1.1"),
+		resourceEP("a1.example.com", "", "1.1.1.1"),
+		resourceEP("b2.example.com", "", "1.1.1.1")
 	om.Append("b", b1)
 	om.Append("a", a1)
 	om.Append("b", b2)
@@ -64,10 +63,10 @@ func TestOrderedMap_KeepsFirstSeenKeyOrder(t *testing.T) {
 
 func TestSortByResource(t *testing.T) {
 	eps := []*Endpoint{
-		resourceEP("x1.example.com", RecordTypeA, "b", "1.1.1.1"),
-		resourceEP("x2.example.com", RecordTypeA, "a", "1.1.1.1"),
-		resourceEP("x3.example.com", RecordTypeA, "b", "1.1.1.1"),
-		resourceEP("x4.example.com", RecordTypeA, "", "1.1.1.1"),
+		resourceEP("x1.example.com", "b", "1.1.1.1"),
+		resourceEP("x2.example.com", "a", "1.1.1.1"),
+		resourceEP("x3.example.com", "b", "1.1.1.1"),
+		resourceEP("x4.example.com", "", "1.1.1.1"),
 	}
 
 	SortByResource(eps)
@@ -85,28 +84,28 @@ func TestMergeEndpoints_SortedByResource(t *testing.T) {
 		{
 			name: "records are ordered by resource label",
 			input: []*Endpoint{
-				resourceEP("z.example.com", RecordTypeA, "svc/z", "1.1.1.1"),
-				resourceEP("a.example.com", RecordTypeA, "svc/a", "1.1.1.1"),
-				resourceEP("m.example.com", RecordTypeA, "svc/m", "1.1.1.1"),
+				resourceEP("z.example.com", "svc/z", "1.1.1.1"),
+				resourceEP("a.example.com", "svc/a", "1.1.1.1"),
+				resourceEP("m.example.com", "svc/m", "1.1.1.1"),
 			},
 			expected: []string{"a.example.com", "m.example.com", "z.example.com"},
 		},
 		{
 			name: "unlabeled records sort first and keep first-seen order",
 			input: []*Endpoint{
-				resourceEP("c.example.com", RecordTypeA, "", "1.1.1.1"),
-				resourceEP("b.example.com", RecordTypeA, "svc/a", "1.1.1.1"),
-				resourceEP("a.example.com", RecordTypeA, "", "1.1.1.1"),
+				resourceEP("c.example.com", "", "1.1.1.1"),
+				resourceEP("b.example.com", "svc/a", "1.1.1.1"),
+				resourceEP("a.example.com", "", "1.1.1.1"),
 			},
 			expected: []string{"c.example.com", "a.example.com", "b.example.com"},
 		},
 		{
 			name: "merged record is positioned by its lowest resource",
 			input: []*Endpoint{
-				resourceEP("x.example.com", RecordTypeA, "svc/m", "1.1.1.1"),
-				resourceEP("y.example.com", RecordTypeA, "svc/c", "1.1.1.1"),
-				resourceEP("x.example.com", RecordTypeA, "svc/b", "2.2.2.2"),
-				resourceEP("w.example.com", RecordTypeA, "svc/a", "1.1.1.1"),
+				resourceEP("x.example.com", "svc/m", "1.1.1.1"),
+				resourceEP("y.example.com", "svc/c", "1.1.1.1"),
+				resourceEP("x.example.com", "svc/b", "2.2.2.2"),
+				resourceEP("w.example.com", "svc/a", "1.1.1.1"),
 			},
 			expected: []string{"w.example.com", "x.example.com", "y.example.com"},
 		},
@@ -125,7 +124,7 @@ func TestMergeEndpoints_BaseIsLowestResource(t *testing.T) {
 		targets := map[string]string{"svc/a": "1.1.1.1", "svc/b": "2.2.2.2"}
 		in := make([]*Endpoint, 0, len(order))
 		for _, res := range order {
-			in = append(in, resourceEP("a.example.com", RecordTypeA, res, targets[res]).WithProviderSpecific("marker", res))
+			in = append(in, resourceEP("a.example.com", res, targets[res]).WithProviderSpecific("marker", res))
 		}
 
 		result := MergeEndpoints(in)
