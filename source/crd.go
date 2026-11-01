@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/retry"
 	crcache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -138,6 +137,7 @@ func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool
 		accepted   []*endpoint.Endpoint
 		rejections []string
 	)
+	resourceLabel := fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name)
 
 	for idx, ep := range dnsEndpoint.Spec.Endpoints {
 		if ep == nil {
@@ -150,6 +150,13 @@ func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool
 			continue
 		}
 
+		if ep.RecordType == endpoint.RecordTypeMX {
+			// normalized, else it diffs against the provider's rendering
+			for i, target := range ep.Targets {
+				ep.Targets[i] = endpoint.NormalizeMXTarget(target)
+			}
+		}
+
 		if reason := rejectionReason(ep, defaultTargets); reason != "" {
 			log.Warnf("Endpoint %s/%s with DNSName %s rejected: %s",
 				dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, reason)
@@ -157,7 +164,7 @@ func validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint, defaultTargets bool
 			continue
 		}
 
-		ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("crd/%s/%s", dnsEndpoint.Namespace, dnsEndpoint.Name))
+		ep.WithLabel(endpoint.ResourceLabelKey, resourceLabel)
 		accepted = append(accepted, ep)
 	}
 
@@ -186,7 +193,7 @@ func rejectionReason(ep *endpoint.Endpoint, defaultTargets bool) string {
 // illegalTargetReason explains the first target whose trailing dot is wrong for
 // the record type, or returns "".
 func illegalTargetReason(ep *endpoint.Endpoint) string {
-	for key, target := range ep.Targets {
+	for _, target := range ep.Targets {
 		// CNAME/DNAME targets are domain names where a trailing dot is
 		// valid (RFC 1035 §5.1 absolute FQDN), so accept both dotted and
 		// bare forms.
@@ -194,12 +201,8 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 			continue
 		}
 		switch ep.RecordType {
-		case endpoint.RecordTypeTXT:
-			continue // no format constraint on targets
-		case endpoint.RecordTypeMX:
-			// normalized, else it diffs against the provider's rendering
-			ep.Targets[key] = endpoint.NormalizeMXTarget(target)
-			continue
+		case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
+			continue // TXT is free-form; rfcViolationReason checks MX
 		case endpoint.RecordTypeSRV:
 			// RFC 2782 requires the dot; rfcViolationReason checks it (#6357).
 			continue
@@ -288,28 +291,23 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 	})
 }
 
-// updateStatus writes the mutated status only if it changed. The cached copy may
-// be stale; its resourceVersion then gets it rejected, and only then do we re-read.
+// updateStatus writes the mutated status only if it changed. A conflict means
+// the cached copy is stale: no retry, the next sync reads the fresh object.
 func (cs *crdSource) updateStatus(ctx context.Context, dnsEndpoint *apiv1alpha1.DNSEndpoint, mutate func(*apiv1alpha1.DNSEndpointStatus)) {
-	updated := dnsEndpoint.DeepCopy()
-	mutate(&updated.Status)
-	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, &updated.Status) {
+	status := dnsEndpoint.Status.DeepCopy()
+	mutate(status)
+	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, status) {
 		return
 	}
 
+	updated := dnsEndpoint.DeepCopy()
+	updated.Status = *status
 	err := cs.crWriter.Status().Update(ctx, updated)
-	if apierrors.IsConflict(err) {
-		key := client.ObjectKeyFromObject(dnsEndpoint)
-		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			latest := &apiv1alpha1.DNSEndpoint{}
-			if err := cs.crWriter.Get(ctx, key, latest); err != nil {
-				return err
-			}
-			mutate(&latest.Status)
-			return cs.crWriter.Status().Update(ctx, latest)
-		})
-	}
-	if err != nil {
+	switch {
+	case apierrors.IsConflict(err):
+		log.Debugf("Status of [%s/%s/%s] changed since last sync, will retry on next sync",
+			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name)
+	case err != nil:
 		log.Warnf("Could not update status of [%s/%s/%s]: %v",
 			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)
 	}
