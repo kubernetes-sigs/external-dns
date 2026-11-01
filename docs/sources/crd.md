@@ -160,7 +160,8 @@ writes, where a rejected write aborts the sync instead of teaching anyone anythi
 rule should not reject what external-dns can legitimately build.
 
 The rest is checked when external-dns reads the object, before anything is planned. A
-rejected endpoint is dropped from the plan and reported in the external-dns log:
+rejected endpoint is left out of the plan, while the other endpoints of the same object
+are still published. The rejection is reported in the object's [status conditions](#status):
 
 * `A`/`AAAA` targets must be addresses of the matching family, unless the endpoint sets
   the `alias` provider-specific property.
@@ -169,8 +170,26 @@ rejected endpoint is dropped from the plan and reported in the external-dns log:
 * `PTR` records need at least one non-empty target.
 * Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
   where both forms are valid (RFC 1035 §5.1).
+* `targets` may be empty only when `--default-targets` is configured.
 
-Leave `targets` empty only when `--default-targets` is configured.
+### Status
+
+external-dns reports on each `DNSEndpoint` whether it understood the spec:
+
+```console
+$ kubectl get dnsendpoint
+NAME               ACCEPTED   AGE
+examplednsrecord   True       2m
+```
+
+| Condition          | Status    | Reason     | Meaning                                                                   |
+|--------------------|-----------|------------|---------------------------------------------------------------------------|
+| `Accepted`         | `Unknown` | `Pending`  | No external-dns instance has read the object yet.                         |
+| `Accepted`         | `True`    | `Accepted` | At least one endpoint was understood and is planned.                      |
+| `Accepted`         | `False`   | `Invalid`  | Every endpoint was refused; the message names each index and the fix.     |
+| `PartiallyInvalid` | `True`    | `Invalid`  | Some endpoints were dropped and the others are planned. Absent otherwise. |
+
+`Accepted` is set before any provider call: it does not tell if the records exist.
 
 ### Using CRD source to manage DNS records in different DNS providers
 

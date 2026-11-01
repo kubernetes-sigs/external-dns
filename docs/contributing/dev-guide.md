@@ -123,7 +123,9 @@ This runs [`scripts/generate-crd.sh`](../../scripts/generate-crd.sh) which:
 
 1. Generates `DeepCopy` methods for types in `endpoint/` and `apis/`
 2. Generates the CRD manifest into `config/crd/standard/`
-3. Copies the CRD (with filtered annotations) into `charts/external-dns/crds/`
+
+`make crd` does not touch `charts/external-dns/crds/`. After the release that supports
+the CRD change, the chart PR runs `make crd-chart` to copy the CRDs there.
 
 The `controller-gen.kubebuilder.io/version` annotation in the generated YAML reflects the version of `controller-gen` from `go.tool.mod` at generation time and is updated automatically.
 

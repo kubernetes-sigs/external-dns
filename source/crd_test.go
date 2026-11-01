@@ -140,6 +140,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		objectNamespace    string
 		endpoints          []*endpoint.Endpoint
 		expectEndpoints    bool
+		defaultTargets     bool
 		annotationSelector labels.Selector
 		labelSelector      labels.Selector
 		annotations        map[string]string
@@ -184,7 +185,21 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
+			defaultTargets:  true,
 			expectEndpoints: true,
+		},
+		{
+			title:           "crd with no targets is rejected without default-targets",
+			namespaceFilter: []string{"foo"},
+			objectNamespace: "foo",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "no-targets.example.org",
+					Targets:    endpoint.Targets{},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
 		},
 		{
 			title:           "valid crd gvk with single endpoint",
@@ -307,12 +322,27 @@ func testCRDSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "_svc._tcp.example.org",
-					Targets:    endpoint.Targets{"0 0 80 abc.example.org", "0 0 80 def.example.org"},
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org.", "0 0 80 def.example.org."},
 					RecordType: endpoint.RecordTypeSRV,
 					RecordTTL:  180,
 				},
 			},
 			expectEndpoints: true,
+		},
+		{
+			title:           "SRV target with a relative host is rejected",
+			namespaceFilter: []string{"foo"},
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "_svc._tcp.example.org",
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org"},
+					RecordType: endpoint.RecordTypeSRV,
+					RecordTTL:  180,
+				},
+			},
 		},
 		{
 			title:           "SRV target with trailing dot (RFC 2782 absolute FQDN host) is valid (#6357)",
@@ -483,7 +513,23 @@ func testCRDSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "MX Record allowing trailing dot in target",
+			title:           "MX Record without trailing dot in target",
+			namespaceFilter: []string{"foo"},
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"10 example.com"},
+					RecordType: endpoint.RecordTypeMX,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
+			title:           "MX Record without a preference is rejected",
 			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
 			labels:          map[string]string{"test": "that"},
@@ -496,23 +542,6 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			expectEndpoints: true,
-		},
-		{
-			title:           "MX Record without trailing dot in target",
-			namespaceFilter: []string{"foo"},
-			objectNamespace: "foo",
-			labels:          map[string]string{"test": "that"},
-			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"example.com"},
-					RecordType: endpoint.RecordTypeMX,
-					RecordTTL:  180,
-				},
-			},
-			expectEndpoints: true,
 		},
 		{
 			title:           "provider-specific properties are passed through from DNSEndpoint spec",
@@ -552,6 +581,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			fakeCache := newFakeCRDCache(t, nil, obj)
 			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, ti.namespaceFilter, ti.labelSelector, ti.annotationSelector)
 			require.NoError(t, err)
+			cs.defaultTargets = ti.defaultTargets
 
 			receivedEndpoints, err := cs.Endpoints(t.Context())
 			require.NoError(t, err)
@@ -588,7 +618,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			wantWarning: `illegal target "1.2.3.4." for A record — use "1.2.3.4" not "1.2.3.4."`,
+			wantWarning: `target "1.2.3.4." must not end with a dot for a A record — use "1.2.3.4"`,
 		},
 		{
 			title: "NAPTR record without trailing dot warns with fix suggestion",
@@ -600,10 +630,10 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			wantWarning: `illegal target "_sip._udp.example.org" for NAPTR record — use "_sip._udp.example.org." not "_sip._udp.example.org"`,
+			wantWarning: `target "_sip._udp.example.org" must be absolute for a NAPTR record — use "_sip._udp.example.org."`,
 		},
 		{
-			title: "CNAME with empty targets produces no warning",
+			title: "CNAME with empty targets is rejected under --default-targets",
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
@@ -612,7 +642,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 					RecordTTL:  180,
 				},
 			},
-			wantWarning: ``,
+			wantWarning: `no targets: a CNAME record needs one target`,
 		},
 		{
 			title: "SRV target with trailing dot produces no warning (#6357)",
@@ -640,6 +670,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			fakeCache := newFakeCRDCache(t, nil, obj)
 			cs, err := newCrdSource(t.Context(), fakeCache, fakeCache.Client, nil, nil, nil)
 			require.NoError(t, err)
+			cs.defaultTargets = true
 
 			_, err = cs.Endpoints(t.Context())
 			require.NoError(t, err)
@@ -665,7 +696,6 @@ func TestCRDSourceNormalizesMXTargets(t *testing.T) {
 		{"whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
 		{"leading zero dropped", "010 mail.example.com", "10 mail.example.com"},
 		{"null MX preserved", "0 .", "0 ."},
-		{"unparseable left alone", "example.com.", "example.com."},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			obj := &apiv1alpha1.DNSEndpoint{
@@ -732,7 +762,7 @@ func TestCRDSource_Endpoints_ObservedGenerationUpdateFailure(t *testing.T) {
 	require.NoError(t, err, "status update failure must not propagate as an error")
 	require.Len(t, endpoints, 1, "endpoints must still be returned despite the update failure")
 
-	logtest.TestHelperLogContainsWithLogLevel("Could not update ObservedGeneration", log.WarnLevel, hook, t)
+	logtest.TestHelperLogContainsWithLogLevel("Could not update status", log.WarnLevel, hook, t)
 }
 
 func TestCRDSource_AddEventHandler(t *testing.T) {
@@ -874,6 +904,25 @@ func helperCreateWatcherWithInformer(t *testing.T) (*cachetesting.FakeController
 	return watcher, cs
 }
 
+// fixtureTargetForType returns a target the crd source accepts for recordType.
+// Targets are validated per record type, so one IPv4 literal will not do.
+func fixtureTargetForType(recordType string, idx int) string {
+	switch recordType {
+	case endpoint.RecordTypeAAAA:
+		return fmt.Sprintf("2001:db8::%x", idx)
+	case endpoint.RecordTypeMX:
+		return fmt.Sprintf("10 mx-%d.example.com", idx)
+	case endpoint.RecordTypeSRV:
+		return fmt.Sprintf("0 0 80 srv-%d.example.com.", idx)
+	case endpoint.RecordTypeNAPTR:
+		return fmt.Sprintf(`100 10 "S" "SIP+D2U" "!^.*$!sip:info@example.org!" _sip._udp.naptr-%d.example.com.`, idx)
+	case endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeTXT:
+		return fmt.Sprintf("target-%d.example.com", idx)
+	default:
+		return fmt.Sprintf("192.0.2.%d", idx)
+	}
+}
+
 // generateTestFixtureDNSEndpointsByType generates DNSEndpoint CRDs according to the provided counts per RecordType.
 func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[string]int) apiv1alpha1.DNSEndpointList {
 	var result []apiv1alpha1.DNSEndpoint
@@ -889,7 +938,7 @@ func generateTestFixtureDNSEndpointsByType(namespace string, typeCounts map[stri
 						{
 							DNSName:    strings.ToLower(fmt.Sprintf("%s-%d.example.com", rt, idx)),
 							RecordType: rt,
-							Targets:    endpoint.Targets{fmt.Sprintf("192.0.2.%d", idx)},
+							Targets:    endpoint.Targets{fixtureTargetForType(rt, idx)},
 							RecordTTL:  300,
 						},
 					},
