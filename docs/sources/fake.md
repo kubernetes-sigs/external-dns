@@ -85,11 +85,11 @@ To test all record types at once, list every type explicitly. The fake source al
 
 ## Kubernetes events
 
-When `--emit-events` is configured, the fake source emits Kubernetes events for every DNS change, referencing a synthetic `Pod` object in the `default` namespace. This lets you observe the event stream during testing without real workloads:
+When `--events-emit` is configured, the fake source emits Kubernetes events for every DNS change, referencing a synthetic `Pod` object in the `default` namespace. This lets you observe the event stream during testing without real workloads:
 
 ```console
 external-dns --source=fake --provider=webhook --webhook-provider-url=http://localhost:8888 \
-  --emit-events=RecordReady
+  --events-emit=RecordReady
 ```
 
 ```console
@@ -126,4 +126,4 @@ This produces `3 × 10 = 30` endpoints in total, with each `A` and `AAAA` record
 ## Limitations
 
 - Endpoints are regenerated with random names on every reconciliation; the fake source does not model resource updates or deletions.
-- No Kubernetes cluster is required, but `--emit-events` will fail to post events when kubernetes API server is unreachable.
+- No Kubernetes cluster is required, but `--events-emit` will fail to post events when kubernetes API server is unreachable.
