@@ -97,6 +97,9 @@ spec:
             - --log-level={{ .Values.logLevel }}
             - --log-format={{ .Values.logFormat }}
             - --interval={{ .Values.interval }}
+            {{- range .Values.fqdnTemplates }}
+            - --fqdn-template={{ . }}
+            {{- end }}
             {{- if .Values.triggerLoopOnEvent }}
             - --events
             {{- end }}
