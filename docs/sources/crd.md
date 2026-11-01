@@ -171,6 +171,11 @@ rejected endpoint is dropped from the plan and reported in the external-dns log:
   where both forms are valid (RFC 1035 §5.1).
 
 Leave `targets` empty only when `--default-targets` is configured.
+Each endpoint takes the default targets that match its `recordType`: IPv4 addresses for `A`, IPv6 addresses for `AAAA`, hostnames for `CNAME`.
+For example, with `--default-targets=192.0.2.1 --default-targets=lb.example.net`, an `A` endpoint gets `192.0.2.1` and a `CNAME` endpoint gets `lb.example.net`.
+If no default target matches, ExternalDNS logs a warning and skips the endpoint.
+`--force-default-targets` follows the same rule, but keeps the source targets when no default target matches.
+Other record types are never filled.
 
 ### Using CRD source to manage DNS records in different DNS providers
 
