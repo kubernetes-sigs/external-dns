@@ -182,13 +182,6 @@ Source  ──▶  source wrappers  ──▶  Registry.AdjustEndpoints  ──�
 Registry.Records (current DNS state) ─────────────────────────┘
 ```
 
-Status flows out of band, from the Source back to the Kubernetes object it
-read:
-
-```text
-Source (validation) ──▶ StatusWriter ──▶ source object (Accepted, PartiallyInvalid, ...)
-```
-
 Each stage has one job:
 
 | Stage                      | Package     | Does                                                                                                 |
