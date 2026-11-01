@@ -45,6 +45,8 @@ linters:
           deny:
             - pkg: k8s.io/utils/set
               desc: use sigs.k8s.io/external-dns/internal/sets instead
+            - pkg: github.com/cenkalti/backoff
+              desc: use k8s.io/apimachinery/pkg/util/wait instead
     exhaustive:
       default-signifies-exhaustive: false
     misspell:
