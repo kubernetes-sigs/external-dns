@@ -619,6 +619,9 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 // rrTargetFor renders an endpoint target for the RR text that is handed to
 // dns.NewRR. Handles validation and canonicalisation.
 func rrTargetFor(recordType, target string) (string, error) {
+	if recordType == endpoint.RecordTypeTXT {
+		return quoteTXT(target), nil
+	}
 	if recordType != endpoint.RecordTypeTLSA {
 		return target, nil
 	}
@@ -629,6 +632,18 @@ func rrTargetFor(recordType, target string) (string, error) {
 	}
 
 	return tlsa.String(), nil
+}
+
+var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
+// quoteTXT renders a TXT target as one quoted character-string: unquoted,
+// spaces would split it into several strings and a ';' would start a comment.
+// A target that is already quoted may hold several strings, so it is kept.
+func quoteTXT(target string) string {
+	if len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`) {
+		return target
+	}
+	return `"` + txtEscaper.Replace(target) + `"`
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given

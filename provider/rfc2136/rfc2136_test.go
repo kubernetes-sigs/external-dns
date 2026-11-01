@@ -746,6 +746,42 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	assert.Contains(t, stub.updateMsgs[1].String(), "v2.foobar.com")
 }
 
+// TXT targets reach dns.NewRR as zone file text, where spaces split an
+// unquoted value into several strings and a ';' starts a comment.
+func TestRfc2136ApplyChangesTXTTargets(t *testing.T) {
+	tests := []struct {
+		name   string
+		target string
+		want   []string
+	}{
+		{name: "spaces", target: "v=spf1 ip4:192.0.2.1 -all", want: []string{"v=spf1 ip4:192.0.2.1 -all"}},
+		{name: "semicolon", target: "v=DMARC1; p=none", want: []string{"v=DMARC1; p=none"}},
+		{name: "already quoted", target: `"v=spf1 ip4:192.0.2.1 -all"`, want: []string{"v=spf1 ip4:192.0.2.1 -all"}},
+		{name: "several quoted strings", target: `"part1" "part2"`, want: []string{"part1", "part2"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stub := newStub()
+			provider, err := createRfc2136StubProvider(stub)
+			require.NoError(t, err)
+
+			ep := &endpoint.Endpoint{DNSName: "v1.foo.com", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{tt.target}}
+			err = provider.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{ep}, Delete: []*endpoint.Endpoint{ep}})
+			require.NoError(t, err)
+
+			require.Len(t, stub.createMsgs, 1)
+			require.Len(t, stub.updateMsgs, 1)
+			for _, msg := range []*dns.Msg{stub.createMsgs[0], stub.updateMsgs[0]} {
+				require.Len(t, msg.Ns, 1)
+				txt, ok := msg.Ns[0].(*dns.TXT)
+				require.True(t, ok, "expected a TXT record, got %T", msg.Ns[0])
+				assert.Equal(t, tt.want, txt.Txt)
+			}
+		})
+	}
+}
+
 // These tests all use the foo.com and foobar.com zones with no filters
 // createMsgs and updateMsgs need sorted when are used
 func TestRfc2136ApplyChangesWithZones(t *testing.T) {
