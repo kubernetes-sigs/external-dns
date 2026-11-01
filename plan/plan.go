@@ -308,7 +308,8 @@ func (p *Plan) calculatePlanTableRowChanges(t planTable, key planKey, row *planT
 func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *endpoint.Endpoint, candidates []*endpoint.Endpoint, inSync *[]*endpoint.Endpoint) {
 	update := t.resolver.ResolveUpdate(current, candidates)
 
-	if p.needsUpdate(current, update) {
+	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
+		p.providerSpecificChanged(update, current) || p.isOldOwnerIDSetAndDifferent(current) {
 		inheritOwner(current, update)
 		changes.UpdateNew = append(changes.UpdateNew, update)
 		changes.UpdateOld = append(changes.UpdateOld, current)
@@ -317,41 +318,6 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 	if p.OwnerID == "" || current.IsOwnedBy(p.OwnerID) {
 		*inSync = append(*inSync, update)
 	}
-}
-
-func (p *Plan) needsUpdate(current, desired *endpoint.Endpoint) bool {
-	if shouldUpdateTTL(desired, current) {
-		return true
-	}
-
-	if targetChanged(desired, current) {
-		return true
-	}
-
-	if p.providerSpecificChanged(desired, current) {
-		return true
-	}
-
-	if p.isOldOwnerIDSetAndDifferent(current) {
-		return true
-	}
-
-	// NoopRegistry records lack resource labels, so ignore missing current labels to avoid perpetual updates.
-	// When both labels exist, detect changes to preserve correct delete attribution (#6766).
-	if resourceChanged(current, desired) {
-		return true
-	}
-
-	return false
-}
-
-func resourceChanged(current, desired *endpoint.Endpoint) bool {
-	cur, des := current.Labels[endpoint.ResourceLabelKey], desired.Labels[endpoint.ResourceLabelKey]
-
-	if cur == "" || des == "" {
-		return false
-	}
-	return cur != des
 }
 
 func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {
