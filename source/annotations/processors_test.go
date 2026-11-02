@@ -117,6 +117,13 @@ func TestTargetsFromTargetAnnotation(t *testing.T) {
 			},
 			expected: endpoint.Targets{"example.com", "example.org"},
 		},
+		{
+			name: "target annotation with trailing comma",
+			annotations: map[string]string{
+				TargetKey: "example.com,",
+			},
+			expected: endpoint.Targets{"example.com"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -277,6 +284,20 @@ func TestHostnamesFromAnnotations(t *testing.T) {
 			},
 			expected: []string{"example.com", "example.org"},
 		},
+		{
+			name: "empty hostname annotation",
+			annotations: map[string]string{
+				HostnameKey: "",
+			},
+			expected: []string{},
+		},
+		{
+			name: "hostname annotation with trailing comma",
+			annotations: map[string]string{
+				HostnameKey: "example.com,",
+			},
+			expected: []string{"example.com"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -296,7 +317,27 @@ func TestSplitHostnameAnnotation(t *testing.T) {
 		{
 			name:       "empty annotation",
 			annotation: "",
-			expected:   []string{""},
+			expected:   []string{},
+		},
+		{
+			name:       "whitespace-only annotation",
+			annotation: "  ",
+			expected:   []string{},
+		},
+		{
+			name:       "trailing comma",
+			annotation: "example.com,",
+			expected:   []string{"example.com"},
+		},
+		{
+			name:       "leading and repeated commas",
+			annotation: ",example.com,,example.org",
+			expected:   []string{"example.com", "example.org"},
+		},
+		{
+			name:       "commas only",
+			annotation: " , , ",
+			expected:   []string{},
 		},
 		{
 			name:       "single hostname",
@@ -354,6 +395,13 @@ func TestInternalHostnamesFromAnnotations(t *testing.T) {
 				InternalHostnameKey: " internal.example.com , internal.example.org ",
 			},
 			expected: []string{"internal.example.com", "internal.example.org"},
+		},
+		{
+			name: "internal hostname annotation with trailing comma",
+			annotations: map[string]string{
+				InternalHostnameKey: "internal.example.com,",
+			},
+			expected: []string{"internal.example.com"},
 		},
 	}
 

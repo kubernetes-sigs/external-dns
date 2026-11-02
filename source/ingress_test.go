@@ -1192,6 +1192,28 @@ func testIngressEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
+			title:           "Ingress with empty hostname annotation falls back to FQDN template",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						annotations.HostnameKey: "",
+					},
+					ips: []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "fake1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
 			title:                    "ignore hostname annotation",
 			targetNamespace:          "",
 			ignoreHostnameAnnotation: true,
