@@ -295,8 +295,7 @@ func (ep EndpointKey) String() string {
 //
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
-// The SRV, MX and NAPTR field grammar is therefore left to Endpoint.Validate,
-// which the dedup wrapper runs.
+// The SRV, MX and NAPTR field grammar is left to Endpoint.Validate, which the dedup wrapper runs.
 //
 // DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
 // pattern accepts the trailing dot of an absolute name; its rule enforces the real
@@ -691,8 +690,7 @@ func (e *Endpoint) RequestedRecordType() (string, bool) {
 	return e.GetProviderSpecificProperty(ProviderSpecificRecordType)
 }
 
-// Validate returns the first reason why the endpoint does not follow the
-// grammar of its record type, or nil.
+// Validate returns the first reason why the endpoint does not follow the grammar of its record type, or nil.
 func (e *Endpoint) Validate() error {
 	// Several providers index Targets[0] and would panic.
 	if len(e.Targets) == 0 {
