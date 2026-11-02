@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"maps"
 	"net/netip"
@@ -295,7 +296,7 @@ func (ep EndpointKey) String() string {
 //
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
-// The SRV, MX and NAPTR field grammar is left to Endpoint.Validate, which the dedup wrapper runs.
+// The SRV, MX and NAPTR field grammar is left to Endpoint.Validate, which the CRD source and the dedup wrapper run.
 //
 // DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
 // pattern accepts the trailing dot of an absolute name; its rule enforces the real
@@ -753,7 +754,7 @@ func NewMXRecord(target string) (*MXTarget, error) {
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid integer value in target: %s", target)
+		return nil, fmt.Errorf("invalid MX record target %q: preference %q is not an integer between 0 and 65535", target, parts[0])
 	}
 
 	return &MXTarget{
@@ -775,15 +776,15 @@ func NewSRVRecord(target string) (*SRVTarget, error) {
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV priority %q: %w", parts[0], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: priority %q is not an integer between 0 and 65535", target, parts[0])
 	}
 	weight, err := strconv.ParseUint(parts[1], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV weight %q: %w", parts[1], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: weight %q is not an integer between 0 and 65535", target, parts[1])
 	}
 	port, err := strconv.ParseUint(parts[2], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV port %q: %w", parts[2], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: port %q is not an integer between 0 and 65535", target, parts[2])
 	}
 
 	return &SRVTarget{
@@ -859,17 +860,14 @@ func (t Targets) validateSRVRecord() error {
 
 func (e *Endpoint) validatePTRRecord() error {
 	if !isReverseDNSName(strings.ToLower(e.DNSName)) {
-		return fmt.Errorf("PTR dnsName %q must be a reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
-	}
-	if len(e.Targets) == 0 {
-		return fmt.Errorf("PTR record %s needs at least one target", e.DNSName)
+		return errors.New("PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa")
 	}
 	for _, target := range e.Targets {
 		if strings.TrimSpace(target) == "" {
-			return fmt.Errorf("PTR target for %s must not be empty", e.DNSName)
+			return errors.New("PTR target must not be empty")
 		}
 		if _, err := netip.ParseAddr(target); err == nil {
-			return fmt.Errorf("PTR target %q for %s must be a hostname, not an IP address", target, e.DNSName)
+			return fmt.Errorf("PTR target %q must be a hostname, not an IP address", target)
 		}
 	}
 	return nil
