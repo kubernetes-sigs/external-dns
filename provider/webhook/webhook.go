@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
