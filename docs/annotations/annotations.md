@@ -84,7 +84,7 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 Specifies additional domains for the resource's DNS records.
 
 Multiple hostnames can be specified through a comma-separated list, e.g.
-`svc.mydomain1.com,svc.mydomain2.com`. Empty entries (`svc.mydomain1.com,`) are ignored, also for `internal-hostname`.
+`svc.mydomain1.com,svc.mydomain2.com`. Empty entries are ignored.
 
 For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
 
