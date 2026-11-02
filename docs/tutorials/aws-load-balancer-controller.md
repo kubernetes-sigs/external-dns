@@ -150,7 +150,7 @@ multiple aliases for the resulting ALB.
 
 To publish internet-facing Ingresses to a public hosted zone and internal ones to a
 private hosted zone, run two ExternalDNS instances. A single AWS Load Balancer Controller
-is enough: it can serve several IngressClasses, and an [IngressClassParams][11] sets the
+is enough: it can serve several IngressClasses, and an [IngressClassParams][ingressclassparams] sets the
 scheme for every Ingress of its class.
 
 ```yaml
@@ -200,7 +200,6 @@ args:
   - --source=ingress
   - --provider=aws
   - --policy=upsert-only
-  - --registry=txt
   - --txt-owner-id=external-dns-public
   - --ingress-class=alb-public
   - --aws-zone-type=public
@@ -212,26 +211,19 @@ args:
   - --source=ingress
   - --provider=aws
   - --policy=upsert-only
-  - --registry=txt
   - --txt-owner-id=external-dns-private
   - --ingress-class=alb-internal
   - --aws-zone-type=private
 ```
 
-Because the IngressClass decides both the load balancer scheme and the hosted zone, the
-two can't get out of sync.
+If you prefer to keep a single IngressClass, set `alb.ingress.kubernetes.io/scheme` on every Ingress and filter on it:
 
-If you prefer to keep a single IngressClass, filter on something else instead of `--ingress-class`:
+`--annotation-filter=alb.ingress.kubernetes.io/scheme=internet-facing` for the public instance and
+`--annotation-filter=alb.ingress.kubernetes.io/scheme=internal` for the private one.
+Ingresses without the annotation are not published.
+`--label-filter` works the same way with a label of your own, for example `dns-zone=public` and `dns-zone=private`.
 
-- `--annotation-filter` on the scheme annotation. The controller treats an Ingress without
-  `alb.ingress.kubernetes.io/scheme` as `internal` (its default, unless it runs with
-  `--default-load-balancer-scheme=internet-facing`), so use
-  `--annotation-filter=alb.ingress.kubernetes.io/scheme=internet-facing` for the public instance
-  and `--annotation-filter=alb.ingress.kubernetes.io/scheme!=internet-facing` for the private one.
-  Note that `--annotation-filter` applies to every configured source.
-- `--label-filter` with a label of your own, for example `--label-filter=dns-zone=private`.
-
-[11]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/#ingressclassparams
+[ingressclassparams]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/#ingressclassparams
 
 ## Dualstack Load Balancers
 
