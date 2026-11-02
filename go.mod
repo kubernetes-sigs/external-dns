@@ -12,17 +12,17 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aws/aws-sdk-go-v2 v1.47.5
-	github.com/aws/aws-sdk-go-v2/config v1.33.12
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.12
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.21.16
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.72.2
+	github.com/aws/aws-sdk-go-v2/config v1.33.13
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.13
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.21.17
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.72.3
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.6
-	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.7
+	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.49.8
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6
 	github.com/aws/smithy-go v1.28.7
 	github.com/bodgit/tsig v1.3.1
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/civo/civogo v0.7.5
+	github.com/civo/civogo v0.7.6
 	// pinned: v7.8.0 dropped the dns.RecordResponseUnion discriminator, losing MX priority and SRV data
 	// See https://github.com/cloudflare/cloudflare-go/issues/4300
 	github.com/cloudflare/cloudflare-go/v7 v7.7.0
@@ -37,12 +37,12 @@ require (
 	github.com/joeig/go-powerdns/v3 v3.23.0
 	github.com/maxatome/go-testdeep v1.16.0
 	github.com/miekg/dns v1.1.73
-	github.com/openshift/api v0.0.0-20261028163820-1f109e9eefc7
+	github.com/openshift/api v0.0.0-20261031042726-f677639a402f
 	github.com/openshift/client-go v0.0.0-20261027103500-48133ed95dad
 	github.com/oracle/oci-go-sdk/v65 v65.128.0
 	github.com/ovh/go-ovh v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/projectcontour/contour v1.33.7
+	github.com/projectcontour/contour v1.33.8
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
 	github.com/scaleway/scaleway-sdk-go v1.39.0
@@ -66,7 +66,7 @@ require (
 	k8s.io/client-go v0.37.2
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/controller-runtime v0.25.2
-	sigs.k8s.io/gateway-api v1.6.3
+	sigs.k8s.io/gateway-api v1.7.0
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -81,13 +81,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.8 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.8 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.46.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.46.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.23 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.12.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.39.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.12.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.39.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bodgit/gssapi v0.0.4 // indirect
