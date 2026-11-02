@@ -340,20 +340,24 @@ func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
-	t := new(dns.Transfer)
-
-	if r.shouldSignAXFR() {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
-	}
-
-	c, err := makeClient(r, nameserver)
+	client, err := makeClient(r, nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
-	conn, err := c.Dial(nameserver)
+	conn, err := client.Dial(nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
+	if r.shouldSignAXFR() {
+		provider := tsig.HMAC{r.tsigKeyName: r.tsigSecret}
+		requestMAC, err := signAndSendAXFRRequest(conn, m, provider)
+		if err != nil {
+			return nil, err
+		}
+		return readSignedAXFR(conn, m.Id, requestMAC, provider), nil
+	}
+
+	t := new(dns.Transfer)
 	t.Conn = conn
 	return t.In(m, nameserver)
 }
@@ -440,7 +444,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -473,7 +477,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 
@@ -509,7 +513,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -765,13 +769,13 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 
 func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 	for _, zone := range zoneNames {
-		if strings.HasSuffix(ep.DNSName, zone) {
-			return dns.Fqdn(zone)
+		if dns.IsSubDomain(dns.Fqdn(zone), dns.Fqdn(ep.DNSName)) {
+			return strings.ToLower(dns.Fqdn(zone))
 		}
 	}
 
 	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
-	return dns.Fqdn(".")
+	return "."
 }
 
 func makeClient(r *rfc2136Provider, nameserver string) (*dns.Client, error) {

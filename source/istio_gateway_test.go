@@ -38,6 +38,7 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
@@ -46,6 +47,53 @@ import (
 
 // This is a compile-time validation that gatewaySource is a Source.
 var _ Source = &gatewaySource{}
+
+func TestGatewayIngressAnnotationRespectsCustomPrefix(t *testing.T) {
+	// Do not run in parallel: the annotation prefix is process-global.
+	prefix := annotations.AnnotationKeyPrefix
+	t.Cleanup(func() { annotations.SetAnnotationPrefix(prefix) })
+	annotations.SetAnnotationPrefix("custom.io/")
+
+	fakeKubernetesClient := fake.NewClientset()
+	ingress := (fakeIngress{
+		name:      "ingress1",
+		namespace: "testing1",
+		ips:       []string{"8.8.8.8"},
+		hostnames: []string{"lb.com"},
+	}).Ingress()
+	_, err := fakeKubernetesClient.NetworkingV1().Ingresses(ingress.Namespace).Create(t.Context(), ingress, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	fakeIstioClient := istiofake.NewSimpleClientset()
+	gateway := (fakeGatewayConfig{
+		name:      "fake1",
+		namespace: "testing1",
+		dnsnames:  [][]string{{"example.org"}},
+		annotations: map[string]string{
+			"custom.io/ingress": "testing1/ingress1",
+		},
+	}).Config()
+	_, err = fakeIstioClient.NetworkingV1().Gateways(gateway.Namespace).Create(t.Context(), gateway, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewIstioGatewaySource(
+		t.Context(),
+		fakeKubernetesClient,
+		fakeIstioClient,
+		&config.Config{
+			Namespaces:     []string{"testing1"},
+			TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+		},
+	)
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
+		{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.com"}},
+	})
+}
 
 type GatewaySuite struct {
 	suite.Suite
@@ -103,7 +151,7 @@ func (suite *GatewaySuite) SetupTest() {
 		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 		},
 	)
@@ -207,7 +255,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -259,7 +307,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"},
@@ -320,7 +368,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "ingress1",
+					annotations.Ingress: "ingress1",
 				},
 				dnsnames: [][]string{
 					{""},
@@ -381,7 +429,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 			config: fakeGatewayConfig{
 				annotations: map[string]string{
-					IstioGatewayIngressSource: "istio-other2/ingress1",
+					annotations.Ingress: "istio-other2/ingress1",
 				},
 				dnsnames: [][]string{
 					{"foo.bar"}, // Kubernetes requires removal of trailing dot
@@ -635,7 +683,7 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"example.org"}},
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "testing2/ingress1",
+						annotations.Ingress: "testing2/ingress1",
 					},
 				},
 			},
@@ -1002,8 +1050,8 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "not-real/ingress1",
-						annotations.TargetKey:     "1.2.3.4",
+						annotations.Ingress:   "not-real/ingress1",
+						annotations.TargetKey: "1.2.3.4",
 					},
 					dnsnames: [][]string{{"example3.org"}},
 				},
@@ -1144,9 +1192,9 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress1",
-						annotations.HostnameKey:   "dns-through-hostname.com",
-						annotations.TargetKey:     "gateway-target.com",
+						annotations.Ingress:     "ingress1",
+						annotations.HostnameKey: "dns-through-hostname.com",
+						annotations.TargetKey:   "gateway-target.com",
 					},
 					dnsnames: [][]string{{"example.org"}},
 				},
@@ -1319,7 +1367,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "",
+						annotations.Ingress: "",
 					},
 					dnsnames: [][]string{},
 				},
@@ -1453,7 +1501,7 @@ func testGatewayEndpoints(t *testing.T) {
 					name:      "fake1",
 					namespace: "",
 					annotations: map[string]string{
-						IstioGatewayIngressSource: "ingress2",
+						annotations.Ingress: "ingress2",
 					},
 					dnsnames: [][]string{{"new.org"}},
 				},
@@ -1495,7 +1543,7 @@ func testGatewayEndpoints(t *testing.T) {
 				t.Context(),
 				fakeKubernetesClient,
 				fakeIstioClient,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{targetNamespace},
 					TemplateEngine:           templatetest.MustEngine(t, ti.fqdnTemplate, "", "", ti.combineFQDNAndAnnotation),
 					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
@@ -1606,7 +1654,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 				t.Context(),
 				fakeKubeClient,
 				fakeIstioClient,
-				&Config{},
+				&config.Config{},
 			)
 			require.NoError(t, err)
 			require.NotNil(t, src)
@@ -1622,7 +1670,7 @@ func TestGatewaySource_GWSelectorMatchServiceSelector(t *testing.T) {
 func TestTransformerInIstioGatewaySource(t *testing.T) {
 	newSource := func(t *testing.T, kClient *fake.Clientset, istioClient *istiofake.Clientset) *gatewaySource {
 		t.Helper()
-		src, err := NewIstioGatewaySource(t.Context(), kClient, istioClient, &Config{})
+		src, err := NewIstioGatewaySource(t.Context(), kClient, istioClient, &config.Config{})
 		require.NoError(t, err)
 		gs, ok := src.(*gatewaySource)
 		require.True(t, ok)
@@ -1765,7 +1813,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 				{
 					Hosts: []string{"example.org"},
 					Tls: &istionetworking.ServerTLSSettings{
-						ServerCertificate: IstioGatewayIngressSource,
+						ServerCertificate: annotations.Ingress,
 						Mode:              istionetworking.ServerTLSSettings_SIMPLE,
 					},
 				},
@@ -1873,7 +1921,7 @@ func TestSingleGatewayMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 		t.Context(),
 		fakeKubeClient,
 		fakeIstioClient,
-		&Config{},
+		&config.Config{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, src)
@@ -1910,7 +1958,7 @@ func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewaySer
 		t.Context(),
 		fakeKubernetesClient,
 		fakeIstioClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "{{.FQDN}}", "", "", false),
 		},
 	)
@@ -2029,7 +2077,7 @@ func TestIstioGatewaySourceMultipleNamespaces(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &Config{
+	src, err := NewIstioGatewaySource(t.Context(), kubeClient, istioClient, &config.Config{
 		Namespaces:  []string{"team-a", "team-b"},
 		LabelFilter: labels.Everything(),
 	})

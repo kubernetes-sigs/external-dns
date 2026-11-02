@@ -34,6 +34,7 @@ import (
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -42,11 +43,6 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 )
-
-// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
-// instead of a standard LoadBalancer service type
-// Using var instead of const because annotation keys can be customized
-var IstioGatewayIngressSource = annotations.Ingress
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
@@ -74,7 +70,7 @@ func NewIstioGatewaySource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
@@ -232,7 +228,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1.Gateway) (endp
 		return targets, nil
 	}
 
-	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	ingressStr, ok := gateway.Annotations[annotations.Ingress]
 	if ok && ingressStr != "" {
 		return sc.targetsFromIngress(ingressStr, gateway)
 	}

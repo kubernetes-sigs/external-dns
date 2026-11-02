@@ -55,6 +55,71 @@ type rfc2136Stub struct {
 	m                     *dns.Msg
 }
 
+func TestFindMsgZone(t *testing.T) {
+	tests := []struct {
+		name      string
+		dnsName   string
+		zoneNames []string
+		expected  string
+	}{
+		{
+			name:      "exact zone match",
+			dnsName:   "example.com",
+			zoneNames: []string{"example.com"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "exact zone match with trailing dot",
+			dnsName:   "example.com",
+			zoneNames: []string{"example.com."},
+			expected:  "example.com.",
+		},
+		{
+			name:      "exact zone match with different case",
+			dnsName:   "eXaMpLe.com",
+			zoneNames: []string{"ExAmPlE.com"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "subdomain of zone matches",
+			dnsName:   "foo.example.com",
+			zoneNames: []string{"example.com"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "subdomain of zone matches with different case",
+			dnsName:   "FOO.example.com",
+			zoneNames: []string{"example.COM"},
+			expected:  "example.com.",
+		},
+		{
+			name:      "domain sharing a suffix but not a dot boundary does not match",
+			dnsName:   "fooexample.com",
+			zoneNames: []string{"example.com"},
+			expected:  ".",
+		},
+		{
+			name:      "no configured zone matches falls back to root",
+			dnsName:   "foo.other.com",
+			zoneNames: []string{"example.com"},
+			expected:  ".",
+		},
+		{
+			name:      "most specific zone wins when zones are nested",
+			dnsName:   "foo.sub.example.com",
+			zoneNames: []string{"sub.example.com", "example.com"},
+			expected:  "sub.example.com.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ep := &endpoint.Endpoint{DNSName: tt.dnsName}
+			assert.Equal(t, tt.expected, findMsgZone(ep, tt.zoneNames))
+		})
+	}
+}
+
 func newStub() *rfc2136Stub {
 	return &rfc2136Stub{
 		output:                make([]*dns.Envelope, 0),
@@ -743,6 +808,23 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 
 	assert.Contains(t, updateMsgs[0], "v2.foo.com")
 	assert.Contains(t, updateMsgs[1], "v2.foobar.com")
+}
+
+func TestRfc2136ApplyChangesWithMixedCaseZone(t *testing.T) {
+	stub := newStub()
+	provider, err := createRfc2136StubProvider(stub, "EXAMPLE.COM")
+	require.NoError(t, err)
+
+	err = provider.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{{
+			DNSName:    "www.example.com",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    []string{"192.0.2.1"},
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, stub.createMsgs, 1)
+	assert.Equal(t, "example.com.", stub.createMsgs[0].Question[0].Name)
 }
 
 // These tests use the foo.com and foobar.com zones and with filters set to both zones

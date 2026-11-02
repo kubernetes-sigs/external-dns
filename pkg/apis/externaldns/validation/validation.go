@@ -153,6 +153,10 @@ func validateConfigForRfc2136(cfg *externaldns.Config) error {
 		if cfg.RFC2136KerberosPassword == "" || cfg.RFC2136KerberosUsername == "" || cfg.RFC2136KerberosRealm == "" {
 			return errors.New("--rfc2136-kerberos-realm, --rfc2136-kerberos-username, and --rfc2136-kerberos-password are required when specifying --rfc2136-gss-tsig option")
 		}
+		// bodgit/tsig only negotiates the TKEY over plain TCP; it rejects the tcp-tls transport.
+		if cfg.RFC2136UseTLS {
+			return errors.New("--rfc2136-gss-tsig does not support --rfc2136-use-tls: the GSS-TSIG key exchange runs over plain TCP")
+		}
 	}
 	if cfg.RFC2136BatchChangeSize < 1 {
 		return errors.New("batch size specified for rfc2136 cannot be less than 1")

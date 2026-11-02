@@ -24,12 +24,13 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given config.
-func NewGatewayTLSRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "TLSRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+// NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given cfg.
+func NewGatewayTLSRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "TLSRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTLSRouteInformer{factory.Gateway().V1().TLSRoutes()}
 	})
 }

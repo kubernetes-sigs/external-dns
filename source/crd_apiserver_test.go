@@ -32,6 +32,7 @@ import (
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 )
 
 // TestCRDSourceAnnotationFilterAgainstAPIServer runs NewCRDSource against a fake API
@@ -81,7 +82,7 @@ func TestCRDSourceAnnotationFilterAgainstAPIServer(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 			defer cancel()
 
-			source, err := NewCRDSource(ctx, restConfig, &Config{AnnotationFilter: selector})
+			source, err := NewCRDSource(ctx, restConfig, &config.Config{AnnotationFilter: selector})
 			require.NoError(t, err)
 
 			endpoints, err := source.Endpoints(ctx)

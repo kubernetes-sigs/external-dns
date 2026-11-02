@@ -106,6 +106,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | enableGatewayListenerSets | bool | `false` | if `true`, the Gateway API ListenerSet flag will be enabled. |
 | enabled | bool | `nil` | No effect - reserved for use in sub-charting. |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
+| eventsEmit | list | `[]` | _Kubernetes_ events to emit; valid values are `RecordReady`, `RecordDeleted` & `RecordError`. Setting this also grants the RBAC permission to create `events.k8s.io` events. |
 | excludeDomains | list | `[]` | Intentionally exclude domains from being managed. |
 | extraArgs | object | `{}` | Extra arguments to provide to _ExternalDNS_. An array or map can be used, with maps allowing for value overrides; maps also support slice values to use the same arg multiple times. |
 | extraContainers | list | `[]` | Extra containers to add to the `Deployment`. |

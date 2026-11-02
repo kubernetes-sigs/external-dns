@@ -133,9 +133,6 @@ func ValidateTTL(value string) error {
 // ValidateHostnames validates a comma-separated list of DNS names against what the sources actually accept, not Kubernetes' stricter object-name rules.
 func ValidateHostnames(value string) error {
 	for _, name := range annotations.SplitHostnameAnnotation(value) {
-		if name == "" {
-			continue
-		}
 		if err := validateDNSName(name); err != nil {
 			return err
 		}

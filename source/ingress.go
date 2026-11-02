@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/types"
 
@@ -76,7 +77,7 @@ type ingressSource struct {
 func NewIngressSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg *Config) (Source, error) {
+	cfg *config.Config) (Source, error) {
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
 	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != nil && !cfg.AnnotationFilter.Empty() {
