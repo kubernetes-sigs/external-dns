@@ -750,7 +750,7 @@ func (e *Endpoint) WithMinTTL(ttl int64) {
 func NewMXRecord(target string) (*MXTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+		return nil, fmt.Errorf("invalid MX record target %q: MX records must have a preference value and a host, e.g. '10 example.com'", target)
 	}
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
@@ -769,10 +769,10 @@ func NewMXRecord(target string) (*MXTarget, error) {
 func NewSRVRecord(target string) (*SRVTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 4 {
-		return nil, fmt.Errorf("invalid SRV record target: %s. SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
+		return nil, fmt.Errorf("invalid SRV record target %q: SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
 	}
 	if !strings.HasSuffix(parts[3], ".") {
-		return nil, fmt.Errorf("invalid SRV record target: %s. Target host does not end with a dot", target)
+		return nil, fmt.Errorf("invalid SRV record target %q: target host does not end with a dot", target)
 	}
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)

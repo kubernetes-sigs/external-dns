@@ -1594,7 +1594,7 @@ func TestValidate_ErrorMessage(t *testing.T) {
 		{
 			name:    "SRV relative host",
 			ep:      Endpoint{DNSName: "_sip._udp.example.com", RecordType: RecordTypeSRV, Targets: Targets{"10 5 5060 sip.example.com"}},
-			wantErr: "Target host does not end with a dot",
+			wantErr: "target host does not end with a dot",
 		},
 		{
 			name:    "NAPTR malformed",
