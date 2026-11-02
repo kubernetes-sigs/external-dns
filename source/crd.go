@@ -181,7 +181,7 @@ func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]
 // rejectionReason explains why ep cannot be planned, or returns "".
 //
 // It must cover what later stages drop with only a log line (MergeEndpoints,
-// CheckEndpoint), or Accepted would lie. Default targets apply in between.
+// Endpoint.Validate), or Accepted would lie. Default targets apply in between.
 func (cs *crdSource) rejectionReason(ep *endpoint.Endpoint) string {
 	if len(ep.Targets) == 0 {
 		switch {
@@ -238,10 +238,10 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 	return ""
 }
 
-// rfcViolationReason turns an Endpoint.CheckEndpoint failure into a message that
+// rfcViolationReason turns an Endpoint.Validate failure into a message that
 // names the grammar the record type expects. It returns "" when ep passes.
 func rfcViolationReason(ep *endpoint.Endpoint) string {
-	if ep.CheckEndpoint() {
+	if ep.Validate() == nil {
 		return ""
 	}
 

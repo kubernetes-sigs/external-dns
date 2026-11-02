@@ -295,8 +295,8 @@ func (ep EndpointKey) String() string {
 //
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
-// The SRV, MX and NAPTR field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord / ValidateNAPTRRecord, which the sources run when they read the object.
+// The SRV, MX and NAPTR field grammar is therefore left to Endpoint.Validate,
+// which the dedup wrapper runs.
 //
 // DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
 // pattern accepts the trailing dot of an absolute name; its rule enforces the real
@@ -691,37 +691,35 @@ func (e *Endpoint) RequestedRecordType() (string, bool) {
 	return e.GetProviderSpecificProperty(ProviderSpecificRecordType)
 }
 
-// TODO: rename to Validate
-// CheckEndpoint Check if endpoint is properly formatted according to RFC standards
-func (e *Endpoint) CheckEndpoint() bool {
+// Validate returns the first reason why the endpoint does not follow the
+// grammar of its record type, or nil.
+func (e *Endpoint) Validate() error {
 	// Several providers index Targets[0] and would panic.
 	if len(e.Targets) == 0 {
-		log.Debugf("Endpoint %s of type %s has no targets", e.DNSName, e.RecordType)
-		return false
+		return fmt.Errorf("%s record needs at least one target", e.RecordType)
 	}
 
 	if !e.supportsAlias() {
 		if _, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias); ok {
-			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
-			return false
+			return fmt.Errorf("%s record does not support the %q provider-specific property", e.RecordType, ProviderSpecificAlias)
 		}
 	}
 
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeA, RecordTypeAAAA:
 		if !e.isAlias() {
-			return e.Targets.ValidateIPRecord(recordType)
+			return e.Targets.validateIPRecord(recordType)
 		}
 	case RecordTypeMX:
-		return e.Targets.ValidateMXRecord()
+		return e.Targets.validateMXRecord()
 	case RecordTypeSRV:
-		return e.Targets.ValidateSRVRecord()
+		return e.Targets.validateSRVRecord()
 	case RecordTypeNAPTR:
-		return e.Targets.ValidateNAPTRRecord()
+		return e.Targets.validateNAPTRRecord()
 	case RecordTypePTR:
-		return e.ValidatePTRRecord()
+		return e.validatePTRRecord()
 	}
-	return true
+	return nil
 }
 
 // isAlias returns true if the endpoint has the alias provider-specific property set to true.
@@ -828,74 +826,55 @@ func (s *SRVTarget) GetHost() string {
 	return s.host
 }
 
-// ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
-func (t Targets) ValidateIPRecord(recordType string) bool {
+func (t Targets) validateIPRecord(recordType string) error {
 	for _, target := range t {
 		addr, err := netip.ParseAddr(target)
-		if err != nil {
-			log.Debugf("Invalid %s record target: %s is not a valid IP address", recordType, target)
-			return false
-		}
-		if recordType == RecordTypeA && addr.Is6() {
-			log.Debugf("Invalid A record target: %s is an IPv6 address", target)
-			return false
-		}
-		if recordType == RecordTypeAAAA && addr.Is4() {
-			log.Debugf("Invalid AAAA record target: %s is an IPv4 address", target)
-			return false
+		switch {
+		case err != nil:
+			return fmt.Errorf("target %q is not an IP address for record type %s; set the %q provider-specific property for a provider-native alias", target, recordType, ProviderSpecificAlias)
+		case recordType == RecordTypeA && addr.Is6():
+			return fmt.Errorf("target %q is an IPv6 address, use an AAAA record", target)
+		case recordType == RecordTypeAAAA && addr.Is4():
+			return fmt.Errorf("target %q is an IPv4 address, use an A record", target)
 		}
 	}
-	return true
+	return nil
 }
 
-// ValidateMXRecord reports whether all targets are valid MX record values (priority + host).
-func (t Targets) ValidateMXRecord() bool {
+func (t Targets) validateMXRecord() error {
 	for _, target := range t {
-		_, err := NewMXRecord(target)
-		if err != nil {
-			log.Debugf("Invalid MX record target: %s. %v", target, err)
-			return false
+		if _, err := NewMXRecord(target); err != nil {
+			return err
 		}
 	}
-
-	return true
+	return nil
 }
 
-// ValidateSRVRecord reports whether all targets are valid SRV record values (priority weight port host).
-func (t Targets) ValidateSRVRecord() bool {
+func (t Targets) validateSRVRecord() error {
 	for _, target := range t {
-		_, err := NewSRVRecord(target)
-		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. %v", target, err)
-			return false
+		if _, err := NewSRVRecord(target); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-// ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name
-// (ending in .in-addr.arpa or .ip6.arpa) and that targets are non-empty hostnames.
-func (e *Endpoint) ValidatePTRRecord() bool {
-	name := strings.ToLower(e.DNSName)
-	if !isReverseDNSName(name) {
-		log.Debugf("Invalid PTR record: DNSName %q must be a valid reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
-		return false
+func (e *Endpoint) validatePTRRecord() error {
+	if !isReverseDNSName(strings.ToLower(e.DNSName)) {
+		return fmt.Errorf("PTR dnsName %q must be a reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
 	}
 	if len(e.Targets) == 0 {
-		log.Debugf("Invalid PTR record: at least one target is required for %s", e.DNSName)
-		return false
+		return fmt.Errorf("PTR record %s needs at least one target", e.DNSName)
 	}
 	for _, target := range e.Targets {
 		if strings.TrimSpace(target) == "" {
-			log.Debugf("Invalid PTR record: target must not be empty for %s", e.DNSName)
-			return false
+			return fmt.Errorf("PTR target for %s must not be empty", e.DNSName)
 		}
 		if _, err := netip.ParseAddr(target); err == nil {
-			log.Debugf("Invalid PTR record: target %q for %s must be a hostname, not an IP address", target, e.DNSName)
-			return false
+			return fmt.Errorf("PTR target %q for %s must be a hostname, not an IP address", target, e.DNSName)
 		}
 	}
-	return true
+	return nil
 }
 
 // isReverseDNSName checks that name ends with .in-addr.arpa or .ip6.arpa
