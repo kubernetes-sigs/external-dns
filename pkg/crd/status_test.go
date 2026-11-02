@@ -134,7 +134,11 @@ func TestStatusWriterReportStatus(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			obj := &apiv1alpha1.DNSEndpoint{Namespace: testNamespace, Name: "test", Generation: 7}
+			// The spec was edited after the source validated generation 6.
+			obj := &apiv1alpha1.DNSEndpoint{
+				Namespace: testNamespace, Name: "test", Generation: 7,
+				Status: apiv1alpha1.DNSEndpointStatus{ObservedGeneration: 6},
+			}
 			w := newStatusWriter(t, interceptor.Funcs{}, obj)
 			w.dryRun = ti.dryRun
 
@@ -145,7 +149,7 @@ func TestStatusWriterReportStatus(t *testing.T) {
 			require.NotNil(t, cond, "Ready condition must be set")
 			assert.Equal(t, ti.wantStatus, cond.Status)
 			assert.Equal(t, ti.wantReason, cond.Reason)
-			assert.Equal(t, int64(7), cond.ObservedGeneration)
+			assert.Equal(t, int64(6), cond.ObservedGeneration)
 			assert.Contains(t, cond.Message, ti.wantMessagePart)
 		})
 	}

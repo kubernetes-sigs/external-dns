@@ -73,7 +73,8 @@ func (w *StatusWriter) ReportStatus(ctx context.Context, objects []plan.PlannedO
 		}
 
 		condition := readyCondition(obj.Endpoints, err, w.dryRun)
-		condition.ObservedGeneration = dnsEndpoint.Generation
+		// The plan was built from the spec the crd source last validated, not from any later edit.
+		condition.ObservedGeneration = dnsEndpoint.Status.ObservedGeneration
 
 		// The crd source returns the same error on its next read and stops
 		// the controller there.
