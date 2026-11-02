@@ -2610,9 +2610,10 @@ func TestOwnerIDMigration_IdenticalDataRecord(t *testing.T) {
 	require.Len(t, current, 1, "Records should return the one A record")
 
 	// The desired state is identical to current (same name, same target) —
-	// this is the exact scenario from issue #6671.
+	// this is the exact scenario from issue #6671. Sources never set an owner
+	// label on desired endpoints, so leave it empty to match the real flow.
 	desired := []*endpoint.Endpoint{
-		newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "new-owner"),
+		newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ""),
 	}
 
 	managedRecords := []string{endpoint.RecordTypeA}
@@ -2628,6 +2629,7 @@ func TestOwnerIDMigration_IdenticalDataRecord(t *testing.T) {
 
 	// The plan must emit an update even though the data record is identical.
 	require.NotEmpty(t, pln.Changes.UpdateNew, "plan must emit an update to migrate the TXT owner")
+	require.True(t, pln.Changes.HasChanges(), "controller only applies changes when HasChanges() is true")
 
 	require.NoError(t, newOwnerRegistry.ApplyChanges(ctx, pln.Changes))
 
