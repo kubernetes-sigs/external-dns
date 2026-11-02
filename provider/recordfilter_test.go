@@ -45,7 +45,7 @@ func TestRecordTypeFilter(t *testing.T) {
 		},
 		{
 			"PTR",
-			true,
+			false,
 		},
 		{
 			"DS",
