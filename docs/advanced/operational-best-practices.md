@@ -325,6 +325,9 @@ kubectl get events --field-selector reason=RecordError
 kubectl describe ingress my-ingress
 ```
 
+`DNSEndpoint` objects that fail [CRD source validation](../sources/crd.md#validation) report
+it in their [status conditions](../sources/crd.md#status) instead.
+
 See [Kubernetes Events in External-DNS](events.md) for full documentation and the list of
 supported event types.
 
