@@ -183,8 +183,7 @@ examplednsrecord   True       Programmed   2m
 otherdnsrecord     True       Filtered     2m
 ```
 
-`Accepted` is set before any provider call; `Ready` reports what became of the
-records afterwards:
+`Accepted` is set before any provider call; `Ready` reports what became of the records afterwards:
 
 | Condition          | Status    | Reason       | Meaning                                                                   |
 |--------------------|-----------|--------------|---------------------------------------------------------------------------|
@@ -198,8 +197,8 @@ records afterwards:
 | `Ready`            | `Unknown` | `DryRun`     | The endpoints were planned, but `--dry-run` kept them from the provider.  |
 | `Ready`            | `False`   | `Invalid`    | No endpoint reached the provider because every one of them was refused.   |
 
-`status.observedGeneration` tracks the last `spec` external-dns processed. Both
-conditions are refreshed on every sync but only written when they change, so a
+`status.observedGeneration` tracks the last `spec` external-dns processed.
+Conditions are refreshed on every sync but only written when they change, so a
 steady-state `DNSEndpoint` costs no API writes. On an empty `spec`, `Ready` is removed.
 
 Limits:

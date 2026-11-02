@@ -76,8 +76,7 @@ func (w *StatusWriter) ReportStatus(ctx context.Context, objects []plan.PlannedO
 		// The plan was built from the spec the crd source last validated, not from any later edit.
 		condition.ObservedGeneration = dnsEndpoint.Status.ObservedGeneration
 
-		// The crd source returns the same error on its next read and stops
-		// the controller there.
+		// The crd source returns the same error on its next read and stops the controller there.
 		if err := UpdateStatus(ctx, w.clients.Writer(), dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
 			meta.SetStatusCondition(&status.Conditions, condition)
 		}); err != nil {
