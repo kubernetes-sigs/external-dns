@@ -2195,6 +2195,71 @@ func TestRecreateRecordAfterDeletion(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, append(desired, txtRecord...)), "Expected records after reconciliation: %v, but got: %v", append(desired, txtRecord...), records)
 }
 
+func TestTXTRegistryCrossOwnerSkipsTXT(t *testing.T) {
+	hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+
+	clusterA := "cluster-a"
+	clusterB := "cluster-b"
+	txtName := "cname-svc-1.test-zone.example.org"
+	existingTXT := newEndpointWithOwner(txtName, "\"heritage=external-dns,external-dns/owner="+clusterA+"\"", endpoint.RecordTypeTXT, clusterA)
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{Create: []*endpoint.Endpoint{existingTXT}}))
+
+	r, err := newRegistry(p, "", "", clusterB, time.Hour, "", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT}, nil, false, nil, "")
+	require.NoError(t, err)
+
+	desired := []*endpoint.Endpoint{
+		newEndpointWithOwner("svc-1.test-zone.example.org", "cluster-b.example.com", endpoint.RecordTypeCNAME, clusterB),
+	}
+
+	records, err := r.Records(ctx)
+	require.NoError(t, err)
+
+	pl := &plan.Plan{
+		Policies:       []plan.Policy{plan.Policies["sync"]},
+		Current:        records,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
+		OwnerID:        clusterB,
+	}
+	changes := pl.Calculate().Changes
+
+	p.OnApplyChanges = func(_ context.Context, applied *plan.Changes) {
+		var txtCreates, txtUpdates int
+		for _, ep := range applied.Create {
+			if ep.RecordType == endpoint.RecordTypeTXT {
+				txtCreates++
+			}
+		}
+		for _, ep := range applied.UpdateNew {
+			if ep.RecordType == endpoint.RecordTypeTXT {
+				txtUpdates++
+			}
+		}
+		assert.Zero(t, txtCreates, "TXT should not be created when another owner holds the name")
+		assert.Zero(t, txtUpdates, "TXT should not be updated when another owner holds the name")
+	}
+
+	require.NoError(t, r.ApplyChanges(ctx, changes))
+
+	logtest.TestHelperLogContains("ownership TXT", hook, t)
+	logtest.TestHelperLogContains(clusterA, hook, t)
+
+	records, err = p.Records(ctx)
+	require.NoError(t, err)
+	found := false
+	for _, ep := range records {
+		if ep.DNSName == txtName && ep.RecordType == endpoint.RecordTypeTXT {
+			assert.Contains(t, ep.Targets[0], clusterA)
+			found = true
+		}
+	}
+	assert.True(t, found, "ownership TXT should remain owned by cluster-a")
+}
+
 // TestTXTRegistryAliasARecordUsesARecordTXTPrefix verifies an A ALIAS record (a CNAME converted by
 // the AWS provider) gets an "a-" prefixed ownership TXT instead of "cname-".
 func TestTXTRegistryAliasARecordUsesARecordTXTPrefix(t *testing.T) {
