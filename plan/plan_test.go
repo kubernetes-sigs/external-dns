@@ -1033,21 +1033,48 @@ func (suite *PlanTestSuite) TestDualStackToSingleStack() {
 	validateEntries(suite.T(), changes.UpdateNew, expectNoChanges)
 }
 
+// TestRecordOwnerIdMigration covers the --migrate-from-txt-owner path. The TXT
+// registry rewrites the owner label from the old owner to the new one and marks
+// the endpoint with the txt/force-update provider-specific property. The plan
+// must then emit an UpdateOld/UpdateNew pair so the companion TXT record is
+// rewritten, even though the data record itself is otherwise identical.
+//
+// The marker is what carries the migration here: because the owner label on
+// current already matches the new owner, the update would otherwise collapse
+// (UpdateOld and UpdateNew identical) and HasChanges() would drop it. The marker
+// only lives on current, so providerSpecificChanged detects the difference.
 func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
-	suite.fooA5.Labels[endpoint.OwnerLabelKey] = "bar"
-	current := []*endpoint.Endpoint{suite.fooA5}
-	desired := []*endpoint.Endpoint{suite.fooA5}
+	current := &endpoint.Endpoint{
+		DNSName:    "foo",
+		Targets:    endpoint.Targets{"5.5.5.5"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-5",
+			endpoint.OwnerLabelKey:    "bar",
+		},
+		ProviderSpecific: []endpoint.ProviderSpecificProperty{
+			{Name: "txt/force-update", Value: "true"},
+		},
+	}
+	desired := &endpoint.Endpoint{
+		DNSName:    "foo",
+		Targets:    endpoint.Targets{"5.5.5.5"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-5",
+		},
+	}
 	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooA5}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
+	expectedUpdateOld := []*endpoint.Endpoint{current}
+	expectedUpdateNew := []*endpoint.Endpoint{desired}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
 		Policies:       []Policy{&SyncPolicy{}},
-		Current:        current,
-		Desired:        desired,
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
+		OwnerID:        "bar",
 		OldOwnerID:     "foo",
 	}
 
@@ -1057,6 +1084,7 @@ func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
 	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
 	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
+	suite.True(changes.HasChanges(), "controller only applies changes when HasChanges() is true")
 }
 
 func TestPlan(t *testing.T) {
