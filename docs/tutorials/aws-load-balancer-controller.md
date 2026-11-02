@@ -21,12 +21,9 @@ as Kubernetes does with the AWS cloud provider.
 
 [3]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/subnet_discovery/
 
-In the examples that follow, it is assumed that an IngressClass named `alb` with
-`spec.controller: ingress.k8s.aws/alb` exists, and that Ingress objects select it with
-`spec.ingressClassName: alb`. The controller manages every Ingress whose IngressClass
-names `ingress.k8s.aws/alb` as its controller, whatever the class is called. Its own
-`--ingress-class` argument (not to be confused with the same argument to ExternalDNS)
-only applies to the legacy `kubernetes.io/ingress.class` annotation.
+The examples below assume an IngressClass named `alb` with `spec.controller: ingress.k8s.aws/alb`,
+selected by Ingresses with `spec.ingressClassName: alb`. The controller's own `--ingress-class`
+argument (not the ExternalDNS one) only applies to the legacy `kubernetes.io/ingress.class` annotation.
 
 ## Deploy an example application
 
