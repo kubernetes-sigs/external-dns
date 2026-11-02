@@ -55,7 +55,6 @@ func newStatusWriter(t *testing.T, funcs interceptor.Funcs, objs ...client.Objec
 	return NewStatusWriter(NewCRDClients(c, c), false)
 }
 
-// Every DNSEndpoint in this file lives in the same namespace.
 const testNamespace = "foo"
 
 func dnsEndpointRef(name string) *events.ObjectReference {

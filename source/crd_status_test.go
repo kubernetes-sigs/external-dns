@@ -400,8 +400,7 @@ func TestCRDSourcePartiallyInvalidIsRemovedOnceFixed(t *testing.T) {
 	assert.True(t, meta.IsStatusConditionTrue(got.Status.Conditions, apiv1alpha1.AcceptedCondition))
 }
 
-// reportProgrammed stands in for the controller's status writer after a
-// successful sync of obj's endpoints.
+// reportProgrammed stands in for the controller's status writer after a successful sync of obj's endpoints.
 func reportProgrammed(t *testing.T, fakeCache *fakeCRDCache, obj *apiv1alpha1.DNSEndpoint) {
 	t.Helper()
 	w := crd.NewStatusWriter(crd.NewCRDClients(fakeCache, fakeCache.Client), false)
