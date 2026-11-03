@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -278,29 +277,43 @@ func (p *OCIProvider) addPaginatedZones(ctx context.Context, zones map[string]dn
 }
 
 func (p *OCIProvider) addZonesByID(ctx context.Context, zones map[string]dns.ZoneSummary) error {
+	seen := make(map[string]struct{}, len(p.zoneIDFilter.ZoneIDs))
 	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
-		request := dns.GetZoneRequest{ZoneNameOrId: &zoneID}
-		if p.zoneScope != "" {
-			request.Scope = dns.GetZoneScopeEnum(p.zoneScope)
+		if _, ok := seen[zoneID]; ok {
+			continue
 		}
-		resp, err := p.client.GetZone(ctx, request)
+		seen[zoneID] = struct{}{}
+
+		// A zone OCID is unique; verify the returned scope rather than relying on
+		// the scope query parameter to filter an OCID lookup.
+		resp, err := p.client.GetZone(ctx, dns.GetZoneRequest{ZoneNameOrId: &zoneID})
 		if err != nil {
-			var serviceErr common.ServiceError
-			if errors.As(err, &serviceErr) && serviceErr.GetHTTPStatusCode() == http.StatusNotFound {
-				log.Warnf("Zone %q not found, skipping: %v", zoneID, err)
-				continue
-			}
 			return provider.NewSoftErrorf("getting zone %q: %w", zoneID, err)
 		}
 
-		if resp.ZoneType == dns.ZoneZoneTypePrimary &&
-			p.domainFilter.Match(*resp.Name) &&
-			*resp.CompartmentId == p.cfg.CompartmentID {
-			zones[*resp.Id] = dns.ZoneSummary{Id: resp.Id, Name: resp.Name}
-			log.Debugf("Matched %q (%q)", *resp.Name, *resp.Id)
-		} else {
-			log.Debugf("Filtered %q (%q)", *resp.Name, *resp.Id)
+		if p.zoneScope != "" && resp.Scope != dns.ScopeEnum(p.zoneScope) {
+			log.Warnf("Skipping configured zone %q: scope %q does not match configured scope %q", zoneID, resp.Scope, p.zoneScope)
+			continue
 		}
+		if resp.ZoneType != dns.ZoneZoneTypePrimary {
+			log.Warnf("Skipping configured zone %q: zone type %q is not PRIMARY", zoneID, resp.ZoneType)
+			continue
+		}
+		if *resp.CompartmentId != p.cfg.CompartmentID {
+			log.Warnf("Skipping configured zone %q: compartment %q does not match configured compartment %q", zoneID, *resp.CompartmentId, p.cfg.CompartmentID)
+			continue
+		}
+		if resp.LifecycleState != dns.ZoneLifecycleStateActive && resp.LifecycleState != dns.ZoneLifecycleStateUpdating {
+			log.Warnf("Skipping configured zone %q: lifecycle state %q is neither ACTIVE nor UPDATING", zoneID, resp.LifecycleState)
+			continue
+		}
+		if !p.domainFilter.Match(*resp.Name) {
+			log.Warnf("Skipping configured zone %q (%q): name does not match domain filters %v", zoneID, *resp.Name, p.domainFilter.Filters)
+			continue
+		}
+
+		zones[*resp.Id] = dns.ZoneSummary{Id: resp.Id, Name: resp.Name}
+		log.Debugf("Matched %q (%q)", *resp.Name, *resp.Id)
 	}
 	return nil
 }

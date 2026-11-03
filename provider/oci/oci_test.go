@@ -36,9 +36,12 @@ import (
 )
 
 type mockOCIDNSClient struct {
-	listZonesCalls int
-	getZoneCalls   int
-	getZoneErrors  map[string]error
+	listZonesCalls           int
+	getZoneCalls             int
+	getZoneRequests          []dns.GetZoneRequest
+	getZoneErrors            map[string]error
+	getZoneResponses         map[string]dns.GetZoneResponse
+	patchZoneRecordsRequests []dns.PatchZoneRecordsRequest
 }
 
 type mockOCIServiceError struct {
@@ -157,7 +160,8 @@ func (c *mockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZone
 	return response, err
 }
 
-func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, _ dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+func (c *mockOCIDNSClient) PatchZoneRecords(_ context.Context, request dns.PatchZoneRecordsRequest) (dns.PatchZoneRecordsResponse, error) {
+	c.patchZoneRecordsRequests = append(c.patchZoneRecordsRequests, request)
 	return dns.PatchZoneRecordsResponse{}, nil
 }
 
@@ -180,11 +184,15 @@ func newOCIProvider(client ociDNSClient, domainFilter *endpoint.DomainFilter, zo
 
 func (c *mockOCIDNSClient) GetZone(_ context.Context, request dns.GetZoneRequest) (dns.GetZoneResponse, error) {
 	c.getZoneCalls++
+	c.getZoneRequests = append(c.getZoneRequests, request)
 	if request.ZoneNameOrId == nil {
 		return dns.GetZoneResponse{}, errors.New("no name or id")
 	}
 	if err := c.getZoneErrors[*request.ZoneNameOrId]; err != nil {
 		return dns.GetZoneResponse{}, err
+	}
+	if response, ok := c.getZoneResponses[*request.ZoneNameOrId]; ok {
+		return response, nil
 	}
 
 	var summary dns.ZoneSummary
@@ -207,11 +215,14 @@ func (c *mockOCIDNSClient) GetZone(_ context.Context, request dns.GetZoneRequest
 	}
 
 	return dns.GetZoneResponse{
-		Id:            summary.Id,
-		Name:          summary.Name,
-		Scope:         scope,
-		ZoneType:      dns.ZoneZoneTypePrimary,
-		CompartmentId: new(compartmentID),
+		Zone: dns.Zone{
+			Id:             summary.Id,
+			Name:           summary.Name,
+			Scope:          scope,
+			ZoneType:       dns.ZoneZoneTypePrimary,
+			CompartmentId:  new(compartmentID),
+			LifecycleState: dns.ZoneLifecycleStateActive,
+		},
 	}, nil
 }
 
@@ -404,9 +415,12 @@ func TestOCIZonesWithFullZoneIDFiltersUsesGetZone(t *testing.T) {
 	validateOCIZones(t, zones, map[string]dns.ZoneSummary{zoneIdBaz: testPrivateZoneSummaryBaz})
 	require.Zero(t, client.listZonesCalls)
 	require.Equal(t, 2, client.getZoneCalls)
+	for _, request := range client.getZoneRequests {
+		require.Empty(t, request.Scope)
+	}
 }
 
-func TestOCIZonesWithFullZoneIDFiltersSkipsNotFoundZone(t *testing.T) {
+func TestOCIZonesWithFullZoneIDFiltersReturnsSoftErrorOnNotFoundZone(t *testing.T) {
 	client := &mockOCIDNSClient{
 		getZoneErrors: map[string]error{
 			zoneIdQux: mockOCIServiceError{
@@ -425,10 +439,105 @@ func TestOCIZonesWithFullZoneIDFiltersSkipsNotFoundZone(t *testing.T) {
 
 	zones, err := ociProvider.zones(t.Context())
 
-	require.NoError(t, err)
-	validateOCIZones(t, zones, map[string]dns.ZoneSummary{zoneIdBaz: testPrivateZoneSummaryBaz})
+	require.Nil(t, zones)
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorContains(t, err, zoneIdQux)
 	require.Zero(t, client.listZonesCalls)
 	require.Equal(t, 2, client.getZoneCalls)
+}
+
+func TestOCIZonesWithFullZoneIDFiltersDeduplicatesZoneIDs(t *testing.T) {
+	client := &mockOCIDNSClient{}
+	ociProvider := newOCIProvider(
+		client,
+		endpoint.NewDomainFilter([]string{"com"}),
+		provider.NewZoneIDFilter([]string{zoneIdBaz, zoneIdBaz, zoneIdQux, zoneIdBaz}),
+		"PRIVATE",
+		false,
+	)
+
+	zones, err := ociProvider.zones(t.Context())
+
+	require.NoError(t, err)
+	validateOCIZones(t, zones, map[string]dns.ZoneSummary{
+		zoneIdBaz: testPrivateZoneSummaryBaz,
+		zoneIdQux: testPrivateZoneSummaryQux,
+	})
+	require.Zero(t, client.listZonesCalls)
+	require.Equal(t, 2, client.getZoneCalls)
+	require.Equal(t, zoneIdBaz, *client.getZoneRequests[0].ZoneNameOrId)
+	require.Equal(t, zoneIdQux, *client.getZoneRequests[1].ZoneNameOrId)
+}
+
+func TestOCIZonesWithFullZoneIDFiltersRejectsUnexpectedZones(t *testing.T) {
+	testCases := []struct {
+		name         string
+		zoneScope    string
+		domainFilter []string
+		modifyZone   func(*dns.GetZoneResponse)
+	}{
+		{
+			name:         "wrong scope",
+			zoneScope:    "PRIVATE",
+			domainFilter: []string{"com"},
+			modifyZone:   func(zone *dns.GetZoneResponse) { zone.Scope = dns.ScopeGlobal },
+		},
+		{
+			name:         "secondary zone",
+			zoneScope:    "PRIVATE",
+			domainFilter: []string{"com"},
+			modifyZone:   func(zone *dns.GetZoneResponse) { zone.ZoneType = dns.ZoneZoneTypeSecondary },
+		},
+		{
+			name:         "wrong compartment",
+			zoneScope:    "PRIVATE",
+			domainFilter: []string{"com"},
+			modifyZone:   func(zone *dns.GetZoneResponse) { zone.CompartmentId = new("another-compartment") },
+		},
+		{
+			name:         "deleted zone",
+			zoneScope:    "PRIVATE",
+			domainFilter: []string{"com"},
+			modifyZone:   func(zone *dns.GetZoneResponse) { zone.LifecycleState = dns.ZoneLifecycleStateDeleted },
+		},
+		{
+			name:         "domain filter mismatch",
+			zoneScope:    "PRIVATE",
+			domainFilter: []string{"foo.com"},
+			modifyZone:   func(_ *dns.GetZoneResponse) {},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			zone := dns.GetZoneResponse{Zone: dns.Zone{
+				Id:             &zoneIdBaz,
+				Name:           &zoneNameBaz,
+				Scope:          dns.ScopePrivate,
+				ZoneType:       dns.ZoneZoneTypePrimary,
+				CompartmentId:  &compartmentID,
+				LifecycleState: dns.ZoneLifecycleStateActive,
+			}}
+			testCase.modifyZone(&zone)
+			client := &mockOCIDNSClient{
+				getZoneResponses: map[string]dns.GetZoneResponse{zoneIdBaz: zone},
+			}
+			ociProvider := newOCIProvider(
+				client,
+				endpoint.NewDomainFilter(testCase.domainFilter),
+				provider.NewZoneIDFilter([]string{zoneIdBaz}),
+				testCase.zoneScope,
+				false,
+			)
+
+			zones, err := ociProvider.zones(t.Context())
+
+			require.NoError(t, err)
+			require.Empty(t, zones)
+			require.Zero(t, client.listZonesCalls)
+			require.Equal(t, 1, client.getZoneCalls)
+		})
+	}
 }
 
 func TestOCIZonesWithFullZoneIDFiltersReturnsSoftError(t *testing.T) {
@@ -722,11 +831,14 @@ func (c *mutableMockOCIDNSClient) GetZone(_ context.Context, request dns.GetZone
 	}
 
 	return dns.GetZoneResponse{
-		Id:            zone.Id,
-		Name:          zone.Name,
-		Scope:         dns.ScopeGlobal,
-		ZoneType:      dns.ZoneZoneTypePrimary,
-		CompartmentId: new(compartmentID),
+		Zone: dns.Zone{
+			Id:             zone.Id,
+			Name:           zone.Name,
+			Scope:          dns.ScopeGlobal,
+			ZoneType:       dns.ZoneZoneTypePrimary,
+			CompartmentId:  new(compartmentID),
+			LifecycleState: dns.ZoneLifecycleStateActive,
+		},
 	}, nil
 }
 
@@ -880,6 +992,59 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, recordsResponse.Items, 2)
 	require.ElementsMatch(t, recordsResponse.Items, records["ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"])
+}
+
+func TestOCIApplyChangesWithNestedZones(t *testing.T) {
+	for _, state := range []dns.ZoneLifecycleStateEnum{dns.ZoneLifecycleStateActive, dns.ZoneLifecycleStateUpdating} {
+		t.Run(string(state), func(t *testing.T) {
+			parentID := "ocid1.dns-zone.oc1..parent"
+			childID := "ocid1.dns-zone.oc1..child"
+			client := &mockOCIDNSClient{
+				getZoneResponses: map[string]dns.GetZoneResponse{
+					parentID: {Zone: dns.Zone{
+						Id:             &parentID,
+						Name:           new("example.com"),
+						CompartmentId:  &compartmentID,
+						Scope:          dns.ScopeGlobal,
+						ZoneType:       dns.ZoneZoneTypePrimary,
+						LifecycleState: dns.ZoneLifecycleStateActive,
+					}},
+					childID: {Zone: dns.Zone{
+						Id:             &childID,
+						Name:           new("sub.example.com"),
+						CompartmentId:  &compartmentID,
+						Scope:          dns.ScopeGlobal,
+						ZoneType:       dns.ZoneZoneTypePrimary,
+						LifecycleState: state,
+					}},
+				},
+			}
+			ociProvider := newOCIProvider(
+				client,
+				endpoint.NewDomainFilter([]string{"example.com"}),
+				provider.NewZoneIDFilter([]string{parentID, childID}),
+				"GLOBAL",
+				false,
+			)
+			ociProvider.zoneCache.duration = time.Hour
+
+			_, err := ociProvider.Records(t.Context())
+			require.NoError(t, err)
+
+			err = ociProvider.ApplyChanges(t.Context(), &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("host.sub.example.com", endpoint.RecordTypeA, "192.0.2.1"),
+				},
+			})
+			require.NoError(t, err)
+			require.Len(t, client.patchZoneRecordsRequests, 1)
+			request := client.patchZoneRecordsRequests[0]
+			require.Equal(t, childID, *request.ZoneNameOrId)
+			require.Len(t, request.Items, 1)
+			require.Equal(t, "host.sub.example.com", *request.Items[0].Domain)
+			require.Equal(t, 2, client.getZoneCalls)
+		})
+	}
 }
 
 func TestOCIApplyChanges(t *testing.T) {
