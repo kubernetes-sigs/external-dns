@@ -183,8 +183,13 @@ spec:
 In this example, External DNS will create DNS records only for `company.private.example.com` based on the annotation, ignoring the `hostnames` field in the `HTTPRoute` spec. This prevents conflicts with existing CNAME records while enabling public resolution for specific endpoints.
 
 When using `annotation-only`, the annotation hostname does **not** need to match the listener hostname.
-ExternalDNS creates DNS records for the annotation hostname using the parent Gateway's IP address,
+ExternalDNS creates DNS records for the annotation hostname using the parent Gateway's targets,
 even when the annotation hostname differs from the listener hostname.
+The hostname is published as written (lowercased), so a wildcard annotation such as `*.example.com`
+is not narrowed to a `foo.example.com` listener; IP addresses and invalid names are ignored.
+The Route must still be accepted by the parent and attached to a matching listener.
+Without `annotation-only`, an annotation hostname outside every listener hostname publishes nothing.
+See [Domain names](gateway.md#domain-names) for details.
 This enables migration patterns where the DNS hostname and the routing hostname are different,
 for example:
 
