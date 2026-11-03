@@ -237,6 +237,38 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:      "SkipsImplementationSpecificAddresses",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+					{Type: new(v1.HostnameAddressType), Value: "alb-123.example.com"},
+					{Type: new(v1.AddressType("alb.gateway.k8s.alibaba/LoadBalancerID")), Value: "alb-123"},
+					{Value: "1.2.3.4"},
+				}},
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
+				newTestEndpointWithTTL("test.example.internal", endpoint.RecordTypeCNAME, 0, "alb-123.example.com"),
+			},
+		},
+		{
 			title: "GatewayNameNoneAccepted",
 			config: &config.Config{
 				GatewayName: "gateway-name",
