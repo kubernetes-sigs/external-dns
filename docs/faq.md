@@ -273,6 +273,7 @@ The internal one should provision hostnames used on the internal network (perhap
 To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller.
 Let's assume you have two ingress controllers, `internal` and `external`.
 You can then start two ExternalDNS providers, one with `--ingress-class=internal` and one with `--ingress-class=external`.
+Some ingress controllers can serve both from a single instance through separate IngressClasses, for example the AWS Load Balancer Controller, see [Public and private hosted zones](tutorials/aws-load-balancer-controller.md#public-and-private-hosted-zones).
 
 If you need to search for multiple ingress classes, you can specify the flag multiple times, like so:
 `--ingress-class=internal --ingress-class=external`.
