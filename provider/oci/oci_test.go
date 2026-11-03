@@ -214,16 +214,16 @@ func (c *mockOCIDNSClient) GetZone(_ context.Context, request dns.GetZoneRequest
 		return dns.GetZoneResponse{}, fmt.Errorf("zone %q not found", *request.ZoneNameOrId)
 	}
 
-	return dns.GetZoneResponse{
-		Zone: dns.Zone{
-			Id:             summary.Id,
-			Name:           summary.Name,
-			Scope:          scope,
-			ZoneType:       dns.ZoneZoneTypePrimary,
-			CompartmentId:  new(compartmentID),
-			LifecycleState: dns.ZoneLifecycleStateActive,
-		},
-	}, nil
+	var response dns.GetZoneResponse
+	response.Zone = dns.Zone{
+		Id:             summary.Id,
+		Name:           summary.Name,
+		Scope:          scope,
+		ZoneType:       dns.ZoneZoneTypePrimary,
+		CompartmentId:  new(compartmentID),
+		LifecycleState: dns.ZoneLifecycleStateActive,
+	}
+	return response, nil
 }
 
 func validateOCIZones(t *testing.T, actual, expected map[string]dns.ZoneSummary) {
@@ -510,14 +510,15 @@ func TestOCIZonesWithFullZoneIDFiltersRejectsUnexpectedZones(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			zone := dns.GetZoneResponse{Zone: dns.Zone{
+			var zone dns.GetZoneResponse
+			zone.Zone = dns.Zone{
 				Id:             &zoneIdBaz,
 				Name:           &zoneNameBaz,
 				Scope:          dns.ScopePrivate,
 				ZoneType:       dns.ZoneZoneTypePrimary,
 				CompartmentId:  &compartmentID,
 				LifecycleState: dns.ZoneLifecycleStateActive,
-			}}
+			}
 			testCase.modifyZone(&zone)
 			client := &mockOCIDNSClient{
 				getZoneResponses: map[string]dns.GetZoneResponse{zoneIdBaz: zone},
@@ -830,16 +831,16 @@ func (c *mutableMockOCIDNSClient) GetZone(_ context.Context, request dns.GetZone
 		return dns.GetZoneResponse{}, errors.New("zone not found")
 	}
 
-	return dns.GetZoneResponse{
-		Zone: dns.Zone{
-			Id:             zone.Id,
-			Name:           zone.Name,
-			Scope:          dns.ScopeGlobal,
-			ZoneType:       dns.ZoneZoneTypePrimary,
-			CompartmentId:  new(compartmentID),
-			LifecycleState: dns.ZoneLifecycleStateActive,
-		},
-	}, nil
+	var response dns.GetZoneResponse
+	response.Zone = dns.Zone{
+		Id:             zone.Id,
+		Name:           zone.Name,
+		Scope:          dns.ScopeGlobal,
+		ZoneType:       dns.ZoneZoneTypePrimary,
+		CompartmentId:  new(compartmentID),
+		LifecycleState: dns.ZoneLifecycleStateActive,
+	}
+	return response, nil
 }
 
 func (c *mutableMockOCIDNSClient) GetZoneRecords(_ context.Context, request dns.GetZoneRecordsRequest) (dns.GetZoneRecordsResponse, error) {
