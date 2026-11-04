@@ -89,6 +89,7 @@ tests:
       fqdnTemplates: null
     asserts:
       - notFailedTemplate: {}
+
   - it: should throw an error when 'eventsEmit' contains an unknown event
     set:
       eventsEmit:
