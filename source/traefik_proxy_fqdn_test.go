@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -219,7 +220,7 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 				Create(t.Context(), obj, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &Config{
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &config.Config{
 				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 				LabelFilter:      labels.Everything(),
@@ -394,7 +395,7 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 				Create(t.Context(), obj, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &Config{
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &config.Config{
 				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 				LabelFilter:      labels.Everything(),
@@ -565,7 +566,7 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 				Create(t.Context(), obj, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &Config{
+			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &config.Config{
 				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
 				LabelFilter:      labels.Everything(),

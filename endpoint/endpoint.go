@@ -18,7 +18,9 @@ package endpoint
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
+	"maps"
 	"net/netip"
 	"slices"
 	"sort"
@@ -29,7 +31,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 const (
@@ -284,8 +285,6 @@ func (ep EndpointKey) String() string {
 	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
 }
 
-type ObjectRef = events.ObjectReference
-
 // This schema also validates the DNSRecord objects the crd registry writes, where
 // external-dns is the author: a rejected write is not user feedback, it aborts
 // ApplyChanges before the provider is called.
@@ -297,8 +296,7 @@ type ObjectRef = events.ObjectReference
 //
 // The rules avoid matches(): the API server estimates a regex rule's admission
 // cost as maxItems x maxLength x regex size, which blows the per-schema budget.
-// The SRV and MX field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord, which the sources run when they read the object.
+// The SRV, MX and NAPTR field grammar is left to Endpoint.Validate, which the CRD source and the dedup wrapper run.
 //
 // DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
 // pattern accepts the trailing dot of an absolute name; its rule enforces the real
@@ -355,6 +353,17 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
+// OverlongDNSLabel returns the first label in dnsName exceeding the RFC 1035 63-character
+// limit, or "" if none do.
+func OverlongDNSLabel(dnsName string) string {
+	for label := range strings.SplitSeq(dnsName, ".") {
+		if len(label) > 63 {
+			return label
+		}
+	}
+	return ""
+}
+
 // NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
 // Unparseable targets pass through; the null MX "0 ." (RFC 7505) keeps its dot, which is the host.
 func NormalizeMXTarget(target string) string {
@@ -386,11 +395,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		}
 	}
 
-	for label := range strings.SplitSeq(dnsName, ".") {
-		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
-		}
+	if label := OverlongDNSLabel(dnsName); label != "" {
+		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		return nil
 	}
 
 	return &Endpoint{
@@ -554,12 +561,12 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 
 // WithRefObject adds obj to the endpoint's set of reference objects, deduplicating by Key().
 // Calling it multiple times with the same object is safe — it is added at most once.
-func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+func (e *Endpoint) WithRefObject(obj *ObjectRef) *Endpoint {
 	if obj == nil {
 		return e
 	}
 	key := obj.Key()
-	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+	if slices.ContainsFunc(e.refObjects, func(r *ObjectRef) bool {
 		return r.Key() == key
 	}) {
 		return e
@@ -569,7 +576,7 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 }
 
 // RefObjects returns all Kubernetes object references associated with this endpoint.
-func (e *Endpoint) RefObjects() []*events.ObjectReference {
+func (e *Endpoint) RefObjects() []*ObjectRef {
 	return e.refObjects
 }
 
@@ -580,6 +587,21 @@ func (e *Endpoint) Key() EndpointKey {
 		RecordType:    e.RecordType,
 		SetIdentifier: e.SetIdentifier,
 	}
+}
+
+// Equal reports whether a and b describe the same DNS record. refObjects is
+// ignored because it only tracks provenance. Nil and empty collections are equal.
+func Equal(a, b *Endpoint) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.DNSName == b.DNSName &&
+		a.RecordType == b.RecordType &&
+		a.SetIdentifier == b.SetIdentifier &&
+		a.RecordTTL == b.RecordTTL &&
+		slices.Equal(a.Targets, b.Targets) &&
+		maps.Equal(a.Labels, b.Labels) &&
+		slices.Equal(a.ProviderSpecific, b.ProviderSpecific)
 }
 
 // IsOwnedBy returns true if the endpoint owner label matches the given ownerID, false otherwise
@@ -669,35 +691,34 @@ func (e *Endpoint) RequestedRecordType() (string, bool) {
 	return e.GetProviderSpecificProperty(ProviderSpecificRecordType)
 }
 
-// TODO: rename to Validate
-// CheckEndpoint Check if endpoint is properly formatted according to RFC standards
-func (e *Endpoint) CheckEndpoint() bool {
+// Validate returns the first reason why the endpoint does not follow the grammar of its record type, or nil.
+func (e *Endpoint) Validate() error {
 	// Several providers index Targets[0] and would panic.
 	if len(e.Targets) == 0 {
-		log.Debugf("Endpoint %s of type %s has no targets", e.DNSName, e.RecordType)
-		return false
+		return fmt.Errorf("%s record needs at least one target", e.RecordType)
 	}
 
 	if !e.supportsAlias() {
 		if _, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias); ok {
-			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
-			return false
+			return fmt.Errorf("%s record does not support the %q provider-specific property", e.RecordType, ProviderSpecificAlias)
 		}
 	}
 
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeA, RecordTypeAAAA:
 		if !e.isAlias() {
-			return e.Targets.ValidateIPRecord(recordType)
+			return e.Targets.validateIPRecord(recordType)
 		}
 	case RecordTypeMX:
-		return e.Targets.ValidateMXRecord()
+		return e.Targets.validateMXRecord()
 	case RecordTypeSRV:
-		return e.Targets.ValidateSRVRecord()
+		return e.Targets.validateSRVRecord()
+	case RecordTypeNAPTR:
+		return e.Targets.validateNAPTRRecord()
 	case RecordTypePTR:
-		return e.ValidatePTRRecord()
+		return e.validatePTRRecord()
 	}
-	return true
+	return nil
 }
 
 // isAlias returns true if the endpoint has the alias provider-specific property set to true.
@@ -728,12 +749,12 @@ func (e *Endpoint) WithMinTTL(ttl int64) {
 func NewMXRecord(target string) (*MXTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+		return nil, fmt.Errorf("invalid MX record target %q: MX records must have a preference value and a host, e.g. '10 example.com'", target)
 	}
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid integer value in target: %s", target)
+		return nil, fmt.Errorf("invalid MX record target %q: preference %q is not an integer between 0 and 65535", target, parts[0])
 	}
 
 	return &MXTarget{
@@ -747,23 +768,23 @@ func NewMXRecord(target string) (*MXTarget, error) {
 func NewSRVRecord(target string) (*SRVTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 4 {
-		return nil, fmt.Errorf("invalid SRV record target: %s. SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
+		return nil, fmt.Errorf("invalid SRV record target %q: SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
 	}
 	if !strings.HasSuffix(parts[3], ".") {
-		return nil, fmt.Errorf("invalid SRV record target: %s. Target host does not end with a dot", target)
+		return nil, fmt.Errorf("invalid SRV record target %q: target host does not end with a dot", target)
 	}
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV priority %q: %w", parts[0], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: priority %q is not an integer between 0 and 65535", target, parts[0])
 	}
 	weight, err := strconv.ParseUint(parts[1], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV weight %q: %w", parts[1], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: weight %q is not an integer between 0 and 65535", target, parts[1])
 	}
 	port, err := strconv.ParseUint(parts[2], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV port %q: %w", parts[2], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: port %q is not an integer between 0 and 65535", target, parts[2])
 	}
 
 	return &SRVTarget{
@@ -804,74 +825,52 @@ func (s *SRVTarget) GetHost() string {
 	return s.host
 }
 
-// ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
-func (t Targets) ValidateIPRecord(recordType string) bool {
+func (t Targets) validateIPRecord(recordType string) error {
 	for _, target := range t {
 		addr, err := netip.ParseAddr(target)
-		if err != nil {
-			log.Debugf("Invalid %s record target: %s is not a valid IP address", recordType, target)
-			return false
-		}
-		if recordType == RecordTypeA && addr.Is6() {
-			log.Debugf("Invalid A record target: %s is an IPv6 address", target)
-			return false
-		}
-		if recordType == RecordTypeAAAA && addr.Is4() {
-			log.Debugf("Invalid AAAA record target: %s is an IPv4 address", target)
-			return false
+		switch {
+		case err != nil:
+			return fmt.Errorf("target %q is not an IP address for record type %s; set the %q provider-specific property for a provider-native alias", target, recordType, ProviderSpecificAlias)
+		case recordType == RecordTypeA && addr.Is6():
+			return fmt.Errorf("target %q is an IPv6 address, use an AAAA record", target)
+		case recordType == RecordTypeAAAA && addr.Is4():
+			return fmt.Errorf("target %q is an IPv4 address, use an A record", target)
 		}
 	}
-	return true
+	return nil
 }
 
-// ValidateMXRecord reports whether all targets are valid MX record values (priority + host).
-func (t Targets) ValidateMXRecord() bool {
+func (t Targets) validateMXRecord() error {
 	for _, target := range t {
-		_, err := NewMXRecord(target)
-		if err != nil {
-			log.Debugf("Invalid MX record target: %s. %v", target, err)
-			return false
+		if _, err := NewMXRecord(target); err != nil {
+			return err
 		}
 	}
-
-	return true
+	return nil
 }
 
-// ValidateSRVRecord reports whether all targets are valid SRV record values (priority weight port host).
-func (t Targets) ValidateSRVRecord() bool {
+func (t Targets) validateSRVRecord() error {
 	for _, target := range t {
-		_, err := NewSRVRecord(target)
-		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. %v", target, err)
-			return false
+		if _, err := NewSRVRecord(target); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-// ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name
-// (ending in .in-addr.arpa or .ip6.arpa) and that targets are non-empty hostnames.
-func (e *Endpoint) ValidatePTRRecord() bool {
-	name := strings.ToLower(e.DNSName)
-	if !isReverseDNSName(name) {
-		log.Debugf("Invalid PTR record: DNSName %q must be a valid reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
-		return false
-	}
-	if len(e.Targets) == 0 {
-		log.Debugf("Invalid PTR record: at least one target is required for %s", e.DNSName)
-		return false
+func (e *Endpoint) validatePTRRecord() error {
+	if !isReverseDNSName(strings.ToLower(e.DNSName)) {
+		return errors.New("PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa")
 	}
 	for _, target := range e.Targets {
 		if strings.TrimSpace(target) == "" {
-			log.Debugf("Invalid PTR record: target must not be empty for %s", e.DNSName)
-			return false
+			return errors.New("PTR target must not be empty")
 		}
 		if _, err := netip.ParseAddr(target); err == nil {
-			log.Debugf("Invalid PTR record: target %q for %s must be a hostname, not an IP address", target, e.DNSName)
-			return false
+			return fmt.Errorf("PTR target %q must be a hostname, not an IP address", target)
 		}
 	}
-	return true
+	return nil
 }
 
 // isReverseDNSName checks that name ends with .in-addr.arpa or .ip6.arpa

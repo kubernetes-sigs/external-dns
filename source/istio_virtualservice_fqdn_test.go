@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
@@ -55,7 +56,7 @@ func TestIstioVirtualServiceSourceNewSourceWithFqdn(t *testing.T) {
 				t.Context(),
 				fake.NewClientset(),
 				istiofake.NewSimpleClientset(),
-				&Config{
+				&config.Config{
 					Namespaces:               nil,
 					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", false),
@@ -662,7 +663,7 @@ func TestIstioVirtualServiceSourceFqdnTemplatingExamples(t *testing.T) {
 				t.Context(),
 				kubeClient,
 				istioClient,
-				&Config{
+				&config.Config{
 					Namespaces:               nil,
 					AnnotationFilter:         nil,
 					TemplateEngine:           templatetest.MustEngine(t, tt.fqdnTemplate, "", "", !tt.combineFqdn),

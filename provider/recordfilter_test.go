@@ -43,6 +43,22 @@ func TestRecordTypeFilter(t *testing.T) {
 			"MX",
 			false,
 		},
+		{
+			"PTR",
+			false,
+		},
+		{
+			"DS",
+			false,
+		},
+		{
+			"SOA",
+			false,
+		},
+		{
+			"SPF",
+			false,
+		},
 	}
 	for _, r := range records {
 		got := SupportedRecordType(r.rtype)

@@ -273,7 +273,7 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 }
 
 func TestMultiSourceDefaultTargetsKeepRefObjects(t *testing.T) {
-	ref := events.NewObjectReferenceFromParts("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "default", "example", "", types.CRD)
+	ref := endpoint.NewObjectRef("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "default", "example", "", types.CRD)
 	src := new(testutils.MockSource)
 	src.On("Endpoints").Return([]*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.org", endpoint.RecordTypeA).WithRefObject(ref),

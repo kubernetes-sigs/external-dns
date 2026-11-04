@@ -212,7 +212,7 @@ func NewEndpointWithRef(dns, target string, obj ctrlclient.Object, source string
 // expected endpoint via WithRefObject to opt into ValidateEndpoints' RefObject check,
 // which asserts the actual endpoint has a non-nil RefObject with this Source and a non-empty UID.
 func RefSource(source string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts("", "", "", "", "", source)
+	return endpoint.NewObjectRef("", "", "", "", "", source)
 }
 
 // AssertEndpointsHaveRefObject asserts that endpoints have the expected count

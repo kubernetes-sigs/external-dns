@@ -110,8 +110,8 @@ func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.Provid
 // Any prefix is accepted, not just the current --annotation-prefix, for easier migration
 func LegacyProviderSpecificName(name string) (string, bool) {
 	attr := name
-	if i := strings.LastIndex(name, "/"); i >= 0 {
-		attr = name[i+1:]
+	if _, after, ok0 := strings.CutLast(name, "/"); ok0 {
+		attr = after
 	}
 	attr, ok := strings.CutPrefix(attr, "cloudflare-")
 	if !ok {

@@ -52,6 +52,12 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 	result := make([]*endpoint.Endpoint, 0, len(endpoints))
 
 	for _, ep := range endpoints {
+		// Non-IP targets never match a CIDR; an include filter would drop them all.
+		if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeAAAA {
+			result = append(result, ep)
+			continue
+		}
+
 		filteredTargets := make([]string, 0, len(ep.Targets))
 
 		for _, t := range ep.Targets {
@@ -60,7 +66,6 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 			}
 		}
 
-		// If all targets are filtered out, skip the endpoint.
 		if len(filteredTargets) == 0 {
 			log.WithField("endpoint", ep).Debugf("Skipping endpoint because all targets were filtered out")
 			continue

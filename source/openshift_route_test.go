@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 	"sigs.k8s.io/external-dns/source/types"
 )
@@ -51,7 +52,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 	suite.sc, err = NewOcpRouteSource(
 		context.TODO(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 			LabelFilter:    labels.Everything(),
 		},
@@ -480,7 +481,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			source, err := NewOcpRouteSource(
 				t.Context(),
 				fakeClient,
-				&Config{
+				&config.Config{
 					TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 					LabelFilter:    labelSelector,
 					OCPRouterName:  tc.ocpRouterName,
@@ -600,7 +601,7 @@ func TestOcpRouteIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{
+			src, err := NewOcpRouteSource(t.Context(), fakeClient, &config.Config{
 				AnnotationFilter: parseLabelSelectorOrEverything(t, tc.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tc.labelFilter),
 			})
@@ -626,12 +627,12 @@ func TestOcpRouteSource_InformerTransform(t *testing.T) {
 	_, err := fakeClient.RouteV1().Routes(route.GetNamespace()).Create(t.Context(), route, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	source, err := NewOcpRouteSource(t.Context(), fakeClient, &Config{})
+	source, err := NewOcpRouteSource(t.Context(), fakeClient, &config.Config{})
 	require.NoError(t, err)
 	require.IsType(t, &ocpRouteSource{}, source)
 
 	testInformerTransformHelper(t,
-		source.(*ocpRouteSource).routeInformer.Informer(),
+		informerFor(t, source.(*ocpRouteSource).routeInformers, "").Informer(),
 		route,
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),

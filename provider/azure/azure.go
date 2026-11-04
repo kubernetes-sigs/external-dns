@@ -19,6 +19,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -194,8 +195,9 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	}
 
 	deleted, updated := p.mapChanges(zones, changes)
-	p.deleteRecords(ctx, deleted)
-	p.updateRecords(ctx, updated)
+	if err := errors.Join(p.deleteRecords(ctx, deleted), p.updateRecords(ctx, updated)); err != nil {
+		return provider.NewSoftError(err)
+	}
 	return nil
 }
 
@@ -274,7 +276,8 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	return deleted, updated
 }
 
-func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) {
+func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) error {
+	var errs []error
 	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
@@ -288,20 +291,22 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), nil); err != nil {
-					log.Errorf(
-						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
+					errs = append(errs, fmt.Errorf(
+						"failed to delete %s record named '%s' for Azure DNS zone '%s': %w",
 						ep.RecordType,
 						name,
 						zone,
 						err,
-					)
+					))
 				}
 			}
 		}
 	}
+	return errors.Join(errs...)
 }
 
-func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) {
+func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) error {
+	var errs []error
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
@@ -341,17 +346,18 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 				)
 			}
 			if err != nil {
-				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
+				errs = append(errs, fmt.Errorf(
+					"failed to update %s record named '%s' to '%s' for DNS zone '%s': %w",
 					ep.RecordType,
 					name,
 					ep.Targets,
 					zone,
 					err,
-				)
+				))
 			}
 		}
 	}
+	return errors.Join(errs...)
 }
 
 func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {

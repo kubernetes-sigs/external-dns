@@ -25,6 +25,27 @@ tests:
           path: spec.template.spec.automountServiceAccountToken
           value: true
 
+  - it: should not set hostUsers by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.hostUsers
+
+  - it: should set hostUsers to false
+    set:
+      hostUsers: false
+    asserts:
+      - equal:
+          path: spec.template.spec.hostUsers
+          value: false
+
+  - it: should set hostUsers to true
+    set:
+      hostUsers: true
+    asserts:
+      - equal:
+          path: spec.template.spec.hostUsers
+          value: true
+
   - it: should provide expected defaults for securityContext
     asserts:
       - isSubset:
@@ -40,6 +61,41 @@ tests:
               runAsGroup: 65532
               runAsNonRoot: true
               runAsUser: 65532
+
+  - it: should provide expected defaults for the webhook securityContext
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: example.com/webhook
+            tag: v1.0.0
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[?(@.name == "webhook")]
+          content:
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              privileged: false
+              readOnlyRootFilesystem: true
+
+  - it: should allow overriding the webhook securityContext
+    set:
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: example.com/webhook
+            tag: v1.0.0
+          securityContext:
+            readOnlyRootFilesystem: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook")].securityContext.readOnlyRootFilesystem
+          value: false
 
   - it: should provide expected defaults for liveness and readiness
     asserts:

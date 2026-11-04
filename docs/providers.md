@@ -16,7 +16,6 @@ Provider supported configurations
 | GoDaddy       | n/a        | yes     | 600                   |
 | Google GCP    | n/a        | yes     | 300                   |
 | InMemory      | n/a        | n/a     | n/a                   |
-| Linode        | n/a        | n/a     | n/a                   |
 | Myra Security | n/a        | yes     | 300                   |
 | NS1           | n/a        | yes     | 10                    |
 | OCI           | yes        | yes     | 300                   |

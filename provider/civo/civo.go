@@ -27,6 +27,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -106,8 +107,8 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool) (*CivoProvide
 	}
 
 	userAgent := &civogo.Component{
-		Name:    externaldns.UserAgentProduct,
-		Version: externaldns.Version,
+		Name:    version.UserAgentProduct,
+		Version: version.Version,
 	}
 	civoClient.SetUserAgent(userAgent)
 

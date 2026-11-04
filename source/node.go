@@ -26,6 +26,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -42,10 +43,10 @@ import (
 // +externaldns:source:description=Creates DNS entries based on Kubernetes Node resources
 // +externaldns:source:resources=Node
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=false
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type nodeSource struct {
 	client         kubernetes.Interface
 	templateEngine template.Engine
@@ -59,7 +60,7 @@ type nodeSource struct {
 func NewNodeSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg *Config) (Source, error) {
+	cfg *config.Config) (Source, error) {
 	// Use shared informers to listen for add/update/delete of nodes.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
@@ -68,6 +69,7 @@ func NewNodeSource(
 	informers.MustAddIndexers(nodeInformer.Informer(), informers.IndexerWithOptions[*v1.Node](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Node)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Node]),
 	))
 

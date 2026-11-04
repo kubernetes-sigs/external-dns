@@ -5,7 +5,7 @@ options:
   # Temporary bump, while working on job improvements.
   machineType: 'N1_HIGHCPU_32'
 steps:
-  - name: 'docker.io/library/golang:1.27.0-bookworm'
+  - name: 'docker.io/library/golang:1.27.3-bookworm'
     entrypoint: make
     env:
       - VERSION=$_GIT_TAG
@@ -19,3 +19,4 @@ substitutions:
   _GIT_TAG: "12345"
   _PULL_BASE_SHA: ""
   _PULL_BASE_REF: 'master'
+serviceAccount: projects/k8s-staging-images/serviceAccounts/external-dns-sa@k8s-staging-images.iam.gserviceaccount.com

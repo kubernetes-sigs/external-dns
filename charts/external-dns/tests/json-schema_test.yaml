@@ -40,7 +40,8 @@ tests:
       provider: null
     asserts:
       - failedTemplate:
-          errorPattern: 'executing "external-dns.providerName" at <.Values.provider.name>: nil pointer evaluating interface {}.name'
+          # Accept Helm error message variations across versions (Helm 3 names the template action, Helm 4 the file position)
+          errorPattern: 'nil pointer evaluating interface \{\}\.name'
 
   - it: should not fail if provider block is empty
     set:
@@ -74,3 +75,13 @@ tests:
             interval: 30s
     asserts:
       - notFailedTemplate: {}
+
+  - it: should throw an error when 'eventsEmit' contains an unknown event
+    set:
+      eventsEmit:
+        - RecordReady
+        - RecordBogus
+    asserts:
+      - failedTemplate:
+          # Accept Helm/JSONSchema error message variations across versions
+          errorPattern: "(eventsEmit\\.1 must be one of the following|at '/eventsEmit/1': value must be one of)"

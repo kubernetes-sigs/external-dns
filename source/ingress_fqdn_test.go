@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -256,7 +257,7 @@ func TestIngressSourceFqdnTemplatingExamples(t *testing.T) {
 			src, err := NewIngressSource(
 				t.Context(),
 				kubeClient,
-				&Config{
+				&config.Config{
 					TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, "", "", true),
 					LabelFilter:    labels.Everything(),
 				},

@@ -31,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -152,7 +153,7 @@ func newProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilte
 	if err != nil {
 		return nil, fmt.Errorf("initializing OCI DNS API client: %w", err)
 	}
-	client.UserAgent = fmt.Sprintf("%s %s", client.UserAgent, externaldns.UserAgent())
+	client.UserAgent = fmt.Sprintf("%s %s", client.UserAgent, version.UserAgent())
 
 	return &OCIProvider{
 		client:       client,

@@ -57,6 +57,9 @@ jobs:
     - name: Run file hygiene checks
       run: ./scripts/file-hygiene.sh
 
+    - name: Check webhook provider dependencies
+      run: ./scripts/webhook-deps.sh
+
   check-go-version:
     name: Go version consistency
     runs-on: ubuntu-latest

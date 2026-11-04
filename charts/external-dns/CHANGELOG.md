@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Add value `eventsEmit` to set the _Kubernetes_ events _ExternalDNS_ emits and grant the matching RBAC to create `events.k8s.io` events. [#6817](https://github.com/kubernetes-sigs/external-dns/pull/6817) @dlanov
+- Add value `hostUsers` to set the `Pod` `hostUsers` field, so that the `Pod` can run in a [user namespace](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/). [#6827](https://github.com/kubernetes-sigs/external-dns/pull/6827) @A-RYAN-1
+
+### Changed
+
+- Default `provider.webhook.securityContext` to no privilege escalation, no capabilities and a read-only root filesystem, like the `external-dns` container, so the `Pod` meets the _restricted_ Pod Security Standard. [#6785](https://github.com/kubernetes-sigs/external-dns/pull/6785) @LorbusChris
+
 ## [v1.23.0] - 2026-10-01
 
 ### Changed

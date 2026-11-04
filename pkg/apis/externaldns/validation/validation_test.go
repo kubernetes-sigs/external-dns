@@ -431,6 +431,19 @@ func TestValidateConfigForRfc2136(t *testing.T) {
 			wantErr: "--rfc2136-kerberos-realm, --rfc2136-kerberos-username, and --rfc2136-kerberos-password are required when specifying --rfc2136-gss-tsig option",
 		},
 		{
+			name: "gss-tsig combined with use-tls is rejected",
+			cfg: externaldns.Config{
+				RFC2136GSSTSIG:          true,
+				RFC2136UseTLS:           true,
+				RFC2136KerberosRealm:    "test-realm",
+				RFC2136KerberosUsername: "test-user",
+				RFC2136KerberosPassword: "test-pass",
+				RFC2136MinTTL:           3600,
+				RFC2136BatchChangeSize:  50,
+			},
+			wantErr: "--rfc2136-gss-tsig does not support --rfc2136-use-tls: the GSS-TSIG key exchange runs over plain TCP",
+		},
+		{
 			name: "batch change size below one is rejected",
 			cfg: externaldns.Config{
 				RFC2136MinTTL:          3600,
@@ -513,12 +526,12 @@ func TestValidateNamespaces(t *testing.T) {
 	}{
 		{
 			name:       "no namespace",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: nil,
 		},
 		{
 			name:       "single namespace with a source watching one",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: []string{"team-a"},
 		},
 		{
@@ -528,25 +541,25 @@ func TestValidateNamespaces(t *testing.T) {
 		},
 		{
 			name:       "duplicated namespace with a source watching one",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: []string{"team-a", "team-a"},
 		},
 		{
 			name:       "all namespaces subsuming another with a source watching one",
-			sources:    []string{"istio-gateway"},
+			sources:    []string{"gateway-httproute"},
 			namespaces: []string{"team-a", ""},
 		},
 		{
 			name:        "several namespaces with a source watching one",
-			sources:     []string{"istio-gateway"},
+			sources:     []string{"gateway-httproute"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway",
+			expectedErr: "--namespace accepts a single value with the following sources: gateway-httproute",
 		},
 		{
 			name:        "several namespaces report every unsupported source once",
-			sources:     []string{"node", "istio-gateway", "pod", "istio-gateway"},
+			sources:     []string{"node", "gateway-httproute", "gateway-grpcroute", "gateway-httproute"},
 			namespaces:  []string{"team-a", "team-b"},
-			expectedErr: "--namespace accepts a single value with the following sources: istio-gateway, pod",
+			expectedErr: "--namespace accepts a single value with the following sources: gateway-httproute, gateway-grpcroute",
 		},
 	}
 

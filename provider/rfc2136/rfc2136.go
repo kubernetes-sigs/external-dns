@@ -260,6 +260,10 @@ OuterLoop:
 		case dns.TypeTXT:
 			rrValues = []string{txtTarget(rr.(*dns.TXT))}
 			rrType = "TXT"
+		case dns.TypeMX:
+			mx := rr.(*dns.MX)
+			rrValues = []string{fmt.Sprintf("%d %s", mx.Preference, mx.Mx)}
+			rrType = endpoint.RecordTypeMX
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
 			rrType = "NS"
@@ -273,19 +277,22 @@ OuterLoop:
 			continue // Unhandled record type
 		}
 
-		for idx, existingEndpoint := range eps {
-			if existingEndpoint.DNSName == strings.TrimSuffix(rrFqdn, ".") && existingEndpoint.RecordType == rrType {
-				eps[idx].Targets = append(eps[idx].Targets, rrValues...)
-				continue OuterLoop
-			}
-		}
-
 		ep := endpoint.NewEndpointWithTTL(
 			rrFqdn,
 			rrType,
 			rrTTL,
 			rrValues...,
 		)
+		if ep == nil {
+			continue
+		}
+
+		for idx, existingEndpoint := range eps {
+			if existingEndpoint.DNSName == ep.DNSName && existingEndpoint.RecordType == ep.RecordType {
+				eps[idx].Targets = append(eps[idx].Targets, ep.Targets...)
+				continue OuterLoop
+			}
+		}
 
 		eps = append(eps, ep)
 	}
@@ -344,9 +351,12 @@ func unescapeTXT(s string) string {
 	return string(b)
 }
 
-// Canonicalize targets to avoid reconciliation when not needed.
+// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum,
+// unwraps quoted TXT targets and canonicalizes TLSA targets. This is required to avoid
+// diff on reconciliation loop.
 func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range eps {
+		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
 		if ep.RecordType == endpoint.RecordTypeTXT {
 			// Records() returns TXT values unquoted, so a quoted target would never match it.
 			for i, target := range ep.Targets {
@@ -374,20 +384,24 @@ func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
-	t := new(dns.Transfer)
-
-	if r.shouldSignAXFR() {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
-	}
-
-	c, err := makeClient(r, nameserver)
+	client, err := makeClient(r, nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
-	conn, err := c.Dial(nameserver)
+	conn, err := client.Dial(nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
+	if r.shouldSignAXFR() {
+		provider := tsig.HMAC{r.tsigKeyName: r.tsigSecret}
+		requestMAC, err := signAndSendAXFRRequest(conn, m, provider)
+		if err != nil {
+			return nil, err
+		}
+		return readSignedAXFR(conn, m.Id, requestMAC, provider), nil
+	}
+
+	t := new(dns.Transfer)
 	t.Conn = conn
 	return t.In(m, nameserver)
 }
@@ -474,7 +488,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -507,7 +521,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 
@@ -543,7 +557,7 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 		m := make(map[string]*dns.Msg)
 		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
+			z = strings.ToLower(dns.Fqdn(z))
 			m[z] = new(dns.Msg)
 		}
 		for _, ep := range chunk {
@@ -586,12 +600,22 @@ func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, new
 	return r.AddRecord(m, newEp)
 }
 
+// floorTTL raises a TTL provided by a source up to the configured minimum.
+// A TTL that no source provided is returned unchanged.
+func (r *rfc2136Provider) floorTTL(ttl endpoint.TTL) endpoint.TTL {
+	minTTL := int64(r.minTTL.Seconds())
+	if ttl.IsConfigured() && int64(ttl) < minTTL {
+		return endpoint.TTL(minTTL)
+	}
+	return ttl
+}
+
 func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 
-	ttl := int64(r.minTTL.Seconds())
-	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
-		ttl = int64(ep.RecordTTL)
+	ttl := r.floorTTL(ep.RecordTTL)
+	if !ttl.IsConfigured() {
+		ttl = endpoint.TTL(int64(r.minTTL.Seconds()))
 	}
 
 	for _, target := range ep.Targets {
@@ -600,7 +624,7 @@ func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 			return fmt.Errorf("failed to build RR: %w", err)
 		}
 
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, rrTarget)
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, int64(ttl), ep.RecordType, rrTarget)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -805,13 +829,13 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 
 func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 	for _, zone := range zoneNames {
-		if strings.HasSuffix(ep.DNSName, zone) {
-			return dns.Fqdn(zone)
+		if dns.IsSubDomain(dns.Fqdn(zone), dns.Fqdn(ep.DNSName)) {
+			return strings.ToLower(dns.Fqdn(zone))
 		}
 	}
 
 	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
-	return dns.Fqdn(".")
+	return "."
 }
 
 func makeClient(r *rfc2136Provider, nameserver string) (*dns.Client, error) {

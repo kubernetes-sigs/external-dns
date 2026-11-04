@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -333,7 +334,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewPodSource(t.Context(), kubeClient, &Config{
+			src, err := NewPodSource(t.Context(), kubeClient, &config.Config{
 				TemplateEngine:  templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 				PodSourceDomain: tt.sourceDomain,
 			})
@@ -354,7 +355,7 @@ func TestPodFQDNTemplate_Error(t *testing.T) {
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewPodSource(t.Context(), kubeClient, &Config{
+	src, err := NewPodSource(t.Context(), kubeClient, &config.Config{
 		TemplateEngine: templatetest.MustEngine(t, "{{ .Name }}.{{ .ThisNotExist }}.domain.tld", "", "", false),
 	})
 	require.NoError(t, err)

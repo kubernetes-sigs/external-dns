@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -640,7 +641,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			require.NoError(t, err)
 
 			source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-				&Config{
+				&config.Config{
 					Namespaces:       []string{namespace},
 					AnnotationFilter: parseAnnotationFilterOrNil(ti.annotationFilter),
 					LabelFilter:      ti.labelSelector,
@@ -701,7 +702,7 @@ func TestAmbassadorHostSource_RealApiserverObject(t *testing.T) {
 	require.NoError(t, err)
 
 	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-		&Config{Namespaces: []string{"default"}, LabelFilter: labels.Everything()})
+		&config.Config{Namespaces: []string{"default"}, LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 
 	endpoints, err := source.Endpoints(t.Context())
@@ -763,14 +764,14 @@ func TestAmbassadorHostSource_InformerTransform(t *testing.T) {
 	require.NoError(t, err)
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(uc.scheme)
 
-	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeClient, &Config{})
+	source, err := NewAmbassadorHostSource(t.Context(), fakeDynamicClient, fakeClient, &config.Config{})
 	require.NoError(t, err)
 	require.NotNil(t, source)
 
 	testDynamicInformerTransformHelper(t,
 		ambHostGVR,
 		fakeDynamicClient,
-		source.(*ambassadorHostSource).ambassadorHostInformer,
+		informerFor(t, source.(*ambassadorHostSource).ambassadorHostInformers, ""),
 		withRemovedLastAppliedConfigAnnotation(),
 		withRemovedManagedFields(),
 	)

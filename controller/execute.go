@@ -34,8 +34,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/pkg/metrics"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	providerfactory "sigs.k8s.io/external-dns/provider/factory"
@@ -43,6 +45,7 @@ import (
 	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/source"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -92,11 +95,11 @@ func execute(ctx context.Context) {
 	// external-dns uses logrus for all logging, so controller-runtime's logr output is discarded here.
 	crlog.SetLogger(logr.Discard())
 
-	log.Info(externaldns.Banner())
+	log.Info(version.Banner())
 
 	go serveMetrics(cfg.MetricsAddress)
 
-	sCfg, err := source.NewSourceConfig(cfg)
+	sCfg, err := config.NewSourceConfig(cfg)
 	if err != nil {
 		log.Fatal(err) // nolint: gocritic // exitAfterDefer
 	}
@@ -160,7 +163,7 @@ func execute(ctx context.Context) {
 func buildController(
 	ctx context.Context,
 	cfg *externaldns.Config,
-	sCfg *source.Config,
+	sCfg *config.Config,
 	src source.Source,
 	p provider.Provider,
 	filter *endpoint.DomainFilter,
@@ -178,7 +181,7 @@ func buildController(
 		events.WithDryRun(cfg.DryRun))
 	var eventEmitter events.EventEmitter
 	if eventsCfg.IsEnabled() {
-		kubeClient, err := sCfg.ClientGenerator().KubeClient()
+		kubeClient, err := source.ClientGeneratorFor(sCfg).KubeClient()
 		if err != nil {
 			return nil, err
 		}
@@ -188,6 +191,11 @@ func buildController(
 		}
 		eventCtrl.Run(ctx)
 		eventEmitter = eventCtrl
+	}
+	// A typed-nil *StatusWriter would make the interface non-nil.
+	var statusReporter StatusReporter
+	if cc := sCfg.CRDClients(); cc != nil {
+		statusReporter = crd.NewStatusWriter(cc)
 	}
 
 	return &Controller{
@@ -201,8 +209,8 @@ func buildController(
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwnerOld:          cfg.TXTOwnerOld,
 		EventEmitter:         eventEmitter,
-		CrdClients:           sCfg.CRDClients(),
 		CRDSourceKind:        cfg.CRDSourceKind,
+		StatusReporter:       statusReporter,
 	}, nil
 }
 
