@@ -157,6 +157,7 @@ from the usage of any externally developed webhook.
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
 | GleSYS                | https://github.com/glesys/external-dns-glesys                        |
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
+| Hostinger             | https://github.com/hayone1/external-dns-hostinger-webhook            |
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox NIOS         | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
