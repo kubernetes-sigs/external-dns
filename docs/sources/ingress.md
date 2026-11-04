@@ -11,6 +11,11 @@ allow multiple ingress classes.
 This source supports the `--label-filter` flag, which filters Ingress resources
 by a set of labels.
 
+The `--annotation-filter` flag filters Ingress resources by their annotations, using
+label selector semantics, for example `--annotation-filter=alb.ingress.kubernetes.io/scheme=internet-facing`.
+It can't be combined with `--ingress-class` when it filters on the deprecated
+`kubernetes.io/ingress.class` annotation.
+
 ## Domain names
 
 The domain names of the DNS entries created from an Ingress are sourced from the following places:
