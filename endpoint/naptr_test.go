@@ -177,19 +177,19 @@ func TestValidateNAPTRRecord(t *testing.T) {
 		`10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`,
 		`100 50 "U" "E2U+sip" "!^.*$!sip:info@bar.com!" .`,
 	}
-	assert.True(t, valid.ValidateNAPTRRecord())
+	require.NoError(t, valid.validateNAPTRRecord())
 
 	invalid := Targets{`10 20`}
-	assert.False(t, invalid.ValidateNAPTRRecord())
+	require.Error(t, invalid.validateNAPTRRecord())
 
 	mixed := Targets{
 		`10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`,
 		`10 20`,
 	}
-	assert.False(t, mixed.ValidateNAPTRRecord())
+	assert.Error(t, mixed.validateNAPTRRecord())
 }
 
-func TestCheckEndpointNAPTR(t *testing.T) {
+func TestValidateNAPTR(t *testing.T) {
 	t.Parallel()
 
 	valid := &Endpoint{
@@ -197,12 +197,12 @@ func TestCheckEndpointNAPTR(t *testing.T) {
 		RecordType: RecordTypeNAPTR,
 		Targets:    Targets{`10 20 "S" "SIP+D2U" "" _sip._udp.bar.com.`},
 	}
-	assert.True(t, valid.CheckEndpoint())
+	require.NoError(t, valid.Validate())
 
 	invalid := &Endpoint{
 		DNSName:    "bar.com",
 		RecordType: RecordTypeNAPTR,
 		Targets:    Targets{`10 20`},
 	}
-	assert.False(t, invalid.CheckEndpoint())
+	assert.Error(t, invalid.Validate())
 }

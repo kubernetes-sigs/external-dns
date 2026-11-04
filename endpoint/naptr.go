@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
-	log "github.com/sirupsen/logrus"
 )
 
 // NAPTRTarget is a parsed NAPTR target (RFC 2915): order preference "flags" "service" "regexp" replacement.
@@ -100,13 +99,11 @@ func (n *NAPTRTarget) String() string {
 	return strings.TrimPrefix(rr.String(), rr.Hdr.String())
 }
 
-// ValidateNAPTRRecord reports whether all targets are valid NAPTR record values.
-func (t Targets) ValidateNAPTRRecord() bool {
+func (t Targets) validateNAPTRRecord() error {
 	for _, target := range t {
 		if _, err := NewNAPTRRecord(target); err != nil {
-			log.Debugf("Invalid NAPTR record target: %s. %v", target, err)
-			return false
+			return err
 		}
 	}
-	return true
+	return nil
 }

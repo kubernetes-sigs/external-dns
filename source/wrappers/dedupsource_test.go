@@ -473,7 +473,7 @@ func TestDedupSource_WarnsOnInvalidEndpoint(t *testing.T) {
 				Targets:          endpoint.Targets{"10 mail.example.org"},
 				ProviderSpecific: endpoint.ProviderSpecific{{Name: endpoint.ProviderSpecificAlias, Value: "true"}},
 			},
-			wantLogMsg: "Endpoint example.org of type MX does not support alias records",
+			wantLogMsg: `due to invalid configuration [MX:10 mail.example.org]: MX record does not support the "alias" provider-specific property`,
 		},
 		{
 			name: "invalid PTR record with non-reverse DNS name",

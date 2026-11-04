@@ -96,7 +96,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			},
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.InvalidReason,
-			wantMessagePart: `spec.endpoints[0] (SRV _svc._tcp.example.org): SRV targets must be "<priority> <weight> <port> <host>"`,
+			wantMessagePart: `spec.endpoints[0] (SRV _svc._tcp.example.org): invalid SRV record target "0 0 80 abc.example.org": target host does not end with a dot`,
 		},
 		{
 			title: "MX target without a preference is reported",
@@ -105,7 +105,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			},
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.InvalidReason,
-			wantMessagePart: `MX targets must be "<preference> <host>"`,
+			wantMessagePart: `invalid MX record target "example.com.": MX records must have a preference value and a host`,
 		},
 		{
 			title: "AAAA record carrying an IPv4 target is reported",
@@ -114,7 +114,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			},
 			wantStatus:      metav1.ConditionFalse,
 			wantReason:      apiv1alpha1.InvalidReason,
-			wantMessagePart: "must be IPv6 addresses",
+			wantMessagePart: `target "1.2.3.4" is an IPv4 address, use an A record`,
 		},
 		{
 			title: "null entry in spec is reported rather than silently skipped",

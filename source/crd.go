@@ -181,7 +181,7 @@ func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]
 // rejectionReason explains why ep cannot be planned, or returns "".
 //
 // It must cover what later stages drop with only a log line (MergeEndpoints,
-// CheckEndpoint), or Accepted would lie. Default targets apply in between.
+// Endpoint.Validate), or Accepted would lie. Default targets apply in between.
 func (cs *crdSource) rejectionReason(ep *endpoint.Endpoint) string {
 	if len(ep.Targets) == 0 {
 		switch {
@@ -200,7 +200,10 @@ func (cs *crdSource) rejectionReason(ep *endpoint.Endpoint) string {
 		return reason
 	}
 
-	return rfcViolationReason(ep)
+	if err := ep.Validate(); err != nil {
+		return err.Error()
+	}
+	return ""
 }
 
 // illegalTargetReason explains the first target whose trailing dot is wrong for
@@ -215,9 +218,9 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 		}
 		switch ep.RecordType {
 		case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
-			continue // TXT is free-form; rfcViolationReason checks MX
+			continue // TXT is free-form; Validate checks MX
 		case endpoint.RecordTypeSRV:
-			// RFC 2782 requires the dot; rfcViolationReason checks it (#6357).
+			// RFC 2782 requires the dot; Validate checks it (#6357).
 			continue
 		}
 
@@ -236,32 +239,6 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 	}
 
 	return ""
-}
-
-// rfcViolationReason turns an Endpoint.CheckEndpoint failure into a message that
-// names the grammar the record type expects. It returns "" when ep passes.
-func rfcViolationReason(ep *endpoint.Endpoint) string {
-	if ep.CheckEndpoint() {
-		return ""
-	}
-
-	switch ep.RecordType {
-	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA:
-		family := 4
-		if ep.RecordType == endpoint.RecordTypeAAAA {
-			family = 6
-		}
-		return fmt.Sprintf("targets of a %s record must be IPv%d addresses, unless the endpoint sets the %q provider-specific property for a provider-native alias",
-			ep.RecordType, family, endpoint.ProviderSpecificAlias)
-	case endpoint.RecordTypeMX:
-		return `MX targets must be "<preference> <host>", e.g. "10 mail.example.com"`
-	case endpoint.RecordTypeSRV:
-		return `SRV targets must be "<priority> <weight> <port> <host>" with an absolute host, e.g. "10 5 5060 sip.example.com."`
-	case endpoint.RecordTypePTR:
-		return "a PTR record needs a dnsName under .in-addr.arpa or .ip6.arpa and at least one non-empty target"
-	}
-
-	return fmt.Sprintf("a %s record does not support the %q provider-specific property", ep.RecordType, endpoint.ProviderSpecificAlias)
 }
 
 // reportAccepted follows Gateway API: an object with some valid endpoints stays
