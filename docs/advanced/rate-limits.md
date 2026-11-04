@@ -44,9 +44,9 @@ or provider-specific options to fine-tune the behaviour of external-dns
 to match the specific needs of your deployments, with the goal to reduce the number of API calls to your DNS provider.
 
 * Google
-  * `--google-batch-change-interval=1s` When using the Google provider, set the interval between batch changes. ($EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_INTERVAL)
+  * `--google-batch-change-interval=1s` When using the Google provider, set the minimum interval between starts of successive batch submissions in one reconciliation. The first batch starts immediately, and the interval does not delay the next reconciliation. ($EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_INTERVAL)
   * `--google-batch-change-size=1000` When using the Google provider, set the maximum number of changes that will be applied in each batch.
-  * `--google-request-timeout=1m0s` When using the Google provider, set the timeout for API requests (0 disables the timeout).
+  * `--google-request-timeout=1m0s` When using the Google provider, set the timeout for API requests (default: 1 minute; previously unlimited; 0 disables the timeout).
 * AWS
   * `--aws-batch-change-interval=1s` When using the AWS provider, set the interval between batch changes.
   * `--aws-batch-change-size=1000` When using the AWS provider, set the maximum number of changes that will be applied in each batch.

@@ -64,16 +64,6 @@ type resourceRecordSetsClientInterface interface {
 	List(project string, managedZone string) resourceRecordSetsListCallInterface
 }
 
-type changesClientInterface interface {
-	Create(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error)
-}
-
-type changesClientFunc func(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error)
-
-func (f changesClientFunc) Create(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error) {
-	return f(ctx, project, managedZone, change)
-}
-
 type resourceRecordSetsService struct {
 	service *dns.ResourceRecordSetsService
 }
@@ -105,7 +95,6 @@ type GoogleProvider struct {
 	batchChangeSize int
 	// Interval between batch updates.
 	batchChangeInterval time.Duration
-	batchChangeLimiter  *rate.Limiter
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter *endpoint.DomainFilter
 	// filter for zones based on visibility
@@ -117,7 +106,7 @@ type GoogleProvider struct {
 	// A client for managing hosted zones
 	managedZonesClient managedZonesServiceInterface
 	// A client for managing change sets.
-	changesClient changesClientInterface
+	changesService *dns.ChangesService
 	// The context parameter to be passed for gcloud API calls.
 	ctx context.Context
 }
@@ -158,16 +147,13 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 		dryRun:                   dryRun,
 		batchChangeSize:          batchChangeSize,
 		batchChangeInterval:      batchChangeInterval,
-		batchChangeLimiter:       rate.NewLimiter(rate.Every(batchChangeInterval), 1),
 		domainFilter:             domainFilter,
 		zoneTypeFilter:           zoneTypeFilter,
 		zoneIDFilter:             zoneIDFilter,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
-		changesClient: changesClientFunc(func(ctx context.Context, project string, managedZone string, change *dns.Change) (*dns.Change, error) {
-			return dnsClient.Changes.Create(project, managedZone, change).Context(ctx).Do()
-		}),
-		ctx: ctx,
+		changesService:           dnsClient.Changes,
+		ctx:                      ctx,
 	}, nil
 }
 
@@ -283,7 +269,11 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return provider.NewSoftErrorf("failed to list zones before applying changes: %w", err)
+		return err
+	}
+	var limiter *rate.Limiter
+	if p.batchChangeInterval > 0 {
+		limiter = rate.NewLimiter(rate.Every(p.batchChangeInterval), 1)
 	}
 
 	// separate into per-zone change sets to be passed to the API.
@@ -303,18 +293,25 @@ func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) e
 				continue
 			}
 
-			if p.batchChangeInterval > 0 {
-				if err := p.batchChangeLimiter.Wait(ctx); err != nil {
-					return provider.NewSoftErrorf("change submission canceled: %w", err)
+			if limiter != nil {
+				if err := waitForBatchChange(ctx, limiter); err != nil {
+					return err
 				}
 			}
 
-			if _, err := p.changesClient.Create(ctx, p.project, zone, c); err != nil {
+			if _, err := p.changesService.Create(p.project, zone, c).Context(ctx).Do(); err != nil {
 				return provider.NewSoftErrorf("failed to create changes: %w", err)
 			}
 		}
 	}
 
+	return nil
+}
+
+func waitForBatchChange(ctx context.Context, limiter *rate.Limiter) error {
+	if err := limiter.Wait(ctx); err != nil {
+		return provider.NewSoftErrorf("waiting to submit changes canceled: %w", err)
+	}
 	return nil
 }
 
