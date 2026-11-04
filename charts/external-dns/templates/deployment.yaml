@@ -53,6 +53,9 @@ spec:
       {{- with .Values.shareProcessNamespace }}
       shareProcessNamespace: {{ . }}
       {{- end }}
+      {{- if not (kindIs "invalid" .Values.hostUsers) }}
+      hostUsers: {{ .Values.hostUsers }}
+      {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
