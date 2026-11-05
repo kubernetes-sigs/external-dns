@@ -3,7 +3,7 @@
 title: "ACME DNS-01 Delegation CNAME Generation"
 authors: "@norman-zon"
 creation-date: 2026-09-30
-status: draft
+status: not-planned
 ---
 ```
 
@@ -12,6 +12,12 @@ status: draft
 ## Table of Contents
 
 <!-- toc -->
+- [Decision](#decision)
+- [Threat Model](#threat-model)
+- [Out-of-Tree Shapes](#out-of-tree-shapes)
+  - [Provider-Side Credential Scoping](#provider-side-credential-scoping)
+  - [Webhook Solver with a Dedicated crd Instance](#webhook-solver-with-a-dedicated-crd-instance)
+  - [Webhook Source Sidecar for the Delegation CNAMEs](#webhook-source-sidecar-for-the-delegation-cnames)
 - [Summary](#summary)
 - [Motivation](#motivation)
   - [Goals](#goals)
@@ -32,6 +38,148 @@ status: draft
 - [Alternatives](#alternatives)
 <!-- /toc -->
 
+## Decision
+
+**Rejected** after review on [#6777](https://github.com/kubernetes-sigs/external-dns/pull/6777):
+
+- ExternalDNS manages records that follow directly from a Kubernetes resource. A record derived
+  from one protocol's convention widens that scope, and the reasoning that keeps new providers out
+  of tree ([#4347](https://github.com/kubernetes-sigs/external-dns/issues/4347)) applies to
+  protocol-specific sources as well.
+- The security motivation is narrower than the proposal states. ExternalDNS already holds a
+  zone-scoped credential for the production zones, so delegation removes one principal with
+  production write access; it does not shrink what ExternalDNS itself can do. Several providers
+  also scope credentials below zone level, which covers much of the motivation without any CNAME.
+- The CNAMEs can be generated out of tree. The preferred shape is a sidecar behind the
+  [webhook source](008-webhook-source.md) that returns one `_acme-challenge` CNAME per hostname.
+  Users without the provider-enforced requirement from the threat model can instead run a
+  cert-manager webhook solver against a dedicated `crd` instance, which needs no CNAME at all.
+
+The reference implementation [#6548](https://github.com/kubernetes-sigs/external-dns/pull/6548) is
+closed. The threat model and the out-of-tree shapes below record the review; the original design
+follows them for reference.
+
+## Threat Model
+
+The threat is a compromised ACME client or a leaked ACME DNS credential. With a zone-scoped
+credential that means rewriting production A, AAAA and CNAME records in that zone, not only issuing
+certificates, which the ACME client can do by design. Delegation reduces the ACME credential to TXT
+writes in a dedicated challenge zone, enforced by the DNS provider. It does not change what
+ExternalDNS can do; it removes one principal with production write access.
+
+The requirement behind this proposal is provider-enforced: the ACME path, that is the ACME client
+and whatever solver it calls, holds credentials for the challenge zone only and can never write into
+a production zone. Enforcement inside the cluster, by RBAC or an admission policy, does not satisfy
+it, because the production-zone write then still happens, with the credential of whichever component
+applies the record.
+
+[RFC 8555 §8.4](https://www.rfc-editor.org/rfc/rfc8555#section-8.4) fixes the validation name at
+`_acme-challenge.<host>`, inside the host's zone. The only way to keep the ACME write out of the
+production zone is therefore the delegation CNAME into the challenge zone, which ACME CAs follow and
+which cert-manager supports with
+[`cnameStrategy: Follow`](https://cert-manager.io/docs/configuration/acme/dns01/#delegated-domains-for-dns01).
+Under this requirement the per-hostname CNAMEs stay with any solver. What this proposal decided is
+only whether generating them from existing sources lives in tree or out of tree.
+
+## Out-of-Tree Shapes
+
+### Provider-Side Credential Scoping
+
+Several providers scope a credential below zone level. A credential limited to TXT records at
+`_acme-challenge.*` names covers most of the threat model without any CNAME:
+
+- Route 53: the IAM condition keys `route53:ChangeResourceRecordSetsNormalizedRecordNames`,
+  `route53:ChangeResourceRecordSetsRecordTypes` and `route53:ChangeResourceRecordSetsActions`
+  ([AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/specifying-rrset-conditions.html)).
+- Cloud DNS: IAM bindings per managed zone, with IAM Conditions on individual resource record sets
+  ([Google Cloud documentation](https://cloud.google.com/dns/docs/zones/iam-per-resource-zones)).
+- NS1: API key and team permissions with `records_allow` entries scoped by zone, domain, subdomain
+  inclusion and record type
+  ([ns1-go model](https://github.com/ns1/ns1-go/blob/v2/rest/model/account/permissions.go)).
+
+This is provider-specific and not available everywhere. Delegation remains the tightest option and
+the only provider-agnostic one.
+
+### Webhook Solver with a Dedicated crd Instance
+
+cert-manager calls two methods on a DNS-01 webhook solver: `Present` writes the challenge TXT
+record, `CleanUp` removes it. A solver that creates a `DNSEndpoint` in `Present` and deletes it in
+`CleanUp` leaves the DNS write to the `crd` source, and cert-manager holds no DNS credential at all.
+Three such solvers exist:
+[youniqx/cert-manager-webhook-external-dns](https://github.com/youniqx/cert-manager-webhook-external-dns),
+[AbsaOSS/cert-manager-webhook-externaldns](https://github.com/AbsaOSS/cert-manager-webhook-externaldns)
+and
+[ThatsMrTalbot/acme-webhook-external-dns](https://github.com/ThatsMrTalbot/acme-webhook-external-dns).
+
+On its own this shape does not meet the threat model: the TXT record still lands in the production
+zone, written with the credential of ExternalDNS. It is compatible with it when combined with the
+delegation CNAMEs: `cnameStrategy: Follow` makes the solver write the delegated name in the
+challenge zone, and a dedicated ExternalDNS instance applies it. That instance:
+
+- runs `--source=crd` only, with `--domain-filter` set to the challenge zone and a credential for
+  that zone only;
+- needs `--managed-record-types=TXT`, because the default set (A, AAAA, CNAME) drops the challenge
+  records;
+- needs `--policy=sync`, because `upsert-only` never removes the challenge records;
+- should run with `--events`, so that a new `DNSEndpoint` triggers a reconcile within
+  `--min-event-sync-interval` instead of waiting for `--interval`.
+
+The trust boundary of this instance is cluster RBAC on `DNSEndpoint` in the watched namespace plus
+an admission policy that limits `dnsName` to `_acme-challenge.*` and `recordType` to TXT. Anything
+that can create a `DNSEndpoint` there can write what the instance's credential allows. In posture
+this equals a native cert-manager solver with a zone-scoped credential.
+
+Two defects were found while reviewing this shape. The code was read at
+[c76b50e](https://github.com/kubernetes-sigs/external-dns/commit/c76b50eca07644bc1782ea3803213e3ee3d7fa51),
+not run against live zones:
+
+- **Concurrent challenges for one name.** An apex name and its wildcard in one `Certificate`
+  produce two challenges at the same `_acme-challenge.<name>` with different keys. The plan keys its
+  rows by name and set identifier
+  ([plan.go#L69](https://github.com/kubernetes-sigs/external-dns/blob/c76b50eca07644bc1782ea3803213e3ee3d7fa51/plan/plan.go#L69)).
+  A solver that names one object per FQDN fails the second `Present` with `AlreadyExists` until the
+  first challenge is cleaned up. A solver that gives each challenge its own set identifier makes the
+  plan emit two creates for the same name and type; the Google provider submits them as two record
+  sets in one change
+  ([google.go#L264](https://github.com/kubernetes-sigs/external-dns/blob/c76b50eca07644bc1782ea3803213e3ee3d7fa51/provider/google/google.go#L264)),
+  which the Cloud DNS API rejects. A correct solver merges all keys for one name into one
+  `DNSEndpoint` with several targets. None of the three solvers above does.
+- **Providers without set-identifier support.** NS1 returns records without an identifier
+  ([ns1.go#L165](https://github.com/kubernetes-sigs/external-dns/blob/c76b50eca07644bc1782ea3803213e3ee3d7fa51/provider/ns1/ns1.go#L165)).
+  With a set identifier on the desired side, the reconcile after the record was created plans a
+  delete of the old record and a create of the new one; the create runs first, the provider returns
+  `ErrRecordExists` as a plain error
+  ([ns1.go#L245](https://github.com/kubernetes-sigs/external-dns/blob/c76b50eca07644bc1782ea3803213e3ee3d7fa51/provider/ns1/ns1.go#L245)),
+  and the controller exits
+  ([controller.go#L197](https://github.com/kubernetes-sigs/external-dns/blob/c76b50eca07644bc1782ea3803213e3ee3d7fa51/controller/controller.go#L197)).
+  A single challenge is enough to trigger it. This is an ExternalDNS defect in its own right, the
+  plan keyed by a set identifier on a provider that cannot store one, and is tracked outside this
+  proposal.
+
+### Webhook Source Sidecar for the Delegation CNAMEs
+
+The preferred out-of-tree shape for generating the CNAMEs is a sidecar behind the
+[webhook source](008-webhook-source.md). It returns one `_acme-challenge.<host>` CNAME per
+hostname, and ExternalDNS treats them like the endpoints of any other source.
+
+- The webhook source is a draft and not implemented as of v0.24.0. Until it lands, the available
+  out-of-tree shape is a controller that writes `DNSEndpoint` objects (Alternative 3 below).
+- The sidecar has to discover the hostnames itself. It runs on loopback in the ExternalDNS pod and
+  shares its service account, so it reads the same `Ingress`, `HTTPRoute` and `Service` objects
+  with the RBAC that already exists. Importing the `source` package of this module reuses hostname
+  extraction and `--fqdn-template`, which moves the wrapper from #6548 out of tree without changes.
+  The package carries no API stability promise.
+- The generated records pass through the plan and the registry as usual: they get ownership TXT
+  records, are deleted when their hostname disappears, and follow `--policy`. They appear within
+  one `--interval`, because the webhook source has no event handler; for a static per-host record
+  that is acceptable.
+- Wildcard handling, deduplication of a wildcard and its base name, and skipping of names that
+  already begin with `_acme-challenge.` stay the sidecar's job.
+- The precedence of explicit records from the original design does not carry over. When the `crd`
+  source and the sidecar both produce the same challenge name, the plan's conflict resolver
+  decides: the smallest target on first creation, the owning resource afterwards
+  ([conflict.go](https://github.com/kubernetes-sigs/external-dns/blob/c76b50eca07644bc1782ea3803213e3ee3d7fa51/plan/conflict.go)).
+
 ## Summary
 
 Add an opt-in source wrapper that creates an ACME DNS-01 delegation CNAME
@@ -49,7 +197,7 @@ Nothing changes unless the feature is enabled.
 
 Tracking issue: [#6535](https://github.com/kubernetes-sigs/external-dns/issues/6535).
 Reference implementation: [#6548](https://github.com/kubernetes-sigs/external-dns/pull/6548)
-(on hold until this proposal is decided).
+(closed with this decision).
 
 ## Motivation
 
