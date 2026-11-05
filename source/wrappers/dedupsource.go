@@ -69,7 +69,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		if i, ok := byIdentifier[identifier]; ok {
 			kept, dropped := result[i], ep
-			if sameKindResourceBefore(ep, kept) {
+			if preferSameKindResource(ep, kept) {
 				kept, dropped = ep, result[i]
 				result[i] = kept
 			}
@@ -88,9 +88,9 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	return result, nil
 }
 
-// sameKindResourceBefore makes the kept duplicate independent of informer order within a
+// preferSameKindResource makes the kept duplicate independent of informer order within a
 // source. Across sources the first --source wins, unless two emit the same kind.
-func sameKindResourceBefore(a, b *endpoint.Endpoint) bool {
+func preferSameKindResource(a, b *endpoint.Endpoint) bool {
 	ra, rb := a.Labels[endpoint.ResourceLabelKey], b.Labels[endpoint.ResourceLabelKey]
 	kindA, _, okA := strings.Cut(ra, "/")
 	kindB, _, okB := strings.Cut(rb, "/")

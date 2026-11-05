@@ -148,8 +148,7 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 //
 // When several endpoints merge into one, the endpoint with the lowest resource label keeps its
 // scalar metadata (TTL, ProviderSpecific, Labels, ...), or the first in input order when none has one.
-// RefObjects from all of them are accumulated, so the merged record references every source object
-// that contributed to it.
+// RefObjects from all of them are accumulated, so the merged record references every source object that contributed to it.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
@@ -182,7 +181,7 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 		}
 		if existing, ok := endpointMap[key]; ok {
 			kept, merged := existing, ep
-			if resourceBefore(ep, existing) {
+			if preferResource(ep, existing) {
 				kept, merged = ep, existing
 				endpointMap[key] = kept
 			}
@@ -205,9 +204,9 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
-// resourceBefore picks the same base endpoint on every sync: sources list objects in
+// preferResource picks the same base endpoint on every sync: sources list objects in
 // informer order, which changes between calls, and the base's labels reach the registry.
-func resourceBefore(a, b *Endpoint) bool {
+func preferResource(a, b *Endpoint) bool {
 	ra, rb := a.Labels[ResourceLabelKey], b.Labels[ResourceLabelKey]
 	return ra != "" && (rb == "" || ra < rb)
 }
