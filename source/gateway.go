@@ -539,6 +539,7 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		if len(override) == 0 {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
 				if !gwAddressIsDNSTarget(addr) {
+					log.Debugf("Skipping Gateway %s/%s address %q of type %s", parent.obj.gateway.Namespace, parent.obj.gateway.Name, addr.Value, *addr.Type)
 					continue
 				}
 				hostTargets[host] = append(hostTargets[host], addr.Value)
@@ -549,18 +550,9 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-// gwAddressIsDNSTarget reports whether a Gateway status address can be used as a DNS target.
-// Domain-prefixed address types are implementation-specific (e.g. a load balancer ID) and are
-// skipped. An unset type defaults to IPAddress.
+// An unset type defaults to IPAddress; other types are implementation-specific.
 func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
-	if addr.Type == nil {
-		return true
-	}
-	switch *addr.Type {
-	case v1.IPAddressType, v1.HostnameAddressType:
-		return true
-	}
-	return false
+	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
 }
 
 // appendFQDNTemplate appends the template-generated hostnames, unless another source already
