@@ -273,6 +273,15 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		p.lastRunZones = []string{}
 	}()
 
+	// the CRD registry does not call Records() before ApplyChanges
+	if len(zones) == 0 {
+		var err error
+		zones, records, err = p.zonesRecords(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	if log.IsLevelEnabled(log.DebugLevel) {
 		for _, change := range changes.Create {
 			log.Debugf("OVH: changes CREATE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
