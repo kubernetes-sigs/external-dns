@@ -88,9 +88,11 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 ## Webhook Source
 
 Adding `webhook` to `sources` runs a `webhook-source` sidecar next to _ExternalDNS_ that serves the desired DNS records over HTTP/JSON on loopback;
-see the [webhook source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/webhook/) documentation for the contract.
+see the [webhook source](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/sources/webhook.md) documentation for the contract.
 The image is set with `webhookSource.image.repository` and `webhookSource.image.tag`.
-The sidecar listens on the contract port `8889` for _ExternalDNS_ and exposes `/healthz` and `/metrics` on port `8081`, which the `Service` publishes as `http-source`.
+The chart expects the image to serve the contract on `localhost:8889`, the default of `--webhook-source-url`, and `/healthz` and `/metrics` on port `8081`, which the `Service` publishes as `http-source`;
+an image that listens elsewhere needs `webhookSource.args` or `extraArgs` with `--webhook-source-url`.
+The chart grants RBAC only for the sources _ExternalDNS_ runs itself, so a sidecar that reads Kubernetes objects with the pod's `ServiceAccount` needs its rules added through `rbac.additionalPermissions`.
 
 ```yaml
 sources:

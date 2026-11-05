@@ -19,6 +19,20 @@ tests:
           path: spec.endpoints[0].port
           value: http
 
+  - it: should render nothing when the service monitor is disabled
+    set:
+      serviceMonitor:
+        enabled: false
+      sources:
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+    asserts:
+      - hasDocuments:
+          count: 0
+
   - it: should add the webhook source endpoint when sources contains webhook
     set:
       sources:

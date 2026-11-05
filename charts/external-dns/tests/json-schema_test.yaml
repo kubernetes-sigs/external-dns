@@ -76,6 +76,14 @@ tests:
     asserts:
       - notFailedTemplate: {}
 
+  - it: should not fail when webhook source serviceMonitor interval is not null
+    set:
+      webhookSource:
+        serviceMonitor:
+          interval: 30s
+    asserts:
+      - notFailedTemplate: {}
+
   - it: should throw an error when 'eventsEmit' contains an unknown event
     set:
       eventsEmit:
