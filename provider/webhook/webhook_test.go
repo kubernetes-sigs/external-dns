@@ -653,6 +653,7 @@ func TestRecords_ResponseBodyOverLimit(t *testing.T) {
 
 	_, err = p.Records(t.Context())
 	require.ErrorIs(t, err, extdnshttp.ErrResponseTooLarge)
+	require.ErrorContains(t, err, "--webhook-provider-max-body-size")
 }
 
 func TestRecords_ResponseBodyLimitDisabled(t *testing.T) {

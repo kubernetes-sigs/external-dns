@@ -46,7 +46,7 @@ func RequestWithRetry(client *http.Client, req *http.Request, backoff wait.Backo
 
 		r, err := client.Do(req)
 		if err != nil {
-			log.Debugf("Request to %s failed: %v", req.URL, err)
+			log.Debugf("Failed to connect to webhook: %v", err)
 			lastErr = err
 			return false, nil
 		}

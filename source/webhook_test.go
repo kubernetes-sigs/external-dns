@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -186,6 +187,25 @@ func TestWebhookSource_Endpoints(t *testing.T) {
 	}, eps)
 }
 
+// Every record type ExternalDNS knows is accepted, not only the provider-side
+// zone-listing subset; MX, PTR, NAPTR and TLSA come from webhooks too.
+func TestWebhookSource_AllKnownRecordTypes(t *testing.T) {
+	srv := newWebhookServer(t, serveEndpoints(`[
+		{"dnsName": "example.com", "recordType": "MX", "targets": ["10 mail.example.com"]},
+		{"dnsName": "1.2.0.192.in-addr.arpa", "recordType": "PTR", "targets": ["host.example.com"]},
+		{"dnsName": "_sip._udp.example.com", "recordType": "NAPTR", "targets": ["100 10 \"u\" \"E2U+sip\" \"!^.*$!sip:info@example.com!\" ."]},
+		{"dnsName": "_443._tcp.example.com", "recordType": "TLSA", "targets": ["3 1 1 abc123"]},
+		{"dnsName": "example.com", "recordType": "NS", "targets": ["ns1.example.com"]},
+		{"dnsName": "alias.example.com", "recordType": "DNAME", "targets": ["example.net"]}
+	]`))
+	defer srv.Close()
+	src := newTestWebhookSource(t, srv)
+
+	eps, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+	assert.Len(t, eps, 6)
+}
+
 func TestWebhookSource_EmptyListIsValid(t *testing.T) {
 	srv := newWebhookServer(t, serveEndpoints(`[]`))
 	defer srv.Close()
@@ -245,9 +265,21 @@ func TestWebhookSource_SoftErrors(t *testing.T) {
 			handler: serveEndpoints(`[null]`),
 			want:    "null endpoint",
 		},
-		"unsupported record type": {
+		"unknown record type": {
 			handler: serveEndpoints(`[{"dnsName": "a.example.com", "recordType": "SPF", "targets": ["v=spf1"]}]`),
-			want:    `unsupported record type "SPF"`,
+			want:    `unknown record type "SPF"`,
+		},
+		"missing dnsName": {
+			handler: serveEndpoints(`[{"recordType": "A", "targets": ["192.0.2.1"]}]`),
+			want:    "without a dnsName",
+		},
+		"overlong label": {
+			handler: serveEndpoints(`[{"dnsName": "` + strings.Repeat("a", 64) + `.example.com", "recordType": "A", "targets": ["192.0.2.1"]}]`),
+			want:    "longer than 63 characters",
+		},
+		"negative ttl": {
+			handler: serveEndpoints(`[{"dnsName": "a.example.com", "recordType": "A", "targets": ["192.0.2.1"], "recordTTL": -1}]`),
+			want:    "negative TTL",
 		},
 		"invalid endpoint rejects the whole response": {
 			handler: serveEndpoints(`[
@@ -300,6 +332,7 @@ func TestWebhookSource_BodyOverLimit(t *testing.T) {
 	_, err = src.Endpoints(t.Context())
 	require.ErrorIs(t, err, provider.SoftError)
 	require.ErrorIs(t, err, extdnshttp.ErrResponseTooLarge)
+	require.ErrorContains(t, err, "--webhook-source-max-body-size")
 }
 
 func TestWebhookSource_MultipleWebhooks(t *testing.T) {

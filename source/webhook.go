@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -251,6 +252,9 @@ func (wc *webhookClient) fetch(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	var eps []*endpoint.Endpoint
 	if err := json.NewDecoder(extdnshttp.LimitBody(resp.Body, wc.maxBodySize)).Decode(&eps); err != nil {
+		if errors.Is(err, extdnshttp.ErrResponseTooLarge) {
+			return nil, fmt.Errorf("%w (--webhook-source-max-body-size)", err)
+		}
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 	// A JSON null decodes to a nil slice without error; it is not an empty list.
@@ -263,8 +267,18 @@ func (wc *webhookClient) fetch(ctx context.Context) ([]*endpoint.Endpoint, error
 		if ep == nil {
 			return nil, errors.New("response contains a null endpoint")
 		}
-		if !provider.SupportedRecordType(ep.RecordType) {
-			return nil, fmt.Errorf("endpoint %q: unsupported record type %q", ep.DNSName, ep.RecordType)
+		// The crd source gets these from the API server's schema; a webhook has no schema in front of it.
+		if ep.DNSName == "" {
+			return nil, errors.New("endpoint without a dnsName")
+		}
+		if label := endpoint.OverlongDNSLabel(ep.DNSName); label != "" {
+			return nil, fmt.Errorf("endpoint %q: label %q is longer than 63 characters", ep.DNSName, label)
+		}
+		if !slices.Contains(endpoint.KnownRecordTypes, ep.RecordType) {
+			return nil, fmt.Errorf("endpoint %q: unknown record type %q", ep.DNSName, ep.RecordType)
+		}
+		if ep.RecordTTL < 0 {
+			return nil, fmt.Errorf("endpoint %q: negative TTL %d", ep.DNSName, ep.RecordTTL)
 		}
 		if err := ep.Validate(); err != nil {
 			return nil, fmt.Errorf("endpoint %q: %w", ep.DNSName, err)

@@ -23,7 +23,7 @@ import (
 
 // ErrResponseTooLarge distinguishes an over-limit body from a malformed or
 // truncated one, which io.LimitReader would report as a plain EOF.
-var ErrResponseTooLarge = errors.New("response body exceeds the configured max body size")
+var ErrResponseTooLarge = errors.New("webhook response body exceeds the configured max size")
 
 // LimitBody caps response body reads at maxBodySize, failing with
 // ErrResponseTooLarge once exceeded; a non-positive limit disables the cap.

@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -106,6 +108,16 @@ func init() {
 	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
 }
 
+// decodeBody decodes a capped response body; an over-limit body names the flag
+// that raises the cap, since the shared reader cannot know which webhook it serves.
+func decodeBody(body io.Reader, maxBodySize int64, v any) error {
+	err := json.NewDecoder(extdnshttp.LimitBody(body, maxBodySize)).Decode(v)
+	if errors.Is(err, extdnshttp.ErrResponseTooLarge) {
+		return fmt.Errorf("%w (--webhook-provider-max-body-size)", err)
+	}
+	return err
+}
+
 // New creates a webhook provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
 	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize)
@@ -140,7 +152,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 
 	df := &endpoint.DomainFilter{}
-	if err := json.NewDecoder(extdnshttp.LimitBody(resp.Body, maxBodySize)).Decode(df); err != nil {
+	if err := decodeBody(resp.Body, maxBodySize, df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
@@ -183,7 +195,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(extdnshttp.LimitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
+	if err := decodeBody(resp.Body, p.maxBodySize, &endpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
@@ -293,7 +305,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	if err := json.NewDecoder(extdnshttp.LimitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
+	if err := decodeBody(resp.Body, p.maxBodySize, &endpoints); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
