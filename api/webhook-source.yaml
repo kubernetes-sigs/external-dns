@@ -1,0 +1,106 @@
+---
+openapi: "3.0.0"
+info:
+  version: "1"
+  title: External DNS Webhook Source
+  description: >-
+    Contract between ExternalDNS and an out-of-process source. The webhook
+    serves the desired DNS records as endpoints; ExternalDNS is the client and
+    polls it once per reconcile loop. The media type is versioned separately
+    from the provider webhook so that a URL pointing at the wrong kind of
+    webhook fails negotiation.
+  contact:
+    url: https://github.com/kubernetes-sigs/external-dns
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+tags:
+  - name: initialization
+    description: Endpoints for initial negotiation.
+  - name: listing
+    description: Endpoints to get the desired DNS records.
+servers:
+  - url: http://localhost:8889
+    description: >-
+      Loopback address of the sidecar. ExternalDNS rejects any
+      --webhook-source-url that is not plain HTTP on a loopback host.
+paths:
+  /:
+    get:
+      summary: Negotiates the media type.
+      description: |
+        Called once at start-up with the `Accept` header set to
+        `application/external.dns.webhook.source+json;version=1`. The webhook
+        answers with the same media type in `Content-Type`; extra parameters
+        such as `charset` are tolerated, a different type or version is not.
+        The body is ignored and reserved for additive fields.
+      operationId: negotiate
+      tags: [initialization]
+      responses:
+        '200':
+          description: |
+            The webhook speaks this media type.
+          content:
+            application/external.dns.webhook.source+json;version=1:
+              schema:
+                $ref: '#/components/schemas/negotiation'
+              example: {}
+        '503':
+          description: |
+            The webhook is still starting. ExternalDNS retries with backoff
+            before it gives up and exits.
+        '5XX':
+          description: |
+            Negotiation failed. Retried with backoff like `503`.
+
+  /endpoints:
+    get:
+      summary: Returns the desired records.
+      description: |
+        Called once per reconcile loop. The response is the complete desired
+        state of this webhook: with `--policy=sync`, records that ExternalDNS
+        owns and that are missing from it are deleted. An empty array is valid
+        and means "no desired records". Never answer an upstream failure with an
+        empty array; use an error status so that ExternalDNS keeps the existing
+        records.
+
+        ExternalDNS validates every entry (supported record type, at least one
+        target, well-formed targets) and rejects the whole response if one entry
+        fails. The `labels` field is ignored: ExternalDNS sets the `resource`
+        label to `webhook/<host:port>` itself.
+      operationId: getEndpoints
+      tags: [listing]
+      responses:
+        '200':
+          description: |
+            Provided the desired records successfully.
+          content:
+            application/external.dns.webhook.source+json;version=1:
+              schema:
+                $ref: 'webhook.yaml#/components/schemas/endpoints'
+              example:
+                - dnsName: "app.example.com"
+                  recordTTL: 300
+                  recordType: 'A'
+                  targets:
+                    - "192.0.2.10"
+                - dnsName: "_acme-challenge.app.example.com"
+                  recordType: 'CNAME'
+                  targets:
+                    - "app.example.com.acme.example.net"
+        '503':
+          description: |
+            The webhook is not ready yet. ExternalDNS logs a soft error, keeps
+            the existing records and retries on the next loop.
+        '5XX':
+          description: |
+            Failed to produce the desired records. Handled like `503`.
+
+components:
+  schemas:
+    negotiation:
+      description: |
+        Body of the negotiation response. Empty today; later versions may add
+        fields, which older ExternalDNS versions ignore.
+      type: object
+      example: {}

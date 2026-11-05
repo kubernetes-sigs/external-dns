@@ -54,6 +54,9 @@ jobs:
         args: --timeout=30m
         version: ${{ steps.lint-version.outputs.version }}
 
+    - name: Lint OpenAPI documents
+      run: make openapi-lint
+
     - name: Run file hygiene checks
       run: ./scripts/file-hygiene.sh
 
