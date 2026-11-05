@@ -445,6 +445,7 @@ and examples.
 Notes:
 
 - The annotation is provider-agnostic in design but is primarily used with AWS Route53 routing policies.
+- Providers that cannot store a set identifier ignore it. NS1 drops the value and logs a warning.
 - The value is arbitrary but must be **unique per record set** for the same domain and type combination.
 - For Gateway API sources, this annotation must be placed on **Route resources** (e.g., `HTTPRoute`), not on
   the `Gateway` resource itself. See [Gateway API Annotation Placement](#gateway-api-annotation-placement).
