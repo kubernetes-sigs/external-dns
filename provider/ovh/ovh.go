@@ -219,6 +219,17 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) (map[string]*p
 	return output, nil
 }
 
+// ovhRecordsByZone groups records by the zone they belong to, so that changes
+// planned for one zone are only ever matched against that zone's records.
+func ovhRecordsByZone(records []ovhRecord) map[string][]ovhRecord {
+	byZone := map[string][]ovhRecord{}
+	for _, record := range records {
+		byZone[record.Zone] = append(byZone[record.Zone], record)
+	}
+	return byZone
+}
+
+// computeSingleZoneChanges expects existingRecords to hold the records of zoneName only.
 func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
 	allChanges := []ovhChange{}
 	var computedChanges []ovhChange
@@ -292,11 +303,12 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	if err != nil {
 		return err
 	}
+	recordsByZone := ovhRecordsByZone(records)
 	eg, ctx := errgroup.WithContext(ctx)
 
 	for zoneName, changes := range changesByZoneName {
 		eg.Go(func() error {
-			return p.handleSingleZoneUpdate(ctx, zoneName, records, changes)
+			return p.handleSingleZoneUpdate(ctx, zoneName, recordsByZone[zoneName], changes)
 		})
 	}
 

@@ -352,6 +352,46 @@ func TestOvhComputeChanges(t *testing.T) {
 
 }
 
+// Records() returns the records of every managed zone. An update in one zone
+// must never touch a record of another zone that has the same type and subdomain.
+func TestOvhApplyChangesUpdateIgnoresOtherZones(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		dnsName string
+		record  string
+		sub     string
+	}{
+		{name: "apex", dnsName: "example.net", record: "/domain/zone/example.net/record/2", sub: ""},
+		{name: "subdomain", dnsName: "www.example.net", record: "/domain/zone/example.net/record/4", sub: "www"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := new(mockOvhClient)
+			provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+
+			// example.org is fetched first and holds records with the same type and subdomain.
+			client.On("GetWithContext", "/domain/zone").Return([]string{"example.org", "example.net"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.org/record").Return([]uint64{1, 3}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.org/record/1").Return(ovhRecord{ID: 1, Zone: "example.org", FieldType: "A", SubDomain: "", TTL: 10, Target: "198.51.100.7"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.org/record/3").Return(ovhRecord{ID: 3, Zone: "example.org", FieldType: "A", SubDomain: "www", TTL: 10, Target: "198.51.100.7"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.net/record").Return([]uint64{2, 4}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.net/record/2").Return(ovhRecord{ID: 2, Zone: "example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.net/record/4").Return(ovhRecord{ID: 4, Zone: "example.net", FieldType: "A", SubDomain: "www", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+
+			// Only the example.net record is rewritten, nothing is deleted.
+			client.On("PutWithContext", tc.record, ovhRecordFieldUpdate{SubDomain: tc.sub, TTL: 10, Target: "203.0.113.43"}).Return(nil, nil).Once()
+			client.On("PostWithContext", "/domain/zone/example.net/refresh", nil).Return(nil, nil).Once()
+
+			_, err := provider.Records(t.Context())
+			td.CmpNoError(t, err)
+			td.CmpNoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
+				UpdateOld: []*endpoint.Endpoint{{DNSName: tc.dnsName, RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}}},
+				UpdateNew: []*endpoint.Endpoint{{DNSName: tc.dnsName, RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}}},
+			}))
+			client.AssertExpectations(t)
+		})
+	}
+}
+
 func TestOvhRefresh(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
