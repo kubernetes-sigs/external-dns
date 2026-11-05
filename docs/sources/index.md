@@ -49,6 +49,7 @@ Sources are responsible for:
 | **skipper-routegroup**   | annotation[^filter-annotation],label[^filter-label] | all,single,multiple[^namespaces] | true[^fqdn-template] | true[^events-emit] | true              |                             | ingress controllers | RouteGroup.zalando.org                                                                |
 | **traefik-proxy**        | annotation[^filter-annotation],label[^filter-label] | all,single,multiple[^namespaces] | true[^fqdn-template] | true[^events-emit] | true              | annotation[^val-annotation] | ingress controllers | IngressRoute.traefik.io<br/>IngressRouteTCP.traefik.io<br/>IngressRouteUDP.traefik.io |
 | **unstructured**         | annotation[^filter-annotation],label[^filter-label] | all,single,multiple[^namespaces] | true[^fqdn-template] | true[^events-emit] | false             | annotation[^val-annotation] | custom resources    | Unstructured                                                                          |
+| **webhook**              |                                                     |                                  | false                | false              | false             |                             | special             | Remote HTTP server                                                                    |
 
 ## Usage
 

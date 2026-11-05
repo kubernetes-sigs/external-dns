@@ -87,6 +87,9 @@ type Config struct {
 	PublishHostIP                                 bool
 	AlwaysPublishNotReadyAddresses                bool
 	ConnectorSourceServer                         string
+	WebhookSourceURLs                             []string
+	WebhookSourceTimeout                          time.Duration
+	WebhookSourceMaxBodySize                      int64
 	Provider                                      string
 	ProviderCacheTime                             time.Duration
 	CreatePTR                                     bool
@@ -278,6 +281,9 @@ var defaultConfig = &Config{
 	CombineFQDNAndAnnotation:         false,
 	Compatibility:                    "",
 	ConnectorSourceServer:            "localhost:8080",
+	WebhookSourceURLs:                []string{"http://localhost:8889"},
+	WebhookSourceTimeout:             15 * time.Second,
+	WebhookSourceMaxBodySize:         defaultWebhookProviderMaxBodySize,
 	CoreDNSPrefix:                    "/skydns/",
 	CoreDNSStrictlyOwned:             false,
 	CRDSourceAPIVersion:              "externaldns.k8s.io/v1alpha1",
@@ -465,6 +471,7 @@ var multiNamespaceSources = []string{
 	"skipper-routegroup",
 	"traefik-proxy",
 	"unstructured",
+	"webhook",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -575,6 +582,9 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the legacy prefix external-dns.alpha.kubernetes.io/ (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
+	b.StringsVar("webhook-source-url", "The base URL of a source webhook, valid only when using the webhook source; the http scheme and a loopback host are required. Specify multiple times for multiple webhooks (default: http://localhost:8889)", defaultConfig.WebhookSourceURLs, &cfg.WebhookSourceURLs)
+	b.DurationVar("webhook-source-timeout", "The round-trip timeout for a source webhook request in duration format (default: 15s)", defaultConfig.WebhookSourceTimeout, &cfg.WebhookSourceTimeout)
+	b.Int64Var("webhook-source-max-body-size", "Maximum size in bytes of a source webhook response body; larger payloads are rejected (default: 33554432, i.e. 32 MiB, 0 disables)", defaultConfig.WebhookSourceMaxBodySize, &cfg.WebhookSourceMaxBodySize)
 	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
 	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
