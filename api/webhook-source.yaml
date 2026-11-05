@@ -8,7 +8,8 @@ info:
     serves the desired DNS records as endpoints; ExternalDNS is the client and
     polls it once per reconcile loop. The media type is versioned separately
     from the provider webhook so that a URL pointing at the wrong kind of
-    webhook fails negotiation.
+    webhook fails negotiation. info.version is the version parameter of that
+    media type, not an ExternalDNS release.
   contact:
     url: https://github.com/kubernetes-sigs/external-dns
   license:
@@ -34,7 +35,7 @@ paths:
         answers with the same media type in `Content-Type`; extra parameters
         such as `charset` are tolerated, a different type or version is not.
         The body is ignored and reserved for additive fields.
-      operationId: negotiate
+      operationId: negotiateSource
       tags: [initialization]
       responses:
         '200':
@@ -52,6 +53,10 @@ paths:
         '5XX':
           description: |
             Negotiation failed. Retried with backoff like `503`.
+        default:
+          description: |
+            Any other status fails negotiation at once, without retry. Redirects
+            are not followed: a `3xx` is a failure like a `4xx`.
 
   /endpoints:
     get:
@@ -64,11 +69,17 @@ paths:
         empty array; use an error status so that ExternalDNS keeps the existing
         records.
 
-        ExternalDNS validates every entry (supported record type, at least one
-        target, well-formed targets) and rejects the whole response if one entry
-        fails. The `labels` field is ignored: ExternalDNS sets the `resource`
-        label to `webhook/<host:port>` itself.
-      operationId: getEndpoints
+        ExternalDNS sends the same `Accept` header as on `/`. The round trip,
+        including reading the body, is bounded by `--webhook-source-timeout`
+        (15s by default), and the body is capped by
+        `--webhook-source-max-body-size` (32 MiB by default); an over-limit body
+        is a soft error.
+
+        ExternalDNS validates every entry (known record type, a name, at least
+        one target, well-formed targets) and rejects the whole response if one
+        entry fails. The `labels` field is ignored: ExternalDNS sets the
+        `resource` label to `webhook/<host:port>` itself.
+      operationId: getSourceEndpoints
       tags: [listing]
       responses:
         '200':
@@ -95,6 +106,10 @@ paths:
         '5XX':
           description: |
             Failed to produce the desired records. Handled like `503`.
+        default:
+          description: |
+            Any other status is a soft error, handled like `503`. Redirects are
+            not followed, so a `3xx` is a failure too.
 
 components:
   schemas:
