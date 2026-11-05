@@ -85,9 +85,26 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | `skipper-routegroup`   | ✅         |                        |
 | `gloo-proxy`           | ✅         |                        |
 | `contour-httpproxy`    | ✅         |                        |
+| `webhook`              | ✅         | Ignores the namespace  |
 | `service`              | ⚠️️         | NodePort not supported |
 | `node`                 | ❌         |                        |
 | `pod`                  | ❌         |                        |
+
+## Webhook Source
+
+Adding `webhook` to `sources` runs a `webhook-source` sidecar next to _ExternalDNS_ that serves the desired DNS records over HTTP/JSON on loopback;
+see the [webhook source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/webhook/) documentation for the contract.
+The image is set with `webhookSource.image.repository` and `webhookSource.image.tag`.
+The sidecar listens on the contract port `8889` for _ExternalDNS_ and exposes `/healthz` and `/metrics` on port `8081`, which the `Service` publishes as `http-source`.
+
+```yaml
+sources:
+  - webhook
+webhookSource:
+  image:
+    repository: example.com/my-source-webhook
+    tag: v1.0.0
+```
 
 ## Values
 
@@ -194,6 +211,18 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ when using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
+| webhookSource.args | list | `[]` | Extra arguments to provide for the `webhook-source` container. |
+| webhookSource.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook-source` container. |
+| webhookSource.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook-source` container. |
+| webhookSource.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `webhook-source` container. |
+| webhookSource.image.repository | string | `nil` | Image repository for the `webhook-source` container. |
+| webhookSource.image.tag | string | `nil` | Image tag for the `webhook-source` container. |
+| webhookSource.livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook-source` container. |
+| webhookSource.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook-source` container. |
+| webhookSource.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook-source` container. |
+| webhookSource.securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook-source` container. |
+| webhookSource.service.port | int | `8081` | `Service` port for the probe and metrics port of the `webhook-source` container. |
+| webhookSource.serviceMonitor | object | See _values.yaml_ | Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook-source` container. |
 
 ## Usage
 

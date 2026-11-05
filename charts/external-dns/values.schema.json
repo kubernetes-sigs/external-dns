@@ -963,6 +963,232 @@
         "string",
         "null"
       ]
+    },
+    "webhookSource": {
+      "type": "object",
+      "properties": {
+        "args": {
+          "description": "Extra arguments to provide for the `webhook-source` container.",
+          "type": "array"
+        },
+        "env": {
+          "description": "[Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook-source` container.",
+          "type": "array"
+        },
+        "extraVolumeMounts": {
+          "description": "Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook-source` container.",
+          "type": "array"
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "pullPolicy": {
+              "description": "Image pull policy for the `webhook-source` container.",
+              "type": "string"
+            },
+            "repository": {
+              "description": "Image repository for the `webhook-source` container.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tag": {
+              "description": "Image tag for the `webhook-source` container.",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "livenessProbe": {
+          "description": "[Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook-source` container.",
+          "type": "object",
+          "properties": {
+            "failureThreshold": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "httpGet": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "port": {
+                  "default": "string",
+                  "type": [
+                    "integer",
+                    "string"
+                  ]
+                }
+              }
+            },
+            "initialDelaySeconds": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "periodSeconds": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "successThreshold": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "timeoutSeconds": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        },
+        "readinessProbe": {
+          "description": "[Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook-source` container.",
+          "type": "object",
+          "properties": {
+            "failureThreshold": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "httpGet": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "port": {
+                  "default": "string",
+                  "type": [
+                    "integer",
+                    "string"
+                  ]
+                }
+              }
+            },
+            "initialDelaySeconds": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "periodSeconds": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "successThreshold": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "timeoutSeconds": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        },
+        "resources": {
+          "description": "[Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook-source` container.",
+          "type": "object"
+        },
+        "securityContext": {
+          "description": "[Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook-source` container.",
+          "type": "object",
+          "properties": {
+            "allowPrivilegeEscalation": {
+              "type": "boolean"
+            },
+            "capabilities": {
+              "type": "object",
+              "properties": {
+                "drop": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "privileged": {
+              "type": "boolean"
+            },
+            "readOnlyRootFilesystem": {
+              "type": "boolean"
+            }
+          }
+        },
+        "service": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "description": "`Service` port for the probe and metrics port of the `webhook-source` container.",
+              "type": "integer"
+            }
+          }
+        },
+        "serviceMonitor": {
+          "description": "Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook-source` container.",
+          "type": "object",
+          "properties": {
+            "bearerTokenFile": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "interval": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "metricRelabelings": {
+              "type": "array"
+            },
+            "relabelings": {
+              "type": "array"
+            },
+            "scheme": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "scrapeTimeout": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "tlsConfig": {
+              "type": "object"
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": true

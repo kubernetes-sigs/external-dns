@@ -79,10 +79,27 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | `skipper-routegroup`   | ✅         |                        |
 | `gloo-proxy`           | ✅         |                        |
 | `contour-httpproxy`    | ✅         |                        |
+| `webhook`              | ✅         | Ignores the namespace  |
 | `service`              | ⚠️️         | NodePort not supported |
 | `node`                 | ❌         |                        |
 | `pod`                  | ❌         |                        |
 
+
+## Webhook Source
+
+Adding `webhook` to `sources` runs a `webhook-source` sidecar next to _ExternalDNS_ that serves the desired DNS records over HTTP/JSON on loopback;
+see the [webhook source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/webhook/) documentation for the contract.
+The image is set with `webhookSource.image.repository` and `webhookSource.image.tag`.
+The sidecar listens on the contract port `8889` for _ExternalDNS_ and exposes `/healthz` and `/metrics` on port `8081`, which the `Service` publishes as `http-source`.
+
+```yaml
+sources:
+  - webhook
+webhookSource:
+  image:
+    repository: example.com/my-source-webhook
+    tag: v1.0.0
+```
 
 {{ template "chart.requirementsSection" . }}
 
