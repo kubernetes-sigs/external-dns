@@ -808,3 +808,67 @@ func TestSubmitCustomHostnameChanges(t *testing.T) {
 		)
 	})
 }
+
+func TestCloudflareCustomHostnamesWithSpacesAndEmptyEntries(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client:                client,
+		CustomHostnamesConfig: CustomHostnamesConfig{Enabled: true},
+	}
+	ctx := t.Context()
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
+
+	desired := func() []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			{
+				DNSName:    "a.foo.bar.com",
+				Targets:    endpoint.Targets{"1.2.3.11"},
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  endpoint.TTL(defaultTTL),
+				Labels:     endpoint.Labels{},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  annotations.CloudflareCustomHostnameProperty,
+						Value: "b.foo.fancybar.com, a.foo.fancybar.com,",
+					},
+				},
+			},
+		}
+	}
+
+	for i := range 2 {
+		records, err := provider.Records(ctx)
+		require.NoError(t, err)
+
+		endpoints, err := provider.AdjustEndpoints(desired())
+		require.NoError(t, err)
+		value, ok := endpoints[0].GetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
+		require.True(t, ok)
+		assert.Equal(t, "a.foo.fancybar.com,b.foo.fancybar.com", value)
+
+		planned := (&plan.Plan{
+			Current:        records,
+			Desired:        endpoints,
+			DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		}).Calculate()
+
+		if i == 1 {
+			assert.False(t, planned.Changes.HasChanges(), "second sync should not produce changes")
+			break
+		}
+
+		require.NoError(t, provider.ApplyChanges(ctx, planned.Changes))
+
+		chs, err := provider.listCustomHostnamesWithPagination(ctx, "001")
+		require.NoError(t, err)
+		actual := map[string]string{}
+		for _, ch := range chs {
+			actual[ch.hostname] = ch.customOriginServer
+		}
+		assert.Equal(t, map[string]string{
+			"a.foo.fancybar.com": "a.foo.bar.com",
+			"b.foo.fancybar.com": "a.foo.bar.com",
+		}, actual)
+	}
+}
