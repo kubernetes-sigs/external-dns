@@ -872,3 +872,56 @@ users:
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 	return path
 }
+
+// In dry-run, ApplyChanges must leave the DNSRecords untouched and only pass the
+// changes on to the provider, which skips them itself.
+func TestCRDRegistryApplyChangesDryRun(t *testing.T) {
+	ctx := t.Context()
+	owner := map[string]string{endpoint.OwnerLabelKey: "test"}
+
+	created := &endpoint.Endpoint{DNSName: "new.mytestdomain.io", RecordType: "A", Targets: endpoint.NewTargets("1.1.1.1")}
+	oldEp := &endpoint.Endpoint{DNSName: "updated.mytestdomain.io", RecordType: "A", Targets: endpoint.NewTargets("1.1.1.1"), Labels: owner}
+	newEp := &endpoint.Endpoint{DNSName: "updated.mytestdomain.io", RecordType: "A", Targets: endpoint.NewTargets("2.2.2.2"), Labels: owner}
+	deleted := &endpoint.Endpoint{DNSName: "deleted.mytestdomain.io", RecordType: "A", Targets: endpoint.NewTargets("3.3.3.3"), Labels: owner}
+
+	seed := func(ep *endpoint.Endpoint) *apiv1alpha1.DNSRecord {
+		return &apiv1alpha1.DNSRecord{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      recordObjectName(ep),
+				Namespace: "default",
+				Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
+			},
+			Spec: apiv1alpha1.DNSRecordSpec{Endpoint: *ep},
+		}
+	}
+
+	prov := &mockProvider{}
+	reg, c := newTestRegistry(t, prov, "test", seed(oldEp), seed(deleted))
+	reg.dryRun = true
+	hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+
+	require.NoError(t, reg.ApplyChanges(ctx, &plan.Changes{
+		Create:    []*endpoint.Endpoint{created},
+		UpdateOld: []*endpoint.Endpoint{oldEp},
+		UpdateNew: []*endpoint.Endpoint{newEp},
+		Delete:    []*endpoint.Endpoint{deleted},
+	}))
+
+	var list apiv1alpha1.DNSRecordList
+	require.NoError(t, c.List(ctx, &list))
+	require.Len(t, list.Items, 2, "dry-run must not create or delete DNSRecords")
+	for _, rec := range list.Items {
+		assert.Empty(t, rec.Status.Conditions, "dry-run must not set a status on %s", rec.Name)
+		switch rec.Name {
+		case recordObjectName(oldEp):
+			assert.Equal(t, endpoint.NewTargets("1.1.1.1"), rec.Spec.Endpoint.Targets, "dry-run must not update DNSRecords")
+		case recordObjectName(deleted):
+		default:
+			t.Errorf("unexpected DNSRecord %s", rec.Name)
+		}
+	}
+
+	require.Len(t, prov.records, 1, "the provider still receives the changes")
+	assert.Equal(t, "test", prov.records[0].Labels[endpoint.OwnerLabelKey])
+	logtest.TestHelperLogContains("Dry run mode, skipping DNSRecord delete default/"+recordObjectName(deleted), hook, t)
+}
