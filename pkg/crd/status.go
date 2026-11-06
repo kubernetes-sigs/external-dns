@@ -43,8 +43,7 @@ type StatusWriter struct {
 	dryRun  bool
 }
 
-// NewStatusWriter returns a StatusWriter using the crd source's clients. Under
-// dryRun nothing reaches the provider, so Ready is never Programmed.
+// NewStatusWriter returns a StatusWriter using the crd source's clients.
 func NewStatusWriter(clients *CRDClients, dryRun bool) *StatusWriter {
 	return &StatusWriter{clients: clients, dryRun: dryRun}
 }
@@ -76,7 +75,7 @@ func (w *StatusWriter) ReportStatus(ctx context.Context, objects []plan.PlannedO
 		// The plan was built from the spec the crd source last validated, not from any later edit.
 		condition.ObservedGeneration = dnsEndpoint.Status.ObservedGeneration
 
-		// The crd source returns the same error on its next read and stops the controller there.
+		// Logged only: the crd source hits the same error and fails the sync.
 		if err := UpdateStatus(ctx, w.clients.Writer(), dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
 			meta.SetStatusCondition(&status.Conditions, condition)
 		}); err != nil {
@@ -93,7 +92,7 @@ func readyCondition(planned int, applyErr error, dryRun bool) metav1.Condition {
 	case planned == 0:
 		condition.Status = metav1.ConditionFalse
 		condition.Reason = apiv1alpha1.FilteredReason
-		condition.Message = "No endpoint reached the DNS provider: --domain-filter, the managed record types or another owner's records excluded all of them"
+		condition.Message = "No endpoint reached the DNS provider: --domain-filter, --managed-record-types or another owner's records excluded all of them"
 	case applyErr != nil:
 		condition.Status = metav1.ConditionFalse
 		condition.Reason = apiv1alpha1.FailedReason
