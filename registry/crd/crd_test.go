@@ -886,12 +886,10 @@ func TestCRDRegistryApplyChangesDryRun(t *testing.T) {
 
 	seed := func(ep *endpoint.Endpoint) *apiv1alpha1.DNSRecord {
 		return &apiv1alpha1.DNSRecord{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      recordObjectName(ep),
-				Namespace: "default",
-				Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
-			},
-			Spec: apiv1alpha1.DNSRecordSpec{Endpoint: *ep},
+			Name:      recordObjectName(ep),
+			Namespace: "default",
+			Labels:    map[string]string{apiv1alpha1.RecordOwnerLabel: "test"},
+			Spec:      apiv1alpha1.DNSRecordSpec{Endpoint: *ep},
 		}
 	}
 
