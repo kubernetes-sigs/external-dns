@@ -969,7 +969,7 @@ func TestRfc2136ApplyChangesInvalidTargetSendsNothing(t *testing.T) {
 			{
 				DNSName:    "txt.foo.com",
 				RecordType: "TXT",
-				Targets:    []string{`"unbalanced`},
+				Targets:    []string{`"a"b"`},
 				RecordTTL:  endpoint.TTL(400),
 			},
 		},
