@@ -33,6 +33,12 @@ const (
 
 	// InvalidReason marks endpoints external-dns refused.
 	InvalidReason string = "Invalid"
+
+	// FilteredReason is a ReadyCondition reason: filters or another owner excluded every endpoint.
+	FilteredReason string = "Filtered"
+
+	// DryRunReason is a ReadyCondition reason: --dry-run kept planned endpoints from the DNS provider.
+	DryRunReason string = "DryRun"
 )
 
 // +genclient
@@ -46,6 +52,7 @@ const (
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/2007"
 // +kubebuilder:printcolumn:name="Accepted",type=string,JSONPath=`.status.conditions[?(@.type=="Accepted")].status`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +versionName=v1alpha1
 type DNSEndpoint struct {
@@ -79,8 +86,8 @@ type DNSEndpointStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
-	// and PartiallyInvalid (some endpoints were dropped).
+	// Conditions observe the DNSEndpoint state: Accepted (the spec was understood),
+	// PartiallyInvalid (some endpoints were dropped) and Ready (the provider applied it).
 	// They start as Accepted=Unknown (Pending) until external-dns reads the object.
 	// +optional
 	// +kubebuilder:default={{type: "Accepted", status: "Unknown", reason: "Pending", message: "Waiting for external-dns", lastTransitionTime: "1970-01-01T00:00:00Z"}}
