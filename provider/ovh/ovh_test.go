@@ -682,6 +682,7 @@ func TestOvhApplyChanges(t *testing.T) {
 }
 
 func TestOvhApplyChangesWithoutRecords(t *testing.T) {
+	// Test create
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
 	changes := plan.Changes{
@@ -693,6 +694,46 @@ func TestOvhApplyChangesWithoutRecords(t *testing.T) {
 	client.On("GetWithContext", "/domain/zone").Return([]string{"www.example.net"}, nil).Once()
 	client.On("GetWithContext", "/domain/zone/www.example.net/record").Return([]uint64{}, nil).Once()
 	client.On("PostWithContext", "/domain/zone/www.example.net/record", ovhRecordFields{FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}).Return(nil, nil).Once()
+	client.On("PostWithContext", "/domain/zone/www.example.net/refresh", nil).Return(nil, nil).Once()
+
+	td.CmpNoError(t, provider.ApplyChanges(t.Context(), &changes))
+	client.AssertExpectations(t)
+
+	// Test update
+	client = new(mockOvhClient)
+	provider = &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+	changes = plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			{DNSName: "www.example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{DNSName: "www.example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}},
+		},
+	}
+
+	client.On("GetWithContext", "/domain/zone").Return([]string{"www.example.net"}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/www.example.net/record").Return([]uint64{42}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/www.example.net/record/42").Return(ovhRecord{ID: 42, Zone: "www.example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+	client.On("PutWithContext", "/domain/zone/www.example.net/record/42", ovhRecordFieldUpdate{SubDomain: "", TTL: 10, Target: "203.0.113.43"}).Return(nil, nil).Once()
+	client.On("PostWithContext", "/domain/zone/www.example.net/refresh", nil).Return(nil, nil).Once()
+
+	td.CmpNoError(t, provider.ApplyChanges(t.Context(), &changes))
+	client.AssertExpectations(t)
+
+	// Test delete
+	client = new(mockOvhClient)
+	provider = &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+	changes = plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			{DNSName: "www.example.net", RecordType: "A", Targets: []string{"203.0.113.43"}},
+		},
+	}
+
+	client.On("GetWithContext", "/domain/zone").Return([]string{"www.example.net"}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/www.example.net/record").Return([]uint64{42, 43}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/www.example.net/record/42").Return(ovhRecord{ID: 42, Zone: "www.example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+	client.On("GetWithContext", "/domain/zone/www.example.net/record/43").Return(ovhRecord{ID: 43, Zone: "www.example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.43"}, nil).Once()
+	client.On("DeleteWithContext", "/domain/zone/www.example.net/record/43").Return(nil, nil).Once()
 	client.On("PostWithContext", "/domain/zone/www.example.net/refresh", nil).Return(nil, nil).Once()
 
 	td.CmpNoError(t, provider.ApplyChanges(t.Context(), &changes))
