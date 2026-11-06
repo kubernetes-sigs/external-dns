@@ -336,10 +336,8 @@ func TestCRDSourceClearsReadyWhenEveryEndpointIsRejected(t *testing.T) {
 	assert.Equal(t, apiv1alpha1.InvalidReason,
 		meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.AcceptedCondition).Reason)
 
-	ready := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition)
-	require.NotNil(t, ready)
-	assert.Equal(t, metav1.ConditionFalse, ready.Status)
-	assert.Equal(t, apiv1alpha1.InvalidReason, ready.Reason, "Ready must not still claim Programmed")
+	assert.Nil(t, meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition),
+		"Ready must not still claim Programmed")
 }
 
 // An emptied spec has nothing to be ready about, so the condition goes away.
