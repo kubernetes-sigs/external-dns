@@ -71,6 +71,10 @@ type DynamoDBRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
+
+	// dryRun keeps the table and in-memory ownership state untouched, mirroring
+	// providers that skip their own writes under --dry-run.
+	dryRun bool
 }
 
 const dynamodbAttributeMigrate = "dynamodb/needs-migration"
@@ -81,9 +85,14 @@ var dynamodbMaxBatchSize uint8 = 25
 // New creates a DynamoDBRegistry from the given configuration.
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
 	client := awsdynamodb.NewFromConfig(provideraws.CreateDefaultV2Config(cfg), WithRegion(cfg.AWSDynamoDBRegion))
-	return newRegistry(p, cfg.TXTOwnerID, client,
+	reg, err := newRegistry(p, cfg.TXTOwnerID, client,
 		cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement,
 		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+	if err != nil {
+		return nil, err
+	}
+	reg.dryRun = cfg.DryRun
+	return reg, nil
 }
 
 // newRegistry returns a new DynamoDBRegistry object.
@@ -243,6 +252,13 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
+	}
+
+	if im.dryRun {
+		// Ownership items are written before and deleted after the provider call,
+		// so a dry-run that only the provider honors leaves the table out of sync
+		// with DNS and orphans records that were never actually changed.
+		return im.provider.ApplyChanges(ctx, filteredChanges)
 	}
 
 	statements := im.planCreateStatements(filteredChanges)
