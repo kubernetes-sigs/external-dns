@@ -209,6 +209,7 @@ func TestCRDSourceAcceptedCondition(t *testing.T) {
 			assert.Equal(t, ti.wantReason, cond.Reason)
 			assert.Equal(t, int64(3), cond.ObservedGeneration)
 			assert.Contains(t, cond.Message, ti.wantMessagePart)
+			assert.Nil(t, meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.ReadyCondition), "the source never adds Ready")
 
 			partial := meta.FindStatusCondition(got.Status.Conditions, apiv1alpha1.PartiallyInvalidCondition)
 			if ti.wantPartial == "" {
