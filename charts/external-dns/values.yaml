@@ -245,6 +245,66 @@ sources:
   - service
   - ingress
 
+webhookSource:
+  image:
+    # -- (string) Image repository for the `webhook-source` container.
+    repository:  # @schema type:[string, null]; default: null
+    # -- (string) Image tag for the `webhook-source` container.
+    tag:  # @schema type:[string, null]; default: null
+    # -- Image pull policy for the `webhook-source` container.
+    pullPolicy: IfNotPresent
+  # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook-source` container.
+  env: []
+  # -- Extra arguments to provide for the `webhook-source` container.
+  args: []
+  # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook-source` container.
+  extraVolumeMounts: []
+  # -- [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook-source` container.
+  resources: {}
+  # -- [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook-source` container.
+  # @default -- See _values.yaml_
+  securityContext:
+    privileged: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ["ALL"]
+  # -- [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook-source` container.
+  # @default -- See _values.yaml_
+  livenessProbe:
+    httpGet:
+      path: /healthz  # @schema type:[string, null]; default: null
+      port: http-source  # @schema type:[integer,string]; default: string
+    initialDelaySeconds: 10  # @schema type:[integer, null]; default: null
+    periodSeconds: 10  # @schema type:[integer, null]; default: null
+    timeoutSeconds: 5  # @schema type:[integer, null]; default: null
+    failureThreshold: 2  # @schema type:[integer, null]; default: null
+    successThreshold: 1  # @schema type:[integer, null]; default: null
+  # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook-source` container.
+  # @default -- See _values.yaml_
+  readinessProbe:
+    httpGet:
+      path: /healthz  # @schema type:[string, null]; default: null
+      port: http-source  # @schema type:[integer,string]; default: string
+    initialDelaySeconds: 5  # @schema type:[integer, null]; default: null
+    periodSeconds: 10  # @schema type:[integer, null]; default: null
+    timeoutSeconds: 5  # @schema type:[integer, null]; default: null
+    failureThreshold: 6  # @schema type:[integer, null]; default: null
+    successThreshold: 1  # @schema type:[integer, null]; default: null
+  service:
+    # -- `Service` port for the probe and metrics port of the `webhook-source` container.
+    port: 8081
+  # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook-source` container.
+  # @default -- See _values.yaml_
+  serviceMonitor:
+    interval:  # @schema type:[string, null]; default: null
+    scheme:  # @schema type:[string, null]; default: null
+    tlsConfig: {}
+    bearerTokenFile:  # @schema type:[string, null]; default: null
+    scrapeTimeout:  # @schema type:[string, null]; default: null
+    metricRelabelings: []
+    relabelings: []
+
 # -- (REQUIRED) How DNS records are synchronized between sources and providers; must be set explicitly to one of `create-only`, `sync`, or `upsert-only`.
 policy:  # @schema enum:[create-only, sync, upsert-only]; type:string; required:true
 
