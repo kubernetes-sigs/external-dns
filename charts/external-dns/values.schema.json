@@ -154,6 +154,13 @@
       "description": "[Host aliases](https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/) to add to the `Pod` definition, injected into the pod's `/etc/hosts`.",
       "type": "array"
     },
+    "hostUsers": {
+      "description": "Whether the `Pod` shares the host's [user namespace](https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/). Set to `false` to run the `Pod` in its own user namespace, if not set the Kubernetes default will be used.",
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
     "image": {
       "type": "object",
       "properties": {

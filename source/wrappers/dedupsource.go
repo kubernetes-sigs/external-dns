@@ -55,8 +55,8 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// validate endpoint before normalization
-		if ok := ep.CheckEndpoint(); !ok {
-			log.Warnf("Skipping endpoint [%s:%s] due to invalid configuration [%s:%s]", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","))
+		if err := ep.Validate(); err != nil {
+			log.Warnf("Skipping endpoint [%s:%s] due to invalid configuration [%s:%s]: %v", ep.SetIdentifier, ep.DNSName, ep.RecordType, strings.Join(ep.Targets, ","), err)
 			invalidEndpoints.AddWithLabels(1, ep.RecordType, endpointSource(ep))
 			continue
 		}

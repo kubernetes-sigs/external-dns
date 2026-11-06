@@ -21,10 +21,9 @@ as Kubernetes does with the AWS cloud provider.
 
 [3]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/subnet_discovery/
 
-In the examples that follow, it is assumed that you configured the ALB Ingress
-Controller with the `ingress-class=alb` argument (not to be confused with the
-same argument to ExternalDNS) so that the controller will only respect Ingress
-objects with the `ingressClassName` field set to "alb".
+The examples below assume an IngressClass named `alb` with `spec.controller: ingress.k8s.aws/alb`,
+selected by Ingresses with `spec.ingressClassName: alb`. The controller's own `--ingress-class`
+argument (not the ExternalDNS one) only applies to the legacy `kubernetes.io/ingress.class` annotation.
 
 ## Deploy an example application
 
@@ -143,6 +142,85 @@ spec:
 In the above example we create a default path that works for any hostname, and
 make use of the `external-dns.kubernetes.io/hostname` annotation to create
 multiple aliases for the resulting ALB.
+
+## Public and private hosted zones
+
+To publish internet-facing Ingresses to a public hosted zone and internal ones to a
+private hosted zone, run two ExternalDNS instances. A single AWS Load Balancer Controller
+is enough: it can serve several IngressClasses, and an [IngressClassParams][ingressclassparams] sets the
+scheme for every Ingress of its class.
+
+```yaml
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: IngressClassParams
+metadata:
+  name: alb-public
+spec:
+  scheme: internet-facing
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: alb-public
+spec:
+  controller: ingress.k8s.aws/alb
+  parameters:
+    apiGroup: elbv2.k8s.aws
+    kind: IngressClassParams
+    name: alb-public
+---
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: IngressClassParams
+metadata:
+  name: alb-internal
+spec:
+  scheme: internal
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: alb-internal
+spec:
+  controller: ingress.k8s.aws/alb
+  parameters:
+    apiGroup: elbv2.k8s.aws
+    kind: IngressClassParams
+    name: alb-internal
+```
+
+Each Ingress picks a class with `spec.ingressClassName`, and each ExternalDNS instance
+only handles one class and one zone type:
+
+```yaml
+# public instance
+args:
+  - --source=ingress
+  - --provider=aws
+  - --policy=upsert-only
+  - --txt-owner-id=external-dns-public
+  - --ingress-class=alb-public
+  - --aws-zone-type=public
+```
+
+```yaml
+# private instance
+args:
+  - --source=ingress
+  - --provider=aws
+  - --policy=upsert-only
+  - --txt-owner-id=external-dns-private
+  - --ingress-class=alb-internal
+  - --aws-zone-type=private
+```
+
+If you prefer to keep a single IngressClass, set `alb.ingress.kubernetes.io/scheme` on every Ingress and filter on it:
+
+`--annotation-filter=alb.ingress.kubernetes.io/scheme=internet-facing` for the public instance and
+`--annotation-filter=alb.ingress.kubernetes.io/scheme=internal` for the private one.
+Ingresses without the annotation are not published.
+`--label-filter` works the same way with a label of your own, for example `dns-zone=public` and `dns-zone=private`.
+
+[ingressclassparams]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/ingress_class/#ingressclassparams
 
 ## Dualstack Load Balancers
 

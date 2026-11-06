@@ -38,6 +38,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/tlsutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -258,7 +259,7 @@ OuterLoop:
 			rrValues = []string{rr.(*dns.AAAA).AAAA.String()}
 			rrType = "AAAA"
 		case dns.TypeTXT:
-			rrValues = (rr.(*dns.TXT).Txt)
+			rrValues = []string{txtTarget(rr.(*dns.TXT))}
 			rrType = "TXT"
 		case dns.TypeMX:
 			mx := rr.(*dns.MX)
@@ -317,18 +318,62 @@ func tlsaTarget(rr *dns.TLSA) string {
 	return tlsa.String()
 }
 
-// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum
-// and canonicalizes TLSA targets. This is required to avoid diff on reconciliation loop.
+// txtTarget returns the text a TXT RR contains. AXFR hands Txt back escaped and
+// split into 255-byte strings. Keeping them would make desired and current targets never compare equal.
+func txtTarget(rr *dns.TXT) string {
+	var b strings.Builder
+	for _, s := range rr.Txt {
+		b.WriteString(unescapeTXT(s))
+	}
+	return b.String()
+}
+
+// unescapeTXT decodes the \X and \DDD escapes of TXT presentation.
+func unescapeTXT(s string) string {
+	if !strings.Contains(s, `\`) {
+		return s
+	}
+	b := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 == len(s) {
+			b = append(b, s[i])
+			continue
+		}
+		if i+3 < len(s) {
+			if n, err := strconv.ParseUint(s[i+1:i+4], 10, 8); err == nil {
+				b = append(b, byte(n))
+				i += 3
+				continue
+			}
+		}
+		b = append(b, s[i+1])
+		i++
+	}
+	return string(b)
+}
+
+// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum,
+// unwraps quoted TXT targets and canonicalizes TLSA targets. This is required to avoid
+// diff on reconciliation loop.
 func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	for _, ep := range eps {
 		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			// Records() returns TXT values unquoted, so a quoted target would never match it.
+			for i, target := range ep.Targets {
+				if isQuotedTXT(target) {
+					ep.Targets[i] = unescapeTXT(target[1 : len(target)-1])
+				}
+			}
+			continue
+		}
 		if ep.RecordType != endpoint.RecordTypeTLSA {
 			continue
 		}
 		for i, target := range ep.Targets {
 			tlsa, err := endpoint.NewTLSARecord(target)
 			if err != nil {
-				// AddRecord reports this as a hard error when the change is applied.
+				// AddRecord reports this as an error when the change is applied.
 				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
 				continue
 			}
@@ -340,20 +385,24 @@ func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
-	t := new(dns.Transfer)
-
-	if r.shouldSignAXFR() {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
-	}
-
-	c, err := makeClient(r, nameserver)
+	client, err := makeClient(r, nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
-	conn, err := c.Dial(nameserver)
+	conn, err := client.Dial(nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 	}
+	if r.shouldSignAXFR() {
+		provider := tsig.HMAC{r.tsigKeyName: r.tsigSecret}
+		requestMAC, err := signAndSendAXFRRequest(conn, m, provider)
+		if err != nil {
+			return nil, err
+		}
+		return readSignedAXFR(conn, m.Id, requestMAC, provider), nil
+	}
+
+	t := new(dns.Transfer)
 	t.Conn = conn
 	return t.In(m, nameserver)
 }
@@ -433,50 +482,53 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	var errs []error
+	errs = append(errs, r.applyBatches("create", changes.Create, func(m *dns.Msg, _ int, ep *endpoint.Endpoint) error {
+		return r.AddRecord(m, ep)
+	})...)
+	errs = append(errs, r.applyBatches("update", changes.UpdateNew, func(m *dns.Msg, idx int, ep *endpoint.Endpoint) error {
+		return r.UpdateRecord(m, changes.UpdateOld[idx], ep)
+	})...)
+	errs = append(errs, r.applyBatches("delete", changes.Delete, func(m *dns.Msg, _ int, ep *endpoint.Endpoint) error {
+		return r.RemoveRecord(m, ep)
+	})...)
 
-	for c, chunk := range chunkBy(changes.Create, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of create changes", c)
+	if len(errs) > 0 {
+		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %w", errors.Join(errs...))
+	}
 
-		m := make(map[string]*dns.Msg)
-		m["."] = new(dns.Msg) // Add the root zone
-		for _, z := range r.zoneNames {
-			z = strings.ToLower(dns.Fqdn(z))
-			m[z] = new(dns.Msg)
-		}
-		for _, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
-				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
-				continue
-			}
+	return nil
+}
 
-			zone := findMsgZone(ep, r.zoneNames)
-			m[zone].SetUpdate(zone)
+func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
+	m := make(map[string]*dns.Msg)
+	m["."] = new(dns.Msg)
+	for _, z := range r.zoneNames {
+		z = strings.ToLower(dns.Fqdn(z))
+		m[z] = new(dns.Msg)
+	}
+	return m
+}
 
-			r.AddRecord(m[zone], ep)
-		}
-
-		// only send if there are records available
-		for _, z := range m {
-			if len(z.Ns) > 0 {
-				if err := r.actions.SendMessage(z); err != nil {
-					log.Errorf("RFC2136 create record failed: %v", err)
-					errs = append(errs, err)
-					continue
-				}
+func (r *rfc2136Provider) sendBatchMsgs(action string, m map[string]*dns.Msg) []error {
+	var errs []error
+	for _, z := range m {
+		if len(z.Ns) > 0 {
+			if err := r.actions.SendMessage(z); err != nil {
+				log.Errorf("RFC2136 %s record failed: %v", action, err)
+				errs = append(errs, err)
 			}
 		}
 	}
+	return errs
+}
 
-	for c, chunk := range chunkBy(changes.UpdateNew, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of update changes", c)
+func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, apply func(m *dns.Msg, idx int, ep *endpoint.Endpoint) error) []error {
+	var errs []error
+	for c, chunk := range chunkBy(eps, r.batchChangeSize) {
+		log.Debugf("Processing batch %d of %s changes", c, action)
 
-		m := make(map[string]*dns.Msg)
-		m["."] = new(dns.Msg) // Add the root zone
-		for _, z := range r.zoneNames {
-			z = strings.ToLower(dns.Fqdn(z))
-			m[z] = new(dns.Msg)
-		}
-
+		m := r.newBatchMsgs()
+		prepared := sets.New[string]()
 		for i, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
@@ -484,63 +536,28 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 			}
 
 			zone := findMsgZone(ep, r.zoneNames)
-			m[zone].SetUpdate(zone)
 
-			// calculate corresponding index in the unsplitted UpdateOld for current endpoint ep in chunk
-			j := (c * r.batchChangeSize) + i
-			r.UpdateRecord(m[zone], changes.UpdateOld[j], ep)
-		}
+			// Build into a scratch message and merge only on success, so a
+			// failed endpoint does not leave a partial update in the batch.
+			scratch := new(dns.Msg)
+			scratch.SetUpdate(zone)
 
-		// only send if there are records available
-		for _, z := range m {
-			if len(z.Ns) > 0 {
-				if err := r.actions.SendMessage(z); err != nil {
-					log.Errorf("RFC2136 update record failed: %v", err)
-					errs = append(errs, err)
-					continue
-				}
-			}
-		}
-	}
-
-	for c, chunk := range chunkBy(changes.Delete, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of delete changes", c)
-
-		m := make(map[string]*dns.Msg)
-		m["."] = new(dns.Msg) // Add the root zone
-		for _, z := range r.zoneNames {
-			z = strings.ToLower(dns.Fqdn(z))
-			m[z] = new(dns.Msg)
-		}
-		for _, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
-				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+			// idx is ep's index in the unsplitted list, so the closure can index a parallel slice.
+			if err := apply(scratch, c*r.batchChangeSize+i, ep); err != nil {
+				errs = append(errs, fmt.Errorf("RFC2136 %s %s: %w", action, ep.DNSName, err))
 				continue
 			}
 
-			zone := findMsgZone(ep, r.zoneNames)
-			m[zone].SetUpdate(zone)
-
-			r.RemoveRecord(m[zone], ep)
-		}
-
-		// only send if there are records available
-		for _, z := range m {
-			if len(z.Ns) > 0 {
-				if err := r.actions.SendMessage(z); err != nil {
-					log.Errorf("RFC2136 delete record failed: %v", err)
-					errs = append(errs, err)
-					continue
-				}
+			if !prepared.Has(zone) {
+				m[zone].SetUpdate(zone)
+				prepared.Insert(zone)
 			}
+			m[zone].Ns = append(m[zone].Ns, scratch.Ns...)
 		}
-	}
 
-	if len(errs) > 0 {
-		return provider.NewSoftErrorf("RFC2136 had errors in one or more of its batches: %v", errs)
+		errs = append(errs, r.sendBatchMsgs(action, m)...)
 	}
-
-	return nil
+	return errs
 }
 
 func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newEp *endpoint.Endpoint) error {
@@ -612,9 +629,21 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	return nil
 }
 
+// txtEscaper escapes a TXT value for use inside a quoted character-string.
+var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
 // rrTargetFor renders an endpoint target for the RR text that is handed to
-// dns.NewRR. Handles validation and canonicalisation.
+// dns.NewRR. Handles validation, canonicalisation and quoting.
 func rrTargetFor(recordType, target string) (string, error) {
+	if recordType == endpoint.RecordTypeTXT {
+		// TXT registry labels arrive pre-quoted.
+		if isQuotedTXT(target) {
+			return target, nil
+		}
+		// Unquoted, the zone-file parser treats ';' as a comment and splits on whitespace.
+		return `"` + txtEscaper.Replace(target) + `"`, nil
+	}
+
 	if recordType != endpoint.RecordTypeTLSA {
 		return target, nil
 	}
@@ -625,6 +654,10 @@ func rrTargetFor(recordType, target string) (string, error) {
 	}
 
 	return tlsa.String(), nil
+}
+
+func isQuotedTXT(target string) bool {
+	return len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`)
 }
 
 // getNextNameserverFor picks the next nameserver to use for the given

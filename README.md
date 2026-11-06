@@ -148,6 +148,7 @@ from the usage of any externally developed webhook.
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
+| Contabo               | https://github.com/hayone1/external-dns-contabo-webhook              |
 | deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | DigitalOcean          | https://github.com/amoniacou/external-dns-digitalocean-webhook       |
 | DNScale               | https://github.com/dnscaleou/external-dns-webhook-dnscale            |
@@ -156,6 +157,7 @@ from the usage of any externally developed webhook.
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
 | GleSYS                | https://github.com/glesys/external-dns-glesys                        |
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
+| Hostinger             | https://github.com/hayone1/external-dns-hostinger-webhook            |
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox NIOS         | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |

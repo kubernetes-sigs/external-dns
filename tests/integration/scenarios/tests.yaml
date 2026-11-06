@@ -531,7 +531,7 @@ scenarios:
   - name: crd-srv-record
     description: >
       A DNSEndpoint with SRV targets missing the trailing dot is rejected by
-      ValidateSRVRecord (RFC 2782 requires absolute FQDNs) and produces no
+      Endpoint.Validate (RFC 2782 requires absolute FQDNs) and produces no
       endpoint. A DNSEndpoint with properly dotted targets is accepted by the
       CRD source and produces an endpoint; the CRD source no longer strips or
       warns on the trailing dot.

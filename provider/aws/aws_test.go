@@ -489,6 +489,8 @@ func TestAWSRecordsFilter(t *testing.T) {
 		".zone-3.ext-dns-test-2.teapot.zalan.do",
 		"zone-4.ext-dns-test-3.teapot.zalan.do",
 		".zone-4.ext-dns-test-3.teapot.zalan.do",
+		"2.0.192.in-addr.arpa",
+		".2.0.192.in-addr.arpa",
 	} {
 		assert.Contains(t, filters, tld)
 		count++
@@ -497,7 +499,7 @@ func TestAWSRecordsFilter(t *testing.T) {
 }
 
 func TestAWSRecords(t *testing.T) {
-	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, false, []route53types.ResourceRecordSet{
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do.", "2.0.192.in-addr.arpa."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, false, []route53types.ResourceRecordSet{
 		{
 			Name:            aws.String("list-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 			Type:            route53types.RRTypeA,
@@ -799,6 +801,12 @@ func TestAWSRecords(t *testing.T) {
 			TTL:             aws.Int64(defaultTTL),
 			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String(`10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com`)}, {Value: aws.String(`10 "U" "SIPS+D2T" "" _sips._tcp.sip1.example.com`)}},
 		},
+		{
+			Name:            aws.String("4.2.0.192.in-addr.arpa."),
+			Type:            route53types.RRTypePtr,
+			TTL:             aws.Int64(defaultTTL),
+			ResourceRecords: []route53types.ResourceRecord{{Value: aws.String("host.example.com")}},
+		},
 	})
 
 	records, err := provider.Records(t.Context())
@@ -840,6 +848,7 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(defaultTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(defaultTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
 		endpoint.NewEndpointWithTTL("naptr.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeNAPTR, endpoint.TTL(defaultTTL), `10 "U" "SIP+DTU" "" _sip._udp.sip1.example.com`, `10 "U" "SIPS+D2T" "" _sips._tcp.sip1.example.com`),
+		endpoint.NewEndpointWithTTL("4.2.0.192.in-addr.arpa", endpoint.RecordTypePTR, endpoint.TTL(defaultTTL), "host.example.com"),
 	})
 }
 
@@ -3087,6 +3096,13 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter *endpoint.DomainFilt
 	createAWSZone(t, provider, &route53types.HostedZone{
 		Id:     aws.String("/hostedzone/zone-4.ext-dns-test-3.teapot.zalan.do."),
 		Name:   aws.String("zone-4.ext-dns-test-3.teapot.zalan.do."),
+		Config: &route53types.HostedZoneConfig{PrivateZone: false},
+	})
+
+	// reverse zone for 192.0.2.0/24 (TEST-NET-1); filtered out unless a test adds it to the domain filter
+	createAWSZone(t, provider, &route53types.HostedZone{
+		Id:     aws.String("/hostedzone/2.0.192.in-addr.arpa."),
+		Name:   aws.String("2.0.192.in-addr.arpa."),
 		Config: &route53types.HostedZoneConfig{PrivateZone: false},
 	})
 

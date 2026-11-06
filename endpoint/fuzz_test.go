@@ -79,7 +79,7 @@ func FuzzValidateSRVRecord(f *testing.F) {
 		if len(input) > 1024 {
 			t.Skip()
 		}
-		Targets{input}.ValidateSRVRecord()
+		_ = Targets{input}.validateSRVRecord()
 	})
 }
 
