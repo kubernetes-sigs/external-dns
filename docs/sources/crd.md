@@ -202,10 +202,10 @@ steady-state `DNSEndpoint` costs no API writes. When no endpoint is accepted, `R
 
 Limits:
 
-* `Ready` is per sync, not per resource: a failed batch marks every contributing
-  `DNSEndpoint` `Failed`. The message carries the provider's error verbatim, which may
-  name records from other namespaces, so treat it as visible to anyone who can read
-  a `DNSEndpoint`.
+* `Ready` is per sync, not per resource: a failed batch marks every `DNSEndpoint`
+  with a change in that batch `Failed`. The message carries the provider's error
+  verbatim, which may name records from other namespaces, so treat it as visible
+  to anyone who can read a `DNSEndpoint`.
 * One external-dns instance per `DNSEndpoint`. Instances sharing an object (e.g. split
   only by `--domain-filter`) overwrite each other's conditions; separate them with
   `--namespace`, `--label-filter` or `--annotation-filter`.
