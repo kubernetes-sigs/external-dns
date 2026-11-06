@@ -17,12 +17,14 @@ limitations under the License.
 package endpoint
 
 import (
+	"slices"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
@@ -473,6 +475,66 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := MergeEndpoints(tt.input())
 			tt.expected(t, result)
+		})
+	}
+}
+
+func TestMergeEndpoints_KeepsLowestResource(t *testing.T) {
+	newEndpoint := func(resource, target, proxied string) *Endpoint {
+		ep := NewEndpoint("app.example.com", RecordTypeA, target).
+			WithProviderSpecific("proxied", proxied).
+			WithRefObject(NewObjectRef("Ingress", "networking.k8s.io/v1", "default", resource, types.UID("uid-"+resource), "ingress"))
+		if resource != "" {
+			ep.WithLabel(ResourceLabelKey, "ingress/default/"+resource)
+		}
+		return ep
+	}
+
+	tests := []struct {
+		name         string
+		input        []*Endpoint
+		wantResource string
+		wantProxied  string
+	}{
+		{
+			name:         "lowest resource listed first",
+			input:        []*Endpoint{newEndpoint("a", "192.0.2.1", "true"), newEndpoint("b", "192.0.2.2", "false")},
+			wantResource: "ingress/default/a",
+			wantProxied:  "true",
+		},
+		{
+			name:         "lowest resource listed last",
+			input:        []*Endpoint{newEndpoint("b", "192.0.2.2", "false"), newEndpoint("c", "192.0.2.3", "false"), newEndpoint("a", "192.0.2.1", "true")},
+			wantResource: "ingress/default/a",
+			wantProxied:  "true",
+		},
+		{
+			name:         "labelled kept over unlabelled listed last",
+			input:        []*Endpoint{newEndpoint("b", "192.0.2.2", "false"), newEndpoint("", "192.0.2.1", "true")},
+			wantResource: "ingress/default/b",
+			wantProxied:  "false",
+		},
+		{
+			name:         "labelled kept over unlabelled listed first",
+			input:        []*Endpoint{newEndpoint("", "192.0.2.1", "true"), newEndpoint("b", "192.0.2.2", "false")},
+			wantResource: "ingress/default/b",
+			wantProxied:  "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := slices.Clone(tt.input)
+			result := MergeEndpoints(tt.input)
+			for i := range input {
+				assert.Same(t, input[i], tt.input[i], "the caller's slice must keep its order")
+			}
+			require.Len(t, result, 1)
+			assert.Equal(t, tt.wantResource, result[0].Labels[ResourceLabelKey])
+			proxied, _ := result[0].GetProviderSpecificProperty("proxied")
+			assert.Equal(t, tt.wantProxied, proxied)
+			assert.Len(t, result[0].Targets, len(tt.input))
+			assert.Len(t, result[0].RefObjects(), len(tt.input))
 		})
 	}
 }
