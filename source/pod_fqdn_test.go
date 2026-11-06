@@ -43,6 +43,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 			Namespace:   namespace,
 			Annotations: anns,
 			Status: v1.PodStatus{
+				Phase:  v1.PodRunning,
 				PodIP:  ip,
 				PodIPs: []v1.PodIP{{IP: ip}},
 			},
@@ -53,6 +54,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 	defaultPod := func(anns map[string]string) *v1.Pod {
 		return makePod(podName, "default", podIP, anns)
 	}
+	deletionTime := metav1.Now()
 
 	for _, tt := range []struct {
 		title              string
@@ -150,6 +152,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 					Name: "my-pod-1", Namespace: "default",
 					Spec: v1.PodSpec{NodeName: "node-1.internal"},
 					Status: v1.PodStatus{
+						Phase:  v1.PodRunning,
 						PodIP:  "100.67.94.101",
 						PodIPs: []v1.PodIP{{IP: "100.67.94.101"}},
 					},
@@ -188,6 +191,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				{
 					Name: "pod-1", Namespace: "default",
 					Status: v1.PodStatus{
+						Phase:  v1.PodRunning,
 						PodIP:  "100.67.94.101",
 						PodIPs: []v1.PodIP{{IP: "100.67.94.101"}, {IP: "2041:0000:140F::875B:131B"}},
 					},
@@ -205,7 +209,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				{
 					Name: "pod-1", Namespace: "default",
 					Annotations: map[string]string{"external-dns.kubernetes.io/target": "203.2.45.22"},
-					Status:      v1.PodStatus{PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
+					Status:      v1.PodStatus{Phase: v1.PodRunning, PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -219,7 +223,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				{
 					Name: "pod-1", Namespace: "default",
 					Annotations: map[string]string{"external-dns.kubernetes.io/hostname": "ip-10-1-176-1.internal.domain.com"},
-					Status:      v1.PodStatus{PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
+					Status:      v1.PodStatus{Phase: v1.PodRunning, PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -245,12 +249,12 @@ func TestPodFQDNTemplate(t *testing.T) {
 				{
 					Name: "pod-1", Namespace: "kube-system",
 					Labels: map[string]string{"topology.kubernetes.io/region": "eu-west-1a"},
-					Status: v1.PodStatus{PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
+					Status: v1.PodStatus{Phase: v1.PodRunning, PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
 				},
 				{
 					Name: "pod-2", Namespace: "workloads",
 					Labels: map[string]string{"topology.kubernetes.io/region": "eu-west-1b"},
-					Status: v1.PodStatus{PodIP: "100.67.94.102", PodIPs: []v1.PodIP{{IP: "100.67.94.102"}}},
+					Status: v1.PodStatus{Phase: v1.PodRunning, PodIP: "100.67.94.102", PodIPs: []v1.PodIP{{IP: "100.67.94.102"}}},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -265,6 +269,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				{
 					Name: "pod-1", Namespace: "kube-system",
 					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
 						PodIP: "100.67.94.101",
 						PodIPs: []v1.PodIP{
 							{IP: "100.67.94.101"}, {IP: "100.67.94.102"}, {IP: "100.67.94.103"},
@@ -293,6 +298,39 @@ func TestPodFQDNTemplate(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "pod-1.domain.tld", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
+			},
+		},
+		{
+			title:        "fqdn-template skips pending pod with assigned IP",
+			fqdnTemplate: "{{ .Name }}.domain.tld",
+			pods: []*v1.Pod{
+				{
+					Name: "pending-pod", Namespace: "kube-system",
+					Status: v1.PodStatus{Phase: v1.PodPending, PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
+				},
+			},
+		},
+		{
+			title:        "fqdn-template skips terminating pod with assigned IP",
+			fqdnTemplate: "{{ .Name }}.domain.tld",
+			pods: []*v1.Pod{
+				{
+					Name: "terminating-pod", Namespace: "kube-system", DeletionTimestamp: &deletionTime,
+					Status: v1.PodStatus{Phase: v1.PodRunning, PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
+				},
+			},
+		},
+		{
+			title:              "fqdn-target-template keeps explicit target for pending pod",
+			fqdnTargetTemplate: "{{ .Name }}.domain.tld:1.2.3.4",
+			pods: []*v1.Pod{
+				{
+					Name: "pending-pod", Namespace: "kube-system",
+					Status: v1.PodStatus{Phase: v1.PodPending},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("pending-pod.domain.tld", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
 		{
@@ -351,7 +389,7 @@ func TestPodFQDNTemplate_Error(t *testing.T) {
 	kubeClient := fake.NewClientset()
 	_, err := kubeClient.CoreV1().Pods("kube-system").Create(t.Context(), &v1.Pod{
 		Name: "pod-1", Namespace: "kube-system",
-		Status: v1.PodStatus{PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
+		Status: v1.PodStatus{Phase: v1.PodRunning, PodIP: "100.67.94.101", PodIPs: []v1.PodIP{{IP: "100.67.94.101"}}},
 	}, metav1.CreateOptions{})
 	require.NoError(t, err)
 
