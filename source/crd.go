@@ -276,21 +276,11 @@ func (cs *crdSource) reportAccepted(ctx context.Context, dnsEndpoint *apiv1alpha
 			meta.RemoveStatusCondition(&status.Conditions, apiv1alpha1.PartiallyInvalidCondition)
 		}
 
-		if accepted > 0 {
-			return
-		}
-		// The status writer never sees this object; don't leave a stale Ready.
-		if len(rejections) == 0 {
+		// Ready belongs to the status writer, which never sees an object without
+		// accepted endpoints: drop the verdict of an earlier generation.
+		if accepted == 0 {
 			meta.RemoveStatusCondition(&status.Conditions, apiv1alpha1.ReadyCondition)
-			return
 		}
-		meta.SetStatusCondition(&status.Conditions, metav1.Condition{
-			Type:               apiv1alpha1.ReadyCondition,
-			Status:             metav1.ConditionFalse,
-			Reason:             apiv1alpha1.InvalidReason,
-			Message:            "No endpoint reached the DNS provider: every endpoint in spec was rejected",
-			ObservedGeneration: dnsEndpoint.Generation,
-		})
 	})
 }
 
