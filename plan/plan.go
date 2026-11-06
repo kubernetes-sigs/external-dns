@@ -309,7 +309,7 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 	update := t.resolver.ResolveUpdate(current, candidates)
 
 	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
-		p.providerSpecificChanged(update, current) || p.isOldOwnerIDSetAndDifferent(current) {
+		p.providerSpecificChanged(update, current) {
 		inheritOwner(current, update)
 		changes.UpdateNew = append(changes.UpdateNew, update)
 		changes.UpdateOld = append(changes.UpdateOld, current)
@@ -318,10 +318,6 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 	if p.OwnerID == "" || current.IsOwnedBy(p.OwnerID) {
 		*inSync = append(*inSync, update)
 	}
-}
-
-func (p *Plan) isOldOwnerIDSetAndDifferent(current *endpoint.Endpoint) bool {
-	return p.OldOwnerID != "" && current.Labels[endpoint.OwnerLabelKey] != p.OldOwnerID
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
