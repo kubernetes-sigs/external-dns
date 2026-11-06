@@ -20,6 +20,7 @@ import (
 	"maps"
 	"net/netip"
 	"slices"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -154,6 +155,9 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 		return endpoints
 	}
 
+	endpoints = slices.Clone(endpoints)
+	slices.SortStableFunc(endpoints, compareResource)
+
 	endpointMap := make(map[EndpointKey]*Endpoint)
 	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
 
@@ -180,14 +184,9 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			singleTargets[singleKey] = ep.Targets[0]
 		}
 		if existing, ok := endpointMap[key]; ok {
-			kept, merged := existing, ep
-			if preferResource(ep, existing) {
-				kept, merged = ep, existing
-				endpointMap[key] = kept
-			}
-			kept.Targets = append(kept.Targets, merged.Targets...)
-			for _, ref := range merged.refObjects {
-				kept.WithRefObject(ref)
+			existing.Targets = append(existing.Targets, ep.Targets...)
+			for _, ref := range ep.refObjects {
+				existing.WithRefObject(ref)
 			}
 		} else {
 			endpointMap[key] = ep
@@ -204,9 +203,18 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	return result
 }
 
-// preferResource picks the same base endpoint on every sync: sources list objects in
-// informer order, which changes between calls, and the base's labels reach the registry.
-func preferResource(a, b *Endpoint) bool {
+// compareResource orders endpoints by resource label, unlabelled last, so the merge base is the
+// same on every sync: sources list objects in informer order, which changes between calls, and
+// the base's labels reach the registry.
+func compareResource(a, b *Endpoint) int {
 	ra, rb := a.Labels[ResourceLabelKey], b.Labels[ResourceLabelKey]
-	return ra != "" && (rb == "" || ra < rb)
+	switch {
+	case ra == rb:
+		return 0
+	case ra == "":
+		return 1
+	case rb == "":
+		return -1
+	}
+	return strings.Compare(ra, rb)
 }

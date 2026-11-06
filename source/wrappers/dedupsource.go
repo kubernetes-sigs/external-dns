@@ -47,7 +47,7 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	result := make([]*endpoint.Endpoint, 0, len(endpoints))
-	byIdentifier := make(map[string]int, len(endpoints))
+	byIdentifier := make(map[string]*endpoint.Endpoint, len(endpoints))
 
 	for _, ep := range endpoints {
 		if ep == nil {
@@ -67,34 +67,20 @@ func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 
 		identifier := strings.Join([]string{ep.RecordType, ep.DNSName, ep.SetIdentifier, ep.Targets.String()}, "/")
 
-		if i, ok := byIdentifier[identifier]; ok {
-			kept, dropped := result[i], ep
-			if preferSameKindResource(ep, kept) {
-				kept, dropped = ep, result[i]
-				result[i] = kept
+		if existing, ok := byIdentifier[identifier]; ok {
+			for _, ref := range ep.RefObjects() {
+				existing.WithRefObject(ref)
 			}
-			for _, ref := range dropped.RefObjects() {
-				kept.WithRefObject(ref)
-			}
-			log.Debugf("Removing duplicate endpoint %s", dropped)
-			deduplicatedEndpoints.AddWithLabels(1, dropped.RecordType, endpointSource(dropped))
+			log.Debugf("Removing duplicate endpoint %s", ep)
+			deduplicatedEndpoints.AddWithLabels(1, ep.RecordType, endpointSource(ep))
 			continue
 		}
 
-		byIdentifier[identifier] = len(result)
+		byIdentifier[identifier] = ep
 		result = append(result, ep)
 	}
 
 	return result, nil
-}
-
-// preferSameKindResource makes the kept duplicate independent of informer order within a
-// source. Across sources the first --source wins, unless two emit the same kind.
-func preferSameKindResource(a, b *endpoint.Endpoint) bool {
-	ra, rb := a.Labels[endpoint.ResourceLabelKey], b.Labels[endpoint.ResourceLabelKey]
-	kindA, _, okA := strings.Cut(ra, "/")
-	kindB, _, okB := strings.Cut(rb, "/")
-	return okA && okB && kindA == kindB && ra < rb
 }
 
 func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {

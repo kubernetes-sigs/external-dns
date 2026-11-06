@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"slices"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -523,7 +524,11 @@ func TestMergeEndpoints_KeepsLowestResource(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			input := slices.Clone(tt.input)
 			result := MergeEndpoints(tt.input)
+			for i := range input {
+				assert.Same(t, input[i], tt.input[i], "the caller's slice must keep its order")
+			}
 			require.Len(t, result, 1)
 			assert.Equal(t, tt.wantResource, result[0].Labels[ResourceLabelKey])
 			proxied, _ := result[0].GetProviderSpecificProperty("proxied")
