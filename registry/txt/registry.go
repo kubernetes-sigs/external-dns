@@ -71,13 +71,21 @@ type TXTRegistry struct {
 
 	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
 	obsoleteTXTWarned sets.Set[string]
+
+	// crossOwnerTXTWarned dedups cross-owner ownership TXT warnings to once per DNS name per process.
+	crossOwnerTXTWarned sets.Set[string]
 }
 
 // existingTXTs maps pre‑existing TXT records to the value they hold at the provider.
 // It relies on the fact that Records() is always called **before** ApplyChanges()
 // within a single reconciliation cycle.
+type existingTXTEntry struct {
+	value string
+	owner string
+}
+
 type existingTXTs struct {
-	entries map[recordKey]string
+	entries map[recordKey]existingTXTEntry
 }
 
 type recordKey struct {
@@ -87,16 +95,16 @@ type recordKey struct {
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{
-		entries: map[recordKey]string{},
+		entries: map[recordKey]existingTXTEntry{},
 	}
 }
 
-func (im *existingTXTs) add(r *endpoint.Endpoint) {
+func (im *existingTXTs) add(r *endpoint.Endpoint, owner string) {
 	var value string
 	if len(r.Targets) > 0 {
 		value = r.Targets[0]
 	}
-	im.entries[keyFor(r)] = value
+	im.entries[keyFor(r)] = existingTXTEntry{value: value, owner: owner}
 }
 
 // isAbsent returns true when there is no entry for the given name in the store.
@@ -112,14 +120,19 @@ func (im *existingTXTs) has(dnsName, setIdentifier string) bool {
 }
 
 func (im *existingTXTs) storedValue(ep *endpoint.Endpoint) (string, bool) {
-	value, ok := im.entries[keyFor(ep)]
-	return value, ok && value != ""
+	entry, ok := im.entries[keyFor(ep)]
+	return entry.value, ok && entry.value != ""
+}
+
+func (im *existingTXTs) storedOwner(ep *endpoint.Endpoint) (string, bool) {
+	entry, ok := im.entries[keyFor(ep)]
+	return entry.owner, ok
 }
 
 func (im *existingTXTs) reset() {
 	// Reset the existing TXT records for the next reconciliation loop.
 	// This is necessary because the existing TXT records are only relevant for the current reconciliation cycle.
-	im.entries = map[recordKey]string{}
+	im.entries = map[recordKey]existingTXTEntry{}
 }
 
 func keyFor(ep *endpoint.Endpoint) recordKey {
@@ -180,6 +193,7 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		oldOwnerID:          oldOwnerID,
 		existingTXTs:        newExistingTXTs(),
 		obsoleteTXTWarned:   sets.New[string](),
+		crossOwnerTXTWarned: sets.New[string](),
 	}, nil
 }
 
@@ -246,7 +260,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: record.SetIdentifier,
 		}
 		labelMap[key] = labels
-		im.existingTXTs.add(record)
+		im.existingTXTs.add(record, labels[endpoint.OwnerLabelKey])
 	}
 
 	for _, ep := range endpoints {
@@ -392,6 +406,19 @@ func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endp
 	return txts
 }
 
+func (im *TXTRegistry) shouldCreateOwnershipTXT(txt *endpoint.Endpoint) bool {
+	if im.existingTXTs.isAbsent(txt) {
+		return true
+	}
+	if owner, ok := im.existingTXTs.storedOwner(txt); ok && owner != "" && owner != im.ownerID {
+		if !im.crossOwnerTXTWarned.Has(txt.DNSName) {
+			im.crossOwnerTXTWarned.Insert(txt.DNSName)
+			log.Warnf("ownership TXT %q is owned by %q, not %q; skipping creation", txt.DNSName, owner, im.ownerID)
+		}
+	}
+	return false
+}
+
 // ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
@@ -407,7 +434,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.shouldCreateOwnershipTXT)...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
