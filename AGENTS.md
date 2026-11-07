@@ -152,6 +152,8 @@ squashed commit and feeds the release changelog, so the type and scope matter.
 Common types: `feat`, `fix`, `docs`, `chore`, `ci`, `refactor`, `test`. See
 `CONTRIBUTING.md`.
 
+Comments explain *why*, not *what* — no prose mirroring an `if` condition.
+
 ## Linting Notes
 
 Uses `golangci-lint` with strict `.golangci.yml` (32+ linters). Key rules: `testifylint` (use `assert`/`require` helpers correctly), `errorlint` (wrap errors properly), `gocritic`, `gochecknoinits` (no `init()` functions). All new Go files need Apache 2.0 license header.
@@ -162,7 +164,7 @@ Use `internal/sets` for set semantics (`sets.New[string]()`, `Insert`, `Has`, `S
 
 Self-check the change against this guide before handing it back:
 
-- Comments explain *why*, not *what* — no prose mirroring an `if` condition.
+- Reviewe each comment against the "explains what code can't show" standard.
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
 - Data flow: validation and normalization on `endpoint.*`, status writes
