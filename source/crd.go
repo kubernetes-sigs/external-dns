@@ -157,10 +157,16 @@ func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]
 			continue
 		}
 
-		if ep.RecordType == endpoint.RecordTypeMX {
-			// normalized, else it diffs against the provider's rendering
+		// normalized, else it diffs against the provider's rendering
+		switch {
+		case ep.RecordType == endpoint.RecordTypeMX:
 			for i, target := range ep.Targets {
 				ep.Targets[i] = endpoint.NormalizeMXTarget(target)
+			}
+		case endpoint.RequiresTrailingDot(ep.RecordType):
+			// RFC 1035 §5.1 allows the absolute form; providers read it back bare.
+			for i, target := range ep.Targets {
+				ep.Targets[i] = strings.TrimSuffix(target, ".")
 			}
 		}
 
@@ -210,12 +216,6 @@ func (cs *crdSource) rejectionReason(ep *endpoint.Endpoint) string {
 // the record type, or returns "".
 func illegalTargetReason(ep *endpoint.Endpoint) string {
 	for _, target := range ep.Targets {
-		// CNAME/DNAME targets are domain names where a trailing dot is
-		// valid (RFC 1035 §5.1 absolute FQDN), so accept both dotted and
-		// bare forms.
-		if endpoint.RequiresTrailingDot(ep.RecordType) {
-			continue
-		}
 		switch ep.RecordType {
 		case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
 			continue // TXT is free-form; Validate checks MX

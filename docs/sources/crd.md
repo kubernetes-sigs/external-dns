@@ -168,8 +168,9 @@ are still published. The rejection is reported in the object's [status condition
 * `MX` targets must be `<preference> <host>`, e.g. `10 mail.example.com`.
 * `SRV` targets must be the full `<priority> <weight> <port> <host>` (RFC 2782).
 * `PTR` records need at least one non-empty target.
-* Every other record type rejects a target with a trailing dot, except `CNAME` and `TXT`,
-  where both forms are valid (RFC 1035 §5.1).
+* Every other record type rejects a target with a trailing dot, except `CNAME`, `DNAME`
+  and `TXT`, where both forms are valid (RFC 1035 §5.1). The dot is stripped from
+  `CNAME` and `DNAME` targets.
 * `targets` may be empty only when `--default-targets` is configured.
 
 ### Status
@@ -237,7 +238,9 @@ spec:
     - example.com
 ```
 
-> **Note:** CNAME and DNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1). Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
+> **Note:** CNAME and DNAME targets accept both bare hostnames (`example.com`) and absolute FQDNs with a trailing dot (`example.com.`), as defined by [RFC 1035 §5.1](https://www.rfc-editor.org/rfc/rfc1035#section-5.1).
+> The trailing dot is stripped, so both forms match the provider's records.
+> Other record types (A, AAAA, NS, etc.) do not accept a trailing dot.
 
 * Example for record type `NS`
 
