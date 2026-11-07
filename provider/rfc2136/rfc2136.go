@@ -69,6 +69,8 @@ type rfc2136Provider struct {
 	krb5Username string
 	krb5Password string
 	krb5Realm    string
+	// gssKeyData negotiates a GSS-TSIG context; it defaults to KeyData.
+	gssKeyData func(nameserver string) (string, gssTsigHandle, error)
 
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter *endpoint.DomainFilter
@@ -119,6 +121,12 @@ var tsigAlgs = map[string]string{
 	"hmac-sha256": dns.HmacSHA256,
 	"hmac-sha384": dns.HmacSHA384,
 	"hmac-sha512": dns.HmacSHA512,
+}
+
+// gssTsigHandle is the part of *gss.Client that IncomeTransfer uses.
+type gssTsigHandle interface {
+	dns.TsigProvider
+	Close() error
 }
 
 type rfc2136Actions interface {
@@ -188,6 +196,14 @@ func newProvider(hosts []string, port int, zoneNames []string, insecure bool, ax
 		sendCounter:           0,
 		listLastErr:           nil,
 		sendLastErr:           nil,
+	}
+	r.gssKeyData = func(nameserver string) (string, gssTsigHandle, error) {
+		keyName, handle, err := r.KeyData(nameserver)
+		// A nil *gss.Client would become a non-nil interface whose Close panics.
+		if handle == nil {
+			return keyName, nil, err
+		}
+		return keyName, handle, err
 	}
 	if actions != nil {
 		r.actions = actions
@@ -303,7 +319,7 @@ OuterLoop:
 
 // shouldSignAXFR reports whether TSIG should be attached to zone transfers.
 func (r *rfc2136Provider) shouldSignAXFR() bool {
-	return !r.insecure && !r.gssTsig && !r.axfrInsecure
+	return !r.insecure && !r.axfrInsecure
 }
 
 // Canonicalize a TLSA RR. Per RFC 6698, those are case-insensitive, which can
@@ -389,22 +405,60 @@ func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *d
 	if err != nil {
 		return nil, fmt.Errorf("error setting up TLS: %w", err)
 	}
-	conn, err := client.Dial(nameserver)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
-	}
-	if r.shouldSignAXFR() {
-		provider := tsig.HMAC{r.tsigKeyName: r.tsigSecret}
-		requestMAC, err := signAndSendAXFRRequest(conn, m, provider)
+
+	if !r.shouldSignAXFR() {
+		conn, err := client.Dial(nameserver)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to connect for transfer: %w", err)
 		}
-		return readSignedAXFR(conn, m.Id, requestMAC, provider), nil
+		t := new(dns.Transfer)
+		t.Conn = conn
+		return t.In(m, nameserver)
 	}
 
-	t := new(dns.Transfer)
-	t.Conn = conn
-	return t.In(m, nameserver)
+	keyName, alg, provider, release, err := r.axfrKey(nameserver)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := client.Dial(nameserver)
+	if err != nil {
+		release()
+		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
+	}
+	m.SetTsig(keyName, alg, clockSkew, time.Now().Unix())
+	requestMAC, err := signAndSendAXFRRequest(conn, m, provider)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	env := readSignedAXFR(conn, m.Id, requestMAC, provider)
+	// Responses are verified against the key, so release it only once the transfer is drained.
+	wrapped := make(chan *dns.Envelope)
+	go func() {
+		defer close(wrapped)
+		defer release()
+		for e := range env {
+			wrapped <- e
+		}
+	}()
+	return wrapped, nil
+}
+
+// axfrKey returns the TSIG key that zone transfers from nameserver are signed
+// with, negotiating a GSS-TSIG context when gssTsig is set, and a func that
+// releases it.
+func (r *rfc2136Provider) axfrKey(nameserver string) (string, string, dns.TsigProvider, func(), error) {
+	if !r.gssTsig {
+		return r.tsigKeyName, r.tsigSecretAlg, tsig.HMAC{r.tsigKeyName: r.tsigSecret}, func() {}, nil
+	}
+	keyName, handle, err := r.gssKeyData(nameserver)
+	if err != nil {
+		if handle != nil {
+			_ = handle.Close()
+		}
+		return "", "", nil, nil, fmt.Errorf("failed to negotiate GSS-TSIG: %w", err)
+	}
+	return keyName, tsig.GSS, handle, func() { _ = handle.Close() }, nil
 }
 
 func (r *rfc2136Provider) List() ([]dns.RR, error) {
@@ -422,12 +476,8 @@ func (r *rfc2136Provider) List() ([]dns.RR, error) {
 			nameserver := r.getNextNameserverFor(nameserverOpList)
 			log.Debugf("Fetching records from nameserver: %s", nameserver)
 
-			// Signing strips the TSIG RR, so a reused message goes out unsigned.
 			m := new(dns.Msg)
 			m.SetAxfr(dns.Fqdn(zone))
-			if r.shouldSignAXFR() {
-				m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
-			}
 
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
@@ -740,6 +790,9 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			if r.gssTsig {
 				keyName, handle, err := r.KeyData(nameserver)
 				if err != nil {
+					if handle != nil {
+						_ = handle.Close()
+					}
 					lastErr = err
 					r.sendLastErr = lastErr
 					continue
