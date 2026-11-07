@@ -208,3 +208,12 @@ func TestValidateHostNames(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateLabelSelector(t *testing.T) {
+	for _, ok := range []string{"", "!karpenter.sh/nodepool", "role=edge", "env in (prod),!spot"} {
+		require.NoError(t, ValidateLabelSelector(ok), ok)
+	}
+	for _, bad := range []string{"env in prod", "!"} {
+		require.Error(t, ValidateLabelSelector(bad), bad)
+	}
+}

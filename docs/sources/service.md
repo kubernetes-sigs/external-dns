@@ -91,6 +91,10 @@ If `spec.ExternalTrafficPolicy` is `Local`, selects Nodes that have at least one
 
 Otherwise iterates over all Nodes, of any phase.
 
+In both cases, if there is an `external-dns.kubernetes.io/nodeport-filter` annotation on the Service, Nodes whose labels
+don't match its label selector are skipped first. With `Local`, this happens before the tiers above are compared. See
+[the annotation](../annotations/annotations.md#external-dnskubernetesionodeport-filter).
+
 Iterates over each relevant Node's `status.addresses`:
 
 1. If there is an `external-dns.kubernetes.io/access: public` annotation on the Service, uses both addresses with

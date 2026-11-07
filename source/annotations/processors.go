@@ -53,6 +53,22 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 	return endpoint.TTL(ttlValue)
 }
 
+// NodePortFilterFromAnnotations returns the label selector that limits which nodes a NodePort
+// service's records point at. An absent or invalid value selects every node, as before the
+// annotation existed: failing or skipping the service would drop its records under --policy=sync.
+func NodePortFilterFromAnnotations(input map[string]string, resource string) labels.Selector {
+	value, ok := input[NodePortFilterKey]
+	if !ok {
+		return labels.Everything()
+	}
+	selector, err := labels.Parse(value)
+	if err != nil {
+		log.Warnf("%s: %q is not a valid %s value: %v; not filtering nodes", resource, value, NodePortFilterKey, err)
+		return labels.Everything()
+	}
+	return selector
+}
+
 // IsControllerMismatch returns true when the resource should be skipped because
 // the controller annotation is present and does not match the expected controller value.
 // It also logs the reason.

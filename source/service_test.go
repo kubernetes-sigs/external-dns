@@ -2428,6 +2428,201 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				},
 			}},
 		},
+		{
+			title:            "nodeport-filter equality selector publishes only matching nodes",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.NodePortFilterKey: "role=edge",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: nodePortFilterTestNodes(),
+		},
+		{
+			title:            "nodeport-filter not-exists selector with access=private",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.AccessKey:         "private",
+				annotations.NodePortFilterKey: "!karpenter.sh/nodepool",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: nodePortFilterTestNodes(),
+		},
+		{
+			title:            "nodeport-filter not-exists selector with access=public",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.AccessKey:         "public",
+				annotations.NodePortFilterKey: "!karpenter.sh/nodepool",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: nodePortFilterTestNodes(),
+		},
+		{
+			title:            "labelled nodes without nodeport-filter publish all nodes",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2", "54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: nodePortFilterTestNodes(),
+		},
+		{
+			title:            "invalid nodeport-filter falls back to all nodes",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.NodePortFilterKey: "env in prod",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2", "54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: nodePortFilterTestNodes(),
+		},
+		{
+			title:            "nodeport-filter matching no nodes publishes only the SRV record",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.NodePortFilterKey: "role=none",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+			},
+			nodes: nodePortFilterTestNodes(),
+		},
+		{
+			title:                  "nodeport-filter still excludes unschedulable nodes",
+			svcNamespace:           "testing",
+			svcName:                "foo",
+			svcType:                v1.ServiceTypeNodePort,
+			svcTrafficPolicy:       v1.ServiceExternalTrafficPolicyTypeCluster,
+			ignoreUnscheduledNodes: true,
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.NodePortFilterKey: "!karpenter.sh/nodepool",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: func() []*v1.Node {
+				nodes := nodePortFilterTestNodes()
+				nodes[2].Spec.Unschedulable = true
+				return nodes
+			}(),
+		},
+		{
+			title:            "nodeport-filter with Local keeps only matching nodes running pods",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			labels:           map[string]string{},
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.AccessKey:         "private",
+				annotations.NodePortFilterKey: "!karpenter.sh/nodepool",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes:     nodePortFilterTestNodes(),
+			podNames:  []string{"pod1", "pod2"},
+			nodeIndex: []int{0, 1},
+			phases:    []v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+			},
+			deletionTimestamp: []*metav1.Time{nil, nil},
+		},
+		{
+			// The only ready pod is on an excluded node: the matching nodes' best tier is used rather than none.
+			title:            "nodeport-filter with Local uses the best tier among matching nodes",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			labels:           map[string]string{},
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.AccessKey:         "private",
+				annotations.NodePortFilterKey: "!karpenter.sh/nodepool",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes:     nodePortFilterTestNodes(),
+			podNames:  []string{"pod1", "pod2"},
+			nodeIndex: []int{1, 0},
+			phases:    []v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+			},
+			deletionTimestamp: []*metav1.Time{nil, nil},
+		},
+		{
+			// Matching nodes exist, but none runs a pod: with Local there is nothing to publish.
+			title:            "nodeport-filter with Local and every pod on excluded nodes publishes only the SRV record",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			labels:           map[string]string{},
+			annotations: map[string]string{
+				annotations.HostnameKey:       "foo.example.org.",
+				annotations.AccessKey:         "private",
+				annotations.NodePortFilterKey: "!karpenter.sh/nodepool",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+			},
+			nodes:     nodePortFilterTestNodes(),
+			podNames:  []string{"pod1"},
+			nodeIndex: []int{1},
+			phases:    []v1.PodPhase{v1.PodRunning},
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+			},
+			deletionTimestamp: []*metav1.Time{nil},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
@@ -2510,6 +2705,80 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			testutils.ValidateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
+
+// nodePortFilterTestNodes returns an unlabelled node, a Karpenter node and a node labelled role=edge.
+func nodePortFilterTestNodes() []*v1.Node {
+	node := func(name string, nodeLabels map[string]string, externalIP, internalIP string) *v1.Node {
+		return &v1.Node{
+			Name:   name,
+			Labels: nodeLabels,
+			Status: v1.NodeStatus{
+				Addresses: []v1.NodeAddress{
+					{Type: v1.NodeExternalIP, Address: externalIP},
+					{Type: v1.NodeInternalIP, Address: internalIP},
+				},
+			},
+		}
+	}
+	return []*v1.Node{
+		node("node1", nil, "54.10.11.1", "10.0.1.1"),
+		node("node2", map[string]string{"karpenter.sh/nodepool": "video"}, "54.10.11.2", "10.0.1.2"),
+		node("node3", map[string]string{"role": "edge"}, "54.10.11.3", "10.0.1.3"),
+	}
+}
+
+// Not parallel: it toggles the package-level legacy annotation prefix.
+func TestServiceSourceNodePortFilterLegacyAnnotationPrefix(t *testing.T) {
+	annotations.SetLegacyAnnotationPrefix(annotations.LegacyAnnotationPrefix)
+	t.Cleanup(func() { annotations.SetLegacyAnnotationPrefix("") })
+
+	for name, svcAnnotations := range map[string]map[string]string{
+		// A service mid-migration: the filter already uses the GA prefix, its other keys don't yet.
+		"GA filter next to legacy hostname/access": {
+			annotations.LegacyAnnotationPrefix + "hostname": "foo.example.org.",
+			annotations.LegacyAnnotationPrefix + "access":   "private",
+			annotations.NodePortFilterKey:                   "!karpenter.sh/nodepool",
+		},
+		"all legacy": {
+			annotations.LegacyAnnotationPrefix + "hostname":        "foo.example.org.",
+			annotations.LegacyAnnotationPrefix + "access":          "private",
+			annotations.LegacyAnnotationPrefix + "nodeport-filter": "!karpenter.sh/nodepool",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			kubernetes := fake.NewClientset()
+			for _, node := range nodePortFilterTestNodes() {
+				_, err := kubernetes.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type:                  v1.ServiceTypeNodePort,
+					ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+					Ports:                 []v1.ServicePort{{NodePort: 30192}},
+				},
+				Namespace:   "testing",
+				Name:        "foo",
+				Annotations: svcAnnotations,
+			}
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(t.Context(), service, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			client, err := NewServiceSource(t.Context(), kubernetes, &Config{
+				TemplateEngine: templatetest.MustEngine(t, "", "", "", false),
+				LabelFilter:    labels.Everything(),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.3"}, RecordType: endpoint.RecordTypeA},
+			})
 		})
 	}
 }
@@ -5828,7 +6097,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			},
 		)
 		for i := range 100 {
-			got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+			got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 			require.Containsf(t, got, "node1", "iteration %d: node1 dropped despite having a ready pod", i)
 			require.Containsf(t, got, "node2", "iteration %d: node2 dropped despite having a ready pod", i)
 		}
@@ -5855,7 +6124,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 				makePod("pod-4", "node3", false, nil), // notReady only
 			},
 		)
-		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 		assert.Equal(t, []string{"node1"}, got, "fallback should select the top-tier node only")
 	})
 
@@ -5864,7 +6133,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Node{makeNode("node1", "54.10.11.1")},
 			[]*v1.Pod{makePod("pod-0", "node1", true, &now)}, // ready + terminating
 		)
-		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 		assert.Equal(t, []string{"node1"}, got)
 	})
 
@@ -5873,7 +6142,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Node{makeNode("node1", "54.10.11.1")},
 			[]*v1.Pod{makePod("pod-0", "node1", false, nil)}, // running, not ready
 		)
-		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 		assert.Equal(t, []string{"node1"}, got)
 	})
 
@@ -5887,7 +6156,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Node{makeNode("node1", "54.10.11.1")},
 			[]*v1.Pod{pendingPod},
 		)
-		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 		assert.Empty(t, got)
 	})
 
@@ -5896,7 +6165,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Node{}, // node1 not registered
 			[]*v1.Pod{makePod("pod-0", "node1", true, nil)},
 		)
-		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 		assert.Empty(t, got)
 	})
 
@@ -5905,7 +6174,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 			[]*v1.Node{makeNode("node1", "54.10.11.1")},
 			[]*v1.Pod{},
 		)
-		got := sc.nodesExternalTrafficPolicyTypeLocal(svc)
+		got := sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything())
 		require.Nil(t, got)
 	})
 
@@ -5917,7 +6186,7 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 				makePod("pod-1", "node2", true, &now), // ready, terminating
 			},
 		)
-		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc, labels.Everything()))
 		assert.Equal(t, []string{"node1"}, got)
 	})
 }

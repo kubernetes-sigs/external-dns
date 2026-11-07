@@ -644,8 +644,9 @@ func isPodStatusReady(status v1.PodStatus) bool {
 // nodesExternalTrafficPolicyTypeLocal returns nodes that have running pods for the given
 // NodePort service with externalTrafficPolicy=Local. Only nodes at the highest available
 // pod readiness level are returned — nodes with lower readiness are excluded when better
-// ones exist.
-func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []*v1.Node {
+// ones exist. Nodes not matching selector are dropped before ranking, so pods on excluded
+// nodes cannot push the matching nodes out of the result.
+func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service, selector labels.Selector) []*v1.Node {
 	// Pod states ranked by readiness then termination; PodRunning phase is a precondition.
 	// Values start at 1 so that the zero value of the bestPriority map acts as a
 	// "node not yet seen" sentinel, making max() correct on the first pod without
@@ -666,6 +667,10 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 		node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
 		if err != nil {
 			log.Debugf("Skipping pod %s/%s: node %s not found", v.Namespace, v.Name, v.Spec.NodeName)
+			continue
+		}
+		if !selector.Matches(labels.Set(node.Labels)) {
+			log.Debugf("Skipping pod %s/%s: node %s does not match %s", v.Namespace, v.Name, v.Spec.NodeName, annotations.NodePortFilterKey)
 			continue
 		}
 
@@ -727,11 +732,13 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		nodes       []*v1.Node
 	)
 
+	selector := annotations.NodePortFilterFromAnnotations(svc.Annotations, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
+
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
-		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc)
+		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc, selector)
 	} else {
 		var err error
-		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
+		nodes, err = sc.nodeInformer.Lister().List(selector)
 		if err != nil {
 			return nil, err
 		}

@@ -41,6 +41,7 @@ const (
 	IngressSuffix               = "ingress"
 	IngressHostnameSourceSuffix = "ingress-hostname-source"
 	InternalHostnameSuffix      = "internal-hostname"
+	NodePortFilterSuffix        = "nodeport-filter"
 	RecordTypeSuffix            = "record-type"
 	SetIdentifierSuffix         = "set-identifier"
 	TargetSuffix                = "target"
@@ -86,6 +87,8 @@ var (
 	ControllerValue = "dns-controller"
 	// InternalHostnameKey The annotation used for defining the desired hostname
 	InternalHostnameKey = AnnotationKeyPrefix + InternalHostnameSuffix
+	// NodePortFilterKey The annotation used for limiting which nodes a NodePort service's records point at, as a label selector
+	NodePortFilterKey = AnnotationKeyPrefix + NodePortFilterSuffix
 	// The annotation used for defining the desired hostname source for gateways
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + GatewayHostnameSourceSuffix
 )
@@ -119,6 +122,7 @@ func SetAnnotationPrefix(prefix string) {
 	Ingress = AnnotationKeyPrefix + IngressSuffix
 	IngressHostnameSourceKey = AnnotationKeyPrefix + IngressHostnameSourceSuffix
 	InternalHostnameKey = AnnotationKeyPrefix + InternalHostnameSuffix
+	NodePortFilterKey = AnnotationKeyPrefix + NodePortFilterSuffix
 	GatewayHostnameSourceKey = AnnotationKeyPrefix + GatewayHostnameSourceSuffix
 }
 
