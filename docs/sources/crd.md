@@ -169,8 +169,7 @@ are still published. The rejection is reported in the object's [status condition
 * `SRV` targets must be the full `<priority> <weight> <port> <host>` (RFC 2782).
 * `PTR` records need at least one non-empty target.
 * Every other record type rejects a target with a trailing dot, except `CNAME`, `DNAME`
-  and `TXT`, where both forms are valid (RFC 1035 §5.1). The dot is stripped from
-  `CNAME` and `DNAME` targets.
+  and `TXT`, where both forms are valid (RFC 1035 §5.1).
 * `targets` may be empty only when `--default-targets` is configured.
 
 ### Status

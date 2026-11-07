@@ -652,8 +652,7 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 	}
 }
 
-// MX, CNAME and DNAME targets are normalized rather than rejected, else they
-// diff against the provider's rendering.
+// Targets are normalized rather than rejected, else they diff against the provider's rendering.
 func TestCRDSourceNormalizesTargets(t *testing.T) {
 	for _, ti := range []struct {
 		title      string

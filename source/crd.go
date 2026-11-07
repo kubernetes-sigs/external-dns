@@ -164,7 +164,6 @@ func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]
 				ep.Targets[i] = endpoint.NormalizeMXTarget(target)
 			}
 		case endpoint.RequiresTrailingDot(ep.RecordType):
-			// RFC 1035 §5.1 allows the absolute form; providers read it back bare.
 			for i, target := range ep.Targets {
 				ep.Targets[i] = strings.TrimSuffix(target, ".")
 			}
