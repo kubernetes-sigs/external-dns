@@ -580,7 +580,8 @@ func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
 }
 
 // Template hostnames come from Apply; the flags say whether it and the listener fallback may add hosts.
-func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) (hostnames []string, templateAllowed, fallbackAllowed bool) {
+func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, bool, bool) {
+	var hostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
 	}

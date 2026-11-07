@@ -61,8 +61,8 @@ func TestKongTCPIngressFQDNTemplate(t *testing.T) {
 
 			// No hostname annotation or rule hosts, so only the fqdn template names the record.
 			tcpIngressJSON, err := json.Marshal(TCPIngress{
-				TypeMeta:   metav1.TypeMeta{APIVersion: kongGroupdVersionResource.GroupVersion().String(), Kind: "TCPIngress"},
-				ObjectMeta: metav1.ObjectMeta{Name: "tmpl-tcp", Namespace: defaultKongNamespace},
+				APIVersion: kongGroupdVersionResource.GroupVersion().String(), Kind: "TCPIngress",
+				Name: "tmpl-tcp", Namespace: defaultKongNamespace,
 				Status: tcpIngressStatus{
 					LoadBalancer: corev1.LoadBalancerStatus{Ingress: []corev1.LoadBalancerIngress{{IP: "2.2.2.2"}}},
 				},

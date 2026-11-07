@@ -56,7 +56,7 @@ func TestAmbassadorHostFQDNTemplate(t *testing.T) {
 
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
 			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(t.Context(), &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{Name: defaultAmbassadorServiceName},
+				Name: defaultAmbassadorServiceName,
 				Status: v1.ServiceStatus{
 					LoadBalancer: v1.LoadBalancerStatus{Ingress: []v1.LoadBalancerIngress{{IP: "1.1.1.1"}}},
 				},
@@ -69,11 +69,9 @@ func TestAmbassadorHostFQDNTemplate(t *testing.T) {
 
 			// No spec hostname, so only the fqdn template names the record.
 			host, err := createAmbassadorHost(&ambassador.Host{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "tmpl-host",
-					Annotations: map[string]string{
-						ambHostAnnotation: defaultAmbassadorNamespace + "/" + defaultAmbassadorServiceName,
-					},
+				Name: "tmpl-host",
+				Annotations: map[string]string{
+					ambHostAnnotation: defaultAmbassadorNamespace + "/" + defaultAmbassadorServiceName,
 				},
 				Spec: &ambassador.HostSpec{},
 			})

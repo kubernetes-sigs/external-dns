@@ -91,7 +91,7 @@ func runGatewayRouteTemplateCases(t *testing.T, cases []gatewayRouteTemplateCase
 
 			gwClient := gatewayfake.NewSimpleClientset()
 			_, err := gwClient.GatewayV1().Gateways("default").Create(t.Context(), &v1.Gateway{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "test"},
+				Namespace: "default", Name: "test",
 				Spec: v1.GatewaySpec{
 					Listeners: []v1.Listener{{
 						Protocol: v1.HTTPProtocolType,
@@ -103,7 +103,7 @@ func runGatewayRouteTemplateCases(t *testing.T, cases []gatewayRouteTemplateCase
 			require.NoError(t, err)
 
 			_, err = gwClient.GatewayV1().HTTPRoutes("default").Create(t.Context(), &v1.HTTPRoute{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "templated-route"},
+				Namespace: "default", Name: "templated-route",
 				Spec: v1.HTTPRouteSpec{
 					CommonRouteSpec: v1.CommonRouteSpec{
 						ParentRefs: []v1.ParentReference{gwParentRef("default", "test")},
@@ -116,7 +116,7 @@ func runGatewayRouteTemplateCases(t *testing.T, cases []gatewayRouteTemplateCase
 
 			kubeClient := kubefake.NewClientset()
 			_, err = kubeClient.CoreV1().Namespaces().Create(t.Context(), &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{Name: "default"},
+				Name: "default",
 			}, metav1.CreateOptions{})
 			require.NoError(t, err)
 
