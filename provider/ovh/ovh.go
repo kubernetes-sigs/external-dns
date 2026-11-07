@@ -229,7 +229,7 @@ func ovhRecordsByZone(records []ovhRecord) map[string][]ovhRecord {
 	return byZone
 }
 
-// computeSingleZoneChanges expects existingRecords to hold the records of zoneName only.
+// existingRecords must belong to zoneName.
 func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
 	allChanges := []ovhChange{}
 	var computedChanges []ovhChange
