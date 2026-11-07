@@ -31,7 +31,7 @@ import (
 
 const (
 	pathToDocs        = "%s/../../../../docs/monitoring"
-	knownMetricsCount = 24
+	knownMetricsCount = 26
 )
 
 func TestComputeMetrics(t *testing.T) {

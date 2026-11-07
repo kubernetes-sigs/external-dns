@@ -33,6 +33,7 @@ import (
 	_ "sigs.k8s.io/external-dns/controller"
 	_ "sigs.k8s.io/external-dns/provider"
 	_ "sigs.k8s.io/external-dns/provider/webhook"
+	_ "sigs.k8s.io/external-dns/source"
 )
 
 var (

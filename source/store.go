@@ -257,6 +257,7 @@ func ByNames(ctx context.Context, cfg *config.Config, p ClientGenerator) ([]Sour
 // - "fake": Fake source for testing
 // - "empty": Returns no endpoints, for testing or as a placeholder
 // - "connector": Connector source for external systems
+// - "webhook": Endpoints served over HTTP/JSON by a sidecar webhook
 //
 // Design Note: Gateway API sources use a different pattern (direct constructor calls)
 // because they have simpler initialization requirements.
@@ -306,6 +307,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return NewEmptySource(), nil
 	case types.Connector:
 		return NewConnectorSource(cfg.ConnectorServer)
+	case types.Webhook:
+		return NewWebhookSource(ctx, cfg.WebhookSourceURLs, cfg.WebhookSourceTimeout, cfg.WebhookSourceMaxBodySize)
 	case types.CRD:
 		return buildCRDSource(ctx, p, cfg)
 	case types.SkipperRouteGroup:

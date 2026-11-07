@@ -99,43 +99,6 @@ type WebhookProvider struct {
 	maxBodySize int64
 }
 
-// errResponseTooLarge distinguishes an over-limit body from a malformed or
-// truncated one, which io.LimitReader would report as a plain EOF.
-var errResponseTooLarge = errors.New("webhook response body exceeds the configured max size (--webhook-provider-max-body-size)")
-
-// limitBody caps response body reads at maxBodySize, failing with
-// errResponseTooLarge once exceeded; a non-positive limit disables the cap.
-func limitBody(r io.Reader, maxBodySize int64) io.Reader {
-	if maxBodySize <= 0 {
-		return r
-	}
-	return &maxBytesReader{r: r, remaining: maxBodySize}
-}
-
-// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
-// past the limit instead of reporting EOF like io.LimitReader.
-type maxBytesReader struct {
-	r         io.Reader
-	remaining int64 // bytes still allowed; negative once the limit is passed
-}
-
-func (l *maxBytesReader) Read(p []byte) (int, error) {
-	if l.remaining < 0 {
-		return 0, errResponseTooLarge
-	}
-	// Read one byte past the limit to detect an over-limit body; compare
-	// against remaining so the +1 can't overflow near math.MaxInt64.
-	if l.remaining < int64(len(p)) {
-		p = p[:l.remaining+1]
-	}
-	n, err := l.r.Read(p)
-	l.remaining -= int64(n)
-	if l.remaining < 0 {
-		return n, errResponseTooLarge
-	}
-	return n, err
-}
-
 func init() {
 	metrics.RegisterMetric.MustRegister(recordsErrorsGauge)
 	metrics.RegisterMetric.MustRegister(recordsRequestsGauge)
@@ -143,6 +106,16 @@ func init() {
 	metrics.RegisterMetric.MustRegister(applyChangesRequestsGauge)
 	metrics.RegisterMetric.MustRegister(adjustEndpointsErrorsGauge)
 	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
+}
+
+// decodeBody decodes a capped response body; an over-limit body names the flag
+// that raises the cap, since the shared reader cannot know which webhook it serves.
+func decodeBody(body io.Reader, maxBodySize int64, v any) error {
+	err := json.NewDecoder(extdnshttp.LimitBody(body, maxBodySize)).Decode(v)
+	if errors.Is(err, extdnshttp.ErrResponseTooLarge) {
+		return fmt.Errorf("%w (--webhook-provider-max-body-size)", err)
+	}
+	return err
 }
 
 // New creates a webhook provider from the given configuration.
@@ -168,7 +141,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 
 	// wait.Jitter only adds delay: first wait 250-750ms, then x1.5 per step.
 	backoff := wait.Backoff{Duration: 250 * time.Millisecond, Factor: 1.5, Jitter: 2, Steps: 5}
-	resp, err := requestWithRetry(client, req, backoff)
+	resp, err := extdnshttp.RequestWithRetry(client, req, backoff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
@@ -179,7 +152,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 
 	df := &endpoint.DomainFilter{}
-	if err := json.NewDecoder(limitBody(resp.Body, maxBodySize)).Decode(df); err != nil {
+	if err := decodeBody(resp.Body, maxBodySize, df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %w", err)
 	}
 
@@ -189,56 +162,6 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 		DomainFilter:    df,
 		maxBodySize:     maxBodySize,
 	}, nil
-}
-
-func requestWithRetry(client *http.Client, req *http.Request, backoff wait.Backoff) (*http.Response, error) {
-	var resp *http.Response
-	var lastErr error
-	err := wait.ExponentialBackoffWithContext(req.Context(), backoff, func(context.Context) (bool, error) {
-		// Reset the body before each attempt so retries send the full payload.
-		// GetBody is set automatically by http.NewRequest for in-memory body types;
-		// it is nil for GET requests (no body), so the block is safely skipped.
-		if req.GetBody != nil {
-			body, err := req.GetBody()
-			if err != nil {
-				return false, fmt.Errorf("failed to reset request body: %w", err)
-			}
-			req.Body = body
-		}
-
-		r, err := client.Do(req)
-		if err != nil {
-			log.Debugf("Failed to connect to webhook: %v", err)
-			lastErr = err
-			return false, nil
-		}
-		// 5xx: retryable server error
-		if r.StatusCode >= http.StatusInternalServerError {
-			extdnshttp.DrainAndClose(r.Body)
-			lastErr = fmt.Errorf("server error: status code %d", r.StatusCode)
-			return false, nil
-		}
-		// 3xx/4xx: permanent error, not worth retrying.
-		// Note: http.Client follows redirects automatically, so a 3xx here means
-		// either a non-redirect 3xx (e.g. 304) or a custom CheckRedirect policy;
-		// it does not mean a normal redirect was left unhandled.
-		// we currently only use 200 as success, but considering okay all 2XX for future usage
-		if r.StatusCode >= http.StatusMultipleChoices {
-			extdnshttp.DrainAndClose(r.Body)
-			return false, fmt.Errorf("unexpected status code %d", r.StatusCode)
-		}
-		resp = r
-		return true, nil
-	})
-	if wait.Interrupted(err) {
-		if cause := context.Cause(req.Context()); cause != nil {
-			return nil, cause
-		}
-		if lastErr != nil {
-			return nil, lastErr
-		}
-	}
-	return resp, err
 }
 
 // Records will make a GET call to remoteServerURL/records and return the results
@@ -272,7 +195,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	var endpoints []*endpoint.Endpoint
-	if err := json.NewDecoder(limitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
+	if err := decodeBody(resp.Body, p.maxBodySize, &endpoints); err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
@@ -382,7 +305,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	if err := json.NewDecoder(limitBody(resp.Body, p.maxBodySize)).Decode(&endpoints); err != nil {
+	if err := decodeBody(resp.Body, p.maxBodySize, &endpoints); err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err

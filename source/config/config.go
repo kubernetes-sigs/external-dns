@@ -70,6 +70,9 @@ type Config struct {
 	PublishHostIP                  bool
 	AlwaysPublishNotReadyAddresses bool
 	ConnectorServer                string
+	WebhookSourceURLs              []string
+	WebhookSourceTimeout           time.Duration
+	WebhookSourceMaxBodySize       int64
 	CRDSourceAPIVersion            string
 	CRDSourceKind                  string
 	KubeConfig                     string
@@ -187,6 +190,9 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		Provider:                       cfg.Provider,
 		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
 		ConnectorServer:                cfg.ConnectorSourceServer,
+		WebhookSourceURLs:              cfg.WebhookSourceURLs,
+		WebhookSourceTimeout:           cfg.WebhookSourceTimeout,
+		WebhookSourceMaxBodySize:       cfg.WebhookSourceMaxBodySize,
 		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
 		CRDSourceKind:                  cfg.CRDSourceKind,
 		KubeConfig:                     cfg.KubeConfig,
