@@ -29,9 +29,13 @@ const (
 	skipCtrlMsg = "Skipping '%s/%s/%s' because controller '%s' value does not match, found: '%s', required: '%s'"
 )
 
-func hasAliasFromAnnotations(annotations map[string]string) bool {
-	aliasAnnotation, ok := annotations[AliasKey]
-	return ok && aliasAnnotation == "true"
+func aliasFromAnnotations(annotations map[string]string) (endpoint.AliasType, bool) {
+	switch v := endpoint.AliasType(annotations[AliasKey]); v {
+	case endpoint.AliasTrue, endpoint.AliasA, endpoint.AliasAAAA:
+		return v, true
+	default:
+		return "", false
+	}
 }
 
 // TTLFromAnnotations extracts the TTL from the annotations of the given resource.
