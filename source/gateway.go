@@ -314,17 +314,17 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 	var endpoints []*endpoint.Endpoint
 	for _, rt := range routes {
 		meta := rt.Metadata()
-		definedHosts, templateAllowed, fallbackAllowed := resolver.resolveHostnames(rt)
+		res := resolver.resolveHostnames(rt)
 		var routeEndpoints []*endpoint.Endpoint
-		if len(definedHosts) > 0 {
-			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, definedHosts, nil))
+		if len(res.defined) > 0 {
+			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, res.defined, nil))
 		}
 
 		templateRendered := false
 		routeEndpoints, err := src.templateEngine.Apply(routeEndpoints, rt.Object(),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				// Defined hostnames suppress the template unless combining, matched or not.
-				if !templateAllowed || (len(definedHosts) > 0 && !src.templateEngine.Combining()) {
+				if !res.templateAllowed || (len(res.defined) > 0 && !src.templateEngine.Combining()) {
 					return nil, nil
 				}
 				templateRendered = true
@@ -335,7 +335,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 			return nil, err
 		}
 		// Only when nothing named a host, else a wildcard listener hostname is published beside annotated ones.
-		if fallbackAllowed && len(definedHosts) == 0 && !templateRendered && len(routeEndpoints) == 0 {
+		if res.fallbackAllowed && len(res.defined) == 0 && !templateRendered && len(routeEndpoints) == 0 {
 			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, []string{""}, nil))
 		}
 		// TODO: does not follow the pattern of other sources to log empty endpoints
@@ -579,8 +579,16 @@ func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
 	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
 }
 
-// Template hostnames come from Apply; the flags say whether it and the listener fallback may add hosts.
-func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, bool, bool) {
+// hostnameResolution is what resolveHostnames reports: the hostnames the route
+// spec and annotations defined, plus whether the FQDN template and the listener
+// wildcard fallback are allowed to add more.
+type hostnameResolution struct {
+	defined         []string
+	templateAllowed bool
+	fallbackAllowed bool
+}
+
+func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) hostnameResolution {
 	var hostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
@@ -591,12 +599,12 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, bool
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
-				return []string{}, false, false
+				return hostnameResolution{defined: []string{}}
 			}
-			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), false, false
+			return hostnameResolution{defined: annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)}
 		case gatewayHostnameSourceDefinedHostsOnlyValue:
 			// Explicitly use only defined hostnames (route spec and optional template result)
-			return hostnames, true, false
+			return hostnameResolution{defined: hostnames, templateAllowed: true}
 		default:
 			// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
 			log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
@@ -607,7 +615,7 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, bool
 	if !c.src.ignoreHostnameAnnotation {
 		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
-	return hostnames, true, true
+	return hostnameResolution{defined: hostnames, templateAllowed: true, fallbackAllowed: true}
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Listener, rt gatewayRoute) bool {
