@@ -153,16 +153,26 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if host is missing on gateway
-		gwEndpoints, err = sc.templateEngine.CombineWithEndpoints(
+		// TODO: review/redesign; build cannot return an error, so a gateway lookup failure is captured and returned after Apply.
+		var templateErr error
+		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
-			func() ([]*endpoint.Endpoint, error) {
-				hostnames, err := sc.templateEngine.ExecFQDN(gateway)
-				if err != nil {
-					return nil, err
+			gateway,
+			nil,
+			func(hostnames, targets []string) []*endpoint.Endpoint {
+				if len(targets) > 0 {
+					return sc.endpointsForHostnames(hostnames, targets, gateway)
 				}
-				return sc.endpointsFromGateway(hostnames, gateway)
+				eps, buildErr := sc.endpointsFromGateway(hostnames, gateway)
+				if buildErr != nil {
+					templateErr = fmt.Errorf("failed to get endpoints from template: %w", buildErr)
+				}
+				return eps
 			},
 		)
+		if err == nil {
+			err = templateErr
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -250,15 +260,19 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *netwo
 		return endpoints, nil
 	}
 
+	return sc.endpointsForHostnames(hostnames, targets, gateway), nil
+}
+
+func (sc *gatewaySource) endpointsForHostnames(hostnames []string, targets endpoint.Targets, gateway *networkingv1.Gateway) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 	ttl := annotations.TTLFromAnnotations(gateway.Annotations, resource)
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(gateway.Annotations)
 
+	var endpoints []*endpoint.Endpoint
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1.Gateway) []string {

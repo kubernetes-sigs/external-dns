@@ -132,10 +132,19 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 	for _, rg := range routeGroups {
 		eps := sc.endpointsFromRouteGroup(rg)
 
+		rgTargets := annotations.TargetsFromTargetAnnotation(rg.Annotations)
+		if len(rgTargets) == 0 {
+			rgTargets = targetsFromRouteGroupStatus(rg.Status)
+		}
+
 		var err error
-		eps, err = sc.templateEngine.CombineWithEndpoints(
+		eps, err = sc.templateEngine.Apply(
 			eps,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(rg) },
+			&routeGroupWrapper{rg},
+			rgTargets,
+			func(hostnames, targets []string) []*endpoint.Endpoint {
+				return sc.endpointsFromTemplate(rg, hostnames, targets)
+			},
 		)
 		if err != nil {
 			return nil, err
@@ -154,22 +163,11 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(&routeGroupWrapper{rg})
-	if err != nil {
-		return nil, err
-	}
-
+func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("routegroup/%s/%s", rg.Namespace, rg.Name)
 
 	// error handled in endpointsFromRouteGroup(), otherwise duplicate log
 	ttl := annotations.TTLFromAnnotations(rg.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(rg.Annotations)
-
-	if len(targets) == 0 {
-		targets = targetsFromRouteGroupStatus(rg.Status)
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(rg.Annotations)
 
@@ -177,7 +175,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *rgv1.RouteGroup) ([]*endpo
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *routeGroupSource) endpointsFromRouteGroup(rg *rgv1.RouteGroup) []*endpoint.Endpoint {

@@ -121,10 +121,19 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	var endpoints []*endpoint.Endpoint
 
 	for _, ocpRoute := range ocpRoutes {
+		routeTargets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
+		if len(routeTargets) == 0 {
+			routeTargets, _ = ors.getTargetsFromRouteStatus(ocpRoute.Status)
+		}
+
 		// apply template if host is missing on OpenShift Route
-		orEndpoints, err := ors.templateEngine.CombineWithEndpoints(
+		orEndpoints, err := ors.templateEngine.Apply(
 			ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation),
-			func() ([]*endpoint.Endpoint, error) { return ors.endpointsFromTemplate(ocpRoute) },
+			ocpRoute,
+			routeTargets,
+			func(hostnames, targets []string) []*endpoint.Endpoint {
+				return ors.endpointsFromTemplate(ocpRoute, hostnames, targets)
+			},
 		)
 		if err != nil {
 			return nil, err
@@ -143,21 +152,10 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*endpoint.Endpoint, error) {
-	hostnames, err := ors.templateEngine.ExecFQDN(ocpRoute)
-	if err != nil {
-		return nil, err
-	}
-
+func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 
 	ttl := annotations.TTLFromAnnotations(ocpRoute.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
-	if len(targets) == 0 {
-		targetsFromRoute, _ := ors.getTargetsFromRouteStatus(ocpRoute.Status)
-		targets = targetsFromRoute
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ocpRoute.Annotations)
 
@@ -165,7 +163,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return endpoints
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object
