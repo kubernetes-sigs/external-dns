@@ -57,6 +57,8 @@ type CRDRegistry struct {
 	namespace string
 	provider  provider.Provider
 	ownerID   string // refers to the owner id of the current instance
+	// When set, DNSRecord writes are logged instead of executed so the registry matches the provider's dry-run.
+	dryRun bool
 }
 
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
@@ -65,7 +67,12 @@ func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error
 		namespace = kubeclient.CurrentNamespace(cfg.KubeConfig)
 		log.Infof("Registry: --crd-registry-namespace not specified, using `%s`", namespace)
 	}
-	return NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
+	r, err := NewCRDRegistry(p, cfg.KubeConfig, cfg.APIServerURL, namespace, cfg.TXTOwnerID, cfg.RequestTimeout)
+	if err != nil {
+		return nil, err
+	}
+	r.dryRun = cfg.DryRun
+	return r, nil
 }
 
 // NewCRDRegistry returns new CRDRegistry object backed by a controller-runtime
@@ -194,6 +201,11 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		r.WithLabel(endpoint.OwnerLabelKey, cr.ownerID)
 	}
 
+	if cr.dryRun {
+		cr.logDryRun(filteredChanges)
+		return cr.provider.ApplyChanges(ctx, filteredChanges)
+	}
+
 	// Write the DNSRecord objects and collect them so their Ready condition can be
 	// set from the provider outcome below.
 	applied := make([]*apiv1alpha1.DNSRecord, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
@@ -265,6 +277,22 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	return cr.adjustLabelsFromProvider(ctx, applied)
+}
+
+// logDryRun logs the DNSRecord writes ApplyChanges skips in dry-run mode.
+func (cr *CRDRegistry) logDryRun(changes *plan.Changes) {
+	for _, group := range []struct {
+		action  string
+		records []*endpoint.Endpoint
+	}{
+		{"create", changes.Create},
+		{"update", changes.UpdateNew},
+		{"delete", changes.Delete},
+	} {
+		for _, r := range group.records {
+			log.Infof("Dry run mode, skipping DNSRecord %s %s/%s (%s %s)", group.action, cr.namespace, recordObjectName(r), r.DNSName, r.RecordType)
+		}
+	}
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
