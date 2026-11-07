@@ -368,7 +368,7 @@ func TestOvhApplyChangesUpdateIgnoresOtherZones(t *testing.T) {
 			client := new(mockOvhClient)
 			provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
 
-			// example.org is fetched first and holds records with the same type and subdomain.
+			// example.org holds records with the same type and subdomain.
 			client.On("GetWithContext", "/domain/zone").Return([]string{"example.org", "example.net"}, nil).Once()
 			client.On("GetWithContext", "/domain/zone/example.org/record").Return([]uint64{1, 3}, nil).Once()
 			client.On("GetWithContext", "/domain/zone/example.org/record/1").Return(ovhRecord{ID: 1, Zone: "example.org", FieldType: "A", SubDomain: "", TTL: 10, Target: "198.51.100.7"}, nil).Once()
