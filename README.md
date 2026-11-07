@@ -148,6 +148,7 @@ from the usage of any externally developed webhook.
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
+| ConnByte              | https://github.com/SteffenBarthel/external-dns-connbyte-webhook      |
 | Contabo               | https://github.com/hayone1/external-dns-contabo-webhook              |
 | deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | DigitalOcean          | https://github.com/amoniacou/external-dns-digitalocean-webhook       |
