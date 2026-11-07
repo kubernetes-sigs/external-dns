@@ -1126,6 +1126,44 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	}
 }
 
+// failOnWriteAPI fails the test on any write, so a dry-run that touches the table is caught.
+type failOnWriteAPI struct {
+	*DynamoDBStub
+}
+
+func (f *failOnWriteAPI) BatchExecuteStatement(context.Context, *dynamodb.BatchExecuteStatementInput, ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
+	f.t.Error("dry-run must not write to DynamoDB")
+	return &dynamodb.BatchExecuteStatementOutput{}, nil
+}
+
+func TestDynamoDBRegistryApplyChangesDryRun(t *testing.T) {
+	stubConfig := DynamoDBStubConfig{}
+	stub, p := newDynamoDBAPIStub(t, &stubConfig)
+
+	r, err := newRegistry(p, "test-owner", &failOnWriteAPI{stub}, "test-table", "txt.", "", "", []string{}, []string{}, nil, 0)
+	require.NoError(t, err)
+	r.dryRun = true
+
+	ctx := t.Context()
+	_, err = r.Records(ctx)
+	require.NoError(t, err)
+	labelsBefore := maps.Clone(r.labels)
+
+	err = r.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("new.test-zone.example.org", endpoint.RecordTypeCNAME, "new.loadbalancer.com"),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("bar.test-zone.example.org", endpoint.RecordTypeCNAME, "my-domain.com").
+				WithLabel(endpoint.OwnerLabelKey, "test-owner"),
+		},
+	})
+	require.NoError(t, err)
+
+	assert.True(t, stub.changesApplied, "the provider still receives the changes")
+	assert.Equal(t, labelsBefore, r.labels, "in-memory ownership state is unchanged")
+}
+
 // DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
 type DynamoDBStub struct {
 	t                *testing.T
