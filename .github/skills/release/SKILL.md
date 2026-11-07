@@ -27,7 +27,10 @@ Confirm these inputs before making remote changes:
 Read the current scripts before invoking them; their behavior is authoritative.
 Require a clean working tree and authenticated GitHub access with the appropriate
 maintainer permissions. Check for Bash, Git, `gh`, `jq`, `crane`, and a working
-Docker daemon. `scripts/version-updater.sh` requires GNU-compatible `sed`.
+Docker daemon. On macOS, check the current `scripts/version-updater.sh`: versions
+using `mapfile` require Bash 4+, and bare `sed -i -e` requires GNU-compatible
+`sed` to avoid stray `*-e` backup files. Newer versions use portable `sed -i.bak`
+and do not require `mapfile`.
 Do not install tools, expose credentials, or change authentication without approval.
 
 Use absolute checkout paths for local commands and run scripts from the
@@ -79,14 +82,23 @@ release is required, confirm the intended status change with the maintainer.
 Read back the release and tag, record their URL and commit, and verify the tag
 matches the approved commit before continuing.
 
+Draft a **General information** section from the breaking changes and fixes,
+including the `--dry-run=true` reminder and
+[upgrade instructions](https://kubernetes-sigs.github.io/external-dns/latest/docs/version-update-playbook/),
+**Action required before upgrade**, and **Important**.
+See [v0.23.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.23.0)
+and [v0.24.0](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.24.0).
+Have the maintainer review it, then add it to the prerelease notes while
+preserving the generated changelog.
+
 ## 2. Wait for the staging image
 
 Track the tag-triggered build in [Prow](https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns).
-Poll `crane digest "gcr.io/k8s-staging-external-dns/external-dns:$VERSION"`
+Poll `crane digest "us-central1-docker.pkg.dev/k8s-staging-images/external-dns/external-dns:$VERSION"`
 until it resolves. Inspect the build/tag association to ensure this is the
 approved release, not an unrelated weekly staging build.
 
-Run `scripts/get-sha256.sh "gcr.io/k8s-staging-external-dns/external-dns:$VERSION"`.
+Run `scripts/get-sha256.sh "us-central1-docker.pkg.dev/k8s-staging-images/external-dns/external-dns:$VERSION"`.
 Record the top-level `image:` sha256 digest and the architecture manifest list.
 Use the **multi-architecture image/index digest**, not an individual platform
 digest, for promotion. Stop if any command fails or the digest is invalid.
@@ -121,10 +133,9 @@ After the promotion PR merges, poll
 `crane digest "registry.k8s.io/external-dns/external-dns:$VERSION"`.
 Require its index digest to equal the promoted staging digest.
 
-Then run both commands against the release tag:
+Then run against the release tag:
 
 ```sh
-docker pull "registry.k8s.io/external-dns/external-dns:$VERSION"
 docker run --rm --pull=always "registry.k8s.io/external-dns/external-dns:$VERSION" --version
 ```
 
@@ -150,7 +161,7 @@ including `docs/release.md`. Validate the changed manifests and documentation
 using existing repository checks, and scan changed files before publishing.
 Do not run this script on the release tag or try to move the tag to this commit.
 
-Create a PR titled `chore(release): update manifests and docs for $VERSION`,
+Create a PR titled `chore(release): updates kustomize & docs with $VERSION`,
 following the PR template and linking the release, promotion PR, and verified
 production image digest. Watch checks and merge state as in step 3, merging only
 with authorization. Verify the merged default-branch files reference the version.
@@ -163,14 +174,24 @@ the confirmed chart maintainer. Do not invent an assignee or independently choos
 a chart version: the chart has a separate release cycle.
 
 The chart maintainer's follow-up PR updates `charts/external-dns/Chart.yaml`
-(`appVersion` without the image tag's leading `v`, an agreed chart `version`,
-and change annotations) and the chart changelog as required by the current
-workflow. Chart linting must pass before merge.
+(`appVersion` without the image tag's leading `v` and an agreed chart `version`),
+`charts/external-dns/CHANGELOG.md` (including the `[vX.Y.Z]` release link at the
+bottom), and `charts/external-dns/README.md` regenerated with `make helm-lint`.
+Chart linting must pass before merge. CI generates `artifacthub.io/changes`
+annotations from the changelog; do not edit them in the PR.
 `.github/workflows/release-chart.yaml` invokes `scripts/chart-release.sh` after
 merge; do not invoke that publishing script locally as part of an image release.
+Prow also runs `make helm-push` to publish the OCI chart to
+`us-central1-docker.pkg.dev/k8s-staging-images/external-dns/charts/external-dns`.
+The chart maintainer then creates a `kubernetes/k8s.io` PR to promote
+`charts/external-dns` by digest to `registry.k8s.io`.
 
 Mark the image release complete only when the production pull/version gate
 passed, the version-updater PR merged, and the chart handoff issue exists.
+Before marking complete, with maintainer authorization, promote the prerelease:
+`gh release edit "$VERSION" --repo kubernetes-sigs/external-dns --prerelease=false --latest`.
+Verify remotely that the release is no longer a prerelease and is latest.
+`scripts/releaser.sh` uses the latest release to determine the next changelog range.
 Report all links, the verified digest/version, any pending chart work, and remind
 the maintainer to announce the release in `#external-dns` on Kubernetes Slack.
 Do not claim an announcement was sent unless it actually was.
