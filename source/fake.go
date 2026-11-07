@@ -79,7 +79,7 @@ func NewFakeSource(cfg *config.Config) (Source, error) {
 		}
 	}
 	// fqdn-template output stays the suffix list above; only template-supplied targets yield exact records.
-	templateEndpoints, err := cfg.TemplateEngine.Apply(nil, &fakePod, nil, endpoint.EndpointsForHostsAndTargets)
+	templateEndpoints, err := cfg.TemplateEngine.Apply(nil, &fakePod)
 	if err != nil {
 		return nil, fmt.Errorf("rendering templates: %w", err)
 	}

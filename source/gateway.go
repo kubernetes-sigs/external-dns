@@ -321,15 +321,15 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		}
 
 		templateRendered := false
-		routeEndpoints, err := src.templateEngine.Apply(routeEndpoints, rt.Object(), nil,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
+		routeEndpoints, err := src.templateEngine.Apply(routeEndpoints, rt.Object(),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				// Defined hostnames suppress the template unless combining, matched or not.
 				if !templateAllowed || (len(definedHosts) > 0 && !src.templateEngine.Combining()) {
-					return nil
+					return nil, nil
 				}
 				templateRendered = true
-				return src.routeEndpoints(rt, resolver.resolve(rt, hostnames, targets))
-			},
+				return src.routeEndpoints(rt, resolver.resolve(rt, hostnames, targets)), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

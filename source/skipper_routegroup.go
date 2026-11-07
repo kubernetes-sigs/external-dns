@@ -141,10 +141,10 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 		eps, err = sc.templateEngine.Apply(
 			eps,
 			&routeGroupWrapper{rg},
-			rgTargets,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return sc.endpointsFromTemplate(rg, hostnames, targets)
-			},
+			template.WithResourceTargets(rgTargets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(rg, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

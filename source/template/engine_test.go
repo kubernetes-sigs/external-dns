@@ -779,13 +779,16 @@ func TestApply(t *testing.T) {
 
 			buildCalled := false
 			var buildTargets []string
-			build := func(hostnames, targets []string) []*endpoint.Endpoint {
+			build := func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				buildCalled = true
 				buildTargets = targets
-				return endpoint.EndpointsForHostsAndTargets(hostnames, targets)
+				return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
 			}
 
-			got, err := engine.Apply(tt.existing, svc, []string{resourceTarget}, build)
+			got, err := engine.Apply(tt.existing, svc,
+				WithResourceTargets([]string{resourceTarget}),
+				WithEndpointBuilder(build),
+			)
 			assert.Equal(t, tt.wantBuildCalled, buildCalled)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
@@ -947,7 +950,7 @@ func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 		engine, err := NewEngine([]string{"{{ .Name }}.example.com"}, []string{"{{ .Spec.address }}"}, nil, false)
 		require.NoError(t, err)
 
-		eps, err := engine.Apply(nil, svc, nil, endpoint.EndpointsForHostsAndTargets)
+		eps, err := engine.Apply(nil, svc)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "can't evaluate field address")
@@ -960,7 +963,7 @@ func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 		engine, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:{{ .Spec.address }}"}, false)
 		require.NoError(t, err)
 
-		eps, err := engine.Apply(nil, svc, nil, endpoint.EndpointsForHostsAndTargets)
+		eps, err := engine.Apply(nil, svc)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "can't evaluate field address")

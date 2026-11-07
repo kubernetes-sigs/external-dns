@@ -128,10 +128,10 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		hpEndpoints, err := sc.templateEngine.Apply(
 			sc.endpointsFromHTTPProxy(hp),
 			hp,
-			targetsFromHTTPProxy(hp),
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return sc.endpointsFromTemplate(hp, hostnames, targets)
-			},
+			template.WithResourceTargets(targetsFromHTTPProxy(hp)),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(hp, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

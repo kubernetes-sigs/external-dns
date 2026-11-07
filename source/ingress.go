@@ -152,10 +152,10 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		ingEndpoints, err = sc.templateEngine.Apply(
 			ingEndpoints,
 			ing,
-			ingTargets,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return sc.endpointsFromTemplate(ing, hostnames, targets)
-			},
+			template.WithResourceTargets(ingTargets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(ing, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

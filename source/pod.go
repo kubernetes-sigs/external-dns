@@ -138,10 +138,9 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		podEndpoints, err := ps.templateEngine.Apply(
 			podEndpoints,
 			pod,
-			nil,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return ps.endpointsFromPodTemplate(pod, hostnames, targets)
-			},
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return ps.endpointsFromPodTemplate(pod, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

@@ -232,10 +232,9 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		svcEndpoints, err = sc.templateEngine.Apply(
 			svcEndpoints,
 			svc,
-			nil,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return sc.endpointsFromTemplate(svc, hostnames, targets)
-			},
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(svc, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

@@ -164,23 +164,13 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		// apply template if host is missing on VirtualService
-		// TODO: review/redesign; build cannot return an error, so a gateway lookup failure is captured and returned after Apply.
-		var templateErr error
 		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
 			vService,
-			nil,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				eps, buildErr := sc.endpointsFromTemplate(ctx, vService, hostnames, targets)
-				if buildErr != nil {
-					templateErr = fmt.Errorf("failed to get endpoints from template: %w", buildErr)
-				}
-				return eps
-			},
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(ctx, vService, hostnames, targets)
+			}),
 		)
-		if err == nil {
-			err = templateErr
-		}
 		if err != nil {
 			return nil, err
 		}

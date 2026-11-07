@@ -148,13 +148,47 @@ func (e Engine) combineWithEndpoints(
 	return templatedEndpoints, nil
 }
 
-// Apply runs the fqdn-target pass, then fqdn+target via build; target-template output wins over resourceTargets.
+// EndpointBuilder renders hostnames and targets into source-specific endpoints,
+// stamping resource, TTL, ProviderSpecific and SetIdentifier.
+type EndpointBuilder func(hostnames, targets []string) ([]*endpoint.Endpoint, error)
+
+type applyConfig struct {
+	resourceTargets []string
+	build           EndpointBuilder
+}
+
+// ApplyOption configures a single Engine.Apply call.
+type ApplyOption func(*applyConfig)
+
+// WithResourceTargets sets the fallback targets passed to the EndpointBuilder when
+// --target-template produces no output. Target-template output wins over these.
+func WithResourceTargets(targets []string) ApplyOption {
+	return func(c *applyConfig) { c.resourceTargets = targets }
+}
+
+// WithEndpointBuilder overrides the function that turns rendered hostnames+targets
+// into endpoints. The default builder wraps endpoint.EndpointsForHostsAndTargets,
+// which is enough for sources that carry no per-record metadata.
+func WithEndpointBuilder(b EndpointBuilder) ApplyOption {
+	return func(c *applyConfig) { c.build = b }
+}
+
+// Apply runs the fqdn-target pass, then fqdn+target via the configured EndpointBuilder;
+// target-template output wins over any WithResourceTargets value.
 func (e Engine) Apply(
 	existing []*endpoint.Endpoint,
 	obj kubeObject,
-	resourceTargets []string,
-	build func(hostnames, targets []string) []*endpoint.Endpoint,
+	opts ...ApplyOption,
 ) ([]*endpoint.Endpoint, error) {
+	cfg := applyConfig{
+		build: func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+			return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
+		},
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	eps, err := e.combineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
 		return e.endpointsFromFQDNTargetTemplate(obj)
 	})
@@ -171,9 +205,9 @@ func (e Engine) Apply(
 			return nil, err
 		}
 		if len(targets) == 0 {
-			targets = resourceTargets
+			targets = cfg.resourceTargets
 		}
-		return build(hostnames, targets), nil
+		return cfg.build(hostnames, targets)
 	})
 }
 

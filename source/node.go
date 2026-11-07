@@ -133,10 +133,10 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		nodeEndpoints, err = ns.templateEngine.Apply(
 			nodeEndpoints,
 			node,
-			nodeTargets,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return ns.endpointsForDNSNames(node, hostnames, targets)
-			},
+			template.WithResourceTargets(nodeTargets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return ns.endpointsForDNSNames(node, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

@@ -130,10 +130,10 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 		orEndpoints, err := ors.templateEngine.Apply(
 			ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation),
 			ocpRoute,
-			routeTargets,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
-				return ors.endpointsFromTemplate(ocpRoute, hostnames, targets)
-			},
+			template.WithResourceTargets(routeTargets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return ors.endpointsFromTemplate(ocpRoute, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err

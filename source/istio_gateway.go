@@ -153,26 +153,16 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if host is missing on gateway
-		// TODO: review/redesign; build cannot return an error, so a gateway lookup failure is captured and returned after Apply.
-		var templateErr error
 		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
 			gateway,
-			nil,
-			func(hostnames, targets []string) []*endpoint.Endpoint {
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				if len(targets) > 0 {
-					return sc.endpointsForHostnames(hostnames, targets, gateway)
+					return sc.endpointsForHostnames(hostnames, targets, gateway), nil
 				}
-				eps, buildErr := sc.endpointsFromGateway(hostnames, gateway)
-				if buildErr != nil {
-					templateErr = fmt.Errorf("failed to get endpoints from template: %w", buildErr)
-				}
-				return eps
-			},
+				return sc.endpointsFromGateway(hostnames, gateway)
+			}),
 		)
-		if err == nil {
-			err = templateErr
-		}
 		if err != nil {
 			return nil, err
 		}
