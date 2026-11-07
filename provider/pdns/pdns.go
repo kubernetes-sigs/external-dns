@@ -41,8 +41,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-type pdnsChangeType string
-
 const (
 	defaultTTL = 300
 
@@ -70,6 +68,8 @@ var trailingTypes = []string{
 	"ALIAS",
 }
 
+type pdnsChangeType string
+
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
 	DomainFilter *endpoint.DomainFilter
@@ -86,6 +86,36 @@ type TLSConfig struct {
 	CAFilePath            string
 	ClientCertFilePath    string
 	ClientCertKeyFilePath string
+}
+
+// pathPrefixRoundTripper re-prepends the URL path prefix of --pdns-server
+// (e.g. an API exposed behind a reverse proxy at https://host/pdns) to every
+// request: the client library always rewrites the request path to
+// /api/v1/..., dropping any prefix present in the base URL.
+type pathPrefixRoundTripper struct {
+	prefix string
+	next   http.RoundTripper
+}
+
+// PDNSAPIProvider : Interface used and extended by the PDNSAPIClient struct as
+// well as mock APIClients used in testing
+type PDNSAPIProvider interface {
+	ListZones(ctx context.Context) ([]pgo.Zone, error)
+	ListZone(ctx context.Context, zoneID string) (*pgo.Zone, error)
+	PatchZone(ctx context.Context, zoneID string, zoneStruct *pgo.Zone) error
+}
+
+// PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
+type PDNSAPIClient struct {
+	dryRun bool
+	client *pgo.Client
+}
+
+// PDNSProvider is an implementation of the Provider interface for PowerDNS
+type PDNSProvider struct {
+	provider.BaseProvider
+	client       PDNSAPIProvider
+	domainFilter *endpoint.DomainFilter
 }
 
 func (tlsConfig *TLSConfig) newHTTPClient() (*http.Client, error) {
@@ -122,33 +152,10 @@ func (tlsConfig *TLSConfig) newHTTPClient() (*http.Client, error) {
 	}, nil
 }
 
-// pathPrefixRoundTripper re-prepends the URL path prefix of --pdns-server
-// (e.g. an API exposed behind a reverse proxy at https://host/pdns) to every
-// request: the client library always rewrites the request path to
-// /api/v1/..., dropping any prefix present in the base URL.
-type pathPrefixRoundTripper struct {
-	prefix string
-	next   http.RoundTripper
-}
-
 func (rt *pathPrefixRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	r := req.Clone(req.Context())
 	r.URL.Path = rt.prefix + r.URL.Path
 	return rt.next.RoundTrip(r)
-}
-
-// PDNSAPIProvider : Interface used and extended by the PDNSAPIClient struct as
-// well as mock APIClients used in testing
-type PDNSAPIProvider interface {
-	ListZones(ctx context.Context) ([]pgo.Zone, error)
-	ListZone(ctx context.Context, zoneID string) (*pgo.Zone, error)
-	PatchZone(ctx context.Context, zoneID string, zoneStruct *pgo.Zone) error
-}
-
-// PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
-type PDNSAPIClient struct {
-	dryRun bool
-	client *pgo.Client
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -236,13 +243,6 @@ func (c *PDNSAPIClient) PatchZone(ctx context.Context, zoneID string, zoneStruct
 	return provider.NewSoftErrorf("unable to patch zone: %v", err)
 }
 
-// PDNSProvider is an implementation of the Provider interface for PowerDNS
-type PDNSProvider struct {
-	provider.BaseProvider
-	client       PDNSAPIProvider
-	domainFilter *endpoint.DomainFilter
-}
-
 // New creates a PowerDNS provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 	return newProvider(
@@ -304,18 +304,6 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 	return provider, nil
 }
 
-// filteredZones fetches all zones from the PowerDNS API and partitions them
-// using the provider's domain filter. It returns the matching zones, the
-// non-matching (residual) zones, and any error from the API call.
-func (p *PDNSProvider) filteredZones(ctx context.Context) ([]pgo.Zone, []pgo.Zone, error) {
-	zones, err := p.client.ListZones(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	filtered, residual := partitionZones(zones, p.domainFilter)
-	return filtered, residual, nil
-}
-
 func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	// Return all zones the provider manages so the controller can intersect
 	// with --domain-filter on its own. Do NOT apply p.domainFilter here;
@@ -333,33 +321,6 @@ func (p *PDNSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 		zoneNames = append(zoneNames, pgo.StringValue(zone.Name), "."+pgo.StringValue(zone.Name))
 	}
 	return endpoint.NewDomainFilter(zoneNames)
-}
-
-// hasAliasAnnotation checks if the endpoint has the alias annotation set to true
-func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
-	value, exists := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
-	return exists && value == "true"
-}
-
-func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RRset) []*endpoint.Endpoint {
-	endpoints := make([]*endpoint.Endpoint, 0)
-	targets := make([]string, 0)
-	rrType := ""
-	if rr.Type != nil {
-		rrType = string(*rr.Type)
-	}
-
-	for _, record := range rr.Records {
-		// If a record is "Disabled", it's not supposed to be "visible"
-		if !pgo.BoolValue(record.Disabled) {
-			targets = append(targets, pgo.StringValue(record.Content))
-		}
-	}
-	if rrType == string(pgo.RRTypeALIAS) {
-		rrType = endpoint.RecordTypeCNAME
-	}
-	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(pgo.StringValue(rr.Name), rrType, endpoint.TTL(pgo.Uint32Value(rr.TTL)), targets...))
-	return endpoints
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
@@ -483,26 +444,6 @@ func (p *PDNSProvider) ConvertEndpointsToZones(ctx context.Context, eps []*endpo
 	return zoneList, nil
 }
 
-// mutateRecords takes a list of endpoints and creates, replaces or deletes them based on the changetype
-func (p *PDNSProvider) mutateRecords(ctx context.Context, endpoints []*endpoint.Endpoint, changetype pdnsChangeType) error {
-	zonelist, err := p.ConvertEndpointsToZones(ctx, endpoints, changetype)
-	if err != nil {
-		return err
-	}
-	for _, zone := range zonelist {
-		jso, err := json.Marshal(zone)
-		if err != nil {
-			log.Errorf("JSON Marshal for zone struct failed!")
-		} else {
-			log.Debugf("Struct for PatchZone:\n%s", string(jso))
-		}
-		if err := p.client.PatchZone(ctx, pgo.StringValue(zone.ID), &zone); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
 func (p *PDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	filteredZones, _, err := p.filteredZones(ctx)
@@ -592,5 +533,64 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	return nil
+}
+
+// filteredZones fetches all zones from the PowerDNS API and partitions them
+// using the provider's domain filter. It returns the matching zones, the
+// non-matching (residual) zones, and any error from the API call.
+func (p *PDNSProvider) filteredZones(ctx context.Context) ([]pgo.Zone, []pgo.Zone, error) {
+	zones, err := p.client.ListZones(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	filtered, residual := partitionZones(zones, p.domainFilter)
+	return filtered, residual, nil
+}
+
+// hasAliasAnnotation checks if the endpoint has the alias annotation set to true
+func (p *PDNSProvider) hasAliasAnnotation(ep *endpoint.Endpoint) bool {
+	value, exists := ep.GetProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+	return exists && value == "true"
+}
+
+func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RRset) []*endpoint.Endpoint {
+	endpoints := make([]*endpoint.Endpoint, 0)
+	targets := make([]string, 0)
+	rrType := ""
+	if rr.Type != nil {
+		rrType = string(*rr.Type)
+	}
+
+	for _, record := range rr.Records {
+		// If a record is "Disabled", it's not supposed to be "visible"
+		if !pgo.BoolValue(record.Disabled) {
+			targets = append(targets, pgo.StringValue(record.Content))
+		}
+	}
+	if rrType == string(pgo.RRTypeALIAS) {
+		rrType = endpoint.RecordTypeCNAME
+	}
+	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(pgo.StringValue(rr.Name), rrType, endpoint.TTL(pgo.Uint32Value(rr.TTL)), targets...))
+	return endpoints
+}
+
+// mutateRecords takes a list of endpoints and creates, replaces or deletes them based on the changetype
+func (p *PDNSProvider) mutateRecords(ctx context.Context, endpoints []*endpoint.Endpoint, changetype pdnsChangeType) error {
+	zonelist, err := p.ConvertEndpointsToZones(ctx, endpoints, changetype)
+	if err != nil {
+		return err
+	}
+	for _, zone := range zonelist {
+		jso, err := json.Marshal(zone)
+		if err != nil {
+			log.Errorf("JSON Marshal for zone struct failed!")
+		} else {
+			log.Debugf("Struct for PatchZone:\n%s", string(jso))
+		}
+		if err := p.client.PatchZone(ctx, pgo.StringValue(zone.ID), &zone); err != nil {
+			return err
+		}
+	}
 	return nil
 }

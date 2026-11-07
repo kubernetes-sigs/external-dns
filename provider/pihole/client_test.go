@@ -30,13 +30,13 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+type errorTransport struct{}
+
 func newTestServer(t *testing.T, hdlr http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	svr := httptest.NewServer(hdlr)
 	return svr
 }
-
-type errorTransport struct{}
 
 func (t *errorTransport) RoundTrip(_ *http.Request) (*http.Response, error) {
 	return nil, errors.New("network error")

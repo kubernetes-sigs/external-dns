@@ -52,6 +52,13 @@ import (
 	"sigs.k8s.io/external-dns/registry"
 )
 
+type mockProvider struct {
+	records    []*endpoint.Endpoint
+	addLabel   bool
+	applyErr   error
+	recordsErr error
+}
+
 // newTestScheme builds a scheme with the DNSRecord types registered.
 func newTestScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
@@ -466,13 +473,6 @@ func TestRecordObjectName(t *testing.T) {
 			assert.NotEqual(t, recordObjectName(c[0]), recordObjectName(c[1]))
 		}
 	})
-}
-
-type mockProvider struct {
-	records    []*endpoint.Endpoint
-	addLabel   bool
-	applyErr   error
-	recordsErr error
 }
 
 func (m *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {

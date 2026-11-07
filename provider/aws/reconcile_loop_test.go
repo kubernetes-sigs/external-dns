@@ -77,6 +77,20 @@ const (
 	settledRounds = 2
 )
 
+// txtAffixes covers the supported --txt-prefix and --txt-suffix modes, because the
+// ownership TXT name is what decides whether a record is still recognised as ours.
+// Wildcard replacement and encryption are left to the registry's own tests.
+var txtAffixes = []struct {
+	name           string
+	prefix, suffix string
+}{
+	{"no-affix", "", ""},
+	{"prefix", "extdns-", ""},
+	{"suffix", "", "-extdns"},
+	{"record-type-prefix", "%{record_type}-extdns-", ""},
+	{"record-type-suffix", "", "-extdns-%{record_type}"},
+}
+
 // reconcileLoop runs repeated reconciliations over one provider and registry pair.
 type reconcileLoop struct {
 	t      *testing.T
@@ -445,20 +459,6 @@ func describeEndpoints(endpoints []*endpoint.Endpoint) string {
 	}
 	sort.Strings(lines)
 	return strings.Join(lines, "\n  ")
-}
-
-// txtAffixes covers the supported --txt-prefix and --txt-suffix modes, because the
-// ownership TXT name is what decides whether a record is still recognised as ours.
-// Wildcard replacement and encryption are left to the registry's own tests.
-var txtAffixes = []struct {
-	name           string
-	prefix, suffix string
-}{
-	{"no-affix", "", ""},
-	{"prefix", "extdns-", ""},
-	{"suffix", "", "-extdns"},
-	{"record-type-prefix", "%{record_type}-extdns-", ""},
-	{"record-type-suffix", "", "-extdns-%{record_type}"},
 }
 
 // TestReconcileLoopReplacesLoadBalancerTargetOfSameRecordType covers a load balancer

@@ -593,6 +593,56 @@ var (
 // API that returns a zone with multiple record types
 type PDNSAPIClientStub struct{}
 
+/******************************************************************************/
+// API that returns a zones with no records
+type PDNSAPIClientStubEmptyZones struct {
+	// Keep track of all zones we receive via PatchZone
+	patchedZones []pgo.Zone
+}
+
+/******************************************************************************/
+// API that returns error on PatchZone()
+type PDNSAPIClientStubPatchZoneFailure struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// API that returns error on ListZone()
+type PDNSAPIClientStubListZoneFailure struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// API that returns error on ListZones() (Zones - plural)
+type PDNSAPIClientStubListZonesFailure struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// API that returns zone partitions given DomainFilter(s)
+type PDNSAPIClientStubPartitionZones struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// Configurable API stub that performs real domain-filter partitioning.
+// Use it to test the intersection logic between ListZones results and the
+// provider's domain filter.
+type PDNSAPIClientStubConfigurable struct {
+	zones   []pgo.Zone
+	listErr error
+}
+
+/******************************************************************************/
+
+type NewPDNSProviderTestSuite struct {
+	suite.Suite
+}
+
 func (c *PDNSAPIClientStub) ListZones(_ context.Context) ([]pgo.Zone, error) {
 	return []pgo.Zone{ZoneMixed}, nil
 }
@@ -603,13 +653,6 @@ func (c *PDNSAPIClientStub) ListZone(_ context.Context, _ string) (*pgo.Zone, er
 
 func (c *PDNSAPIClientStub) PatchZone(_ context.Context, _ string, _ *pgo.Zone) error {
 	return nil
-}
-
-/******************************************************************************/
-// API that returns a zones with no records
-type PDNSAPIClientStubEmptyZones struct {
-	// Keep track of all zones we receive via PatchZone
-	patchedZones []pgo.Zone
 }
 
 func (c *PDNSAPIClientStubEmptyZones) ListZones(_ context.Context) ([]pgo.Zone, error) {
@@ -633,23 +676,9 @@ func (c *PDNSAPIClientStubEmptyZones) PatchZone(_ context.Context, _ string, zon
 	return nil
 }
 
-/******************************************************************************/
-// API that returns error on PatchZone()
-type PDNSAPIClientStubPatchZoneFailure struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
-}
-
 // Just overwrite the PatchZone method to introduce a failure
 func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(_ context.Context, _ string, _ *pgo.Zone) error {
 	return provider.NewSoftErrorf("Generic PDNS Error")
-}
-
-/******************************************************************************/
-// API that returns error on ListZone()
-type PDNSAPIClientStubListZoneFailure struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
 }
 
 // Just overwrite the ListZone method to introduce a failure
@@ -657,23 +686,9 @@ func (c *PDNSAPIClientStubListZoneFailure) ListZone(_ context.Context, _ string)
 	return &pgo.Zone{}, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
-/******************************************************************************/
-// API that returns error on ListZones() (Zones - plural)
-type PDNSAPIClientStubListZonesFailure struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
-}
-
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubListZonesFailure) ListZones(_ context.Context) ([]pgo.Zone, error) {
 	return []pgo.Zone{}, provider.NewSoftErrorf("Generic PDNS Error")
-}
-
-/******************************************************************************/
-// API that returns zone partitions given DomainFilter(s)
-type PDNSAPIClientStubPartitionZones struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
 }
 
 func (c *PDNSAPIClientStubPartitionZones) ListZones(_ context.Context) ([]pgo.Zone, error) {
@@ -692,15 +707,6 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(_ context.Context, zoneID str
 	return &pgo.Zone{}, nil
 }
 
-/******************************************************************************/
-// Configurable API stub that performs real domain-filter partitioning.
-// Use it to test the intersection logic between ListZones results and the
-// provider's domain filter.
-type PDNSAPIClientStubConfigurable struct {
-	zones   []pgo.Zone
-	listErr error
-}
-
 func (c *PDNSAPIClientStubConfigurable) ListZones(_ context.Context) ([]pgo.Zone, error) {
 	if c.listErr != nil {
 		return nil, c.listErr
@@ -714,12 +720,6 @@ func (c *PDNSAPIClientStubConfigurable) ListZone(_ context.Context, _ string) (*
 
 func (c *PDNSAPIClientStubConfigurable) PatchZone(_ context.Context, _ string, _ *pgo.Zone) error {
 	return nil
-}
-
-/******************************************************************************/
-
-type NewPDNSProviderTestSuite struct {
-	suite.Suite
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {

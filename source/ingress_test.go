@@ -51,6 +51,19 @@ type IngressSuite struct {
 	fooWithTargets *networkv1.Ingress
 }
 
+// ingress specific helper functions
+type fakeIngress struct {
+	dnsnames         []string
+	tlsdnsnames      [][]string
+	ips              []string
+	hostnames        []string
+	namespace        string
+	name             string
+	annotations      map[string]string
+	labels           map[string]string
+	ingressClassName string
+}
+
 func (suite *IngressSuite) SetupTest() {
 	fakeClient := fake.NewClientset()
 
@@ -1472,19 +1485,6 @@ func testIngressEndpoints(t *testing.T) {
 			}
 		})
 	}
-}
-
-// ingress specific helper functions
-type fakeIngress struct {
-	dnsnames         []string
-	tlsdnsnames      [][]string
-	ips              []string
-	hostnames        []string
-	namespace        string
-	name             string
-	annotations      map[string]string
-	labels           map[string]string
-	ingressClassName string
 }
 
 func (ing fakeIngress) Ingress() *networkv1.Ingress {

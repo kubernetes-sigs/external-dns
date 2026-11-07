@@ -79,6 +79,12 @@ type ambassadorHostSource struct {
 	labelSelector           labels.Selector
 }
 
+// unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types
+type unstructuredConverter struct {
+	// scheme holds an initializer for converting Unstructured to a type
+	scheme *runtime.Scheme
+}
+
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
 func NewAmbassadorHostSource(
 	ctx context.Context,
@@ -192,6 +198,9 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
+func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
+}
+
 // endpointsFromHost extracts the endpoints from a Host object
 func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
@@ -208,22 +217,6 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 	}
 
 	return endpoints
-}
-
-func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
-	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
-	if err != nil {
-		return nil, err
-	}
-
-	svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	targets := extractLoadBalancerTargets(svc, false)
-
-	return targets, nil
 }
 
 // parseAmbLoadBalancerService returns a name/namespace tuple from the annotation in
@@ -272,13 +265,20 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 	return "", "", fmt.Errorf("invalid external-dns service: %s", service)
 }
 
-func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
-}
+func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
+	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
+	if err != nil {
+		return nil, err
+	}
 
-// unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types
-type unstructuredConverter struct {
-	// scheme holds an initializer for converting Unstructured to a type
-	scheme *runtime.Scheme
+	svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	targets := extractLoadBalancerTargets(svc, false)
+
+	return targets, nil
 }
 
 // newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized

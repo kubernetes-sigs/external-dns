@@ -68,6 +68,25 @@ type Source struct {
 	Validation       string // Comma-separated validation kinds enabled, e.g., "annotation"
 }
 
+type Sources []Source
+
+type columnWidths struct {
+	Name             int
+	Resources        int
+	Filters          int
+	Namespace        int
+	FQDNTemplate     int
+	Events           int
+	ProviderSpecific int
+	Validation       int
+	Category         int
+}
+
+type templateData struct {
+	Sources   Sources
+	ColWidths columnWidths
+}
+
 // ValidationCell returns the Validation value with a footnote reference per kind
 // (e.g., `annotation[^val-annotation]`), so the generated table links each kind
 // to its explanation at the bottom of the page. Empty when no validation applies.
@@ -124,8 +143,6 @@ func (s Source) NamespaceCell() string {
 	return s.Namespace + footnote
 }
 
-type Sources []Source
-
 // main generates a markdown file with the supported sources
 // and writes it to the 'docs/sources/index.md' file.
 // To re-generate, execute 'go run internal/gen/docs/sources/main.go'.
@@ -164,18 +181,6 @@ func discoverSources(dir string) (Sources, error) {
 	return sources, nil
 }
 
-type columnWidths struct {
-	Name             int
-	Resources        int
-	Filters          int
-	Namespace        int
-	FQDNTemplate     int
-	Events           int
-	ProviderSpecific int
-	Validation       int
-	Category         int
-}
-
 func computeColumnWidths(sources Sources) columnWidths {
 	return columnWidths{
 		Name:             render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
@@ -188,11 +193,6 @@ func computeColumnWidths(sources Sources) columnWidths {
 		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.ValidationCell() }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
-}
-
-type templateData struct {
-	Sources   Sources
-	ColWidths columnWidths
 }
 
 func (s *Sources) generateMarkdown() (string, error) {

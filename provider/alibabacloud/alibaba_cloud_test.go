@@ -44,6 +44,15 @@ type MockAlibabaCloudDNSAPI struct {
 	records                 map[string][]*alidns.Record
 }
 
+type MockAlibabaCloudPrivateZoneAPI struct {
+	counter               int64
+	addZoneRecordCalls    int
+	deleteZoneRecordCalls int
+	updateZoneRecordCalls int
+	zones                 []*pvtz.Zone
+	records               map[string][]*pvtz.Record
+}
+
 func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (*alidns.AddDomainRecordResponse, error) {
 	m.addDomainRecordCalls++
 	if _, exist := m.records[request.DomainName]; !exist {
@@ -174,15 +183,6 @@ func (m *MockAlibabaCloudDNSAPI) newRecord(ep *endpoint.Endpoint, target, domain
 		RR:         subname,
 		Value:      value,
 	}
-}
-
-type MockAlibabaCloudPrivateZoneAPI struct {
-	counter               int64
-	addZoneRecordCalls    int
-	deleteZoneRecordCalls int
-	updateZoneRecordCalls int
-	zones                 []*pvtz.Zone
-	records               map[string][]*pvtz.Record
 }
 
 func (m *MockAlibabaCloudPrivateZoneAPI) AddZoneRecord(request *pvtz.AddZoneRecordRequest) (*pvtz.AddZoneRecordResponse, error) {

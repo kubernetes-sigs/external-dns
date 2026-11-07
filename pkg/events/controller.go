@@ -75,6 +75,22 @@ func (ec *Controller) Run(ctx context.Context) {
 	go ec.run(ctx)
 }
 
+func (ec *Controller) Add(events ...Event) {
+	dropped := 0
+	for _, e := range events {
+		if ec.queue.Len() >= ec.maxQueuedEvents {
+			dropped++
+			continue
+		}
+		for _, event := range e.events() {
+			ec.emit(event)
+		}
+	}
+	if dropped > 0 {
+		log.Warnf("event queue is full, dropped %d events", dropped)
+	}
+}
+
 func (ec *Controller) run(ctx context.Context) {
 	log.Info("event Controller started")
 	defer log.Info("event Controller terminated")
@@ -110,22 +126,6 @@ func (ec *Controller) processNextWorkItem(ctx context.Context) bool {
 	}
 	ec.queue.Forget(event)
 	return true
-}
-
-func (ec *Controller) Add(events ...Event) {
-	dropped := 0
-	for _, e := range events {
-		if ec.queue.Len() >= ec.maxQueuedEvents {
-			dropped++
-			continue
-		}
-		for _, event := range e.events() {
-			ec.emit(event)
-		}
-	}
-	if dropped > 0 {
-		log.Warnf("event queue is full, dropped %d events", dropped)
-	}
 }
 
 func (ec *Controller) emit(event *eventsv1.Event) {

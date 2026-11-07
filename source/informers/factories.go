@@ -40,6 +40,12 @@ type Factories[T Factory] struct {
 	factories  map[string]T
 }
 
+// Informers holds one informer of a given resource type per watched namespace.
+type Informers[I SharedInformer] struct {
+	namespaces []string
+	informers  map[string]I
+}
+
 // NewFactories builds one factory per namespace, as normalized by NewSourceConfig.
 // An empty namespace list yields a single cluster-wide factory.
 // Duplicates are dropped so that no namespace is watched twice.
@@ -113,12 +119,6 @@ func waitForCacheSyncAll[T Factory](ctx context.Context, factories *Factories[T]
 		})
 	}
 	return g.Wait()
-}
-
-// Informers holds one informer of a given resource type per watched namespace.
-type Informers[I SharedInformer] struct {
-	namespaces []string
-	informers  map[string]I
 }
 
 // Map builds one informer per namespace. build runs before the factories are started,

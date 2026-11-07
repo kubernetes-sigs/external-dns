@@ -35,6 +35,22 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
+// mockEndpointInfo implements EndpointInfo for testing
+type mockEndpointInfo struct {
+	dnsName    string
+	recordType string
+	recordTTL  int64
+	targets    []string
+	owner      string
+	refObjects []*ObjectReference
+}
+
+// customObject is a type not registered in the scheme, used to test reflection fallback
+type customObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
 func TestNewObjectReference_DoesNotMutateObject(t *testing.T) {
 	// Verify that NewObjectReference does NOT mutate the original object
 	pod := &apiv1.Pod{
@@ -247,16 +263,6 @@ func TestWithEmitEvents(t *testing.T) {
 			tt.assert(cfg)
 		})
 	}
-}
-
-// mockEndpointInfo implements EndpointInfo for testing
-type mockEndpointInfo struct {
-	dnsName    string
-	recordType string
-	recordTTL  int64
-	targets    []string
-	owner      string
-	refObjects []*ObjectReference
 }
 
 func (m *mockEndpointInfo) GetDNSName() string             { return m.dnsName }
@@ -472,12 +478,6 @@ func TestNewObjectReference(t *testing.T) {
 			require.Equal(t, tt.expected.Source(), result.Source())
 		})
 	}
-}
-
-// customObject is a type not registered in the scheme, used to test reflection fallback
-type customObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
 }
 
 func (c *customObject) DeepCopyObject() runtime.Object {

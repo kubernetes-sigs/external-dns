@@ -22,13 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type targetFilterTest struct {
-	targetFilter []string
-	exclusions   []string
-	targets      []string
-	expected     bool
-}
-
 var targetFilterTests = []targetFilterTest{
 	{
 		[]string{"10.0.0.0/8"},
@@ -78,6 +71,13 @@ var targetFilterTests = []targetFilterTest{
 		[]string{"10.0.1.101"},
 		false,
 	},
+}
+
+type targetFilterTest struct {
+	targetFilter []string
+	exclusions   []string
+	targets      []string
+	expected     bool
 }
 
 func TestTargetFilterWithExclusions(t *testing.T) {

@@ -28,6 +28,12 @@ import (
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
+type gatewayTCPRoute struct{ route v1.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+
+type gatewayTCPRouteInformer struct {
+	informers_v1.TCPRouteInformer
+}
+
 // NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given cfg.
 func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
 	return newGatewayRouteSource(ctx, clients, cfg, "TCPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
@@ -35,18 +41,12 @@ func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, cfg 
 	})
 }
 
-type gatewayTCPRoute struct{ route v1.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
-
 func (rt *gatewayTCPRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
 func (rt *gatewayTCPRoute) Hostnames() []v1.Hostname         { return nil }
 func (rt *gatewayTCPRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
 func (rt *gatewayTCPRoute) Protocol() v1.ProtocolType        { return v1.TCPProtocolType }
 func (rt *gatewayTCPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
-
-type gatewayTCPRouteInformer struct {
-	informers_v1.TCPRouteInformer
-}
 
 func (inf gatewayTCPRouteInformer) List() []gatewayRoute {
 	list := extInformers.ListIndexed[*v1.TCPRoute](inf.TCPRouteInformer.Informer().GetIndexer())

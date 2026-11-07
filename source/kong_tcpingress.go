@@ -66,6 +66,49 @@ type kongTCPIngressSource struct {
 	unstructuredConverter    *unstructuredConverter
 }
 
+// Kong types based on https://github.com/Kong/kubernetes-ingress-controller/blob/v1.2.0/pkg/apis/configuration/v1beta1/types.go to facilitate testing
+// When trying to import them from the Kong repo as a dependency it required upgrading the k8s.io/client-go and k8s.io/apimachinery which seemed
+// cause several changes in how the mock clients were working that resulted in a bunch of failures in other tests
+// If that is dealt with at some point the below can be removed and replaced with an actual import
+type TCPIngress struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec   tcpIngressSpec   `json:"spec"`
+	Status tcpIngressStatus `json:"status"`
+}
+
+type TCPIngressList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []TCPIngress `json:"items"`
+}
+
+type tcpIngressSpec struct {
+	Rules []tcpIngressRule `json:"rules,omitempty"`
+	TLS   []tcpIngressTLS  `json:"tls,omitempty"`
+}
+
+type tcpIngressTLS struct {
+	Hosts      []string `json:"hosts,omitempty"`
+	SecretName string   `json:"secretName,omitempty"`
+}
+
+type tcpIngressStatus struct {
+	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer"`
+}
+
+type tcpIngressRule struct {
+	Host    string            `json:"host,omitempty"`
+	Port    int               `json:"port,omitempty"`
+	Backend tcpIngressBackend `json:"backend"`
+}
+
+type tcpIngressBackend struct {
+	ServiceName string `json:"serviceName"`
+	ServicePort int    `json:"servicePort"`
+}
+
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.
 func NewKongTCPIngressSource(
 	ctx context.Context,
@@ -160,6 +203,14 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
+func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func()) {
+	log.Debug("Adding event handler for TCPIngress")
+
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	sc.kongTCPIngressInformers.MustAddEventHandler(eventHandlerFunc(handler))
+}
+
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object
 func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
@@ -188,14 +239,6 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 	return endpoints
 }
 
-func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func()) {
-	log.Debug("Adding event handler for TCPIngress")
-
-	// Right now there is no way to remove event handler from informer, see:
-	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.kongTCPIngressInformers.MustAddEventHandler(eventHandlerFunc(handler))
-}
-
 // newUnstructuredConverter returns a new unstructuredConverter initialized
 func newKongUnstructuredConverter() (*unstructuredConverter, error) {
 	uc := &unstructuredConverter{
@@ -209,49 +252,6 @@ func newKongUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// Kong types based on https://github.com/Kong/kubernetes-ingress-controller/blob/v1.2.0/pkg/apis/configuration/v1beta1/types.go to facilitate testing
-// When trying to import them from the Kong repo as a dependency it required upgrading the k8s.io/client-go and k8s.io/apimachinery which seemed
-// cause several changes in how the mock clients were working that resulted in a bunch of failures in other tests
-// If that is dealt with at some point the below can be removed and replaced with an actual import
-type TCPIngress struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
-
-	Spec   tcpIngressSpec   `json:"spec"`
-	Status tcpIngressStatus `json:"status"`
-}
-
-type TCPIngressList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-	Items           []TCPIngress `json:"items"`
-}
-
-type tcpIngressSpec struct {
-	Rules []tcpIngressRule `json:"rules,omitempty"`
-	TLS   []tcpIngressTLS  `json:"tls,omitempty"`
-}
-
-type tcpIngressTLS struct {
-	Hosts      []string `json:"hosts,omitempty"`
-	SecretName string   `json:"secretName,omitempty"`
-}
-
-type tcpIngressStatus struct {
-	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer"`
-}
-
-type tcpIngressRule struct {
-	Host    string            `json:"host,omitempty"`
-	Port    int               `json:"port,omitempty"`
-	Backend tcpIngressBackend `json:"backend"`
-}
-
-type tcpIngressBackend struct {
-	ServiceName string `json:"serviceName"`
-	ServicePort int    `json:"servicePort"`
 }
 
 func (in *tcpIngressBackend) DeepCopyInto(out *tcpIngressBackend) {

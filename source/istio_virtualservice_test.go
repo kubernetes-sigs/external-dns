@@ -48,6 +48,25 @@ import (
 // This is a compile-time validation that istioVirtualServiceSource is a Source.
 var _ Source = &virtualServiceSource{}
 
+type VirtualServiceSuite struct {
+	suite.Suite
+	source     Source
+	lbServices []*v1.Service
+	ingresses  []*networkv1.Ingress
+	gwconfig   *networkingv1.Gateway
+	vsconfig   *networkingv1.VirtualService
+}
+
+type fakeVirtualServiceConfig struct {
+	namespace   string
+	name        string
+	gateways    []string
+	annotations map[string]string
+	labels      map[string]string
+	dnsnames    []string
+	exportTo    string
+}
+
 func TestVirtualServiceIngressAnnotationRespectsCustomPrefix(t *testing.T) {
 	// Do not run in parallel: the annotation prefix is process-global.
 	prefix := annotations.AnnotationKeyPrefix
@@ -102,15 +121,6 @@ func TestVirtualServiceIngressAnnotationRespectsCustomPrefix(t *testing.T) {
 		{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
 		{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.com"}},
 	})
-}
-
-type VirtualServiceSuite struct {
-	suite.Suite
-	source     Source
-	lbServices []*v1.Service
-	ingresses  []*networkv1.Ingress
-	gwconfig   *networkingv1.Gateway
-	vsconfig   *networkingv1.VirtualService
 }
 
 func (suite *VirtualServiceSuite) SetupTest() {
@@ -2275,16 +2285,6 @@ func newTestVirtualServiceSource(t *testing.T, loadBalancerList []fakeIngressGat
 	}
 
 	return vssrc, nil
-}
-
-type fakeVirtualServiceConfig struct {
-	namespace   string
-	name        string
-	gateways    []string
-	annotations map[string]string
-	labels      map[string]string
-	dnsnames    []string
-	exportTo    string
 }
 
 func (c fakeVirtualServiceConfig) Config() *networkingv1.VirtualService {

@@ -29,6 +29,11 @@ import (
 
 type dummyTransport struct{}
 
+type mockRoundTripper struct {
+	response *http.Response
+	error    error
+}
+
 func (d *dummyTransport) RoundTrip(_ *http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("dummy error")
 }
@@ -77,11 +82,6 @@ func TestCancelRequest(t *testing.T) {
 			tt.customRoundTripper.CancelRequest(tt.request)
 		})
 	}
-}
-
-type mockRoundTripper struct {
-	response *http.Response
-	error    error
 }
 
 func (mrt mockRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {

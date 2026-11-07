@@ -26,14 +26,14 @@ type EventEmitter struct {
 	mock.Mock
 }
 
-func (m *EventEmitter) Add(events ...events.Event) {
-	for _, e := range events {
-		m.Called(e)
-	}
-}
-
 func NewFakeEventEmitter() *EventEmitter {
 	m := &EventEmitter{}
 	m.On("Add", mock.AnythingOfType("events.Event"))
 	return m
+}
+
+func (m *EventEmitter) Add(events ...events.Event) {
+	for _, e := range events {
+		m.Called(e)
+	}
 }

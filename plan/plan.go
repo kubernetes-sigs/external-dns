@@ -96,10 +96,6 @@ type planTable struct {
 	resolver ConflictResolver
 }
 
-func newPlanTable() planTable { // TODO: make resolver configurable
-	return planTable{map[planKey]*planTableRow{}, PerResource{}}
-}
-
 // planTableRow represents a set of current and desired domain resource records.
 type planTableRow struct {
 	// current corresponds to the records currently occupying dns name on the dns provider. More than one record may
@@ -121,6 +117,10 @@ type domainEndpoints struct {
 	current *endpoint.Endpoint
 	// candidates corresponds to the list of records which would like to have this dnsName.
 	candidates []*endpoint.Endpoint
+}
+
+func newPlanTable() planTable { // TODO: make resolver configurable
+	return planTable{map[planKey]*planTableRow{}, PerResource{}}
 }
 
 func (t *planTable) addCurrent(e *endpoint.Endpoint) {

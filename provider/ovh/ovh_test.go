@@ -41,6 +41,10 @@ type mockOvhClient struct {
 	mock.Mock
 }
 
+type mockDnsClient struct {
+	mock.Mock
+}
+
 func (c *mockOvhClient) PostWithContext(_ context.Context, endpoint string, input any, output any) error {
 	stub := c.Called(endpoint, input)
 	data, err := json.Marshal(stub.Get(0))
@@ -79,10 +83,6 @@ func (c *mockOvhClient) DeleteWithContext(_ context.Context, endpoint string, ou
 	}
 	json.Unmarshal(data, output)
 	return stub.Error(1)
-}
-
-type mockDnsClient struct {
-	mock.Mock
 }
 
 func (c *mockDnsClient) ExchangeContext(ctx context.Context, m *dns.Msg, addr string) (*dns.Msg, time.Duration, error) {

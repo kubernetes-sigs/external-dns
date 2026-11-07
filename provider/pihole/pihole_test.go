@@ -46,17 +46,22 @@ var (
 	})
 )
 
+type testPiholeClient struct {
+	endpoints []*endpoint.Endpoint
+	requests  *requestTracker
+	trigger   string
+}
+
+type requestTracker struct {
+	createRequests []*endpoint.Endpoint
+	deleteRequests []*endpoint.Endpoint
+}
+
 func assertEndpointsEqual(t *testing.T, got, want []*endpoint.Endpoint) {
 	t.Helper()
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(endpoint.Endpoint{}), endpointSort); diff != "" {
 		t.Error(diff)
 	}
-}
-
-type testPiholeClient struct {
-	endpoints []*endpoint.Endpoint
-	requests  *requestTracker
-	trigger   string
 }
 
 func (t *testPiholeClient) listRecords(_ context.Context, rtype string) ([]*endpoint.Endpoint, error) {
@@ -94,11 +99,6 @@ func (t *testPiholeClient) deleteRecord(_ context.Context, ep *endpoint.Endpoint
 	t.endpoints = newEPs
 	t.requests.deleteRequests = append(t.requests.deleteRequests, ep)
 	return nil
-}
-
-type requestTracker struct {
-	createRequests []*endpoint.Endpoint
-	deleteRequests []*endpoint.Endpoint
 }
 
 func (r *requestTracker) clear() {

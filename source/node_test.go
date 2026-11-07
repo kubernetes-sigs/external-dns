@@ -49,6 +49,14 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+type fakeNodeInformer struct {
+	mock.Mock
+}
+
+type nodeListBuilder struct {
+	nodes []v1.Node
+}
+
 func TestNodeSource(t *testing.T) {
 	t.Parallel()
 
@@ -677,10 +685,6 @@ func TestNodeSource_AddEventHandler(t *testing.T) {
 	assert.Equal(t, 1, inf.times)
 }
 
-type fakeNodeInformer struct {
-	mock.Mock
-}
-
 func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
 	args := f.Called()
 	return args.Get(0).(cache.SharedIndexInformer)
@@ -688,10 +692,6 @@ func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
 
 func (f *fakeNodeInformer) Lister() corev1lister.NodeLister {
 	return corev1lister.NewNodeLister(f.Informer().GetIndexer())
-}
-
-type nodeListBuilder struct {
-	nodes []v1.Node
 }
 
 func helperNodeBuilder() *nodeListBuilder {

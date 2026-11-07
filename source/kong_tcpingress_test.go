@@ -39,10 +39,10 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+const defaultKongNamespace = "kong"
+
 // This is a compile-time validation that kongTCPIngressSource is a Source.
 var _ Source = &kongTCPIngressSource{}
-
-const defaultKongNamespace = "kong"
 
 func TestKongTCPIngressEndpoints(t *testing.T) {
 	t.Parallel()

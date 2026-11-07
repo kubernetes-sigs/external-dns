@@ -40,6 +40,16 @@ type mockZonesClient struct {
 	pagingHandler azcoreruntime.PagingHandler[dns.ZonesClientListByResourceGroupResponse]
 }
 
+// mockZonesClient implements the methods of the Azure DNS RecordSet Client which are used in the Azure Provider
+// and returns static results which are defined per test
+type mockRecordSetsClient struct {
+	pagingHandler    azcoreruntime.PagingHandler[dns.RecordSetsClientListAllByDNSZoneResponse]
+	deletedEndpoints []*endpoint.Endpoint
+	updatedEndpoints []*endpoint.Endpoint
+	deleteErr        error
+	updateErr        error
+}
+
 func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
 	pagingHandler := azcoreruntime.PagingHandler[dns.ZonesClientListByResourceGroupResponse]{
 		More: func(_ dns.ZonesClientListByResourceGroupResponse) bool {
@@ -58,16 +68,6 @@ func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
 
 func (client *mockZonesClient) NewListByResourceGroupPager(_ string, _ *dns.ZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[dns.ZonesClientListByResourceGroupResponse] {
 	return azcoreruntime.NewPager(client.pagingHandler)
-}
-
-// mockZonesClient implements the methods of the Azure DNS RecordSet Client which are used in the Azure Provider
-// and returns static results which are defined per test
-type mockRecordSetsClient struct {
-	pagingHandler    azcoreruntime.PagingHandler[dns.RecordSetsClientListAllByDNSZoneResponse]
-	deletedEndpoints []*endpoint.Endpoint
-	updatedEndpoints []*endpoint.Endpoint
-	deleteErr        error
-	updateErr        error
 }
 
 func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {

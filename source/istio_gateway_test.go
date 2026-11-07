@@ -48,6 +48,32 @@ import (
 // This is a compile-time validation that gatewaySource is a Source.
 var _ Source = &gatewaySource{}
 
+type GatewaySuite struct {
+	suite.Suite
+	source     Source
+	lbServices []*v1.Service
+	ingresses  []*networkv1.Ingress
+}
+
+type fakeIngressGatewayService struct {
+	ips         []string
+	hostnames   []string
+	namespace   string
+	name        string
+	selector    map[string]string
+	externalIPs []string
+}
+
+type fakeGatewayConfig struct {
+	namespace   string
+	name        string
+	annotations map[string]string
+	labels      map[string]string
+	dnsnames    [][]string
+	selector    map[string]string
+	uid         string
+}
+
 func TestGatewayIngressAnnotationRespectsCustomPrefix(t *testing.T) {
 	// Do not run in parallel: the annotation prefix is process-global.
 	prefix := annotations.AnnotationKeyPrefix
@@ -93,13 +119,6 @@ func TestGatewayIngressAnnotationRespectsCustomPrefix(t *testing.T) {
 		{DNSName: "example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
 		{DNSName: "example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.com"}},
 	})
-}
-
-type GatewaySuite struct {
-	suite.Suite
-	source     Source
-	lbServices []*v1.Service
-	ingresses  []*networkv1.Ingress
 }
 
 func (suite *GatewaySuite) SetupTest() {
@@ -1974,15 +1993,6 @@ func newTestGatewaySource(t *testing.T, loadBalancerList []fakeIngressGatewaySer
 	return gwsrc, nil
 }
 
-type fakeIngressGatewayService struct {
-	ips         []string
-	hostnames   []string
-	namespace   string
-	name        string
-	selector    map[string]string
-	externalIPs []string
-}
-
 func (ig fakeIngressGatewayService) Service() *v1.Service {
 	svc := &v1.Service{
 		Namespace: ig.namespace,
@@ -2010,16 +2020,6 @@ func (ig fakeIngressGatewayService) Service() *v1.Service {
 	}
 
 	return svc
-}
-
-type fakeGatewayConfig struct {
-	namespace   string
-	name        string
-	annotations map[string]string
-	labels      map[string]string
-	dnsnames    [][]string
-	selector    map[string]string
-	uid         string
 }
 
 func (c fakeGatewayConfig) Config() *networkingv1.Gateway {

@@ -29,19 +29,9 @@ import (
 	"sigs.k8s.io/external-dns/internal/idna"
 )
 
-type MatchAllDomainFilters []DomainFilterInterface
+var _ DomainFilterInterface = &DomainFilter{}
 
-func (f MatchAllDomainFilters) Match(domain string) bool {
-	for _, filter := range f {
-		if filter == nil {
-			continue
-		}
-		if !filter.Match(domain) {
-			return false
-		}
-	}
-	return true
-}
+type MatchAllDomainFilters []DomainFilterInterface
 
 type DomainFilterInterface interface {
 	Match(domain string) bool
@@ -59,14 +49,33 @@ type DomainFilter struct {
 	regexExclusion *regexp.Regexp
 }
 
-var _ DomainFilterInterface = &DomainFilter{}
-
 // domainFilterSerde is a helper type for serializing and deserializing DomainFilter.
 type domainFilterSerde struct {
 	Include      []string `json:"include,omitempty"`
 	Exclude      []string `json:"exclude,omitempty"`
 	RegexInclude string   `json:"regexInclude,omitempty"`
 	RegexExclude string   `json:"regexExclude,omitempty"`
+}
+
+type DomainFilterOption func(*domainFilterConfig)
+type domainFilterConfig struct {
+	include       []string
+	exclude       []string
+	regexInclude  *regexp.Regexp
+	regexExclude  *regexp.Regexp
+	isRegexFilter bool
+}
+
+func (f MatchAllDomainFilters) Match(domain string) bool {
+	for _, filter := range f {
+		if filter == nil {
+			continue
+		}
+		if !filter.Match(domain) {
+			return false
+		}
+	}
+	return true
 }
 
 // prepareFilters provides consistent trimming for filters/exclude params
@@ -287,15 +296,6 @@ func normalizeDomain(domain string) string {
 		log.Warnf(`Got error while parsing domain %s: %v`, domain, err)
 	}
 	return s
-}
-
-type DomainFilterOption func(*domainFilterConfig)
-type domainFilterConfig struct {
-	include       []string
-	exclude       []string
-	regexInclude  *regexp.Regexp
-	regexExclude  *regexp.Regexp
-	isRegexFilter bool
 }
 
 func WithDomainFilter(filters []string) DomainFilterOption {

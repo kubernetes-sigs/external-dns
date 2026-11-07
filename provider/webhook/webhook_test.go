@@ -42,13 +42,15 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
-var testBackoff = wait.Backoff{Duration: time.Millisecond, Factor: 1.5, Steps: 5}
-
 const (
 	testReadTimeout  = 5 * time.Second
 	testWriteTimeout = 5 * time.Second
 	testMaxBodySize  = 32 << 20 // 32 MiB
 )
+
+var testBackoff = wait.Backoff{Duration: time.Millisecond, Factor: 1.5, Steps: 5}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
 	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout, testMaxBodySize)
@@ -657,8 +659,6 @@ func TestRequestWithRetry_RetriesExhausted(t *testing.T) {
 	require.Nil(t, resp)
 	require.Equal(t, testBackoff.Steps, attempts)
 }
-
-type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 

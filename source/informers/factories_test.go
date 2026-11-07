@@ -40,6 +40,19 @@ type startableFactory struct {
 	barrier     *syncBarrier
 }
 
+// syncBarrier lets every factory sync only once all of them are waiting, which never
+// happens when caches are waited for one after another.
+type syncBarrier struct {
+	wg   sync.WaitGroup
+	done chan struct{}
+}
+
+// startableDynamicFactory is the dynamic counterpart of startableFactory.
+type startableDynamicFactory struct {
+	namespace   string
+	syncResults map[schema.GroupVersionResource]bool
+}
+
 func (f *startableFactory) Start(_ <-chan struct{}) {
 	f.started = true
 }
@@ -49,13 +62,6 @@ func (f *startableFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.
 		return map[reflect.Type]bool{reflect.TypeFor[string](): false}
 	}
 	return f.syncResults
-}
-
-// syncBarrier lets every factory sync only once all of them are waiting, which never
-// happens when caches are waited for one after another.
-type syncBarrier struct {
-	wg   sync.WaitGroup
-	done chan struct{}
 }
 
 func newSyncBarrier(n int) *syncBarrier {
@@ -76,12 +82,6 @@ func (b *syncBarrier) arrive(stopCh <-chan struct{}) bool {
 	case <-stopCh:
 		return false
 	}
-}
-
-// startableDynamicFactory is the dynamic counterpart of startableFactory.
-type startableDynamicFactory struct {
-	namespace   string
-	syncResults map[schema.GroupVersionResource]bool
 }
 
 func (f *startableDynamicFactory) Start(_ <-chan struct{}) {}

@@ -165,6 +165,14 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
+func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
+	log.Debug("Adding event handler for ingress")
+
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	sc.ingressInformers.MustAddEventHandler(eventHandlerFunc(handler))
+}
+
 func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
 	hostnames, err := sc.templateEngine.ExecFQDN(ing)
 	if err != nil {
@@ -187,50 +195,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-// filterByIngressClass filters a list of ingresses based on a required ingress
-// class
-func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
-	// if no class filter is specified then there's nothing to do
-	if len(sc.ingressClassNames) == 0 {
-		return ingresses, nil
-	}
-
-	classNameReq, err := labels.NewRequirement(IngressClassAnnotationKey, selection.In, sc.ingressClassNames)
-	if err != nil {
-		return nil, err
-	}
-
-	selector := labels.NewSelector()
-	selector = selector.Add(*classNameReq)
-
-	filteredList := []*networkv1.Ingress{}
-
-	for _, ingress := range ingresses {
-		var matched = false
-
-		for _, nameFilter := range sc.ingressClassNames {
-			if ingress.Spec.IngressClassName != nil && len(*ingress.Spec.IngressClassName) > 0 {
-				if nameFilter == *ingress.Spec.IngressClassName {
-					matched = true
-				}
-			} else if matchLabelSelector(selector, ingress.Annotations) {
-				matched = true
-			}
-
-			if matched {
-				filteredList = append(filteredList, ingress)
-				break
-			}
-		}
-
-		if !matched {
-			log.Debugf("Discarding ingress %s/%s because it does not match required ingress classes %v", ingress.Namespace, ingress.Name, sc.ingressClassNames)
-		}
-	}
-
-	return filteredList, nil
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
@@ -314,10 +278,46 @@ func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 	return targets
 }
 
-func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
-	log.Debug("Adding event handler for ingress")
+// filterByIngressClass filters a list of ingresses based on a required ingress
+// class
+func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
+	// if no class filter is specified then there's nothing to do
+	if len(sc.ingressClassNames) == 0 {
+		return ingresses, nil
+	}
 
-	// Right now there is no way to remove event handler from informer, see:
-	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.ingressInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	classNameReq, err := labels.NewRequirement(IngressClassAnnotationKey, selection.In, sc.ingressClassNames)
+	if err != nil {
+		return nil, err
+	}
+
+	selector := labels.NewSelector()
+	selector = selector.Add(*classNameReq)
+
+	filteredList := []*networkv1.Ingress{}
+
+	for _, ingress := range ingresses {
+		var matched = false
+
+		for _, nameFilter := range sc.ingressClassNames {
+			if ingress.Spec.IngressClassName != nil && len(*ingress.Spec.IngressClassName) > 0 {
+				if nameFilter == *ingress.Spec.IngressClassName {
+					matched = true
+				}
+			} else if matchLabelSelector(selector, ingress.Annotations) {
+				matched = true
+			}
+
+			if matched {
+				filteredList = append(filteredList, ingress)
+				break
+			}
+		}
+
+		if !matched {
+			log.Debugf("Discarding ingress %s/%s because it does not match required ingress classes %v", ingress.Namespace, ingress.Name, sc.ingressClassNames)
+		}
+	}
+
+	return filteredList, nil
 }

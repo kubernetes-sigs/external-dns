@@ -32,22 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-type createRecordExoscale struct {
-	domainID v3.UUID
-	req      v3.CreateDNSDomainRecordRequest
-}
-
-type deleteRecordExoscale struct {
-	domainID v3.UUID
-	recordID v3.UUID
-}
-
-type updateRecordExoscale struct {
-	domainID v3.UUID
-	recordID v3.UUID
-	req      v3.UpdateDNSDomainRecordRequest
-}
-
 var (
 	createExoscale []createRecordExoscale
 	deleteExoscale []deleteRecordExoscale
@@ -76,7 +60,32 @@ var groups = map[string][]v3.DNSDomainRecord{
 	},
 }
 
+type createRecordExoscale struct {
+	domainID v3.UUID
+	req      v3.CreateDNSDomainRecordRequest
+}
+
+type deleteRecordExoscale struct {
+	domainID v3.UUID
+	recordID v3.UUID
+}
+
+type updateRecordExoscale struct {
+	domainID v3.UUID
+	recordID v3.UUID
+	req      v3.UpdateDNSDomainRecordRequest
+}
+
 type ExoscaleClientStub struct{}
+
+// ExoscaleClientApexStub serves a single domain with one apex record for apex-specific tests.
+type ExoscaleClientApexStub struct{}
+
+// errListDomainsStub always errors on ListDNSDomains.
+type errListDomainsStub struct{}
+
+// errListRecordsStub returns one domain but errors on ListDNSDomainRecords.
+type errListRecordsStub struct{}
 
 func NewExoscaleClientStub() EgoscaleClientI {
 	return &ExoscaleClientStub{}
@@ -107,9 +116,6 @@ func (ep *ExoscaleClientStub) UpdateDNSDomainRecord(_ context.Context, domainID 
 	updateExoscale = append(updateExoscale, updateRecordExoscale{domainID: domainID, recordID: recordID, req: req})
 	return nil
 }
-
-// ExoscaleClientApexStub serves a single domain with one apex record for apex-specific tests.
-type ExoscaleClientApexStub struct{}
 
 func (ep *ExoscaleClientApexStub) ListDNSDomains(_ context.Context) ([]v3.DNSDomain, error) {
 	return []v3.DNSDomain{
@@ -509,40 +515,42 @@ func TestExoscaleZoneCacheHit(t *testing.T) {
 	assert.Len(t, recs2, len(recs1))
 }
 
-// errListDomainsStub always errors on ListDNSDomains.
-type errListDomainsStub struct{}
-
 func (s *errListDomainsStub) ListDNSDomains(_ context.Context) ([]v3.DNSDomain, error) {
 	return nil, assert.AnError
 }
+
 func (s *errListDomainsStub) ListDNSDomainRecords(_ context.Context, _ v3.UUID) ([]v3.DNSDomainRecord, error) {
 	return nil, nil
 }
+
 func (s *errListDomainsStub) CreateDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.CreateDNSDomainRecordRequest) error {
 	return nil
 }
+
 func (s *errListDomainsStub) DeleteDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.UUID) error {
 	return nil
 }
+
 func (s *errListDomainsStub) UpdateDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.UUID, _ v3.UpdateDNSDomainRecordRequest) error {
 	return nil
 }
 
-// errListRecordsStub returns one domain but errors on ListDNSDomainRecords.
-type errListRecordsStub struct{}
-
 func (s *errListRecordsStub) ListDNSDomains(_ context.Context) ([]v3.DNSDomain, error) {
 	return []v3.DNSDomain{{ID: v3.UUID(domainIDs[0]), UnicodeName: "foo.com"}}, nil
 }
+
 func (s *errListRecordsStub) ListDNSDomainRecords(_ context.Context, _ v3.UUID) ([]v3.DNSDomainRecord, error) {
 	return nil, assert.AnError
 }
+
 func (s *errListRecordsStub) CreateDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.CreateDNSDomainRecordRequest) error {
 	return nil
 }
+
 func (s *errListRecordsStub) DeleteDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.UUID) error {
 	return nil
 }
+
 func (s *errListRecordsStub) UpdateDNSDomainRecord(_ context.Context, _ v3.UUID, _ v3.UUID, _ v3.UpdateDNSDomainRecordRequest) error {
 	return nil
 }

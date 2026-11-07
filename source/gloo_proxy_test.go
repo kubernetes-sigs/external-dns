@@ -41,10 +41,10 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+const defaultGlooNamespace = "gloo-system"
+
 // This is a compile-time validation that glooSource is a Source.
 var _ Source = &glooSource{}
-
-const defaultGlooNamespace = "gloo-system"
 
 var (
 	// Internal proxy test
@@ -426,6 +426,10 @@ var (
 		},
 	}
 )
+
+type fakeGlooProxyInformer struct {
+	inf *testInformer
+}
 
 func TestGlooSource(t *testing.T) {
 	t.Parallel()
@@ -947,10 +951,6 @@ func TestGlooSource_AddEventHandler(t *testing.T) {
 	}
 	gs.AddEventHandler(t.Context(), func() {})
 	assert.Equal(t, 1, inf.times)
-}
-
-type fakeGlooProxyInformer struct {
-	inf *testInformer
 }
 
 func (f *fakeGlooProxyInformer) Informer() cache.SharedIndexInformer { return f.inf }

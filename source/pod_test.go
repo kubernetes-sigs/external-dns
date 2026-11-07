@@ -49,6 +49,10 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
+type fakePodInformer struct {
+	mock.Mock
+}
+
 // testPodSource tests that various services generate the correct endpoints.
 func TestPodSource(t *testing.T) {
 	t.Parallel()
@@ -1085,10 +1089,6 @@ func TestPodSource_AddEventHandler(t *testing.T) {
 	fakeInformer.AssertNumberOfCalls(t, "Informer", 1)
 	assert.False(t, handlerCalled)
 	assert.Equal(t, 1, inf.times)
-}
-
-type fakePodInformer struct {
-	mock.Mock
 }
 
 func (f *fakePodInformer) Informer() cache.SharedIndexInformer {

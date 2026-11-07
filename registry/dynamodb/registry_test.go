@@ -42,6 +42,27 @@ const (
 	testZone = "test-zone.example.org"
 )
 
+// DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
+type DynamoDBStub struct {
+	t                *testing.T
+	stubConfig       *DynamoDBStubConfig
+	tableDescription dynamodbtypes.TableDescription
+	changesApplied   bool
+}
+
+type DynamoDBStubConfig struct {
+	ExpectInsert      map[string]map[string]string
+	ExpectInsertError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
+	ExpectUpdate      map[string]map[string]string
+	ExpectUpdateError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
+	ExpectDelete      sets.Set[string]
+}
+
+type wrappedProvider struct {
+	provider.Provider
+	stub *DynamoDBStub
+}
+
 func TestDynamoDBRegistryNew(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)
 
@@ -1126,22 +1147,6 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	}
 }
 
-// DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
-type DynamoDBStub struct {
-	t                *testing.T
-	stubConfig       *DynamoDBStubConfig
-	tableDescription dynamodbtypes.TableDescription
-	changesApplied   bool
-}
-
-type DynamoDBStubConfig struct {
-	ExpectInsert      map[string]map[string]string
-	ExpectInsertError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
-	ExpectUpdate      map[string]map[string]string
-	ExpectUpdateError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
-	ExpectDelete      sets.Set[string]
-}
-
 func cloneStubConfig(cfg DynamoDBStubConfig) DynamoDBStubConfig {
 	cfg.ExpectInsert = cloneLabelMap(cfg.ExpectInsert)
 	cfg.ExpectInsertError = maps.Clone(cfg.ExpectInsertError)
@@ -1157,11 +1162,6 @@ func cloneLabelMap(m map[string]map[string]string) map[string]map[string]string 
 		cloned[k] = maps.Clone(v)
 	}
 	return cloned
-}
-
-type wrappedProvider struct {
-	provider.Provider
-	stub *DynamoDBStub
 }
 
 func (w *wrappedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {

@@ -322,6 +322,67 @@ func isAliasARecord(ep *endpoint.Endpoint) bool {
 	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
 }
 
+// ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
+func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	filteredChanges := &plan.Changes{
+		Create:    changes.Create,
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
+	}
+
+	for _, r := range filteredChanges.Create {
+		if r.Labels == nil {
+			r.Labels = make(map[string]string)
+		}
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+
+		if im.cacheInterval > 0 {
+			im.addToCache(r)
+		}
+	}
+
+	for _, r := range filteredChanges.Delete {
+		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
+		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecordForRemoval(r)...)
+
+		if im.cacheInterval > 0 {
+			im.removeFromCache(r)
+		}
+	}
+
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateOld {
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
+		// remove old version of record from cache
+		if im.cacheInterval > 0 {
+			im.removeFromCache(r)
+		}
+	}
+
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateNew {
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		// add new version of record to cache
+		if im.cacheInterval > 0 {
+			im.addToCache(r)
+		}
+	}
+
+	// when caching is enabled, disable the provider from using the cache
+	if im.cacheInterval > 0 {
+		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
+	}
+	return im.provider.ApplyChanges(ctx, filteredChanges)
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the specific provider
+func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return im.provider.AdjustEndpoints(endpoints)
+}
+
 // warnObsoleteAliasTXT logs, once per record, that a legacy "cname-" alias TXT can be removed.
 func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 	legacyName := im.mapper.ToTXTName(dnsName, endpoint.RecordTypeCNAME)
@@ -390,67 +451,6 @@ func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endp
 		txt.Targets = endpoint.Targets{stored}
 	}
 	return txts
-}
-
-// ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
-func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
-	}
-
-	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
-
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
-
-	for _, r := range filteredChanges.Delete {
-		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecordForRemoval(r)...)
-
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
-	}
-
-	// make sure TXT records are consistently updated as well
-	for _, r := range filteredChanges.UpdateOld {
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
-		// remove old version of record from cache
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
-	}
-
-	// make sure TXT records are consistently updated as well
-	for _, r := range filteredChanges.UpdateNew {
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
-		// add new version of record to cache
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
-
-	// when caching is enabled, disable the provider from using the cache
-	if im.cacheInterval > 0 {
-		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
-	}
-	return im.provider.ApplyChanges(ctx, filteredChanges)
-}
-
-// AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return im.provider.AdjustEndpoints(endpoints)
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {

@@ -73,11 +73,6 @@ type proxy struct {
 	Spec              proxySpec `json:"spec"`
 }
 
-func (p *proxy) DeepCopyObject() runtime.Object {
-	cp := *p
-	return &cp
-}
-
 type proxySpec struct {
 	Listeners []proxySpecListener `json:"listeners,omitempty"`
 }
@@ -170,6 +165,11 @@ type glooSource struct {
 	virtualServiceInformer kubeinformers.GenericInformer
 	gatewayInformer        kubeinformers.GenericInformer
 	templateEngine         template.Engine
+}
+
+func (p *proxy) DeepCopyObject() runtime.Object {
+	cp := *p
+	return &cp
 }
 
 // NewGlooSource creates a new glooSource with the given config
