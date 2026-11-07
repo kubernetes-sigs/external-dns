@@ -558,7 +558,7 @@ func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint
 			// same OVH record, we remove a record from the list when a match is found.
 			if action == ovhDelete {
 				for i, rec := range existingRecords {
-					if rec.Zone == change.Zone && rec.SubDomain == change.SubDomain && rec.FieldType == change.FieldType && rec.Target == change.Target && !slices.Contains(toDeleteIds, i) {
+					if rec.SubDomain == change.SubDomain && rec.FieldType == change.FieldType && rec.Target == change.Target && !slices.Contains(toDeleteIds, i) {
 						change.ID = rec.ID
 						toDeleteIds = append(toDeleteIds, i)
 						break
