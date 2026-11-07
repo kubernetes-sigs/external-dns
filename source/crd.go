@@ -157,13 +157,13 @@ func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]
 			continue
 		}
 
-		// normalized, else it diffs against the provider's rendering
-		switch {
-		case ep.RecordType == endpoint.RecordTypeMX:
+		// Normalized, else it diffs against the provider's rendering.
+		switch ep.RecordType {
+		case endpoint.RecordTypeMX:
 			for i, target := range ep.Targets {
 				ep.Targets[i] = endpoint.NormalizeMXTarget(target)
 			}
-		case endpoint.RequiresTrailingDot(ep.RecordType):
+		case endpoint.RecordTypeCNAME, endpoint.RecordTypeDNAME:
 			for i, target := range ep.Targets {
 				ep.Targets[i] = strings.TrimSuffix(target, ".")
 			}
@@ -221,6 +221,10 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 		case endpoint.RecordTypeSRV:
 			// RFC 2782 requires the dot; Validate checks it (#6357).
 			continue
+		case endpoint.RecordTypeCNAME, endpoint.RecordTypeDNAME:
+			if target == "" {
+				return fmt.Sprintf("empty target for a %s record", ep.RecordType)
+			}
 		}
 
 		hasDot := strings.HasSuffix(target, ".")

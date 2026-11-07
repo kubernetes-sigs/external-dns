@@ -613,6 +613,18 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			wantWarning: `no targets: a CNAME record needs one target`,
 		},
 		{
+			title: "CNAME target of a single dot is rejected",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"."},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `empty target for a CNAME record`,
+		},
+		{
 			title: "SRV target with trailing dot produces no warning (#6357)",
 			endpoints: []*endpoint.Endpoint{
 				{
