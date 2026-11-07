@@ -130,6 +130,12 @@ func ValidateTTL(value string) error {
 	return nil
 }
 
+// ValidateTargetFrom checks the syntax only; the template runs at resolution time.
+func ValidateTargetFrom(value string) error {
+	_, err := annotations.ParseTargetFrom(value)
+	return err
+}
+
 // ValidateHostnames validates a comma-separated list of DNS names against what the sources actually accept, not Kubernetes' stricter object-name rules.
 func ValidateHostnames(value string) error {
 	for _, name := range annotations.SplitHostnameAnnotation(value) {
