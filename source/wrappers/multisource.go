@@ -19,6 +19,7 @@ package wrappers
 import (
 	"context"
 	"reflect"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -52,10 +53,26 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		for _, ep := range endpoints {
+			if !isAddressType(ep.RecordType) {
+				result = append(result, ep)
+				continue
+			}
+
 			hasSourceTargets := len(ep.Targets) > 0
 
 			if ms.forceDefaultTargets || !hasSourceTargets {
 				eps := endpoint.EndpointsForHostname(ep.DNSName, ms.defaultTargets, ep.RecordTTL, ep.ProviderSpecific, ep.SetIdentifier, "")
+				eps = slices.DeleteFunc(eps, func(e *endpoint.Endpoint) bool { return e.RecordType != ep.RecordType })
+				if len(eps) == 0 {
+					// Keeping the source targets avoids deleting a live record because of a flag mismatch.
+					if hasSourceTargets {
+						log.Warnf("No default target [%s] fits %s record %q, keeping source targets", strings.Join(ms.defaultTargets, ", "), ep.RecordType, ep.DNSName)
+						result = append(result, ep)
+					} else {
+						log.Warnf("No default target [%s] fits %s record %q, skipping it", strings.Join(ms.defaultTargets, ", "), ep.RecordType, ep.DNSName)
+					}
+					continue
+				}
 				for _, e := range eps {
 					e.Labels = ep.Labels
 					// Without the refs, events and the DNSEndpoint status can't tell which object these records came from.
@@ -73,6 +90,15 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	return result, nil
+}
+
+// isAddressType reports whether default targets can stand in for the endpoint's targets.
+func isAddressType(recordType string) bool {
+	switch recordType {
+	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME:
+		return true
+	}
+	return false
 }
 
 func (ms *multiSource) AddEventHandler(ctx context.Context, handler func()) {
