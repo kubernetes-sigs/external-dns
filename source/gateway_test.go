@@ -253,12 +253,14 @@ func TestGatewayRouteHasParentRefDefaulting(t *testing.T) {
 	gatewayAPIGroup := v1.Group(gatewayGroup)
 	gatewayKindVal := v1.Kind(gatewayKind)
 	serviceKind := v1.Kind("Service")
+	routeNamespace := v1.Namespace("default")
 
 	omitted := v1.ParentReference{Name: "gw"}
 	explicitGateway := v1.ParentReference{Name: "gw", Group: &gatewayAPIGroup}
 	explicitCore := v1.ParentReference{Name: "gw", Group: &coreGroup}
 	explicitGatewayKind := v1.ParentReference{Name: "gw", Kind: &gatewayKindVal}
 	explicitServiceKind := v1.ParentReference{Name: "gw", Kind: &serviceKind}
+	explicitNamespace := v1.ParentReference{Name: "gw", Namespace: &routeNamespace}
 
 	tests := []struct {
 		desc string
@@ -272,12 +274,16 @@ func TestGatewayRouteHasParentRefDefaulting(t *testing.T) {
 		{"an explicit core group matches itself", explicitCore, explicitCore, true},
 		{"an omitted kind matches the spelled out Gateway kind", omitted, explicitGatewayKind, true},
 		{"an omitted kind does not match a Service kind", omitted, explicitServiceKind, false},
+		{"an omitted namespace matches the Route namespace", omitted, explicitNamespace, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			if got := gwRouteHasParentRef([]v1.ParentReference{tt.spec}, tt.ref, meta); got != tt.want {
 				t.Errorf("gwRouteHasParentRef = %v, want %v", got, tt.want)
+			}
+			if got := gwRouteParentObjectRef(tt.spec, meta) == gwRouteParentObjectRef(tt.ref, meta); got != tt.want {
+				t.Errorf("gwRouteParentObjectRef keys equal = %v, want %v", got, tt.want)
 			}
 		})
 	}
