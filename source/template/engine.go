@@ -124,7 +124,6 @@ func (e Engine) ExecFQDN(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdn, obj)
 }
 
-// combineWithEndpoints merges annotation-based endpoints with template-based endpoints.
 func (e Engine) combineWithEndpoints(
 	endpoints []*endpoint.Endpoint,
 	templateFunc func() ([]*endpoint.Endpoint, error),

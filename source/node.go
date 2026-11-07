@@ -115,7 +115,6 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		// Only generate node name endpoints when there's no template or when combining
 		nodeNameEndpoints := !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining()
 
-		// Resolved before Apply so the template build func cannot fail.
 		var nodeTargets []string
 		var err error
 		if nodeNameEndpoints || ns.templateEngine.IsConfigured() {
