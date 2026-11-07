@@ -164,11 +164,27 @@ func validateConfigForProvider(cfg *externaldns.Config) field.ErrorList {
 	switch cfg.Provider {
 	case externaldns.ProviderAzure:
 		return validateConfigForAzure(cfg)
+	case externaldns.ProviderGoogle:
+		return validateConfigForGoogle(cfg)
 	case externaldns.ProviderRFC2136:
 		return validateConfigForRfc2136(cfg)
 	default:
 		return nil
 	}
+}
+
+func validateConfigForGoogle(cfg *externaldns.Config) field.ErrorList {
+	var errs field.ErrorList
+	if cfg.GoogleBatchChangeSize < 0 {
+		errs = append(errs, field.Invalid(field.NewPath("google-batch-change-size"), cfg.GoogleBatchChangeSize, "--google-batch-change-size cannot be negative"))
+	}
+	if cfg.GoogleBatchChangeInterval < 0 {
+		errs = append(errs, field.Invalid(field.NewPath("google-batch-change-interval"), cfg.GoogleBatchChangeInterval, "--google-batch-change-interval cannot be negative"))
+	}
+	if cfg.GoogleRequestTimeout < 0 {
+		errs = append(errs, field.Invalid(field.NewPath("google-request-timeout"), cfg.GoogleRequestTimeout, "--google-request-timeout cannot be negative"))
+	}
+	return errs
 }
 
 func validateConfigForAzure(cfg *externaldns.Config) field.ErrorList {
