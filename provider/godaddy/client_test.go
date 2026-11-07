@@ -19,6 +19,7 @@ package godaddy
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -68,4 +69,86 @@ func TestClient_DoWhenQuotaExceeded(t *testing.T) {
 	require.ErrorAs(t, err, &apiErr)
 	assert.Equal("QUOTA_EXCEEDED", apiErr.Code)
 	assert.Equal("rate limit exceeded", apiErr.Message)
+}
+
+func TestClient_DoRetryRateLimitReset(t *testing.T) {
+	var attempts atomic.Int32
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if attempts.Add(1) == 1 {
+			w.Header().Set("RateLimit-Reset", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, err := w.Write([]byte(`{"code": "QUOTA_EXCEEDED", "message": "rate limit exceeded"}`))
+			if err != nil {
+				t.Fatalf("Failed to write response: %v", err)
+			}
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`[]`))
+		if err != nil {
+			t.Fatalf("Failed to write response: %v", err)
+		}
+	}))
+	defer mockServer.Close()
+
+	client := Client{
+		APIKey:      "",
+		APISecret:   "",
+		APIEndPoint: mockServer.URL,
+		Client:      &http.Client{},
+		Ratelimiter: rate.NewLimiter(rate.Every(time.Second), 60),
+		Timeout:     DefaultTimeout,
+	}
+
+	req, err := client.NewRequest(http.MethodGet, "/v1/domains/example.net/records", nil)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), attempts.Load())
+}
+
+func TestClient_DoRetryRetryAfter(t *testing.T) {
+	var attempts atomic.Int32
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if attempts.Add(1) == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, err := w.Write([]byte(`{"code": "QUOTA_EXCEEDED", "message": "rate limit exceeded"}`))
+			if err != nil {
+				t.Fatalf("Failed to write response: %v", err)
+			}
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`[]`))
+		if err != nil {
+			t.Fatalf("Failed to write response: %v", err)
+		}
+	}))
+	defer mockServer.Close()
+
+	client := Client{
+		APIKey:      "",
+		APISecret:   "",
+		APIEndPoint: mockServer.URL,
+		Client:      &http.Client{},
+		Ratelimiter: rate.NewLimiter(rate.Every(time.Second), 60),
+		Timeout:     DefaultTimeout,
+	}
+
+	req, err := client.NewRequest(http.MethodGet, "/v1/domains/example.net/records", nil)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, int32(2), attempts.Load())
 }
