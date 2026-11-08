@@ -51,8 +51,6 @@ type Plan struct {
 	ExcludeRecords []string
 	// OwnerID of records to manage
 	OwnerID string
-	// Old owner ID we migrate from
-	OldOwnerID string
 }
 
 // Changes holds lists of actions to be executed by dns providers

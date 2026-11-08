@@ -2591,7 +2591,6 @@ func TestOwnerIDMigration_IdenticalDataRecord(t *testing.T) {
 		Desired:        desired,
 		ManagedRecords: managedRecords,
 		OwnerID:        "new-owner",
-		OldOwnerID:     "old-owner",
 	}
 	pln := pl.Calculate()
 
