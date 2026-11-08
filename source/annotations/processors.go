@@ -30,11 +30,11 @@ const (
 )
 
 func aliasFromAnnotations(annotations map[string]string) (endpoint.AliasType, bool) {
-	switch v := endpoint.AliasType(annotations[AliasKey]); v {
+	switch alias := endpoint.NormalizeAliasType(annotations[AliasKey]); alias {
 	case endpoint.AliasTrue, endpoint.AliasA, endpoint.AliasAAAA:
-		return v, true
+		return alias, true
 	default:
-		return "", false
+		return endpoint.AliasNone, false
 	}
 }
 

@@ -386,6 +386,8 @@ and creating an AAAA alias record would fail.
 
 Note: The `A` and `AAAA` values are currently only supported by the AWS Route53 provider — AWS-SD does not support them (see below).
 
+Annotation values are case-insensitive.
+
 #### Example: IPv4-only alias target
 
 ```yaml

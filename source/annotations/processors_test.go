@@ -240,12 +240,26 @@ func TestGetAliasFromAnnotations(t *testing.T) {
 			expectedOK:    true,
 		},
 		{
-			name:        "alias annotation exists and is false",
-			annotations: map[string]string{AliasKey: "false"},
+			name:          "alias annotation true ignores case",
+			annotations:   map[string]string{AliasKey: "True"},
+			expectedAlias: endpoint.AliasTrue,
+			expectedOK:    true,
 		},
 		{
-			name:        "alias annotation has lowercase record type",
-			annotations: map[string]string{AliasKey: "a"},
+			name:          "alias annotation A ignores case",
+			annotations:   map[string]string{AliasKey: "a"},
+			expectedAlias: endpoint.AliasA,
+			expectedOK:    true,
+		},
+		{
+			name:          "alias annotation AAAA ignores case",
+			annotations:   map[string]string{AliasKey: "aaaa"},
+			expectedAlias: endpoint.AliasAAAA,
+			expectedOK:    true,
+		},
+		{
+			name:        "alias annotation exists and is false",
+			annotations: map[string]string{AliasKey: "false"},
 		},
 		{
 			name:        "alias annotation has unknown value",
