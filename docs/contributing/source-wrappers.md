@@ -30,7 +30,7 @@ Wrappers solve these key challenges:
 |    `MultiSource`     | Combine multiple sources.               | Aggregate `Ingress`, `Service`, etc.                |
 |    `DedupSource`     | Remove duplicate DNS records.           | Avoid duplicate records from sources.               |
 | `TargetFilterSource` | Include/exclude targets based on CIDRs. | Exclude internal IPs.                               |
-|    `NAT64Source`     | Add NAT64-prefixed AAAA records.        | Support IPv6 with NAT64.                            |
+|    `NAT64Source`     | Add A records for NAT64 AAAA records.   | Reach IPv6-only hosts through NAT64 over IPv4.      |
 |   `PostProcessor`    | Add records post-processing.            | Configure TTL, filter provider-specific properties. |
 |    `PTRSource`       | Generate PTR records from A/AAAA.       | Automatic reverse DNS entries.                      |
 
@@ -49,12 +49,13 @@ Filters A/AAAA targets by CIDR inclusion or exclusion rules. Other record types 
 
 ### 2.1 `NAT64Source`
 
-Converts IPv4 targets to IPv6 using NAT64 prefixes.
+For each AAAA record whose targets fall within a NAT64 prefix, adds an A record with the IPv4 address
+embedded in the last 32 bits of those targets. Prefixes must be `/96`; AAAA targets outside every prefix are skipped.
 
-📌 **Use case**: Publish AAAA records for IPv6-only clients in NAT64 environments.
+📌 **Use case**: Publish A records alongside AAAA records in a NAT64 prefix so IPv4 clients can reach the same hosts.
 
 ```yaml
---nat64-prefix=64:ff9b::/96
+--nat64-networks=64:ff9b::/96
 ```
 
 ### 3.1 `PostProcessor`
