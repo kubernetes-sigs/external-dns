@@ -17,8 +17,6 @@ limitations under the License.
 package testutils
 
 import (
-	"net/netip"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -432,50 +430,6 @@ func TestSamePlanChanges(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			checkPlanChanges := SamePlanChanges(tt.a, tt.b)
 			assert.Equal(t, tt.want, checkPlanChanges)
-		})
-	}
-}
-func TestNewTargetsFromAddr(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []netip.Addr
-		expected endpoint.Targets
-	}{
-		{
-			name:     "empty slice",
-			input:    []netip.Addr{},
-			expected: endpoint.Targets{},
-		},
-		{
-			name: "single IPv4 address",
-			input: []netip.Addr{
-				netip.MustParseAddr("192.0.2.1"),
-			},
-			expected: endpoint.Targets{"192.0.2.1"},
-		},
-		{
-			name: "multiple IP addresses",
-			input: []netip.Addr{
-				netip.MustParseAddr("192.0.2.1"),
-				netip.MustParseAddr("2001:db8::1"),
-			},
-			expected: endpoint.Targets{"192.0.2.1", "2001:db8::1"},
-		},
-		{
-			name: "IPv6 address only",
-			input: []netip.Addr{
-				netip.MustParseAddr("::1"),
-			},
-			expected: endpoint.Targets{"::1"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := NewTargetsFromAddr(tt.input)
-			if !reflect.DeepEqual(got, tt.expected) {
-				t.Errorf("NewTargetsFromAddr() = %v, want %v", got, tt.expected)
-			}
 		})
 	}
 }

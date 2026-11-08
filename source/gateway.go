@@ -599,6 +599,8 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) hostnameResolut
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
+				log.Warnf("%q is %q on %s %s/%s, but --ignore-hostname-annotation is set, so the route has no hostnames.",
+					annotations.GatewayHostnameSourceKey, hostNameAnnotation, c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
 				return hostnameResolution{defined: []string{}}
 			}
 			return hostnameResolution{defined: annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)}
