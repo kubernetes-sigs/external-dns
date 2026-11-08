@@ -395,18 +395,25 @@ func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endp
 // ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
+		Create:    make([]*endpoint.Endpoint, 0, len(changes.Create)),
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	for _, r := range filteredChanges.Create {
+	for _, r := range changes.Create {
+		// Without its ownership TXT record a created record could never be matched
+		// to this owner again, so it would be left behind once its source is gone.
+		if im.txtRecordName(r) == "" {
+			log.Errorf("Skipping creation of %s %s: a label of its ownership TXT record name %q is longer than 63 characters", r.RecordType, r.DNSName, im.mapper.ToTXTName(r.DNSName, r.RecordType))
+			continue
+		}
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
+		filteredChanges.Create = append(filteredChanges.Create, r)
 		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
 
 		if im.cacheInterval > 0 {
