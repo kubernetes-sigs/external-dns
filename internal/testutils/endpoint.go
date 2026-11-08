@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
-	"net/netip"
 	"reflect"
 	"slices"
 	"strings"
@@ -106,15 +105,6 @@ func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
 func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 	return SameEndpoints(a["Create"], b["Create"]) && SameEndpoints(a["Delete"], b["Delete"]) &&
 		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
-}
-
-// NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)
-func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
-	t := make(endpoint.Targets, len(targets))
-	for i, target := range targets {
-		t[i] = target.String()
-	}
-	return t
 }
 
 // GenerateTestEndpointsByType generates a shuffled slice of test Endpoints for each record type and count specified in typeCounts.
