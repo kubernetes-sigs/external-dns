@@ -1075,7 +1075,6 @@ func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
 		Desired:        []*endpoint.Endpoint{desired},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		OwnerID:        "bar",
-		OldOwnerID:     "foo",
 	}
 
 	changes := p.Calculate().Changes

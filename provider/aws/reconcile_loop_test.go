@@ -165,7 +165,6 @@ func (h *reconcileLoop) runOnce(desired []*endpoint.Endpoint) (*plan.Changes, er
 		ManagedRecords: h.cfg.ManagedDNSRecordTypes,
 		ExcludeRecords: h.cfg.ExcludeDNSRecordTypes,
 		OwnerID:        h.reg.OwnerID(),
-		OldOwnerID:     h.cfg.TXTOwnerOld,
 	}
 	p = p.Calculate()
 
