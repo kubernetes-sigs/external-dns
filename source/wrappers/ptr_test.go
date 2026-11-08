@@ -91,6 +91,22 @@ func TestPTRSource(t *testing.T) {
 			},
 		},
 		{
+			name:           "same hostname and IP from several endpoints adds the hostname once",
+			defaultEnabled: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").WithSetIdentifier("blue"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").WithSetIdentifier("green"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2", "192.168.49.3"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2", "192.168.49.3"),
+				endpoint.NewEndpoint("2.49.168.192.in-addr.arpa", endpoint.RecordTypePTR, "web.example.com"),
+				endpoint.NewEndpoint("3.49.168.192.in-addr.arpa", endpoint.RecordTypePTR, "web.example.com"),
+			},
+		},
+		{
 			name:           "TTL preserved",
 			defaultEnabled: true,
 			endpoints: []*endpoint.Endpoint{

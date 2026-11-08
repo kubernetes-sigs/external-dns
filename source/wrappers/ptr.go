@@ -18,6 +18,7 @@ package wrappers
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -100,7 +101,12 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 					log.Warnf("PTR: conflicting TTLs for %s (from %s TTL=%d vs existing TTL=%d), using minimum", target, ep.DNSName, ep.RecordTTL, info.ttl)
 					info.ttl = ep.RecordTTL
 				}
-				info.targets = append(info.targets, ep.DNSName)
+				// Routing records with set identifiers, or endpoints with overlapping
+				// targets, repeat a hostname per IP; a duplicate PTR target would never
+				// match the record read back from the provider.
+				if !slices.Contains(info.targets, ep.DNSName) {
+					info.targets = append(info.targets, ep.DNSName)
+				}
 			} else {
 				ptrMap[target] = &ptrInfo{targets: []string{ep.DNSName}, ttl: ep.RecordTTL}
 				order = append(order, target)
