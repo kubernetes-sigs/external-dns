@@ -2640,3 +2640,35 @@ func TestOwnerIDMigration_IdenticalDataRecord(t *testing.T) {
 	assert.Contains(t, newTXT.Targets[0], "new-owner", "TXT must carry new-owner after migration")
 	assert.NotContains(t, newTXT.Targets[0], "old-owner", "TXT must not retain old-owner after migration")
 }
+
+// TestOwnerIDMigration_SameOwnerIDConverges guards against a migration loop when
+// --migrate-from-txt-owner equals --txt-owner-id. No record needs migrating in
+// that case, so every sync must report no changes.
+func TestOwnerIDMigration_SameOwnerIDConverges(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	reg, err := newRegistry(p, "%{record_type}-", "", "default", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "default")
+	require.NoError(t, err)
+	require.NoError(t, reg.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "default"),
+		},
+	}))
+
+	for i := 1; i <= 3; i++ {
+		current, err := reg.Records(ctx)
+		require.NoError(t, err)
+		require.Len(t, current, 1)
+		pln := (&plan.Plan{
+			Policies:       []plan.Policy{&plan.SyncPolicy{}},
+			Current:        current,
+			Desired:        []*endpoint.Endpoint{newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "")},
+			ManagedRecords: []string{endpoint.RecordTypeA},
+			OwnerID:        "default",
+		}).Calculate()
+		require.False(t, pln.Changes.HasChanges(), "sync %d must not report changes", i)
+		require.Empty(t, pln.Changes.UpdateNew, "sync %d must not emit updates", i)
+		require.NoError(t, reg.ApplyChanges(ctx, pln.Changes))
+	}
+}
