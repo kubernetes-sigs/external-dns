@@ -195,6 +195,30 @@ func TestRegistryFollowsCustomAnnotationPrefix(t *testing.T) {
 	assert.True(t, s.IsValid(makePod(map[string]string{annotations.DefaultAnnotationPrefix + "hostname": "bad..name"})))
 }
 
+func TestAliasAnnotationContract(t *testing.T) {
+	tests := []struct {
+		name      string
+		source    string
+		value     string
+		wantValid bool
+	}{
+		{name: "true", source: "service", value: "true", wantValid: true},
+		{name: "false", source: "service", value: "false", wantValid: true},
+		{name: "A", source: "service", value: "A", wantValid: true},
+		{name: "AAAA", source: "service", value: "AAAA", wantValid: true},
+		{name: "case-insensitive", source: "service", value: "aaaa", wantValid: true},
+		{name: "unknown value", source: "service", value: "yes", wantValid: false},
+		{name: "empty value", source: "service", value: "", wantValid: false},
+		{name: "source without provider-specific annotations", source: "pod", value: "true", wantValid: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := New(Options{Mode: ModeStrict}).WithSource(tt.source)
+			assert.Equal(t, tt.wantValid, s.IsValid(makePod(map[string]string{annotations.AliasKey: tt.value})))
+		})
+	}
+}
+
 func TestIgnoreHostnameAnnotation(t *testing.T) {
 	tests := []struct {
 		name        string
