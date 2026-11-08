@@ -432,6 +432,11 @@ func testDnsimpleSuitableZone(t *testing.T) {
 
 	_ = os.Unsetenv("DNSIMPLE_ZONES")
 	mockProvider.accountID = "1"
+
+	zones = map[string]dnsimple.Zone{"1": {Name: "example.com"}}
+	assert.Equal(t, "example.com", dnsimpleSuitableZone("example.com", zones).Name)
+	assert.Nil(t, dnsimpleSuitableZone("www.myexample.com", zones))
+	assert.Nil(t, dnsimpleSuitableZone("myexample.com", zones))
 }
 
 func TestNewProvider(t *testing.T) {
