@@ -219,8 +219,7 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) (map[string]*p
 	return output, nil
 }
 
-// ovhRecordsByZone groups records by the zone they belong to, so that changes
-// planned for one zone are only ever matched against that zone's records.
+// ovhRecordsByZone keeps each zone's changes from matching other zones' records.
 func ovhRecordsByZone(records []ovhRecord) map[string][]ovhRecord {
 	byZone := map[string][]ovhRecord{}
 	for _, record := range records {
