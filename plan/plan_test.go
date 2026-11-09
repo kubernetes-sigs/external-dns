@@ -337,6 +337,18 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestSyncSecondRoundTrailingDotCNAME() {
+	current := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"v1.example.org"}}
+	desired := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"v1.example.org."}}
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}
+	suite.False(p.Calculate().Changes.HasChanges())
+}
+
 func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
