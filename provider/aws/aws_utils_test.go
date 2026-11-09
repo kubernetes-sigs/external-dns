@@ -102,19 +102,40 @@ func NewRoute53APIFixtureStub(zones *HostedZones) *Route53APIFixtureStub {
 	}
 }
 
+func TestRoute53APIFixtureStubMinimalResponses(t *testing.T) {
+	stub := NewRoute53APIFixtureStub(&HostedZones{})
+
+	listOutput, listErr := stub.ListResourceRecordSets(t.Context(), &route53.ListResourceRecordSetsInput{})
+	require.NoError(t, listErr)
+	require.NotNil(t, listOutput)
+
+	changeOutput, changeErr := stub.ChangeResourceRecordSets(t.Context(), &route53.ChangeResourceRecordSetsInput{})
+	require.NoError(t, changeErr)
+	require.NotNil(t, changeOutput)
+
+	zoneOutput, zoneErr := stub.CreateHostedZone(t.Context(), &route53.CreateHostedZoneInput{})
+	require.NoError(t, zoneErr)
+	require.NotNil(t, zoneOutput)
+}
+
 func (r Route53APIFixtureStub) ListResourceRecordSets(_ context.Context, _ *route53.ListResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
-	// TODO implement me
-	panic("implement me")
+	r.calls["listresourcerecordsets"]++
+	return &route53.ListResourceRecordSetsOutput{}, nil
 }
 
 func (r Route53APIFixtureStub) ChangeResourceRecordSets(_ context.Context, _ *route53.ChangeResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
-	// TODO implement me
-	panic("implement me")
+	r.calls["changeresourcerecordsets"]++
+	return &route53.ChangeResourceRecordSetsOutput{
+		ChangeInfo: &route53types.ChangeInfo{Status: route53types.ChangeStatusInsync},
+	}, nil
 }
 
 func (r Route53APIFixtureStub) CreateHostedZone(_ context.Context, _ *route53.CreateHostedZoneInput, _ ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error) {
-	// TODO implement me
-	panic("implement me")
+	r.calls["createhostedzone"]++
+	return &route53.CreateHostedZoneOutput{
+		HostedZone: &route53types.HostedZone{},
+		ChangeInfo: &route53types.ChangeInfo{Status: route53types.ChangeStatusInsync},
+	}, nil
 }
 
 func (r Route53APIFixtureStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
