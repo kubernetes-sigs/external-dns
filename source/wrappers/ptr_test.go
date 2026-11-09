@@ -99,10 +99,24 @@ func TestPTRSource(t *testing.T) {
 				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2", "192.168.49.3"),
 			},
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
-				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").WithSetIdentifier("blue"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2").WithSetIdentifier("green"),
 				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2", "192.168.49.3"),
 				endpoint.NewEndpoint("2.49.168.192.in-addr.arpa", endpoint.RecordTypePTR, "web.example.com"),
+				endpoint.NewEndpoint("3.49.168.192.in-addr.arpa", endpoint.RecordTypePTR, "web.example.com"),
+			},
+		},
+		{
+			name:           "hostnames differing only in case add one PTR target",
+			defaultEnabled: true,
+			endpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("Web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2", "192.168.49.3"),
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("Web.example.com", endpoint.RecordTypeA, "192.168.49.2"),
+				endpoint.NewEndpoint("web.example.com", endpoint.RecordTypeA, "192.168.49.2", "192.168.49.3"),
+				endpoint.NewEndpoint("2.49.168.192.in-addr.arpa", endpoint.RecordTypePTR, "Web.example.com"),
 				endpoint.NewEndpoint("3.49.168.192.in-addr.arpa", endpoint.RecordTypePTR, "web.example.com"),
 			},
 		},

@@ -101,10 +101,9 @@ func generatePTREndpoints(endpoints []*endpoint.Endpoint, defaultEnabled bool) [
 					log.Warnf("PTR: conflicting TTLs for %s (from %s TTL=%d vs existing TTL=%d), using minimum", target, ep.DNSName, ep.RecordTTL, info.ttl)
 					info.ttl = ep.RecordTTL
 				}
-				// Routing records with set identifiers, or endpoints with overlapping
-				// targets, repeat a hostname per IP; a duplicate PTR target would never
-				// match the record read back from the provider.
-				if !slices.Contains(info.targets, ep.DNSName) {
+				// Set identifiers or overlapping target sets repeat a hostname per IP;
+				// the provider stores one RR, so a duplicate churns the plan.
+				if !slices.ContainsFunc(info.targets, func(h string) bool { return strings.EqualFold(h, ep.DNSName) }) {
 					info.targets = append(info.targets, ep.DNSName)
 				}
 			} else {
