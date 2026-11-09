@@ -1467,6 +1467,8 @@ func TestClusterIpServices(t *testing.T) {
 		labels                   map[string]string
 		annotations              map[string]string
 		clusterIP                string
+		externalIPs              []string
+		noPublishInternal        bool
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 		labelSelector            string
@@ -1676,6 +1678,63 @@ func TestClusterIpServices(t *testing.T) {
 			clusterIP: "1.2.3.4",
 			expected:  []*endpoint.Endpoint{},
 		},
+		{
+			title:        "ClusterIp services with externalIPs return an endpoint with the external IPs",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			clusterIP:         "1.2.3.4",
+			externalIPs:       []string{"10.2.3.4", "2001:DB8::1"},
+			noPublishInternal: true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
+			},
+		},
+		{
+			title:        "ClusterIp services with externalIPs return the Cluster IP with publish-internal",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			clusterIP:   "1.2.3.4",
+			externalIPs: []string{"10.2.3.4"},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:        "internal-hostname annotated ClusterIp services with externalIPs return the Cluster IP",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				annotations.InternalHostnameKey: "foo.internal.example.org.",
+			},
+			clusterIP:         "1.2.3.4",
+			externalIPs:       []string{"10.2.3.4"},
+			noPublishInternal: true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.internal.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:        "ClusterIp services without externalIPs or publish-internal do not generate endpoints",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			clusterIP:         "1.2.3.4",
+			noPublishInternal: true,
+			expected:          []*endpoint.Endpoint{},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
@@ -1687,8 +1746,9 @@ func TestClusterIpServices(t *testing.T) {
 			// Create a service to test against
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
-					Type:      tc.svcType,
-					ClusterIP: tc.clusterIP,
+					Type:        tc.svcType,
+					ClusterIP:   tc.clusterIP,
+					ExternalIPs: tc.externalIPs,
 				},
 				Namespace:   tc.svcNamespace,
 				Name:        tc.svcName,
@@ -1711,7 +1771,7 @@ func TestClusterIpServices(t *testing.T) {
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
 					Namespaces:               []string{tc.targetNamespace},
-					PublishInternal:          true,
+					PublishInternal:          !tc.noPublishInternal,
 					IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
 					LabelFilter:              labelSelector,
 				},
