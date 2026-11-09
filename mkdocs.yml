@@ -11,11 +11,12 @@ nav:
       - About: charts/external-dns/README.md
       - Changelog: charts/external-dns/CHANGELOG.md
   - About:
+      - Code of Conduct: code-of-conduct.md
+      - CRD API Reference: docs/crd-api.md
       - FAQ: docs/faq.md
       - Flags: docs/flags.md
-      - Out of Incubator: docs/20190708-external-dns-incubator.md
-      - Code of Conduct: code-of-conduct.md
       - License: LICENSE.md
+      - Out of Incubator: docs/20190708-external-dns-incubator.md
       - Providers: docs/providers.md
       - Version Update: docs/version-update-playbook.md
   - Tutorials: docs/tutorials/*
