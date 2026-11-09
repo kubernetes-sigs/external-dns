@@ -261,10 +261,6 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	// When caching is enabled, disable the provider from using the cache.
-	if im.cacheInterval > 0 {
-		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
-	}
 	err = im.provider.ApplyChanges(ctx, filteredChanges)
 	if err != nil {
 		im.recordsCache = nil

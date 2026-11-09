@@ -771,11 +771,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone(testZone)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
-		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
-	}
+	ctx := t.Context()
 	_ = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
@@ -846,7 +842,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("txt.cname-multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "multiple.test-zone.example.org").WithSetIdentifier("test-set-2"),
 		},
 	}
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -860,7 +856,6 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -870,11 +865,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
-		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
-	}
+	ctx := t.Context()
 	_ = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{},
 	})
@@ -893,7 +884,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("prefixcname.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-1,external-dns/resource=ingress/default/my-ingress\"", "new-record-1.test-zone.example.org"),
 		},
 	}
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -907,7 +898,6 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -916,11 +906,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	_ = p.CreateZone(testZone)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
-		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
-	}
+	ctx := t.Context()
 	r, _ := newRegistry(p, "", "-%{record_type}suffix", "owner-2", time.Hour, "", []string{}, []string{}, false, nil, "")
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -936,7 +922,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("new-record-1-cnamesuffix.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2,external-dns/resource=ingress/default/my-ingress\"", "new-record-1.test-zone.example.org"),
 		},
 	}
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -950,7 +936,6 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -960,11 +945,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
-		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
-	}
+	ctx := t.Context()
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
@@ -1040,7 +1021,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("cname-multiple-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "multiple.test-zone.example.org").WithSetIdentifier("test-set-2"),
 		},
 	}
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1054,7 +1035,6 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1064,11 +1044,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
-		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
-	}
+	ctx := t.Context()
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
@@ -1121,7 +1097,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
 	}
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1135,7 +1111,6 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1436,11 +1411,7 @@ func TestNewTXTScheme(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
-	p.OnApplyChanges = func(ctx context.Context, _ *plan.Changes) {
-		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
-	}
+	ctx := t.Context()
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
@@ -1488,7 +1459,7 @@ func TestNewTXTScheme(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
 	}
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1502,7 +1473,6 @@ func TestNewTXTScheme(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
@@ -1606,8 +1576,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
-	var ctxEndpoints []*endpoint.Endpoint
-	ctx := context.WithValue(t.Context(), provider.RecordsContextKey, ctxEndpoints)
+	ctx := t.Context()
 
 	err = p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -1631,7 +1600,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		},
 	}
 
-	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Delete": expected.Delete,
 		}
@@ -1639,7 +1608,6 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 			"Delete": got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-		require.Nil(t, ctx.Value(provider.RecordsContextKey))
 	}
 	err = r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)

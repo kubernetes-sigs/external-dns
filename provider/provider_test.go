@@ -78,11 +78,6 @@ func TestBaseProvider_GetDomainFilter(t *testing.T) {
 	assert.True(t, f.Match("example.com"))
 }
 
-func TestContextKeyString(t *testing.T) {
-	k := &contextKey{name: "records"}
-	assert.Equal(t, "provider context value records", k.String())
-}
-
 func TestDifference(t *testing.T) {
 	current := []string{"foo", "bar"}
 	desired := []string{"bar", "baz"}
