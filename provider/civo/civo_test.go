@@ -162,19 +162,38 @@ func TestCivoProviderRecordsApexAt(t *testing.T) {
 
 	records, err := provider.Records(t.Context())
 	require.NoError(t, err)
-	assert.Len(t, records, 3)
+	require.Len(t, records, 3)
 
-	// The "@" apex record should be translated to the zone name.
 	assert.Equal(t, "example.com", records[0].DNSName)
 	assert.Equal(t, "A", records[0].RecordType)
 	assert.Equal(t, "10.0.0.0", records[0].Targets[0])
-
-	// Regular subdomain records should work as before.
 	assert.Equal(t, "www.example.com", records[1].DNSName)
-
-	// Civo uses "@" for apex records of every type, not only address records.
 	assert.Equal(t, "example.com", records[2].DNSName)
 	assert.Equal(t, "TXT", records[2].RecordType)
+}
+
+func TestCivoProviderRecordsGroupsTargets(t *testing.T) {
+	client, server, _ := civogo.NewClientForTesting(map[string]string{
+		"/v2/dns/12345/records": `[
+			{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
+			{"id": "2", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600},
+			{"id": "3", "domain_id":"12345", "account_id": "1", "name": "@", "type": "TXT", "value": "v=spf1 -all", "ttl": 600},
+			{"id": "4", "domain_id":"12345", "account_id": "1", "name": "@", "type": "TXT", "value": "\"heritage=external-dns\"", "ttl": 600}
+			]`,
+		"/v2/dns": `[{"id": "12345", "account_id": "1", "name": "example.com"}]`,
+	})
+	defer server.Close()
+	provider := &CivoProvider{
+		Client:       *client,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+	}
+
+	records, err := provider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, records, 3)
+	assert.Equal(t, endpoint.Targets{"10.0.0.0", "10.0.0.1"}, records[0].Targets)
+	assert.Equal(t, endpoint.Targets{"v=spf1 -all"}, records[1].Targets)
+	assert.Equal(t, endpoint.Targets{`"heritage=external-dns"`}, records[2].Targets)
 }
 
 func TestCivoProviderRecordsWithError(t *testing.T) {
@@ -436,7 +455,7 @@ func TestCivoProcessUpdateActionsWithError(t *testing.T) {
 	}
 
 	var changes CivoChanges
-	err := processUpdateActions(zoneByID, recordsByZoneID, updatesByZone, &changes)
+	err := processUpdateActions(zoneByID, recordsByZoneID, nil, updatesByZone, &changes)
 	require.Error(t, err)
 }
 
@@ -481,6 +500,13 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 		},
 	}
 
+	updatesOldByZone := map[string][]*endpoint.Endpoint{
+		"example.com": {
+			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
+		},
+	}
+
 	updatesByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
 			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeA, "10.20.30.40"),
@@ -489,7 +515,7 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 	}
 
 	var changes CivoChanges
-	err := processUpdateActions(zoneByID, recordsByZoneID, updatesByZone, &changes)
+	err := processUpdateActions(zoneByID, recordsByZoneID, updatesOldByZone, updatesByZone, &changes)
 	require.NoError(t, err)
 
 	assert.Len(t, changes.Creates, 2)
@@ -665,6 +691,37 @@ func TestCivoProcessDeleteAction(t *testing.T) {
 	}
 }
 
+func TestCivoProcessDeleteActionKeepsUnmanagedRecords(t *testing.T) {
+	zone := civogo.DNSDomain{ID: "z", Name: "example.com"}
+	records := map[string][]civogo.DNSRecord{"z": {
+		{ID: "1", Name: "", Type: "TXT", Value: "v=spf1 -all"},
+		{ID: "2", Name: "", Type: "TXT", Value: "google-site-verification=x"},
+		{ID: "3", Name: "", Type: "TXT", Value: "owned"},
+	}}
+
+	var changes CivoChanges
+	require.NoError(t, processDeleteActions(map[string]civogo.DNSDomain{"z": zone}, records,
+		map[string][]*endpoint.Endpoint{"z": {endpoint.NewEndpoint("example.com", "TXT", "owned")}}, &changes))
+	require.Len(t, changes.Deletes, 1)
+	assert.Equal(t, "3", changes.Deletes[0].DomainRecord.ID)
+}
+
+func TestCivoProcessUpdateActionsKeepsUnmanagedRecords(t *testing.T) {
+	zone := civogo.DNSDomain{ID: "z", Name: "example.com"}
+	records := map[string][]civogo.DNSRecord{"z": {
+		{ID: "1", Name: "", Type: "TXT", Value: "v=spf1 -all"},
+		{ID: "2", Name: "", Type: "TXT", Value: "owned-old"},
+	}}
+
+	var changes CivoChanges
+	require.NoError(t, processUpdateActions(map[string]civogo.DNSDomain{"z": zone}, records,
+		map[string][]*endpoint.Endpoint{"z": {endpoint.NewEndpoint("example.com", "TXT", "owned-old")}},
+		map[string][]*endpoint.Endpoint{"z": {endpoint.NewEndpoint("example.com", "TXT", "owned-new")}}, &changes))
+	require.Len(t, changes.Creates, 1)
+	assert.Equal(t, "owned-new", changes.Creates[0].Options.Value)
+	require.Len(t, changes.Deletes, 1)
+	assert.Equal(t, "2", changes.Deletes[0].DomainRecord.ID)
+}
 func TestCivoApplyChanges(t *testing.T) {
 	log.SetOutput(io.Discard)
 	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
@@ -810,7 +867,8 @@ func TestCivoProviderFetchRecords(t *testing.T) {
 	client, server, _ := civogo.NewClientForTesting(map[string]string{
 		"/v2/dns/12345/records": `[
 			{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
-			{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600}
+			{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600},
+			{"id": "3", "account_id": "1", "domain_id":"12345", "name": "@", "type": "TXT", "value": "apex", "ttl": 600}
 			]`,
 	})
 	defer server.Close()
@@ -820,6 +878,7 @@ func TestCivoProviderFetchRecords(t *testing.T) {
 
 	expected, err := client.ListDNSRecords("12345")
 	require.NoError(t, err)
+	expected[2].Name = ""
 
 	actual, err := provider.fetchRecords("12345")
 	require.NoError(t, err)
@@ -911,73 +970,6 @@ func TestCivoProviderGetRecordID(t *testing.T) {
 	id := getRecordID(record, zone, endPoint)
 
 	assert.Equal(t, id[0].ID, record[0].ID)
-}
-
-func TestCivoProviderGetRecordIDApexAt(t *testing.T) {
-	zone := civogo.DNSDomain{
-		ID:   "12345",
-		Name: "test.com",
-	}
-
-	// Civo API may return "@" for apex record names.
-	records := []civogo.DNSRecord{{
-		ID:          "1",
-		Type:        "A",
-		Name:        "@",
-		Value:       "10.0.0.0",
-		DNSDomainID: "12345",
-		TTL:         600,
-	}, {
-		ID:          "2",
-		Type:        "CNAME",
-		Name:        "@",
-		Value:       "lb.example.com",
-		DNSDomainID: "12345",
-		TTL:         600,
-	}}
-
-	// Apex endpoint: DNSName == zone name, so getStrippedRecordName returns "".
-	ep := endpoint.Endpoint{DNSName: "test.com", Targets: endpoint.Targets{"10.0.0.0"}, RecordType: "A"}
-	matched := getRecordID(records, zone, ep)
-
-	assert.Len(t, matched, 1)
-	assert.Equal(t, "1", matched[0].ID)
-
-	ep = endpoint.Endpoint{DNSName: "test.com", Targets: endpoint.Targets{"lb.example.com"}, RecordType: "CNAME"}
-	matched = getRecordID(records, zone, ep)
-
-	assert.Len(t, matched, 1)
-	assert.Equal(t, "2", matched[0].ID)
-}
-
-func TestNormalizeCivoRecordName(t *testing.T) {
-	testCases := []struct {
-		name       string
-		recordName string
-		expected   string
-	}{
-		{
-			name:       "apex marker",
-			recordName: "@",
-			expected:   "",
-		},
-		{
-			name:       "empty apex",
-			recordName: "",
-			expected:   "",
-		},
-		{
-			name:       "subdomain",
-			recordName: "www",
-			expected:   "www",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.expected, normalizeCivoRecordName(testCase.recordName))
-		})
-	}
 }
 
 func TestCivo_submitChangesCreate(t *testing.T) {
