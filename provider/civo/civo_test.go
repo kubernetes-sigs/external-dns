@@ -173,14 +173,25 @@ func TestCivoProviderRecordsApexAt(t *testing.T) {
 }
 
 func TestCivoProviderRecordsGroupsTargets(t *testing.T) {
-	client, server, _ := civogo.NewClientForTesting(map[string]string{
-		"/v2/dns/12345/records": `[
-			{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
-			{"id": "2", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600},
-			{"id": "3", "domain_id":"12345", "account_id": "1", "name": "@", "type": "TXT", "value": "v=spf1 -all", "ttl": 600},
-			{"id": "4", "domain_id":"12345", "account_id": "1", "name": "@", "type": "TXT", "value": "\"heritage=external-dns\"", "ttl": 600}
-			]`,
-		"/v2/dns": `[{"id": "12345", "account_id": "1", "name": "example.com"}]`,
+	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
+		{
+			Method: "GET",
+			Value: []civogo.ValueAdvanceClientForTesting{
+				{
+					URL: "/v2/dns/12345/records",
+					ResponseBody: `[
+						{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
+						{"id": "2", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600},
+						{"id": "3", "domain_id":"12345", "account_id": "1", "name": "@", "type": "TXT", "value": "v=spf1 -all", "ttl": 600},
+						{"id": "4", "domain_id":"12345", "account_id": "1", "name": "@", "type": "TXT", "value": "\"heritage=external-dns\"", "ttl": 600}
+						]`,
+				},
+				{
+					URL:          "/v2/dns",
+					ResponseBody: `[{"id": "12345", "account_id": "1", "name": "example.com"}]`,
+				},
+			},
+		},
 	})
 	defer server.Close()
 	provider := &CivoProvider{

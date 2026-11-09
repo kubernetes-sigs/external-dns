@@ -138,9 +138,8 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	var endpoints []*endpoint.Endpoint
-	// Civo lists one record per target. Grouping them keeps every target in
-	// plan.Changes.UpdateOld, which decides which records an update may delete.
-	// TXT stays ungrouped: the TXT registry reads ownership from Targets[0].
+	// Civo lists one record per target; UpdateOld needs them all. Not TXT: the
+	// registry reads ownership from Targets[0].
 	byNameType := make(map[string]*endpoint.Endpoint)
 
 	for _, zone := range zones {
@@ -425,9 +424,8 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 				}
 			}
 
-			// Any remaining records have been removed, delete them. Records the
-			// old endpoint did not own only share name and type with it (e.g. SPF
-			// next to an owned apex TXT) and must survive.
+			// Any remaining records have been removed, delete them. Skip records
+			// the old endpoint did not own (e.g. SPF next to an owned apex TXT).
 			for _, record := range matchedRecordsByTarget {
 				if !oldTargets[ep.DNSName+"/"+ep.RecordType].Has(record.Value) {
 					continue
@@ -598,8 +596,7 @@ func getRecordID(records []civogo.DNSRecord, zone civogo.DNSDomain, ep endpoint.
 	return matchedRecords
 }
 
-// filterRecordsByTargets keeps only records whose value is one of targets, so
-// unmanaged records sharing name and type with an endpoint are not deleted.
+// filterRecordsByTargets keeps records whose value is one of targets.
 func filterRecordsByTargets(records []civogo.DNSRecord, targets endpoint.Targets) []civogo.DNSRecord {
 	wanted := sets.New(targets...)
 
