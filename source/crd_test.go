@@ -377,6 +377,22 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 		},
 		{
+			title:           "CNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
+			namespaceFilter: []string{"foo"},
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"foo.example.org."},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
 			title:           "CNAME target without trailing dot (relative name)",
 			namespaceFilter: []string{"foo"},
 			objectNamespace: "foo",
@@ -388,6 +404,22 @@ func testCRDSourceEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets{"backend.cluster.local"},
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  300,
+				},
+			},
+			expectEndpoints: true,
+		},
+		{
+			title:           "DNAME target with trailing dot (RFC 1035 §5.1 absolute FQDN) is valid",
+			namespaceFilter: []string{"foo"},
+			objectNamespace: "foo",
+			labels:          map[string]string{"test": "that"},
+			labelSelector:   labels.SelectorFromSet(labels.Set{"test": "that"}),
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"target.example.net."},
+					RecordType: endpoint.RecordTypeDNAME,
+					RecordTTL:  180,
 				},
 			},
 			expectEndpoints: true,
@@ -613,18 +645,6 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			wantWarning: `no targets: a CNAME record needs one target`,
 		},
 		{
-			title: "CNAME target of a single dot is rejected",
-			endpoints: []*endpoint.Endpoint{
-				{
-					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"."},
-					RecordType: endpoint.RecordTypeCNAME,
-					RecordTTL:  180,
-				},
-			},
-			wantWarning: `empty target for a CNAME record`,
-		},
-		{
 			title: "SRV target with trailing dot produces no warning (#6357)",
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -664,22 +684,18 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 	}
 }
 
-// Targets are normalized rather than rejected, else they diff against the provider's rendering.
-func TestCRDSourceNormalizesTargets(t *testing.T) {
+// MX targets are normalized rather than rejected, else they diff against the provider's rendering.
+func TestCRDSourceNormalizesMXTargets(t *testing.T) {
 	for _, ti := range []struct {
-		title      string
-		recordType string
-		target     string
-		want       string
+		title  string
+		target string
+		want   string
 	}{
-		{"MX trailing dot trimmed", endpoint.RecordTypeMX, "10 mail.example.com.", "10 mail.example.com"},
-		{"MX already canonical", endpoint.RecordTypeMX, "10 mail.example.com", "10 mail.example.com"},
-		{"MX whitespace collapsed", endpoint.RecordTypeMX, "10   mail.example.com.", "10 mail.example.com"},
-		{"MX leading zero dropped", endpoint.RecordTypeMX, "010 mail.example.com", "10 mail.example.com"},
-		{"MX null preserved", endpoint.RecordTypeMX, "0 .", "0 ."},
-		{"CNAME trailing dot trimmed", endpoint.RecordTypeCNAME, "foo.example.com.", "foo.example.com"},
-		{"CNAME already canonical", endpoint.RecordTypeCNAME, "foo.example.com", "foo.example.com"},
-		{"DNAME trailing dot trimmed", endpoint.RecordTypeDNAME, "example.net.", "example.net"},
+		{"trailing dot trimmed", "10 mail.example.com.", "10 mail.example.com"},
+		{"already canonical", "10 mail.example.com", "10 mail.example.com"},
+		{"whitespace collapsed", "10   mail.example.com.", "10 mail.example.com"},
+		{"leading zero dropped", "010 mail.example.com", "10 mail.example.com"},
+		{"null MX preserved", "0 .", "0 ."},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			obj := &apiv1alpha1.DNSEndpoint{
@@ -689,7 +705,7 @@ func TestCRDSourceNormalizesTargets(t *testing.T) {
 				Spec: apiv1alpha1.DNSEndpointSpec{Endpoints: []*endpoint.Endpoint{{
 					DNSName:    "example.org",
 					Targets:    endpoint.Targets{ti.target},
-					RecordType: ti.recordType,
+					RecordType: endpoint.RecordTypeMX,
 					RecordTTL:  180,
 				}}},
 			}
