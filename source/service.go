@@ -565,10 +565,13 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 				targets = extractLoadBalancerTargets(svc, sc.lookupIP)
 			}
 		case v1.ServiceTypeClusterIP:
-			if svc.Spec.ClusterIP == v1.ClusterIPNone {
+			switch {
+			case svc.Spec.ClusterIP == v1.ClusterIPNone:
 				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
-			} else if useClusterIP || sc.publishInternal {
+			case useClusterIP || sc.publishInternal:
 				targets = extractServiceIps(svc)
+			case len(svc.Spec.ExternalIPs) > 0:
+				targets = svc.Spec.ExternalIPs
 			}
 		case v1.ServiceTypeNodePort:
 			// add the nodeTargets and extract an SRV endpoint
