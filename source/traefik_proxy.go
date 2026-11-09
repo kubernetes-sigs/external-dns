@@ -834,8 +834,8 @@ func extractEndpoints[T interface {
 		targets := annotations.TargetsFromTargetAnnotation(typed.GetAnnotations())
 		if len(targets) == 0 {
 			if resolved, ok := targetFrom.TargetsFromAnnotations(ctx, types.TraefikProxy, typed); ok {
-          targets = resolved
-      }
+				targets = resolved
+			}
 		}
 		name := getObjectFullName(typed)
 
