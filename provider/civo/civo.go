@@ -26,7 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -138,9 +137,6 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	var endpoints []*endpoint.Endpoint
-	// Civo lists one record per target; UpdateOld needs them all. Not TXT: the
-	// registry reads ownership from Targets[0].
-	byNameType := make(map[string]*endpoint.Endpoint)
 
 	for _, zone := range zones {
 		records, err := p.fetchRecords(zone.ID)
@@ -159,15 +155,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 					name = zone.Name
 				}
 
-				key := name + "/" + toUpper
-				if ep, ok := byNameType[key]; ok && toUpper != endpoint.RecordTypeTXT {
-					ep.Targets = append(ep.Targets, r.Value)
-					continue
-				}
-
-				ep := endpoint.NewEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value)
-				byNameType[key] = ep
-				endpoints = append(endpoints, ep)
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value))
 			}
 		}
 	}
@@ -338,7 +326,7 @@ func processCreateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 }
 
 // processUpdateActions return a list of changes to update records.
-func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID map[string][]civogo.DNSRecord, updatesOldByZone, updatesByZone map[string][]*endpoint.Endpoint, civoChange *CivoChanges) error {
+func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID map[string][]civogo.DNSRecord, updatesByZone map[string][]*endpoint.Endpoint, civoChange *CivoChanges) error {
 	for zoneID, updates := range updatesByZone {
 		zone := zonesByID[zoneID]
 
@@ -351,11 +339,6 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 		}
 
 		records := recordsByZoneID[zoneID]
-
-		oldTargets := make(map[string]sets.Set[string])
-		for _, old := range updatesOldByZone[zoneID] {
-			oldTargets[old.DNSName+"/"+old.RecordType] = sets.New(old.Targets...)
-		}
 
 		for _, ep := range updates {
 			matchedRecords := getRecordID(records, zone, *ep)
@@ -424,13 +407,8 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 				}
 			}
 
-			// Any remaining records have been removed, delete them. Skip records
-			// the old endpoint did not own (e.g. SPF next to an owned apex TXT).
+			// Any remaining records have been removed, delete them
 			for _, record := range matchedRecordsByTarget {
-				if !oldTargets[ep.DNSName+"/"+ep.RecordType].Has(record.Value) {
-					continue
-				}
-
 				log.WithFields(log.Fields{
 					logFieldZoneID:     zoneID,
 					logFieldDNSName:    ep.DNSName,
@@ -465,7 +443,7 @@ func processDeleteActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 		records := recordsByZoneID[zoneID]
 
 		for _, ep := range deletes {
-			matchedRecords := filterRecordsByTargets(getRecordID(records, zone, *ep), ep.Targets)
+			matchedRecords := getRecordID(records, zone, *ep)
 
 			if len(matchedRecords) == 0 {
 				log.WithFields(log.Fields{
@@ -519,7 +497,6 @@ func (p *CivoProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 	}
 
 	createsByZone := endpointsByZone(zoneNameIDMapper, changes.Create)
-	updatesOldByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateOld)
 	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
 	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
 
@@ -530,7 +507,7 @@ func (p *CivoProvider) ApplyChanges(_ context.Context, changes *plan.Changes) er
 	}
 
 	// Generate Updates
-	err = processUpdateActions(zonesByID, recordsByZoneID, updatesOldByZone, updatesByZone, &civoChange)
+	err = processUpdateActions(zonesByID, recordsByZoneID, updatesByZone, &civoChange)
 	if err != nil {
 		return err
 	}
@@ -594,18 +571,4 @@ func getRecordID(records []civogo.DNSRecord, zone civogo.DNSDomain, ep endpoint.
 	}
 
 	return matchedRecords
-}
-
-// filterRecordsByTargets keeps records whose value is one of targets.
-func filterRecordsByTargets(records []civogo.DNSRecord, targets endpoint.Targets) []civogo.DNSRecord {
-	wanted := sets.New(targets...)
-
-	var filtered []civogo.DNSRecord
-	for _, record := range records {
-		if wanted.Has(record.Value) {
-			filtered = append(filtered, record)
-		}
-	}
-
-	return filtered
 }
