@@ -842,7 +842,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("txt.cname-multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "multiple.test-zone.example.org").WithSetIdentifier("test-set-2"),
 		},
 	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -884,7 +884,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("prefixcname.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-1,external-dns/resource=ingress/default/my-ingress\"", "new-record-1.test-zone.example.org"),
 		},
 	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -922,7 +922,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("new-record-1-cnamesuffix.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2,external-dns/resource=ingress/default/my-ingress\"", "new-record-1.test-zone.example.org"),
 		},
 	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1021,7 +1021,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			newTXTEndpointWithOwnedRecord("cname-multiple-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "multiple.test-zone.example.org").WithSetIdentifier("test-set-2"),
 		},
 	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1097,7 +1097,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
 	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1459,7 +1459,7 @@ func TestNewTXTScheme(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
 	}
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -1600,7 +1600,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		},
 	}
 
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Delete": expected.Delete,
 		}
@@ -1655,7 +1655,7 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 	}
 
 	changes := pl.Calculate()
-	p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
+	p.OnApplyChanges = func(changes *plan.Changes) {
 		got := map[string][]*endpoint.Endpoint{
 			"Create":    changes.Create,
 			"UpdateNew": changes.UpdateNew,
@@ -1984,7 +1984,7 @@ func TestTXTRegistryRecreatesMissingRecords(t *testing.T) {
 					// The first ApplyChanges call should create the expected records.
 					// Subsequent calls are expected to be no-ops (i.e., no additional creates).
 					isCalled := false
-					p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
+					p.OnApplyChanges = func(changes *plan.Changes) {
 						if isCalled {
 							assert.Empty(t, changes.Create, "ApplyChanges should not be called multiple times with new changes")
 						} else {
@@ -2178,7 +2178,7 @@ func TestTXTRegistryAliasARecordUsesARecordTXTPrefix(t *testing.T) {
 		WithAliasProperty(endpoint.AliasTrue)
 
 	var applied *plan.Changes
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) { applied = got }
+	p.OnApplyChanges = func(got *plan.Changes) { applied = got }
 
 	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{aliasA}}))
 	require.NotNil(t, applied)
@@ -2256,7 +2256,7 @@ func TestTXTRegistryAliasARecordDeleteLeavesLegacyCNAME(t *testing.T) {
 	require.NoError(t, err)
 
 	var applied *plan.Changes
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) { applied = got }
+	p.OnApplyChanges = func(got *plan.Changes) { applied = got }
 
 	require.NoError(t, r.ApplyChanges(t.Context(), &plan.Changes{Delete: []*endpoint.Endpoint{aliasA}}))
 	require.NotNil(t, applied)
@@ -2289,7 +2289,7 @@ func seedZoneWithTXT(t *testing.T, txtValue string, encrypt bool, aesKey []byte,
 	require.NoError(t, err)
 
 	var applied *plan.Changes
-	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) { applied = got }
+	p.OnApplyChanges = func(got *plan.Changes) { applied = got }
 
 	return r, func() *plan.Changes { return applied }
 }
