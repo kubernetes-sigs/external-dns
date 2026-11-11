@@ -137,9 +137,7 @@ func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error
 		cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey), cfg.TXTOwnerOld)
 }
 
-// newRegistry returns a new TXTRegistry object. When newFormatOnly is true, it will only
-// generate new format TXT records, otherwise it generates both old and new formats for
-// backwards compatibility.
+// newRegistry returns a new TXTRegistry object.
 func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string,
 	cacheInterval time.Duration, txtWildcardReplacement string,
 	managedRecordTypes, excludeRecordTypes []string,
@@ -333,9 +331,7 @@ func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
 		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
 }
 
-// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
-// depending on the newFormatOnly configuration. The old format is maintained for backwards
-// compatibility but can be disabled to reduce the number of DNS records.
+// generateTXTRecord generates the ownership TXT record of r.
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
 	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
 }
@@ -401,13 +397,19 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
+	var zones endpoint.DomainFilterInterface
+	if len(changes.Create) > 0 {
+		zones = im.provider.GetDomainFilter()
+	}
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
+		txts := im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)
+		warnTXTOutsideZones(zones, r, txts)
+		filteredChanges.Create = append(filteredChanges.Create, txts...)
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
@@ -446,6 +448,22 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
 	}
 	return im.provider.ApplyChanges(ctx, filteredChanges)
+}
+
+// warnTXTOutsideZones reports ownership TXT records that the provider will drop
+// because they fall outside its zones: the record is then created but never
+// owned, so it is not updated or deleted later. Typical case: a zone apex with
+// the default TXT prefix.
+func warnTXTOutsideZones(zones endpoint.DomainFilterInterface, r *endpoint.Endpoint, txts []*endpoint.Endpoint) {
+	if !zones.Match(r.DNSName) {
+		return
+	}
+	for _, txt := range txts {
+		if !zones.Match(txt.DNSName) {
+			log.Warnf("Ownership TXT record %q for %q is outside the provider zones and will not be created, so %q will not be owned. "+
+				"For a zone apex, use a --txt-prefix with %%{record_type} that ends with a dot.", txt.DNSName, r.DNSName, r.DNSName)
+		}
+	}
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
