@@ -91,6 +91,61 @@ ExternalDNS propagates request context to all outbound calls. When the controlle
 - Handle abrupt connection drops gracefully — do not treat a cancelled request as a reason to roll back partially applied changes without verifying state first.
 - Respond within the deadline configured by `--webhook-provider-read-timeout` and `--webhook-provider-write-timeout` (default values apply when unset). Long-running DNS API calls should have their own internal timeout shorter than the ExternalDNS deadline.
 
+### Graceful shutdown
+
+Go webhook providers using `provider/webhook/api` can call
+`StartHTTPApiWithContext` with their process lifecycle context. Cancellation stops
+accepting connections and waits for active requests to finish. `ShutdownTimeout`
+bounds that wait (30 seconds when non-positive); on timeout, remaining HTTP
+connections are closed and the function returns an error wrapping
+`context.DeadlineExceeded`. Normal cancellation returns `nil`.
+
+This complete example uses an in-memory provider; replace it with your provider:
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
+
+    "sigs.k8s.io/external-dns/provider/inmemory"
+    "sigs.k8s.io/external-dns/provider/webhook/api"
+)
+
+func main() {
+    if err := run(); err != nil {
+        log.Fatal(err)
+    }
+}
+
+func run() error {
+    ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+    defer stop()
+    return api.StartHTTPApiWithContext(ctx, api.ServerOptions{
+        Provider:          inmemory.NewInMemoryProvider(),
+        ProviderPort:      "127.0.0.1:8888",
+        ReadTimeout:       5 * time.Second,
+        WriteTimeout:      10 * time.Second,
+        ReadHeaderTimeout: 5 * time.Second,
+        IdleTimeout:       30 * time.Second,
+        ShutdownTimeout:   10 * time.Second,
+        MaxBodySize:       32 << 20,
+    })
+}
+```
+
+The existing `StartHTTPApi(opts)` entry point remains available and keeps its
+background-context behavior. The built-in `--webhook-server` mode uses the
+SIGTERM context and the default 30-second drain timeout. Set the pod's termination
+grace period longer than the drain timeout to leave time for process cleanup.
+Draining does not make DNS provider operations atomic; retain the connection-drop
+handling described above.
+
 ### Memory and goroutine hygiene
 
 - Close request bodies after reading them to avoid goroutine leaks on the webhook provider side.

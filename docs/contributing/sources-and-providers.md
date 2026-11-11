@@ -424,6 +424,14 @@ this provider does not manage), log at `debug` or `info` and return `nil`.
 Returning an error for an expected no-op inflates the soft-error metric or, as a
 hard error, crashes the controller.
 
+### Webhook server lifecycle
+
+Lifecycle cancellation should drain webhook requests rather than report a fatal
+serving error. Draining needs its own bounded context: passing the already
+canceled lifecycle context to `http.Server.Shutdown` aborts the wait immediately.
+Use `api.StartHTTPApiWithContext` for the shared server implementation; see
+[graceful shutdown](../tutorials/webhook-provider.md#graceful-shutdown).
+
 ## Provider Blueprints
 
 The `provider/blueprint` package contains reusable building blocks for provider
