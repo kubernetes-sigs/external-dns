@@ -188,7 +188,7 @@ spec:
             - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
             - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
             - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
-         env:
+          env:
             - name: CF_API_KEY
               valueFrom:
                 secretKeyRef:
