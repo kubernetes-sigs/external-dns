@@ -1735,6 +1735,36 @@ func TestClusterIpServices(t *testing.T) {
 			noPublishInternal: true,
 			expected:          []*endpoint.Endpoint{},
 		},
+		{
+			title:        "hostname and internal-hostname annotated ClusterIp services with externalIPs split targets",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				annotations.HostnameKey:         "foo.example.org.",
+				annotations.InternalHostnameKey: "foo.internal.example.org.",
+			},
+			clusterIP:         "1.2.3.4",
+			externalIPs:       []string{"10.2.3.4"},
+			noPublishInternal: true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4"}},
+				{DNSName: "foo.internal.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:             "FQDN template ClusterIp services with externalIPs return an endpoint with the external IPs",
+			svcNamespace:      "testing",
+			svcName:           "foo",
+			svcType:           v1.ServiceTypeClusterIP,
+			fqdnTemplate:      "{{.Name}}.example.org",
+			clusterIP:         "1.2.3.4",
+			externalIPs:       []string{"10.2.3.4"},
+			noPublishInternal: true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4"}},
+			},
+		},
 	} {
 
 		t.Run(tc.title, func(t *testing.T) {
