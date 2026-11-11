@@ -6,6 +6,8 @@
 
 ### DNSEndpoint
 
+DNSEndpoint declares DNS records for external-dns to publish.
+
 <table>
   <thead>
     <tr><th>Name</th><th>Type</th><th>Description</th><th>Required</th></tr>
@@ -27,7 +29,7 @@
       <td>object</td>
       <td>
         DNSEndpointStatus defines the observed state of DNSEndpoint
-        <br/><i>Default</i>: map[]
+        <br/><i>Default</i>: <code>{}</code>
       </td>
       <td>false</td>
     </tr>
@@ -50,6 +52,12 @@ DNSEndpointSpec defines the desired state of DNSEndpoint
       <td>[]object</td>
       <td>
         Endpoints is the list of DNS records this resource declares.
+        <br/><i>Item validation</i>: <code>self.recordType != &#39;SRV&#39; || !has(self.targets) || self.targets.all(t, t.endsWith(&#39;.&#39;))</code>
+        <br/><i>Message</i>: SRV targets must be &#39;&lt;priority&gt; &lt;weight&gt; &lt;port&gt; &lt;host&gt;&#39; with an absolute host, e.g. &#39;10 5 5060 sip.example.com.&#39;
+        <br/><i>Item validation</i>: <code>self.recordType != &#39;NAPTR&#39; || !has(self.targets) || self.targets.all(t, t.endsWith(&#39;.&#39;))</code>
+        <br/><i>Message</i>: NAPTR targets must be absolute and end with a dot
+        <br/><i>Item validation</i>: <code>self.recordType != &#39;PTR&#39; || self.dnsName.lowerAscii().endsWith(&#39;.in-addr.arpa&#39;) || self.dnsName.lowerAscii().endsWith(&#39;.ip6.arpa&#39;)</code>
+        <br/><i>Message</i>: PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. &#39;1.0.0.10.in-addr.arpa&#39;
         <br/><i>Max items</i>: 1000
       </td>
       <td>false</td>
@@ -77,6 +85,7 @@ written as an absolute name with a trailing dot.
         <br/><i>Validation</i>: <code>self.size() &lt;= (self.endsWith(&#39;.&#39;) ? 254 : 253)</code>
         <br/><i>Message</i>: dnsName must be at most 253 characters, or 254 including the trailing dot
         <br/><i>Pattern</i>: <code>^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$</code>
+        <br/><i>Min length</i>: 1
         <br/><i>Max length</i>: 254
       </td>
       <td>true</td>
@@ -159,6 +168,7 @@ ProviderSpecificProperty holds the name and value of a configuration which is sp
       <td>
         Name of the provider-specific property. Accepted names are provider
 dependent; see the tutorial for the provider in use.
+        <br/><i>Min length</i>: 1
         <br/><i>Max length</i>: 253
       </td>
       <td>true</td>
@@ -193,7 +203,7 @@ DNSEndpointStatus defines the observed state of DNSEndpoint
         Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
 and PartiallyInvalid (some endpoints were dropped).
 They start as Accepted=Unknown (Pending) until external-dns reads the object.
-        <br/><i>Default</i>: [map[lastTransitionTime:1970-01-01T00:00:00Z message:Waiting for external-dns reason:Pending status:Unknown type:Accepted]]
+        <br/><i>Default</i>: <code>[{&#34;lastTransitionTime&#34;:&#34;1970-01-01T00:00:00Z&#34;,&#34;message&#34;:&#34;Waiting for external-dns&#34;,&#34;reason&#34;:&#34;Pending&#34;,&#34;status&#34;:&#34;Unknown&#34;,&#34;type&#34;:&#34;Accepted&#34;}]</code>
       </td>
       <td>false</td>
     </tr>
@@ -250,6 +260,7 @@ and whether the values are considered a guaranteed API.
 The value should be a CamelCase string.
 This field may not be empty.
         <br/><i>Pattern</i>: <code>^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$</code>
+        <br/><i>Min length</i>: 1
         <br/><i>Max length</i>: 1024
       </td>
       <td>true</td>
@@ -365,6 +376,7 @@ written as an absolute name with a trailing dot.
         <br/><i>Validation</i>: <code>self.size() &lt;= (self.endsWith(&#39;.&#39;) ? 254 : 253)</code>
         <br/><i>Message</i>: dnsName must be at most 253 characters, or 254 including the trailing dot
         <br/><i>Pattern</i>: <code>^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$</code>
+        <br/><i>Min length</i>: 1
         <br/><i>Max length</i>: 254
       </td>
       <td>true</td>
@@ -447,6 +459,7 @@ ProviderSpecificProperty holds the name and value of a configuration which is sp
       <td>
         Name of the provider-specific property. Accepted names are provider
 dependent; see the tutorial for the provider in use.
+        <br/><i>Min length</i>: 1
         <br/><i>Max length</i>: 253
       </td>
       <td>true</td>
@@ -526,6 +539,7 @@ and whether the values are considered a guaranteed API.
 The value should be a CamelCase string.
 This field may not be empty.
         <br/><i>Pattern</i>: <code>^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$</code>
+        <br/><i>Min length</i>: 1
         <br/><i>Max length</i>: 1024
       </td>
       <td>true</td>

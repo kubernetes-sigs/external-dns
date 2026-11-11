@@ -38,6 +38,11 @@
         <br/><i>Validation</i>: <code>{{ .Rule | html }}</code>
         <br/><i>Message</i>: {{ .Message | html }}
 {{- end }}
+{{- with .Schema.Items }}{{ with .Schema }}
+{{- range .XValidations }}
+        <br/><i>Item validation</i>: <code>{{ .Rule | html }}</code>
+        <br/><i>Message</i>: {{ .Message | html }}
+{{- end }}{{ end }}{{ end }}
 {{- if .Schema.Format }}
         <br/><i>Format</i>: {{ .Schema.Format }}
 {{- end }}
@@ -48,13 +53,16 @@
         <br/><i>Enum</i>: {{ .Schema.Enum | toStrings | join ", " }}
 {{- end }}
 {{- if .Schema.Default }}
-        <br/><i>Default</i>: {{ .Schema.Default | html }}
+        <br/><i>Default</i>: <code>{{ .Schema.Default | toJson | html }}</code>
 {{- end }}
 {{- if .Schema.Minimum }}
         <br/><i>Minimum</i>: {{ .Schema.Minimum | int64 }}
 {{- end }}
 {{- if .Schema.Maximum }}
         <br/><i>Maximum</i>: {{ .Schema.Maximum | int64 }}
+{{- end }}
+{{- if .Schema.MinLength }}
+        <br/><i>Min length</i>: {{ .Schema.MinLength | int64 }}
 {{- end }}
 {{- if .Schema.MaxLength }}
         <br/><i>Max length</i>: {{ .Schema.MaxLength | int64 }}

@@ -24,6 +24,7 @@ spec:
       name: v1alpha1
       schema:
         openAPIV3Schema:
+          description: DNSEndpoint declares DNS records for external-dns to publish.
           properties:
             apiVersion:
               description: |-

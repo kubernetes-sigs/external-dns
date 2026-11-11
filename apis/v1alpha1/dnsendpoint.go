@@ -37,6 +37,8 @@ const (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// DNSEndpoint declares DNS records for external-dns to publish.
 // +k8s:openapi-gen=true
 // +groupName=externaldns.k8s.io
 // +kubebuilder:resource:path=dnsendpoints
