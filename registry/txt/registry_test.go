@@ -1777,6 +1777,53 @@ func (zoneFilterProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return endpoint.NewDomainFilter([]string{testZone})
 }
 
+func TestRecordsSkipsForceUpdateForTXTOutsideZones(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		dns         string
+		forceUpdate bool
+	}{
+		{name: "apex", dns: testZone},
+		{name: "subdomain", dns: "foo." + testZone, forceUpdate: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+			// Legacy-format TXT at the record name: ownership resolves, the new-format TXT is missing.
+			require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					newEndpointWithOwner(tc.dns, "1.2.3.4", endpoint.RecordTypeA, ""),
+					newEndpointWithOwner(tc.dns, "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+				},
+			}))
+			r, err := newRegistry(zoneFilterProvider{p}, "", "", "owner", 0, "", []string{endpoint.RecordTypeA}, nil, false, nil, "")
+			require.NoError(t, err)
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			for range 2 {
+				records, err := r.Records(t.Context())
+				require.NoError(t, err)
+				for _, ep := range records {
+					if ep.RecordType != endpoint.RecordTypeA {
+						continue
+					}
+					assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
+					_, forced := ep.GetProviderSpecificProperty(providerSpecificForceUpdate)
+					assert.Equal(t, tc.forceUpdate, forced)
+				}
+			}
+
+			warnings := 0
+			for _, e := range hook.AllEntries() {
+				if strings.Contains(e.Message, "is outside the provider zones") {
+					warnings++
+				}
+			}
+			assert.Equal(t, map[bool]int{true: 0, false: 1}[tc.forceUpdate], warnings)
+		})
+	}
+}
+
 func TestApplyChangesWarnsTXTOutsideZones(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
