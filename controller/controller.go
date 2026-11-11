@@ -100,12 +100,15 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	sourceEndpointsTotal.Gauge.Set(float64(len(sourceEndpoints)))
 
 	countAddressRecords(sourceEndpoints, sourceRecords)
-	countMatchingAddressRecords(sourceEndpoints, regRecords, verifiedRecords)
 
 	endpoints, err := c.Registry.AdjustEndpoints(sourceEndpoints)
 	if err != nil {
 		return fmt.Errorf("adjusting endpoints: %w", err)
 	}
+	// After AdjustEndpoints: a provider can change the record type it writes,
+	// such as AWS turning a CNAME to an ELB into an alias A record, and the
+	// registry reports the type that the provider wrote.
+	countMatchingAddressRecords(endpoints, regRecords, verifiedRecords)
 	registryFilter := c.Registry.GetDomainFilter()
 
 	plan := &plan.Plan{
