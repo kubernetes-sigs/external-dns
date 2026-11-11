@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1799,6 +1800,7 @@ func TestRecordsSkipsForceUpdateForTXTOutsideZones(t *testing.T) {
 			r, err := newRegistry(zoneFilterProvider{p}, "", "", "owner", 0, "", []string{endpoint.RecordTypeA}, nil, false, nil, "")
 			require.NoError(t, err)
 			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			before := testutil.ToFloat64(txtOutsideZonesTotal.Counter)
 
 			for range 2 {
 				records, err := r.Records(t.Context())
@@ -1820,6 +1822,8 @@ func TestRecordsSkipsForceUpdateForTXTOutsideZones(t *testing.T) {
 				}
 			}
 			assert.Equal(t, map[bool]int{true: 0, false: 1}[tc.forceUpdate], warnings)
+			// Counted on every sync, unlike the warning.
+			assert.InDelta(t, map[bool]float64{true: 0, false: 2}[tc.forceUpdate], testutil.ToFloat64(txtOutsideZonesTotal.Counter)-before, 0)
 		})
 	}
 }

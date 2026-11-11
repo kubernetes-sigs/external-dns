@@ -471,6 +471,7 @@ func (im *TXTRegistry) txtOutsideZones(zones endpoint.DomainFilterInterface, dns
 	if !zones.Match(dnsName) || zones.Match(txtName) {
 		return false
 	}
+	txtOutsideZonesTotal.Counter.Inc()
 	if !im.outsideZonesWarned.Has(txtName) {
 		im.outsideZonesWarned.Insert(txtName)
 		log.Warnf("Ownership TXT record %q for %q is outside the provider zones, so the provider cannot create it. "+
