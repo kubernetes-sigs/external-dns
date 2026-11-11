@@ -150,6 +150,9 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // When several endpoints merge into one, the endpoint with the lowest resource label keeps its
 // scalar metadata (TTL, ProviderSpecific, Labels, ...), or the first in input order when none has one.
 // RefObjects from all of them are accumulated, so the merged record references every source object that contributed to it.
+//
+// The result is ordered by resource label (unlabelled last), then input order, so a wrapper that
+// keeps the first of several labelled endpoints (dedupSource) does not depend on informer order.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
@@ -159,6 +162,7 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	slices.SortStableFunc(endpoints, compareResource)
 
 	endpointMap := make(map[EndpointKey]*Endpoint)
+	result := make([]*Endpoint, 0, len(endpoints))
 	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
 
 	for _, ep := range endpoints {
@@ -190,14 +194,13 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			}
 		} else {
 			endpointMap[key] = ep
+			result = append(result, ep)
 		}
 	}
 
-	result := make([]*Endpoint, 0, len(endpointMap))
-	for _, ep := range endpointMap {
+	for _, ep := range result {
 		slices.Sort(ep.Targets)
 		ep.Targets = slices.Compact(ep.Targets)
-		result = append(result, ep)
 	}
 
 	return result
