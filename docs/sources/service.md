@@ -79,6 +79,7 @@ or the `--publish-host-ip` flag was specified, uses the Pod's `status.hostIP` fi
 or the `--publish-internal-services` flag was specified, uses the `spec.ClusterIP`.
 
 2. Otherwise, if the Service has one or more `spec.externalIPs`, uses the values in that field.
+This also applies to names from `--fqdn-template`, so every matching Service with `spec.externalIPs` gets records.
 
 3. Otherwise, does not create any targets.
 
