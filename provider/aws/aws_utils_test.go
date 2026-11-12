@@ -103,17 +103,14 @@ func NewRoute53APIFixtureStub(zones *HostedZones) *Route53APIFixtureStub {
 }
 
 func (r Route53APIFixtureStub) ListResourceRecordSets(_ context.Context, _ *route53.ListResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
-	// TODO implement me
 	panic("implement me")
 }
 
 func (r Route53APIFixtureStub) ChangeResourceRecordSets(_ context.Context, _ *route53.ChangeResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error) {
-	// TODO implement me
 	panic("implement me")
 }
 
 func (r Route53APIFixtureStub) CreateHostedZone(_ context.Context, _ *route53.CreateHostedZoneInput, _ ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error) {
-	// TODO implement me
 	panic("implement me")
 }
 
