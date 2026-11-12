@@ -186,8 +186,8 @@ spec:
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
             - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
-            - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
-            - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
+            - --cloudflare-region-key=eu # (optional) configure which region can decrypt HTTPS requests
+            - "--cloudflare-record-comment=provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
           env:
             - name: CF_API_KEY
               valueFrom:
@@ -268,8 +268,8 @@ spec:
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
             - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
-            - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
-            - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
+            - --cloudflare-region-key=eu # (optional) configure which region can decrypt HTTPS requests
+            - "--cloudflare-record-comment=provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
           env:
             - name: CF_API_KEY
               valueFrom:

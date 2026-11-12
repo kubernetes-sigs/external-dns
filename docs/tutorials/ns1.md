@@ -57,7 +57,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 
 Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
 
-```shell
+```yaml
 provider:
   name: ns1
 env:
