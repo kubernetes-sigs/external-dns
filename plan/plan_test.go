@@ -1190,3 +1190,138 @@ func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 	}
 	suite.False(changes.HasChanges())
 }
+
+func resourceTestEndpoint(resource, owner string) *endpoint.Endpoint {
+	ep := &endpoint.Endpoint{
+		DNSName:    "app.example.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+	}
+	if resource == "" && owner == "" {
+		return ep
+	}
+	ep.Labels = map[string]string{}
+	if resource != "" {
+		ep.Labels[endpoint.ResourceLabelKey] = resource
+	}
+	if owner != "" {
+		ep.Labels[endpoint.OwnerLabelKey] = owner
+	}
+	return ep
+}
+
+func resourceTestPlan(ownerID string, current, desired *endpoint.Endpoint) *Plan {
+	return &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		OwnerID:        ownerID,
+	}
+}
+
+func (suite *PlanTestSuite) TestResourceLabelNoopRegistryNeverPlansChanges() {
+	const (
+		svc = "service/default/a"
+		ing = "ingress/default/b"
+	)
+	tests := []struct {
+		name            string
+		currentResource string
+		desiredResource string
+	}{
+		{
+			name:            "current record has no resource label while desired has one",
+			currentResource: "",
+			desiredResource: svc,
+		},
+		{
+			name:            "neither current nor desired record has a resource label",
+			currentResource: "",
+			desiredResource: "",
+		},
+		{
+			name:            "current and desired records have different resource labels",
+			currentResource: svc,
+			desiredResource: ing,
+		},
+		{
+			name:            "current record has a resource label while desired has none",
+			currentResource: svc,
+			desiredResource: "",
+		},
+	}
+	for i := range tests {
+		tc := tests[i]
+		suite.Run(tc.name, func() {
+			current := resourceTestEndpoint(tc.currentResource, "")
+			desired := resourceTestEndpoint(tc.desiredResource, "")
+
+			changes := resourceTestPlan("", current, desired).Calculate().Changes
+			suite.False(changes.HasChanges())
+		})
+	}
+}
+
+func (suite *PlanTestSuite) TestResourceLabelWithOwnerFollowsSelectedSource() {
+	const (
+		owner = "pwner"
+		svc   = "service/default/a"
+		ing   = "ingress/default/b"
+	)
+	tests := []struct {
+		name            string
+		currentResource string
+		desiredResource string
+		wantUpdate      bool
+	}{
+		{
+			name:            "current record has no resource label (pod/gloo) while desired is a service",
+			currentResource: "",
+			desiredResource: svc,
+			wantUpdate:      true,
+		},
+		{
+			name:            "current record is owned by an ingress while desired has no resource label (pod/gloo)",
+			currentResource: ing,
+			desiredResource: "",
+			wantUpdate:      true,
+		},
+		{
+			name:            "current record is owned by a service while desired is an ingress",
+			currentResource: svc,
+			desiredResource: ing,
+			wantUpdate:      true,
+		},
+		{
+			name:            "current and desired records have the same resource label",
+			currentResource: svc,
+			desiredResource: svc,
+			wantUpdate:      false,
+		},
+		{
+			name:            "neither current nor desired record has a resource label (pod/gloo)",
+			currentResource: "",
+			desiredResource: "",
+			wantUpdate:      false,
+		},
+	}
+	for i := range tests {
+		tc := tests[i]
+		suite.Run(tc.name, func() {
+			current := resourceTestEndpoint(tc.currentResource, owner)
+			desired := resourceTestEndpoint(tc.desiredResource, "")
+
+			changes := resourceTestPlan(owner, current, desired).Calculate().Changes
+			validateEntries(suite.T(), changes.Create, nil)
+			validateEntries(suite.T(), changes.Delete, nil)
+			if !tc.wantUpdate {
+				suite.False(changes.HasChanges())
+				return
+			}
+			expectedNew := resourceTestEndpoint(tc.desiredResource, owner)
+			validateEntries(suite.T(), changes.UpdateOld, []*endpoint.Endpoint{current})
+			validateEntries(suite.T(), changes.UpdateNew, []*endpoint.Endpoint{expectedNew})
+		})
+	}
+}
