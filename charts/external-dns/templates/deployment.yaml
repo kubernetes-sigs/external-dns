@@ -238,6 +238,41 @@ spec:
           {{- end }}
         {{- end }}
         {{- end }}
+        {{- if has "webhook" .Values.sources }}
+        {{- with .Values.webhookSource }}
+        - name: webhook-source
+          image: {{ include "external-dns.webhookSourceImage" . }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          {{- with .env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http-source
+              protocol: TCP
+              containerPort: 8081
+          livenessProbe:
+            {{- toYaml .livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .readinessProbe | nindent 12 }}
+          {{- with .extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
       volumes:
         {{- if .Values.secretConfiguration.enabled }}

@@ -1,0 +1,62 @@
+suite: ServiceMonitor configuration
+set:
+  policy: upsert-only
+  serviceMonitor:
+    enabled: true
+templates:
+  - servicemonitor.yaml
+release:
+  namespace: default
+tests:
+  - it: should scrape only the external-dns endpoint by default
+    asserts:
+      - isKind:
+          of: ServiceMonitor
+      - lengthEqual:
+          path: spec.endpoints
+          count: 1
+      - equal:
+          path: spec.endpoints[0].port
+          value: http
+
+  - it: should render nothing when the service monitor is disabled
+    set:
+      serviceMonitor:
+        enabled: false
+      sources:
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should add the webhook source endpoint when sources contains webhook
+    set:
+      sources:
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+        serviceMonitor:
+          interval: 30s
+          scrapeTimeout: 10s
+    asserts:
+      - lengthEqual:
+          path: spec.endpoints
+          count: 2
+      - equal:
+          path: spec.endpoints[1].port
+          value: http-source
+      - equal:
+          path: spec.endpoints[1].path
+          value: /metrics
+      - equal:
+          path: spec.endpoints[1].interval
+          value: 30s
+      - equal:
+          path: spec.endpoints[1].scrapeTimeout
+          value: 10s

@@ -106,6 +106,18 @@ The image to use for optional webhook sidecar
 {{- end }}
 
 {{/*
+The image to use for the optional webhook source sidecar
+*/}}
+{{- define "external-dns.webhookSourceImage" -}}
+{{- with .image }}
+{{- if or (empty .repository) (empty .tag) }}
+{{- fail "ERROR: webhook source needs an image repository and a tag" }}
+{{- end }}
+{{- printf "%s:%s" .repository .tag }}
+{{- end }}
+{{- end }}
+
+{{/*
 The pod affinity default label Selector
 */}}
 {{- define "external-dns.labelSelector" -}}
