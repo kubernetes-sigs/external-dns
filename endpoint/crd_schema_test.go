@@ -19,6 +19,7 @@ package endpoint
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,19 +28,26 @@ import (
 )
 
 // The chart copies are included because they are what users install.
-var crdManifests = []string{
-	"../config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml",
-	"../config/crd/standard/dnsrecords.externaldns.k8s.io.yaml",
-	"../charts/external-dns/crds/dnsendpoints.externaldns.k8s.io.yaml",
-	"../charts/external-dns/crds/dnsrecords.externaldns.k8s.io.yaml",
+var crdManifests = []struct {
+	path  string
+	chart bool
+}{
+	{"../config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml", false},
+	{"../config/crd/standard/dnsrecords.externaldns.k8s.io.yaml", false},
+	{"../charts/external-dns/crds/dnsendpoints.externaldns.k8s.io.yaml", true},
+	{"../charts/external-dns/crds/dnsrecords.externaldns.k8s.io.yaml", true},
 }
+
+// chartPendingRecordTypes are in KnownRecordTypes but not yet in the chart CRDs, which follow
+// the release (dev-guide.md). Empty it in the `make crd-chart` PR.
+var chartPendingRecordTypes = []string{RecordTypeCAA}
 
 // validate-crd.yml cannot catch this drift: it only checks that `make crd` is a
 // no-op, and a stale hand-written marker regenerates cleanly.
 func TestRecordTypeEnumMatchesKnownRecordTypes(t *testing.T) {
 	for _, manifest := range crdManifests {
-		t.Run(filepath.Base(filepath.Dir(manifest))+"/"+filepath.Base(manifest), func(t *testing.T) {
-			raw, err := os.ReadFile(manifest)
+		t.Run(filepath.Base(filepath.Dir(manifest.path))+"/"+filepath.Base(manifest.path), func(t *testing.T) {
+			raw, err := os.ReadFile(manifest.path)
 			require.NoError(t, err)
 
 			var crd map[string]any
@@ -48,9 +56,15 @@ func TestRecordTypeEnumMatchesKnownRecordTypes(t *testing.T) {
 			enums := findRecordTypeEnums(crd)
 			require.NotEmpty(t, enums, "no recordType enum found; the schema layout changed and this test no longer checks anything")
 
+			want := KnownRecordTypes
+			if manifest.chart {
+				want = slices.DeleteFunc(slices.Clone(KnownRecordTypes), func(rt string) bool {
+					return slices.Contains(chartPendingRecordTypes, rt)
+				})
+			}
 			for _, enum := range enums {
-				assert.ElementsMatch(t, KnownRecordTypes, enum,
-					"recordType enum differs from KnownRecordTypes; update the Enum marker on Endpoint.RecordType and run `make crd`")
+				assert.ElementsMatch(t, want, enum,
+					"recordType enum differs from KnownRecordTypes; update the Enum marker on Endpoint.RecordType and run `make crd`, or chartPendingRecordTypes after `make crd-chart`")
 			}
 		})
 	}
