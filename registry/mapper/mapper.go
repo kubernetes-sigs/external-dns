@@ -55,6 +55,7 @@ var (
 		endpoint.RecordTypeTXT,
 		endpoint.RecordTypeDNAME,
 		endpoint.RecordTypeTLSA,
+		endpoint.RecordTypeCAA,
 	}
 )
 

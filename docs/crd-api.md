@@ -95,7 +95,7 @@ written as an absolute name with a trailing dot.
       <td>enum</td>
       <td>
         RecordType is the DNS record type.
-        <br/><i>Enum</i>: A, AAAA, CNAME, DNAME, MX, NAPTR, NS, PTR, SRV, TLSA, TXT
+        <br/><i>Enum</i>: A, AAAA, CAA, CNAME, DNAME, MX, NAPTR, NS, PTR, SRV, TLSA, TXT
       </td>
       <td>true</td>
     </tr>
@@ -386,7 +386,7 @@ written as an absolute name with a trailing dot.
       <td>enum</td>
       <td>
         RecordType is the DNS record type.
-        <br/><i>Enum</i>: A, AAAA, CNAME, DNAME, MX, NAPTR, NS, PTR, SRV, TLSA, TXT
+        <br/><i>Enum</i>: A, AAAA, CAA, CNAME, DNAME, MX, NAPTR, NS, PTR, SRV, TLSA, TXT
       </td>
       <td>true</td>
     </tr>
