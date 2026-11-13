@@ -55,7 +55,7 @@ licensecheck:
 
 #? lint: Run all the linters
 .PHONY: lint
-lint: licensecheck go-lint validate-json-yaml webhook-deps
+lint: licensecheck go-lint validate-json-yaml webhook-deps openapi-lint
 
 #? webhook-deps: Check webhook-facing packages stay free of the Kubernetes client stack
 .PHONY: webhook-deps
@@ -66,6 +66,11 @@ webhook-deps:
 .PHONY: validate-json-yaml
 validate-json-yaml:
 	bash scripts/validate-json-yaml.sh
+
+#? openapi-lint: Lint the OpenAPI documents in api/ with the rules in .vacuum.yaml
+.PHONY: openapi-lint
+openapi-lint:
+	go tool -modfile=go.tool.mod vacuum lint --ruleset .vacuum.yaml --fail-severity warn --details --no-banner --no-update-check api/*.yaml
 
 #? crd: Generates CRD using controller-gen
 .PHONY: crd

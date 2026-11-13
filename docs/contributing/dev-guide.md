@@ -22,7 +22,6 @@ Building and/or testing `external-dns` requires additional tooling.
 - [ko](https://ko.build/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
 - [helm](https://helm.sh/docs/helm/helm_install/)
-- [spectral](https://github.com/stoplightio/spectral)
 - [python](https://www.python.org/downloads/)
 
 ### Go Tools
@@ -34,6 +33,7 @@ Additional Go-based tools are managed in `go.tool.mod` and used for code generat
 | [controller-gen](https://github.com/kubernetes-sigs/controller-tools) | Generates CRD manifests and deepcopy methods       |
 | [yq](https://github.com/mikefarah/yq)                                 | YAML processing (splitting, filtering CRD outputs) |
 | [yamlfmt](https://github.com/google/yamlfmt)                          | YAML formatting                                    |
+| [vacuum](https://github.com/daveshanley/vacuum)                       | Lints the OpenAPI documents (`make openapi-lint`)  |
 
 List all installed Go tools:
 
