@@ -151,8 +151,8 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // scalar metadata (TTL, ProviderSpecific, Labels, ...), or the first in input order when none has one.
 // RefObjects from all of them are accumulated, so the merged record references every source object that contributed to it.
 //
-// The result is ordered by resource label (unlabelled last), then input order, so a wrapper that
-// keeps the first of several labelled endpoints (dedupSource) does not depend on informer order.
+// The result is ordered by resource label (unlabelled last), then input order:
+// dedupSource keeps the first duplicate, so this order picks the winner.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints

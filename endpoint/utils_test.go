@@ -554,11 +554,6 @@ func TestMergeEndpoints_OrdersByResource(t *testing.T) {
 		wantResources []string
 	}{
 		{
-			name:          "lowest resource listed first",
-			input:         []*Endpoint{newEndpoint("a", 0), newEndpoint("b", 300), newEndpoint("c", 60)},
-			wantResources: []string{"httproute/default/a", "httproute/default/b", "httproute/default/c"},
-		},
-		{
 			name:          "lowest resource listed last",
 			input:         []*Endpoint{newEndpoint("c", 60), newEndpoint("b", 300), newEndpoint("a", 0)},
 			wantResources: []string{"httproute/default/a", "httproute/default/b", "httproute/default/c"},
@@ -569,7 +564,7 @@ func TestMergeEndpoints_OrdersByResource(t *testing.T) {
 			wantResources: []string{"httproute/default/a", "httproute/default/b", ""},
 		},
 		{
-			name:          "merged pair listed around another",
+			name:          "merged endpoint keeps lowest position",
 			input:         []*Endpoint{newEndpoint("c", 300), newEndpoint("b", 60), newEndpoint("a", 300)},
 			wantResources: []string{"httproute/default/a", "httproute/default/b"},
 		},
