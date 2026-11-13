@@ -2570,3 +2570,159 @@ func TestTXTRegistryRecordsForceUpdateOnMigrationWithEncryption(t *testing.T) {
 		})
 	}
 }
+
+// TestOwnerIDMigration_IdenticalDataRecord is a regression test for issue #6671.
+//
+// When --migrate-from-txt-owner is set and the data record (A/CNAME) is
+// otherwise identical (same name, same target, same TTL), the plan must still
+// emit an update so that the companion TXT record is rewritten from the old
+// owner ID to the new one. Before the fix, Records() mutated the owner label
+// in place but did not set providerSpecificForceUpdate, so providerSpecificChanged
+// returned false, and the plan silently dropped the update — leaving the TXT
+// record permanently stale.
+func TestOwnerIDMigration_IdenticalDataRecord(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+
+	// Seed the zone: one A record owned by "old-owner".
+	oldOwnerRegistry, err := newRegistry(p, "%{record_type}-", "", "old-owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	require.NoError(t, oldOwnerRegistry.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "old-owner"),
+		},
+	}))
+
+	// Capture what ApplyChanges receives so we can inspect the TXT companion.
+	var appliedChanges *plan.Changes
+	p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
+		appliedChanges = changes
+	}
+
+	// Create a registry with new-owner migrating from old-owner.
+	newOwnerRegistry, err := newRegistry(p, "%{record_type}-", "", "new-owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "old-owner")
+	require.NoError(t, err)
+
+	// Records() should re-label the endpoint with new-owner and set forceUpdate.
+	current, err := newOwnerRegistry.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1, "Records should return the one A record")
+
+	// The desired state is identical to current (same name, same target) —
+	// this is the exact scenario from issue #6671. Sources never set an owner
+	// label on desired endpoints, so leave it empty to match the real flow.
+	desired := []*endpoint.Endpoint{
+		newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ""),
+	}
+
+	managedRecords := []string{endpoint.RecordTypeA}
+	pl := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: managedRecords,
+		OwnerID:        "new-owner",
+	}
+	pln := pl.Calculate()
+
+	// The plan must emit an update even though the data record is identical.
+	require.NotEmpty(t, pln.Changes.UpdateNew, "plan must emit an update to migrate the TXT owner")
+	require.True(t, pln.Changes.HasChanges(), "controller only applies changes when HasChanges() is true")
+
+	require.NoError(t, newOwnerRegistry.ApplyChanges(ctx, pln.Changes))
+
+	// After ApplyChanges, the TXT companion in UpdateNew must carry new-owner.
+	require.NotNil(t, appliedChanges, "ApplyChanges must have been called")
+	newTXT := findEndpoint(appliedChanges.UpdateNew, "a-bar.test-zone.example.org", endpoint.RecordTypeTXT)
+	require.NotNil(t, newTXT, "TXT companion must appear in UpdateNew")
+	assert.Contains(t, newTXT.Targets[0], "new-owner", "TXT must carry new-owner after migration")
+	assert.NotContains(t, newTXT.Targets[0], "old-owner", "TXT must not retain old-owner after migration")
+
+	// A second sync must converge: the stored TXT now carries new-owner, so the
+	// marker must not fire again. HasChanges() alone is not enough because an
+	// identical update pair also reports false, so UpdateNew is checked too.
+	current, err = newOwnerRegistry.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	pln = (&plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: managedRecords,
+		OwnerID:        "new-owner",
+	}).Calculate()
+	assert.False(t, pln.Changes.HasChanges(), "second sync must not report changes")
+	assert.Empty(t, pln.Changes.UpdateNew, "second sync must not emit updates")
+}
+
+// TestOwnerIDMigration_OnlyOldOwnerRecordUpdated checks that, with both an
+// old-owner record and a new-owner record in the zone, only the old-owner
+// record is updated by the migration.
+func TestOwnerIDMigration_OnlyOldOwnerRecordUpdated(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	for _, seed := range []struct{ name, owner string }{
+		{"old.test-zone.example.org", "old-owner"},
+		{"new.test-zone.example.org", "new-owner"},
+	} {
+		r, err := newRegistry(p, "%{record_type}-", "", seed.owner, 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "")
+		require.NoError(t, err)
+		require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{
+			Create: []*endpoint.Endpoint{newEndpointWithOwner(seed.name, "1.2.3.4", endpoint.RecordTypeA, seed.owner)},
+		}))
+	}
+
+	reg, err := newRegistry(p, "%{record_type}-", "", "new-owner", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "old-owner")
+	require.NoError(t, err)
+	current, err := reg.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 2)
+
+	desired := []*endpoint.Endpoint{
+		newEndpointWithOwner("old.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ""),
+		newEndpointWithOwner("new.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ""),
+	}
+	pln := (&plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA},
+		OwnerID:        "new-owner",
+	}).Calculate()
+	require.Len(t, pln.Changes.UpdateNew, 1, "only the old-owner record must be updated")
+	assert.Equal(t, "old.test-zone.example.org", pln.Changes.UpdateNew[0].DNSName)
+}
+
+// TestOwnerIDMigration_SameOwnerIDConverges guards against a migration loop when
+// --migrate-from-txt-owner equals --txt-owner-id. No record needs migrating in
+// that case, so every sync must report no changes.
+func TestOwnerIDMigration_SameOwnerIDConverges(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	reg, err := newRegistry(p, "%{record_type}-", "", "default", 0, "", []string{endpoint.RecordTypeA}, []string{}, false, nil, "default")
+	require.NoError(t, err)
+	require.NoError(t, reg.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "default"),
+		},
+	}))
+
+	for i := 1; i <= 3; i++ {
+		current, err := reg.Records(ctx)
+		require.NoError(t, err)
+		require.Len(t, current, 1)
+		pln := (&plan.Plan{
+			Policies:       []plan.Policy{&plan.SyncPolicy{}},
+			Current:        current,
+			Desired:        []*endpoint.Endpoint{newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "")},
+			ManagedRecords: []string{endpoint.RecordTypeA},
+			OwnerID:        "default",
+		}).Calculate()
+		require.False(t, pln.Changes.HasChanges(), "sync %d must not report changes", i)
+		require.Empty(t, pln.Changes.UpdateNew, "sync %d must not emit updates", i)
+		require.NoError(t, reg.ApplyChanges(ctx, pln.Changes))
+	}
+}
