@@ -111,6 +111,37 @@ func TestTXTRegistry_Records_ProviderError(t *testing.T) {
 	require.ErrorIs(t, err, assert.AnError)
 }
 
+type failedApplyProvider struct {
+	provider.BaseProvider
+	recordsCalls int
+}
+
+func (p *failedApplyProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	p.recordsCalls++
+	return nil, nil
+}
+
+func (p *failedApplyProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error {
+	return assert.AnError
+}
+
+func TestTXTRegistryFailedApplyInvalidatesRecordsCache(t *testing.T) {
+	p := &failedApplyProvider{}
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{endpoint.RecordTypeA}, nil, false, nil, "")
+	require.NoError(t, err)
+	_, err = r.Records(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, p.recordsCalls)
+
+	ep := endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeA, "192.0.2.1")
+	require.ErrorIs(t, r.ApplyChanges(t.Context(), &plan.Changes{Create: []*endpoint.Endpoint{ep}}), assert.AnError)
+	require.Nil(t, r.recordsCache)
+	records, err := r.Records(t.Context())
+	require.NoError(t, err)
+	require.Empty(t, records)
+	require.Equal(t, 2, p.recordsCalls)
+}
+
 func TestTXTRegistry_OwnerID(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	r, err := newRegistry(p, "", "", "my-owner", time.Hour, "", []string{}, []string{}, false, nil, "")
