@@ -40,9 +40,9 @@ type PerResource struct{}
 // ResolveCreate is invoked when dns name is not owned by any resource
 // ResolveCreate takes "minimal" (string comparison of Target) endpoint to acquire the DNS record
 func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint {
-	kept := slices.MinFunc(candidates, compareEndpoints)
-	warnConflictingAliasTargets(candidates, kept)
-	return kept
+	selected := slices.MinFunc(candidates, compareEndpoints)
+	warnCNAMEConflict(candidates, selected)
+	return selected
 }
 
 // ResolveUpdate is invoked when dns name is already owned by "current" endpoint
@@ -53,20 +53,20 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 	slices.SortStableFunc(candidates, compareEndpoints)
 	for _, ep := range candidates {
 		if ep.Labels[endpoint.ResourceLabelKey] == currentResource {
-			warnConflictingAliasTargets(candidates, ep)
+			warnCNAMEConflict(candidates, ep)
 			return ep
 		}
 	}
 	return s.ResolveCreate(candidates)
 }
 
-func warnConflictingAliasTargets(candidates []*endpoint.Endpoint, kept *endpoint.Endpoint) {
-	if kept.RecordType != endpoint.RecordTypeCNAME && kept.RecordType != endpoint.RecordTypeDNAME {
+func warnCNAMEConflict(candidates []*endpoint.Endpoint, selected *endpoint.Endpoint) {
+	if selected.RecordType != endpoint.RecordTypeCNAME && selected.RecordType != endpoint.RecordTypeDNAME {
 		return
 	}
 	discarded := make([]string, 0, len(candidates)-1)
 	for _, candidate := range candidates {
-		if candidate == kept || slices.Clone(candidate.Targets).Same(slices.Clone(kept.Targets)) {
+		if candidate == selected || candidate.Targets.Same(selected.Targets) {
 			continue
 		}
 		discarded = append(discarded, fmt.Sprintf("%s (%s)",
@@ -79,7 +79,7 @@ func warnConflictingAliasTargets(candidates []*endpoint.Endpoint, kept *endpoint
 	// This runs after the plan's domain/record filters; MergeEndpoints sees unfiltered, per-source endpoints (#6529).
 	// TODO: add metric for CNAME/DNAME conflicts
 	log.Warnf("Domain %s has conflicting %s targets; selected %s (%s), discarded %s",
-		kept.DNSName, kept.RecordType, kept.Targets.String(), kept.Labels[endpoint.ResourceLabelKey], strings.Join(discarded, ", "))
+		selected.DNSName, selected.RecordType, selected.Targets.String(), selected.Labels[endpoint.ResourceLabelKey], strings.Join(discarded, ", "))
 }
 
 // ResolveRecordTypes attempts to detect and resolve record type conflicts in desired

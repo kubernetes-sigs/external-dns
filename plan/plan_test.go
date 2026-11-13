@@ -1063,7 +1063,7 @@ func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }
 
-func TestCalculateAliasTargetConflicts(t *testing.T) {
+func TestCalculateCNAMEConflicts(t *testing.T) {
 	endpointFor := func(name, recordType, target, resource, setIdentifier string) *endpoint.Endpoint {
 		ep := endpoint.NewEndpoint(name, recordType, target)
 		if resource != "" {
@@ -1143,12 +1143,12 @@ func TestCalculateAliasTargetConflicts(t *testing.T) {
 			},
 		},
 		{
-			name:           "unmanaged aliases are ignored",
+			name:           "unmanaged CNAMEs are ignored",
 			desired:        []*endpoint.Endpoint{caseA, caseB},
 			managedRecords: []string{endpoint.RecordTypeA},
 		},
 		{
-			name:           "excluded aliases are ignored",
+			name:           "excluded CNAMEs are ignored",
 			desired:        []*endpoint.Endpoint{caseA, caseB},
 			managedRecords: []string{endpoint.RecordTypeCNAME},
 			excludeRecords: []string{endpoint.RecordTypeCNAME},
