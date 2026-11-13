@@ -20,6 +20,14 @@ listener has a `hostname`, it narrows the set of domain names from the \*Route t
 that overlaps the `hostname`. If a matching listener does not have a `hostname`, it uses
 the un-narrowed set of domain names.
 
+The exception is a \*Route annotated with
+`external-dns.kubernetes.io/gateway-hostname-source: annotation-only`: its annotation hostnames
+name DNS records rather than routed hosts, so they are not narrowed to the listener `hostname`
+and are published as written, wildcards included. The listener must still match and accept the \*Route.
+In the default mode, an annotation hostname outside every listener `hostname` publishes nothing
+(see [#6746](https://github.com/kubernetes-sigs/external-dns/pull/6746)), so `annotation-only` is the
+explicit way to publish such a hostname.
+
 ### Domain names from Route
 
 The set of domain names from a \*Route is sourced from the following places:

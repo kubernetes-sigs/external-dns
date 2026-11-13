@@ -523,7 +523,8 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 
 	match := false
 	gwHost := ""
-	if lis.Hostname != nil {
+	// The annotation names the DNS record, not a routed host, so don't match it against the listener.
+	if lis.Hostname != nil && !gwAnnotationOnly(rt) {
 		gwHost = string(*lis.Hostname)
 	}
 	for _, rtHost := range rtHosts {
@@ -825,6 +826,10 @@ func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentRefe
 		return true
 	}
 	return false
+}
+
+func gwAnnotationOnly(rt gatewayRoute) bool {
+	return strings.EqualFold(rt.Metadata().Annotations[annotations.GatewayHostnameSourceKey], gatewayHostnameSourceAnnotationOnlyValue)
 }
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {

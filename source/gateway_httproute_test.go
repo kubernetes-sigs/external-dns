@@ -2133,6 +2133,296 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: nil,
 		},
 		{
+			title:      "OnlyAnnotationHostNonMatchingListener",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("mywebsite.example.com")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "mywebsite.gtw.prod.example.com",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("mywebsite.example.com"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mywebsite.gtw.prod.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "OnlyAnnotationHostMixedCase",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("mywebsite.example.com")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "Annotation-Only",
+					annotations.HostnameKey:              "MyWebsite.GTW.Prod.Example.com",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("mywebsite.example.com"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mywebsite.gtw.prod.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			// An invalid value falls back to the default, which narrows the annotation to the listener.
+			title:      "InvalidSourceAnnotationNonMatchingListener",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("mywebsite.example.com")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation_only",
+					annotations.HostnameKey:              "mywebsite.gtw.prod.example.com",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("mywebsite.example.com"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("mywebsite.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			// The annotation is published as written, not narrowed to the listener hostname.
+			title:      "OnlyAnnotationWildcardHostNonWildcardListener",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("foo.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "*.example.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("*.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "OnlyAnnotationHostIPAddress",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("foo.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "1.2.3.4",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: nil,
+		},
+		{
+			title:      "OnlyAnnotationHostRouteNotAccepted",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("foo.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "app.other.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: rsWithoutAccepted(httpRouteStatus(gwParentRef("default", "test"))),
+			}},
+			endpoints: nil,
+		},
+		{
+			title:      "OnlyAnnotationHostSectionNameMatch",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:          "foo",
+							Protocol:      v1.HTTPProtocolType,
+							Hostname:      new(v1.Hostname("foo.example.internal")),
+							AllowedRoutes: allowCoreGroupHTTPRoute,
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "app.other.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("bar")),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test", withSectionName("bar"))),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("app.other.internal", "1.2.3.4"),
+			},
+		},
+		{
+			// annotation-only skips hostname matching, not the listener's allowedRoutes.
+			title:      "OnlyAnnotationHostSectionNameNotAllowed",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{
+						{
+							Name:          "foo",
+							Protocol:      v1.HTTPProtocolType,
+							Hostname:      new(v1.Hostname("foo.example.internal")),
+							AllowedRoutes: allowCoreGroupHTTPRoute,
+						},
+						{
+							Name:     "bar",
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("bar.example.internal")),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "app.other.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test", withSectionName("foo")),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test", withSectionName("foo"))),
+			}},
+			endpoints: nil,
+		},
+		{
 			title:      "InvalidSourceAnnotation",
 			config:     &config.Config{},
 			namespaces: namespaces("default"),
