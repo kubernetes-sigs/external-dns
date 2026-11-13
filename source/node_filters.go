@@ -46,9 +46,8 @@ func unschedulableReason(node *v1.Node) string {
 	return ""
 }
 
-// isExcludedFromLoadBalancers reports whether the Node is labeled to be kept out of load balancers
-// that use Nodes as a second hop, with the same rules as the cloud-provider service controller:
-// any value other than one that parses as false excludes the Node.
+// isExcludedFromLoadBalancers reports whether the Node has the exclude-from-external-load-balancers
+// label with a value that does not parse as false, like the cloud-provider service controller.
 func isExcludedFromLoadBalancers(node *v1.Node) bool {
 	value, ok := node.Labels[v1.LabelNodeExcludeBalancers]
 	if !ok {
@@ -58,8 +57,7 @@ func isExcludedFromLoadBalancers(node *v1.Node) bool {
 	return err != nil || exclude
 }
 
-// nodePortEventHandler calls handler when a Node is added or deleted, and when an update changes
-// something the NodePort targets depend on. Other updates, such as status reports, are ignored.
+// nodePortEventHandler calls handler on Node add and delete, and on updates that change NodePort targets.
 func nodePortEventHandler(handler func()) cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(_ any) { handler() },
