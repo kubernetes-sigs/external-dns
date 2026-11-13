@@ -105,9 +105,11 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 	endpoints := make([]*endpoint.Endpoint, 0, len(nodes))
 
 	for _, node := range nodes {
-		if node.Spec.Unschedulable && ns.excludeUnschedulable {
-			log.Debugf("Skipping node %s because it is unschedulable", node.Name)
-			continue
+		if ns.excludeUnschedulable {
+			if reason := unschedulableReason(node); reason != "" {
+				log.Debugf("Skipping node %s because it is %s", node.Name, reason)
+				continue
+			}
 		}
 
 		log.Debugf("creating endpoint for node %s", node.Name)
