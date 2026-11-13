@@ -177,10 +177,10 @@ are still published. The rejection is reported in the object's [status condition
 external-dns reports what it did with each `DNSEndpoint` on the object itself:
 
 ```console
-$ kubectl get dnsendpoint
-NAME               ACCEPTED   READY        AGE
-examplednsrecord   True       Programmed   2m
-otherdnsrecord     True       Filtered     2m
+$ kubectl get dnsendpoint -o wide
+NAME               ACCEPTED   READY   REASON       AGE
+examplednsrecord   True       True    Programmed   2m
+otherdnsrecord     True       False   Filtered     2m
 ```
 
 `Accepted` is set before any provider call; `Ready` reports what became of the records afterwards:

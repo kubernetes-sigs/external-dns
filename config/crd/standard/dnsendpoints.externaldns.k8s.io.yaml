@@ -18,8 +18,12 @@ spec:
         - jsonPath: .status.conditions[?(@.type=="Accepted")].status
           name: Accepted
           type: string
-        - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+        - jsonPath: .status.conditions[?(@.type=="Ready")].status
           name: Ready
+          type: string
+        - jsonPath: .status.conditions[?(@.type=="Ready")].reason
+          name: Reason
+          priority: 1
           type: string
         - jsonPath: .metadata.creationTimestamp
           name: Age
