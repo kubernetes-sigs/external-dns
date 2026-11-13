@@ -247,15 +247,13 @@ You have an option to chose from using the gcloud CLI or using Terraform.
 
 ### Restricting access to specific zones
 
-By default, ExternalDNS lists every managed zone in the project. That requires `dns.managedZones.list`, which can only be granted at project level (for example through `roles/dns.reader` above) and exposes the names of all zones in the project.
-
-To limit ExternalDNS to specific zones, set `--zone-id-filter` to each zone's exact name or numeric ID, and grant only a zone-level role such as `roles/dns.admin` on those zones (`google_dns_managed_zone_iam_member` above), without the project-level `roles/dns.reader`.
-ExternalDNS then looks up each zone with `dns.managedZones.get` instead of listing.
+Set `--zone-id-filter` to each zone's exact name or numeric ID and grant a zone-level role (`google_dns_managed_zone_iam_member` above) instead of project-level `roles/dns.reader`.
+ExternalDNS then uses `dns.managedZones.get` and does not need `dns.managedZones.list`, which exposes every zone name in the project.
 
 !!! warning "Change in zone ID matching"
-    `--zone-id-filter` values are matched as a suffix of the zone name or numeric ID, so `public` used to match both `public` and `prod-public`.
-    A value that is an exact zone name or ID now matches only that zone.
-    A value that matches no zone exactly (a suffix pattern such as `ernal-1`) still falls back to listing, keeps the old suffix behavior, and still needs `dns.managedZones.list`.
+    An exact zone name or ID now matches only that zone (`public` no longer also matches `prod-public`).
+    A suffix pattern that matches no zone exactly still lists all zones and needs `dns.managedZones.list`.
+    With only zone-level roles, Cloud DNS returns `403 Forbidden` (not `404`) for a value that is not an exact zone name or ID, so a typo or a suffix pattern shows up as a permission error.
 
 ### Worker Node Service Account method
 
