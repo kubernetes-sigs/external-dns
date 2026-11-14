@@ -919,11 +919,19 @@ func TestParseFlagsRFC2136AXFR(t *testing.T) {
 func TestParseFlagsTraefik(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t,
-		"--traefik-enable-legacy",
 		"--traefik-disable-new",
 	)
-	assert.True(t, cfg.TraefikEnableLegacy)
 	assert.True(t, cfg.TraefikDisableNew)
+}
+
+// The legacy traefik.containo.us listeners were removed together with the flag, so a
+// leftover --traefik-enable-legacy must fail as an unknown flag instead of being accepted
+// and silently doing nothing.
+func TestParseFlagsTraefikLegacyFlagIsRejected(t *testing.T) {
+	t.Parallel()
+	cfg := NewConfig()
+	err := cfg.ParseFlags([]string{"--provider=google", "--source=service", "--traefik-enable-legacy"})
+	require.ErrorContains(t, err, "unknown long flag '--traefik-enable-legacy'")
 }
 
 func TestParseFlagsTXTRegistry(t *testing.T) {
