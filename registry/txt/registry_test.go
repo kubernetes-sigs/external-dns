@@ -2570,3 +2570,39 @@ func TestTXTRegistryRecordsForceUpdateOnMigrationWithEncryption(t *testing.T) {
 		})
 	}
 }
+
+func TestTXTRegistryApplyChangesSkipsCreateWhenTXTNameOverflows(t *testing.T) {
+	ctx := t.Context()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+
+	// 63 characters: a valid label on its own, but "a-" pushes the TXT label to 65.
+	longName := "this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org"
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner(longName, "1.2.3.4", endpoint.RecordTypeA, ""),
+			newEndpointWithOwner("short.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ""),
+		},
+	}
+	expected := map[string][]*endpoint.Endpoint{
+		"Create": {
+			newEndpointWithOwner("short.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
+			newTXTEndpointWithOwnedRecord("a-short.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "short.test-zone.example.org"),
+		},
+	}
+	p.OnApplyChanges = func(_ context.Context, got *plan.Changes) {
+		assert.True(t, testutils.SamePlanChanges(map[string][]*endpoint.Endpoint{"Create": got.Create}, expected))
+	}
+
+	hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
+	require.NoError(t, r.ApplyChanges(ctx, changes))
+	logtest.TestHelperLogContains("Skipping creation of A "+longName, hook, t)
+
+	records, err := p.Records(ctx)
+	require.NoError(t, err)
+	for _, rec := range records {
+		assert.NotEqual(t, longName, rec.DNSName, "record without ownership TXT must not be created")
+	}
+}
