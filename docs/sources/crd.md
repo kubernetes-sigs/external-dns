@@ -174,22 +174,41 @@ are still published. The rejection is reported in the object's [status condition
 
 ### Status
 
-external-dns reports on each `DNSEndpoint` whether it understood the spec:
+external-dns reports what it did with each `DNSEndpoint` on the object itself:
 
 ```console
-$ kubectl get dnsendpoint
-NAME               ACCEPTED   AGE
-examplednsrecord   True       2m
+$ kubectl get dnsendpoint -o wide
+NAME               ACCEPTED   READY   REASON       AGE
+examplednsrecord   True       True    Programmed   2m
+otherdnsrecord     True       False   Filtered     2m
 ```
 
-| Condition          | Status    | Reason     | Meaning                                                                   |
-|--------------------|-----------|------------|---------------------------------------------------------------------------|
-| `Accepted`         | `Unknown` | `Pending`  | No external-dns instance has read the object yet.                         |
-| `Accepted`         | `True`    | `Accepted` | At least one endpoint was understood and is planned.                      |
-| `Accepted`         | `False`   | `Invalid`  | Every endpoint was refused; the message names each index and the fix.     |
-| `PartiallyInvalid` | `True`    | `Invalid`  | Some endpoints were dropped and the others are planned. Absent otherwise. |
+`Accepted` is set before any provider call; `Ready` reports what became of the records afterwards:
 
-`Accepted` is set before any provider call: it does not tell if the records exist.
+| Condition          | Status    | Reason       | Meaning                                                                   |
+|--------------------|-----------|--------------|---------------------------------------------------------------------------|
+| `Accepted`         | `Unknown` | `Pending`    | No external-dns instance has read the object yet.                         |
+| `Accepted`         | `True`    | `Accepted`   | At least one endpoint was understood and is planned.                      |
+| `Accepted`         | `False`   | `Invalid`    | Every endpoint was refused; the message names each index and the fix.     |
+| `PartiallyInvalid` | `True`    | `Invalid`    | Some endpoints were dropped and the others are planned. Absent otherwise. |
+| `Ready`            | `True`    | `Programmed` | The DNS provider applied the records.                                     |
+| `Ready`            | `False`   | `Failed`     | The provider rejected the batch; the message carries its error.           |
+| `Ready`            | `False`   | `Filtered`   | No endpoint reached the provider: `--domain-filter`, `--managed-record-types` or another `--txt-owner-id` excluded them all. |
+| `Ready`            | `Unknown` | `DryRun`     | The endpoints were planned, but `--dry-run` kept them from the provider.  |
+
+`status.observedGeneration` tracks the last `spec` external-dns processed.
+Conditions are refreshed on every sync but only written when they change, so a
+steady-state `DNSEndpoint` costs no API writes. When no endpoint is accepted, `Ready` is removed.
+
+Limits:
+
+* `Ready` is per sync, not per resource: a failed batch marks every `DNSEndpoint`
+  with a change in that batch `Failed`. The message carries the provider's error
+  verbatim, which may name records from other namespaces, so treat it as visible
+  to anyone who can read a `DNSEndpoint`.
+* One external-dns instance per `DNSEndpoint`. Instances sharing an object (e.g. split
+  only by `--domain-filter`) overwrite each other's conditions; separate them with
+  `--namespace`, `--label-filter` or `--annotation-filter`.
 
 ### Using CRD source to manage DNS records in different DNS providers
 
