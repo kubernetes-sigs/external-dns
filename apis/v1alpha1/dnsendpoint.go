@@ -38,8 +38,7 @@ const (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// DNSEndpoint is a contract that a user-specified CRD must implement to be used as a source for external-dns.
-// The user-specified CRD should also have the status sub-resource.
+// DNSEndpoint declares DNS records for external-dns to publish.
 // +k8s:openapi-gen=true
 // +groupName=externaldns.k8s.io
 // +kubebuilder:resource:path=dnsendpoints
