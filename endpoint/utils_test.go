@@ -539,6 +539,52 @@ func TestMergeEndpoints_KeepsLowestResource(t *testing.T) {
 	}
 }
 
+func TestMergeEndpoints_OrdersByResource(t *testing.T) {
+	newEndpoint := func(resource string, ttl TTL) *Endpoint {
+		ep := NewEndpointWithTTL("app.example.com", RecordTypeA, ttl, "192.0.2.1")
+		if resource != "" {
+			ep.WithLabel(ResourceLabelKey, "httproute/default/"+resource)
+		}
+		return ep
+	}
+
+	tests := []struct {
+		name          string
+		input         []*Endpoint
+		wantResources []string
+	}{
+		{
+			name:          "lowest resource listed last",
+			input:         []*Endpoint{newEndpoint("c", 60), newEndpoint("b", 300), newEndpoint("a", 0)},
+			wantResources: []string{"httproute/default/a", "httproute/default/b", "httproute/default/c"},
+		},
+		{
+			name:          "unlabelled listed first",
+			input:         []*Endpoint{newEndpoint("", 60), newEndpoint("b", 300), newEndpoint("a", 0)},
+			wantResources: []string{"httproute/default/a", "httproute/default/b", ""},
+		},
+		{
+			name:          "merged endpoint keeps lowest position",
+			input:         []*Endpoint{newEndpoint("c", 300), newEndpoint("b", 60), newEndpoint("a", 300)},
+			wantResources: []string{"httproute/default/a", "httproute/default/b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Map iteration order is random, repeat to catch a result built from it.
+			for range 50 {
+				result := MergeEndpoints(tt.input)
+				resources := make([]string, len(result))
+				for i, ep := range result {
+					resources[i] = ep.Labels[ResourceLabelKey]
+				}
+				assert.Equal(t, tt.wantResources, resources)
+			}
+		})
+	}
+}
+
 func TestMergeEndpointsLogging(t *testing.T) {
 	t.Run("warns on CNAME conflict", func(t *testing.T) {
 		hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
