@@ -123,6 +123,19 @@ This produces `3 × 10 = 30` endpoints in total, with each `A` and `AAAA` record
 
 > **Note:** Multiple domains add volume but not predictability — names are still random and change on every reconciliation. If your integration test needs a stable, known set of records, use `DNSEndpoint` resources with `--source=crd` instead.
 
+## Exact records with target templates
+
+`--fqdn-template` output is a domain-suffix list for the random records. Only `--target-template` and `--fqdn-target-template` produce exact records, rendered once against the same synthetic `Pod` and added alongside the random ones:
+
+```console
+external-dns --source=fake --provider=webhook --webhook-provider-url=http://localhost:8888 \
+  --fqdn-template=my-company.com \
+  --target-template=lb.my-company.net \
+  --fqdn-target-template=api.my-company.com:192.0.2.10
+```
+
+This adds `api.my-company.com A 192.0.2.10`. Without `--combine-fqdn-annotation` the `host:target` pairs take precedence, so `my-company.com CNAME lb.my-company.net` is added only when `--fqdn-target-template` is unset or combining is enabled.
+
 ## Limitations
 
 - Endpoints are regenerated with random names on every reconciliation; the fake source does not model resource updates or deletions.

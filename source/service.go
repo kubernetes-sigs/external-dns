@@ -236,15 +236,12 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 			}
 		}
 
-		// fqdn-target template: explicit name:target pairs.
-		// fqdn template: name from template, target from service (LB/ClusterIP/ExternalName).
-		svcEndpoints, err = sc.templateEngine.ApplyFQDNTargetTemplate(svcEndpoints, svc)
-		if err != nil {
-			return nil, err
-		}
-		svcEndpoints, err = sc.templateEngine.CombineWithEndpoints(
+		svcEndpoints, err = sc.templateEngine.Apply(
 			svcEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(svc) },
+			svc,
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(svc, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -503,20 +500,16 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 	return endpoints
 }
 
-func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(svc)
-	if err != nil {
-		return nil, err
-	}
-
+// Non-empty templateTargets win over the resource's own targets.
+func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, hostnames []string, templateTargets endpoint.Targets) []*endpoint.Endpoint {
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false, templateTargets)...)
 	}
 
-	return endpoints, nil
+	return endpoints
 }
 
 // endpointsFromService extracts the endpoints from a service object
@@ -534,25 +527,27 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 
 	hostnameList = annotations.HostnamesFromAnnotations(svc.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false, nil)...)
 	}
 
 	internalHostnameList = annotations.InternalHostnamesFromAnnotations(svc.Annotations)
 	for _, hostname := range internalHostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true, nil)...)
 	}
 
 	return endpoints
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool, targets endpoint.Targets) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
 
 	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
 
-	targets := annotations.TargetsFromTargetAnnotation(svc.Annotations)
+	if len(targets) == 0 {
+		targets = annotations.TargetsFromTargetAnnotation(svc.Annotations)
+	}
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 

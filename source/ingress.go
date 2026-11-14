@@ -143,10 +143,19 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	for _, ing := range ingresses {
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
+		ingTargets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
+		if len(ingTargets) == 0 {
+			ingTargets = targetsFromIngressStatus(ing.Status)
+		}
+
 		// apply template if host is missing on ingress
-		ingEndpoints, err = sc.templateEngine.CombineWithEndpoints(
+		ingEndpoints, err = sc.templateEngine.Apply(
 			ingEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+			ing,
+			template.WithResourceTargets(ingTargets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(ing, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -165,20 +174,10 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(ing)
-	if err != nil {
-		return nil, err
-	}
-
+func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
@@ -186,7 +185,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return endpoints
 }
 
 // filterByIngressClass filters a list of ingresses based on a required ingress

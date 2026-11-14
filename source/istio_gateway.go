@@ -153,15 +153,15 @@ func (sc *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		// apply template if host is missing on gateway
-		gwEndpoints, err = sc.templateEngine.CombineWithEndpoints(
+		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
-			func() ([]*endpoint.Endpoint, error) {
-				hostnames, err := sc.templateEngine.ExecFQDN(gateway)
-				if err != nil {
-					return nil, err
+			gateway,
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				if len(targets) > 0 {
+					return sc.endpointsForHostnames(hostnames, targets, gateway), nil
 				}
 				return sc.endpointsFromGateway(hostnames, gateway)
-			},
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -250,15 +250,19 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *netwo
 		return endpoints, nil
 	}
 
+	return sc.endpointsForHostnames(hostnames, targets, gateway), nil
+}
+
+func (sc *gatewaySource) endpointsForHostnames(hostnames []string, targets endpoint.Targets, gateway *networkingv1.Gateway) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 	ttl := annotations.TTLFromAnnotations(gateway.Annotations, resource)
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(gateway.Annotations)
 
+	var endpoints []*endpoint.Endpoint
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-
-	return endpoints, nil
+	return endpoints
 }
 
 func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1.Gateway) []string {

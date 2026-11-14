@@ -118,6 +118,14 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
+			title:          "target-template replaces node addresses for fqdn-template hostnames",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: nodeName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
 			title:        "fqdn-template expansion with multiple domains",
 			fqdnTemplate: "{{.Name}}.domainA.com,{{.Name}}.domainB.com",
 			nodes: []*v1.Node{
@@ -370,6 +378,39 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			endpoints, err := src.Endpoints(t.Context())
 			require.NoError(t, err)
 			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+// Node targets are resolved before Apply, so a node without addresses fails even when templates supply targets.
+func TestNodeFQDNTemplateRequiresNodeAddress(t *testing.T) {
+	for _, tt := range []struct {
+		title              string
+		targetTemplate     string
+		fqdnTargetTemplate string
+	}{
+		{
+			title:          "with target-template",
+			targetTemplate: "lb.example.com",
+		},
+		{
+			title:              "with fqdn-target-template pairs",
+			fqdnTargetTemplate: "{{.Name}}.pair.example.com:1.2.3.4",
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &v1.Node{Name: "no-address"}, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewNodeSource(t.Context(), kubeClient, &config.Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.example.com", tt.targetTemplate, tt.fqdnTargetTemplate, false),
+				LabelFilter:    labels.Everything(),
+			})
+			require.NoError(t, err)
+
+			_, err = src.Endpoints(t.Context())
+			require.ErrorContains(t, err, "failed to get node address from no-address")
 		})
 	}
 }

@@ -164,9 +164,12 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		// apply template if host is missing on VirtualService
-		gwEndpoints, err = sc.templateEngine.CombineWithEndpoints(
+		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ctx, vService) },
+			vService,
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(ctx, vService, hostnames, targets)
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -229,12 +232,8 @@ func (sc *virtualServiceSource) lookupGateway(namespace, name string) (*networki
 	return gatewayInformer.Lister().Gateways(namespace).Get(name)
 }
 
-func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1.VirtualService) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(virtualService)
-	if err != nil {
-		return nil, err
-	}
-
+// Non-empty templateTargets win over the per-host gateway targets.
+func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1.VirtualService, hostnames []string, templateTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
 
 	ttl := annotations.TTLFromAnnotations(virtualService.Annotations, resource)
@@ -243,9 +242,13 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
-		if err != nil {
-			return endpoints, err
+		targets := templateTargets
+		if len(targets) == 0 {
+			var err error
+			targets, err = sc.targetsFromVirtualService(ctx, virtualService, hostname)
+			if err != nil {
+				return endpoints, err
+			}
 		}
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}

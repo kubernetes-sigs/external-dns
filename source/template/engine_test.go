@@ -675,7 +675,7 @@ func TestCombineWithEndpoints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.engine.CombineWithEndpoints(
+			got, err := tt.engine.combineWithEndpoints(
 				tt.endpoints,
 				tt.templateFunc,
 			)
@@ -685,6 +685,118 @@ func TestCombineWithEndpoints(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestApply(t *testing.T) {
+	const resourceTarget = "10.0.0.1"
+	svc := &corev1.Service{
+		Name: "svc", Namespace: "ns",
+	}
+	existingEndpoints := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+	}
+
+	tests := []struct {
+		name               string
+		fqdnTemplate       string
+		targetTemplate     string
+		fqdnTargetTemplate string
+		combine            bool
+		existing           []*endpoint.Endpoint
+		wantBuildCalled    bool
+		wantBuildTargets   []string
+		want               []*endpoint.Endpoint
+		wantErr            string
+	}{
+		{
+			name:               "fqdn-target template generates pairs without calling build",
+			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("svc.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+			},
+		},
+		{
+			name:             "target template output is passed to build",
+			fqdnTemplate:     "{{.Name}}.example.com",
+			targetTemplate:   "lb.example.com",
+			wantBuildCalled:  true,
+			wantBuildTargets: []string{"lb.example.com"},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("svc.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			name:             "without target template build receives resource targets",
+			fqdnTemplate:     "{{.Name}}.example.com",
+			wantBuildCalled:  true,
+			wantBuildTargets: []string{resourceTarget},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("svc.example.com", endpoint.RecordTypeA, resourceTarget),
+			},
+		},
+		{
+			name:           "target template alone has no hostnames so build is not called",
+			targetTemplate: "lb.example.com",
+			existing:       existingEndpoints,
+			want:           existingEndpoints,
+		},
+		{
+			name:         "existing endpoints without combine skip the template passes",
+			fqdnTemplate: "{{.Name}}.example.com",
+			existing:     existingEndpoints,
+			want:         existingEndpoints,
+		},
+		{
+			name:               "combine appends fqdn-target and fqdn template endpoints",
+			fqdnTemplate:       "{{.Name}}.tmpl.example.com",
+			targetTemplate:     "lb.example.com",
+			fqdnTargetTemplate: "{{.Name}}.pair.example.com:5.6.7.8",
+			combine:            true,
+			existing:           existingEndpoints,
+			wantBuildCalled:    true,
+			wantBuildTargets:   []string{"lb.example.com"},
+			want: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("annotation.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				endpoint.NewEndpoint("svc.pair.example.com", endpoint.RecordTypeA, "5.6.7.8"),
+				endpoint.NewEndpoint("svc.tmpl.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			name:           "target template execution error is propagated",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "{{ .Spec.address }}",
+			wantErr:        "can't evaluate field address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine, err := NewEngine([]string{tt.fqdnTemplate}, []string{tt.targetTemplate}, []string{tt.fqdnTargetTemplate}, tt.combine)
+			require.NoError(t, err)
+
+			buildCalled := false
+			var buildTargets []string
+			build := func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				buildCalled = true
+				buildTargets = targets
+				return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
+			}
+
+			got, err := engine.Apply(tt.existing, svc,
+				WithResourceTargets([]string{resourceTarget}),
+				WithEndpointBuilder(build),
+			)
+			assert.Equal(t, tt.wantBuildCalled, buildCalled)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Empty(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantBuildTargets, buildTargets)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -838,7 +950,7 @@ func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 		engine, err := NewEngine([]string{"{{ .Name }}.example.com"}, []string{"{{ .Spec.address }}"}, nil, false)
 		require.NoError(t, err)
 
-		eps, err := engine.ApplyTemplates(nil, svc)
+		eps, err := engine.Apply(nil, svc)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "can't evaluate field address")
@@ -851,7 +963,7 @@ func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 		engine, err := NewEngine(nil, nil, []string{"{{ .Name }}.example.com:{{ .Spec.address }}"}, false)
 		require.NoError(t, err)
 
-		eps, err := engine.ApplyFQDNTargetTemplate(nil, svc)
+		eps, err := engine.Apply(nil, svc)
 
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "can't evaluate field address")

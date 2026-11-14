@@ -124,8 +124,7 @@ func (e Engine) ExecFQDN(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdn, obj)
 }
 
-// CombineWithEndpoints merges annotation-based endpoints with template-based endpoints.
-func (e Engine) CombineWithEndpoints(
+func (e Engine) combineWithEndpoints(
 	endpoints []*endpoint.Endpoint,
 	templateFunc func() ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
@@ -148,27 +147,66 @@ func (e Engine) CombineWithEndpoints(
 	return templatedEndpoints, nil
 }
 
-// ApplyFQDNTargetTemplate combines existing endpoints with those derived from the fqdn-target
-// template (host:target pairs). Used standalone by sources whose second template pass derives
-// targets from the resource itself (pod IPs, service ClusterIP, node addresses).
-func (e Engine) ApplyFQDNTargetTemplate(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
-	return e.CombineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
-		return e.endpointsFromFQDNTargetTemplate(obj)
-	})
+// EndpointBuilder renders hostnames and targets into source-specific endpoints,
+// stamping resource, TTL, ProviderSpecific and SetIdentifier.
+type EndpointBuilder func(hostnames, targets []string) ([]*endpoint.Endpoint, error)
+
+type applyConfig struct {
+	resourceTargets []string
+	build           EndpointBuilder
 }
 
-// ApplyTemplates runs both template passes in sequence — fqdn-target first, then
-// fqdn+target — returning the combined result. Use this for sources where the template
-// itself provides the DNS target (gloo, traefik, f5, unstructured). Sources that derive
-// targets from the resource (pod, service, node) call ApplyFQDNTargetTemplate and then
-// their own resource-specific CombineWithEndpoints.
-func (e Engine) ApplyTemplates(existing []*endpoint.Endpoint, obj kubeObject) ([]*endpoint.Endpoint, error) {
-	eps, err := e.ApplyFQDNTargetTemplate(existing, obj)
+// ApplyOption configures a single Engine.Apply call.
+type ApplyOption func(*applyConfig)
+
+// WithResourceTargets sets the fallback targets passed to the EndpointBuilder when
+// --target-template produces no output. Target-template output wins over these.
+func WithResourceTargets(targets []string) ApplyOption {
+	return func(c *applyConfig) { c.resourceTargets = targets }
+}
+
+// WithEndpointBuilder overrides the function that turns rendered hostnames+targets
+// into endpoints. The default builder wraps endpoint.EndpointsForHostsAndTargets,
+// which is enough for sources that carry no per-record metadata.
+func WithEndpointBuilder(b EndpointBuilder) ApplyOption {
+	return func(c *applyConfig) { c.build = b }
+}
+
+// Apply runs the fqdn-target pass, then fqdn+target via the configured EndpointBuilder;
+// target-template output wins over any WithResourceTargets value.
+func (e Engine) Apply(
+	existing []*endpoint.Endpoint,
+	obj kubeObject,
+	opts ...ApplyOption,
+) ([]*endpoint.Endpoint, error) {
+	cfg := applyConfig{
+		build: func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+			return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
+		},
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	eps, err := e.combineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
+		return e.endpointsFromFQDNTargetTemplate(obj)
+	})
 	if err != nil {
 		return nil, err
 	}
-	return e.CombineWithEndpoints(eps, func() ([]*endpoint.Endpoint, error) {
-		return e.endpointsFromTemplate(obj)
+	return e.combineWithEndpoints(eps, func() ([]*endpoint.Endpoint, error) {
+		hostnames, err := e.ExecFQDN(obj)
+		if err != nil || len(hostnames) == 0 {
+			return nil, err
+		}
+		targets, err := e.execTarget(obj)
+		if err != nil {
+			return nil, err
+		}
+		if len(targets) == 0 {
+			targets = cfg.resourceTargets
+		}
+		return cfg.build(hostnames, targets)
 	})
 }
 
@@ -204,18 +242,6 @@ func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.End
 		eps = append(eps, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
 	}
 	return endpoint.MergeEndpoints(eps), nil
-}
-
-func (e Engine) endpointsFromTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
-	hostnames, err := e.ExecFQDN(obj)
-	if err != nil || len(hostnames) == 0 {
-		return nil, err
-	}
-	targets, err := e.execTarget(obj)
-	if err != nil {
-		return nil, err
-	}
-	return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
 }
 
 func validateAndParse(templates []string, flag string) (*template.Template, error) {

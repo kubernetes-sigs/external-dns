@@ -45,8 +45,9 @@ import (
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=false
 type fakeSource struct {
-	dnsNames []string
-	rand     *rand.Rand
+	dnsNames          []string
+	templateEndpoints []*endpoint.Endpoint
+	rand              *rand.Rand
 }
 
 const (
@@ -77,8 +78,13 @@ func NewFakeSource(cfg *config.Config) (Source, error) {
 			dnsNames = hostnames
 		}
 	}
+	// fqdn-template output stays the suffix list above; only template-supplied targets yield exact records.
+	templateEndpoints, err := cfg.TemplateEngine.Apply(nil, &fakePod)
+	if err != nil {
+		return nil, fmt.Errorf("rendering templates: %w", err)
+	}
 	rand := rand.New(rand.NewSource(9673))
-	return &fakeSource{dnsNames: dnsNames, rand: rand}, nil
+	return &fakeSource{dnsNames: dnsNames, templateEndpoints: templateEndpoints, rand: rand}, nil
 }
 
 func (sc *fakeSource) AddEventHandler(_ context.Context, _ func()) {
@@ -98,6 +104,10 @@ func (sc *fakeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 				endpoints = append(endpoints, ep)
 			}
 		}
+	}
+	// Copy so downstream mutation cannot leak into later calls.
+	for _, ep := range sc.templateEndpoints {
+		endpoints = append(endpoints, ep.DeepCopy())
 	}
 	return endpoint.MergeEndpoints(endpoints), nil
 }
