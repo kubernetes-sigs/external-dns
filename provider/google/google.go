@@ -68,20 +68,8 @@ type resourceRecordSetsService struct {
 	service *dns.ResourceRecordSetsService
 }
 
-func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
-	return r.service.List(project, managedZone)
-}
-
 type managedZonesService struct {
 	service *dns.ManagedZonesService
-}
-
-func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
-	return m.service.Create(project, managedzone)
-}
-
-func (m managedZonesService) List(project string) managedZonesListCallInterface {
-	return m.service.List(project)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
@@ -109,6 +97,18 @@ type GoogleProvider struct {
 	changesService *dns.ChangesService
 	// The context parameter to be passed for gcloud API calls.
 	ctx context.Context
+}
+
+func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
+	return r.service.List(project, managedZone)
+}
+
+func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
+	return m.service.Create(project, managedzone)
+}
+
+func (m managedZonesService) List(project string) managedZonesListCallInterface {
+	return m.service.List(project)
 }
 
 // New creates a Google Cloud DNS provider from the given configuration.

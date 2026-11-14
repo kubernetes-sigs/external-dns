@@ -40,6 +40,22 @@ type mockScalewayDomain struct {
 	*domain.API
 }
 
+// countingScalewayDomain counts the calls to ListDNSZones to assert on the zone cache.
+type countingScalewayDomain struct {
+	mockScalewayDomain
+	listDNSZonesCalls int
+}
+
+type failingScalewayDomain struct {
+	mockScalewayDomain
+}
+
+// mockScalewayDomainAliasAndCNAME serves a zone holding an ALIAS and a CNAME record
+// with the same name, which ExternalDNS never creates but a user can.
+type mockScalewayDomainAliasAndCNAME struct {
+	*domain.API
+}
+
 func (m *mockScalewayDomain) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
 	return &domain.ListDNSZonesResponse{
 		DNSZones: []*domain.DNSZone{
@@ -425,19 +441,9 @@ func TestScalewayProvider_Zones(t *testing.T) {
 	assert.Contains(t, apexNames, "test.example.com")
 }
 
-// countingScalewayDomain counts the calls to ListDNSZones to assert on the zone cache.
-type countingScalewayDomain struct {
-	mockScalewayDomain
-	listDNSZonesCalls int
-}
-
 func (m *countingScalewayDomain) ListDNSZones(req *domain.ListDNSZonesRequest, opts ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
 	m.listDNSZonesCalls++
 	return m.mockScalewayDomain.ListDNSZones(req, opts...)
-}
-
-type failingScalewayDomain struct {
-	mockScalewayDomain
 }
 
 func (m *failingScalewayDomain) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {
@@ -582,12 +588,6 @@ func TestScalewayProvider_Records(t *testing.T) {
 		}
 		assert.True(t, found)
 	}
-}
-
-// mockScalewayDomainAliasAndCNAME serves a zone holding an ALIAS and a CNAME record
-// with the same name, which ExternalDNS never creates but a user can.
-type mockScalewayDomainAliasAndCNAME struct {
-	*domain.API
 }
 
 func (m *mockScalewayDomainAliasAndCNAME) ListDNSZones(_ *domain.ListDNSZonesRequest, _ ...scw.RequestOption) (*domain.ListDNSZonesResponse, error) {

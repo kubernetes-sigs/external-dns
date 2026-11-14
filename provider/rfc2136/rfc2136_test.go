@@ -43,6 +43,11 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+const (
+	txtDMARC    = "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
+	txtRegistry = "heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.foo.com"
+)
+
 type rfc2136Stub struct {
 	output                []*dns.Envelope
 	updateMsgs            []*dns.Msg
@@ -54,6 +59,31 @@ type rfc2136Stub struct {
 	loadBalancingStrategy string
 	m                     *dns.Msg
 	sendCount             int
+}
+
+// Test stub that simulates nameserver connection failures
+type failingRfc2136Stub struct {
+	rfc2136Stub
+}
+
+// axfrEnvelopeErrorStub returns a valid envelope followed by an error envelope.
+type axfrEnvelopeErrorStub struct {
+	rfc2136Stub
+}
+
+// axfrFailoverStub fails the first nameserver with an error envelope, then
+// serves a clean transfer from the second.
+type axfrFailoverStub struct {
+	rfc2136Stub
+	calls int
+}
+
+// axfrTsigStripStub drops the TSIG RR like dns.TsigGenerateWithProvider does,
+// and fails the first nameserver to force a second attempt.
+type axfrTsigStripStub struct {
+	rfc2136Stub
+	calls  int
+	signed []bool
 }
 
 func TestFindMsgZone(t *testing.T) {
@@ -143,34 +173,6 @@ func newStubLB(strategy string, nameservers []string) *rfc2136Stub {
 	}
 }
 
-func (r *rfc2136Stub) getNextNameserver() string {
-	if len(r.nameservers) == 1 {
-		return r.nameservers[0]
-	}
-
-	switch r.loadBalancingStrategy {
-	case "random":
-		return r.nameservers[r.randGen.Intn(len(r.nameservers))]
-	case "round-robin":
-		nameserver := r.nameservers[r.counter]
-		r.counter = (r.counter + 1) % len(r.nameservers)
-
-		return nameserver
-	default:
-		return r.nameservers[0]
-	}
-}
-
-func getSortedChanges(msgs []*dns.Msg) []string {
-	r := []string{}
-	for _, d := range msgs {
-		// only care about section after the ZONE SECTION: as the id: needs stripped out in order to sort and grantee the order when sorting
-		r = append(r, strings.Split(d.String(), "ZONE SECTION:")[1])
-	}
-	sort.Strings(r)
-	return r
-}
-
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 	r.sendCount++
 	r.lastNameserver = r.getNextNameserver()
@@ -207,18 +209,14 @@ func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 	return nil
 }
 
-func (r *rfc2136Stub) setOutput(output []string) error {
-	r.output = make([]*dns.Envelope, len(output))
-	for i, e := range output {
-		rr, err := dns.NewRR(e)
-		if err != nil {
-			return err
-		}
-		r.output[i] = &dns.Envelope{
-			RR: []dns.RR{rr},
-		}
+func getSortedChanges(msgs []*dns.Msg) []string {
+	r := []string{}
+	for _, d := range msgs {
+		// only care about section after the ZONE SECTION: as the id: needs stripped out in order to sort and grantee the order when sorting
+		r = append(r, strings.Split(d.String(), "ZONE SECTION:")[1])
 	}
-	return nil
+	sort.Strings(r)
+	return r
 }
 
 func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
@@ -249,6 +247,38 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, 
 	}()
 
 	return outChan, nil
+}
+
+func (r *rfc2136Stub) getNextNameserver() string {
+	if len(r.nameservers) == 1 {
+		return r.nameservers[0]
+	}
+
+	switch r.loadBalancingStrategy {
+	case "random":
+		return r.nameservers[r.randGen.Intn(len(r.nameservers))]
+	case "round-robin":
+		nameserver := r.nameservers[r.counter]
+		r.counter = (r.counter + 1) % len(r.nameservers)
+
+		return nameserver
+	default:
+		return r.nameservers[0]
+	}
+}
+
+func (r *rfc2136Stub) setOutput(output []string) error {
+	r.output = make([]*dns.Envelope, len(output))
+	for i, e := range output {
+		rr, err := dns.NewRR(e)
+		if err != nil {
+			return err
+		}
+		r.output[i] = &dns.Envelope{
+			RR: []dns.RR{rr},
+		}
+	}
+	return nil
 }
 
 func createRfc2136StubProviderWithoutSignedAXFR(stub *rfc2136Stub, zoneNames ...string) (provider.Provider, error) {
@@ -1319,11 +1349,6 @@ func TestRfc2136ApplyChangesWithMultipleChunks(t *testing.T) {
 	assert.Contains(t, stub.updateMsgs[2].String(), "\nv4.foo.com.\t0\tNONE\tA\t10.0.0.4\nv4.foo.com.\t400\tIN\tA\t10.0.1.4\n")
 }
 
-// Test stub that simulates nameserver connection failures
-type failingRfc2136Stub struct {
-	rfc2136Stub
-}
-
 func (r *failingRfc2136Stub) SendMessage(_ *dns.Msg) error {
 	return fmt.Errorf("failed to connect: dial tcp: lookup unreachable-nameserver: no such host")
 }
@@ -1396,11 +1421,6 @@ func TestRfc2136NameserverFailureReturnsSoftError(t *testing.T) {
 	assert.ErrorIs(t, err, provider.SoftError, "Expected SoftError when nameserver fails in ApplyChanges")
 }
 
-// axfrEnvelopeErrorStub returns a valid envelope followed by an error envelope.
-type axfrEnvelopeErrorStub struct {
-	rfc2136Stub
-}
-
 func (r *axfrEnvelopeErrorStub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envelope, error) {
 	outChan := make(chan *dns.Envelope)
 	go func() {
@@ -1469,13 +1489,6 @@ func TestRfc2136AxfrEnvelopeErrorReturnsSoftError(t *testing.T) {
 	records, err := providerInstance.Records(t.Context())
 	require.ErrorIs(t, err, provider.SoftError, "Expected SoftError when AXFR envelope carries an error")
 	assert.Empty(t, records, "Expected no records returned when AXFR envelope carries an error")
-}
-
-// axfrFailoverStub fails the first nameserver with an error envelope, then
-// serves a clean transfer from the second.
-type axfrFailoverStub struct {
-	rfc2136Stub
-	calls int
 }
 
 func (r *axfrFailoverStub) IncomeTransfer(_ *dns.Msg, _ string) (chan *dns.Envelope, error) {
@@ -1554,14 +1567,6 @@ func TestRfc2136AxfrFailoverSucceedsAfterEnvelopeError(t *testing.T) {
 	endpoints, err := providerInstance.Records(t.Context())
 	require.NoError(t, err, "Expected nil error when second nameserver succeeds after first fails")
 	assert.NotEmpty(t, endpoints, "Expected records from the successful second nameserver")
-}
-
-// axfrTsigStripStub drops the TSIG RR like dns.TsigGenerateWithProvider does,
-// and fails the first nameserver to force a second attempt.
-type axfrTsigStripStub struct {
-	rfc2136Stub
-	calls  int
-	signed []bool
 }
 
 func (r *axfrTsigStripStub) IncomeTransfer(m *dns.Msg, _ string) (chan *dns.Envelope, error) {
@@ -1819,11 +1824,6 @@ func TestRFC2136ShouldSignAXFR(t *testing.T) {
 		})
 	}
 }
-
-const (
-	txtDMARC    = "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
-	txtRegistry = "heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.foo.com"
-)
 
 func TestRrTargetForTXT(t *testing.T) {
 	// holds the character-strings in miekg/dns presentation form.

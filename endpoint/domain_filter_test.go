@@ -27,22 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type domainFilterTest struct {
-	domainFilter          []string
-	exclusions            []string
-	domains               []string
-	expected              bool
-	expectedSerialization map[string][]string
-}
-
-type regexDomainFilterTest struct {
-	regex                 *regexp.Regexp
-	regexExclusion        *regexp.Regexp
-	domains               []string
-	expected              bool
-	expectedSerialization map[string]string
-}
-
 var domainFilterTests = []domainFilterTest{
 	{
 		[]string{"google.com.", "exaring.de", "inovex.de"},
@@ -475,6 +459,22 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 			"regexExclude": `^internal-`,
 		},
 	},
+}
+
+type domainFilterTest struct {
+	domainFilter          []string
+	exclusions            []string
+	domains               []string
+	expected              bool
+	expectedSerialization map[string][]string
+}
+
+type regexDomainFilterTest struct {
+	regex                 *regexp.Regexp
+	regexExclusion        *regexp.Regexp
+	domains               []string
+	expected              bool
+	expectedSerialization map[string]string
 }
 
 func TestDomainFilterMatch(t *testing.T) {

@@ -52,6 +52,26 @@ type Engine struct {
 	combine bool
 }
 
+type kubeObject interface {
+	runtime.Object
+	metav1.Object
+}
+
+// fqdnTemplateData mirrors source.unstructuredWrapper so typed objects can
+// evaluate the same --fqdn-template as the unstructured source.
+type fqdnTemplateData struct {
+	Name        string
+	Namespace   string
+	Kind        string
+	APIVersion  string
+	Labels      map[string]string
+	Annotations map[string]string
+	Metadata    map[string]any
+	Spec        map[string]any
+	Status      map[string]any
+	Object      map[string]any
+}
+
 // NewEngine parses the provided Go template strings into a Engine.
 // An empty string leaves the corresponding template unset; IsConfigured reflects
 // whether the FQDN template was provided. Returns an error on the first parse failure.
@@ -269,11 +289,6 @@ func parseTemplate(input string) (*template.Template, error) {
 	return t, nil
 }
 
-type kubeObject interface {
-	runtime.Object
-	metav1.Object
-}
-
 func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 	if tmpl == nil {
 		return []string{}, nil
@@ -333,21 +348,6 @@ func execTemplate(tmpl *template.Template, obj kubeObject) ([]string, error) {
 func wrapTemplateErr(obj kubeObject, err error) error {
 	kind := obj.GetObjectKind().GroupVersionKind().Kind
 	return fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
-}
-
-// fqdnTemplateData mirrors source.unstructuredWrapper so typed objects can
-// evaluate the same --fqdn-template as the unstructured source.
-type fqdnTemplateData struct {
-	Name        string
-	Namespace   string
-	Kind        string
-	APIVersion  string
-	Labels      map[string]string
-	Annotations map[string]string
-	Metadata    map[string]any
-	Spec        map[string]any
-	Status      map[string]any
-	Object      map[string]any
 }
 
 // toTemplateData converts a Kubernetes object into the unstructured-style

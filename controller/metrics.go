@@ -135,6 +135,11 @@ var (
 	)
 )
 
+type dnsKey struct {
+	name       string
+	recordType string
+}
+
 func init() {
 	metrics.RegisterMetric.MustRegister(registryErrorsTotal)
 	metrics.RegisterMetric.MustRegister(sourceErrorsTotal)
@@ -151,11 +156,6 @@ func init() {
 	metrics.RegisterMetric.MustRegister(verifiedRecords)
 
 	metrics.RegisterMetric.MustRegister(consecutiveSoftErrors)
-}
-
-type dnsKey struct {
-	name       string
-	recordType string
 }
 
 // countMatchingAddressRecords counts records that exist in both endpoints and registry.

@@ -48,6 +48,23 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+// fakeTestIndexer is a minimal cache.Indexer that returns a wrong-type object,
+// causing ListIndexed[*unstructured.Unstructured]'s internal type assertion to fail.
+type fakeTestIndexer struct {
+	cache.Indexer // nil embed; only overridden methods are called in tests
+}
+
+// fakeTestSharedIndexInformer wraps a cache.SharedIndexInformer with a custom indexer.
+type fakeTestSharedIndexInformer struct {
+	cache.SharedIndexInformer // nil embed
+	indexer                   cache.Indexer
+}
+
+// fakeTestGenericInformer implements kubeinformers.GenericInformer with a custom shared informer.
+type fakeTestGenericInformer struct {
+	inf cache.SharedIndexInformer
+}
+
 func TestUnstructuredWrapperImplementsKubeObject(t *testing.T) {
 	u := &unstructured.Unstructured{
 		Object: map[string]any{
@@ -863,12 +880,6 @@ func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
 	}
 }
 
-// fakeTestIndexer is a minimal cache.Indexer that returns a wrong-type object,
-// causing ListIndexed[*unstructured.Unstructured]'s internal type assertion to fail.
-type fakeTestIndexer struct {
-	cache.Indexer // nil embed; only overridden methods are called in tests
-}
-
 func (f *fakeTestIndexer) ListIndexFuncValues(_ string) []string {
 	return []string{"default/my-vm"}
 }
@@ -877,18 +888,7 @@ func (f *fakeTestIndexer) GetByKey(_ string) (any, bool, error) {
 	return "not-an-unstructured-object", true, nil
 }
 
-// fakeTestSharedIndexInformer wraps a cache.SharedIndexInformer with a custom indexer.
-type fakeTestSharedIndexInformer struct {
-	cache.SharedIndexInformer // nil embed
-	indexer                   cache.Indexer
-}
-
 func (f *fakeTestSharedIndexInformer) GetIndexer() cache.Indexer { return f.indexer }
-
-// fakeTestGenericInformer implements kubeinformers.GenericInformer with a custom shared informer.
-type fakeTestGenericInformer struct {
-	inf cache.SharedIndexInformer
-}
 
 func (f *fakeTestGenericInformer) Informer() cache.SharedIndexInformer { return f.inf }
 func (f *fakeTestGenericInformer) Lister() cache.GenericLister         { panic("not needed") }

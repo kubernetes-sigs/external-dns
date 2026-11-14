@@ -41,6 +41,11 @@ import (
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
+const dynamodbAttributeMigrate = "dynamodb/needs-migration"
+
+// DynamoDB allows a maximum batch size of 25 items.
+var dynamodbMaxBatchSize uint8 = 25
+
 // DynamoDBAPI is the subset of the AWS DynamoDB API that we actually use.  Add methods as required. Signatures must match exactly.
 type DynamoDBAPI interface {
 	DescribeTable(context.Context, *awsdynamodb.DescribeTableInput, ...func(*awsdynamodb.Options)) (*awsdynamodb.DescribeTableOutput, error)
@@ -72,11 +77,6 @@ type DynamoDBRegistry struct {
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
 }
-
-const dynamodbAttributeMigrate = "dynamodb/needs-migration"
-
-// DynamoDB allows a maximum batch size of 25 items.
-var dynamodbMaxBatchSize uint8 = 25
 
 // New creates a DynamoDBRegistry from the given configuration.
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
@@ -276,6 +276,11 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	return im.executeStatements(ctx, statements, im.deleteStatementError)
 }
 
+// AdjustEndpoints modifies the endpoints as needed by the specific provider.
+func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return im.provider.AdjustEndpoints(endpoints)
+}
+
 // Also writes im.labels and the records cache.
 func (im *DynamoDBRegistry) planCreateStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
 	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Create)+len(changes.UpdateNew))
@@ -387,11 +392,6 @@ func (im *DynamoDBRegistry) deleteStatementError(request dynamodbtypes.BatchStat
 		return fmt.Errorf("deleting dynamodb record: %w", err)
 	}
 	return fmt.Errorf("deleting dynamodb record %v: %s: %s", record, response.Error.Code, *response.Error.Message)
-}
-
-// AdjustEndpoints modifies the endpoints as needed by the specific provider.
-func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return im.provider.AdjustEndpoints(endpoints)
 }
 
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {

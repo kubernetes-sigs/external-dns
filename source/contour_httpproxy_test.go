@@ -52,17 +52,28 @@ type HTTPProxySuite struct {
 	httpProxy *projectcontour.HTTPProxy
 }
 
-func newContourDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
-	s := runtime.NewScheme()
-	_ = projectcontour.AddToScheme(s)
-	return fakeDynamic.NewSimpleDynamicClient(s), s
-}
-
 type fakeLoadBalancerService struct {
 	ips       []string
 	hostnames []string
 	namespace string
 	name      string
+}
+
+type fakeHTTPProxy struct {
+	namespace   string
+	name        string
+	uid         string
+	annotations map[string]string
+
+	host         string
+	delegate     bool
+	loadBalancer fakeLoadBalancerService
+}
+
+func newContourDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
+	s := runtime.NewScheme()
+	_ = projectcontour.AddToScheme(s)
+	return fakeDynamic.NewSimpleDynamicClient(s), s
 }
 
 func (ig fakeLoadBalancerService) Service() *v1.Service {
@@ -1070,17 +1081,6 @@ func newTestHTTPProxySource(t *testing.T) (*httpProxySource, error) {
 	}
 
 	return irsrc, nil
-}
-
-type fakeHTTPProxy struct {
-	namespace   string
-	name        string
-	uid         string
-	annotations map[string]string
-
-	host         string
-	delegate     bool
-	loadBalancer fakeLoadBalancerService
 }
 
 func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {

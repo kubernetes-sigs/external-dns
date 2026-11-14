@@ -30,6 +30,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// informerTransformHelperConfig is a struct that holds configuration for the informerTransformHelper functions.
+type informerTransformHelperConfig struct {
+	removedLastAppliedConfigAnnotation bool
+	removedManagedFields               bool
+	removedStatusConditions            bool
+}
+
+// informerTransformHelperOptions are options for configuring the behavior of the informerTransformHelper functions.
+type informerTransformHelperOptions func(*informerTransformHelperConfig)
+
 func TestParseIngress(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -97,16 +107,6 @@ func informerTransformObjectMeta() metav1.ObjectMeta {
 		},
 	}
 }
-
-// informerTransformHelperConfig is a struct that holds configuration for the informerTransformHelper functions.
-type informerTransformHelperConfig struct {
-	removedLastAppliedConfigAnnotation bool
-	removedManagedFields               bool
-	removedStatusConditions            bool
-}
-
-// informerTransformHelperOptions are options for configuring the behavior of the informerTransformHelper functions.
-type informerTransformHelperOptions func(*informerTransformHelperConfig)
 
 // withRemovedLastAppliedConfigAnnotation indicates that the informer transformer should have removed the
 // "metadata.annotations['kubectl.kubernetes.io/last-applied']" annotation

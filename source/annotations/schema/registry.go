@@ -161,6 +161,21 @@ type Schema struct {
 	source                   string
 }
 
+// NewWithSpecs returns a Schema with an explicit spec list — intended for tests
+// and future schema extensions that supply their own specs.
+func NewWithSpecs(specs []AnnotationSpec, opts Options) *Schema {
+	return &Schema{
+		specs:                    specs,
+		mode:                     opts.Mode,
+		ignoreHostnameAnnotation: opts.IgnoreHostnameAnnotation,
+	}
+}
+
+// New returns a Schema using the default spec list and the given options.
+func New(opts Options) *Schema {
+	return NewWithSpecs(defaultSpecs, opts)
+}
+
 // WithSource returns a shallow copy of s bound to the given source name
 // (e.g. types.Ingress). IsValid is a no-op until a source is bound.
 func (s *Schema) WithSource(name string) *Schema {
@@ -170,21 +185,6 @@ func (s *Schema) WithSource(name string) *Schema {
 	cp := *s
 	cp.source = name
 	return &cp
-}
-
-// New returns a Schema using the default spec list and the given options.
-func New(opts Options) *Schema {
-	return NewWithSpecs(defaultSpecs, opts)
-}
-
-// NewWithSpecs returns a Schema with an explicit spec list — intended for tests
-// and future schema extensions that supply their own specs.
-func NewWithSpecs(specs []AnnotationSpec, opts Options) *Schema {
-	return &Schema{
-		specs:                    specs,
-		mode:                     opts.Mode,
-		ignoreHostnameAnnotation: opts.IgnoreHostnameAnnotation,
-	}
 }
 
 // Mode reports the Schema's active validation mode.

@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type faultyReader struct{}
+
 func TestEncrypt(t *testing.T) {
 	// Verify that nil nonce is rejected
 	aesKey := []byte("s%zF`.*'5`9.AhI2!B,.~hmbs^.*TL?;")
@@ -90,8 +92,6 @@ func TestGenerateNonceError(t *testing.T) {
 	require.Error(t, err)
 	require.Empty(t, nonce)
 }
-
-type faultyReader struct{}
 
 func (f *faultyReader) Read(_ []byte) (int, error) {
 	return 0, io.ErrUnexpectedEOF

@@ -56,6 +56,8 @@ var (
 	skipLabels = []string{originalTextLabel, randomPrefixLabel, "resource", endpoint.OwnerLabelKey}
 )
 
+var _ coreDNSClient = etcdClient{}
+
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
 	GetServices(ctx context.Context, prefix string) ([]*Service, error)
@@ -106,8 +108,6 @@ type etcdClient struct {
 	owner         string
 	strictlyOwned bool
 }
-
-var _ coreDNSClient = etcdClient{}
 
 // GetServices GetService return all Service records stored in etcd stored anywhere under the given key (recursively)
 func (c etcdClient) GetServices(ctx context.Context, prefix string) ([]*Service, error) {

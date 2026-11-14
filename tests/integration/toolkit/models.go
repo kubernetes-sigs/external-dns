@@ -55,21 +55,6 @@ type ExpectedEndpoint struct {
 	RefObjects []ExpectedRefObject `json:"refObjects,omitempty"`
 }
 
-// ToEndpoint converts an ExpectedEndpoint to a plain *endpoint.Endpoint for use
-// with the standard field validation helpers.
-func (e *ExpectedEndpoint) ToEndpoint() *endpoint.Endpoint {
-	ep := &endpoint.Endpoint{
-		DNSName:          e.DNSName,
-		Targets:          e.Targets,
-		RecordType:       e.RecordType,
-		SetIdentifier:    e.SetIdentifier,
-		RecordTTL:        e.RecordTTL,
-		Labels:           e.Labels,
-		ProviderSpecific: e.ProviderSpecific,
-	}
-	return ep
-}
-
 // Scenario represents a single test scenario.
 type Scenario struct {
 	Name        string                     `json:"name"`
@@ -125,4 +110,19 @@ type LoadedResources struct {
 	K8sClient *fake.Clientset
 	// DNSEndpoints are the parsed DNSEndpoint CRD objects ready to be injected into the CRD source fake cache.
 	DNSEndpoints []*apiv1alpha1.DNSEndpoint
+}
+
+// ToEndpoint converts an ExpectedEndpoint to a plain *endpoint.Endpoint for use
+// with the standard field validation helpers.
+func (e *ExpectedEndpoint) ToEndpoint() *endpoint.Endpoint {
+	ep := &endpoint.Endpoint{
+		DNSName:          e.DNSName,
+		Targets:          e.Targets,
+		RecordType:       e.RecordType,
+		SetIdentifier:    e.SetIdentifier,
+		RecordTTL:        e.RecordTTL,
+		Labels:           e.Labels,
+		ProviderSpecific: e.ProviderSpecific,
+	}
+	return ep
 }

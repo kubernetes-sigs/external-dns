@@ -46,10 +46,6 @@ type dnsimpleIdentityService struct {
 	service *dnsimple.IdentityService
 }
 
-func (i dnsimpleIdentityService) Whoami(ctx context.Context) (*dnsimple.WhoamiResponse, error) {
-	return i.service.Whoami(ctx)
-}
-
 // dnsimpleZoneServiceInterface is an interface that contains all necessary zone services from DNSimple
 type dnsimpleZoneServiceInterface interface {
 	ListZones(ctx context.Context, accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
@@ -61,6 +57,25 @@ type dnsimpleZoneServiceInterface interface {
 
 type dnsimpleZoneService struct {
 	service *dnsimple.ZonesService
+}
+
+type dnsimpleProvider struct {
+	provider.BaseProvider
+	client       dnsimpleZoneServiceInterface
+	identity     dnsimpleIdentityService
+	accountID    string
+	domainFilter *endpoint.DomainFilter
+	zoneIDFilter provider.ZoneIDFilter
+	dryRun       bool
+}
+
+type dnsimpleChange struct {
+	Action            string
+	ResourceRecordSet dnsimple.ZoneRecord
+}
+
+func (i dnsimpleIdentityService) Whoami(ctx context.Context) (*dnsimple.WhoamiResponse, error) {
+	return i.service.Whoami(ctx)
 }
 
 func (z dnsimpleZoneService) ListZones(ctx context.Context, accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
@@ -81,21 +96,6 @@ func (z dnsimpleZoneService) DeleteRecord(ctx context.Context, accountID string,
 
 func (z dnsimpleZoneService) UpdateRecord(ctx context.Context, accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error) {
 	return z.service.UpdateRecord(ctx, accountID, zoneID, recordID, recordAttributes)
-}
-
-type dnsimpleProvider struct {
-	provider.BaseProvider
-	client       dnsimpleZoneServiceInterface
-	identity     dnsimpleIdentityService
-	accountID    string
-	domainFilter *endpoint.DomainFilter
-	zoneIDFilter provider.ZoneIDFilter
-	dryRun       bool
-}
-
-type dnsimpleChange struct {
-	Action            string
-	ResourceRecordSet dnsimple.ZoneRecord
 }
 
 // New creates a DNSimple provider from the given configuration.
@@ -261,6 +261,59 @@ func newDnsimpleChanges(action string, endpoints []*endpoint.Endpoint) []*dnsimp
 	return changes
 }
 
+// GetRecordID returns the record ID for a given record name, type and zone.
+// The record type is required to disambiguate dual-stack hosts that have both
+// an A and an AAAA record sharing the same name, where matching on name alone
+// could return the wrong record.
+func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string, recordType string) (int64, error) {
+	page := 1
+	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName, Type: &recordType}
+	for {
+		listOptions.Page = &page
+		records, err := p.client.ListRecords(ctx, p.accountID, zone, listOptions)
+		if err != nil {
+			return 0, err
+		}
+
+		for _, record := range records.Data {
+			if record.Name == recordName && record.Type == recordType {
+				return record.ID, nil
+			}
+		}
+
+		page++
+		if page > records.Pagination.TotalPages {
+			break
+		}
+	}
+	return 0, fmt.Errorf("no record id found")
+}
+
+// ApplyChanges applies a given set of changes
+func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+
+	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleCreate, changes.Create)...)
+	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleUpdate, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleDelete, changes.Delete)...)
+
+	return p.submitChanges(ctx, combinedChanges)
+}
+
+// dnsimpleSuitableZone returns the most suitable zone for a given hostname and a set of zones.
+func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsimple.Zone {
+	var zone *dnsimple.Zone
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, z.Name) {
+			if zone == nil || len(z.Name) > len(zone.Name) {
+				newZ := z
+				zone = &newZ
+			}
+		}
+	}
+	return zone
+}
+
 // submitChanges takes a zone and a collection of changes and makes all changes from the collection
 func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpleChange) error {
 	if len(changes) == 0 {
@@ -322,59 +375,6 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 		}
 	}
 	return nil
-}
-
-// GetRecordID returns the record ID for a given record name, type and zone.
-// The record type is required to disambiguate dual-stack hosts that have both
-// an A and an AAAA record sharing the same name, where matching on name alone
-// could return the wrong record.
-func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string, recordType string) (int64, error) {
-	page := 1
-	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName, Type: &recordType}
-	for {
-		listOptions.Page = &page
-		records, err := p.client.ListRecords(ctx, p.accountID, zone, listOptions)
-		if err != nil {
-			return 0, err
-		}
-
-		for _, record := range records.Data {
-			if record.Name == recordName && record.Type == recordType {
-				return record.ID, nil
-			}
-		}
-
-		page++
-		if page > records.Pagination.TotalPages {
-			break
-		}
-	}
-	return 0, fmt.Errorf("no record id found")
-}
-
-// dnsimpleSuitableZone returns the most suitable zone for a given hostname and a set of zones.
-func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsimple.Zone {
-	var zone *dnsimple.Zone
-	for _, z := range zones {
-		if strings.HasSuffix(hostname, z.Name) {
-			if zone == nil || len(z.Name) > len(zone.Name) {
-				newZ := z
-				zone = &newZ
-			}
-		}
-	}
-	return zone
-}
-
-// ApplyChanges applies a given set of changes
-func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
-
-	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleUpdate, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleDelete, changes.Delete)...)
-
-	return p.submitChanges(ctx, combinedChanges)
 }
 
 func int64ToString(i int64) string {

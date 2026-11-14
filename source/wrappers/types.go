@@ -39,6 +39,8 @@ type Config struct {
 	sourceWrappers      sets.Set[string] // set of source wrappers, e.g. "targetfilter", "nat64"
 }
 
+type Option func(config *Config)
+
 func NewConfig(opts ...Option) *Config {
 	o := &Config{}
 	for _, opt := range opts {
@@ -46,8 +48,6 @@ func NewConfig(opts ...Option) *Config {
 	}
 	return o
 }
-
-type Option func(config *Config)
 
 func WithDefaultTargets(input []string) Option {
 	return func(o *Config) {

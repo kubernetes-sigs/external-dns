@@ -96,6 +96,11 @@ func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Change
 	return sdr.provider.ApplyChanges(ctx, filteredChanges)
 }
 
+// AdjustEndpoints modifies the endpoints as needed by the specific provider
+func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return sdr.provider.AdjustEndpoints(endpoints)
+}
+
 func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		if ep.Labels == nil {
@@ -104,9 +109,4 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 		ep.Labels[endpoint.OwnerLabelKey] = sdr.ownerID
 		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.SerializePlain(false)
 	}
-}
-
-// AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return sdr.provider.AdjustEndpoints(endpoints)
 }

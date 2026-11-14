@@ -32,6 +32,9 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+// Validate that fakeSource implements Source.
+var _ Source = &fakeSource{}
+
 // parseAnnotationFilterOrNil parses an annotation filter string into a labels.Selector for use in tests.
 // Returns nil for empty or invalid input, matching the production behavior in NewSourceConfig
 // where invalid annotation filters are silently treated as no-op selectors.
@@ -57,9 +60,6 @@ func parseLabelSelectorOrEverything(t *testing.T, s string) labels.Selector {
 	require.NoError(t, err)
 	return sel
 }
-
-// Validate that fakeSource implements Source.
-var _ Source = &fakeSource{}
 
 func TestFakeSourceEndpoints(t *testing.T) {
 	sc, err := NewFakeSource(&config.Config{})

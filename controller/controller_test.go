@@ -43,6 +43,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const toggleRegistryFailureCount = 3
+
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
 	provider.BaseProvider
@@ -56,6 +58,12 @@ type filteredMockProvider struct {
 	RecordsStore      []*endpoint.Endpoint
 	RecordsCallCount  int
 	ApplyChangesCalls []*plan.Changes
+}
+
+type toggleRegistry struct {
+	noop.NoopRegistry
+	failCount   int
+	failCountMu sync.Mutex // protects failCount
 }
 
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
@@ -496,14 +504,6 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 		},
 	)
 }
-
-type toggleRegistry struct {
-	noop.NoopRegistry
-	failCount   int
-	failCountMu sync.Mutex // protects failCount
-}
-
-const toggleRegistryFailureCount = 3
 
 func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	r.failCountMu.Lock()

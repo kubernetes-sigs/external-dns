@@ -33,6 +33,10 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
+type errIndexer struct {
+	cache.Indexer
+}
+
 func TestIndexerWithOptions_FilterByAnnotation(t *testing.T) {
 	sel, err := annotations.ParseFilter("example-annotation")
 	require.NoError(t, err)
@@ -408,10 +412,6 @@ func TestGetByKey_TypeAssertionFailure(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "object is not of type")
 	require.Nil(t, result)
-}
-
-type errIndexer struct {
-	cache.Indexer
 }
 
 func (e *errIndexer) ListIndexFuncValues(_ string) []string { return []string{"default/pod"} }

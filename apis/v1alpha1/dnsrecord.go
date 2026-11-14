@@ -50,19 +50,6 @@ type DNSRecordSpec struct {
 	Endpoint endpoint.Endpoint `json:"endpoint"`
 }
 
-// MergeProviderLabels overwrites the record's endpoint labels with the labels
-// the provider stored, preserving the external-dns owner and resource labels.
-// Some providers (e.g. coredns) rewrite labels on apply, so the provider copy
-// is authoritative for everything except ownership/resource identity.
-func (r *DNSRecord) MergeProviderLabels(providerLabels endpoint.Labels, ownerID string) {
-	resource := r.Spec.Endpoint.Labels[endpoint.ResourceLabelKey]
-	r.Spec.Endpoint.Labels = providerLabels
-	r.Spec.Endpoint.WithLabel(endpoint.OwnerLabelKey, ownerID)
-	if resource != "" {
-		r.Spec.Endpoint.WithLabel(endpoint.ResourceLabelKey, resource)
-	}
-}
-
 // DNSRecordStatus defines the observed state of DNSRecord
 // +kubebuilder:object:generate=true
 type DNSRecordStatus struct {
@@ -104,4 +91,17 @@ type DNSRecordList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DNSRecord `json:"items"`
+}
+
+// MergeProviderLabels overwrites the record's endpoint labels with the labels
+// the provider stored, preserving the external-dns owner and resource labels.
+// Some providers (e.g. coredns) rewrite labels on apply, so the provider copy
+// is authoritative for everything except ownership/resource identity.
+func (r *DNSRecord) MergeProviderLabels(providerLabels endpoint.Labels, ownerID string) {
+	resource := r.Spec.Endpoint.Labels[endpoint.ResourceLabelKey]
+	r.Spec.Endpoint.Labels = providerLabels
+	r.Spec.Endpoint.WithLabel(endpoint.OwnerLabelKey, ownerID)
+	if resource != "" {
+		r.Spec.Endpoint.WithLabel(endpoint.ResourceLabelKey, resource)
+	}
 }

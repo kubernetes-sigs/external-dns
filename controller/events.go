@@ -56,6 +56,20 @@ var resourceKinds = map[string]string{
 	"f5-transportserver": "TransportServer",
 }
 
+// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
+type deletedEndpoint struct {
+	*endpoint.Endpoint
+	ref *events.ObjectReference
+}
+
+// StatusReporter receives each sync's outcome, which only exists after
+// ApplyChanges, e.g. to set DNSEndpoint conditions.
+type StatusReporter interface {
+	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
+	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
+	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
+}
+
 // emitChangeEvent emits a Kubernetes event for each DNS record change.
 // Deletes use RecordDeleted on success and RecordError on failure.
 func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reason, crdKind string) {
@@ -79,12 +93,6 @@ func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reas
 		}
 		e.Add(events.NewEventFromEndpoint(deletedEndpoint{Endpoint: ep, ref: ref}, events.ActionDelete, deleteReason))
 	}
-}
-
-// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
-type deletedEndpoint struct {
-	*endpoint.Endpoint
-	ref *events.ObjectReference
 }
 
 func (d deletedEndpoint) RefObjects() []*events.ObjectReference {
@@ -112,14 +120,6 @@ func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 		kind = k
 	}
 	return endpoint.NewObjectRef(kind, "", namespace, name, "", registrySource)
-}
-
-// StatusReporter receives each sync's outcome, which only exists after
-// ApplyChanges, e.g. to set DNSEndpoint conditions.
-type StatusReporter interface {
-	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
-	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
-	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
 }
 
 func reportSyncStatus(ctx context.Context, r StatusReporter, p *plan.Plan, applyErr error) {

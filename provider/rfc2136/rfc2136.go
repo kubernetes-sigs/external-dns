@@ -49,6 +49,23 @@ const (
 	clockSkew = 300
 )
 
+const (
+	nameserverOpList nameserverOp = iota
+	nameserverOpSend
+)
+
+// Map of supported TSIG algorithms
+var tsigAlgs = map[string]string{
+	"hmac-sha1":   dns.HmacSHA1,
+	"hmac-sha224": dns.HmacSHA224,
+	"hmac-sha256": dns.HmacSHA256,
+	"hmac-sha384": dns.HmacSHA384,
+	"hmac-sha512": dns.HmacSHA512,
+}
+
+// txtEscaper escapes a TXT value for use inside a quoted character-string.
+var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
+
 // rfc2136 provider type
 type rfc2136Provider struct {
 	provider.BaseProvider
@@ -98,11 +115,6 @@ type rfc2136Provider struct {
 // having to know which field to pass in.
 type nameserverOp int
 
-const (
-	nameserverOpList nameserverOp = iota
-	nameserverOpSend
-)
-
 // TLSConfig is comprised of the TLS-related fields necessary if we are using DNS over TLS
 type TLSConfig struct {
 	UseTLS                bool
@@ -110,15 +122,6 @@ type TLSConfig struct {
 	CAFilePath            string
 	ClientCertFilePath    string
 	ClientCertKeyFilePath string
-}
-
-// Map of supported TSIG algorithms
-var tsigAlgs = map[string]string{
-	"hmac-sha1":   dns.HmacSHA1,
-	"hmac-sha224": dns.HmacSHA224,
-	"hmac-sha256": dns.HmacSHA256,
-	"hmac-sha384": dns.HmacSHA384,
-	"hmac-sha512": dns.HmacSHA512,
 }
 
 type rfc2136Actions interface {
@@ -301,9 +304,36 @@ OuterLoop:
 	return eps, nil
 }
 
-// shouldSignAXFR reports whether TSIG should be attached to zone transfers.
-func (r *rfc2136Provider) shouldSignAXFR() bool {
-	return !r.insecure && !r.gssTsig && !r.axfrInsecure
+// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum,
+// unwraps quoted TXT targets and canonicalizes TLSA targets. This is required to avoid
+// diff on reconciliation loop.
+func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range eps {
+		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
+		if ep.RecordType == endpoint.RecordTypeTXT {
+			// Records() returns TXT values unquoted, so a quoted target would never match it.
+			for i, target := range ep.Targets {
+				if isQuotedTXT(target) {
+					ep.Targets[i] = unescapeTXT(target[1 : len(target)-1])
+				}
+			}
+			continue
+		}
+		if ep.RecordType != endpoint.RecordTypeTLSA {
+			continue
+		}
+		for i, target := range ep.Targets {
+			tlsa, err := endpoint.NewTLSARecord(target)
+			if err != nil {
+				// AddRecord reports this as an error when the change is applied.
+				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
+				continue
+			}
+			ep.Targets[i] = tlsa.String()
+		}
+	}
+
+	return eps, nil
 }
 
 // Canonicalize a TLSA RR. Per RFC 6698, those are case-insensitive, which can
@@ -350,38 +380,6 @@ func unescapeTXT(s string) string {
 		i++
 	}
 	return string(b)
-}
-
-// AdjustEndpoints raises the TTL of each desired endpoint to the configured minimum,
-// unwraps quoted TXT targets and canonicalizes TLSA targets. This is required to avoid
-// diff on reconciliation loop.
-func (r *rfc2136Provider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	for _, ep := range eps {
-		ep.RecordTTL = r.floorTTL(ep.RecordTTL)
-		if ep.RecordType == endpoint.RecordTypeTXT {
-			// Records() returns TXT values unquoted, so a quoted target would never match it.
-			for i, target := range ep.Targets {
-				if isQuotedTXT(target) {
-					ep.Targets[i] = unescapeTXT(target[1 : len(target)-1])
-				}
-			}
-			continue
-		}
-		if ep.RecordType != endpoint.RecordTypeTLSA {
-			continue
-		}
-		for i, target := range ep.Targets {
-			tlsa, err := endpoint.NewTLSARecord(target)
-			if err != nil {
-				// AddRecord reports this as an error when the change is applied.
-				log.Warnf("could not parse TLSA target %q for %s, leaving it unchanged: %v", target, ep.DNSName, err)
-				continue
-			}
-			ep.Targets[i] = tlsa.String()
-		}
-	}
-
-	return eps, nil
 }
 
 func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (chan *dns.Envelope, error) {
@@ -499,67 +497,6 @@ func (r *rfc2136Provider) ApplyChanges(_ context.Context, changes *plan.Changes)
 	return nil
 }
 
-func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
-	m := make(map[string]*dns.Msg)
-	m["."] = new(dns.Msg)
-	for _, z := range r.zoneNames {
-		z = strings.ToLower(dns.Fqdn(z))
-		m[z] = new(dns.Msg)
-	}
-	return m
-}
-
-func (r *rfc2136Provider) sendBatchMsgs(action string, m map[string]*dns.Msg) []error {
-	var errs []error
-	for _, z := range m {
-		if len(z.Ns) > 0 {
-			if err := r.actions.SendMessage(z); err != nil {
-				log.Errorf("RFC2136 %s record failed: %v", action, err)
-				errs = append(errs, err)
-			}
-		}
-	}
-	return errs
-}
-
-func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, apply func(m *dns.Msg, idx int, ep *endpoint.Endpoint) error) []error {
-	var errs []error
-	for c, chunk := range chunkBy(eps, r.batchChangeSize) {
-		log.Debugf("Processing batch %d of %s changes", c, action)
-
-		m := r.newBatchMsgs()
-		prepared := sets.New[string]()
-		for i, ep := range chunk {
-			if !r.domainFilter.Match(ep.DNSName) {
-				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
-				continue
-			}
-
-			zone := findMsgZone(ep, r.zoneNames)
-
-			// Build into a scratch message and merge only on success, so a
-			// failed endpoint does not leave a partial update in the batch.
-			scratch := new(dns.Msg)
-			scratch.SetUpdate(zone)
-
-			// idx is ep's index in the unsplitted list, so the closure can index a parallel slice.
-			if err := apply(scratch, c*r.batchChangeSize+i, ep); err != nil {
-				errs = append(errs, fmt.Errorf("RFC2136 %s %s: %w", action, ep.DNSName, err))
-				continue
-			}
-
-			if !prepared.Has(zone) {
-				m[zone].SetUpdate(zone)
-				prepared.Insert(zone)
-			}
-			m[zone].Ns = append(m[zone].Ns, scratch.Ns...)
-		}
-
-		errs = append(errs, r.sendBatchMsgs(action, m)...)
-	}
-	return errs
-}
-
 func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newEp *endpoint.Endpoint) error {
 	err := r.RemoveRecord(m, oldEp)
 	if err != nil {
@@ -567,16 +504,6 @@ func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, new
 	}
 
 	return r.AddRecord(m, newEp)
-}
-
-// floorTTL raises a TTL provided by a source up to the configured minimum.
-// A TTL that no source provided is returned unchanged.
-func (r *rfc2136Provider) floorTTL(ttl endpoint.TTL) endpoint.TTL {
-	minTTL := int64(r.minTTL.Seconds())
-	if ttl.IsConfigured() && int64(ttl) < minTTL {
-		return endpoint.TTL(minTTL)
-	}
-	return ttl
 }
 
 func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
@@ -627,94 +554,6 @@ func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error 
 	}
 
 	return nil
-}
-
-// txtEscaper escapes a TXT value for use inside a quoted character-string.
-var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
-
-// rrTargetFor renders an endpoint target for the RR text that is handed to
-// dns.NewRR. Handles validation, canonicalisation and quoting.
-func rrTargetFor(recordType, target string) (string, error) {
-	if recordType == endpoint.RecordTypeTXT {
-		// TXT registry labels arrive pre-quoted.
-		if isQuotedTXT(target) {
-			return target, nil
-		}
-		// Unquoted, the zone-file parser treats ';' as a comment and splits on whitespace.
-		return `"` + txtEscaper.Replace(target) + `"`, nil
-	}
-
-	if recordType != endpoint.RecordTypeTLSA {
-		return target, nil
-	}
-
-	tlsa, err := endpoint.NewTLSARecord(target)
-	if err != nil {
-		return "", err
-	}
-
-	return tlsa.String(), nil
-}
-
-func isQuotedTXT(target string) bool {
-	return len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`)
-}
-
-// getNextNameserverFor picks the next nameserver to use for the given
-// operation according to the configured load balancing strategy. List
-// (AXFR) and Send (update) operations rotate and fail over independently,
-// so the caller states its intent via op rather than reaching into the
-// provider's internal counter/error fields itself.
-func (r *rfc2136Provider) getNextNameserverFor(op nameserverOp) string {
-	if len(r.nameservers) == 1 {
-		return r.nameservers[0]
-	}
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	counter, lastErr := r.rotationStateFor(op)
-
-	if *lastErr != nil {
-		log.Warnf("Last operation failed for nameserver %s", r.nameservers[*counter])
-		log.Warnf("Last operation error message: %v", *lastErr)
-	}
-
-	var nameserver string
-	switch r.loadBalancingStrategy {
-	case "random":
-		for {
-			nameserver = r.nameservers[r.randGen.Intn(len(r.nameservers))]
-			// Ensure that we don't get the same nameserver as the last one
-			if nameserver != r.nameservers[*counter] {
-				break
-			}
-		}
-	case "round-robin":
-		nameserver = r.nameservers[*counter]
-		*counter = (*counter + 1) % len(r.nameservers)
-	default:
-		if *lastErr != nil {
-			*counter = (*counter + 1) % len(r.nameservers)
-			nameserver = r.nameservers[*counter]
-		} else {
-			nameserver = r.nameservers[*counter]
-		}
-	}
-
-	// Last error has been logged, reset it for the next operation
-	*lastErr = nil
-	return nameserver
-}
-
-// rotationStateFor returns the counter and last-error slots that belong to
-// the given operation, keeping the per-operation field bookkeeping in one
-// place instead of spread across List() and SendMessage().
-func (r *rfc2136Provider) rotationStateFor(op nameserverOp) (*int, *error) {
-	if op == nameserverOpList {
-		return &r.listCounter, &r.listLastErr
-	}
-	return &r.sendCounter, &r.sendLastErr
 }
 
 func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
@@ -782,6 +621,167 @@ func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 	r.sendLastErr = lastErr
 	return provider.NewSoftError(lastErr)
+}
+
+// shouldSignAXFR reports whether TSIG should be attached to zone transfers.
+func (r *rfc2136Provider) shouldSignAXFR() bool {
+	return !r.insecure && !r.gssTsig && !r.axfrInsecure
+}
+
+func (r *rfc2136Provider) newBatchMsgs() map[string]*dns.Msg {
+	m := make(map[string]*dns.Msg)
+	m["."] = new(dns.Msg)
+	for _, z := range r.zoneNames {
+		z = strings.ToLower(dns.Fqdn(z))
+		m[z] = new(dns.Msg)
+	}
+	return m
+}
+
+func (r *rfc2136Provider) sendBatchMsgs(action string, m map[string]*dns.Msg) []error {
+	var errs []error
+	for _, z := range m {
+		if len(z.Ns) > 0 {
+			if err := r.actions.SendMessage(z); err != nil {
+				log.Errorf("RFC2136 %s record failed: %v", action, err)
+				errs = append(errs, err)
+			}
+		}
+	}
+	return errs
+}
+
+func (r *rfc2136Provider) applyBatches(action string, eps []*endpoint.Endpoint, apply func(m *dns.Msg, idx int, ep *endpoint.Endpoint) error) []error {
+	var errs []error
+	for c, chunk := range chunkBy(eps, r.batchChangeSize) {
+		log.Debugf("Processing batch %d of %s changes", c, action)
+
+		m := r.newBatchMsgs()
+		prepared := sets.New[string]()
+		for i, ep := range chunk {
+			if !r.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				continue
+			}
+
+			zone := findMsgZone(ep, r.zoneNames)
+
+			// Build into a scratch message and merge only on success, so a
+			// failed endpoint does not leave a partial update in the batch.
+			scratch := new(dns.Msg)
+			scratch.SetUpdate(zone)
+
+			// idx is ep's index in the unsplitted list, so the closure can index a parallel slice.
+			if err := apply(scratch, c*r.batchChangeSize+i, ep); err != nil {
+				errs = append(errs, fmt.Errorf("RFC2136 %s %s: %w", action, ep.DNSName, err))
+				continue
+			}
+
+			if !prepared.Has(zone) {
+				m[zone].SetUpdate(zone)
+				prepared.Insert(zone)
+			}
+			m[zone].Ns = append(m[zone].Ns, scratch.Ns...)
+		}
+
+		errs = append(errs, r.sendBatchMsgs(action, m)...)
+	}
+	return errs
+}
+
+// rrTargetFor renders an endpoint target for the RR text that is handed to
+// dns.NewRR. Handles validation, canonicalisation and quoting.
+func rrTargetFor(recordType, target string) (string, error) {
+	if recordType == endpoint.RecordTypeTXT {
+		// TXT registry labels arrive pre-quoted.
+		if isQuotedTXT(target) {
+			return target, nil
+		}
+		// Unquoted, the zone-file parser treats ';' as a comment and splits on whitespace.
+		return `"` + txtEscaper.Replace(target) + `"`, nil
+	}
+
+	if recordType != endpoint.RecordTypeTLSA {
+		return target, nil
+	}
+
+	tlsa, err := endpoint.NewTLSARecord(target)
+	if err != nil {
+		return "", err
+	}
+
+	return tlsa.String(), nil
+}
+
+func isQuotedTXT(target string) bool {
+	return len(target) >= 2 && strings.HasPrefix(target, `"`) && strings.HasSuffix(target, `"`)
+}
+
+// floorTTL raises a TTL provided by a source up to the configured minimum.
+// A TTL that no source provided is returned unchanged.
+func (r *rfc2136Provider) floorTTL(ttl endpoint.TTL) endpoint.TTL {
+	minTTL := int64(r.minTTL.Seconds())
+	if ttl.IsConfigured() && int64(ttl) < minTTL {
+		return endpoint.TTL(minTTL)
+	}
+	return ttl
+}
+
+// getNextNameserverFor picks the next nameserver to use for the given
+// operation according to the configured load balancing strategy. List
+// (AXFR) and Send (update) operations rotate and fail over independently,
+// so the caller states its intent via op rather than reaching into the
+// provider's internal counter/error fields itself.
+func (r *rfc2136Provider) getNextNameserverFor(op nameserverOp) string {
+	if len(r.nameservers) == 1 {
+		return r.nameservers[0]
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	counter, lastErr := r.rotationStateFor(op)
+
+	if *lastErr != nil {
+		log.Warnf("Last operation failed for nameserver %s", r.nameservers[*counter])
+		log.Warnf("Last operation error message: %v", *lastErr)
+	}
+
+	var nameserver string
+	switch r.loadBalancingStrategy {
+	case "random":
+		for {
+			nameserver = r.nameservers[r.randGen.Intn(len(r.nameservers))]
+			// Ensure that we don't get the same nameserver as the last one
+			if nameserver != r.nameservers[*counter] {
+				break
+			}
+		}
+	case "round-robin":
+		nameserver = r.nameservers[*counter]
+		*counter = (*counter + 1) % len(r.nameservers)
+	default:
+		if *lastErr != nil {
+			*counter = (*counter + 1) % len(r.nameservers)
+			nameserver = r.nameservers[*counter]
+		} else {
+			nameserver = r.nameservers[*counter]
+		}
+	}
+
+	// Last error has been logged, reset it for the next operation
+	*lastErr = nil
+	return nameserver
+}
+
+// rotationStateFor returns the counter and last-error slots that belong to
+// the given operation, keeping the per-operation field bookkeeping in one
+// place instead of spread across List() and SendMessage().
+func (r *rfc2136Provider) rotationStateFor(op nameserverOp) (*int, *error) {
+	if op == nameserverOpList {
+		return &r.listCounter, &r.listLastErr
+	}
+	return &r.sendCounter, &r.sendLastErr
 }
 
 func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {

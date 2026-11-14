@@ -32,6 +32,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Test for custom header policy
+type transportFunc func(*http.Request) (*http.Response, error)
+
 func TestGetCloudConfiguration(t *testing.T) {
 	tests := map[string]struct {
 		cloudName string
@@ -67,9 +70,6 @@ func TestOverrideConfiguration(t *testing.T) {
 	assert.Equal(t, "rg-override", cfg.ResourceGroup)
 	assert.Equal(t, "aad-endpoint-override", cfg.ActiveDirectoryAuthorityHost)
 }
-
-// Test for custom header policy
-type transportFunc func(*http.Request) (*http.Response, error)
 
 func (f transportFunc) Do(req *http.Request) (*http.Response, error) {
 	return f(req)

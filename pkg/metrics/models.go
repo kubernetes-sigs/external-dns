@@ -57,17 +57,9 @@ type GaugeMetric struct {
 	Gauge prometheus.Gauge
 }
 
-func (g GaugeMetric) Get() *Metric {
-	return &g.Metric
-}
-
 type CounterMetric struct {
 	Metric
 	Counter prometheus.Counter
-}
-
-func (g CounterMetric) Get() *Metric {
-	return &g.Metric
 }
 
 type CounterVecMetric struct {
@@ -75,39 +67,19 @@ type CounterVecMetric struct {
 	CounterVec *prometheus.CounterVec
 }
 
-func (g CounterVecMetric) Get() *Metric {
-	return &g.Metric
-}
-
 type GaugeVecMetric struct {
 	Metric
 	Gauge prometheus.GaugeVec
 }
 
-func (g GaugeVecMetric) Get() *Metric {
-	return &g.Metric
+type GaugeFuncMetric struct {
+	Metric
+	GaugeFunc prometheus.GaugeFunc
 }
 
-// SetWithLabels sets the value of the Gauge metric for the specified label values.
-// All label values are converted to lowercase before being applied.
-func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
-	g.Gauge.WithLabelValues(toLower(lvs)...).Set(value)
-}
-
-// AddWithLabels adds the value to the Gauge metric for the specified label values.
-// All label values are converted to lowercase before being applied.
-//
-// Without Reset(), values accumulate and reset only on process restart.
-// Use Reset() + AddWithLabels() pattern for per-cycle counts.
-func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
-	g.Gauge.WithLabelValues(toLower(lvs)...).Add(value)
-}
-
-// Reset removes all label combinations from the gauge vector.
-// Use Reset() at the start of each collection cycle followed by
-// AddWithLabels() to prevent stale label combinations from persisting.
-func (g GaugeVecMetric) Reset() {
-	g.Gauge.Reset()
+type SummaryVecMetric struct {
+	Metric
+	SummaryVec prometheus.SummaryVec
 }
 
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
@@ -121,22 +93,6 @@ func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 		Help:      opts.Help,
 		Labels:    slices.Sorted(maps.Keys(opts.ConstLabels)),
 		Gauge:     prometheus.NewGauge(opts),
-	}
-}
-
-// NewGaugedVectorOpts creates a new GaugeVec based on the provided GaugeOpts and
-// partitioned by the given label names.
-func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVecMetric {
-	opts.Namespace = Namespace
-	return GaugeVecMetric{
-		Type:      metricTypeGauge,
-		Name:      opts.Name,
-		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
-		Namespace: opts.Namespace,
-		Subsystem: opts.Subsystem,
-		Help:      opts.Help,
-		Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
-		Gauge:     *prometheus.NewGaugeVec(opts, labelNames),
 	}
 }
 
@@ -168,12 +124,57 @@ func NewCounterVecWithOpts(opts prometheus.CounterOpts, labelNames []string) Cou
 	}
 }
 
-type GaugeFuncMetric struct {
-	Metric
-	GaugeFunc prometheus.GaugeFunc
+// NewGaugedVectorOpts creates a new GaugeVec based on the provided GaugeOpts and
+// partitioned by the given label names.
+func NewGaugedVectorOpts(opts prometheus.GaugeOpts, labelNames []string) GaugeVecMetric {
+	opts.Namespace = Namespace
+	return GaugeVecMetric{
+		Type:      metricTypeGauge,
+		Name:      opts.Name,
+		FQDN:      fmt.Sprintf("%s_%s", opts.Subsystem, opts.Name),
+		Namespace: opts.Namespace,
+		Subsystem: opts.Subsystem,
+		Help:      opts.Help,
+		Labels:    append(slices.Sorted(maps.Keys(opts.ConstLabels)), labelNames...),
+		Gauge:     *prometheus.NewGaugeVec(opts, labelNames),
+	}
 }
 
-func (g GaugeFuncMetric) Get() *Metric {
+func (g GaugeVecMetric) Get() *Metric {
+	return &g.Metric
+}
+
+// SetWithLabels sets the value of the Gauge metric for the specified label values.
+// All label values are converted to lowercase before being applied.
+func (g GaugeVecMetric) SetWithLabels(value float64, lvs ...string) {
+	g.Gauge.WithLabelValues(toLower(lvs)...).Set(value)
+}
+
+// AddWithLabels adds the value to the Gauge metric for the specified label values.
+// All label values are converted to lowercase before being applied.
+//
+// Without Reset(), values accumulate and reset only on process restart.
+// Use Reset() + AddWithLabels() pattern for per-cycle counts.
+func (g GaugeVecMetric) AddWithLabels(value float64, lvs ...string) {
+	g.Gauge.WithLabelValues(toLower(lvs)...).Add(value)
+}
+
+func (g GaugeMetric) Get() *Metric {
+	return &g.Metric
+}
+
+// Reset removes all label combinations from the gauge vector.
+// Use Reset() at the start of each collection cycle followed by
+// AddWithLabels() to prevent stale label combinations from persisting.
+func (g GaugeVecMetric) Reset() {
+	g.Gauge.Reset()
+}
+
+func (g CounterMetric) Get() *Metric {
+	return &g.Metric
+}
+
+func (g CounterVecMetric) Get() *Metric {
 	return &g.Metric
 }
 
@@ -195,17 +196,8 @@ func NewGaugeFuncMetric(opts prometheus.GaugeOpts) GaugeFuncMetric {
 	}
 }
 
-type SummaryVecMetric struct {
-	Metric
-	SummaryVec prometheus.SummaryVec
-}
-
-func (s SummaryVecMetric) Get() *Metric {
-	return &s.Metric
-}
-
-func (s SummaryVecMetric) SetWithLabels(value float64, labels prometheus.Labels) {
-	s.SummaryVec.With(labels).Observe(value)
+func (g GaugeFuncMetric) Get() *Metric {
+	return &g.Metric
 }
 
 func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) SummaryVecMetric {
@@ -220,6 +212,14 @@ func NewSummaryVecWithOpts(opts prometheus.SummaryOpts, labels []string) Summary
 		Labels:     append(slices.Sorted(maps.Keys(opts.ConstLabels)), labels...),
 		SummaryVec: *prometheus.NewSummaryVec(opts, labels),
 	}
+}
+
+func (s SummaryVecMetric) Get() *Metric {
+	return &s.Metric
+}
+
+func (s SummaryVecMetric) SetWithLabels(value float64, labels prometheus.Labels) {
+	s.SummaryVec.With(labels).Observe(value)
 }
 
 func PathProcessor(path string) string {

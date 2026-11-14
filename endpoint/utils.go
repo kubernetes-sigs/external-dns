@@ -27,6 +27,14 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
+// namedObject is the subset of metav1.Object that IsEmptyEndpoints logs. It is
+// declared here so endpoint does not import k8s.io/apimachinery/pkg/apis/meta/v1,
+// which would pull the Kubernetes client stack into every webhook provider.
+type namedObject interface {
+	GetNamespace() string
+	GetName() string
+}
+
 // SuitableType returns the DNS record type for the given target:
 // A for IPv4, AAAA for IPv6, CNAME for everything else.
 func SuitableType(target string) string {
@@ -51,14 +59,6 @@ func RequiresTrailingDot(recordType string) bool {
 	default:
 		return false
 	}
-}
-
-// namedObject is the subset of metav1.Object that IsEmptyEndpoints logs. It is
-// declared here so endpoint does not import k8s.io/apimachinery/pkg/apis/meta/v1,
-// which would pull the Kubernetes client stack into every webhook provider.
-type namedObject interface {
-	GetNamespace() string
-	GetName() string
 }
 
 // IsEmptyEndpoints reports whether endpoints is empty, logging at debug level

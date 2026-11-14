@@ -109,42 +109,8 @@ type Config struct {
 	crdClients *crd.CRDClients
 }
 
-// CRDClients returns the reader/writer built for the crd source, or nil if the
-// crd source was not built.
-func (cfg *Config) CRDClients() *crd.CRDClients {
-	return cfg.crdClients
-}
-
-// SetCRDClients records the crd source's clients for reuse by CRDClients.
-func (cfg *Config) SetCRDClients(cc *crd.CRDClients) {
-	cfg.crdClients = cc
-}
-
-// SetClientGen sets the Kubernetes client factory. gen must be a source.ClientGenerator.
-func (cfg *Config) SetClientGen(gen any) {
-	cfg.clientGen = gen
-}
-
-// EnsureClientGen returns the client factory, building it with init on the
-// first call if none was set. It panics if the stored value is not a T.
-func (cfg *Config) EnsureClientGen[T any](init func() T) T {
-	cfg.clientGenOnce.Do(func() {
-		if cfg.clientGen == nil {
-			cfg.clientGen = init()
-		}
-	})
-	return cfg.clientGen.(T)
-}
-
 // OverrideConfigOption configures a Config.
 type OverrideConfigOption func(*Config)
-
-// WithCRDClients overrides the crd source's clients. Intended for testing.
-func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
-	return func(cfg *Config) {
-		cfg.crdClients = cc
-	}
-}
 
 // NewSourceConfig builds a Config from the parsed CLI configuration. It
 // validates label and annotation filters and compiles the template engine so
@@ -220,6 +186,40 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		opt(c)
 	}
 	return c, nil
+}
+
+// CRDClients returns the reader/writer built for the crd source, or nil if the
+// crd source was not built.
+func (cfg *Config) CRDClients() *crd.CRDClients {
+	return cfg.crdClients
+}
+
+// SetCRDClients records the crd source's clients for reuse by CRDClients.
+func (cfg *Config) SetCRDClients(cc *crd.CRDClients) {
+	cfg.crdClients = cc
+}
+
+// SetClientGen sets the Kubernetes client factory. gen must be a source.ClientGenerator.
+func (cfg *Config) SetClientGen(gen any) {
+	cfg.clientGen = gen
+}
+
+// WithCRDClients overrides the crd source's clients. Intended for testing.
+func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
+	return func(cfg *Config) {
+		cfg.crdClients = cc
+	}
+}
+
+// EnsureClientGen returns the client factory, building it with init on the
+// first call if none was set. It panics if the stored value is not a T.
+func (cfg *Config) EnsureClientGen[T any](init func() T) T {
+	cfg.clientGenOnce.Do(func() {
+		if cfg.clientGen == nil {
+			cfg.clientGen = init()
+		}
+	})
+	return cfg.clientGen.(T)
 }
 
 // Namespace returns the namespace watched by sources supporting a single one,

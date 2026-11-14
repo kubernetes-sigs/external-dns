@@ -25,6 +25,14 @@ type FakeServiceInformer struct {
 	mock.Mock
 }
 
+type FakeEndpointSliceInformer struct {
+	mock.Mock
+}
+
+type FakeNodeInformer struct {
+	mock.Mock
+}
+
 func (f *FakeServiceInformer) Informer() cache.SharedIndexInformer {
 	args := f.Called()
 	return args.Get(0).(cache.SharedIndexInformer)
@@ -34,10 +42,6 @@ func (f *FakeServiceInformer) Lister() corev1lister.ServiceLister {
 	return corev1lister.NewServiceLister(f.Informer().GetIndexer())
 }
 
-type FakeEndpointSliceInformer struct {
-	mock.Mock
-}
-
 func (f *FakeEndpointSliceInformer) Informer() cache.SharedIndexInformer {
 	args := f.Called()
 	return args.Get(0).(cache.SharedIndexInformer)
@@ -45,10 +49,6 @@ func (f *FakeEndpointSliceInformer) Informer() cache.SharedIndexInformer {
 
 func (f *FakeEndpointSliceInformer) Lister() discoveryv1lister.EndpointSliceLister {
 	return discoveryv1lister.NewEndpointSliceLister(f.Informer().GetIndexer())
-}
-
-type FakeNodeInformer struct {
-	mock.Mock
 }
 
 func (f *FakeNodeInformer) Informer() cache.SharedIndexInformer {

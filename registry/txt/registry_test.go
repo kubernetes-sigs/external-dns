@@ -44,6 +44,22 @@ const (
 	testZone = "test-zone.example.org"
 )
 
+const (
+	storedDNSName = "foo." + testZone
+	storedTXTName = "cname-foo." + testZone
+)
+
+// errProvider is a provider whose Records call always returns an error.
+type errProvider struct {
+	provider.BaseProvider
+	err error
+}
+
+// nilLabelsProvider returns a single non-TXT endpoint with nil Labels.
+type nilLabelsProvider struct {
+	provider.BaseProvider
+}
+
 func TestTXTRegistry(t *testing.T) {
 	t.Run("TestNewTXTRegistry", testTXTRegistryNew)
 	t.Run("TestRecords", testTXTRegistryRecords)
@@ -91,12 +107,6 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// errProvider is a provider whose Records call always returns an error.
-type errProvider struct {
-	provider.BaseProvider
-	err error
-}
-
 func (p *errProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return nil, p.err
 }
@@ -123,11 +133,6 @@ func TestTXTRegistry_GetDomainFilter(t *testing.T) {
 	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, p.GetDomainFilter(), r.GetDomainFilter())
-}
-
-// nilLabelsProvider returns a single non-TXT endpoint with nil Labels.
-type nilLabelsProvider struct {
-	provider.BaseProvider
 }
 
 func (p *nilLabelsProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
@@ -2297,11 +2302,6 @@ func TestTXTRegistryAliasARecordDeleteLeavesLegacyCNAME(t *testing.T) {
 	require.NotNil(t, findEndpoint(applied.Delete, "a-alias.test-zone.example.org", endpoint.RecordTypeTXT), "the new a- ownership TXT must be deleted")
 	require.Nil(t, findEndpoint(applied.Delete, "cname-alias.test-zone.example.org", endpoint.RecordTypeTXT), "the legacy cname- TXT should be kept")
 }
-
-const (
-	storedDNSName = "foo." + testZone
-	storedTXTName = "cname-foo." + testZone
-)
 
 // seedZoneWithTXT creates a CNAME and its ownership TXT holding txtValue verbatim, and returns a
 // registry over that zone plus an accessor for the changes the provider received.

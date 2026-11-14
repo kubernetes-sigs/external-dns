@@ -55,6 +55,8 @@ const (
 	defaultEvaluateTargetHealth  = true
 )
 
+const stubZoneID = "/hostedzone/example.com."
+
 // Compile time check for interface conformance
 var _ Route53API = &Route53APIStub{}
 
@@ -74,12 +76,13 @@ type Route53APIStub struct {
 	t          *testing.T
 }
 
-// MockMethod starts a description of an expectation of the specified method
-// being called.
-//
-//	Route53APIStub.MockMethod("MyMethod", arg1, arg2)
-func (r *Route53APIStub) MockMethod(method string, args ...any) *mock.Call {
-	return r.m.On(method, args...)
+type Route53APICounter struct {
+	wrapped Route53API
+	calls   map[string]int
+}
+
+type dynamicMock struct {
+	mock.Mock
 }
 
 // NewRoute53APIStub returns an initialized Route53APIStub
@@ -90,6 +93,14 @@ func NewRoute53APIStub(t *testing.T) *Route53APIStub {
 		zoneTags:   make(map[string][]route53types.Tag),
 		t:          t,
 	}
+}
+
+// MockMethod starts a description of an expectation of the specified method
+// being called.
+//
+//	Route53APIStub.MockMethod("MyMethod", arg1, arg2)
+func (r *Route53APIStub) MockMethod(method string, args ...any) *mock.Call {
+	return r.m.On(method, args...)
 }
 
 func (r *Route53APIStub) ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
@@ -110,11 +121,6 @@ func (r *Route53APIStub) ListResourceRecordSets(ctx context.Context, input *rout
 		}
 	}
 	return output, nil
-}
-
-type Route53APICounter struct {
-	wrapped Route53API
-	calls   map[string]int
 }
 
 func NewRoute53APICounter(w Route53API) *Route53APICounter {
@@ -302,12 +308,12 @@ func canonicalResourceRecordSet(rrs route53types.ResourceRecordSet) route53types
 	return rrs
 }
 
-// rejectInvalidZones makes the stub enforce a Route 53 constraint the lenient stub
-// skips: a CNAME cannot share a name with another record type. A reconcile loop turns
-// it on so it cannot settle on a zone Route 53 would refuse. The record-reading tests
-// keep the lenient default, where a fixture may hold a shape Route 53 would not.
-func (r *Route53APIStub) rejectInvalidZones() {
-	r.rejectCNAMEConflicts = true
+func (r *Route53APIStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
+	output := &route53.ListHostedZonesOutput{}
+	for _, zone := range r.zones {
+		output.HostedZones = append(output.HostedZones, *zone)
+	}
+	return output, nil
 }
 
 // validateNoCNAMEConflict rejects a batch whose result would leave a CNAME sharing a name
@@ -331,14 +337,6 @@ func validateNoCNAMEConflict(recordSets map[string][]route53types.ResourceRecord
 	return nil
 }
 
-func (r *Route53APIStub) ListHostedZones(_ context.Context, _ *route53.ListHostedZonesInput, _ ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error) {
-	output := &route53.ListHostedZonesOutput{}
-	for _, zone := range r.zones {
-		output.HostedZones = append(output.HostedZones, *zone)
-	}
-	return output, nil
-}
-
 func (r *Route53APIStub) CreateHostedZone(_ context.Context, input *route53.CreateHostedZoneInput, _ ...func(options *route53.Options)) (*route53.CreateHostedZoneOutput, error) {
 	name := *input.Name
 	id := "/hostedzone/" + name
@@ -353,8 +351,12 @@ func (r *Route53APIStub) CreateHostedZone(_ context.Context, input *route53.Crea
 	return &route53.CreateHostedZoneOutput{HostedZone: r.zones[id]}, nil
 }
 
-type dynamicMock struct {
-	mock.Mock
+// rejectInvalidZones makes the stub enforce a Route 53 constraint the lenient stub
+// skips: a CNAME cannot share a name with another record type. A reconcile loop turns
+// it on so it cannot settle on a zone Route 53 would refuse. The record-reading tests
+// keep the lenient default, where a fixture may hold a shape Route 53 would not.
+func (r *Route53APIStub) rejectInvalidZones() {
+	r.rejectCNAMEConflicts = true
 }
 
 func (m *dynamicMock) ListResourceRecordSets(_ context.Context, input *route53.ListResourceRecordSetsInput, _ ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error) {
@@ -1925,8 +1927,6 @@ func TestAWSsubmitChangesRetryOnError(t *testing.T) {
 	require.True(t, containsRecordWithDNSName(records, "success2.zone-1.ext-dns-test-2.teapot.zalan.do"))
 	require.True(t, containsRecordWithDNSName(records, "fail__edns_housekeeping.zone-1.ext-dns-test-2.teapot.zalan.do"))
 }
-
-const stubZoneID = "/hostedzone/example.com."
 
 func changeInput(action route53types.ChangeAction, rrs *route53types.ResourceRecordSet) *route53.ChangeResourceRecordSetsInput {
 	return &route53.ChangeResourceRecordSetsInput{
