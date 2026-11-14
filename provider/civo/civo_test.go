@@ -129,6 +129,49 @@ func TestCivoProviderRecords(t *testing.T) {
 	assert.Equal(t, int(records[1].RecordTTL), expected[1].TTL)
 }
 
+func TestCivoProviderRecordsApexAt(t *testing.T) {
+	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
+		{
+			Method: "GET",
+			Value: []civogo.ValueAdvanceClientForTesting{
+				{
+					RequestBody: ``,
+					URL:         "/v2/dns/12345/records",
+					ResponseBody: `[
+						{"id": "1", "domain_id":"12345", "account_id": "1", "name": "@", "type": "A", "value": "10.0.0.0", "ttl": 600},
+						{"id": "2", "account_id": "1", "domain_id":"12345", "name": "www", "type": "A", "value": "10.0.0.1", "ttl": 600},
+						{"id": "3", "account_id": "1", "domain_id":"12345", "name": "@", "type": "txt", "value": "\"heritage=external-dns\"", "ttl": 600}
+						]`,
+				},
+				{
+					RequestBody: ``,
+					URL:         "/v2/dns",
+					ResponseBody: `[
+						{"id": "12345", "account_id": "1", "name": "example.com"}
+						]`,
+				},
+			},
+		},
+	})
+	defer server.Close()
+
+	provider := &CivoProvider{
+		Client:       *client,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+	}
+
+	records, err := provider.Records(t.Context())
+	require.NoError(t, err)
+	require.Len(t, records, 3)
+
+	assert.Equal(t, "example.com", records[0].DNSName)
+	assert.Equal(t, "A", records[0].RecordType)
+	assert.Equal(t, "10.0.0.0", records[0].Targets[0])
+	assert.Equal(t, "www.example.com", records[1].DNSName)
+	assert.Equal(t, "example.com", records[2].DNSName)
+	assert.Equal(t, "TXT", records[2].RecordType)
+}
+
 func TestCivoProviderRecordsWithError(t *testing.T) {
 	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
 		{
@@ -762,7 +805,8 @@ func TestCivoProviderFetchRecords(t *testing.T) {
 	client, server, _ := civogo.NewClientForTesting(map[string]string{
 		"/v2/dns/12345/records": `[
 			{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
-			{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600}
+			{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600},
+			{"id": "3", "account_id": "1", "domain_id":"12345", "name": "@", "type": "TXT", "value": "apex", "ttl": 600}
 			]`,
 	})
 	defer server.Close()
@@ -772,6 +816,7 @@ func TestCivoProviderFetchRecords(t *testing.T) {
 
 	expected, err := client.ListDNSRecords("12345")
 	require.NoError(t, err)
+	expected[2].Name = ""
 
 	actual, err := provider.fetchRecords("12345")
 	require.NoError(t, err)
