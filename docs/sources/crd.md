@@ -4,67 +4,16 @@ CRD source provides a generic mechanism to manage DNS records in your favorite D
 
 ## Details
 
-CRD source watches for a user specified CRD to extract [Endpoints](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/endpoint/endpoint.go) from its `Spec`.
+CRD source watches for a user specified CRD to extract [Endpoints](../crd-api.md#dnsendpoint) from its `Spec`.
 So users need to create such a CRD and register it to the kubernetes cluster and then create new object(s) of the CRD specifying the Endpoints.
 
 ## Registering CRD
 
-Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/endpoint/endpoint.go) which provides Endpoints to `CRD source`:
+The `DNSEndpoint` CRD is in [config/crd/standard](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/config/crd/standard).
+The [CRD API Reference](../crd-api.md) lists its fields.
 
-```go
-type TTL int64
-type Targets []string
-type ProviderSpecificProperty struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
-}
-type ProviderSpecific []ProviderSpecificProperty
-type Labels map[string]string
-
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string `json:"dnsName,omitempty"`
-	// The targets the DNS record points to
-	Targets Targets `json:"targets,omitempty"`
-	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
-	RecordType string `json:"recordType,omitempty"`
-	// TTL for the record
-	RecordTTL TTL `json:"recordTTL,omitempty"`
-	// Labels stores labels defined for the Endpoint
-	// +optional
-	Labels Labels `json:"labels,omitempty"`
-	// ProviderSpecific stores provider specific config
-	// +optional
-	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
-}
-
-type DNSEndpointSpec struct {
-	Endpoints []*Endpoint `json:"endpoints,omitempty"`
-}
-
-type DNSEndpointStatus struct {
-	// The generation observed by the external-dns controller.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// DNSEndpoint is the CRD wrapper for Endpoint
-// +k8s:openapi-gen=true
-// +kubebuilder:resource:path=dnsendpoints
-// +kubebuilder:subresource:status
-type DNSEndpoint struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   DNSEndpointSpec   `json:"spec,omitempty"`
-	Status DNSEndpointStatus `json:"status,omitempty"`
-}
-```
-
-Refer to [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) to create and register the CRD.
+You can also use your own CRD.
+It must have the same `spec` and `status` fields as `DNSEndpoint` and the `status` subresource.
 
 ## Usage
 

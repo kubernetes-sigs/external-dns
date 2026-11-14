@@ -29,12 +29,14 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 	"sigs.k8s.io/external-dns/pkg/metrics"
 	"sigs.k8s.io/external-dns/plan"
@@ -53,12 +55,12 @@ var testBackoff = wait.Backoff{Duration: time.Millisecond, Factor: 1.5, Steps: 5
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
-	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout, testMaxBodySize)
+	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.Error(t, err)
 }
 
 func TestNewWebhookProvider_HTTPRequestFailure(t *testing.T) {
-	_, err := newProvider(t.Context(), "http://nonexistent.url", testReadTimeout, testWriteTimeout, testMaxBodySize)
+	_, err := newProvider(t.Context(), "http://nonexistent.url", testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.Error(t, err)
 }
 
@@ -70,7 +72,7 @@ func TestNewWebhookProvider_InvalidResponseBody(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to unmarshal response body of DomainFilter")
 }
@@ -81,7 +83,7 @@ func TestNewWebhookProvider_Non2XXStatusCode(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unexpected status code 400")
 }
@@ -96,7 +98,7 @@ func TestNewWebhookProvider_WrongContentTypeHeader(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "wrong content type returned from server")
 }
@@ -114,7 +116,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	_, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.Error(t, err)
 }
 
@@ -130,7 +132,7 @@ func TestValidDomainfilter(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
@@ -149,7 +151,7 @@ func TestRecords(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	endpoints, err := provider.Records(t.Context())
 	require.NoError(t, err)
@@ -171,7 +173,7 @@ func TestRecordsWithErrors(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	_, err = p.Records(t.Context())
 	require.Error(t, err)
@@ -257,7 +259,7 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	err = p.ApplyChanges(t.Context(), nil)
 	require.NoError(t, err)
@@ -267,6 +269,29 @@ func TestApplyChanges(t *testing.T) {
 	err = p.ApplyChanges(t.Context(), nil)
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
+}
+
+func TestApplyChangesDryRun(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
+		t.Errorf("unexpected %s %s in dry-run", r.Method, r.URL.Path)
+	}))
+	defer svr.Close()
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, true)
+	require.NoError(t, err)
+	hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{endpoint.NewEndpoint("new.example.com", endpoint.RecordTypeA, "1.2.3.4")},
+		Delete: []*endpoint.Endpoint{endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "5.6.7.8")},
+	}))
+	logtest.TestHelperLogContains("Dry run: skipping CREATE new.example.com", hook, t)
+	logtest.TestHelperLogContains("Dry run: skipping DELETE old.example.com", hook, t)
 }
 
 func TestApplyChanges_HTTPNewRequestErrorWrongHost(t *testing.T) {
@@ -303,7 +328,7 @@ func TestApplyChanges_StatusCodeError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 
 	err = p.ApplyChanges(t.Context(), nil)
@@ -340,7 +365,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	provider, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -391,7 +416,7 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 		svr := echoSvr(t)
 		defer svr.Close()
 
-		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 		require.NoError(t, err)
 
 		ref := endpoint.NewObjectRef("Service", "v1", "default", "my-svc", "uid-1", "service")
@@ -409,7 +434,7 @@ func TestAdjustEndpoints_PreservesRefObjects(t *testing.T) {
 		svr := echoSvr(t)
 		defer svr.Close()
 
-		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+		p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 		require.NoError(t, err)
 
 		ref1 := endpoint.NewObjectRef("Service", "v1", "default", "svc-a", "uid-1", "service")
@@ -441,7 +466,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -489,7 +514,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 	e := &endpoint.Endpoint{
 		DNSName:    "test.example.com",
@@ -695,7 +720,7 @@ func TestNewWebhookProvider_UsesInstrumentedTransport(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 
 	assert.IsType(t, &extdnshttp.CustomRoundTripper{}, p.client.Transport, "webhook provider client should use an instrumented transport")
@@ -717,7 +742,7 @@ func TestRecords_EmitsHTTPDurationMetric(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize, false)
 	require.NoError(t, err)
 
 	before := httpDurationSampleCount(t, "records", http.MethodGet)
@@ -755,7 +780,7 @@ func TestRecords_ResponseBodyOverLimit(t *testing.T) {
 	svr := oversizedRecordsServer(t, 2*limit)
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, limit)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, limit, false)
 	require.NoError(t, err)
 
 	_, err = p.Records(t.Context())
@@ -767,7 +792,7 @@ func TestRecords_ResponseBodyLimitDisabled(t *testing.T) {
 	svr := oversizedRecordsServer(t, 0) // terminates the JSON after one chunk
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, 0)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, 0, false)
 	require.NoError(t, err)
 
 	endpoints, err := p.Records(t.Context())
@@ -798,7 +823,7 @@ func TestRecords_ResponseBodyAtLimit(t *testing.T) {
 	svr := validRecordsServer(t, limit)
 	defer svr.Close()
 
-	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, limit)
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, limit, false)
 	require.NoError(t, err)
 
 	endpoints, err := p.Records(t.Context())

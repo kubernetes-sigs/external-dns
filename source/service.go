@@ -319,6 +319,10 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		sc.endpointSlicesInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	}
+	// NodePort targets follow Node changes, e.g. a Node being added, tainted for removal or deleted.
+	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
+		informers.MustAddEventHandler(sc.nodeInformer.Informer(), nodePortEventHandler(handler))
+	}
 }
 
 // Helper to convert raw objects to EndpointSlice
@@ -691,6 +695,10 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 			log.Debugf("Skipping pod %s/%s: node %s not found", v.Namespace, v.Name, v.Spec.NodeName)
 			continue
 		}
+		// Drop excluded nodes before ranking, so a lower tier on an eligible node can still be used.
+		if !sc.isNodeTargetable(node) {
+			continue
+		}
 
 		p := notReady
 		if isPodStatusReady(v.Status) {
@@ -753,18 +761,18 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
 		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc)
 	} else {
-		var err error
-		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
+		allNodes, err := sc.nodeInformer.Lister().List(labels.Everything())
 		if err != nil {
 			return nil, err
+		}
+		for _, node := range allNodes {
+			if sc.isNodeTargetable(node) {
+				nodes = append(nodes, node)
+			}
 		}
 	}
 
 	for _, node := range nodes {
-		if node.Spec.Unschedulable && sc.excludeUnschedulable {
-			log.Debugf("Skipping node %s - unschedulable", node.Name)
-			continue
-		}
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:
@@ -797,6 +805,21 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	return internalIPs, nil
+}
+
+// isNodeTargetable reports whether the Node can be a NodePort target.
+func (sc *serviceSource) isNodeTargetable(node *v1.Node) bool {
+	if sc.excludeUnschedulable {
+		if reason := unschedulableReason(node); reason != "" {
+			log.Debugf("Skipping node %s - %s", node.Name, reason)
+			return false
+		}
+	}
+	if isExcludedFromLoadBalancers(node) {
+		log.Debugf("Skipping node %s - labeled %s", node.Name, v1.LabelNodeExcludeBalancers)
+		return false
+	}
+	return true
 }
 
 func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {

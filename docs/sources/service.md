@@ -91,6 +91,17 @@ If `spec.ExternalTrafficPolicy` is `Local`, selects Nodes that have at least one
 
 Otherwise iterates over all Nodes, of any phase.
 
+These Nodes are skipped (with `Local`, before the tiers above are compared):
+
+- Nodes labeled `node.kubernetes.io/exclude-from-external-load-balancers`, unless the value parses as false
+  (for example `false` or `0`). This is the label the cloud-provider service controller uses to keep Nodes out of
+  load balancers.
+- By default, Nodes that are cordoned, being deleted, or tainted `ToBeDeletedByClusterAutoscaler` (Cluster Autoscaler)
+  or `karpenter.sh/disrupted` (Karpenter). Use `--no-exclude-unschedulable` to keep them.
+
+With `--events`, the records are updated when Nodes are added, removed or change.
+Use a short `external-dns.kubernetes.io/ttl` when Nodes come and go.
+
 Iterates over each relevant Node's `status.addresses`:
 
 1. If there is an `external-dns.kubernetes.io/access: public` annotation on the Service, uses both addresses with
