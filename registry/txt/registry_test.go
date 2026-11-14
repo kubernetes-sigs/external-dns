@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -1707,42 +1708,22 @@ func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
+func TestGenerateTXTRecord(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	testCases := []struct {
-		name            string
-		endpoint        *endpoint.Endpoint
-		expectedRecords int
-		expectedPrefix  string
-		description     string
+		name           string
+		endpoint       *endpoint.Endpoint
+		expectedPrefix string
 	}{
 		{
-			name:            "legacy format enabled - standard record",
-			endpoint:        newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
-			expectedRecords: 1,
-			expectedPrefix:  "a-",
-			description:     "Should generate only new format TXT records",
+			name:           "A record",
+			endpoint:       newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
+			expectedPrefix: "a-",
 		},
 		{
-			name:            "new format only - standard record",
-			endpoint:        newEndpointWithOwner("foo.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "owner"),
-			expectedRecords: 1,
-			expectedPrefix:  "a-",
-			description:     "Should only generate new format TXT record",
-		},
-		{
-			name:            "legacy format enabled - AAAA record",
-			endpoint:        newEndpointWithOwner("foo.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, "owner"),
-			expectedRecords: 1,
-			expectedPrefix:  "aaaa-",
-			description:     "Should only generate new format for AAAA records regardless of setting",
-		},
-		{
-			name:            "new format only - AAAA record",
-			endpoint:        newEndpointWithOwner("foo.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, "owner"),
-			expectedRecords: 1,
-			expectedPrefix:  "aaaa-",
-			description:     "Should only generate new format for AAAA records",
+			name:           "AAAA record",
+			endpoint:       newEndpointWithOwner("foo.test-zone.example.org", "2001:db8::1", endpoint.RecordTypeAAAA, "owner"),
+			expectedPrefix: "aaaa-",
 		},
 	}
 
@@ -1751,28 +1732,14 @@ func TestGenerateTXTRecordWithNewFormatOnly(t *testing.T) {
 			r, _ := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
 			records := r.generateTXTRecord(tc.endpoint)
 
-			assert.Len(t, records, tc.expectedRecords, tc.description)
-
-			for _, record := range records {
-				assert.Equal(t, endpoint.RecordTypeTXT, record.RecordType)
-			}
-
-			if tc.endpoint.RecordType == endpoint.RecordTypeAAAA {
-				hasNewFormat := false
-				for _, record := range records {
-					if strings.HasPrefix(record.DNSName, tc.expectedPrefix) {
-						hasNewFormat = true
-						break
-					}
-				}
-				assert.True(t, hasNewFormat,
-					"Should have at least one record with prefix %s when using new format", tc.expectedPrefix)
-			}
+			require.Len(t, records, 1)
+			assert.Equal(t, endpoint.RecordTypeTXT, records[0].RecordType)
+			assert.True(t, strings.HasPrefix(records[0].DNSName, tc.expectedPrefix))
 		})
 	}
 }
 
-func TestApplyChangesWithNewFormatOnly(t *testing.T) {
+func TestApplyChangesCreatesOneTXTRecord(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
 	require.NoError(t, err)
@@ -1799,11 +1766,98 @@ func TestApplyChangesWithNewFormatOnly(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, txtRecords, 1, "Should only create one TXT record in new format")
+	require.Len(t, txtRecords, 1)
+	assert.Equal(t, "a-new-record.test-zone.example.org", txtRecords[0].DNSName)
+}
 
-	if len(txtRecords) > 0 {
-		assert.True(t, strings.HasPrefix(txtRecords[0].DNSName, "a-"),
-			"TXT record should have 'a-' prefix when using new format only")
+type zoneFilterProvider struct {
+	*inmemory.InMemoryProvider
+}
+
+func (zoneFilterProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return endpoint.NewDomainFilter([]string{testZone})
+}
+
+func TestRecordsSkipsForceUpdateForTXTOutsideZones(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		dns         string
+		forceUpdate bool
+	}{
+		{name: "apex", dns: testZone},
+		{name: "subdomain", dns: "foo." + testZone, forceUpdate: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+			// Legacy-format TXT at the record name: ownership resolves, the new-format TXT is missing.
+			require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					newEndpointWithOwner(tc.dns, "1.2.3.4", endpoint.RecordTypeA, ""),
+					newEndpointWithOwner(tc.dns, "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+				},
+			}))
+			r, err := newRegistry(zoneFilterProvider{p}, "", "", "owner", 0, "", []string{endpoint.RecordTypeA}, nil, false, nil, "")
+			require.NoError(t, err)
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			before := testutil.ToFloat64(txtOutsideZonesTotal.Counter)
+
+			for range 2 {
+				records, err := r.Records(t.Context())
+				require.NoError(t, err)
+				for _, ep := range records {
+					if ep.RecordType != endpoint.RecordTypeA {
+						continue
+					}
+					assert.Equal(t, "owner", ep.Labels[endpoint.OwnerLabelKey])
+					_, forced := ep.GetProviderSpecificProperty(providerSpecificForceUpdate)
+					assert.Equal(t, tc.forceUpdate, forced)
+				}
+			}
+
+			warnings := 0
+			for _, e := range hook.AllEntries() {
+				if strings.Contains(e.Message, "is outside the provider zones") {
+					warnings++
+				}
+			}
+			assert.Equal(t, map[bool]int{true: 0, false: 1}[tc.forceUpdate], warnings)
+			// Counted on every sync, unlike the warning.
+			assert.InDelta(t, map[bool]float64{true: 0, false: 2}[tc.forceUpdate], testutil.ToFloat64(txtOutsideZonesTotal.Counter)-before, 0)
+		})
+	}
+}
+
+func TestApplyChangesWarnsTXTOutsideZones(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		prefix string
+		dns    string
+		warns  bool
+	}{
+		{name: "apex with default prefix", dns: testZone, warns: true},
+		{name: "apex with dotted prefix", prefix: "%{record_type}-txt.", dns: testZone},
+		{name: "subdomain with default prefix", dns: "foo." + testZone},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := inmemory.NewInMemoryProvider()
+			require.NoError(t, p.CreateZone(testZone))
+			r, err := newRegistry(zoneFilterProvider{p}, tc.prefix, "", "owner", 0, "", nil, nil, false, nil, "")
+			require.NoError(t, err)
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+
+			err = r.ApplyChanges(t.Context(), &plan.Changes{
+				Create: []*endpoint.Endpoint{newEndpointWithOwner(tc.dns, "1.2.3.4", endpoint.RecordTypeA, "")},
+			})
+			require.NoError(t, err)
+
+			msg := "is outside the provider zones"
+			if tc.warns {
+				logtest.TestHelperLogContains(msg, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(msg, hook, t)
+			}
+		})
 	}
 }
 
