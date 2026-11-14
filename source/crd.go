@@ -217,8 +217,8 @@ func illegalTargetReason(ep *endpoint.Endpoint) string {
 			continue
 		}
 		switch ep.RecordType {
-		case endpoint.RecordTypeTXT, endpoint.RecordTypeMX:
-			continue // TXT is free-form; Validate checks MX
+		case endpoint.RecordTypeTXT, endpoint.RecordTypeMX, endpoint.RecordTypeCAA:
+			continue // TXT and CAA values are free-form; Validate checks MX and CAA
 		case endpoint.RecordTypeSRV:
 			// RFC 2782 requires the dot; Validate checks it (#6357).
 			continue

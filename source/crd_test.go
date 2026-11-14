@@ -656,6 +656,30 @@ func TestCRDSourceIllegalTargetWarnings(t *testing.T) {
 			},
 			wantWarning: ``,
 		},
+		{
+			title: "CAA value with trailing dot produces no warning",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"0 issue letsencrypt.org."},
+					RecordType: endpoint.RecordTypeCAA,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: ``,
+		},
+		{
+			title: "malformed CAA target is rejected",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"0 issue"},
+					RecordType: endpoint.RecordTypeCAA,
+					RecordTTL:  180,
+				},
+			},
+			wantWarning: `invalid CAA target "0 issue"`,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
