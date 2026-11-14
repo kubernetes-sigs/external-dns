@@ -909,12 +909,6 @@ func TestAWSApplyChanges(t *testing.T) {
 		listRRSets int
 	}{
 		{"no cache", func(_ *AWSProvider) context.Context { return t.Context() }, 0},
-		{"cached", func(p *AWSProvider) context.Context {
-			ctx := t.Context()
-			records, err := p.Records(ctx)
-			require.NoError(t, err)
-			return context.WithValue(ctx, provider.RecordsContextKey, records)
-		}, 0},
 	}
 
 	for _, tt := range tests {

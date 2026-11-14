@@ -29,7 +29,6 @@ package aws
 // which a source never produces.
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"sort"
@@ -144,7 +143,6 @@ func (h *reconcileLoop) runOnce(desired []*endpoint.Endpoint) (*plan.Changes, er
 	if err != nil {
 		return nil, fmt.Errorf("registry.Records: %w", err)
 	}
-	ctx = context.WithValue(ctx, provider.RecordsContextKey, current)
 
 	// A source rebuilds its endpoints every loop, and AdjustEndpoints mutates them.
 	source := make([]*endpoint.Endpoint, 0, len(desired))

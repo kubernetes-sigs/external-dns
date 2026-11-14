@@ -88,8 +88,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	countAddressRecords(regRecords, registryRecords)
 
-	ctx = context.WithValue(ctx, provider.RecordsContextKey, regRecords)
-
 	sourceEndpoints, err := c.Source.Endpoints(ctx)
 	if err != nil {
 		sourceErrorsTotal.Counter.Inc()
