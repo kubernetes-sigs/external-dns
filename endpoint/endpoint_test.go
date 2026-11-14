@@ -1824,6 +1824,31 @@ func TestNewEndpointWithTTLMXTargets(t *testing.T) {
 	assert.NoError(t, Targets{"0 ."}.validateMXRecord(), "null MX must stay a valid MX target")
 }
 
+func TestNormalizeAliasType(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected AliasType
+	}{
+		{input: "true", expected: AliasTrue},
+		{input: "True", expected: AliasTrue},
+		{input: "TRUE", expected: AliasTrue},
+		{input: "false", expected: AliasFalse},
+		{input: "False", expected: AliasFalse},
+		{input: "A", expected: AliasA},
+		{input: "a", expected: AliasA},
+		{input: "AAAA", expected: AliasAAAA},
+		{input: "aaaa", expected: AliasAAAA},
+		{input: "", expected: AliasNone},
+		{input: "yes", expected: AliasNone},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			assert.Equal(t, tt.expected, NormalizeAliasType(tt.input))
+		})
+	}
+}
+
 func TestGetAliasProperty(t *testing.T) {
 	tests := []struct {
 		name     string
