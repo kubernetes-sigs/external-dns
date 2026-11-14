@@ -71,6 +71,9 @@ type DynamoDBRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
+
+	// When set, ownership writes are logged instead of executed so the registry matches the provider's dry-run.
+	dryRun bool
 }
 
 const dynamodbAttributeMigrate = "dynamodb/needs-migration"
@@ -81,9 +84,14 @@ var dynamodbMaxBatchSize uint8 = 25
 // New creates a DynamoDBRegistry from the given configuration.
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
 	client := awsdynamodb.NewFromConfig(provideraws.CreateDefaultV2Config(cfg), WithRegion(cfg.AWSDynamoDBRegion))
-	return newRegistry(p, cfg.TXTOwnerID, client,
+	r, err := newRegistry(p, cfg.TXTOwnerID, client,
 		cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement,
 		cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+	if err != nil {
+		return nil, err
+	}
+	r.dryRun = cfg.DryRun
+	return r, nil
 }
 
 // newRegistry returns a new DynamoDBRegistry object.
@@ -542,6 +550,12 @@ func (im *DynamoDBRegistry) appendDelete(statements []dynamodbtypes.BatchStateme
 }
 
 func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []dynamodbtypes.BatchStatementRequest, handleErr func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error) error {
+	if im.dryRun {
+		for _, s := range statements {
+			log.Infof("Dry run mode, skipping DynamoDB statement: %s", *s.Statement)
+		}
+		return nil
+	}
 	for len(statements) > 0 {
 		var chunk []dynamodbtypes.BatchStatementRequest
 		if len(statements) > int(dynamodbMaxBatchSize) {

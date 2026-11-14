@@ -18,8 +18,12 @@ package dynamodb
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -33,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -1407,4 +1412,53 @@ func TestWithRegion(t *testing.T) {
 			assert.Equal(t, tc.expectedRegion, opts.Region)
 		})
 	}
+}
+
+// TestDynamoDBRegistryApplyChangesDryRun drives New with DryRun set against a local
+// HTTP stub standing in for DynamoDB, so it only uses the public constructor.
+func TestDynamoDBRegistryApplyChangesDryRun(t *testing.T) {
+	var batchCalls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		batchCalls.Add(1)
+		var in struct {
+			Statements []json.RawMessage `json:"Statements"`
+		}
+		_ = json.NewDecoder(req.Body).Decode(&in)
+		out := struct {
+			Responses []map[string]any `json:"Responses"`
+		}{}
+		for range in.Statements {
+			out.Responses = append(out.Responses, map[string]any{})
+		}
+		w.Header().Set("Content-Type", "application/x-amz-json-1.0")
+		_ = json.NewEncoder(w).Encode(out)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("AWS_ENDPOINT_URL_DYNAMODB", srv.URL)
+	t.Setenv("AWS_ACCESS_KEY_ID", "test")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	t.Setenv("AWS_REGION", "us-east-1")
+
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	cfg := &externaldns.Config{
+		TXTOwnerID:        "test-owner",
+		AWSDynamoDBTable:  "test-table",
+		AWSDynamoDBRegion: "us-east-1",
+		DryRun:            true,
+	}
+	reg, err := New(cfg, p)
+	require.NoError(t, err)
+	r := reg.(*DynamoDBRegistry)
+	// Records() would normally populate these before ApplyChanges; the stub has no Scan.
+	r.labels = map[endpoint.EndpointKey]endpoint.Labels{}
+	r.orphanedLabels = sets.New[endpoint.EndpointKey]()
+
+	err = r.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("foo.test-zone.example.org", endpoint.RecordTypeCNAME, "foo.loadbalancer.com"),
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int32(0), batchCalls.Load(), "dry-run must not write ownership items to DynamoDB")
 }
