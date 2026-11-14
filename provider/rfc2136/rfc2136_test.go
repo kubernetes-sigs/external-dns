@@ -377,6 +377,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 		{"DNAME", "sub.foo.com", []string{"a.bar.com.", "b.bar.com."}, []string{"a.bar.com", "b.bar.com"}},
 		{"PTR", "4.3.2.1.in-addr.arpa", []string{"host1.foo.com.", "host2.foo.com."}, []string{"host1.foo.com", "host2.foo.com"}},
 		{"MX", "mxprobe.foo.com", []string{"10 mail1.foo.com.", "20 mail2.foo.com."}, []string{"10 mail1.foo.com", "20 mail2.foo.com"}},
+		{"SRV", "_xmpp-client._tcp.foo.com", []string{"0 5 5222 xmpp1.foo.com.", "10 5 5222 xmpp2.foo.com."}, []string{"0 5 5222 xmpp1.foo.com.", "10 5 5222 xmpp2.foo.com."}},
 	} {
 		t.Run(tc.recordType, func(t *testing.T) {
 			zone := make([]string, 0, len(tc.axfrValues))
