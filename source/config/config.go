@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/annotations/schema"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/template"
 )
 
@@ -107,6 +108,11 @@ type Config struct {
 	// crdClients lets callers outside this package reuse the crd source's client
 	// instead of building a second one.
 	crdClients *crd.CRDClients
+
+	// targetFrom is shared by all sources so a resource referenced from several
+	// of them is watched once.
+	targetFrom     *targetfrom.Resolver
+	targetFromOnce sync.Once
 }
 
 // CRDClients returns the reader/writer built for the crd source, or nil if the
@@ -134,6 +140,22 @@ func (cfg *Config) EnsureClientGen[T any](init func() T) T {
 		}
 	})
 	return cfg.clientGen.(T)
+}
+
+// SetTargetFrom sets the shared target-from resolver. Intended for testing.
+func (cfg *Config) SetTargetFrom(r *targetfrom.Resolver) {
+	cfg.targetFrom = r
+}
+
+// EnsureTargetFrom returns the shared target-from resolver, building it with
+// init on the first call if none was set.
+func (cfg *Config) EnsureTargetFrom(init func() *targetfrom.Resolver) *targetfrom.Resolver {
+	cfg.targetFromOnce.Do(func() {
+		if cfg.targetFrom == nil {
+			cfg.targetFrom = init()
+		}
+	})
+	return cfg.targetFrom
 }
 
 // OverrideConfigOption configures a Config.
