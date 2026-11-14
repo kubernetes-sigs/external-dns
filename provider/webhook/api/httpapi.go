@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -37,6 +38,7 @@ const (
 	UrlAdjustEndpoints        = "/adjustendpoints"
 	UrlApplyChanges           = "/applychanges"
 	UrlRecords                = "/records"
+	defaultShutdownTimeout    = 30 * time.Second
 )
 
 type WebhookServer struct {
@@ -56,6 +58,8 @@ type ServerOptions struct {
 	WriteTimeout      time.Duration
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
+	// ShutdownTimeout bounds request draining; <= 0 defaults to 30 seconds.
+	ShutdownTimeout time.Duration
 	// MaxBodySize caps request body bytes; <= 0 disables the limit.
 	MaxBodySize int64
 }
@@ -150,15 +154,30 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request)
 	}
 }
 
-// StartHTTPApi starts a HTTP server given any provider.
-// the function takes an optional channel as input which is used to signal that the server has started.
-// The server will listen on port `providerPort`.
-// The server will respond to the following endpoints:
-// - / (GET): initialization, negotiates headers and returns the domain filter
-// - /records (GET): returns the current records
-// - /records (POST): applies the changes
-// - /adjustendpoints (POST): executes the AdjustEndpoints method
+// StartHTTPApi serves the webhook API until a fatal server error occurs.
+// Use StartHTTPApiWithContext to support graceful shutdown and handle errors.
 func StartHTTPApi(opts ServerOptions) {
+	if err := StartHTTPApiWithContext(context.Background(), opts); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// StartHTTPApiWithContext serves the webhook API until ctx is canceled or the
+// server fails. Cancellation drains active requests for up to ShutdownTimeout.
+// It returns nil on graceful cancellation and an error on startup, serving, or
+// shutdown failure. After a shutdown timeout, remaining connections are closed.
+func StartHTTPApiWithContext(ctx context.Context, opts ServerOptions) error {
+	if ctx.Err() != nil {
+		return nil
+	}
+	l, err := net.Listen("tcp", opts.ProviderPort)
+	if err != nil {
+		return fmt.Errorf("listen for webhook HTTP API: %w", err)
+	}
+	return serveHTTPAPI(ctx, opts, l)
+}
+
+func serveHTTPAPI(ctx context.Context, opts ServerOptions, l net.Listener) error {
 	p := WebhookServer{
 		Provider:    opts.Provider,
 		MaxBodySize: opts.MaxBodySize,
@@ -180,16 +199,38 @@ func StartHTTPApi(opts ServerOptions) {
 		IdleTimeout:       opts.IdleTimeout,
 	}
 
-	l, err := net.Listen("tcp", opts.ProviderPort)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Also close active connections if graceful draining exceeds its deadline.
+	defer func() { _ = s.Close() }()
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- s.Serve(l) }()
 
-	if opts.StartedChan != nil {
-		opts.StartedChan <- struct{}{}
+	started := opts.StartedChan
+	for {
+		select {
+		case started <- struct{}{}:
+			started = nil
+		case err := <-serveErr:
+			return httpServeError(err)
+		case <-ctx.Done():
+			timeout := opts.ShutdownTimeout
+			if timeout <= 0 {
+				timeout = defaultShutdownTimeout
+			}
+			// The lifecycle context is already canceled; draining needs a fresh deadline.
+			shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+			defer cancel()
+			if err := s.Shutdown(shutdownCtx); err != nil {
+				<-serveErr
+				return fmt.Errorf("shut down webhook HTTP API: %w", err)
+			}
+			return httpServeError(<-serveErr)
+		}
 	}
+}
 
-	if err := s.Serve(l); err != nil {
-		log.Fatal(err)
+func httpServeError(err error) error {
+	if err == nil || errors.Is(err, http.ErrServerClosed) {
+		return nil
 	}
+	return fmt.Errorf("serve webhook HTTP API: %w", err)
 }
