@@ -337,6 +337,18 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestSyncSecondRoundTrailingDotCNAME() {
+	current := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"v1.example.org"}}
+	desired := &endpoint.Endpoint{DNSName: "foo", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"v1.example.org."}}
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        []*endpoint.Endpoint{current},
+		Desired:        []*endpoint.Endpoint{desired},
+		ManagedRecords: []string{endpoint.RecordTypeCNAME},
+	}
+	suite.False(p.Calculate().Changes.HasChanges())
+}
+
 func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
@@ -1189,4 +1201,26 @@ func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 		UpdateNew: []*endpoint.Endpoint{updated},
 	}
 	suite.False(changes.HasChanges())
+}
+
+func TestTargetChanged(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		recordType      string
+		desired         endpoint.Targets
+		current         endpoint.Targets
+		expectedChanged bool
+	}{
+		{"CNAME dotted vs bare", endpoint.RecordTypeCNAME, endpoint.Targets{"target.example.org."}, endpoint.Targets{"target.example.org"}, false},
+		{"CNAME bare vs dotted", endpoint.RecordTypeCNAME, endpoint.Targets{"target.example.org"}, endpoint.Targets{"target.example.org."}, false},
+		{"DNAME dotted vs bare", endpoint.RecordTypeDNAME, endpoint.Targets{"other.example.org."}, endpoint.Targets{"other.example.org"}, false},
+		{"CNAME other target", endpoint.RecordTypeCNAME, endpoint.Targets{"a.example.org."}, endpoint.Targets{"b.example.org"}, true},
+		{"TXT dot is significant", endpoint.RecordTypeTXT, endpoint.Targets{"foo."}, endpoint.Targets{"foo"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			desired := &endpoint.Endpoint{DNSName: "foo.example.com", RecordType: tc.recordType, Targets: tc.desired}
+			current := &endpoint.Endpoint{DNSName: "foo.example.com", RecordType: tc.recordType, Targets: tc.current}
+			assert.Equal(t, tc.expectedChanged, targetChanged(desired, current))
+		})
+	}
 }
