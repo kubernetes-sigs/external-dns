@@ -1011,7 +1011,6 @@ func TestTraefikSource_InformerTransform(t *testing.T) {
 	}
 }
 
-// newTraefikScheme builds a runtime.Scheme with the supported Traefik CRD types registered.
 func newTraefikScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	s.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
@@ -1021,7 +1020,7 @@ func newTraefikScheme() *runtime.Scheme {
 }
 
 // TestTraefikIndexer verifies that the indexer correctly filters IngressRoute, IngressRouteTCP,
-// and IngressRouteUDP resources (current traefik.io GVRs) by annotation and label at index time.
+// and IngressRouteUDP resources by annotation and label at index time.
 func TestTraefikIndexer(t *testing.T) {
 	t.Parallel()
 
