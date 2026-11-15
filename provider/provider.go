@@ -33,11 +33,6 @@ import (
 // that this is a transient error.
 var SoftError error = errors.New("soft error") //nolint:staticcheck
 
-// RecordsContextKey is a context key. It can be used during ApplyChanges
-// to access previously cached records. The associated value will be of
-// type []*endpoint.Endpoint.
-var RecordsContextKey = &contextKey{"records"}
-
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -54,10 +49,6 @@ type Provider interface {
 }
 
 type BaseProvider struct{}
-
-type contextKey struct {
-	name string
-}
 
 // NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
 func NewSoftErrorf(format string, a ...any) error {
@@ -80,8 +71,6 @@ func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return &endpoint.DomainFilter{}
 }
-
-func (k *contextKey) String() string { return "provider context value " + k.name }
 
 // EnsureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
 func EnsureTrailingDot(hostname string) string {
