@@ -38,7 +38,9 @@ const (
 	UrlAdjustEndpoints        = "/adjustendpoints"
 	UrlApplyChanges           = "/applychanges"
 	UrlRecords                = "/records"
-	defaultShutdownTimeout    = 30 * time.Second
+	// defaultShutdownTimeout is below the default Kubernetes termination grace
+	// period (30s), so draining finishes before the kubelet sends SIGKILL.
+	defaultShutdownTimeout = 25 * time.Second
 )
 
 type WebhookServer struct {
@@ -58,7 +60,8 @@ type ServerOptions struct {
 	WriteTimeout      time.Duration
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
-	// ShutdownTimeout bounds request draining; <= 0 defaults to 30 seconds.
+	// ShutdownTimeout bounds request draining; <= 0 defaults to 25 seconds.
+	// It is only used by StartHTTPApiWithContext.
 	ShutdownTimeout time.Duration
 	// MaxBodySize caps request body bytes; <= 0 disables the limit.
 	MaxBodySize int64
@@ -154,22 +157,40 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request)
 	}
 }
 
-// StartHTTPApi serves the webhook API until a fatal server error occurs.
-// Use StartHTTPApiWithContext to support graceful shutdown and handle errors.
+// StartHTTPApi starts a HTTP server given any provider.
+// the function takes an optional channel as input which is used to signal that the server has started.
+// The server will listen on port `providerPort`.
+// The server will respond to the following endpoints:
+// - / (GET): initialization, negotiates headers and returns the domain filter
+// - /records (GET): returns the current records
+// - /records (POST): applies the changes
+// - /adjustendpoints (POST): executes the AdjustEndpoints method
+//
+// StartHTTPApi is no longer the recommended way to start the server: it cannot
+// be stopped and it exits the process on errors. Use StartHTTPApiWithContext,
+// which shuts down gracefully and returns errors to the caller.
 func StartHTTPApi(opts ServerOptions) {
 	if err := StartHTTPApiWithContext(context.Background(), opts); err != nil {
 		log.Fatal(err)
 	}
 }
 
-// StartHTTPApiWithContext serves the webhook API until ctx is canceled or the
-// server fails. Cancellation drains active requests for up to ShutdownTimeout.
-// It returns nil on graceful cancellation and an error on startup, serving, or
-// shutdown failure. After a shutdown timeout, remaining connections are closed.
+// StartHTTPApiWithContext starts a HTTP server given any provider and serves it
+// until ctx is canceled or the server fails. It is the recommended way to start
+// the server.
+// The function takes an optional channel as input which is used to signal that the server has started.
+// The server will listen on port `providerPort`.
+// The server will respond to the following endpoints:
+// - / (GET): initialization, negotiates headers and returns the domain filter
+// - /records (GET): returns the current records
+// - /records (POST): applies the changes
+// - /adjustendpoints (POST): executes the AdjustEndpoints method
+//
+// When ctx is canceled, the server stops accepting connections and waits up to
+// ShutdownTimeout for active requests to finish, then closes the remaining
+// connections. It returns nil after a graceful shutdown and an error if the
+// server cannot listen, fails while serving, or does not drain in time.
 func StartHTTPApiWithContext(ctx context.Context, opts ServerOptions) error {
-	if ctx.Err() != nil {
-		return nil
-	}
 	l, err := net.Listen("tcp", opts.ProviderPort)
 	if err != nil {
 		return fmt.Errorf("listen for webhook HTTP API: %w", err)
@@ -207,6 +228,8 @@ func serveHTTPAPI(ctx context.Context, opts ServerOptions, l net.Listener) error
 	started := opts.StartedChan
 	for {
 		select {
+		// Signal readiness without blocking: the server must still stop on
+		// cancellation or a serve error if nobody receives from StartedChan.
 		case started <- struct{}{}:
 			started = nil
 		case err := <-serveErr:

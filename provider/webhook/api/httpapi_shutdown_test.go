@@ -31,204 +31,282 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-type shutdownListener struct {
+// testWait bounds every wait in these tests so that a bug fails the test
+// instead of hanging it.
+const testWait = 5 * time.Second
+
+// The tests below exercise the shutdown of the webhook HTTP API:
+//
+//  1. startTestServer runs serveHTTPAPI on a random local port.
+//  2. A test can hold a GET /records request inside the provider with
+//     blockingRecordsProvider, so that the request is still active when the
+//     server is stopped.
+//  3. testServer.Stop cancels the server context, which starts the shutdown.
+//  4. testServer.Wait returns what serveHTTPAPI returned.
+
+// testServer is a webhook HTTP API running on a random local port.
+type testServer struct {
+	url      string
+	listener *trackingListener
+	client   *http.Client
+	cancel   context.CancelFunc
+	result   chan error    // receives the error returned by serveHTTPAPI
+	done     chan struct{} // closed when serveHTTPAPI has returned
+}
+
+// startTestServer starts serveHTTPAPI with opts and stops it at the end of the
+// test. It uses FakeWebhookProvider when opts.Provider is nil.
+func startTestServer(t *testing.T, opts ServerOptions) *testServer {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	listener := &trackingListener{Listener: l, closed: make(chan struct{})}
+	if opts.Provider == nil {
+		opts.Provider = FakeWebhookProvider{domainFilter: endpoint.NewDomainFilter(nil)}
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	transport := &http.Transport{}
+	s := &testServer{
+		url:      "http://" + l.Addr().String(),
+		listener: listener,
+		client:   &http.Client{Transport: transport, Timeout: testWait},
+		cancel:   cancel,
+		result:   make(chan error, 1),
+		done:     make(chan struct{}),
+	}
+	go func() {
+		s.result <- serveHTTPAPI(ctx, opts, listener)
+		close(s.done)
+	}()
+
+	t.Cleanup(func() {
+		cancel()
+		transport.CloseIdleConnections()
+		select {
+		case <-s.done:
+		case <-time.After(testWait):
+			t.Error("webhook API did not stop")
+		}
+	})
+	return s
+}
+
+// Stop cancels the server context, which starts the graceful shutdown.
+func (s *testServer) Stop() {
+	s.cancel()
+}
+
+// Wait returns the error returned by serveHTTPAPI.
+func (s *testServer) Wait(t *testing.T) error {
+	t.Helper()
+	select {
+	case err := <-s.result:
+		return err
+	case <-time.After(testWait):
+		t.Fatal("webhook API did not return")
+		return nil
+	}
+}
+
+// Get sends a GET request in the background and returns a channel that
+// receives the result once the response body has been read.
+func (s *testServer) Get(path string) <-chan getResult {
+	result := make(chan getResult, 1)
+	go func() {
+		resp, err := s.client.Get(s.url + path)
+		if err != nil {
+			result <- getResult{err: err}
+			return
+		}
+		defer resp.Body.Close()
+		_, err = io.Copy(io.Discard, resp.Body)
+		result <- getResult{status: resp.StatusCode, err: err}
+	}()
+	return result
+}
+
+type getResult struct {
+	status int
+	err    error
+}
+
+func waitGet(t *testing.T, result <-chan getResult) getResult {
+	t.Helper()
+	select {
+	case res := <-result:
+		return res
+	case <-time.After(testWait):
+		t.Fatal("HTTP request did not complete")
+		return getResult{}
+	}
+}
+
+// trackingListener reports when the server closes it, which is the first step
+// of http.Server.Shutdown: from then on, no new connections are accepted.
+type trackingListener struct {
 	net.Listener
 	closed chan struct{}
 	once   sync.Once
 }
 
-func (l *shutdownListener) Close() error {
+func (l *trackingListener) Close() error {
 	err := l.Listener.Close()
 	l.once.Do(func() { close(l.closed) })
 	return err
 }
 
-type webhookAPIFixture struct {
-	listener *shutdownListener
-	client   *http.Client
-	cancel   context.CancelFunc
-	result   <-chan error
-}
-
-func startWebhookAPI(t *testing.T, opts ServerOptions) *webhookAPIFixture {
-	t.Helper()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	l := &shutdownListener{Listener: listener, closed: make(chan struct{})}
-	if opts.Provider == nil {
-		opts.Provider = FakeWebhookProvider{domainFilter: endpoint.NewDomainFilter(nil)}
-	}
-	ctx, cancel := context.WithCancel(t.Context())
-	result := make(chan error, 1)
-	done := make(chan struct{})
-	go func() {
-		result <- serveHTTPAPI(ctx, opts, l)
-		close(done)
-	}()
-	transport := &http.Transport{}
-	f := &webhookAPIFixture{
-		listener: l, client: &http.Client{Transport: transport, Timeout: 5 * time.Second},
-		cancel: cancel, result: result,
-	}
-	t.Cleanup(func() {
-		cancel()
-		transport.CloseIdleConnections()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			_ = l.Close()
-			t.Error("webhook API did not stop")
-		}
-	})
-	return f
-}
-
-func waitWebhookResult(t *testing.T, result <-chan error) error {
+func (l *trackingListener) WaitClosed(t *testing.T) {
 	t.Helper()
 	select {
-	case err := <-result:
-		return err
-	case <-time.After(5 * time.Second):
-		t.Fatal("timed out waiting for the webhook API")
-		return nil
+	case <-l.closed:
+	case <-time.After(testWait):
+		t.Fatal("server did not stop accepting connections")
 	}
 }
 
-func TestHTTPAPIShutdownIdle(t *testing.T) {
-	started := make(chan struct{}, 2)
-	f := startWebhookAPI(t, ServerOptions{StartedChan: started})
-	select {
-	case <-started:
-	case <-time.After(5 * time.Second):
-		t.Fatal("server did not report readiness")
-	}
-	resp, err := f.client.Get("http://" + f.listener.Addr().String())
-	require.NoError(t, err)
-	_, err = io.Copy(io.Discard, resp.Body)
-	require.NoError(t, err)
-	require.NoError(t, resp.Body.Close())
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	f.cancel()
-	require.NoError(t, waitWebhookResult(t, f.result))
-	assert.Empty(t, started, "readiness must be signaled only once")
-}
-
-func TestHTTPAPIShutdownWithUnreadReadiness(t *testing.T) {
-	f := startWebhookAPI(t, ServerOptions{StartedChan: make(chan struct{})})
-	f.cancel()
-	require.NoError(t, waitWebhookResult(t, f.result))
-}
-
-type drainingWebhookProvider struct {
+// blockingRecordsProvider blocks in Records until UnblockRecords is called,
+// to keep a GET /records request active during the shutdown.
+type blockingRecordsProvider struct {
 	FakeWebhookProvider
-	entered chan struct{}
-	release chan struct{}
+	recordsCalled chan struct{}
+	unblock       chan struct{}
+	unblockOnce   sync.Once
 }
 
-func (p *drainingWebhookProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
-	close(p.entered)
-	<-p.release
+// newBlockingRecordsProvider returns a provider whose Records call is released
+// at the latest at the end of the test, so that the server can always stop.
+func newBlockingRecordsProvider(t *testing.T) *blockingRecordsProvider {
+	p := &blockingRecordsProvider{
+		recordsCalled: make(chan struct{}),
+		unblock:       make(chan struct{}),
+	}
+	t.Cleanup(p.UnblockRecords)
+	return p
+}
+
+func (p *blockingRecordsProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
+	close(p.recordsCalled)
+	<-p.unblock
 	return []*endpoint.Endpoint{}, nil
 }
 
-type webhookRequestResult struct {
-	status int
-	err    error
-}
-
-func startWebhookRecordsRequest(t *testing.T, f *webhookAPIFixture, p *drainingWebhookProvider) <-chan webhookRequestResult {
+// WaitUntilRecordsCalled waits until a request is blocked in Records.
+func (p *blockingRecordsProvider) WaitUntilRecordsCalled(t *testing.T) {
 	t.Helper()
-	result := make(chan webhookRequestResult, 1)
-	go func() {
-		resp, err := f.client.Get("http://" + f.listener.Addr().String() + UrlRecords)
-		if err != nil {
-			result <- webhookRequestResult{err: err}
-			return
-		}
-		_, err = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-		result <- webhookRequestResult{status: resp.StatusCode, err: err}
-	}()
 	select {
-	case <-p.entered:
-	case <-time.After(5 * time.Second):
+	case <-p.recordsCalled:
+	case <-time.After(testWait):
 		t.Fatal("request did not reach the provider")
 	}
-	return result
 }
 
-func waitWebhookRequest(t *testing.T, result <-chan webhookRequestResult) webhookRequestResult {
-	t.Helper()
+// UnblockRecords lets the blocked Records call return.
+func (p *blockingRecordsProvider) UnblockRecords() {
+	p.unblockOnce.Do(func() { close(p.unblock) })
+}
+
+func TestHTTPAPIShutdownWhenIdle(t *testing.T) {
+	started := make(chan struct{}, 2)
+	s := startTestServer(t, ServerOptions{StartedChan: started})
 	select {
-	case res := <-result:
-		return res
-	case <-time.After(5 * time.Second):
-		t.Fatal("timed out waiting for the HTTP request")
-		return webhookRequestResult{}
+	case <-started:
+	case <-time.After(testWait):
+		t.Fatal("server did not signal that it started")
 	}
+	res := waitGet(t, s.Get("/"))
+	require.NoError(t, res.err)
+	require.Equal(t, http.StatusOK, res.status)
+
+	s.Stop()
+
+	require.NoError(t, s.Wait(t))
+	assert.Empty(t, started, "the server must signal that it started only once")
 }
 
-func TestHTTPAPIShutdownDrainsActiveRequest(t *testing.T) {
-	for _, timeout := range []time.Duration{0, -time.Second, time.Second} {
-		t.Run(timeout.String(), func(t *testing.T) {
-			p := &drainingWebhookProvider{entered: make(chan struct{}), release: make(chan struct{})}
-			f := startWebhookAPI(t, ServerOptions{Provider: p, ShutdownTimeout: timeout})
-			release := sync.OnceFunc(func() { close(p.release) })
-			t.Cleanup(release)
-			request := startWebhookRecordsRequest(t, f, p)
+func TestHTTPAPIShutdownWithoutStartedChanReceiver(t *testing.T) {
+	// Nobody receives from StartedChan: the server must not block on it.
+	s := startTestServer(t, ServerOptions{StartedChan: make(chan struct{})})
 
-			f.cancel()
+	s.Stop()
+
+	require.NoError(t, s.Wait(t))
+}
+
+func TestHTTPAPIShutdownWaitsForActiveRequest(t *testing.T) {
+	for name, shutdownTimeout := range map[string]time.Duration{
+		"default timeout":  0,
+		"negative timeout": -time.Second,
+		"custom timeout":   time.Second,
+	} {
+		t.Run(name, func(t *testing.T) {
+			p := newBlockingRecordsProvider(t)
+			s := startTestServer(t, ServerOptions{Provider: p, ShutdownTimeout: shutdownTimeout})
+			request := s.Get(UrlRecords)
+			p.WaitUntilRecordsCalled(t)
+
+			s.Stop()
+
+			// The server stops accepting connections but keeps running while
+			// the request is still being served.
+			s.listener.WaitClosed(t)
 			select {
-			case <-f.listener.closed:
-			case <-time.After(5 * time.Second):
-				t.Fatal("shutdown did not close the listener")
-			}
-			select {
-			case err := <-f.result:
+			case err := <-s.result:
 				t.Fatalf("server returned before the active request completed: %v", err)
 			default:
 			}
 
-			release()
-			res := waitWebhookRequest(t, request)
+			p.UnblockRecords()
+
+			// The request completes, then the server returns without error.
+			res := waitGet(t, request)
 			require.NoError(t, res.err)
 			assert.Equal(t, http.StatusOK, res.status)
-			require.NoError(t, waitWebhookResult(t, f.result))
+			require.NoError(t, s.Wait(t))
 		})
 	}
 }
 
-func TestHTTPAPIShutdownTimeoutClosesConnection(t *testing.T) {
-	p := &drainingWebhookProvider{entered: make(chan struct{}), release: make(chan struct{})}
-	f := startWebhookAPI(t, ServerOptions{Provider: p, ShutdownTimeout: 20 * time.Millisecond})
-	t.Cleanup(sync.OnceFunc(func() { close(p.release) }))
-	request := startWebhookRecordsRequest(t, f, p)
-	f.cancel()
-	require.ErrorIs(t, waitWebhookResult(t, f.result), context.DeadlineExceeded)
-	res := waitWebhookRequest(t, request)
-	require.Error(t, res.err, "the timed-out connection must be closed")
+func TestHTTPAPIShutdownTimeoutClosesActiveRequest(t *testing.T) {
+	// Records never returns before the shutdown timeout.
+	p := newBlockingRecordsProvider(t)
+	s := startTestServer(t, ServerOptions{Provider: p, ShutdownTimeout: 20 * time.Millisecond})
+	request := s.Get(UrlRecords)
+	p.WaitUntilRecordsCalled(t)
+
+	s.Stop()
+
+	require.ErrorIs(t, s.Wait(t), context.DeadlineExceeded)
+	res := waitGet(t, request)
+	require.Error(t, res.err, "the connection of the unfinished request must be closed")
 }
 
 func TestHTTPAPIServeErrorIsReturned(t *testing.T) {
-	f := startWebhookAPI(t, ServerOptions{})
-	require.NoError(t, f.listener.Close())
-	require.ErrorIs(t, waitWebhookResult(t, f.result), net.ErrClosed)
+	s := startTestServer(t, ServerOptions{})
+
+	require.NoError(t, s.listener.Close())
+
+	require.ErrorIs(t, s.Wait(t), net.ErrClosed)
 }
 
 func TestStartHTTPAPIWithContextListenError(t *testing.T) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	inUse, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer listener.Close()
-	err = StartHTTPApiWithContext(t.Context(), ServerOptions{ProviderPort: listener.Addr().String()})
+	defer inUse.Close()
+
+	err = StartHTTPApiWithContext(t.Context(), ServerOptions{ProviderPort: inUse.Addr().String()})
+
 	require.ErrorContains(t, err, "listen for webhook HTTP API")
 }
 
-func TestStartHTTPAPIWithCanceledContext(t *testing.T) {
+func TestStartHTTPAPIWithContextAlreadyCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	started := make(chan struct{}, 1)
-	err := StartHTTPApiWithContext(ctx, ServerOptions{ProviderPort: "not a valid address", StartedChan: started})
+
+	err := StartHTTPApiWithContext(ctx, ServerOptions{
+		Provider:     FakeWebhookProvider{},
+		ProviderPort: "127.0.0.1:0",
+	})
+
 	require.NoError(t, err)
-	assert.Empty(t, started)
 }

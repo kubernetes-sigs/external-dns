@@ -95,58 +95,26 @@ ExternalDNS propagates request context to all outbound calls. When the controlle
 
 ### Graceful shutdown
 
-Go webhook providers using `provider/webhook/api` can call
-`StartHTTPApiWithContext` with their process lifecycle context. Cancellation stops
-accepting connections and waits for active requests to finish. `ShutdownTimeout`
-bounds that wait (30 seconds when non-positive); on timeout, remaining HTTP
-connections are closed and the function returns an error wrapping
-`context.DeadlineExceeded`. Normal cancellation returns `nil`.
+When the pod stops, Kubernetes sends `SIGTERM` to every container and waits for the
+termination grace period (`terminationGracePeriodSeconds`, 30 seconds by default)
+before it kills them. A request that ExternalDNS has already sent, such as an
+`ApplyChanges` call, should be able to finish in that time. On `SIGTERM`, a provider
+should:
 
-This complete example uses an in-memory provider; replace it with your provider:
+- stop accepting new connections;
+- let in-flight requests finish, with a bound on how long it waits that is shorter
+  than the termination grace period;
+- exit after the remaining requests are done or the bound is reached.
 
-```go
-package main
+If you raise the bound, raise the pod's termination grace period with it. Graceful
+shutdown does not make DNS changes atomic; keep handling dropped connections as
+described above.
 
-import (
-    "context"
-    "log"
-    "os"
-    "os/signal"
-    "syscall"
-    "time"
-
-    "sigs.k8s.io/external-dns/provider/inmemory"
-    "sigs.k8s.io/external-dns/provider/webhook/api"
-)
-
-func main() {
-    if err := run(); err != nil {
-        log.Fatal(err)
-    }
-}
-
-func run() error {
-    ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-    defer stop()
-    return api.StartHTTPApiWithContext(ctx, api.ServerOptions{
-        Provider:          inmemory.NewInMemoryProvider(),
-        ProviderPort:      "127.0.0.1:8888",
-        ReadTimeout:       5 * time.Second,
-        WriteTimeout:      10 * time.Second,
-        ReadHeaderTimeout: 5 * time.Second,
-        IdleTimeout:       30 * time.Second,
-        ShutdownTimeout:   10 * time.Second,
-        MaxBodySize:       32 << 20,
-    })
-}
-```
-
-The existing `StartHTTPApi(opts)` entry point remains available and keeps its
-background-context behavior. The built-in `--webhook-server` mode uses the
-SIGTERM context and the default 30-second drain timeout. Set the pod's termination
-grace period longer than the drain timeout to leave time for process cleanup.
-Draining does not make DNS provider operations atomic; retain the connection-drop
-handling described above.
+Go providers can get this behaviour from `http.Server.Shutdown`. Pass it a new
+context with a deadline: the context that was canceled to start the shutdown would
+make it return immediately. Providers built on the `provider/webhook/api` package
+can use `StartHTTPApiWithContext`, which does this with a 25-second default
+(`ServerOptions.ShutdownTimeout`).
 
 ### Memory and goroutine hygiene
 
