@@ -4,24 +4,22 @@ CRD source provides a generic mechanism to manage DNS records in your favorite D
 
 ## Details
 
-CRD source watches for a user specified CRD to extract [Endpoints](../crd-api.md#dnsendpoint) from its `Spec`.
-So users need to create such a CRD and register it to the kubernetes cluster and then create new object(s) of the CRD specifying the Endpoints.
+CRD source watches `DNSEndpoint` objects to extract [Endpoints](../crd-api.md#dnsendpoint) from their `Spec`.
+So users need to register the `DNSEndpoint` CRD to the kubernetes cluster and then create `DNSEndpoint` objects specifying the Endpoints.
 
 ## Registering CRD
 
 The `DNSEndpoint` CRD is in [config/crd/standard](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/config/crd/standard).
 The [CRD API Reference](../crd-api.md) lists its fields.
 
-You can also use your own CRD.
-It must have the same `spec` and `status` fields as `DNSEndpoint` and the `status` subresource.
+For a third-party CRD, use the [unstructured source](unstructured.md).
 
 ## Usage
 
-One can use CRD source by specifying `--source` flag with `crd` and specifying the ApiVersion and Kind of the CRD with `--crd-source-apiversion` and `crd-source-kind` respectively.
-for e.g:
+One can use CRD source by specifying `--source` flag with `crd`, for e.g:
 
 ```sh
-build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --policy sync --once --dry-run
+build/external-dns --source crd --provider inmemory --policy sync --once --dry-run
 ```
 
 As with every source, `--annotation-filter` is optional. If you set it, ExternalDNS applies it to `DNSEndpoint` objects too, so a `DNSEndpoint` must match the filter itself or the CRD source will ignore it.
@@ -29,7 +27,7 @@ As with every source, `--annotation-filter` is optional. If you set it, External
 For example, with:
 
 ```sh
-build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1 --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run --annotation-filter=external-dns=public
+build/external-dns --source crd --provider inmemory --once --dry-run --annotation-filter=external-dns=public
 ```
 
 the `DNSEndpoint` metadata must include a matching annotation:
@@ -74,7 +72,7 @@ dnsendpoint.externaldns.k8s.io "examplednsrecord" created
 Run external-dns in dry-mode to see whether external-dns picks up the DNS record from CRD.
 
 ```sh
-$ build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --policy sync --once --dry-run
+$ build/external-dns --source crd --provider inmemory --policy sync --once --dry-run
 INFO[0000] running in dry-run mode. No changes to DNS records will be made.
 INFO[0000] Connected to cluster at https://192.168.99.100:8443
 INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
