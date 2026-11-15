@@ -126,12 +126,9 @@ func NewTraefikSource(
 		inf.MustAddEventHandler(informers.DefaultEventHandler())
 		return inf
 	}
-	var ingressRouteInformers, ingressRouteTcpInformers, ingressRouteUdpInformers *informers.Informers[kubeinformers.GenericInformer]
-	if !cfg.TraefikDisableNew {
-		ingressRouteInformers = forResource(ingressRouteGVR)
-		ingressRouteTcpInformers = forResource(ingressRouteTCPGVR)
-		ingressRouteUdpInformers = forResource(ingressRouteUDPGVR)
-	}
+	ingressRouteInformers := forResource(ingressRouteGVR)
+	ingressRouteTcpInformers := forResource(ingressRouteTCPGVR)
+	ingressRouteUdpInformers := forResource(ingressRouteUDPGVR)
 
 	factories.Start(ctx.Done())
 
@@ -161,27 +158,23 @@ func NewTraefikSource(
 func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	if ts.ingressRouteInformers != nil {
-		ingressRouteEndpoints, err := ts.ingressRouteEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, ingressRouteEndpoints...)
+	ingressRouteEndpoints, err := ts.ingressRouteEndpoints(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if ts.ingressRouteTcpInformers != nil {
-		ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, ingressRouteTcpEndpoints...)
+	endpoints = append(endpoints, ingressRouteEndpoints...)
+
+	ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if ts.ingressRouteUdpInformers != nil {
-		ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, ingressRouteUdpEndpoints...)
+	endpoints = append(endpoints, ingressRouteTcpEndpoints...)
+
+	ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints(ctx)
+	if err != nil {
+		return nil, err
 	}
+	endpoints = append(endpoints, ingressRouteUdpEndpoints...)
 
 	return endpoint.MergeEndpoints(endpoints), nil
 }
@@ -318,17 +311,11 @@ func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")
-	if ts.ingressRouteInformers != nil {
-		ts.ingressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
+	ts.ingressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	log.Debug("Adding event handler for IngressRouteTCP")
-	if ts.ingressRouteTcpInformers != nil {
-		ts.ingressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
+	ts.ingressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	log.Debug("Adding event handler for IngressRouteUDP")
-	if ts.ingressRouteUdpInformers != nil {
-		ts.ingressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
+	ts.ingressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	ts.targetFrom.AddEventHandler(handler)
 }
 
@@ -349,7 +336,7 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	return uc, nil
 }
 
-// Basic redefinition of Traefik 2's CRD: https://github.com/traefik/traefik/tree/v2.8.7/pkg/provider/kubernetes/crd/traefik/v1alpha1
+// Basic redefinition of Traefik 3's CRD: https://github.com/traefik/traefik/tree/v3.5.0/pkg/provider/kubernetes/crd/traefikio/v1alpha1
 
 // traefikIngressRouteSpec defines the desired state of IngressRoute.
 type traefikIngressRouteSpec struct {
@@ -360,7 +347,7 @@ type traefikIngressRouteSpec struct {
 // traefikRoute holds the HTTP route configuration.
 type traefikRoute struct {
 	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule
+	// More info: https://doc.traefik.io/traefik/v3.5/reference/routing-configuration/http/routing/rules-and-priority/
 	Match string `json:"match"`
 }
 
@@ -393,7 +380,7 @@ type traefikIngressRouteTCPSpec struct {
 // traefikRouteTCP holds the TCP route configuration.
 type traefikRouteTCP struct {
 	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule_1
+	// More info: https://doc.traefik.io/traefik/v3.5/reference/routing-configuration/tcp/routing/rules-and-priority/
 	Match string `json:"match"`
 }
 

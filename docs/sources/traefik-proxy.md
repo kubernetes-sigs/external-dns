@@ -105,17 +105,6 @@ kubectl delete -f docs/snippets/traefik-proxy/ingress-route-default.yaml
 kubectl delete -f externaldns.yaml
 ```
 
-## Additional Flags
+## Resource Listeners
 
-| Flag                  | Description                                     |
-|-----------------------|-------------------------------------------------|
-| --traefik-disable-new | Disable listeners on Resources under traefik.io |
-
-### Resource Listeners
-
-The `traefik-proxy` source listens for resources under the _traefik.io_ API group, which is the group used by Traefik v3.
-
-Support for the legacy _traefik.containo.us_ group, used by Traefik v2, was removed: Traefik v3
-dropped those CRDs and Traefik v2 security support ended on 2026-02-01. Resources under
-_traefik.containo.us_ are ignored, and `--traefik-disable-new` turns the `traefik-proxy`
-source into a no-op. On Traefik v2, stay on an external-dns release from before this removal.
+The `traefik-proxy` source listens for resources under the _traefik.io_ API group.

@@ -916,14 +916,6 @@ func TestParseFlagsRFC2136AXFR(t *testing.T) {
 	}
 }
 
-func TestParseFlagsTraefik(t *testing.T) {
-	t.Parallel()
-	cfg := parseCfg(t,
-		"--traefik-disable-new",
-	)
-	assert.True(t, cfg.TraefikDisableNew)
-}
-
 // The legacy traefik.containo.us listeners were removed together with the flag, so a
 // leftover --traefik-enable-legacy must fail as an unknown flag instead of being accepted
 // and silently doing nothing.

@@ -51,14 +51,6 @@ var _ Source = &traefikSource{}
 
 const defaultTraefikNamespace = "traefik"
 
-// The traefik-proxy source no longer watches the legacy traefik.containo.us API group.
-// These GVRs are only used to assert that resources under it are ignored.
-var (
-	legacyIngressRouteGVR    = schema.GroupVersionResource{Group: "traefik.containo.us", Version: traefikAPIVersion, Resource: "ingressroutes"}
-	legacyIngressRouteTCPGVR = schema.GroupVersionResource{Group: "traefik.containo.us", Version: traefikAPIVersion, Resource: "ingressroutetcps"}
-	legacyIngressRouteUDPGVR = schema.GroupVersionResource{Group: "traefik.containo.us", Version: traefikAPIVersion, Resource: "ingressrouteudps"}
-)
-
 func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 	t.Parallel()
 
@@ -917,115 +909,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 	}
 }
 
-func TestTraefikAPIGroupFlags(t *testing.T) {
-	t.Parallel()
-
-	for _, ti := range []struct {
-		title                    string
-		ingressRoute             IngressRoute
-		gvr                      schema.GroupVersionResource
-		ignoreHostnameAnnotation bool
-		disableNew               bool
-		expected                 []*endpoint.Endpoint
-	}{
-		{
-			title: "IngressRoute with the traefik.io API group enabled",
-			ingressRoute: IngressRoute{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: ingressRouteGVR.GroupVersion().String(),
-					Kind:       "IngressRoute",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingressroute-annotation",
-					Namespace: defaultTraefikNamespace,
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/hostname": "a.example.com",
-						"external-dns.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":         "traefik",
-					},
-				},
-			},
-			gvr:        ingressRouteGVR,
-			disableNew: false,
-			expected: []*endpoint.Endpoint{
-				{
-					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
-					RecordType: endpoint.RecordTypeCNAME,
-					RecordTTL:  0,
-					Labels: endpoint.Labels{
-						"resource": "ingressroute/traefik/ingressroute-annotation",
-					},
-					ProviderSpecific: endpoint.ProviderSpecific{},
-				},
-			},
-		},
-		{
-			title: "IngressRoute with the traefik.io API group disabled",
-			ingressRoute: IngressRoute{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: ingressRouteGVR.GroupVersion().String(),
-					Kind:       "IngressRoute",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ingressroute-annotation",
-					Namespace: defaultTraefikNamespace,
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/hostname": "a.example.com",
-						"external-dns.kubernetes.io/target":   "target.domain.tld",
-						"kubernetes.io/ingress.class":         "traefik",
-					},
-				},
-			},
-			gvr:        ingressRouteGVR,
-			disableNew: true,
-		},
-	} {
-		t.Run(ti.title, func(t *testing.T) {
-			t.Parallel()
-
-			fakeKubernetesClient := fakeKube.NewSimpleClientset()
-			scheme := runtime.NewScheme()
-			scheme.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-			scheme.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-			scheme.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(scheme)
-
-			ir := unstructured.Unstructured{}
-
-			ingressRouteAsJSON, err := json.Marshal(ti.ingressRoute)
-			require.NoError(t, err)
-
-			require.NoError(t, ir.UnmarshalJSON(ingressRouteAsJSON))
-
-			// Create proxy resources
-			_, err = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).Create(t.Context(), &ir, metav1.CreateOptions{})
-			require.NoError(t, err)
-
-			source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubernetesClient,
-				&config.Config{
-					Namespaces:               []string{defaultTraefikNamespace},
-					AnnotationFilter:         parseAnnotationFilterOrNil("kubernetes.io/ingress.class=traefik"),
-					LabelFilter:              labels.Everything(),
-					IgnoreHostnameAnnotation: ti.ignoreHostnameAnnotation,
-					TraefikDisableNew:        ti.disableNew,
-				})
-			require.NoError(t, err)
-			require.NotNil(t, source)
-
-			count := &unstructured.UnstructuredList{}
-			for len(count.Items) < 1 {
-				count, _ = fakeDynamicClient.Resource(ti.gvr).Namespace(defaultTraefikNamespace).List(t.Context(), metav1.ListOptions{})
-			}
-
-			endpoints, err := source.Endpoints(t.Context())
-			require.NoError(t, err)
-			testutils.ValidateEndpoints(t, endpoints, ti.expected)
-		})
-	}
-}
-
-func TestAddEventHandler_AllBranches(t *testing.T) {
+func TestAddEventHandler(t *testing.T) {
 	ctx := t.Context()
 	handlerCalled := false
 	handler := func() { handlerCalled = true }
@@ -1034,40 +918,17 @@ func TestAddEventHandler_AllBranches(t *testing.T) {
 	fakeInformer := new(FakeInformer)
 	fakeInformer.On("Informer").Return(&inf)
 
-	cases := []struct {
-		name string
-		ts   *traefikSource
-		want int
-	}{
-		{"all nil", &traefikSource{}, 0},
-		{"all set", &traefikSource{
-			ingressRouteInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
-			ingressRouteTcpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
-			ingressRouteUdpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
-		}, 3},
-		{"some set", &traefikSource{
-			ingressRouteInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
-			ingressRouteTcpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
-			ingressRouteUdpInformers: nil,
-		}, 2},
+	src := &traefikSource{
+		ingressRouteInformers:    informers.Single[kubeinformers.GenericInformer](fakeInformer),
+		ingressRouteTcpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
+		ingressRouteUdpInformers: informers.Single[kubeinformers.GenericInformer](fakeInformer),
 	}
+	src.AddEventHandler(ctx, handler)
 
-	for _, test := range cases {
-		t.Run(test.name, func(t *testing.T) {
-			test.ts.AddEventHandler(ctx, handler)
-			assert.Equal(t, test.want, inf.times)
-			assert.False(t, handlerCalled)
-
-			if test.want > 0 {
-				fakeInformer.AssertExpectations(t)
-				fakeInformer.AssertCalled(t, "Informer")
-			} else {
-				fakeInformer.AssertNotCalled(t, "Informer")
-			}
-			// reset the call count
-			inf.times = 0
-		})
-	}
+	assert.Equal(t, 3, inf.times)
+	assert.False(t, handlerCalled)
+	fakeInformer.AssertExpectations(t)
+	fakeInformer.AssertCalled(t, "Informer")
 }
 
 type FakeInformer struct {
@@ -1156,16 +1017,6 @@ func newTraefikScheme() *runtime.Scheme {
 	s.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
 	s.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
 	s.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-	return s
-}
-
-// newTraefikSchemeWithLegacy also registers the unsupported traefik.containo.us types, so
-// tests can create objects under that group and assert the source ignores them.
-func newTraefikSchemeWithLegacy() *runtime.Scheme {
-	s := newTraefikScheme()
-	s.AddKnownTypes(legacyIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	s.AddKnownTypes(legacyIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	s.AddKnownTypes(legacyIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
 	return s
 }
 
@@ -1281,129 +1132,6 @@ func TestTraefikIndexer(t *testing.T) {
 				Namespaces:       []string{defaultTraefikNamespace},
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      parseLabelSelectorOrEverything(t, tt.labelFilter),
-			})
-			require.NoError(t, err)
-
-			endpoints, err := src.Endpoints(t.Context())
-			require.NoError(t, err)
-			assert.Len(t, endpoints, tt.expectedCount)
-		})
-	}
-}
-
-// traefikTestObject is a Traefik resource created under a specific API group.
-type traefikTestObject struct {
-	gvr    schema.GroupVersionResource
-	object runtime.Object
-}
-
-// TestTraefikLegacyAPIGroupIsIgnored verifies that resources under the removed
-// traefik.containo.us API group are never watched, even when they are annotated exactly
-// like a traefik.io resource that does produce an endpoint.
-func TestTraefikLegacyAPIGroupIsIgnored(t *testing.T) {
-	t.Parallel()
-
-	ingressRoute := func(gvr schema.GroupVersionResource, name string) *IngressRoute {
-		return &IngressRoute{
-			APIVersion:  gvr.GroupVersion().String(),
-			Kind:        "IngressRoute",
-			Name:        name,
-			Namespace:   defaultTraefikNamespace,
-			Annotations: map[string]string{annotations.TargetKey: "1.2.3.4"},
-			Spec: traefikIngressRouteSpec{
-				Routes: []traefikRoute{{Match: fmt.Sprintf("Host(`%s.example.org`)", name)}},
-			},
-		}
-	}
-	ingressRouteTCP := func(gvr schema.GroupVersionResource, name string) *IngressRouteTCP {
-		return &IngressRouteTCP{
-			APIVersion:  gvr.GroupVersion().String(),
-			Kind:        "IngressRouteTCP",
-			Name:        name,
-			Namespace:   defaultTraefikNamespace,
-			Annotations: map[string]string{annotations.TargetKey: "1.2.3.4"},
-			Spec: traefikIngressRouteTCPSpec{
-				Routes: []traefikRouteTCP{{Match: fmt.Sprintf("HostSNI(`%s.example.org`)", name)}},
-			},
-		}
-	}
-	// IngressRouteUDP has no routes, so its hostname can only come from annotations.
-	ingressRouteUDP := func(gvr schema.GroupVersionResource, name string) *IngressRouteUDP {
-		return &IngressRouteUDP{
-			APIVersion: gvr.GroupVersion().String(),
-			Kind:       "IngressRouteUDP",
-			Name:       name,
-			Namespace:  defaultTraefikNamespace,
-			Annotations: map[string]string{
-				annotations.TargetKey:   "1.2.3.4",
-				annotations.HostnameKey: fmt.Sprintf("%s.example.org", name),
-			},
-		}
-	}
-
-	tests := []struct {
-		name          string
-		objects       []traefikTestObject
-		expectedCount int
-	}{
-		{
-			name:          "legacy IngressRoute yields no endpoints",
-			objects:       []traefikTestObject{{legacyIngressRouteGVR, ingressRoute(legacyIngressRouteGVR, "legacy")}},
-			expectedCount: 0,
-		},
-		{
-			name:          "traefik.io IngressRoute yields endpoints",
-			objects:       []traefikTestObject{{ingressRouteGVR, ingressRoute(ingressRouteGVR, "current")}},
-			expectedCount: 1,
-		},
-		{
-			name: "only the traefik.io IngressRoute is watched when both are present",
-			objects: []traefikTestObject{
-				{legacyIngressRouteGVR, ingressRoute(legacyIngressRouteGVR, "legacy")},
-				{ingressRouteGVR, ingressRoute(ingressRouteGVR, "current")},
-			},
-			expectedCount: 1,
-		},
-		{
-			name:          "legacy IngressRouteTCP yields no endpoints",
-			objects:       []traefikTestObject{{legacyIngressRouteTCPGVR, ingressRouteTCP(legacyIngressRouteTCPGVR, "legacy")}},
-			expectedCount: 0,
-		},
-		{
-			name:          "traefik.io IngressRouteTCP yields endpoints",
-			objects:       []traefikTestObject{{ingressRouteTCPGVR, ingressRouteTCP(ingressRouteTCPGVR, "current")}},
-			expectedCount: 1,
-		},
-		{
-			name:          "legacy IngressRouteUDP yields no endpoints",
-			objects:       []traefikTestObject{{legacyIngressRouteUDPGVR, ingressRouteUDP(legacyIngressRouteUDPGVR, "legacy")}},
-			expectedCount: 0,
-		},
-		{
-			name:          "traefik.io IngressRouteUDP yields endpoints",
-			objects:       []traefikTestObject{{ingressRouteUDPGVR, ingressRouteUDP(ingressRouteUDPGVR, "current")}},
-			expectedCount: 1,
-		},
-	}
-
-	traefikScheme := newTraefikSchemeWithLegacy()
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(traefikScheme)
-			for _, tr := range tt.objects {
-				data, err := json.Marshal(tr.object)
-				require.NoError(t, err)
-				obj := unstructured.Unstructured{}
-				require.NoError(t, obj.UnmarshalJSON(data))
-				_, err = fakeDynamicClient.Resource(tr.gvr).Namespace(defaultTraefikNamespace).Create(t.Context(), &obj, metav1.CreateOptions{})
-				require.NoError(t, err)
-			}
-
-			src, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKube.NewSimpleClientset(), &config.Config{
-				Namespaces:  []string{defaultTraefikNamespace},
-				LabelFilter: labels.Everything(),
 			})
 			require.NoError(t, err)
 
