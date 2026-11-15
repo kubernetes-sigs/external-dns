@@ -147,23 +147,14 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		targets := ingressTargets(ctx, sc.targetFrom, ing)
 		ingEndpoints := endpointsFromIngress(ing, targets, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
-		ingTargets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-		if len(ingTargets) == 0 {
-			ingTargets = targetsFromIngressStatus(ing.Status)
-		}
-
 		// apply template if host is missing on ingress
 		ingEndpoints, err = sc.templateEngine.Apply(
 			ingEndpoints,
-<<<<<<< HEAD
 			ing,
-			template.WithResourceTargets(ingTargets),
+			template.WithResourceTargets(targets),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(ing, hostnames, targets), nil
 			}),
-=======
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing, targets) },
->>>>>>> master
 		)
 		if err != nil {
 			return nil, err
@@ -182,16 +173,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-<<<<<<< HEAD
 func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
-=======
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(ing)
-	if err != nil {
-		return nil, err
-	}
-
->>>>>>> master
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)

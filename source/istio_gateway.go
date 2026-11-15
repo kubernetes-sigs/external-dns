@@ -163,13 +163,8 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				if len(targets) > 0 {
 					return sc.endpointsForHostnames(hostnames, targets, gateway), nil
 				}
-<<<<<<< HEAD
-				return sc.endpointsFromGateway(hostnames, gateway)
-			}),
-=======
 				return sc.endpointsFromGateway(ctx, hostnames, gateway)
-			},
->>>>>>> master
+			}),
 		)
 		if err != nil {
 			return nil, err
