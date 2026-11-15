@@ -2397,6 +2397,135 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}},
 		},
 		{
+			title:                  "NodePort services ignore nodes being removed",
+			ignoreUnscheduledNodes: true,
+			svcNamespace:           "testing",
+			svcName:                "foo",
+			svcType:                v1.ServiceTypeNodePort,
+			svcTrafficPolicy:       v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name: "node1",
+				Spec: v1.NodeSpec{
+					Taints: []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name: "node2",
+				Spec: v1.NodeSpec{
+					Taints: []v1.Taint{{Key: "ToBeDeletedByClusterAutoscaler", Value: "1700000000", Effect: v1.TaintEffectNoSchedule}},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}, {
+				Name: "node3",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.3"}},
+				},
+			}},
+		},
+		{
+			title:            "NodePort services keep nodes being removed when unschedulable nodes are not excluded",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name: "node1",
+				Spec: v1.NodeSpec{
+					Taints: []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name: "node2",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}},
+		},
+		{
+			title:            "NodePort services ignore nodes labeled exclude-from-external-load-balancers",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2", "54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name:   "node1",
+				Labels: map[string]string{v1.LabelNodeExcludeBalancers: "true"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name:   "node2",
+				Labels: map[string]string{v1.LabelNodeExcludeBalancers: "false"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}, {
+				Name: "node3",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.3"}},
+				},
+			}},
+		},
+		{
+			title:            "NodePort services with ExternalTrafficPolicy=Local ignore pods on nodes labeled exclude-from-external-load-balancers",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name:   "node1",
+				Labels: map[string]string{v1.LabelNodeExcludeBalancers: "true"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name: "node2",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}},
+			// The only ready pod runs on the excluded node, so the record falls back to the not-ready pod's node.
+			podNames:          []string{"pod-0", "pod-1"},
+			nodeIndex:         []int{0, 1},
+			phases:            []v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			conditions:        []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionTrue}, {Type: v1.PodReady, Status: v1.ConditionFalse}},
+			deletionTimestamp: []*metav1.Time{nil, nil},
+		},
+		{
 			title:            "annotated NodePort service with TTL produces SRV endpoint with TTL",
 			svcNamespace:     "testing",
 			svcName:          "foo",
@@ -5217,11 +5346,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
-			times:  2,
+			times:  3,
 			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
-				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
 			},
 		},
 		{
@@ -5247,11 +5376,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		{
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
-			times:  2,
+			times:  3,
 			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
-				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
 			},
 		},
 	}
@@ -5924,6 +6053,50 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 		)
 		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
 		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips nodes being removed before choosing the readiness tier", func(t *testing.T) {
+		// node1 has the only ready pod but Karpenter is removing it; node2's not-ready pod is used instead.
+		disrupted := makeNode("node1", "54.10.11.1")
+		disrupted.Spec.Taints = []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}}
+		sc := makeResourceSource(t,
+			[]*v1.Node{disrupted, makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),  // ready, on a node being removed
+				makePod("pod-1", "node2", false, nil), // not ready
+			},
+		)
+		sc.excludeUnschedulable = true
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node2"}, got)
+	})
+
+	t.Run("keeps nodes being removed when unschedulable nodes are not excluded", func(t *testing.T) {
+		disrupted := makeNode("node1", "54.10.11.1")
+		disrupted.Spec.Taints = []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}}
+		sc := makeResourceSource(t,
+			[]*v1.Node{disrupted, makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),
+				makePod("pod-1", "node2", false, nil),
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips nodes labeled exclude-from-external-load-balancers before choosing the readiness tier", func(t *testing.T) {
+		excluded := makeNode("node1", "54.10.11.1")
+		excluded.Labels = map[string]string{v1.LabelNodeExcludeBalancers: "true"}
+		sc := makeResourceSource(t,
+			[]*v1.Node{excluded, makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),
+				makePod("pod-1", "node2", false, nil),
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node2"}, got)
 	})
 }
 

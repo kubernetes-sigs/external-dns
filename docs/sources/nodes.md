@@ -9,6 +9,8 @@ The TTL of the records can be set with the `external-dns.kubernetes.io/ttl` node
 
 Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded by default.
 As such, no DNS records are created for Unhealthy, NotReady or SchedulingDisabled (cordon) nodes (and existing ones are removed).
+Nodes being removed are excluded too: those being deleted, and those tainted `ToBeDeletedByClusterAutoscaler` (Cluster Autoscaler)
+or `karpenter.sh/disrupted` (Karpenter).
 In case you want to override the default, for example if you manage per-host DNS records via ExternalDNS, you can specify `--no-exclude-unschedulable` to always expose nodes no matter their status.
 
 ## IPv6 Behavior

@@ -4,67 +4,16 @@ CRD source provides a generic mechanism to manage DNS records in your favorite D
 
 ## Details
 
-CRD source watches for a user specified CRD to extract [Endpoints](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/endpoint/endpoint.go) from its `Spec`.
+CRD source watches for a user specified CRD to extract [Endpoints](../crd-api.md#dnsendpoint) from its `Spec`.
 So users need to create such a CRD and register it to the kubernetes cluster and then create new object(s) of the CRD specifying the Endpoints.
 
 ## Registering CRD
 
-Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/endpoint/endpoint.go) which provides Endpoints to `CRD source`:
+The `DNSEndpoint` CRD is in [config/crd/standard](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/config/crd/standard).
+The [CRD API Reference](../crd-api.md) lists its fields.
 
-```go
-type TTL int64
-type Targets []string
-type ProviderSpecificProperty struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
-}
-type ProviderSpecific []ProviderSpecificProperty
-type Labels map[string]string
-
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string `json:"dnsName,omitempty"`
-	// The targets the DNS record points to
-	Targets Targets `json:"targets,omitempty"`
-	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
-	RecordType string `json:"recordType,omitempty"`
-	// TTL for the record
-	RecordTTL TTL `json:"recordTTL,omitempty"`
-	// Labels stores labels defined for the Endpoint
-	// +optional
-	Labels Labels `json:"labels,omitempty"`
-	// ProviderSpecific stores provider specific config
-	// +optional
-	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
-}
-
-type DNSEndpointSpec struct {
-	Endpoints []*Endpoint `json:"endpoints,omitempty"`
-}
-
-type DNSEndpointStatus struct {
-	// The generation observed by the external-dns controller.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// DNSEndpoint is the CRD wrapper for Endpoint
-// +k8s:openapi-gen=true
-// +kubebuilder:resource:path=dnsendpoints
-// +kubebuilder:subresource:status
-type DNSEndpoint struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   DNSEndpointSpec   `json:"spec,omitempty"`
-	Status DNSEndpointStatus `json:"status,omitempty"`
-}
-```
-
-Refer to [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) to create and register the CRD.
+You can also use your own CRD.
+It must have the same `spec` and `status` fields as `DNSEndpoint` and the `status` subresource.
 
 ## Usage
 
@@ -174,22 +123,41 @@ are still published. The rejection is reported in the object's [status condition
 
 ### Status
 
-external-dns reports on each `DNSEndpoint` whether it understood the spec:
+external-dns reports what it did with each `DNSEndpoint` on the object itself:
 
 ```console
-$ kubectl get dnsendpoint
-NAME               ACCEPTED   AGE
-examplednsrecord   True       2m
+$ kubectl get dnsendpoint -o wide
+NAME               ACCEPTED   READY   REASON       AGE
+examplednsrecord   True       True    Programmed   2m
+otherdnsrecord     True       False   Filtered     2m
 ```
 
-| Condition          | Status    | Reason     | Meaning                                                                   |
-|--------------------|-----------|------------|---------------------------------------------------------------------------|
-| `Accepted`         | `Unknown` | `Pending`  | No external-dns instance has read the object yet.                         |
-| `Accepted`         | `True`    | `Accepted` | At least one endpoint was understood and is planned.                      |
-| `Accepted`         | `False`   | `Invalid`  | Every endpoint was refused; the message names each index and the fix.     |
-| `PartiallyInvalid` | `True`    | `Invalid`  | Some endpoints were dropped and the others are planned. Absent otherwise. |
+`Accepted` is set before any provider call; `Ready` reports what became of the records afterwards:
 
-`Accepted` is set before any provider call: it does not tell if the records exist.
+| Condition          | Status    | Reason       | Meaning                                                                   |
+|--------------------|-----------|--------------|---------------------------------------------------------------------------|
+| `Accepted`         | `Unknown` | `Pending`    | No external-dns instance has read the object yet.                         |
+| `Accepted`         | `True`    | `Accepted`   | At least one endpoint was understood and is planned.                      |
+| `Accepted`         | `False`   | `Invalid`    | Every endpoint was refused; the message names each index and the fix.     |
+| `PartiallyInvalid` | `True`    | `Invalid`    | Some endpoints were dropped and the others are planned. Absent otherwise. |
+| `Ready`            | `True`    | `Programmed` | The DNS provider applied the records.                                     |
+| `Ready`            | `False`   | `Failed`     | The provider rejected the batch; the message carries its error.           |
+| `Ready`            | `False`   | `Filtered`   | No endpoint reached the provider: `--domain-filter`, `--managed-record-types` or another `--txt-owner-id` excluded them all. |
+| `Ready`            | `Unknown` | `DryRun`     | The endpoints were planned, but `--dry-run` kept them from the provider.  |
+
+`status.observedGeneration` tracks the last `spec` external-dns processed.
+Conditions are refreshed on every sync but only written when they change, so a
+steady-state `DNSEndpoint` costs no API writes. When no endpoint is accepted, `Ready` is removed.
+
+Limits:
+
+* `Ready` is per sync, not per resource: a failed batch marks every `DNSEndpoint`
+  with a change in that batch `Failed`. The message carries the provider's error
+  verbatim, which may name records from other namespaces, so treat it as visible
+  to anyone who can read a `DNSEndpoint`.
+* One external-dns instance per `DNSEndpoint`. Instances sharing an object (e.g. split
+  only by `--domain-filter`) overwrite each other's conditions; separate them with
+  `--namespace`, `--label-filter` or `--annotation-filter`.
 
 ### Using CRD source to manage DNS records in different DNS providers
 

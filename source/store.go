@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,6 +36,7 @@ import (
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/config"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
@@ -64,6 +66,25 @@ func ClientGeneratorFor(cfg *config.Config) ClientGenerator {
 			QPS:   cfg.KubeAPIQPS,
 			Burst: cfg.KubeAPIBurst,
 		}
+	})
+}
+
+// targetFromResolver returns cfg's shared target-from resolver. Its clients are
+// built on the first reference, so sources pay nothing unless it is used.
+func targetFromResolver(ctx context.Context, cfg *config.Config) *targetfrom.Resolver {
+	return cfg.EnsureTargetFrom(func() *targetfrom.Resolver {
+		gen := ClientGeneratorFor(cfg)
+		return targetfrom.NewResolver(ctx, func() (dynamic.Interface, discovery.DiscoveryInterface, error) {
+			dyn, err := gen.DynamicKubernetesClient()
+			if err != nil {
+				return nil, nil, err
+			}
+			kube, err := gen.KubeClient()
+			if err != nil {
+				return nil, nil, err
+			}
+			return dyn, kube.Discovery(), nil
+		})
 	})
 }
 

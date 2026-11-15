@@ -38,6 +38,8 @@ The default recommended port for the provider endpoints is `8888`, and should li
 
 **NOTE**: only `5xx` responses will be retried and only `20x` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS's side.
 
+**NOTE**: with `--dry-run`, ExternalDNS logs the changes and does not call `POST /records`.
+
 **NOTE**: the `--webhook-provider-read-timeout` and `--webhook-provider-write-timeout` flags control the outbound HTTP client timeout.
 The total client timeout is the sum of both values and covers the full round-trip: writing the request body, waiting for the response,
 and reading the response body. Requests that exceed this deadline are cancelled and treated as a failure.
