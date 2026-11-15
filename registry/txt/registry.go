@@ -441,10 +441,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	// when caching is enabled, disable the provider from using the cache
-	if im.cacheInterval > 0 {
-		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
-	}
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
