@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -69,6 +70,7 @@ type ingressSource struct {
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	ingressInformers         *informers.Informers[netinformers.IngressInformer]
+	targetFrom               *targetfrom.Resolver
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
 }
@@ -125,6 +127,7 @@ func NewIngressSource(
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		ingressInformers:         ingressInformers,
+		targetFrom:               targetFromResolver(ctx, cfg),
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
 	}, nil
@@ -132,7 +135,7 @@ func NewIngressSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.filterByIngressClass(informers.ListIndexedAll[*networkv1.Ingress](sc.ingressInformers.Indexers()...))
 	if err != nil {
 		return nil, err
@@ -141,12 +144,13 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		targets := ingressTargets(ctx, sc.targetFrom, ing)
+		ingEndpoints := endpointsFromIngress(ing, targets, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
 		ingEndpoints, err = sc.templateEngine.CombineWithEndpoints(
 			ingEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing, targets) },
 		)
 		if err != nil {
 			return nil, err
@@ -171,9 +175,10 @@ func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.ingressInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	sc.targetFrom.AddEventHandler(handler)
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	hostnames, err := sc.templateEngine.ExecFQDN(ing)
 	if err != nil {
 		return nil, err
@@ -182,11 +187,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
@@ -198,16 +198,10 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, targets endpoint.Targets, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-
-	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
@@ -258,6 +252,16 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 		endpoints = append(endpoints, annotationEndpoints...)
 	}
 	return endpoints
+}
+
+func ingressTargets(ctx context.Context, targetFrom *targetfrom.Resolver, ing *networkv1.Ingress) endpoint.Targets {
+	if targets := annotations.TargetsFromTargetAnnotation(ing.Annotations); len(targets) > 0 {
+		return targets
+	}
+	if targets, ok := targetFrom.TargetsFromAnnotations(ctx, types.Ingress, ing); ok {
+		return targets
+	}
+	return targetsFromIngressStatus(ing.Status)
 }
 
 // targetsFromIngressStatus extracts targets from ingress load balancer status.
