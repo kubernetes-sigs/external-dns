@@ -140,6 +140,7 @@ type Config struct {
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
+	CloudflareZoneMatchParent                     bool
 	CoreDNSPrefix                                 string
 	CoreDNSStrictlyOwned                          bool
 	OCIConfigFile                                 string
@@ -275,6 +276,7 @@ var defaultConfig = &Config{
 	CloudflareProxied:                             false,
 	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
+	CloudflareZoneMatchParent:                     false,
 
 	CombineFQDNAndAnnotation:         false,
 	Compatibility:                    "",
@@ -659,6 +661,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)", defaultConfig.CloudflareRegionalServices, &cfg.CloudflareRegionalServices)
 	b.StringVar("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)", "", &cfg.CloudflareRegionKey)
 	b.StringVar("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')", "", &cfg.CloudflareDNSRecordsComment)
+	b.BoolVar("cloudflare-zone-match-parent", "When using the Cloudflare provider, also consider zones that are a parent of a --domain-filter entry, so a subdomain filter (e.g. dev.example.com) can use the zone of its parent domain (e.g. example.com) (default: disabled)", defaultConfig.CloudflareZoneMatchParent, &cfg.CloudflareZoneMatchParent)
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
 	b.BoolVar("coredns-strictly-owned", "When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false)", defaultConfig.CoreDNSStrictlyOwned, &cfg.CoreDNSStrictlyOwned)

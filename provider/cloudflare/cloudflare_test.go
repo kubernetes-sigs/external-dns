@@ -846,6 +846,136 @@ func TestCloudflareZones(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
+// Cloudflare only exposes the apex domain as a zone (e.g. "bar.com"), so a domain filter that
+// targets a subdomain (e.g. "dev.bar.com") never matches a zone name. With zoneMatchParent enabled
+// the zone that is a parent of a domain filter entry is still considered.
+func TestCloudflareZonesMatchParent(t *testing.T) {
+	tests := []struct {
+		name            string
+		domainFilter    []string
+		zoneMatchParent bool
+		expectedZones   []string
+	}{
+		{
+			name:          "subdomain filter matches no zone by default",
+			domainFilter:  []string{"dev.bar.com"},
+			expectedZones: nil,
+		},
+		{
+			name:            "subdomain filter matches the parent zone when enabled",
+			domainFilter:    []string{"dev.bar.com"},
+			zoneMatchParent: true,
+			expectedZones:   []string{"bar.com"},
+		},
+		{
+			name:            "nested subdomain filter matches the parent zone when enabled",
+			domainFilter:    []string{"www.dev.bar.com"},
+			zoneMatchParent: true,
+			expectedZones:   []string{"bar.com"},
+		},
+		{
+			name:            "apex filter still matches its own zone when enabled",
+			domainFilter:    []string{"bar.com"},
+			zoneMatchParent: true,
+			expectedZones:   []string{"bar.com"},
+		},
+		{
+			name:            "unrelated filter matches no zone when enabled",
+			domainFilter:    []string{"dev.baz.com"},
+			zoneMatchParent: true,
+			expectedZones:   nil,
+		},
+		{
+			name:            "filter that only shares a name suffix does not match another zone",
+			domainFilter:    []string{"notbar.com"},
+			zoneMatchParent: true,
+			expectedZones:   nil,
+		},
+		{
+			name:            "filters under different zones match each parent zone",
+			domainFilter:    []string{"dev.bar.com", "api.foo.com"},
+			zoneMatchParent: true,
+			expectedZones:   []string{"bar.com", "foo.com"},
+		},
+		{
+			name:            "leading-dot filter does not match parent zones",
+			domainFilter:    []string{".dev.bar.com"},
+			zoneMatchParent: true,
+			expectedZones:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &CloudFlareProvider{
+				Client:          NewMockCloudFlareClient(),
+				domainFilter:    endpoint.NewDomainFilter(tt.domainFilter),
+				zoneIDFilter:    provider.NewZoneIDFilter([]string{""}),
+				zoneMatchParent: tt.zoneMatchParent,
+			}
+
+			zones, err := p.Zones(t.Context())
+			require.NoError(t, err)
+
+			var names []string
+			for _, z := range zones {
+				names = append(names, z.Name)
+			}
+			assert.ElementsMatch(t, tt.expectedZones, names)
+		})
+	}
+}
+
+// Matching the parent zone must not widen what ExternalDNS manages: with --domain-filter=dev.bar.com
+// only records under dev.bar.com are changed, other records in the bar.com zone are left alone.
+func TestCloudflareZoneMatchParentLeavesRecordsOutsideFilterUntouched(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]dns.RecordResponse{
+		"001": {
+			{ID: "inside", Name: "dev.bar.com", Type: endpoint.RecordTypeA, Content: "1.1.1.1", TTL: 1},
+			{ID: "sibling", Name: "other.bar.com", Type: endpoint.RecordTypeA, Content: "9.9.9.9", TTL: 1},
+			{ID: "apex", Name: "bar.com", Type: endpoint.RecordTypeA, Content: "8.8.8.8", TTL: 1},
+		},
+	})
+	domainFilter := endpoint.NewDomainFilter([]string{"dev.bar.com"})
+	p := &CloudFlareProvider{
+		Client:          client,
+		domainFilter:    domainFilter,
+		zoneIDFilter:    provider.NewZoneIDFilter([]string{""}),
+		zoneMatchParent: true,
+	}
+
+	records, err := p.Records(t.Context())
+	require.NoError(t, err)
+
+	desired, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		{DNSName: "dev.bar.com", Targets: endpoint.Targets{"3.3.3.3"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(defaultTTL)},
+		{DNSName: "new.dev.bar.com", Targets: endpoint.Targets{"4.4.4.4"}, RecordType: endpoint.RecordTypeA, RecordTTL: endpoint.TTL(defaultTTL)},
+	})
+	require.NoError(t, err)
+
+	planned := (&plan.Plan{
+		Current:        records,
+		Desired:        desired,
+		DomainFilter:   endpoint.MatchAllDomainFilters{domainFilter},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}).Calculate()
+
+	require.NoError(t, p.ApplyChanges(t.Context(), planned.Changes))
+
+	require.NotEmpty(t, client.Actions, "the records under the domain filter should be changed")
+	for _, action := range client.Actions {
+		assert.Equal(t, "001", action.ZoneId)
+		assert.NotContains(t, []string{"sibling", "apex"}, action.RecordId, "records outside the domain filter must not be touched")
+		if action.Name == "Delete" {
+			// the provider applies an update as a delete of the old record plus a create
+			assert.Equal(t, "inside", action.RecordId, "only the record under the domain filter may be deleted")
+		}
+		if action.RecordData.Name != "" {
+			assert.True(t, strings.HasSuffix(action.RecordData.Name, "dev.bar.com"), "unexpected change to %q", action.RecordData.Name)
+		}
+	}
+}
+
 // test failures on zone lookup
 func TestCloudflareZonesFailed(t *testing.T) {
 
@@ -1082,6 +1212,7 @@ func TestCloudflareProvider(t *testing.T) {
 				RegionalServicesConfig{Enabled: false},
 				CustomHostnamesConfig{Enabled: false},
 				DNSRecordsConfig{PerPage: 5000, Comment: ""},
+				false,
 			)
 			if err != nil && !tc.ShouldFail {
 				t.Errorf("should not fail, %s", err)
@@ -1940,6 +2071,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 		RegionalServicesConfig{Enabled: false, RegionKey: "us"},
 		CustomHostnamesConfig{Enabled: false},
 		DNSRecordsConfig{PerPage: 50, Comment: ""},
+		false,
 	)
 	require.NoError(t, err, "should not fail to create provider")
 	assert.True(t, provider.RegionalServicesConfig.Enabled, "expect regional services to be enabled")
