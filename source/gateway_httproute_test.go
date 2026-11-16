@@ -2417,3 +2417,40 @@ func TestGatewayHTTPRouteIndexer(t *testing.T) {
 		})
 	}
 }
+
+func TestGatewayRouteSourcesShareCommonInformers(t *testing.T) {
+	t.Parallel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	cfg := &config.Config{
+		GatewayNamespace:    "infra",
+		GatewayLabelFilter:  "team=platform",
+		GatewayListenerSets: true,
+	}
+
+	httpSource, err := NewGatewayHTTPRouteSource(t.Context(), clients, cfg)
+	require.NoError(t, err)
+	tcpSource, err := NewGatewayTCPRouteSource(t.Context(), clients, cfg)
+	require.NoError(t, err)
+
+	http := httpSource.(*gatewayRouteSource)
+	tcp := tcpSource.(*gatewayRouteSource)
+	require.Same(t, http.gwInformer.Informer().GetIndexer(), tcp.gwInformer.Informer().GetIndexer())
+	require.Same(t, http.lsInformer.Informer().GetIndexer(), tcp.lsInformer.Informer().GetIndexer())
+	require.Same(t, http.nsInformer.Informer().GetIndexer(), tcp.nsInformer.Informer().GetIndexer())
+
+	cfg.GatewayNamespace = "shared"
+	cfg.GatewayLabelFilter = "team=other"
+	tlsSource, err := NewGatewayTLSRouteSource(t.Context(), clients, cfg)
+	require.NoError(t, err)
+
+	tls := tlsSource.(*gatewayRouteSource)
+	require.NotSame(t, http.gwInformer.Informer().GetIndexer(), tls.gwInformer.Informer().GetIndexer())
+	require.Same(t, http.lsInformer.Informer().GetIndexer(), tls.lsInformer.Informer().GetIndexer())
+	require.Same(t, http.nsInformer.Informer().GetIndexer(), tls.nsInformer.Informer().GetIndexer())
+}
