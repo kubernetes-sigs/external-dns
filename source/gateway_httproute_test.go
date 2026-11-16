@@ -2423,6 +2423,20 @@ func TestGatewayRouteSourcesShareCommonInformers(t *testing.T) {
 
 	gwClient := gatewayfake.NewSimpleClientset()
 	kubeClient := kubefake.NewClientset()
+	for _, rt := range []*v1.HTTPRoute{
+		{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "http-match", Labels: map[string]string{"route": "first"}}},
+		{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "http-no-match", Labels: map[string]string{"route": "second"}}},
+	} {
+		_, err := gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(t.Context(), rt, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
+	for _, rt := range []*v1.TCPRoute{
+		{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "tcp-match", Labels: map[string]string{"route": "second"}}},
+		{ObjectMeta: metav1.ObjectMeta{Namespace: "default", Name: "tcp-no-match", Labels: map[string]string{"route": "first"}}},
+	} {
+		_, err := gwClient.GatewayV1().TCPRoutes(rt.Namespace).Create(t.Context(), rt, metav1.CreateOptions{})
+		require.NoError(t, err)
+	}
 	clients := new(testutils.MockClientGenerator)
 	clients.On("GatewayClient").Return(gwClient, nil)
 	clients.On("KubeClient").Return(kubeClient, nil)
@@ -2431,15 +2445,19 @@ func TestGatewayRouteSourcesShareCommonInformers(t *testing.T) {
 		GatewayNamespace:    "infra",
 		GatewayLabelFilter:  "team=platform",
 		GatewayListenerSets: true,
+		LabelFilter:         parseLabelSelectorOrEverything(t, "route=first"),
 	}
 
 	httpSource, err := NewGatewayHTTPRouteSource(t.Context(), clients, cfg)
 	require.NoError(t, err)
+	cfg.LabelFilter = parseLabelSelectorOrEverything(t, "route=second")
 	tcpSource, err := NewGatewayTCPRouteSource(t.Context(), clients, cfg)
 	require.NoError(t, err)
 
 	http := httpSource.(*gatewayRouteSource)
 	tcp := tcpSource.(*gatewayRouteSource)
+	require.Len(t, http.rtInformer.List(), 1)
+	require.Len(t, tcp.rtInformer.List(), 1)
 	require.Same(t, http.gwInformer.Informer().GetIndexer(), tcp.gwInformer.Informer().GetIndexer())
 	require.Same(t, http.lsInformer.Informer().GetIndexer(), tcp.lsInformer.Informer().GetIndexer())
 	require.Same(t, http.nsInformer.Informer().GetIndexer(), tcp.nsInformer.Informer().GetIndexer())
