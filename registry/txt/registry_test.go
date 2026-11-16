@@ -2452,7 +2452,7 @@ func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
 				}
 
 				require.Empty(t, r.generateTXTRecord(tooLong))
-				assert.Empty(t, r.txtRecordName(tooLong))
+				assert.NotEmpty(t, endpoint.OverlongDNSLabel(r.txtRecordName(tooLong)))
 			})
 		}
 	}
