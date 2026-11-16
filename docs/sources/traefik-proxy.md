@@ -108,3 +108,10 @@ kubectl delete -f externaldns.yaml
 ## Resource Listeners
 
 The `traefik-proxy` source listens for resources under the _traefik.io_ API group.
+
+!!! note "Removed flags"
+    `--traefik-disable-new` and `--traefik-enable-legacy` were removed. Delete them from
+    your arguments before upgrading: the controller fails at startup with an
+    `unknown long flag` error if either is still passed. If you relied on
+    `--traefik-disable-new`, remove `traefik-proxy` from `--source` to keep the previous
+    behaviour. The `traefik.containo.us` API group is not watched any more.
