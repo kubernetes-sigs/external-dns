@@ -300,7 +300,9 @@ func TestResolverInformer(t *testing.T) {
 		got, err := r.Resolve(t.Context(), "apps", value)
 		return err == nil && len(got) == 1 && got[0] == "10.0.0.2"
 	}, 5*time.Second, 10*time.Millisecond)
-	assert.GreaterOrEqual(t, calls.Load(), int32(2), "initial add and update should both trigger a sync")
+	// Handlers run asynchronously, after the informer store is updated.
+	assert.Eventually(t, func() bool { return calls.Load() >= 2 }, 5*time.Second, 10*time.Millisecond,
+		"initial add and update should both trigger a sync")
 }
 
 func TestResolverWatchForbidden(t *testing.T) {
