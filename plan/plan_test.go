@@ -523,6 +523,40 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestSyncSecondRoundWithResourceChanged() {
+	current := []*endpoint.Endpoint{{
+		DNSName:    "foo",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo",
+			endpoint.OwnerLabelKey:    "pwner",
+		},
+	}}
+	desired := []*endpoint.Endpoint{{
+		DNSName:    "foo",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar",
+		},
+	}}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		OwnerID:        "pwner",
+		ManagedRecords: []string{endpoint.RecordTypeA},
+	}
+
+	changes := p.Calculate().Changes
+	suite.Require().Len(changes.UpdateNew, 1)
+	suite.Require().Len(changes.UpdateOld, 1)
+	suite.Equal("ingress/default/bar", changes.UpdateNew[0].Labels[endpoint.ResourceLabelKey])
+	suite.Equal("pwner", changes.UpdateNew[0].Labels[endpoint.OwnerLabelKey])
+}
+
 func (suite *PlanTestSuite) TestIdempotency() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}

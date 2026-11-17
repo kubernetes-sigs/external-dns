@@ -309,7 +309,8 @@ func (p *Plan) appendEndpointUpdates(t planTable, changes *Changes, current *end
 	update := t.resolver.ResolveUpdate(current, candidates)
 
 	if shouldUpdateTTL(update, current) || targetChanged(update, current) ||
-		p.providerSpecificChanged(update, current) || p.isOldOwnerIDSetAndDifferent(current) {
+		p.providerSpecificChanged(update, current) || current.Labels[endpoint.ResourceLabelKey] != update.Labels[endpoint.ResourceLabelKey] ||
+		p.isOldOwnerIDSetAndDifferent(current) {
 		inheritOwner(current, update)
 		changes.UpdateNew = append(changes.UpdateNew, update)
 		changes.UpdateOld = append(changes.UpdateOld, current)
