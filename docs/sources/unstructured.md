@@ -100,7 +100,7 @@ spec:
 | `--fqdn-target-template`    | Go template returning `host:target` pairs (repeatable; comma-separated values within one flag also accepted) |
 | `--label-filter`            | Filter resources by labels                                                        |
 | `--annotation-filter`       | Filter resources by annotations                                                   |
-| `--combine-fqdn-annotation` | Combine FQDN template and Annotations instead of overwriting                      |
+| `--combine-fqdn-annotation` | Add FQDN template names to the names found on the resource                          |
 
 ## Template Syntax
 

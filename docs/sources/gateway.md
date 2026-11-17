@@ -29,9 +29,9 @@ The set of domain names from a \*Route is sourced from the following places:
 - Adds the hostnames from any `external-dns.kubernetes.io/hostname` annotation on the \*Route.
   This behavior is suppressed if the `--ignore-hostname-annotation` flag was specified.
 
-- Adds hostnames generated from `--fqdn-template` when the previous steps
-  produced no endpoints. If `--combine-fqdn-annotation` is specified, template
-  hostnames are also added when the previous steps produced endpoints.
+- If no hostnames were produced by the previous steps
+  or the `--combine-fqdn-annotation` flag was specified, adds hostnames
+  generated from any `--fqdn-template` flag.
 
 - If no endpoints were produced by the previous steps, each
   attached Gateway listener will use its `hostname`, if present.
