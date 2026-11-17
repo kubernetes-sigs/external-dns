@@ -18,10 +18,9 @@ package google
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"sort"
+	"strconv"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -170,10 +169,8 @@ func newProvider(ctx context.Context, project string, domainFilter *endpoint.Dom
 
 // Zones returns the list of hosted zones.
 func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone, error) {
-	if p.zoneIDFilter.IsConfigured() {
-		if byID, ok, err := p.zonesByID(); err != nil || ok {
-			return byID, err
-		}
+	if p.hasNumericZoneIDFilter() {
+		return p.zonesByID()
 	}
 
 	zones := make(map[string]*dns.ManagedZone)
@@ -210,22 +207,26 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 	return zones, nil
 }
 
-// zonesByID resolves zone IDs with Get, so only dns.managedZones.get is needed.
-// ok is false when an ID is not an exact zone name or ID; the caller then lists.
-func (p *GoogleProvider) zonesByID() (map[string]*dns.ManagedZone, bool, error) {
+// hasNumericZoneIDFilter reports whether every zone ID filter is a numeric zone ID.
+func (p *GoogleProvider) hasNumericZoneIDFilter() bool {
+	if !p.zoneIDFilter.IsConfigured() {
+		return false
+	}
+	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+		if _, err := strconv.ParseUint(zoneID, 10, 64); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// zonesByID fetches each zone with Get, so only dns.managedZones.get is needed.
+func (p *GoogleProvider) zonesByID() (map[string]*dns.ManagedZone, error) {
 	zones := make(map[string]*dns.ManagedZone)
 	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
-		if zoneID == "" {
-			continue
-		}
 		zone, err := p.managedZonesClient.Get(p.project, zoneID).Do()
-		var apiErr *googleapi.Error
-		if errors.As(err, &apiErr) && apiErr.Code == http.StatusNotFound {
-			log.Warnf("Zone %s not found via Get (may be a suffix pattern), falling back to List", zoneID)
-			return nil, false, nil
-		}
 		if err != nil {
-			return nil, false, provider.NewSoftErrorf("failed to get zone %s: %w", zoneID, err)
+			return nil, provider.NewSoftErrorf("failed to get zone %s: %w", zoneID, err)
 		}
 		if zone.PeeringConfig == nil && p.domainFilter.Match(zone.DnsName) && p.zoneTypeFilter.Match(zone.Visibility) {
 			zones[zone.Name] = zone
@@ -237,7 +238,7 @@ func (p *GoogleProvider) zonesByID() (map[string]*dns.ManagedZone, bool, error) 
 	if len(zones) == 0 {
 		log.Warnf("No zones in project %s matched zone ID filters %v and domain filters %v", p.project, p.zoneIDFilter.ZoneIDs, p.domainFilter)
 	}
-	return zones, true, nil
+	return zones, nil
 }
 
 // Records returns the list of records in all relevant zones.

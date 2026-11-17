@@ -288,9 +288,9 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 	})
 }
 
-// Each exact zone ID resolves via Get, without List.
-func TestGoogleZonesMultipleIDFilterGet(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"internal-2", "internal-3"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
+// Numeric zone IDs resolve via Get, without List.
+func TestGoogleZonesNumericIDFilterUsesGet(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002", "10003"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
@@ -302,64 +302,36 @@ func TestGoogleZonesMultipleIDFilterGet(t *testing.T) {
 	assert.Equal(t, 0, provider.managedZonesClient.(*mockManagedZonesClient).listCallCount)
 }
 
-// "ernal-1" is not an exact zone name, so Get returns 404 and List applies the suffix match.
-func TestGoogleZonesIDFilterGetFallbackToList(t *testing.T) {
-	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"ernal-1"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
+// Any non-numeric value keeps List and suffix matching for every value.
+func TestGoogleZonesMixedIDFilterUsesList(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002", "ernal-3"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones(t.Context())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
-		"internal-1": {Name: "internal-1", DnsName: "cluster.local.", Id: 10001, Visibility: "private"},
+		"internal-2": {Name: "internal-2", DnsName: "cluster.local.", Id: 10002, Visibility: "private"},
+		"internal-3": {Name: "internal-3", DnsName: "cluster.local.", Id: 10003, Visibility: "private"},
 	})
 	assert.Equal(t, 1, provider.managedZonesClient.(*mockManagedZonesClient).listCallCount)
 }
 
-// TestGoogleZonesGetError verifies that a non-404 error from Get is surfaced as an error.
+// Numeric zone IDs still apply the domain filter.
+func TestGoogleZonesNumericIDFilterAppliesDomainFilter(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"other.local."}), provider.NewZoneIDFilter([]string{"10002"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+	require.Empty(t, zones)
+}
+
 func TestGoogleZonesGetError(t *testing.T) {
-	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"some-zone"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to get zone"), nil)
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10001"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to get zone"), nil)
 
 	zones, err := p.Zones(t.Context())
 	require.Error(t, err)
 	require.ErrorIs(t, err, provider.SoftError)
 	require.Empty(t, zones)
-}
-
-// An exact zone name matches only that zone: "public" no longer also matches "prod-public".
-func TestGoogleZonesIDFilterExactNameSkipsSuffixSiblings(t *testing.T) {
-	// createZone hardcodes this project, so the provider must use it too.
-	const project = "zalando-external-dns-test"
-	mock := &mockManagedZonesClient{}
-	p := &GoogleProvider{
-		project:                  project,
-		domainFilter:             endpoint.NewDomainFilter([]string{"example.com."}),
-		zoneIDFilter:             provider.NewZoneIDFilter([]string{"public"}),
-		zoneTypeFilter:           provider.NewZoneTypeFilter(""),
-		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
-		managedZonesClient:       mock,
-		changesService:           newMockChangesService(t),
-	}
-
-	createZone(t, p, &dns.ManagedZone{
-		Name:       "public",
-		DnsName:    "example.com.",
-		Id:         20001,
-		Visibility: "public",
-	})
-	createZone(t, p, &dns.ManagedZone{
-		Name:       "prod-public",
-		DnsName:    "prod.example.com.",
-		Id:         20002,
-		Visibility: "public",
-	})
-
-	zones, err := p.Zones(t.Context())
-	require.NoError(t, err)
-
-	validateZones(t, zones, map[string]*dns.ManagedZone{
-		"public": {Name: "public", DnsName: "example.com.", Id: 20001, Visibility: "public"},
-	})
-	assert.Equal(t, 0, mock.listCallCount, "an exact zone name must not require dns.managedZones.list")
 }
 
 func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
