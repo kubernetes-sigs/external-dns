@@ -18,7 +18,6 @@ package txt
 
 import (
 	"context"
-	b64 "encoding/base64"
 	"errors"
 	"maps"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/internal/encryption"
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
@@ -149,15 +149,11 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		return nil, errors.New("owner id cannot be empty")
 	}
 
-	// TODO: encryption logic duplicated in DynamoDB registry; refactor into common utility function.
-	if len(txtEncryptAESKey) == 0 {
-		txtEncryptAESKey = nil
-	} else if len(txtEncryptAESKey) != 32 {
-		var err error
-		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
-			return nil, errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
-		}
+	parsedAESKey, err := encryption.ParseAESKey(txtEncryptAESKey)
+	if err != nil {
+		return nil, err
 	}
+	txtEncryptAESKey = parsedAESKey
 
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
 		return nil, errors.New("the AES Encryption key must be set when TXT record encryption is enabled")

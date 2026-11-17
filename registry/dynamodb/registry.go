@@ -18,7 +18,6 @@ package dynamodb
 
 import (
 	"context"
-	b64 "encoding/base64"
 	"errors"
 	"fmt"
 	"maps"
@@ -38,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	provideraws "sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/registry/internal/encryption"
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
@@ -100,15 +100,12 @@ func newRegistry(
 		return nil, errors.New("table cannot be empty")
 	}
 
-	// TODO: encryption logic duplicated in TXT registry; refactor into common utility function.
-	if len(txtEncryptAESKey) == 0 {
-		txtEncryptAESKey = nil
-	} else if len(txtEncryptAESKey) != 32 {
-		var err error
-		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
-			return nil, errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
-		}
+	parsedAESKey, err := encryption.ParseAESKey(txtEncryptAESKey)
+	if err != nil {
+		return nil, err
 	}
+	txtEncryptAESKey = parsedAESKey
+
 	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
 	}
