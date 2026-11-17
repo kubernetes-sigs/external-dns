@@ -188,6 +188,9 @@ even when the annotation hostname differs from the listener hostname.
 The hostname is published as written (lowercased), so a wildcard annotation such as `*.example.com`
 is not narrowed to a `foo.example.com` listener; IP addresses and invalid names are ignored.
 The Route must still be accepted by the parent and attached to a matching listener.
+With several parents, each annotation hostname gets the targets of every parent
+that accepts the Route. To publish different hostnames to different Gateways,
+use a separate Route per Gateway.
 Without `annotation-only`, an annotation hostname outside every listener hostname publishes nothing.
 See [Domain names](gateway.md#domain-names) for details.
 This enables migration patterns where the DNS hostname and the routing hostname are different,

@@ -2296,6 +2296,59 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: nil,
 		},
 		{
+			// The annotation does not say which parent a hostname belongs to, so every
+			// hostname gets the targets of every parent that accepts the route.
+			title:      "OnlyAnnotationHostTwoParents",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{
+				{
+					ObjectMeta: objectMeta("default", "public"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("public.example.internal")),
+						}},
+					},
+					Status: gatewayStatus("1.1.1.1"),
+				},
+				{
+					ObjectMeta: objectMeta("default", "private"),
+					Spec: v1.GatewaySpec{
+						Listeners: []v1.Listener{{
+							Protocol: v1.HTTPProtocolType,
+							Hostname: new(v1.Hostname("private.example.internal")),
+						}},
+					},
+					Status: gatewayStatus("10.0.0.1"),
+				},
+			},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "app.one.internal, app.two.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "public"),
+							gwParentRef("default", "private"),
+						},
+					},
+				},
+				Status: httpRouteStatus(
+					gwParentRef("default", "public"),
+					gwParentRef("default", "private"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("app.one.internal", "1.1.1.1", "10.0.0.1"),
+				newTestEndpoint("app.two.internal", "1.1.1.1", "10.0.0.1"),
+			},
+		},
+		{
 			title:      "InvalidSourceAnnotation",
 			config:     &config.Config{},
 			namespaces: namespaces("default"),
