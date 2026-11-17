@@ -13,9 +13,9 @@ anyway.
 
 ## Feature Support
 
-The PDNS provider currently does not support:
-
-* Dry running a configuration is not supported
+The PDNS provider supports `--dry-run`. In this mode, ExternalDNS reads the
+configured zones and logs planned record creations, updates, and deletions without
+sending changes to PowerDNS. Remove `--dry-run` to apply the planned changes.
 
 ## Deployment
 

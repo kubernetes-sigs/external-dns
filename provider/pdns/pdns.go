@@ -216,6 +216,11 @@ func (c *PDNSAPIClient) ListZone(ctx context.Context, zoneID string) (*pgo.Zone,
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#patch--servers-server_id-zones-zone_id
 func (c *PDNSAPIClient) PatchZone(ctx context.Context, zoneID string, zoneStruct *pgo.Zone) error {
+	if c.dryRun {
+		log.Infof("Dry run: skipping changes to PowerDNS zone %s", zoneID)
+		return nil
+	}
+
 	rrSets := &pgo.RRsets{Sets: zoneStruct.RRsets}
 	var err error
 	for i := range retryLimit {
@@ -269,12 +274,6 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 
 	if config.APIKey == "" {
 		return nil, errors.New("missing API Key for PDNS. Specify using --pdns-api-key=")
-	}
-
-	// We do not support dry running, exit safely instead of surprising the user
-	// TODO: Add Dry Run support
-	if config.DryRun {
-		return nil, errors.New("PDNS Provider does not currently support dry-run")
 	}
 
 	if config.Server == "localhost" {
@@ -591,6 +590,6 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	log.Infof("Changes processed for PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }
