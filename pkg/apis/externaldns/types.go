@@ -763,7 +763,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).", defaultConfig.WebhookServer, &cfg.WebhookServer)
 
 	// FQDN Templating
-	b.BoolVar("combine-fqdn-annotation", "Combine template-generated DNS values with source-derived values instead of using templates only as a fallback (default: false)", false, &cfg.CombineFQDNAndAnnotation)
+	b.BoolVar("combine-fqdn-annotation", "Add FQDN template names to the names found on the resource (default: false)", false, &cfg.CombineFQDNAndAnnotation)
 	b.StringsVar("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Specify multiple times for multiple templates.", defaultConfig.FQDNTemplate, &cfg.FQDNTemplate)
 	b.StringsVar("target-template", "A templated string used to generate DNS targets (IP or hostname) from sources that support it (optional). Specify multiple times for multiple targets.", defaultConfig.TargetTemplate, &cfg.TargetTemplate)
 	b.StringsVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Specify multiple times for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
