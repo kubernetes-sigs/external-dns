@@ -2448,11 +2448,14 @@ func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
 					generated := r.generateTXTRecord(ep)
 					require.Len(t, generated, 1, ep.DNSName)
 
-					assert.Equal(t, generated[0].DNSName, r.txtRecordName(ep), "%s %s", ep.RecordType, ep.DNSName)
+					name, ok := r.txtRecordName(ep)
+					require.True(t, ok, "%s %s", ep.RecordType, ep.DNSName)
+					assert.Equal(t, generated[0].DNSName, name, "%s %s", ep.RecordType, ep.DNSName)
 				}
 
 				require.Empty(t, r.generateTXTRecord(tooLong))
-				assert.NotEmpty(t, endpoint.OverlongDNSLabel(r.txtRecordName(tooLong)))
+				_, ok := r.txtRecordName(tooLong)
+				assert.False(t, ok)
 			})
 		}
 	}
