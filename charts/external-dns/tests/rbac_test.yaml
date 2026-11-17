@@ -127,7 +127,7 @@ tests:
             - apiGroups: ["externaldns.k8s.io"]
               resources: ["dnsendpoints/status"]
               verbs: ["update"]
-            - apiGroups: ["traefik.io"]
+            - apiGroups: ["traefik.containo.us", "traefik.io"]
               resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
               verbs: ["get","watch","list"]
 

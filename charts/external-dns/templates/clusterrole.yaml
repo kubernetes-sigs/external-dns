@@ -124,7 +124,7 @@ rules:
     verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "traefik-proxy" .Values.sources }}
-  - apiGroups: ["traefik.io"]
+  - apiGroups: ["traefik.containo.us", "traefik.io"]
     resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
     verbs: ["get","watch","list"]
 {{- end }}

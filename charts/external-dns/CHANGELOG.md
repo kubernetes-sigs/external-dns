@@ -28,10 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Default `provider.webhook.securityContext` to no privilege escalation, no capabilities and a read-only root filesystem, like the `external-dns` container, so the `Pod` meets the _restricted_ Pod Security Standard. [#6785](https://github.com/kubernetes-sigs/external-dns/pull/6785) @LorbusChris
 
-### Removed
-
-- Remove the `traefik.containo.us` API group from the `traefik-proxy` RBAC rule. [#6964](https://github.com/kubernetes-sigs/external-dns/pull/6964) @neoLsH
-
 ## [v1.23.0] - 2026-10-01
 
 ### Changed
