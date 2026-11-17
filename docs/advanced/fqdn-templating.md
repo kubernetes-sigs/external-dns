@@ -450,7 +450,8 @@ This is helpful in scenarios such as:
 
 ## Tips
 
-- By default, template-generated DNS values are used only when the source does not provide values. The node source is an exception: without `--combine-fqdn-annotation`, the template replaces the node name. Set `--combine-fqdn-annotation` to append template-generated DNS values to those provided by the source, including resource specifications and hostname annotations.
+- By default, template-generated DNS values are used only when the source does not provide values. The node source is an exception: without `--combine-fqdn-annotation`, the template replaces the node name.
+- Set `--combine-fqdn-annotation` to append template-generated DNS values to those provided by the source, including resource specifications and hostname annotations.
 - You must still ensure the resulting FQDN is valid and unique.
 - Since Go templates can be error-prone, test your template with simple examples before deploying. Mismatched field names or nil values (e.g., missing labels) will result in errors or skipped entries.
 
