@@ -66,7 +66,7 @@ type TXTRegistry struct {
 	oldOwnerID string
 
 	// existingTXTs is the TXT records that already exist in the zone so that
-	// ApplyChanges() can skip re-creating them. See the struct below for details.
+	// Plan() can skip re-creating them. See the struct below for details.
 	existingTXTs *existingTXTs
 
 	// obsoleteTXTWarned dedups the legacy "cname-" alias warning to once per record per process.
@@ -74,7 +74,7 @@ type TXTRegistry struct {
 }
 
 // existingTXTs maps pre‑existing TXT records to the value they hold at the provider.
-// It relies on the fact that Records() is always called **before** ApplyChanges()
+// It relies on the fact that Records() is always called **before** Plan()
 // within a single reconciliation cycle.
 type existingTXTs struct {
 	entries map[recordKey]string
@@ -392,8 +392,19 @@ func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endp
 	return txts
 }
 
+// Provider returns the dns provider.
+func (im *TXTRegistry) Provider() provider.Provider {
+	return im.provider
+}
+
 // ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return registry.Apply(ctx, im, changes, false)
+}
+
+// Plan drops changes to records owned by others, sets the owner label on new records
+// and adds the ownership TXT records to the changes.
+func (im *TXTRegistry) Plan(changes *plan.Changes) *plan.Changes {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
@@ -408,40 +419,71 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
 		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecordWithFilter(r, im.existingTXTs.isAbsent)...)
-
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
 	}
 
 	for _, r := range filteredChanges.Delete {
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
 		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecordForRemoval(r)...)
-
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
 	}
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecordForRemoval(r)...)
-		// remove old version of record from cache
-		if im.cacheInterval > 0 {
-			im.removeFromCache(r)
-		}
 	}
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
-		// add new version of record to cache
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
 	}
 
-	return im.provider.ApplyChanges(ctx, filteredChanges)
+	return filteredChanges
+}
+
+// PreApply has nothing to write. With caching enabled, the returned function updates the
+// records cache once the provider applied the changes, and drops it when the provider failed.
+func (im *TXTRegistry) PreApply(_ context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
+	if im.cacheInterval <= 0 {
+		return changes, registry.NoFinish, nil
+	}
+
+	// Taken now, before the provider gets the changes. The cache holds the managed
+	// records only, not their ownership TXT records.
+	created, deleted := withoutOwnershipTXT(changes.Create), withoutOwnershipTXT(changes.Delete)
+	updatedOld, updatedNew := withoutOwnershipTXT(changes.UpdateOld), withoutOwnershipTXT(changes.UpdateNew)
+
+	finish := func(_ context.Context, providerErr error) error {
+		if providerErr != nil {
+			// The provider may have applied only part of the changes: read the records again on the next sync.
+			im.recordsCache = nil
+			return providerErr
+		}
+		for _, r := range created {
+			im.addToCache(r)
+		}
+		for _, r := range deleted {
+			im.removeFromCache(r)
+		}
+		for _, r := range updatedOld {
+			im.removeFromCache(r)
+		}
+		for _, r := range updatedNew {
+			im.addToCache(r)
+		}
+		return nil
+	}
+	return changes, finish, nil
+}
+
+// withoutOwnershipTXT returns the endpoints without the ownership TXT records added by Plan.
+func withoutOwnershipTXT(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	result := make([]*endpoint.Endpoint, 0, len(endpoints))
+	for _, ep := range endpoints {
+		if ep.RecordType == endpoint.RecordTypeTXT && ep.Labels[endpoint.OwnedRecordLabelKey] != "" {
+			continue
+		}
+		result = append(result, ep)
+	}
+	return result
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider

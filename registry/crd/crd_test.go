@@ -571,6 +571,27 @@ func TestCRDApplyChangesSetsProgrammedStatus(t *testing.T) {
 	assert.Equal(t, apiv1alpha1.ProgrammedReason, cond.Reason)
 }
 
+// In dry-run the provider still gets the changes, but no DNSRecord is written.
+func TestCRDApplyDryRunWritesNoDNSRecord(t *testing.T) {
+	ctx := t.Context()
+	prov := inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones([]string{"mytestdomain.io"}))
+
+	ep := endpoint.Endpoint{
+		DNSName:    "sub.mytestdomain.io",
+		RecordType: "CNAME",
+		Targets:    endpoint.NewTargets("127.0.0.1"),
+	}
+
+	reg, c := newTestRegistry(t, prov, "test")
+	require.NoError(t, registry.Apply(ctx, reg, &plan.Changes{Create: []*endpoint.Endpoint{&ep}}, true))
+
+	assert.Equal(t, "test", ep.Labels[endpoint.OwnerLabelKey], "Plan still sets the owner label")
+
+	got := &apiv1alpha1.DNSRecord{}
+	err := c.Get(ctx, types.NamespacedName{Namespace: "default", Name: recordObjectName(&ep)}, got)
+	assert.True(t, k8sErrors.IsNotFound(err), "expected no DNSRecord, got error %v", err)
+}
+
 // When the provider rejects the changes, the DNSRecord is persisted with a
 // Ready=False/Failed condition, so the failure is visible on the object while
 // Records() still excludes it from current state (it is not Ready) and the plan

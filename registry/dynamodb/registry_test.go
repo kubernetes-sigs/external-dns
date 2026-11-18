@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/registry"
 )
 
 const (
@@ -1127,6 +1128,28 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 }
 
 // DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
+func TestDynamoDBRegistryDryRunWritesNothing(t *testing.T) {
+	// No expected statements: the stub fails the test on any insert, update or delete.
+	stubConfig := DynamoDBStubConfig{}
+	api, p := newDynamoDBAPIStub(t, &stubConfig)
+	ctx := t.Context()
+
+	r, err := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, time.Hour)
+	require.NoError(t, err)
+	_, err = r.Records(ctx)
+	require.NoError(t, err)
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("new.test-zone.example.org", endpoint.RecordTypeCNAME, "new.loadbalancer.com"),
+		},
+	}
+	require.NoError(t, registry.Apply(ctx, r, changes, true))
+
+	assert.True(t, api.changesApplied, "the provider still gets the changes")
+	assert.Equal(t, "test-owner", changes.Create[0].Labels[endpoint.OwnerLabelKey], "Plan still sets the owner label")
+}
+
 type DynamoDBStub struct {
 	t                *testing.T
 	stubConfig       *DynamoDBStubConfig

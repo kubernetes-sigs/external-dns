@@ -67,6 +67,9 @@ type Controller struct {
 	TXTOwnerOld string
 	// CRDSourceKind is the Kind reported for "crd/" deletes.
 	CRDSourceKind string
+	// DryRun leaves the registry state untouched. The provider still gets the changes and
+	// handles dry-run itself, so it can log what it would change.
+	DryRun bool
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -120,7 +123,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	plan = plan.Calculate()
 
 	if plan.Changes.HasChanges() {
-		err = c.Registry.ApplyChanges(ctx, plan.Changes)
+		err = registry.Apply(ctx, c.Registry, plan.Changes, c.DryRun)
 		if err != nil {
 			registryErrorsTotal.Counter.Inc()
 			deprecatedRegistryErrors.Counter.Inc()

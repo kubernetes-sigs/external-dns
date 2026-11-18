@@ -236,8 +236,18 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	return endpoints, nil
 }
 
+// Provider returns the DNS provider.
+func (im *DynamoDBRegistry) Provider() provider.Provider {
+	return im.provider
+}
+
 // ApplyChanges updates the DNS provider and DynamoDB table with the changes.
 func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return registry.Apply(ctx, im, changes, false)
+}
+
+// Plan drops changes to records owned by others and sets the owner label on new records.
+func (im *DynamoDBRegistry) Plan(changes *plan.Changes) *plan.Changes {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
@@ -245,42 +255,52 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
-	statements := im.planCreateStatements(filteredChanges)
-	for _, r := range filteredChanges.Delete {
+	for _, r := range filteredChanges.Create {
+		if r.Labels == nil {
+			r.Labels = make(map[string]string)
+		}
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+	}
+
+	return filteredChanges
+}
+
+// PreApply inserts and updates the ownership items in the DynamoDB table. It drops the
+// creates of records that another owner already holds. The returned function deletes
+// the ownership items of deleted records once the provider applied the changes.
+func (im *DynamoDBRegistry) PreApply(ctx context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
+	statements := im.planCreateStatements(changes)
+	for _, r := range changes.Delete {
 		delete(im.labels, r.Key())
 		im.removeFromCache(r)
 	}
-	statements = im.planUpdateStatements(statements, filteredChanges)
+	statements = im.planUpdateStatements(statements, changes)
 
 	err := im.executeStatements(ctx, statements, func(request dynamodbtypes.BatchStatementRequest, response dynamodbtypes.BatchStatementResponse) error {
-		return im.insertUpdateStatementError(filteredChanges, request, response)
+		return im.insertUpdateStatementError(changes, request, response)
 	})
 	if err != nil {
 		im.recordsCache = nil
 		im.labels = nil
-		return err
+		return nil, nil, err
 	}
 
-	err = im.provider.ApplyChanges(ctx, filteredChanges)
-	if err != nil {
-		im.recordsCache = nil
-		im.labels = nil
-		return err
+	deletes := &plan.Changes{Delete: changes.Delete}
+	finish := func(ctx context.Context, providerErr error) error {
+		if providerErr != nil {
+			im.recordsCache = nil
+			im.labels = nil
+			return providerErr
+		}
+		return im.executeStatements(ctx, im.planDeleteStatements(deletes), im.deleteStatementError)
 	}
-
-	statements = im.planDeleteStatements(filteredChanges)
-	return im.executeStatements(ctx, statements, im.deleteStatementError)
+	return changes, finish, nil
 }
 
 // Also writes im.labels and the records cache.
 func (im *DynamoDBRegistry) planCreateStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
 	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Create)+len(changes.UpdateNew))
 	for _, r := range changes.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-
 		key := r.Key()
 		oldLabels := im.labels[key]
 		if oldLabels == nil {

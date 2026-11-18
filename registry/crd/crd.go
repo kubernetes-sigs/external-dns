@@ -165,7 +165,36 @@ func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
+// Provider returns the dns provider.
+func (cr *CRDRegistry) Provider() provider.Provider {
+	return cr.provider
+}
+
 // ApplyChanges updates dns provider with the changes and creates/updates/delete a DNSRecord accordingly.
+func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return registry.Apply(ctx, cr, changes, false)
+}
+
+// Plan drops changes to records owned by others and sets the owner label on new records,
+// so the provider sees owner-labeled endpoints, matching the TXT registry behavior.
+func (cr *CRDRegistry) Plan(changes *plan.Changes) *plan.Changes {
+	filteredChanges := &plan.Changes{
+		Create:    changes.Create,
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.Delete),
+	}
+
+	for _, r := range filteredChanges.Create {
+		r.WithLabel(endpoint.OwnerLabelKey, cr.ownerID)
+	}
+
+	return filteredChanges
+}
+
+// PreApply writes the DNSRecord objects of created and updated endpoints and marks
+// them Accepted. The returned function sets their condition from the provider outcome
+// and deletes the DNSRecords of deleted endpoints.
 //
 // Intent is recorded first: the DNSRecord objects for created and updated
 // endpoints are written and marked Accepted before the provider is called. Their
@@ -180,45 +209,32 @@ func (cr *CRDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // individual records, so on failure every record in the batch is marked Failed.
 // Provider applies are idempotent, so records that did get applied are corrected
 // to Programmed on the next reconcile.
-func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.UpdateNew),
-		UpdateOld: endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.UpdateOld),
-		Delete:    endpoint.FilterEndpointsByOwnerID(cr.ownerID, changes.Delete),
-	}
-
-	// Stamp the owner label before applying so the provider sees owner-labeled
-	// endpoints, matching the TXT registry behavior.
-	for _, r := range filteredChanges.Create {
-		r.WithLabel(endpoint.OwnerLabelKey, cr.ownerID)
-	}
-
+func (cr *CRDRegistry) PreApply(ctx context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
 	// Write the DNSRecord objects and collect them so their Ready condition can be
-	// set from the provider outcome below.
-	applied := make([]*apiv1alpha1.DNSRecord, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
+	// set from the provider outcome in finish.
+	applied := make([]*apiv1alpha1.DNSRecord, 0, len(changes.Create)+len(changes.UpdateNew))
 
-	for _, r := range filteredChanges.Create {
+	for _, r := range changes.Create {
 		dnsrecord, err := cr.ensureDNSRecord(ctx, r)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 		applied = append(applied, dnsrecord)
 	}
 
 	// Update existing DNS records to reflect the newest change.
-	for i, e := range filteredChanges.UpdateNew {
-		old := filteredChanges.UpdateOld[i]
+	for i, e := range changes.UpdateNew {
+		old := changes.UpdateOld[i]
 		dnsrecord, err := cr.getDNSRecord(ctx, old)
 		if err != nil {
-			return fmt.Errorf("unable to get DNSRecord of %s: %w", old, err)
+			return nil, nil, fmt.Errorf("unable to get DNSRecord of %s: %w", old, err)
 		}
 		if dnsrecord == nil {
 			continue
 		}
 		dnsrecord.Spec.Endpoint = *e
 		if err := cr.crWriter.Update(ctx, dnsrecord); err != nil {
-			return fmt.Errorf("unable to update DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
+			return nil, nil, fmt.Errorf("unable to update DNSRecord %s in %s: %w", dnsrecord.Name, dnsrecord.Namespace, err)
 		}
 		applied = append(applied, dnsrecord)
 	}
@@ -229,42 +245,46 @@ func (cr *CRDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		cr.setStatus(ctx, dnsrecord, apiv1alpha1.AcceptedReason, "Endpoint accepted by external-dns; not yet programmed")
 	}
 
-	if err := cr.provider.ApplyChanges(ctx, filteredChanges); err != nil {
-		// The provider reports a single batch error and cannot attribute it to
-		// individual records, so every record in the batch is marked Failed; the
-		// apply is idempotent, so records that were in fact applied are corrected
-		// to Programmed on the next reconcile.
+	deletes := changes.Delete
+	finish := func(ctx context.Context, providerErr error) error {
+		if providerErr != nil {
+			// The provider reports a single batch error and cannot attribute it to
+			// individual records, so every record in the batch is marked Failed; the
+			// apply is idempotent, so records that were in fact applied are corrected
+			// to Programmed on the next reconcile.
+			for _, dnsrecord := range applied {
+				cr.setStatus(ctx, dnsrecord, apiv1alpha1.FailedReason, fmt.Sprintf("Provider rejected the batch: %v", providerErr))
+			}
+			return fmt.Errorf("provider cannot apply changes: %w", providerErr)
+		}
+
+		// Provider accepted the changes; mark the records Programmed.
 		for _, dnsrecord := range applied {
-			cr.setStatus(ctx, dnsrecord, apiv1alpha1.FailedReason, fmt.Sprintf("Provider rejected the batch: %v", err))
+			cr.setStatus(ctx, dnsrecord, apiv1alpha1.ProgrammedReason, "Endpoint applied to the DNS provider")
 		}
-		return fmt.Errorf("provider cannot apply changes: %w", err)
-	}
 
-	// Provider accepted the changes; mark the records Programmed.
-	for _, dnsrecord := range applied {
-		cr.setStatus(ctx, dnsrecord, apiv1alpha1.ProgrammedReason, "Endpoint applied to the DNS provider")
-	}
-
-	// Deletes are reconciled last: the DNS record is gone from the provider, so
-	// drop its DNSRecord too.
-	for _, r := range filteredChanges.Delete {
-		dnsrecord, err := cr.getDNSRecord(ctx, r)
-		if err != nil {
-			return fmt.Errorf("unable to get DNSRecord of %s: %w", r, err)
-		}
-		if dnsrecord == nil {
-			continue
-		}
-		if err := cr.crWriter.Delete(ctx, dnsrecord); err != nil {
-			// Ignore not found as it's a benign error, the record isn't present and it's the end goal here, to remove
-			// all records. All other errors should surface back to the user.
-			if !k8sErrors.IsNotFound(err) {
-				return fmt.Errorf("unable to delete DNSRecord %s in %s: %w", dnsrecord.Name, cr.namespace, err)
+		// Deletes are reconciled last: the DNS record is gone from the provider, so
+		// drop its DNSRecord too.
+		for _, r := range deletes {
+			dnsrecord, err := cr.getDNSRecord(ctx, r)
+			if err != nil {
+				return fmt.Errorf("unable to get DNSRecord of %s: %w", r, err)
+			}
+			if dnsrecord == nil {
+				continue
+			}
+			if err := cr.crWriter.Delete(ctx, dnsrecord); err != nil {
+				// Ignore not found as it's a benign error, the record isn't present and it's the end goal here, to remove
+				// all records. All other errors should surface back to the user.
+				if !k8sErrors.IsNotFound(err) {
+					return fmt.Errorf("unable to delete DNSRecord %s in %s: %w", dnsrecord.Name, cr.namespace, err)
+				}
 			}
 		}
-	}
 
-	return cr.adjustLabelsFromProvider(ctx, applied)
+		return cr.adjustLabelsFromProvider(ctx, applied)
+	}
+	return changes, finish, nil
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider

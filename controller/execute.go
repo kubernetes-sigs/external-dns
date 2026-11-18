@@ -211,6 +211,7 @@ func buildController(
 		EventEmitter:         eventEmitter,
 		CRDSourceKind:        cfg.CRDSourceKind,
 		StatusReporter:       statusReporter,
+		DryRun:               cfg.DryRun,
 	}, nil
 }
 

@@ -78,9 +78,24 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	return records, nil
 }
 
-// ApplyChanges filters out records not owned the External-DNS, additionally it adds the required label
-// inserted in the AWS SD instance as a CreateID field
+// Provider returns the AWS SD provider.
+func (sdr *AWSSDRegistry) Provider() provider.Provider {
+	return sdr.provider
+}
+
+// ApplyChanges plans the changes and applies them to the AWS SD provider.
 func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return registry.Apply(ctx, sdr, changes, false)
+}
+
+// PreApply has nothing to write: the provider stores the ownership itself.
+func (sdr *AWSSDRegistry) PreApply(_ context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
+	return changes, registry.NoFinish, nil
+}
+
+// Plan filters out records not owned the External-DNS, additionally it adds the required label
+// inserted in the AWS SD instance as a CreateID field
+func (sdr *AWSSDRegistry) Plan(changes *plan.Changes) *plan.Changes {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateNew),
@@ -93,7 +108,7 @@ func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Change
 	sdr.updateLabels(filteredChanges.UpdateOld)
 	sdr.updateLabels(filteredChanges.Delete)
 
-	return sdr.provider.ApplyChanges(ctx, filteredChanges)
+	return filteredChanges
 }
 
 func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
