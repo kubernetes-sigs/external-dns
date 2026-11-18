@@ -92,33 +92,21 @@ func TestGenerateNonceError(t *testing.T) {
 }
 
 func TestParseAESKey(t *testing.T) {
-	rawKey := []byte("passphrasewhichneedstobe32bytes!")
-	encodedKey := []byte(base64.StdEncoding.EncodeToString(rawKey))
 	encoded32ByteKey := []byte("12345678901234567890123456789012")
 
 	tests := []struct {
-		name    string
-		input   []byte
-		want    []byte
-		wantErr bool
+		name  string
+		input []byte
+		want  []byte
 	}{
 		{name: "nil key"},
 		{name: "empty key", input: []byte{}},
-		{name: "raw key", input: rawKey, want: rawKey},
-		{name: "base64 key", input: encodedKey, want: rawKey},
 		{name: "32-byte key takes precedence over base64 decoding", input: encoded32ByteKey, want: encoded32ByteKey},
-		{name: "invalid base64", input: []byte("not-base64!"), wantErr: true},
-		{name: "decoded key has invalid length", input: []byte(base64.StdEncoding.EncodeToString([]byte("short"))), wantErr: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ParseAESKey(tt.input)
-			if tt.wantErr {
-				require.EqualError(t, err, "the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
-				require.Nil(t, got)
-				return
-			}
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
 		})

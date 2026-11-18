@@ -23,13 +23,14 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 )
 
 const standardGcmNonceSize = 12
 
-var errInvalidAESKey = fmt.Errorf("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
+var errInvalidAESKey = errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
 
 // ParseAESKey accepts an unset key, a raw 32-byte key, or a base64-encoded 32-byte key.
 func ParseAESKey(key []byte) ([]byte, error) {
