@@ -37,7 +37,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	provideraws "sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/registry"
-	"sigs.k8s.io/external-dns/registry/internal/encryption"
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
@@ -100,7 +99,7 @@ func newRegistry(
 		return nil, errors.New("table cannot be empty")
 	}
 
-	txtEncryptAESKey, err := encryption.ParseAESKey(txtEncryptAESKey)
+	txtEncryptAESKey, err := endpoint.ParseAESKey(txtEncryptAESKey)
 	if err != nil {
 		return nil, err
 	}

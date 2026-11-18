@@ -29,6 +29,25 @@ import (
 
 const standardGcmNonceSize = 12
 
+var errInvalidAESKey = fmt.Errorf("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
+
+// ParseAESKey accepts an unset key, a raw 32-byte key, or a base64-encoded 32-byte key.
+func ParseAESKey(key []byte) ([]byte, error) {
+	if len(key) == 0 {
+		return nil, nil
+	}
+	if len(key) == 32 {
+		return key, nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(string(key))
+	if err != nil || len(decoded) != 32 {
+		return nil, errInvalidAESKey
+	}
+
+	return decoded, nil
+}
+
 // GenerateNonce creates a random base64-encoded nonce of a fixed size.
 func GenerateNonce() (string, error) {
 	nonce := make([]byte, standardGcmNonceSize)

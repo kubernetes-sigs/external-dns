@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
-	"sigs.k8s.io/external-dns/registry/internal/encryption"
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
@@ -149,11 +148,10 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		return nil, errors.New("owner id cannot be empty")
 	}
 
-	parsedAESKey, err := encryption.ParseAESKey(txtEncryptAESKey)
+	txtEncryptAESKey, err := endpoint.ParseAESKey(txtEncryptAESKey)
 	if err != nil {
 		return nil, err
 	}
-	txtEncryptAESKey = parsedAESKey
 
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
 		return nil, errors.New("the AES Encryption key must be set when TXT record encryption is enabled")
