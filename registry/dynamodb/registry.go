@@ -100,11 +100,10 @@ func newRegistry(
 		return nil, errors.New("table cannot be empty")
 	}
 
-	parsedAESKey, err := encryption.ParseAESKey(txtEncryptAESKey)
+	txtEncryptAESKey, err := encryption.ParseAESKey(txtEncryptAESKey)
 	if err != nil {
 		return nil, err
 	}
-	txtEncryptAESKey = parsedAESKey
 
 	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
 		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
