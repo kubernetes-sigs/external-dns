@@ -299,7 +299,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if len(im.existingTXTs.entries) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Name only: rendering the value would encrypt every owned record's labels on each call.
-				if txtName := im.txtRecordName(ep); txtName != "" && !im.existingTXTs.has(txtName, ep.SetIdentifier) {
+				if txtName, ok := im.txtRecordName(ep); ok && !im.existingTXTs.has(txtName, ep.SetIdentifier) {
 					ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 				}
 			}
@@ -340,17 +340,12 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
 }
 
-// txtRecordName returns the name of r's ownership TXT record without rendering its value,
-// or "" if a label exceeds 63 characters.
-func (im *TXTRegistry) txtRecordName(r *endpoint.Endpoint) string {
+// txtRecordName returns the name of r's ownership TXT record without rendering its value.
+// ok is false if a label of the name is longer than 63 characters.
+func (im *TXTRegistry) txtRecordName(r *endpoint.Endpoint) (string, bool) {
 	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
-	name := im.mapper.ToTXTName(r.DNSName, r.RecordType)
-	for label := range strings.SplitSeq(name, ".") {
-		if len(label) > 63 {
-			return ""
-		}
-	}
-	return strings.TrimSuffix(name, ".")
+	name := strings.TrimSuffix(im.mapper.ToTXTName(r.DNSName, r.RecordType), ".")
+	return name, endpoint.OverlongDNSLabel(name) == ""
 }
 
 func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
@@ -360,9 +355,9 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 	}
 
-	name := im.txtRecordName(r)
-	if name == "" {
-		log.Errorf("Cannot create ownership TXT record for %s: a label of %q is longer than 63 characters", r.DNSName, im.mapper.ToTXTName(r.DNSName, r.RecordType))
+	name, ok := im.txtRecordName(r)
+	if !ok {
+		log.Errorf("Cannot create ownership TXT record for %s: a label of %q is longer than 63 characters", r.DNSName, name)
 		return endpoints
 	}
 
