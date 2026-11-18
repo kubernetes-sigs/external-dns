@@ -1128,6 +1128,46 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 }
 
 // DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
+func TestDynamoDBRegistryApplyChangesKeepsCallerCreate(t *testing.T) {
+	ep := func(name string) *endpoint.Endpoint {
+		return &endpoint.Endpoint{
+			DNSName:       name + ".test-zone.example.org",
+			Targets:       endpoint.Targets{"new.loadbalancer.com"},
+			RecordType:    endpoint.RecordTypeCNAME,
+			SetIdentifier: "set-new",
+			Labels:        map[string]string{endpoint.ResourceLabelKey: "ingress/default/" + name},
+		}
+	}
+	stubConfig := DynamoDBStubConfig{
+		ExpectInsert: map[string]map[string]string{
+			"new1.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new1"},
+			"new3.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new3"},
+		},
+		ExpectInsertError: map[string]dynamodbtypes.BatchStatementErrorCodeEnum{
+			"new2.test-zone.example.org#CNAME#set-new": dynamodbtypes.BatchStatementErrorCodeEnumDuplicateItem,
+		},
+		ExpectDelete: sets.New("quux.test-zone.example.org#A#set-2"),
+	}
+	api, p := newDynamoDBAPIStub(t, &stubConfig)
+	r, err := newRegistry(p, "test-owner", api, "test-table", "txt.", "", "", []string{}, []string{}, nil, 0)
+	require.NoError(t, err)
+	_, err = r.Records(t.Context())
+	require.NoError(t, err)
+
+	changes := &plan.Changes{Create: []*endpoint.Endpoint{ep("new1"), ep("new2"), ep("new3")}}
+	require.NoError(t, r.ApplyChanges(t.Context(), changes))
+
+	names := make([]string, 0, len(changes.Create))
+	for _, e := range changes.Create {
+		names = append(names, e.DNSName)
+	}
+	assert.Equal(t, []string{
+		"new1.test-zone.example.org",
+		"new2.test-zone.example.org",
+		"new3.test-zone.example.org",
+	}, names)
+}
+
 func TestDynamoDBRegistryDryRunWritesNothing(t *testing.T) {
 	// No expected statements: the stub fails the test on any insert, update or delete.
 	stubConfig := DynamoDBStubConfig{}

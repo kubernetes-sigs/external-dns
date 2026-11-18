@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -249,7 +250,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 // Plan drops changes to records owned by others and sets the owner label on new records.
 func (im *DynamoDBRegistry) Plan(changes *plan.Changes) *plan.Changes {
 	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
+		Create:    slices.Clone(changes.Create),
 		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
 		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
 		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),

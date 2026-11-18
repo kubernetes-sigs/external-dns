@@ -204,11 +204,6 @@ func (cr *CRDRegistry) Plan(changes *plan.Changes) *plan.Changes {
 // on the next reconcile rather than mistaken for an existing record — the same
 // safety the apply-first ordering gave, while making the full lifecycle
 // (Accepted, Programmed, Failed) visible on the object.
-//
-// The provider reports a single batch error and cannot attribute it to
-// individual records, so on failure every record in the batch is marked Failed.
-// Provider applies are idempotent, so records that did get applied are corrected
-// to Programmed on the next reconcile.
 func (cr *CRDRegistry) PreApply(ctx context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
 	// Write the DNSRecord objects and collect them so their Ready condition can be
 	// set from the provider outcome in finish.
