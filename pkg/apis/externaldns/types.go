@@ -594,7 +594,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("ignore-ingress-rules-spec", "Ignore the spec.rules section in Ingress resources (default: false)", false, &cfg.IgnoreIngressRulesSpec)
 	b.BoolVar("ignore-ingress-tls-spec", "Ignore the spec.tls section in Ingress resources (default: false)", false, &cfg.IgnoreIngressTLSSpec)
 	b.BoolVar("ignore-non-host-network-pods", "Ignore pods not running on host network when using pod source (default: false)", false, &cfg.IgnoreNonHostNetworkPods)
-	b.StringsVar("ingress-class", "Require an Ingress to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)", nil, &cfg.IngressClassNames)
+	b.StringsVar("ingress-class", "Require an Ingress or Traefik route to have this class name; specify multiple times to allow more than one class (optional; defaults to any class)", nil, &cfg.IngressClassNames)
 	b.StringVar("label-filter", "Filter resources queried for endpoints by label selector (default: all resources)", defaultConfig.LabelFilter, &cfg.LabelFilter)
 	managedRecordTypesHelp := fmt.Sprintf("Record types to manage; specify multiple times to include many; (default: %s) (supported records: A, AAAA, CNAME, DNAME, NS, SRV, TLSA, TXT)", strings.Join(defaultConfig.ManagedDNSRecordTypes, ","))
 	b.StringsVar("managed-record-types", managedRecordTypesHelp, defaultConfig.ManagedDNSRecordTypes, &cfg.ManagedDNSRecordTypes)

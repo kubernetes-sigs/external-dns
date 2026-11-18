@@ -6,6 +6,21 @@
 This tutorial describes how to configure ExternalDNS to use the Traefik Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
 
+## Filtering by ingress class
+
+Use `--ingress-class` to select Traefik `IngressRoute`, `IngressRouteTCP`, and
+`IngressRouteUDP` resources by `spec.ingressClassName`. The deprecated
+`kubernetes.io/ingress.class` annotation is used as a fallback when the spec
+The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
+
+For example, to manage only routes handled by a public Traefik instance:
+
+```yaml
+args:
+  - --source=traefik-proxy
+  - --ingress-class=traefik
+```
+
 ## Manifest (for clusters without RBAC enabled)
 
 ```yaml
@@ -83,17 +98,17 @@ Create a IngressRoutes files with the following contents:
 [[% include 'traefik-proxy/ingress-route-public-private.yaml' %]]
 ```
 
-And the arguments for `external-dns` instances should looks like
+And the arguments for `external-dns` instances should look like
 
 ```yaml
 ---
 args:
   - --source=traefik-proxy
-  - --annotation-filter="kubernetes.io/ingress.class=traefik-public"
+  - --ingress-class=traefik-public
 ---
 args:
   - --source=traefik-proxy
-  - --annotation-filter="kubernetes.io/ingress.class=traefik-private"
+  - --ingress-class=traefik-private
 ```
 
 ## Cleanup
