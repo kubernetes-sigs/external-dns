@@ -200,8 +200,8 @@ DNSEndpointStatus defines the observed state of DNSEndpoint
       <td><b><a href="#dnsendpointstatusconditionsindex">conditions</a></b></td>
       <td>[]object</td>
       <td>
-        Conditions observe the DNSEndpoint state: Accepted (the spec was understood)
-and PartiallyInvalid (some endpoints were dropped).
+        Conditions observe the DNSEndpoint state: Accepted (the spec was understood),
+PartiallyInvalid (some endpoints were dropped) and Ready (the provider applied it).
 They start as Accepted=Unknown (Pending) until external-dns reads the object.
         <br/><i>Default</i>: <code>[{&#34;lastTransitionTime&#34;:&#34;1970-01-01T00:00:00Z&#34;,&#34;message&#34;:&#34;Waiting for external-dns&#34;,&#34;reason&#34;:&#34;Pending&#34;,&#34;status&#34;:&#34;Unknown&#34;,&#34;type&#34;:&#34;Accepted&#34;}]</code>
       </td>
