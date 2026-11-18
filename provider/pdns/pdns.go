@@ -244,6 +244,7 @@ func (c *PDNSAPIClient) PatchZone(ctx context.Context, zoneID string, zoneStruct
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
+	dryRun       bool
 	client       PDNSAPIProvider
 	domainFilter *endpoint.DomainFilter
 }
@@ -294,6 +295,7 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 	}
 
 	provider := &PDNSProvider{
+		dryRun: config.DryRun,
 		client: &PDNSAPIClient{
 			dryRun: config.DryRun,
 			client: pgo.New(config.Server, config.ServerID, pgo.WithAPIKey(config.APIKey), pgo.WithHTTPClient(httpClient)),
@@ -590,6 +592,8 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	log.Infof("Changes processed for PowerDNS in %s\n", time.Since(startTime))
+	if !p.dryRun {
+		log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	}
 	return nil
 }

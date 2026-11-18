@@ -11,12 +11,6 @@ functional. It expects that zones, you wish to add records to, already exist
 and are configured correctly. It does not add, remove or configure new zones in
 anyway.
 
-## Feature Support
-
-The PDNS provider supports `--dry-run`. In this mode, ExternalDNS reads the
-configured zones and logs planned record creations, updates, and deletions without
-sending changes to PowerDNS. Remove `--dry-run` to apply the planned changes.
-
 ## Deployment
 
 Deploying external DNS for PowerDNS is actually nearly identical to deploying

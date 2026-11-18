@@ -1520,6 +1520,7 @@ func TestPDNSApplyChangesDryRun(t *testing.T) {
 					logtest.TestHelperLogContains("Dry run: skipping changes to PowerDNS zone example.com.", hook, t)
 					logtest.TestHelperLogNotContains("Changes pushed out to PowerDNS", hook, t)
 				} else {
+					logtest.TestHelperLogContains("Changes pushed out to PowerDNS", hook, t)
 					assert.Equal(t, []string{http.MethodGet, http.MethodPatch}, methods)
 					require.Len(t, patches, 1)
 					require.Len(t, patches[0].Sets, 1)
