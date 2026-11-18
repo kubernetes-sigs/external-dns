@@ -10,8 +10,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 Use `--ingress-class` to select Traefik `IngressRoute`, `IngressRouteTCP`, and
 `IngressRouteUDP` resources by `spec.ingressClassName`. The deprecated
-`kubernetes.io/ingress.class` annotation is used as a fallback when the spec
-The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
+`kubernetes.io/ingress.class` annotation is used as a fallback. The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
 
 For example, to manage only routes handled by a public Traefik instance:
 
