@@ -93,6 +93,29 @@ ExternalDNS propagates request context to all outbound calls. When the controlle
 - Handle abrupt connection drops gracefully — do not treat a cancelled request as a reason to roll back partially applied changes without verifying state first.
 - Respond within the deadline configured by `--webhook-provider-read-timeout` and `--webhook-provider-write-timeout` (default values apply when unset). Long-running DNS API calls should have their own internal timeout shorter than the ExternalDNS deadline.
 
+### Graceful shutdown
+
+When the pod stops, Kubernetes sends `SIGTERM` to every container and waits for the
+termination grace period (`terminationGracePeriodSeconds`, 30 seconds by default)
+before it kills them. A request that ExternalDNS has already sent, such as an
+`ApplyChanges` call, should be able to finish in that time. On `SIGTERM`, a provider
+should:
+
+- stop accepting new connections;
+- let in-flight requests finish, with a bound on how long it waits that is shorter
+  than the termination grace period;
+- exit after the remaining requests are done or the bound is reached.
+
+If you raise the bound, raise the pod's termination grace period with it. Graceful
+shutdown does not make DNS changes atomic; keep handling dropped connections as
+described above.
+
+Go providers can get this behaviour from `http.Server.Shutdown`. Pass it a new
+context with a deadline: the context that was canceled to start the shutdown would
+make it return immediately. Providers built on the `provider/webhook/api` package
+can use `StartHTTPApiWithContext`, which does this with a 25-second default
+(`ServerOptions.ShutdownTimeout`).
+
 ### Memory and goroutine hygiene
 
 - Close request bodies after reading them to avoid goroutine leaks on the webhook provider side.
