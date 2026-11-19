@@ -265,6 +265,10 @@ OuterLoop:
 			mx := rr.(*dns.MX)
 			rrValues = []string{fmt.Sprintf("%d %s", mx.Preference, mx.Mx)}
 			rrType = endpoint.RecordTypeMX
+		case dns.TypeSRV:
+			srv := rr.(*dns.SRV)
+			rrValues = []string{fmt.Sprintf("%d %d %d %s", srv.Priority, srv.Weight, srv.Port, srv.Target)}
+			rrType = endpoint.RecordTypeSRV
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
 			rrType = "NS"
