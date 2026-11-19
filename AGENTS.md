@@ -26,6 +26,10 @@ go test -race ./source -run TestIngressEndpoints
 
 All CLI flags also settable as env vars (e.g., `--dry-run` → `EXTERNAL_DNS_DRY_RUN=1`).
 
+## Releases
+
+To cut a release, follow `.github/skills/release/SKILL.md`.
+
 ## Architecture
 
 Entry point: `main.go` → `controller.Execute()`. Four key abstractions:
