@@ -35,6 +35,7 @@ import (
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
 
@@ -256,9 +257,9 @@ func LoadResources(ctx context.Context, scenario Scenario) (*LoadedResources, er
 	}, nil
 }
 
-// scenarioToConfig creates a source.Config for testing with the scenario config.
-func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...source.OverrideConfigOption) (*source.Config, error) {
-	return source.NewSourceConfig(&externaldns.Config{
+// scenarioToConfig creates a *config.Config for testing with the scenario config.
+func scenarioToConfig(scenarioCfg ScenarioConfig, opts ...config.OverrideConfigOption) (*config.Config, error) {
+	return config.NewSourceConfig(&externaldns.Config{
 		Sources:             scenarioCfg.Sources,
 		ServiceTypeFilter:   scenarioCfg.ServiceTypeFilter,
 		DefaultTargets:      scenarioCfg.DefaultTargets,

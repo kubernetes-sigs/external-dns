@@ -216,6 +216,11 @@ func (c *PDNSAPIClient) ListZone(ctx context.Context, zoneID string) (*pgo.Zone,
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
 // ref: https://doc.powerdns.com/authoritative/http-api/zone.html#patch--servers-server_id-zones-zone_id
 func (c *PDNSAPIClient) PatchZone(ctx context.Context, zoneID string, zoneStruct *pgo.Zone) error {
+	if c.dryRun {
+		log.Infof("Dry run: skipping changes to PowerDNS zone %s", zoneID)
+		return nil
+	}
+
 	rrSets := &pgo.RRsets{Sets: zoneStruct.RRsets}
 	var err error
 	for i := range retryLimit {
@@ -239,6 +244,7 @@ func (c *PDNSAPIClient) PatchZone(ctx context.Context, zoneID string, zoneStruct
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
+	dryRun       bool
 	client       PDNSAPIProvider
 	domainFilter *endpoint.DomainFilter
 }
@@ -271,12 +277,6 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 		return nil, errors.New("missing API Key for PDNS. Specify using --pdns-api-key=")
 	}
 
-	// We do not support dry running, exit safely instead of surprising the user
-	// TODO: Add Dry Run support
-	if config.DryRun {
-		return nil, errors.New("PDNS Provider does not currently support dry-run")
-	}
-
 	if config.Server == "localhost" {
 		log.Warnf("PDNS Server is set to localhost, this may not be what you want. Specify using --pdns-server=")
 	}
@@ -295,6 +295,7 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 	}
 
 	provider := &PDNSProvider{
+		dryRun: config.DryRun,
 		client: &PDNSAPIClient{
 			dryRun: config.DryRun,
 			client: pgo.New(config.Server, config.ServerID, pgo.WithAPIKey(config.APIKey), pgo.WithHTTPClient(httpClient)),
@@ -531,8 +532,8 @@ func (p *PDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func (p *PDNSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var validEndpoints []*endpoint.Endpoint
 	for i := range endpoints {
-		if !endpoints[i].CheckEndpoint() {
-			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}", endpoints[i].RecordType, endpoints[i].Targets)
+		if err := endpoints[i].Validate(); err != nil {
+			log.Warnf("Ignoring Endpoint because of invalid %v record formatting: {Target: '%v'}: %v", endpoints[i].RecordType, endpoints[i].Targets, err)
 			continue
 		}
 		validEndpoints = append(validEndpoints, endpoints[i])
@@ -591,6 +592,8 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	if !p.dryRun {
+		log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	}
 	return nil
 }

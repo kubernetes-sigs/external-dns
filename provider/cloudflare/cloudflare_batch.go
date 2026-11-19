@@ -56,6 +56,9 @@ type batchCollections struct {
 	// typed batch-put union. These are submitted via individual UpdateDNSRecord
 	// calls instead of the batch API.
 	fallbackUpdates []*cloudFlareChange
+
+	// failed marks a change dropped while building the collections; the sync must surface a soft error so the controller retries.
+	failed bool
 }
 
 // batchChunk holds a DNS record batch request alongside the source changes
@@ -79,6 +82,15 @@ func getUpdateDNSRecordParam(zoneID string, cfc cloudFlareChange) (dns.RecordUpd
 		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
 			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
+		}
+		return dns.RecordUpdateParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeNAPTR:
+		body, err := buildNAPTRRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordUpdateParams{}, fmt.Errorf("failed to parse NAPTR record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
 		return dns.RecordUpdateParams{
 			ZoneID: cloudflare.F(zoneID),
@@ -117,6 +129,15 @@ func getCreateDNSRecordParam(zoneID string, cfc *cloudFlareChange) (dns.RecordNe
 		body, err := buildSRVRecordParam(cfc.ResourceRecord)
 		if err != nil {
 			return dns.RecordNewParams{}, fmt.Errorf("failed to parse SRV record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
+		}
+		return dns.RecordNewParams{
+			ZoneID: cloudflare.F(zoneID),
+			Body:   body,
+		}, nil
+	case dns.RecordResponseTypeNAPTR:
+		body, err := buildNAPTRRecordParam(cfc.ResourceRecord)
+		if err != nil {
+			return dns.RecordNewParams{}, fmt.Errorf("failed to parse NAPTR record target %q for %s: %w", cfc.ResourceRecord.Content, cfc.ResourceRecord.Name, err)
 		}
 		return dns.RecordNewParams{
 			ZoneID: cloudflare.F(zoneID),
@@ -243,6 +264,41 @@ func buildSRVRecordParam(r dns.RecordResponse) (dns.SRVRecordParam, error) {
 	}, nil
 }
 
+// cloudflareNAPTRReplacement strips the trailing dot Cloudflare rejects; the root "." stays (RFC 2915 terminal rule).
+func cloudflareNAPTRReplacement(replacement string) string {
+	if replacement == "." {
+		return replacement
+	}
+	return strings.TrimSuffix(replacement, ".")
+}
+
+func naptrRecordDataParam(target *endpoint.NAPTRTarget) dns.NAPTRRecordDataParam {
+	return dns.NAPTRRecordDataParam{
+		Order:       cloudflare.F(float64(target.GetOrder())),
+		Preference:  cloudflare.F(float64(target.GetPreference())),
+		Flags:       cloudflare.F(target.GetFlags()),
+		Service:     cloudflare.F(target.GetService()),
+		Regex:       cloudflare.F(target.GetRegexp()),
+		Replacement: cloudflare.F(cloudflareNAPTRReplacement(target.GetReplacement())),
+	}
+}
+
+// buildNAPTRRecordParam builds NAPTR parameters; the API rejects NAPTR sent as content.
+func buildNAPTRRecordParam(r dns.RecordResponse) (dns.NAPTRRecordParam, error) {
+	target, err := endpoint.NewNAPTRRecord(r.Content)
+	if err != nil {
+		return dns.NAPTRRecordParam{}, err
+	}
+	return dns.NAPTRRecordParam{
+		Name:    cloudflare.F(r.Name),
+		TTL:     cloudflare.F(r.TTL),
+		Type:    cloudflare.F(dns.NAPTRRecordTypeNAPTR),
+		Data:    cloudflare.F(naptrRecordDataParam(target)),
+		Comment: cloudflare.F(r.Comment),
+		Tags:    cloudflare.F(tagsFromResponse(r.Tags)),
+	}, nil
+}
+
 func tlsaRecordDataParam(target *endpoint.TLSATarget) dns.TLSARecordDataParam {
 	return dns.TLSARecordDataParam{
 		Usage:        cloudflare.F(float64(target.GetUsage())),
@@ -275,6 +331,13 @@ func buildBatchPostParam(r dns.RecordResponse) (dns.RecordBatchParamsPostUnion, 
 		param, err := buildSRVRecordParam(r)
 		if err != nil {
 			log.Errorf("failed to parse SRV record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return param, true
+	case dns.RecordResponseTypeNAPTR:
+		param, err := buildNAPTRRecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse NAPTR record target %q for %s: %v", r.Content, r.Name, err)
 			return nil, false
 		}
 		return param, true
@@ -383,6 +446,16 @@ func buildBatchPutParam(id string, r dns.RecordResponse) (dns.BatchPutUnionParam
 			ID:             cloudflare.F(id),
 			SRVRecordParam: param,
 		}, true
+	case dns.RecordResponseTypeNAPTR:
+		param, err := buildNAPTRRecordParam(r)
+		if err != nil {
+			log.Errorf("failed to parse NAPTR record target %q for %s: %v", r.Content, r.Name, err)
+			return nil, false
+		}
+		return dns.BatchPutNAPTRRecordParam{
+			ID:               cloudflare.F(id),
+			NAPTRRecordParam: param,
+		}, true
 	case dns.RecordResponseTypeTLSA:
 		param, err := buildTLSARecordParam(r)
 		if err != nil {
@@ -424,6 +497,8 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			if postParam, ok := buildBatchPostParam(change.ResourceRecord); ok {
 				bc.batchPosts = append(bc.batchPosts, postParam)
 				bc.createChanges = append(bc.createChanges, change)
+			} else {
+				bc.failed = true
 			}
 
 		case cloudFlareDelete:
@@ -439,6 +514,7 @@ func (p *CloudFlareProvider) buildBatchCollections(
 			recordID := p.getRecordID(records, change.ResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				bc.failed = true
 				continue
 			}
 			if putParam, ok := buildBatchPutParam(recordID, change.ResourceRecord); ok {
@@ -465,7 +541,7 @@ func (p *CloudFlareProvider) submitDNSRecordChanges(
 	bc batchCollections,
 	records DNSRecordsMap,
 ) bool {
-	failed := false
+	failed := bc.failed
 	if len(bc.batchDeletes) > 0 || len(bc.batchPosts) > 0 || len(bc.batchPuts) > 0 {
 		limit := max(p.DNSRecordsConfig.BatchChangeSize, defaultBatchChangeSize)
 		chunks := chunkBatchChanges(zoneID, bc, limit)
@@ -573,8 +649,9 @@ func (p *CloudFlareProvider) fallbackIndividualChanges(
 			case cloudFlareUpdate:
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
-					// Record is gone; let the next sync cycle issue a fresh CREATE.
-					log.WithFields(logFields).Info("fallback: record unexpectedly not found for update, will re-evaluate on next sync")
+					// Record is gone; fail the sync so the controller retries instead of dropping the update.
+					log.WithFields(logFields).Errorf("fallback: record unexpectedly not found for update")
+					failed = true
 					continue
 				}
 				var params dns.RecordUpdateParams

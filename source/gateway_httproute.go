@@ -24,12 +24,13 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given config.
-func NewGatewayHTTPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "HTTPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+// NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given cfg.
+func NewGatewayHTTPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "HTTPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayHTTPRouteInformer{factory.Gateway().V1().HTTPRoutes()}
 	})
 }

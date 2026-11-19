@@ -42,6 +42,7 @@ import (
 	discoveryinformers "k8s.io/client-go/informers/discovery/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -85,7 +86,7 @@ func (suite *ServiceSuite) SetupTest() {
 	suite.sc, err = NewServiceSource(
 		context.TODO(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(suite.T(), "{{.Name}}", "", "", false),
 			LabelFilter:    labels.Everything(),
 		},
@@ -116,12 +117,14 @@ func testServiceSourceImplementsSource(t *testing.T) {
 
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
-	exampleDotComIP4, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip4", "example.com")
-	require.NoError(t, err)
-	exampleDotComIP6, err := net.DefaultResolver.LookupNetIP(t.Context(), "ip6", "example.com")
-	require.NoError(t, err)
-
 	t.Parallel()
+
+	fakeLookupIP := func(host string) ([]net.IP, error) {
+		if host == "example.com" {
+			return []net.IP{net.ParseIP("192.0.2.1"), net.ParseIP("2001:db8::1")}, nil
+		}
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
 
 	for _, tc := range []struct {
 		title                       string
@@ -362,12 +365,12 @@ func testServiceSourceEndpoints(t *testing.T) {
 				annotations.HostnameKey: "foo.example.org.",
 			},
 			externalIPs:                 []string{},
-			lbs:                         []string{"example.com"}, // Use a resolvable hostname for testing.
+			lbs:                         []string{"example.com"},
 			serviceTypesFilter:          []string{},
 			resolveLoadBalancerHostname: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP4)},
-				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: testutils.NewTargetsFromAddr(exampleDotComIP6)},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.0.2.1"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 		},
 		{
@@ -1198,7 +1201,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					TemplateEngine:              templatetest.MustEngine(t, tc.fqdnTemplate, "", "", tc.combineFQDNAndAnnotation),
 					AnnotationFilter:            parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:           tc.serviceTypesFilter,
@@ -1211,6 +1214,9 @@ func testServiceSourceEndpoints(t *testing.T) {
 			)
 
 			require.NoError(t, err)
+			if tc.resolveLoadBalancerHostname {
+				client.(*serviceSource).lookupIP = fakeLookupIP
+			}
 
 			res, err := client.Endpoints(t.Context())
 			if tc.expectError {
@@ -1406,7 +1412,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", tc.combineFQDNAndAnnotation),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
@@ -1700,7 +1706,7 @@ func TestClusterIpServices(t *testing.T) {
 			}
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
@@ -2391,6 +2397,135 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}},
 		},
 		{
+			title:                  "NodePort services ignore nodes being removed",
+			ignoreUnscheduledNodes: true,
+			svcNamespace:           "testing",
+			svcName:                "foo",
+			svcType:                v1.ServiceTypeNodePort,
+			svcTrafficPolicy:       v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name: "node1",
+				Spec: v1.NodeSpec{
+					Taints: []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name: "node2",
+				Spec: v1.NodeSpec{
+					Taints: []v1.Taint{{Key: "ToBeDeletedByClusterAutoscaler", Value: "1700000000", Effect: v1.TaintEffectNoSchedule}},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}, {
+				Name: "node3",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.3"}},
+				},
+			}},
+		},
+		{
+			title:            "NodePort services keep nodes being removed when unschedulable nodes are not excluded",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name: "node1",
+				Spec: v1.NodeSpec{
+					Taints: []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name: "node2",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}},
+		},
+		{
+			title:            "NodePort services ignore nodes labeled exclude-from-external-load-balancers",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2", "54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name:   "node1",
+				Labels: map[string]string{v1.LabelNodeExcludeBalancers: "true"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name:   "node2",
+				Labels: map[string]string{v1.LabelNodeExcludeBalancers: "false"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}, {
+				Name: "node3",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.3"}},
+				},
+			}},
+		},
+		{
+			title:            "NodePort services with ExternalTrafficPolicy=Local ignore pods on nodes labeled exclude-from-external-load-balancers",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			annotations: map[string]string{
+				annotations.HostnameKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org."}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				Name:   "node1",
+				Labels: map[string]string{v1.LabelNodeExcludeBalancers: "true"},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.1"}},
+				},
+			}, {
+				Name: "node2",
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "54.10.11.2"}},
+				},
+			}},
+			// The only ready pod runs on the excluded node, so the record falls back to the not-ready pod's node.
+			podNames:          []string{"pod-0", "pod-1"},
+			nodeIndex:         []int{0, 1},
+			phases:            []v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			conditions:        []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionTrue}, {Type: v1.PodReady, Status: v1.ConditionFalse}},
+			deletionTimestamp: []*metav1.Time{nil, nil},
+		},
+		{
 			title:            "annotated NodePort service with TTL produces SRV endpoint with TTL",
 			svcNamespace:     "testing",
 			svcName:          "foo",
@@ -2487,7 +2622,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					AnnotationFilter:         parseAnnotationFilterOrNil(tc.annotationFilter),
 					Compatibility:            tc.compatibility,
@@ -3383,7 +3518,7 @@ func TestHeadlessServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					ServiceTypeFilter:        tc.serviceTypesFilter,
 					Compatibility:            tc.compatibility,
@@ -3508,7 +3643,7 @@ func TestMultipleServicesPointingToSameLoadBalancer(t *testing.T) {
 	}
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
-		&Config{
+		&config.Config{
 			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
@@ -3849,7 +3984,7 @@ func TestMultipleHeadlessServicesPointingToPodsOnTheSameNode(t *testing.T) {
 	}
 
 	src, err := NewServiceSource(t.Context(), kubernetes,
-		&Config{
+		&config.Config{
 			Namespaces:           []string{v1.NamespaceAll},
 			LabelFilter:          labels.Everything(),
 			ExcludeUnschedulable: true,
@@ -4290,7 +4425,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					Namespaces:               []string{tc.targetNamespace},
 					LabelFilter:              labels.Everything(),
 					Compatibility:            tc.compatibility,
@@ -4492,7 +4627,7 @@ func TestExternalServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(t.Context(), kubernetes,
-				&Config{
+				&config.Config{
 					TemplateEngine:           templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					Compatibility:            tc.compatibility,
 					ServiceTypeFilter:        tc.serviceTypeFilter,
@@ -4545,7 +4680,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	require.NoError(b, err)
 
 	client, err := NewServiceSource(b.Context(), kubernetes,
-		&Config{
+		&config.Config{
 			Namespaces:           []string{v1.NamespaceAll},
 			ExcludeUnschedulable: true,
 			LabelFilter:          labels.Everything(),
@@ -4577,7 +4712,7 @@ func TestServiceSourceMultipleNamespaces(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(ctx, fakeClient, &Config{
+	src, err := NewServiceSource(ctx, fakeClient, &config.Config{
 		Namespaces:           []string{"team-a", "team-b"},
 		LabelFilter:          labels.Everything(),
 		ExcludeUnschedulable: true,
@@ -4636,7 +4771,7 @@ func TestServiceSourceMultipleNamespacesHeadless(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	src, err := NewServiceSource(ctx, fakeClient, &Config{
+	src, err := NewServiceSource(ctx, fakeClient, &config.Config{
 		Namespaces:                     []string{"team-a", "team-b"},
 		LabelFilter:                    labels.Everything(),
 		ExcludeUnschedulable:           true,
@@ -4731,7 +4866,7 @@ func TestNewServiceSourceInformersEnabled(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
-				&Config{
+				&config.Config{
 					Namespaces:                     []string{"default"},
 					ServiceTypeFilter:              tc.svcFilter,
 					AlwaysPublishNotReadyAddresses: true,
@@ -4752,7 +4887,7 @@ func TestNewServiceSourceWithServiceTypeFilters_Unsupported(t *testing.T) {
 	serviceTypeFilter := []string{"ClusterIP", "ServiceTypeNotExist"}
 
 	svc, err := NewServiceSource(t.Context(), fake.NewClientset(),
-		&Config{
+		&config.Config{
 			Namespaces:        []string{"default"},
 			ServiceTypeFilter: serviceTypeFilter,
 			LabelFilter:       labels.Everything(),
@@ -4877,7 +5012,7 @@ func TestEndpointSlicesIndexer(t *testing.T) {
 
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
-		&Config{
+		&config.Config{
 			TemplateEngine:       templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 			Namespaces:           []string{"default"},
 			ExcludeUnschedulable: true,
@@ -4969,7 +5104,7 @@ func TestPodTransformerInServiceSource(t *testing.T) {
 
 	// Should not error when creating the source
 	src, err := NewServiceSource(ctx, fakeClient,
-		&Config{
+		&config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "{{.Name}}", "", "", false),
 			LabelFilter:    labels.Everything(),
 		},
@@ -5045,7 +5180,7 @@ func TestNodeTransformerInServiceSource(t *testing.T) {
 
 	fakeClient := fake.NewClientset(node)
 
-	src, err := NewServiceSource(ctx, fakeClient, &Config{
+	src, err := NewServiceSource(ctx, fakeClient, &config.Config{
 		ServiceTypeFilter: []string{string(v1.ServiceTypeNodePort)},
 		LabelFilter:       labels.Everything(),
 	})
@@ -5099,7 +5234,7 @@ func TestServiceTransformerInServiceSource(t *testing.T) {
 
 	fakeClient := fake.NewClientset(svc)
 
-	src, err := NewServiceSource(ctx, fakeClient, &Config{
+	src, err := NewServiceSource(ctx, fakeClient, &config.Config{
 		Namespaces:  []string{svc.Namespace},
 		LabelFilter: labels.Everything(),
 	})
@@ -5211,11 +5346,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		{
 			name:   "AddEventHandler should trigger all event handlers when empty filter is provided",
 			filter: []string{},
-			times:  2,
+			times:  3,
 			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
-				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
 			},
 		},
 		{
@@ -5241,11 +5376,11 @@ func TestServiceSource_AddEventHandler(t *testing.T) {
 		{
 			name:   "AddEventHandler should configure all service event handlers",
 			filter: []string{string(v1.ServiceTypeNodePort)},
-			times:  2,
+			times:  3,
 			asserts: func(t *testing.T) {
 				fakeServiceInformer.AssertNumberOfCalls(t, "Informer", 1)
 				fakeEdpInformer.AssertNumberOfCalls(t, "Informer", 1)
-				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 0)
+				fakeNodeInformer.AssertNumberOfCalls(t, "Informer", 1)
 			},
 		},
 	}
@@ -5743,7 +5878,7 @@ func TestProcessEndpoint_Service_RefObjectExist(t *testing.T) {
 	client, err := NewServiceSource(
 		t.Context(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			LabelFilter: labels.Everything(),
 		},
 	)
@@ -5918,6 +6053,50 @@ func TestNodesExternalTrafficPolicyTypeLocal(t *testing.T) {
 		)
 		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
 		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips nodes being removed before choosing the readiness tier", func(t *testing.T) {
+		// node1 has the only ready pod but Karpenter is removing it; node2's not-ready pod is used instead.
+		disrupted := makeNode("node1", "54.10.11.1")
+		disrupted.Spec.Taints = []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}}
+		sc := makeResourceSource(t,
+			[]*v1.Node{disrupted, makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),  // ready, on a node being removed
+				makePod("pod-1", "node2", false, nil), // not ready
+			},
+		)
+		sc.excludeUnschedulable = true
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node2"}, got)
+	})
+
+	t.Run("keeps nodes being removed when unschedulable nodes are not excluded", func(t *testing.T) {
+		disrupted := makeNode("node1", "54.10.11.1")
+		disrupted.Spec.Taints = []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}}
+		sc := makeResourceSource(t,
+			[]*v1.Node{disrupted, makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),
+				makePod("pod-1", "node2", false, nil),
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node1"}, got)
+	})
+
+	t.Run("skips nodes labeled exclude-from-external-load-balancers before choosing the readiness tier", func(t *testing.T) {
+		excluded := makeNode("node1", "54.10.11.1")
+		excluded.Labels = map[string]string{v1.LabelNodeExcludeBalancers: "true"}
+		sc := makeResourceSource(t,
+			[]*v1.Node{excluded, makeNode("node2", "54.10.11.2")},
+			[]*v1.Pod{
+				makePod("pod-0", "node1", true, nil),
+				makePod("pod-1", "node2", false, nil),
+			},
+		)
+		got := nodeNames(sc.nodesExternalTrafficPolicyTypeLocal(svc))
+		assert.Equal(t, []string{"node2"}, got)
 	})
 }
 
@@ -6130,7 +6309,7 @@ func TestServiceIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewServiceSource(t.Context(), client, &Config{
+			src, err := NewServiceSource(t.Context(), client, &config.Config{
 				AnnotationFilter:  parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:       labelSel,
 				ServiceTypeFilter: tt.serviceTypeFilter,

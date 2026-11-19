@@ -21,11 +21,12 @@
 ## What this script does:
 # 1. Generates DeepCopy methods for types in the endpoint package
 # 2. Generates CRD manifests for API types in the apis package
-# 3. Copies CRDs to the Helm chart directory
+# 3. Generates the API reference docs/crd-api.md from the CRD manifests
+# 4. With --chart only: copies CRDs to the Helm chart directory
 #
 # Usage:
-#   ./scripts/generate-crd.sh
-#   make crd  # calls this script
+#   ./scripts/generate-crd.sh          # make crd
+#   ./scripts/generate-crd.sh --chart  # make crd-chart
 
 set -euo pipefail
 
@@ -36,10 +37,17 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${PROJECT_ROOT}"
 
+# The chart gets a CRD change only after the release that supports it.
+COPY_TO_CHART=false
+if [[ "${1:-}" == "--chart" ]]; then
+    COPY_TO_CHART=true
+fi
+
 # Define tool commands (using tools from go.tool.mod)
 CONTROLLER_GEN="go tool -modfile=go.tool.mod controller-gen"
 YQ="go tool -modfile=go.tool.mod yq"
 YAMLFMT="go tool -modfile=go.tool.mod yamlfmt"
+CRDOC="go tool -modfile=go.tool.mod crdoc"
 
 echo " Generating CRDs using controller-gen..."
 
@@ -65,13 +73,20 @@ ${CONTROLLER_GEN} object crd:crdVersions=v1 paths="./apis/..." output:crd:stdout
 # Clean up empty import statements from generated files
 find ./apis -name "zz_generated.deepcopy.go" -exec gofmt -s -w {} \;
 
-# Step 3: Copy CRDs to Helm chart with filtered annotations
+# Reads the CRD YAML, not the Go types: the endpoint schema lives in ./endpoint,
+# which Go-type based generators treat as an external package.
+echo "  → Generating API reference..."
+${CRDOC} --resources ./config/crd/standard --template ./scripts/crd-api.tmpl --output ./docs/crd-api.md
+
+# Step 4: Copy CRDs to Helm chart with filtered annotations
 # - Reads CRDs from config/crd/standard/
 # - Filters annotations to only keep kubernetes.io/* (removes controller-gen annotations)
 # - Splits and saves to charts/external-dns/crds/ for Helm chart packaging
-echo "  → Copying CRDs to chart directory..."
-${YQ} eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
-    --no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
-    ./config/crd/standard/*.yaml
+if [[ "${COPY_TO_CHART}" == "true" ]]; then
+    echo "  → Copying CRDs to chart directory..."
+    ${YQ} eval '.metadata.annotations |= with_entries(select(.key | test("kubernetes\.io")))' \
+        --no-doc --split-exp '"./charts/external-dns/crds/" + .metadata.name + ".yaml"' \
+        ./config/crd/standard/*.yaml
+fi
 
 echo -e "  ✅ CRD generation complete"

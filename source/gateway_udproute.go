@@ -24,12 +24,13 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayUDPRouteSource creates a new Gateway UDPRoute source with the given config.
-func NewGatewayUDPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "UDPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+// NewGatewayUDPRouteSource creates a new Gateway UDPRoute source with the given cfg.
+func NewGatewayUDPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "UDPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayUDPRouteInformer{factory.Gateway().V1().UDPRoutes()}
 	})
 }

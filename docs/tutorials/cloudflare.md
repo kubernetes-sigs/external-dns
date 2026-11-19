@@ -186,9 +186,9 @@ spec:
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
             - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
-            - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
-            - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
-         env:
+            - --cloudflare-region-key=eu # (optional) configure which region can decrypt HTTPS requests
+            - "--cloudflare-record-comment=provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
+          env:
             - name: CF_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -268,8 +268,8 @@ spec:
             - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
             - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
             - --cloudflare-regional-services # (optional) enable the regional hostname feature that configure which region can decrypt HTTPS requests
-            - --cloudflare-region-key="eu" # (optional) configure which region can decrypt HTTPS requests
-            - --cloudflare-record-comment="provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
+            - --cloudflare-region-key=eu # (optional) configure which region can decrypt HTTPS requests
+            - "--cloudflare-record-comment=provisioned by external-dns" # (optional) configure comments for provisioned records; <=100 chars for free zones; <=500 chars for paid zones
           env:
             - name: CF_API_KEY
               valueFrom:
@@ -374,6 +374,41 @@ spec:
 ```
 
 After synchronization, the Cloudflare SRV record contains priority `0`, weight `1`, port `443`, and target `caldav.example.com`.
+
+## Managing NAPTR records
+
+NAPTR records ([RFC 2915](https://datatracker.ietf.org/doc/html/rfc2915), used for SIP and ENUM service discovery) are
+supported. Add `NAPTR` to `--managed-record-types`, since the default managed set is `A`, `AAAA` and `CNAME` only:
+
+```sh
+--managed-record-types=A --managed-record-types=AAAA --managed-record-types=CNAME --managed-record-types=NAPTR
+```
+
+Targets use RFC 2915 presentation format, `<order> <preference> "<flags>" "<service>" "<regexp>" <replacement>`:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: sip-naptr
+spec:
+  endpoints:
+    - dnsName: sip.example.com
+      recordType: NAPTR
+      recordTTL: 300
+      targets:
+        - 10 20 "S" "SIP+D2U" "" _sip._udp.example.com.
+```
+
+The `DNSEndpoint` schema requires the replacement to be absolute (end with a dot). Cloudflare requires NAPTR records
+to be sent as structured fields, so ExternalDNS parses the target and converts it. Targets are normalised to canonical
+form (single spaces and quoted fields), so records written by ExternalDNS compare equal to the same records read back
+from Cloudflare.
+
+Two caveats:
+
+- Cloudflare cannot proxy NAPTR records, so proxying is always disabled for them regardless of `--cloudflare-proxied`.
+- NAPTR `regexp` fields with literal double-quote characters are not supported.
 
 ## Cleanup
 

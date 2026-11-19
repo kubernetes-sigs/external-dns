@@ -18,8 +18,6 @@ package aws
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -51,9 +49,8 @@ const (
 	// when fewer items are returned, and still paginate accordingly.
 	// As we are using the standard AWS client, this should already be compliant.
 	// Hence, if AWS ever decides to raise this limit, we will automatically reduce the pressure on rate limits
-	route53PageSize                   int32 = 300
-	providerSpecificTargetHostedZone        = "aws/target-hosted-zone"
-	providerSpecificAliasZoneSnapshot       = "aws/alias-zone-snapshot"
+	route53PageSize                  int32 = 300
+	providerSpecificTargetHostedZone       = "aws/target-hosted-zone"
 	// providerSpecificHostedZoneID pins the record to a specific hosted zone,
 	// bypassing suffix-based zone selection. Needed when overlapping public/private
 	// zones share the same name.
@@ -245,11 +242,10 @@ type Route53API interface {
 // Route53Change wrapper to handle ownership relation throughout the provider implementation
 type Route53Change struct {
 	route53types.Change
-	OwnedRecord   string
-	hostedZoneID  string
-	aliasSnapshot string
-	sizeBytes     int
-	sizeValues    int
+	OwnedRecord  string
+	hostedZoneID string
+	sizeBytes    int
+	sizeValues   int
 }
 
 type Route53Changes []*Route53Change
@@ -535,7 +531,6 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	type aliasRecord struct {
 		endpoint     *endpoint.Endpoint
 		sourceZoneID string
-		recordSet    route53types.ResourceRecordSet
 	}
 	aliasRecords := make(map[aliasTargetKey][]aliasRecord)
 
@@ -562,7 +557,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					endpoints = append(endpoints, ep)
 					if _, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
 						if key, ok := aliasKey(ep); ok {
-							aliasRecords[key] = append(aliasRecords[key], aliasRecord{ep, cleanZoneID(aws.ToString(z.zone.Id)), r})
+							aliasRecords[key] = append(aliasRecords[key], aliasRecord{ep, cleanZoneID(aws.ToString(z.zone.Id))})
 						}
 					}
 				}
@@ -571,18 +566,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 	}
 	for _, records := range aliasRecords {
 		inferred := true
-		firstZone, _ := records[0].endpoint.GetProviderSpecificProperty(providerSpecificTargetHostedZone)
-		zoneMismatch := false
-		targetMismatch := false
-		firstTarget := records[0].endpoint.Targets[0]
 		for _, record := range records {
 			actual, _ := record.endpoint.GetProviderSpecificProperty(providerSpecificTargetHostedZone)
-			if actual != firstZone {
-				zoneMismatch = true
-			}
-			if !strings.EqualFold(record.endpoint.Targets[0], firstTarget) {
-				targetMismatch = true
-			}
 			expected := canonicalHostedZone(record.endpoint.Targets[0])
 			if expected == "" {
 				expected = record.sourceZoneID
@@ -594,24 +579,6 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 		if inferred {
 			for _, record := range records {
 				record.endpoint.DeleteProviderSpecificProperty(providerSpecificTargetHostedZone)
-			}
-		}
-		if targetMismatch || (!inferred && zoneMismatch) {
-			// Each duplicate carries the same snapshot, so any planner selection forces a retry.
-			snapshots := make(map[string]string, len(records))
-			for _, record := range records {
-				hash, err := aliasRecordHash(&record.recordSet)
-				if err != nil {
-					return nil, provider.NewSoftErrorf("failed to snapshot alias record: %w", err)
-				}
-				snapshots[record.sourceZoneID] = hash
-			}
-			encoded, err := json.Marshal(snapshots)
-			if err != nil {
-				return nil, provider.NewSoftErrorf("failed to encode alias zone snapshots: %w", err)
-			}
-			for _, record := range records {
-				record.endpoint.SetProviderSpecificProperty(providerSpecificAliasZoneSnapshot, string(encoded))
 			}
 		}
 	}
@@ -843,32 +810,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			"zoneID":   z,
 			"profile":  zones[z].profile,
 		})
-		if !p.dryRun {
-			for i, change := range cs {
-				if change.Action != route53types.ChangeActionDelete || change.aliasSnapshot == "" || change.ResourceRecordSet.AliasTarget == nil {
-					continue
-				}
-				var snapshots map[string]string
-				if err := json.Unmarshal([]byte(change.aliasSnapshot), &snapshots); err != nil {
-					return provider.NewSoftErrorf("invalid alias zone snapshot for %s: %w", *change.ResourceRecordSet.Name, err)
-				}
-				expectedHash, ok := snapshots[cleanZoneID(z)]
-				if !ok {
-					return provider.NewSoftErrorf("missing alias zone snapshot for %s in zone %s", *change.ResourceRecordSet.Name, z)
-				}
-				current, err := p.aliasRecordSet(ctx, zones[z], change.ResourceRecordSet)
-				if err != nil {
-					return provider.NewSoftErrorf("failed to read alias before deleting from zone %s: %w", z, err)
-				}
-				currentHash, err := aliasRecordHash(current)
-				if err != nil || currentHash != expectedHash {
-					return provider.NewSoftErrorf("alias record %s changed before deletion from zone %s", *change.ResourceRecordSet.Name, z)
-				}
-				perZone := *change
-				perZone.ResourceRecordSet = current
-				cs[i] = &perZone
-			}
-		}
 
 		var failedUpdate bool
 
@@ -955,42 +896,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	return nil
 }
 
-func aliasRecordHash(record *route53types.ResourceRecordSet) (string, error) {
-	encoded, err := json.Marshal(record)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", sha256.Sum256(encoded)), nil
-}
-
-func (p *AWSProvider) aliasRecordSet(ctx context.Context, zone *profiledZone, expected *route53types.ResourceRecordSet) (*route53types.ResourceRecordSet, error) {
-	client := p.clients[zone.profile]
-	name := provider.EnsureTrailingDot(aws.ToString(expected.Name))
-	paginator := route53.NewListResourceRecordSetsPaginator(client, &route53.ListResourceRecordSetsInput{
-		HostedZoneId:    zone.zone.Id,
-		StartRecordName: aws.String(strings.Replace(name, "*", "\\052", 1)),
-		StartRecordType: expected.Type,
-		MaxItems:        aws.Int32(route53PageSize),
-	})
-	for paginator.HasMorePages() {
-		resp, err := paginator.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, record := range resp.ResourceRecordSets {
-			recordName := provider.EnsureTrailingDot(convertOctalToAscii(wildcardUnescape(aws.ToString(record.Name))))
-			if !strings.EqualFold(recordName, name) || record.Type != expected.Type || aws.ToString(record.SetIdentifier) != aws.ToString(expected.SetIdentifier) {
-				continue
-			}
-			if record.AliasTarget == nil {
-				return nil, fmt.Errorf("record %s %s is no longer an alias", name, expected.Type)
-			}
-			return &record, nil
-		}
-	}
-	return nil, fmt.Errorf("alias record %s %s not found", name, expected.Type)
-}
-
 // newChanges returns a collection of Changes based on the given records and action.
 func (p *AWSProvider) newChanges(action route53types.ChangeAction, endpoints []*endpoint.Endpoint) Route53Changes {
 	changes := make(Route53Changes, 0, len(endpoints))
@@ -1018,9 +923,9 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, aaaa)
 		}
 	}
-	adjusted := append(endpoints, aliasCnameAaaaEndpoints...)
+	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
 	var zones map[string]*profiledZone
-	for _, ep := range adjusted {
+	for _, ep := range endpoints {
 		if ep.GetAliasProperty() != endpoint.AliasTrue || len(ep.Targets) != 1 {
 			continue
 		}
@@ -1049,7 +954,7 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			ep.DeleteProviderSpecificProperty(providerSpecificTargetHostedZone)
 		}
 	}
-	return adjusted, nil
+	return endpoints, nil
 }
 
 func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *endpoint.Endpoint {
@@ -1150,7 +1055,6 @@ func (p *AWSProvider) newChange(action route53types.ChangeAction, ep *endpoint.E
 		},
 	}
 	change.ResourceRecordSet.Type = route53types.RRType(ep.RecordType)
-	change.aliasSnapshot, _ = ep.GetProviderSpecificProperty(providerSpecificAliasZoneSnapshot)
 	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHostedZoneID); ok {
 		change.hostedZoneID = cleanZoneID(prop)
 	}
@@ -1538,17 +1442,19 @@ func changesByZone(zones map[string]*profiledZone, changeSet Route53Changes) map
 			continue
 		}
 		for _, z := range zones {
-			change := c
-			if c.ResourceRecordSet.AliasTarget != nil && aws.ToString(c.ResourceRecordSet.AliasTarget.HostedZoneId) == sameZoneAlias {
+			if c.ResourceRecordSet.AliasTarget != nil && *c.ResourceRecordSet.AliasTarget.HostedZoneId == sameZoneAlias {
+				// alias record is to be created; target needs to be in the same zone as endpoint
+				// if it's not, this will fail
 				rrset := *c.ResourceRecordSet
 				aliasTarget := *rrset.AliasTarget
-				aliasTarget.HostedZoneId = aws.String(cleanZoneID(aws.ToString(z.zone.Id)))
+				aliasTarget.HostedZoneId = aws.String(cleanZoneID(*z.zone.Id))
 				rrset.AliasTarget = &aliasTarget
-				copy := *c
-				copy.ResourceRecordSet = &rrset
-				change = &copy
+				c = &Route53Change{
+					Action:            c.Action,
+					ResourceRecordSet: &rrset,
+				}
 			}
-			changes[*z.zone.Id] = append(changes[*z.zone.Id], change)
+			changes[*z.zone.Id] = append(changes[*z.zone.Id], c)
 			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, *z.zone.Name, *z.zone.Id)
 		}
 	}
@@ -1667,7 +1573,7 @@ func cleanZoneID(id string) string {
 
 func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	switch recordType {
-	case route53types.RRTypeMx, route53types.RRTypeNaptr:
+	case route53types.RRTypeMx, route53types.RRTypeNaptr, route53types.RRTypePtr:
 		return true
 	default:
 		return provider.SupportedRecordType(string(recordType))

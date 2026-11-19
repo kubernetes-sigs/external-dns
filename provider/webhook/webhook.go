@@ -35,14 +35,13 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
-	"github.com/cenkalti/backoff/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
 	acceptHeader = "Accept"
-	maxRetries   = 5
 
 	webhookProviderSubsystem = "webhook_provider"
 )
@@ -98,6 +97,7 @@ type WebhookProvider struct {
 	DomainFilter    *endpoint.DomainFilter
 	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
 	maxBodySize int64
+	dryRun      bool
 }
 
 // errResponseTooLarge distinguishes an over-limit body from a malformed or
@@ -148,10 +148,10 @@ func init() {
 
 // New creates a webhook provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize)
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize, cfg.DryRun)
 }
 
-func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64) (*WebhookProvider, error) {
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64, dryRun bool) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -167,7 +167,9 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 	}
 	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
-	resp, err := requestWithRetry(client, req)
+	// wait.Jitter only adds delay: first wait 250-750ms, then x1.5 per step.
+	backoff := wait.Backoff{Duration: 250 * time.Millisecond, Factor: 1.5, Jitter: 2, Steps: 5}
+	resp, err := requestWithRetry(client, req, backoff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to webhook: %w", err)
 	}
@@ -187,43 +189,57 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 		remoteServerURL: parsedURL,
 		DomainFilter:    df,
 		maxBodySize:     maxBodySize,
+		dryRun:          dryRun,
 	}, nil
 }
 
-func requestWithRetry(client *http.Client, req *http.Request) (*http.Response, error) {
-	resp, err := backoff.Retry(req.Context(), func() (*http.Response, error) {
+func requestWithRetry(client *http.Client, req *http.Request, backoff wait.Backoff) (*http.Response, error) {
+	var resp *http.Response
+	var lastErr error
+	err := wait.ExponentialBackoffWithContext(req.Context(), backoff, func(context.Context) (bool, error) {
 		// Reset the body before each attempt so retries send the full payload.
 		// GetBody is set automatically by http.NewRequest for in-memory body types;
 		// it is nil for GET requests (no body), so the block is safely skipped.
 		if req.GetBody != nil {
 			body, err := req.GetBody()
 			if err != nil {
-				return nil, backoff.Permanent(fmt.Errorf("failed to reset request body: %w", err))
+				return false, fmt.Errorf("failed to reset request body: %w", err)
 			}
 			req.Body = body
 		}
 
-		resp, err := client.Do(req)
+		r, err := client.Do(req)
 		if err != nil {
 			log.Debugf("Failed to connect to webhook: %v", err)
-			return nil, err
+			lastErr = err
+			return false, nil
 		}
 		// 5xx: retryable server error
-		if resp.StatusCode >= http.StatusInternalServerError {
-			extdnshttp.DrainAndClose(resp.Body)
-			return nil, fmt.Errorf("server error: status code %d", resp.StatusCode)
+		if r.StatusCode >= http.StatusInternalServerError {
+			extdnshttp.DrainAndClose(r.Body)
+			lastErr = fmt.Errorf("server error: status code %d", r.StatusCode)
+			return false, nil
 		}
 		// 3xx/4xx: permanent error, not worth retrying.
 		// Note: http.Client follows redirects automatically, so a 3xx here means
 		// either a non-redirect 3xx (e.g. 304) or a custom CheckRedirect policy;
 		// it does not mean a normal redirect was left unhandled.
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
-		if resp.StatusCode >= http.StatusMultipleChoices {
-			extdnshttp.DrainAndClose(resp.Body)
-			return nil, backoff.Permanent(fmt.Errorf("unexpected status code %d", resp.StatusCode))
+		if r.StatusCode >= http.StatusMultipleChoices {
+			extdnshttp.DrainAndClose(r.Body)
+			return false, fmt.Errorf("unexpected status code %d", r.StatusCode)
 		}
-		return resp, nil
-	}, backoff.WithMaxTries(maxRetries))
+		resp = r
+		return true, nil
+	})
+	if wait.Interrupted(err) {
+		if cause := context.Cause(req.Context()); cause != nil {
+			return nil, cause
+		}
+		if lastErr != nil {
+			return nil, lastErr
+		}
+	}
 	return resp, err
 }
 
@@ -268,6 +284,19 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if p.dryRun {
+		for _, e := range changes.Create {
+			log.Infof("Dry run: skipping CREATE %s", e)
+		}
+		for _, e := range changes.UpdateNew {
+			log.Infof("Dry run: skipping UPDATE %s", e)
+		}
+		for _, e := range changes.Delete {
+			log.Infof("Dry run: skipping DELETE %s", e)
+		}
+		return nil
+	}
+
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 

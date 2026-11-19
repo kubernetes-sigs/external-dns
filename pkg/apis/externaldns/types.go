@@ -93,6 +93,7 @@ type Config struct {
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
+	GoogleRequestTimeout                          time.Duration
 	GoogleZoneVisibility                          string
 	DomainFilter                                  []string
 	DomainExclude                                 []string
@@ -310,6 +311,7 @@ var defaultConfig = &Config{
 	GoogleBatchChangeInterval:        time.Second,
 	GoogleBatchChangeSize:            1000,
 	GoogleProject:                    "",
+	GoogleRequestTimeout:             time.Minute,
 	GoogleZoneVisibility:             "",
 	IgnoreHostnameAnnotation:         false,
 	IgnoreIngressRulesSpec:           false,
@@ -575,14 +577,14 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the legacy prefix external-dns.alpha.kubernetes.io/ (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
-	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
-	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
+	b.StringVar("crd-source-apiversion", "[DEPRECATED: only the default is accepted] API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
+	b.StringVar("crd-source-kind", "[DEPRECATED: only the default is accepted] Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
 	b.StringsVar("exclude-target-net", "Exclude target nets. Only applies to A/AAAA records. (optional)", nil, &cfg.ExcludeTargetNets)
-	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
+	b.BoolVar("exclude-unschedulable", "Exclude nodes that are cordoned or being removed (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
 	b.BoolVar("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)", false, &cfg.ExposeInternalIPV6)
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
 	b.StringVar("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)", defaultConfig.GatewayName, &cfg.GatewayName)
@@ -620,6 +622,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)
 	b.IntVar("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.", defaultConfig.GoogleBatchChangeSize, &cfg.GoogleBatchChangeSize)
 	b.DurationVar("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.", defaultConfig.GoogleBatchChangeInterval, &cfg.GoogleBatchChangeInterval)
+	b.DurationVar("google-request-timeout", "When using the Google provider, set the timeout for API requests (0 disables the timeout).", defaultConfig.GoogleRequestTimeout, &cfg.GoogleRequestTimeout)
 	b.EnumVar("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)", defaultConfig.GoogleZoneVisibility, &cfg.GoogleZoneVisibility, "", "public", "private")
 	b.StringVar("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)", defaultConfig.AlibabaCloudConfigFile, &cfg.AlibabaCloudConfigFile)
 	b.EnumVar("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)", defaultConfig.AlibabaCloudZoneType, &cfg.AlibabaCloudZoneType, "", "public", "private")

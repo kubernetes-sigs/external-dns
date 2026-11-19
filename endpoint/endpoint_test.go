@@ -1079,8 +1079,7 @@ func TestPDNScheckEndpoint(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := tt.endpoint.CheckEndpoint()
-		assert.Equal(t, tt.expected, actual)
+		assert.Equal(t, tt.expected, tt.endpoint.Validate() == nil)
 	}
 }
 
@@ -1206,7 +1205,7 @@ func TestSRVTarget_Getters(t *testing.T) {
 	assert.Equal(t, "service.example.com.", s.GetHost())
 }
 
-func TestCheckEndpoint(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		description string
 		endpoint    Endpoint
@@ -1546,129 +1545,82 @@ func TestCheckEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			actual := tt.endpoint.CheckEndpoint()
-			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.expected, tt.endpoint.Validate() == nil)
 		})
 	}
 }
 
-func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
+func TestValidate_ErrorMessage(t *testing.T) {
 	tests := []struct {
 		name    string
 		ep      Endpoint
-		wantLog bool
+		wantErr string
 	}{
 		{
-			name: "unsupported type with alias logs warning",
+			name: "alias on unsupported type",
 			ep: Endpoint{
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
 				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
-			wantLog: true,
+			wantErr: `MX record does not support the "alias" provider-specific property`,
 		},
 		{
-			name: "supported type with alias does not log",
-			ep: Endpoint{
-				DNSName:          "example.com",
-				RecordType:       RecordTypeA,
-				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
-			},
-			wantLog: false,
+			name:    "no targets",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeCNAME},
+			wantErr: "CNAME record needs at least one target",
 		},
 		{
-			name: "unsupported type without alias does not log",
-			ep: Endpoint{
-				DNSName:    "example.com",
-				RecordType: RecordTypeMX,
-				Targets:    Targets{"10 mail.example.com"},
-			},
-			wantLog: false,
+			name:    "A target is a hostname",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeA, Targets: Targets{"lb.example.com"}},
+			wantErr: `target "lb.example.com" is not an IP address for record type A`,
+		},
+		{
+			name:    "A target is IPv6",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeA, Targets: Targets{"::1"}},
+			wantErr: `target "::1" is an IPv6 address, use an AAAA record`,
+		},
+		{
+			name:    "AAAA target is IPv4",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeAAAA, Targets: Targets{"1.2.3.4"}},
+			wantErr: `target "1.2.3.4" is an IPv4 address, use an A record`,
+		},
+		{
+			name:    "MX without preference",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeMX, Targets: Targets{"mail.example.com"}},
+			wantErr: "MX records must have a preference value and a host",
+		},
+		{
+			name:    "SRV relative host",
+			ep:      Endpoint{DNSName: "_sip._udp.example.com", RecordType: RecordTypeSRV, Targets: Targets{"10 5 5060 sip.example.com"}},
+			wantErr: "target host does not end with a dot",
+		},
+		{
+			name:    "NAPTR malformed",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeNAPTR, Targets: Targets{"10 20"}},
+			wantErr: `invalid NAPTR target "10 20"`,
+		},
+		{
+			name:    "PTR forward name",
+			ep:      Endpoint{DNSName: "web.example.com", RecordType: RecordTypePTR, Targets: Targets{"other.example.com"}},
+			wantErr: "must be a reverse DNS name",
+		},
+		{
+			name:    "PTR IP target",
+			ep:      Endpoint{DNSName: "1.0.0.10.in-addr.arpa", RecordType: RecordTypePTR, Targets: Targets{"10.0.0.1"}},
+			wantErr: "must be a hostname, not an IP address",
+		},
+		{
+			name:    "PTR empty target",
+			ep:      Endpoint{DNSName: "1.0.0.10.in-addr.arpa", RecordType: RecordTypePTR, Targets: Targets{""}},
+			wantErr: "must not be empty",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-			tt.ep.CheckEndpoint()
-
-			warnMsg := "does not support alias records"
-			if tt.wantLog {
-				logtest.TestHelperLogContains(warnMsg, hook, t)
-			} else {
-				logtest.TestHelperLogNotContains(warnMsg, hook, t)
-			}
-		})
-	}
-}
-
-func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
-	tests := []struct {
-		name    string
-		ep      Endpoint
-		wantLog string
-	}{
-		{
-			name: "non-reverse DNS name logs invalid",
-			ep: Endpoint{
-				DNSName:    "web.example.com",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{"other.example.com"},
-			},
-			wantLog: "must be a valid reverse DNS name",
-		},
-		{
-			name: "IP address target logs invalid",
-			ep: Endpoint{
-				DNSName:    "1.0.0.10.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{"10.0.0.1"},
-			},
-			wantLog: "must be a hostname, not an IP address",
-		},
-		{
-			name: "empty target logs invalid",
-			ep: Endpoint{
-				DNSName:    "1.0.0.10.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{""},
-			},
-			wantLog: "target must not be empty",
-		},
-		{
-			name: "no targets logs invalid",
-			ep: Endpoint{
-				DNSName:    "1.0.0.10.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{},
-			},
-			wantLog: "has no targets",
-		},
-		{
-			name: "valid PTR does not log",
-			ep: Endpoint{
-				DNSName:    "2.49.168.192.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{"web.example.com"},
-			},
-			wantLog: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-
-			tt.ep.CheckEndpoint()
-
-			if tt.wantLog != "" {
-				logtest.TestHelperLogContains(tt.wantLog, hook, t)
-			} else {
-				logtest.TestHelperLogNotContains("Invalid PTR record", hook, t)
-			}
+			assert.ErrorContains(t, tt.ep.Validate(), tt.wantErr)
 		})
 	}
 }
@@ -1869,7 +1821,7 @@ func TestNewEndpointWithTTLMXTargets(t *testing.T) {
 		})
 	}
 
-	assert.True(t, Targets{"0 ."}.ValidateMXRecord(), "null MX must stay a valid MX target")
+	assert.NoError(t, Targets{"0 ."}.validateMXRecord(), "null MX must stay a valid MX target")
 }
 
 func TestGetAliasProperty(t *testing.T) {

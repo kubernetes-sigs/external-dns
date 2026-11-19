@@ -18,18 +18,23 @@ package google
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"slices"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/time/rate"
 	dns "google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -127,49 +132,54 @@ func (m *mockResourceRecordSetsClient) List(project string, managedZone string) 
 	return &mockResourceRecordSetsListCall{project: project, managedZone: managedZone, recordsListSoftErr: m.recordsErr}
 }
 
-type mockChangesCreateCall struct {
-	project     string
-	managedZone string
-	change      *dns.Change
-}
+func newMockChangesService(t *testing.T) *dns.ChangesService {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		resourcePath := len(parts) - 7
+		if r.Method != http.MethodPost || resourcePath < 0 || parts[resourcePath] != "dns" || parts[resourcePath+1] != "v1" || parts[resourcePath+2] != "projects" || parts[resourcePath+4] != "managedZones" || parts[resourcePath+6] != "changes" {
+			http.NotFound(w, r)
+			return
+		}
 
-func (m *mockChangesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Change, error) {
-	zoneKey := zoneKey(m.project, m.managedZone)
+		zoneKey := zoneKey(parts[resourcePath+3], parts[resourcePath+5])
+		if _, ok := testZones[zoneKey]; !ok {
+			http.Error(w, "zone not found", http.StatusNotFound)
+			return
+		}
 
-	if _, ok := testZones[zoneKey]; !ok {
-		return nil, &googleapi.Error{Code: http.StatusNotFound}
-	}
-
-	if _, ok := testRecords[zoneKey]; !ok {
-		testRecords[zoneKey] = make(map[string]*dns.ResourceRecordSet)
-	}
-
-	for _, c := range append(m.change.Additions, m.change.Deletions...) {
-		if !isValidRecordSet(c) {
-			return nil, &googleapi.Error{
-				Code:    http.StatusBadRequest,
-				Message: fmt.Sprintf("invalid record: %v", c),
+		change := &dns.Change{}
+		if err := json.NewDecoder(r.Body).Decode(change); err != nil {
+			http.Error(w, "invalid change", http.StatusBadRequest)
+			return
+		}
+		for _, record := range append(change.Additions, change.Deletions...) {
+			if !isValidRecordSet(record) {
+				http.Error(w, "invalid record", http.StatusBadRequest)
+				return
 			}
 		}
-	}
 
-	for _, del := range m.change.Deletions {
-		recordKey := recordKey(del.Type, del.Name)
-		delete(testRecords[zoneKey], recordKey)
-	}
+		if _, ok := testRecords[zoneKey]; !ok {
+			testRecords[zoneKey] = make(map[string]*dns.ResourceRecordSet)
+		}
+		for _, del := range change.Deletions {
+			delete(testRecords[zoneKey], recordKey(del.Type, del.Name))
+		}
+		for _, add := range change.Additions {
+			testRecords[zoneKey][recordKey(add.Type, add.Name)] = add
+		}
 
-	for _, add := range m.change.Additions {
-		recordKey := recordKey(add.Type, add.Name)
-		testRecords[zoneKey][recordKey] = add
-	}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(change); err != nil {
+			t.Errorf("encode change response: %v", err)
+		}
+	}))
+	t.Cleanup(server.Close)
 
-	return m.change, nil
-}
-
-type mockChangesClient struct{}
-
-func (m *mockChangesClient) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return &mockChangesCreateCall{project: project, managedZone: managedZone, change: change}
+	service, err := dns.NewService(t.Context(), option.WithEndpoint(server.URL), option.WithHTTPClient(server.Client()))
+	require.NoError(t, err)
+	return service.Changes
 }
 
 func zoneKey(project, zoneName string) string {
@@ -632,6 +642,42 @@ func TestSoftErrListRecordsConflict(t *testing.T) {
 	require.Empty(t, records)
 }
 
+func testBatchChange(n int) *dns.Change {
+	change := &dns.Change{}
+	for i := range n {
+		change.Additions = append(change.Additions, &dns.ResourceRecordSet{
+			Name:    fmt.Sprintf("record-%d.zone-1.ext-dns-test-2.gcp.zalan.do.", i),
+			Type:    endpoint.RecordTypeA,
+			Ttl:     defaultTTL,
+			Rrdatas: []string{"192.0.2.1"},
+		})
+	}
+	return change
+}
+
+func TestSubmitChangeCancellation(t *testing.T) {
+	limiter := rate.NewLimiter(rate.Every(time.Hour), 1)
+	require.NoError(t, waitForBatchChange(t.Context(), limiter))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := waitForBatchChange(ctx, limiter)
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestSubmitChangeLimiterResetsEachReconciliation(t *testing.T) {
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{}, nil, nil)
+	p.batchChangeInterval = time.Hour
+	p.batchChangeSize = 1
+
+	require.NoError(t, p.submitChange(t.Context(), testBatchChange(1)))
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	require.NoError(t, p.submitChange(ctx, testBatchChange(1)))
+}
+
 func sortChangesByName(cs *dns.Change) {
 	sort.SliceStable(cs.Additions, func(i, j int) bool {
 		return cs.Additions[i].Name < cs.Additions[j].Name
@@ -685,7 +731,7 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter *endpoint.DomainFil
 		zoneTypeFilter:           zoneTypeFilter,
 		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
 		managedZonesClient:       &mockManagedZonesClient{},
-		changesClient:            &mockChangesClient{},
+		changesService:           newMockChangesService(t),
 	}
 
 	createZone(t, provider, &dns.ManagedZone{
@@ -753,7 +799,7 @@ func newGoogleProvider(t *testing.T, domainFilter *endpoint.DomainFilter, zoneID
 		managedZonesClient: &mockManagedZonesClient{
 			zonesErr: zonesErr,
 		},
-		changesClient: &mockChangesClient{},
+		changesService: newMockChangesService(t),
 	}
 
 	createZone(t, provider, &dns.ManagedZone{
@@ -828,9 +874,9 @@ func clearGoogleRecords(t *testing.T, provider *GoogleProvider, zone string) {
 	})
 
 	if len(recordSets) != 0 {
-		_, err := provider.changesClient.Create(provider.project, zone, &dns.Change{
+		_, err := provider.changesService.Create(provider.project, zone, &dns.Change{
 			Deletions: recordSets,
-		}).Do()
+		}).Context(t.Context()).Do()
 		require.NoError(t, err)
 	}
 }

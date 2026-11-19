@@ -109,15 +109,8 @@ func ParseFilter(annotationFilter string) (labels.Selector, error) {
 // Returns empty endpoints array if none are found.
 func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets {
 	var targets endpoint.Targets
-	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, ok := annotations[TargetKey]
-	if ok && targetAnnotation != "" {
-		// splits the hostname annotation and removes the trailing periods
-		targetsList := SplitHostnameAnnotation(targetAnnotation)
-		for _, targetHostname := range targetsList {
-			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			targets = append(targets, targetHostname)
-		}
+	for _, target := range SplitHostnameAnnotation(annotations[TargetKey]) {
+		targets = append(targets, strings.TrimSuffix(target, "."))
 	}
 	return targets
 }
@@ -134,10 +127,9 @@ func InternalHostnamesFromAnnotations(input map[string]string) []string {
 	return extractHostnamesFromAnnotations(input, InternalHostnameKey)
 }
 
-// SplitHostnameAnnotation splits a comma-separated hostname annotation string into a slice of hostnames.
-// It trims any leading or trailing whitespace and removes any spaces within the anno
+// SplitHostnameAnnotation splits a comma-separated annotation value, removes spaces and drops empty entries.
 func SplitHostnameAnnotation(input string) []string {
-	return strings.Split(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), ",")
+	return strings.FieldsFunc(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), func(r rune) bool { return r == ',' })
 }
 
 func extractHostnamesFromAnnotations(input map[string]string, key string) []string {

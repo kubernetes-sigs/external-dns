@@ -102,6 +102,8 @@ Iterates over all listeners for the parent's `parentRef.sectionName`:
 
 - Ignores listeners which specify an `allowedRoutes` which does not allow the route.
 
+`parentRef.group` and `allowedRoutes.kinds[].group` default to `gateway.networking.k8s.io` only when omitted; an explicit `""` is the core group and never matches.
+
 ## Targets
 
 The targets of the DNS entries created from a \*Route are sourced from the following places:

@@ -29,6 +29,7 @@ import (
 
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -216,7 +217,7 @@ func TestPodsWithAnnotationsAndLabels(t *testing.T) {
 			selector, _ := annotations.ParseFilter(tt.labelSelector)
 			pSource, err := NewPodSource(
 				t.Context(), client,
-				&Config{
+				&config.Config{
 					Namespaces:       []string{tt.namespace},
 					TemplateEngine:   templatetest.MustEngine(t, "{{ .Name }}.tld.org", "", "", false),
 					AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),

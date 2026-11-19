@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -358,7 +359,7 @@ func TestNodeFQDNTemplate(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewNodeSource(t.Context(), kubeClient, &Config{
+			src, err := NewNodeSource(t.Context(), kubeClient, &config.Config{
 				TemplateEngine:       templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 				ExcludeUnschedulable: true,
 				ExposeInternalIPv6:   true,

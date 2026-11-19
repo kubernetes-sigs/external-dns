@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # renovate: datasource=github-releases depName=golangci/golangci-lint
-GOLANG_CI_LINTER_VERSION=v2.14.0
+GOLANG_CI_LINTER_VERSION=v2.15.0
 GOLANG_CI_LINTER_INSTALL_SCRIPT_COMMIT=114493f9b3e7257d29e4130f2b4a4aadefbb6845
 GOLANG_CI_LINTER_INSTALL_SCRIPT_SHA256=1022ddb4d87ed252350ed03fc9677e250a4ae95cc6bcd4658c2a20a8a23d390f
 

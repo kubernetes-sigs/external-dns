@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"reflect"
 	"sort"
 	"sync"
 	"testing"
@@ -80,7 +79,7 @@ func (p *mockProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) 
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumptions.
-func (p *mockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *mockProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
 	if err := verifyEndpoints(changes.Create, p.ExpectChanges.Create); err != nil {
 		return err
 	}
@@ -97,9 +96,6 @@ func (p *mockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		return err
 	}
 
-	if !reflect.DeepEqual(ctx.Value(provider.RecordsContextKey), p.RecordsStore) {
-		return errors.New("context is wrong")
-	}
 	return nil
 }
 

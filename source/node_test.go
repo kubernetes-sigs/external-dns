@@ -29,6 +29,7 @@ import (
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -69,6 +70,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 		excludeUnschedulable bool // default to false
 		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
 		unschedulable        bool // default to false
+		taints               []v1.Taint
+		deletionTimestamp    *metav1.Time
 		expected             []*endpoint.Endpoint
 		expectError          bool
 		expectedLogs         []string
@@ -357,6 +360,60 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:                "node tainted by Karpenter returns nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			taints:               []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is tainted karpenter.sh/disrupted",
+			},
+		},
+		{
+			title:                "node tainted by the Cluster Autoscaler returns nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			taints:               []v1.Taint{{Key: "ToBeDeletedByClusterAutoscaler", Value: "1700000000", Effect: v1.TaintEffectNoSchedule}},
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is tainted ToBeDeletedByClusterAutoscaler",
+			},
+		},
+		{
+			title:                "node being deleted returns nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			deletionTimestamp:    &metav1.Time{Time: time.Unix(1700000000, 0)},
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is being deleted",
+			},
+		},
+		{
+			title:                "node tainted by Karpenter returns node with excludeUnschedulable=false",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			taints:               []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+			excludeUnschedulable: false,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			// The label is about load balancing through NodePorts; it doesn't remove a Node's own records.
+			title:                "node labeled exclude-from-external-load-balancers is still published",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			labels:               map[string]string{v1.LabelNodeExcludeBalancers: "true"},
+			excludeUnschedulable: true,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
 			title:              "provider-specific annotation is not supported and is ignored",
 			nodeName:           "node1",
 			exposeInternalIPv6: true,
@@ -383,11 +440,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 			kubeClient := fake.NewClientset()
 
 			node := &v1.Node{
-				Name:        tc.nodeName,
-				Labels:      tc.labels,
-				Annotations: tc.annotations,
+				Name:              tc.nodeName,
+				Labels:            tc.labels,
+				Annotations:       tc.annotations,
+				DeletionTimestamp: tc.deletionTimestamp,
 				Spec: v1.NodeSpec{
 					Unschedulable: tc.unschedulable,
+					Taints:        tc.taints,
 				},
 				Status: v1.NodeStatus{
 					Addresses: tc.nodeAddresses,
@@ -401,7 +460,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			client, err := NewNodeSource(
 				t.Context(),
 				kubeClient,
-				&Config{
+				&config.Config{
 					AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 					TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 					LabelFilter:          labelSelector,
@@ -513,7 +572,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		client, err := NewNodeSource(
 			t.Context(),
 			kubeClient,
-			&Config{
+			&config.Config{
 				AnnotationFilter:     parseAnnotationFilterOrNil(tc.annotationFilter),
 				TemplateEngine:       templatetest.MustEngine(t, tc.fqdnTemplate, "", "", false),
 				LabelFilter:          labelSelector,
@@ -569,7 +628,7 @@ func TestTransformerInNodeSource(t *testing.T) {
 	_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewNodeSource(t.Context(), kubeClient, &Config{LabelFilter: labels.Everything()})
+	src, err := NewNodeSource(t.Context(), kubeClient, &config.Config{LabelFilter: labels.Everything()})
 	require.NoError(t, err)
 	ns, ok := src.(*nodeSource)
 	require.True(t, ok)
@@ -607,7 +666,7 @@ func TestResourceLabelIsSetForEachNodeEndpoint(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		kubeClient,
-		&Config{
+		&config.Config{
 			LabelFilter: labels.Everything(),
 		},
 	)
@@ -646,7 +705,7 @@ func TestProcessEndpoint_Node_RefObjectExist(t *testing.T) {
 	client, err := NewNodeSource(
 		t.Context(),
 		fakeClient,
-		&Config{
+		&config.Config{
 			LabelFilter: labels.Everything(),
 		},
 	)
@@ -850,7 +909,7 @@ func TestNodeIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewNodeSource(t.Context(), client, &Config{
+			src, err := NewNodeSource(t.Context(), client, &config.Config{
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
 				TemplateEngine:   templatetest.MustEngine(t, "", "", "", false),
