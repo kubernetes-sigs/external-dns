@@ -2162,6 +2162,118 @@ func TestTraefikIndexer(t *testing.T) {
 	}
 }
 
+func TestTraefikProxyIngressClass(t *testing.T) {
+	t.Parallel()
+
+	converter, err := newTraefikUnstructuredConverter()
+	require.NoError(t, err)
+
+	fakeKubeClient := fakeKube.NewSimpleClientset()
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(converter.scheme)
+
+	createResource := func(gvr schema.GroupVersionResource, resource any) {
+		data, marshalErr := json.Marshal(resource)
+		require.NoError(t, marshalErr)
+
+		obj := &unstructured.Unstructured{}
+		require.NoError(t, obj.UnmarshalJSON(data))
+		_, createErr := fakeDynamicClient.Resource(gvr).Namespace(defaultTraefikNamespace).
+			Create(t.Context(), obj, metav1.CreateOptions{})
+		require.NoError(t, createErr)
+	}
+
+	createResource(ingressRouteGVR, &IngressRoute{
+		TypeMeta: metav1.TypeMeta{APIVersion: ingressRouteGVR.GroupVersion().String(), Kind: "IngressRoute"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "http-public",
+			Namespace: defaultTraefikNamespace,
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/target": "target.example.com",
+			},
+		},
+		Spec: traefikIngressRouteSpec{
+			IngressClassName: "public",
+			Routes:           []traefikRoute{{Match: "Host(`http.example.com`)"}},
+		},
+	})
+	createResource(ingressRouteGVR, &IngressRoute{
+		TypeMeta: metav1.TypeMeta{APIVersion: ingressRouteGVR.GroupVersion().String(), Kind: "IngressRoute"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "http-private",
+			Namespace: defaultTraefikNamespace,
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/target": "target.example.com",
+				IngressClassAnnotationKey:           "public",
+			},
+		},
+		Spec: traefikIngressRouteSpec{
+			IngressClassName: "private",
+			Routes:           []traefikRoute{{Match: "Host(`private.example.com`)"}},
+		},
+	})
+	createResource(ingressRouteTCPGVR, &IngressRouteTCP{
+		TypeMeta: metav1.TypeMeta{APIVersion: ingressRouteTCPGVR.GroupVersion().String(), Kind: "IngressRouteTCP"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tcp-public",
+			Namespace: defaultTraefikNamespace,
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/target": "target.example.com",
+			},
+		},
+		Spec: traefikIngressRouteTCPSpec{
+			IngressClassName: "public",
+			Routes:           []traefikRouteTCP{{Match: "HostSNI(`tcp.example.com`)"}},
+		},
+	})
+	createResource(ingressRouteTCPGVR, &IngressRouteTCP{
+		TypeMeta: metav1.TypeMeta{APIVersion: ingressRouteTCPGVR.GroupVersion().String(), Kind: "IngressRouteTCP"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tcp-legacy",
+			Namespace: defaultTraefikNamespace,
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/target": "target.example.com",
+				IngressClassAnnotationKey:           "public",
+			},
+		},
+		Spec: traefikIngressRouteTCPSpec{
+			Routes: []traefikRouteTCP{{Match: "HostSNI(`legacy.example.com`)"}},
+		},
+	})
+	createResource(ingressRouteUDPGVR, &IngressRouteUDP{
+		TypeMeta: metav1.TypeMeta{APIVersion: ingressRouteUDPGVR.GroupVersion().String(), Kind: "IngressRouteUDP"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "udp-public",
+			Namespace: defaultTraefikNamespace,
+			Annotations: map[string]string{
+				"external-dns.kubernetes.io/hostname": "udp.example.com",
+				"external-dns.kubernetes.io/target":   "target.example.com",
+			},
+		},
+		Spec: traefikIngressRouteUDPSpec{IngressClassName: "public"},
+	})
+
+	source, err := NewTraefikSource(t.Context(), fakeDynamicClient, fakeKubeClient, &config.Config{
+		Namespaces:        []string{defaultTraefikNamespace},
+		IngressClassNames: []string{"public"},
+		LabelFilter:       labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	endpoints, err := source.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	var hostnames []string
+	for _, ep := range endpoints {
+		hostnames = append(hostnames, ep.DNSName)
+	}
+	assert.ElementsMatch(t, []string{
+		"http.example.com",
+		"tcp.example.com",
+		"legacy.example.com",
+		"udp.example.com",
+	}, hostnames)
+}
+
 // TestTraefikLegacyIndexer verifies that the indexer correctly filters legacy IngressRoute resources
 // (traefik.containo.us GVRs, enabled via --traefik-enable-legacy) by annotation and label at index time.
 func TestTraefikLegacyIndexer(t *testing.T) {
