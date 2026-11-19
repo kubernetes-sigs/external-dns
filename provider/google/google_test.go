@@ -86,15 +86,42 @@ func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZ
 	return f(&dns.ManagedZonesListResponse{ManagedZones: zones})
 }
 
+type mockManagedZonesGetCall struct {
+	project     string
+	managedZone string
+	zonesErr    error
+}
+
+func (m *mockManagedZonesGetCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
+	if m.zonesErr != nil {
+		return nil, m.zonesErr
+	}
+	if zone, ok := testZones[zoneKey(m.project, m.managedZone)]; ok {
+		return zone, nil
+	}
+	for key, zone := range testZones {
+		if strings.HasPrefix(key, m.project+"/") && fmt.Sprintf("%v", zone.Id) == m.managedZone {
+			return zone, nil
+		}
+	}
+	return nil, &googleapi.Error{Code: http.StatusNotFound}
+}
+
 type mockManagedZonesClient struct {
-	zonesErr error
+	zonesErr      error
+	listCallCount int
 }
 
 func (m *mockManagedZonesClient) Create(project string, managedZone *dns.ManagedZone) managedZonesCreateCallInterface {
 	return &mockManagedZonesCreateCall{project: project, managedZone: managedZone}
 }
 
+func (m *mockManagedZonesClient) Get(project string, managedZone string) managedZonesGetCallInterface {
+	return &mockManagedZonesGetCall{project: project, managedZone: managedZone, zonesErr: m.zonesErr}
+}
+
 func (m *mockManagedZonesClient) List(project string) managedZonesListCallInterface {
+	m.listCallCount++
 	return &mockManagedZonesListCall{project: project, zonesListSoftErr: m.zonesErr}
 }
 
@@ -259,6 +286,52 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 	validateZones(t, zones, map[string]*dns.ManagedZone{
 		"split-horizon-1": {Name: "split-horizon-1", DnsName: "cluster.local.", Id: 10001, Visibility: "public"},
 	})
+}
+
+// Numeric zone IDs resolve via Get, without List.
+func TestGoogleZonesNumericIDFilterUsesGet(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002", "10003"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"internal-2": {Name: "internal-2", DnsName: "cluster.local.", Id: 10002, Visibility: "private"},
+		"internal-3": {Name: "internal-3", DnsName: "cluster.local.", Id: 10003, Visibility: "private"},
+	})
+	assert.Equal(t, 0, provider.managedZonesClient.(*mockManagedZonesClient).listCallCount)
+}
+
+// Any non-numeric value keeps List and suffix matching for every value.
+func TestGoogleZonesMixedIDFilterUsesList(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10002", "ernal-3"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"internal-2": {Name: "internal-2", DnsName: "cluster.local.", Id: 10002, Visibility: "private"},
+		"internal-3": {Name: "internal-3", DnsName: "cluster.local.", Id: 10003, Visibility: "private"},
+	})
+	assert.Equal(t, 1, provider.managedZonesClient.(*mockManagedZonesClient).listCallCount)
+}
+
+// Numeric zone IDs still apply the domain filter.
+func TestGoogleZonesNumericIDFilterAppliesDomainFilter(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"other.local."}), provider.NewZoneIDFilter([]string{"10002"}), provider.NewZoneTypeFilter(""), []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones(t.Context())
+	require.NoError(t, err)
+	require.Empty(t, zones)
+}
+
+func TestGoogleZonesGetError(t *testing.T) {
+	p := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"cluster.local."}), provider.NewZoneIDFilter([]string{"10001"}), false, []*endpoint.Endpoint{}, provider.NewSoftErrorf("failed to get zone"), nil)
+
+	zones, err := p.Zones(t.Context())
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
+	require.Empty(t, zones)
 }
 
 func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
