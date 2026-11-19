@@ -115,23 +115,29 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		log.Debugf("creating endpoint for node %s", node.Name)
 
 		// Only generate node name endpoints when there's no template or when combining
-		var nodeEndpoints []*endpoint.Endpoint
+		nodeNameEndpoints := !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining()
+
+		var nodeTargets []string
 		var err error
-		if !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining() {
-			nodeEndpoints, err = ns.endpointsForDNSNames(node, []string{node.Name})
+		if nodeNameEndpoints || ns.templateEngine.IsConfigured() {
+			nodeTargets, err = ns.targetsForNode(node)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		nodeEndpoints, err = ns.templateEngine.ApplyFQDNTargetTemplate(nodeEndpoints, node)
-		if err != nil {
-			return nil, err
+		var nodeEndpoints []*endpoint.Endpoint
+		if nodeNameEndpoints {
+			nodeEndpoints = ns.endpointsForDNSNames(node, []string{node.Name}, nodeTargets)
 		}
 
-		nodeEndpoints, err = ns.templateEngine.CombineWithEndpoints(
+		nodeEndpoints, err = ns.templateEngine.Apply(
 			nodeEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return ns.endpointsFromNodeTemplate(node) },
+			node,
+			template.WithResourceTargets(nodeTargets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return ns.endpointsForDNSNames(node, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -154,32 +160,19 @@ func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
 	informers.MustAddEventHandler(ns.nodeInformer.Informer(), eventHandlerFunc(handler))
 }
 
-// endpointsFromNodeTemplate creates endpoints using DNS names from the FQDN template.
-func (ns *nodeSource) endpointsFromNodeTemplate(node *v1.Node) ([]*endpoint.Endpoint, error) {
-	names, err := ns.templateEngine.ExecFQDN(node)
+func (ns *nodeSource) targetsForNode(node *v1.Node) ([]string, error) {
+	if addrs := annotations.TargetsFromTargetAnnotation(node.Annotations); len(addrs) > 0 {
+		return addrs, nil
+	}
+	addrs, err := ns.nodeAddresses(node)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
 	}
-
-	for _, name := range names {
-		log.Debugf("applied template for %s, converting to %s", node.Name, name)
-	}
-
-	return ns.endpointsForDNSNames(node, names)
+	return addrs, nil
 }
 
-// endpointsForDNSNames creates endpoints for the given DNS names using the node's addresses.
-func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]*endpoint.Endpoint, error) {
+func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string, addrs []string) []*endpoint.Endpoint {
 	ttl := annotations.TTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
-
-	addrs := annotations.TargetsFromTargetAnnotation(node.Annotations)
-	if len(addrs) == 0 {
-		var err error
-		addrs, err = ns.nodeAddresses(node)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
-		}
-	}
 
 	var endpoints []*endpoint.Endpoint
 	for _, dns := range dnsNames {
@@ -196,7 +189,7 @@ func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string) ([]
 		}
 	}
 
-	return endpoint.MergeEndpoints(endpoints), nil
+	return endpoint.MergeEndpoints(endpoints)
 }
 
 // nodeAddress returns the node's externalIP and if that's not found, the node's internalIP

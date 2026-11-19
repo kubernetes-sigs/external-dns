@@ -135,14 +135,12 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 	for _, pod := range pods {
 		podEndpoints := ps.endpointsFromPodAnnotations(pod)
 
-		podEndpoints, err := ps.templateEngine.ApplyFQDNTargetTemplate(podEndpoints, pod)
-		if err != nil {
-			return nil, err
-		}
-
-		podEndpoints, err = ps.templateEngine.CombineWithEndpoints(
+		podEndpoints, err := ps.templateEngine.Apply(
 			podEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return ps.endpointsFromPodTemplate(pod) },
+			pod,
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return ps.endpointsFromPodTemplate(pod, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -169,11 +167,8 @@ func (ps *podSource) endpointsFromPodAnnotations(pod *v1.Pod) []*endpoint.Endpoi
 	return endpoints
 }
 
-func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint, error) {
-	hostsMap, err := ps.hostsFromTemplate(pod)
-	if err != nil {
-		return nil, err
-	}
+func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod, hostnames []string, templateTargets endpoint.Targets) []*endpoint.Endpoint {
+	hostsMap := ps.hostsFromTemplate(pod, hostnames, templateTargets)
 
 	var endpoints []*endpoint.Endpoint
 	for key, targets := range hostsMap {
@@ -181,7 +176,7 @@ func (ps *podSource) endpointsFromPodTemplate(pod *v1.Pod) ([]*endpoint.Endpoint
 			endpoints = append(endpoints, ep)
 		}
 	}
-	return endpoints, nil
+	return endpoints
 }
 
 func (ps *podSource) addPodEndpointsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod) {
@@ -265,14 +260,15 @@ func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.E
 	}
 }
 
-func (ps *podSource) hostsFromTemplate(pod *v1.Pod) (map[endpoint.EndpointKey][]string, error) {
-	hosts, err := ps.templateEngine.ExecFQDN(pod)
-	if err != nil {
-		return nil, err
+// Non-empty templateTargets win over the pod IPs.
+func (ps *podSource) hostsFromTemplate(pod *v1.Pod, hostnames []string, templateTargets endpoint.Targets) map[endpoint.EndpointKey][]string {
+	result := make(map[endpoint.EndpointKey][]string)
+	if len(templateTargets) > 0 {
+		addTargetsToEndpointMap(result, pod, templateTargets, hostnames...)
+		return result
 	}
 
-	result := make(map[endpoint.EndpointKey][]string)
-	for _, target := range hosts {
+	for _, target := range hostnames {
 		for _, address := range pod.Status.PodIPs {
 			if address.IP == "" {
 				log.Debugf("skipping pod %q. PodIP is empty with phase %q", pod.Name, pod.Status.Phase)
@@ -287,7 +283,7 @@ func (ps *podSource) hostsFromTemplate(pod *v1.Pod) (map[endpoint.EndpointKey][]
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func addTargetsToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, pod *v1.Pod, targets []string, domainList ...string) {

@@ -125,6 +125,26 @@ func TestServiceFQDNTemplate(t *testing.T) {
 				endpoint.NewEndpoint(svcName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
+		// ── target-template cases ─────────────────────────────────────────────
+		{
+			title:          "target-template replaces service targets for fqdn-template hostnames",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title: "target-template wins over the target annotation",
+			services: []*v1.Service{makeSvc(map[string]string{
+				annotations.TargetKey: "9.9.9.9",
+			})},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
 		// ── fqdn-template cases ───────────────────────────────────────────────
 		{
 			title:   "fqdn-template with combine across multiple services",

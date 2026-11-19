@@ -173,7 +173,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 
 		var err error
-		vsEndpoints, err = vs.templateEngine.ApplyTemplates(vsEndpoints, virtualServer)
+		vsEndpoints, err = vs.templateEngine.Apply(vsEndpoints, virtualServer)
 		if err != nil {
 			return nil, err
 		}

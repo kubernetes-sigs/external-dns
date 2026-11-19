@@ -313,26 +313,35 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
 	var endpoints []*endpoint.Endpoint
 	for _, rt := range routes {
-		// Get Route hostnames and their targets.
 		meta := rt.Metadata()
-		annots := meta.Annotations
-		hostTargets, err := resolver.resolve(rt)
+		res := resolver.resolveHostnames(rt)
+		var routeEndpoints []*endpoint.Endpoint
+		if len(res.defined) > 0 {
+			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, res.defined, nil))
+		}
+
+		templateRendered := false
+		routeEndpoints, err := src.templateEngine.Apply(routeEndpoints, rt.Object(),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				// Defined hostnames suppress the template unless combining, matched or not.
+				if !res.templateAllowed || (len(res.defined) > 0 && !src.templateEngine.Combining()) {
+					return nil, nil
+				}
+				templateRendered = true
+				return src.routeEndpoints(rt, resolver.resolve(rt, hostnames, targets)), nil
+			}),
+		)
 		if err != nil {
 			return nil, err
 		}
-		// TODO: does not follow the pattern of other sources to log empty hostTargets
-		if len(hostTargets) == 0 {
+		// Only when nothing named a host, else a wildcard listener hostname is published beside annotated ones.
+		if res.fallbackAllowed && len(res.defined) == 0 && !templateRendered && len(routeEndpoints) == 0 {
+			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, []string{""}, nil))
+		}
+		// TODO: does not follow the pattern of other sources to log empty endpoints
+		if len(routeEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
-		}
-
-		// Create endpoints from hostnames and targets.
-		var routeEndpoints []*endpoint.Endpoint
-		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
-		ttl := annotations.TTLFromAnnotations(annots, resource)
-		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
 
@@ -341,6 +350,21 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		endpoints = append(endpoints, routeEndpoints...)
 	}
 	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+func (src *gatewayRouteSource) routeEndpoints(rt gatewayRoute, hostTargets map[string]endpoint.Targets) []*endpoint.Endpoint {
+	if len(hostTargets) == 0 {
+		return nil
+	}
+	meta := rt.Metadata()
+	resource := fmt.Sprintf("%s/%s/%s", strings.ToLower(src.rtKind), meta.Namespace, meta.Name)
+	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(meta.Annotations)
+	ttl := annotations.TTLFromAnnotations(meta.Annotations, resource)
+	var endpoints []*endpoint.Endpoint
+	for host, targets := range hostTargets {
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	}
+	return endpoints
 }
 
 func namespacedName(namespace, name string) types.NamespacedName {
@@ -405,18 +429,15 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, li
 	}
 }
 
-func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Targets, error) {
-	rtHosts, err := c.resolveHostnames(rt)
-	if err != nil {
-		return nil, err
-	}
+// Non-empty templateTargets win over the parent's targets.
+func (c *gatewayRouteResolver) resolve(rt gatewayRoute, rtHosts, templateTargets []string) map[string]endpoint.Targets {
 	hostTargets := make(map[string]endpoint.Targets)
 
 	routeParentRefs := rt.ParentRefs()
 
 	if len(routeParentRefs) == 0 {
 		log.Debugf("No parent references found for %s %s/%s", c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
-		return hostTargets, nil
+		return hostTargets
 	}
 
 	for _, rps := range rt.RouteStatus().Parents {
@@ -424,14 +445,14 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		if !ok {
 			continue
 		}
-		c.matchRouteToParent(rt, rtHosts, parent, hostTargets)
+		c.matchRouteToParent(rt, rtHosts, templateTargets, parent, hostTargets)
 	}
 	// If a Gateway has multiple matching Listeners for the same host, then we'll
 	// add its IPs to the target list multiple times and should dedupe them.
 	for host, targets := range hostTargets {
 		hostTargets[host] = uniqueTargets(targets)
 	}
-	return hostTargets, nil
+	return hostTargets
 }
 
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
@@ -483,7 +504,7 @@ func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs
 	}, true
 }
 
-func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
+func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts, templateTargets []string, parent *resolvedParent, hostTargets map[string]endpoint.Targets) {
 	meta := rt.Metadata()
 	match := false
 	var unattachedReason string
@@ -495,7 +516,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 			}
 			continue
 		}
-		if c.matchRouteToListener(rt, rtHosts, parent, &section.listener, hostTargets) {
+		if c.matchRouteToListener(rt, rtHosts, templateTargets, parent, &section.listener, hostTargets) {
 			match = true
 		}
 	}
@@ -509,7 +530,7 @@ func (c *gatewayRouteResolver) matchRouteToParent(rt gatewayRoute, rtHosts []str
 	log.Debugf("%s %s/%s section %q does not match %s %s/%s hostnames %q", parent.kind, parent.namespace, parent.ref.Name, parent.section, c.src.rtKind, meta.Namespace, meta.Name, rtHosts)
 }
 
-func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
+func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts, templateTargets []string, parent *resolvedParent, lis *v1.Listener, hostTargets map[string]endpoint.Targets) bool {
 	if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
 		return false
 	}
@@ -535,6 +556,9 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 			continue
 		}
 		override := parent.obj.overrides
+		if len(templateTargets) > 0 {
+			override = templateTargets
+		}
 		hostTargets[host] = append(hostTargets[host], override...)
 		if len(override) == 0 {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
@@ -555,23 +579,16 @@ func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
 	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
 }
 
-// appendFQDNTemplate appends the template-generated hostnames, unless another source already
-// supplied one and the template is not combining.
-// TODO: The combine-fqdn-annotation flag is similarly vague.
-func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
-	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
-		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())
-		if err != nil {
-			return nil, err
-		}
-		hostnames = append(hostnames, hosts...)
-	}
-	return hostnames, nil
+// hostnameResolution is what resolveHostnames reports: the hostnames the route
+// spec and annotations defined, plus whether the FQDN template and the listener
+// wildcard fallback are allowed to add more.
+type hostnameResolution struct {
+	defined         []string
+	templateAllowed bool
+	fallbackAllowed bool
 }
 
-// resolveHostnames returns a route's hostnames in the order documented for the gateway sources:
-// spec, annotation, FQDN template, listener fallback, subject to gateway-hostname-source.
-func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, error) {
+func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) hostnameResolution {
 	var hostnames []string
 	for _, name := range rt.Hostnames() {
 		hostnames = append(hostnames, string(name))
@@ -582,15 +599,14 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
-				// The flag wins, which leaves the route with no hostnames at all, so make that visible.
 				log.Warnf("%q is %q on %s %s/%s, but --ignore-hostname-annotation is set, so the route has no hostnames.",
 					annotations.GatewayHostnameSourceKey, hostNameAnnotation, c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
-				return []string{}, nil
+				return hostnameResolution{defined: []string{}}
 			}
-			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
+			return hostnameResolution{defined: annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)}
 		case gatewayHostnameSourceDefinedHostsOnlyValue:
 			// Explicitly use only defined hostnames (route spec and optional template result)
-			return c.appendFQDNTemplate(hostnames, rt)
+			return hostnameResolution{defined: hostnames, templateAllowed: true}
 		default:
 			// Invalid value provided: warn and fall back to default behavior (as if the annotation is absent)
 			log.Warnf("Invalid value for %q on %s/%s: %q. Falling back to default behavior.",
@@ -601,16 +617,7 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	if !c.src.ignoreHostnameAnnotation {
 		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
-	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
-	if err != nil {
-		return nil, err
-	}
-	// Fall back to the listeners' hostnames only when spec, annotation and template named nothing:
-	// checking the spec alone would publish a wildcard listener hostname next to an annotated one.
-	if len(hostnames) == 0 {
-		hostnames = append(hostnames, "")
-	}
-	return hostnames, nil
+	return hostnameResolution{defined: hostnames, templateAllowed: true, fallbackAllowed: true}
 }
 
 func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Listener, rt gatewayRoute) bool {

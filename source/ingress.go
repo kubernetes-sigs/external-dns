@@ -148,9 +148,13 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		ingEndpoints := endpointsFromIngress(ing, targets, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
-		ingEndpoints, err = sc.templateEngine.CombineWithEndpoints(
+		ingEndpoints, err = sc.templateEngine.Apply(
 			ingEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing, targets) },
+			ing,
+			template.WithResourceTargets(targets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(ing, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -169,12 +173,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(ing)
-	if err != nil {
-		return nil, err
-	}
-
+func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
@@ -185,7 +184,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, targets e
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return endpoints
 }
 
 // filterByIngressClass filters a list of ingresses based on a required ingress

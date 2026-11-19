@@ -169,7 +169,7 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 		}
 
 		var err error
-		tsEndpoints, err = ts.templateEngine.ApplyTemplates(tsEndpoints, transportServer)
+		tsEndpoints, err = ts.templateEngine.Apply(tsEndpoints, transportServer)
 		if err != nil {
 			return nil, err
 		}

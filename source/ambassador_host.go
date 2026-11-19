@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 const (
@@ -67,7 +68,7 @@ var (
 // +externaldns:source:resources=Host.getambassador.io
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single,multiple
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type ambassadorHostSource struct {
@@ -77,6 +78,7 @@ type ambassadorHostSource struct {
 	ambassadorHostInformers *informers.Informers[kubeinformers.GenericInformer]
 	unstructuredConverter   *unstructuredConverter
 	labelSelector           labels.Selector
+	templateEngine          template.Engine
 }
 
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
@@ -122,6 +124,7 @@ func NewAmbassadorHostSource(
 		ambassadorHostInformers: ambassadorHostInformers,
 		unstructuredConverter:   uc,
 		labelSelector:           cfg.LabelFilter,
+		templateEngine:          cfg.TemplateEngine,
 	}, nil
 }
 
@@ -178,7 +181,15 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			}
 		}
 
-		hostEndpoints := sc.endpointsFromHost(host, targets)
+		hostEndpoints, err := sc.templateEngine.Apply(sc.endpointsFromHost(host, targets), host,
+			template.WithResourceTargets(targets),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsForHostnames(host, hostnames, targets), nil
+			}),
+		)
+		if err != nil {
+			return nil, err
+		}
 		if endpoint.IsEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
@@ -194,19 +205,21 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 // endpointsFromHost extracts the endpoints from a Host object
 func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
+	if host.Spec == nil || host.Spec.Hostname == "" {
+		return nil
+	}
+	return sc.endpointsForHostnames(host, []string{host.Spec.Hostname}, targets)
+}
 
+func (sc *ambassadorHostSource) endpointsForHostnames(host *ambassador.Host, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(host.Annotations)
 	ttl := annotations.TTLFromAnnotations(host.Annotations, resource)
 
-	if host.Spec != nil {
-		hostname := host.Spec.Hostname
-		if hostname != "" {
-			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
-		}
+	var endpoints []*endpoint.Endpoint
+	for _, hostname := range hostnames {
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-
 	return endpoints
 }
 
