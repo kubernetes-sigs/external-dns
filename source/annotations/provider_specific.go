@@ -50,10 +50,10 @@ var warnedLegacyNames sync.Map
 func ProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	if hasAliasFromAnnotations(annotations) {
+	if alias, ok := aliasFromAnnotations(annotations); ok {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  endpoint.ProviderSpecificAlias,
-			Value: "true",
+			Value: string(alias),
 		})
 	}
 	if v, ok := annotations[RecordTypeKey]; ok {
