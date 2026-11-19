@@ -91,6 +91,28 @@ func TestGenerateNonceError(t *testing.T) {
 	require.Empty(t, nonce)
 }
 
+func TestParseAESKey(t *testing.T) {
+	encoded32ByteKey := []byte("12345678901234567890123456789012")
+
+	tests := []struct {
+		name  string
+		input []byte
+		want  []byte
+	}{
+		{name: "nil key"},
+		{name: "empty key", input: []byte{}},
+		{name: "32-byte key takes precedence over base64 decoding", input: encoded32ByteKey, want: encoded32ByteKey},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseAESKey(tt.input)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 type faultyReader struct{}
 
 func (f *faultyReader) Read(_ []byte) (int, error) {
