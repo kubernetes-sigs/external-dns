@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/config"
 )
 
@@ -251,9 +253,8 @@ func TestGatewayHTTPRouteWithListenerSetWildcardHostnameIntersection(t *testing.
 	})
 }
 
+// Not parallel: it captures the global logger.
 func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
-	t.Parallel()
-
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 
@@ -291,7 +292,69 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	// Route with ListenerSet parentRef, but feature is disabled.
+	// Route with a ListenerSet parentRef, but feature is disabled. Its Gateway parentRef
+	// must still produce records.
+	rt := &v1.HTTPRoute{
+		Name: "rt", Namespace: "default",
+		Spec: v1.HTTPRouteSpec{
+			Hostnames: []v1.Hostname{"app.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{
+				lsParentRef("default", "ls"),
+				gwParentRef("default", "gw"),
+			}},
+		},
+		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"), gwParentRef("default", "gw"))},
+	}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Rejected by the Gateway controller: the flag would not help it.
+	rejected := &v1.HTTPRoute{
+		Name: "rejected", Namespace: "default",
+		Spec: v1.HTTPRouteSpec{
+			Hostnames:       []v1.Hostname{"rejected.example.com"},
+			CommonRouteSpec: v1.CommonRouteSpec{ParentRefs: []v1.ParentReference{lsParentRef("default", "ls")}},
+		},
+		Status: v1.HTTPRouteStatus{RouteStatus: gwRouteStatus(lsParentRef("default", "ls"))},
+	}
+	rejected.Status.Parents[0].Conditions = []metav1.Condition{rejectedCondition()}
+	_, err = gwClient.GatewayV1().HTTPRoutes(rejected.Namespace).Create(ctx, rejected, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &config.Config{GatewayListenerSets: false})
+	require.NoError(t, err)
+
+	level := log.GetLevel()
+	t.Cleanup(func() { log.SetLevel(level) })
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+
+	endpoints, err := src.Endpoints(ctx)
+	require.NoError(t, err)
+	testutils.ValidateEndpoints(t, endpoints, []*endpoint.Endpoint{
+		newTestEndpoint("app.example.com", "10.0.0.1"),
+	})
+	logtest.TestHelperLogContainsWithLogLevel(
+		"ListenerSet default/ls ignored for HTTPRoute default/rt: --gateway-listener-sets is disabled", log.WarnLevel, hook, t)
+	logtest.TestHelperLogContainsWithLogLevel(
+		"ListenerSet default/ls has not accepted the current generation HTTPRoute default/rejected", log.DebugLevel, hook, t)
+	logtest.TestHelperLogNotContains("ignored for HTTPRoute default/rejected", hook, t)
+}
+
+// Not parallel: it captures the global logger.
+func TestGatewayHTTPRouteWithListenerSetMissing(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewClientset()
+	clients := new(testutils.MockClientGenerator)
+	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
+
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{Name: "default"}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// ListenerSet support is on, but the route's ListenerSet does not exist.
 	rt := &v1.HTTPRoute{
 		Name: "rt", Namespace: "default",
 		Spec: v1.HTTPRouteSpec{
@@ -303,12 +366,18 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	_, err = gwClient.GatewayV1().HTTPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	src, err := NewGatewayHTTPRouteSource(ctx, clients, &config.Config{GatewayListenerSets: false})
+	src, err := NewGatewayHTTPRouteSource(ctx, clients, &config.Config{GatewayListenerSets: true})
 	require.NoError(t, err)
+
+	level := log.GetLevel()
+	t.Cleanup(func() { log.SetLevel(level) })
+	hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
 
 	endpoints, err := src.Endpoints(ctx)
 	require.NoError(t, err)
-	require.Empty(t, endpoints, "expected no endpoints when ListenerSet support is disabled")
+	require.Empty(t, endpoints)
+	logtest.TestHelperLogContainsWithLogLevel("ListenerSet default/ls not found", log.DebugLevel, hook, t)
+	logtest.TestHelperLogNotContains("--gateway-listener-sets", hook, t)
 }
 
 func TestGatewayHTTPRouteWithListenerSetGatewayLabelFilter(t *testing.T) {
