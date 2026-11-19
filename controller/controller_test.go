@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/fakes"
+	"sigs.k8s.io/external-dns/registry"
 	registryfactory "sigs.k8s.io/external-dns/registry/factory"
 	"sigs.k8s.io/external-dns/registry/noop"
 
@@ -511,8 +512,9 @@ func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error
 	return []*endpoint.Endpoint{}, nil
 }
 
-func (r *toggleRegistry) ApplyChanges(_ context.Context, _ *plan.Changes) error {
-	return nil
+// Provider returns a provider that accepts every change.
+func (r *toggleRegistry) Provider() provider.Provider {
+	return &fakes.MockProvider{}
 }
 
 func (r *toggleRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
@@ -641,4 +643,66 @@ func TestRun_HardError(t *testing.T) {
 	require.ErrorContains(t, err, "simulated hard error")
 
 	source.AssertExpectations(t)
+}
+
+// phaseRegistry records whether the controller ran PreApply.
+type phaseRegistry struct {
+	preApplied bool
+}
+
+func (r *phaseRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	return []*endpoint.Endpoint{}, nil
+}
+
+func (r *phaseRegistry) Plan(changes *plan.Changes) *plan.Changes {
+	return changes
+}
+
+func (r *phaseRegistry) PreApply(_ context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
+	r.preApplied = true
+	return changes, registry.NoFinish, nil
+}
+
+func (r *phaseRegistry) Provider() provider.Provider {
+	return &fakes.MockProvider{}
+}
+
+func (r *phaseRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return endpoints, nil
+}
+
+func (r *phaseRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+	return &endpoint.DomainFilter{}
+}
+
+func (r *phaseRegistry) OwnerID() string {
+	return ""
+}
+
+func TestRunOnceDryRunLeavesRegistryUntouched(t *testing.T) {
+	tests := []struct {
+		name           string
+		dryRun         bool
+		wantPreApplied bool
+	}{
+		{name: "dry-run", dryRun: true, wantPreApplied: false},
+		{name: "normal run", dryRun: false, wantPreApplied: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := getTestConfig()
+			r := &phaseRegistry{}
+			ctrl := &Controller{
+				Source:             getTestSource(),
+				Registry:           r,
+				Policy:             &plan.SyncPolicy{},
+				DomainFilter:       &endpoint.DomainFilter{},
+				ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+				DryRun:             tt.dryRun,
+			}
+
+			require.NoError(t, ctrl.RunOnce(t.Context()))
+			assert.Equal(t, tt.wantPreApplied, r.preApplied)
+		})
+	}
 }

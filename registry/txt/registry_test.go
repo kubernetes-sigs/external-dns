@@ -1407,6 +1407,57 @@ func TestCacheMethods(t *testing.T) {
 	}
 }
 
+// newCachedTXTRegistry returns a registry with caching enabled and an empty, filled cache.
+func newCachedTXTRegistry(t *testing.T) (*TXTRegistry, *inmemory.InMemoryProvider) {
+	t.Helper()
+	p := inmemory.NewInMemoryProvider()
+	require.NoError(t, p.CreateZone(testZone))
+	r, err := newRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil, "")
+	require.NoError(t, err)
+	_, err = r.Records(t.Context())
+	require.NoError(t, err)
+	return r, p
+}
+
+// Plan also runs in dry-run, so it must add the ownership TXT record without touching the cache.
+func TestTXTRegistryPlanLeavesCacheUntouched(t *testing.T) {
+	r, _ := newCachedTXTRegistry(t)
+	created := newEndpointWithOwner("new.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "")
+
+	planned := r.Plan(&plan.Changes{Create: []*endpoint.Endpoint{created}})
+
+	require.Len(t, planned.Create, 2, "the record and its ownership TXT record")
+	assert.Equal(t, endpoint.RecordTypeTXT, planned.Create[1].RecordType)
+	assert.Equal(t, "owner", created.Labels[endpoint.OwnerLabelKey])
+	assert.Empty(t, r.recordsCache, "Plan does not change the cache")
+}
+
+func TestTXTRegistryFinishUpdatesCache(t *testing.T) {
+	ctx := t.Context()
+	r, p := newCachedTXTRegistry(t)
+	created := newEndpointWithOwner("new.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "")
+
+	changes, finish, err := r.PreApply(ctx, r.Plan(&plan.Changes{Create: []*endpoint.Endpoint{created}}))
+	require.NoError(t, err)
+	assert.Empty(t, r.recordsCache, "the cache is only updated after the provider call")
+
+	require.NoError(t, finish(ctx, p.ApplyChanges(ctx, changes)))
+	assert.Equal(t, []*endpoint.Endpoint{created}, r.recordsCache, "the cache holds the record, not its ownership TXT record")
+}
+
+func TestTXTRegistryFinishDropsCacheOnProviderError(t *testing.T) {
+	ctx := t.Context()
+	r, _ := newCachedTXTRegistry(t)
+	created := newEndpointWithOwner("new.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, "")
+
+	_, finish, err := r.PreApply(ctx, r.Plan(&plan.Changes{Create: []*endpoint.Endpoint{created}}))
+	require.NoError(t, err)
+
+	providerErr := fmt.Errorf("provider failed")
+	require.ErrorIs(t, finish(ctx, providerErr), providerErr)
+	assert.Nil(t, r.recordsCache, "the next sync reads the records from the provider again")
+}
+
 func TestNewTXTScheme(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	err := p.CreateZone(testZone)
