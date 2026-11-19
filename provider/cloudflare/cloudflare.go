@@ -681,10 +681,14 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		e.SetProviderSpecificProperty(annotations.CloudflareProxiedProperty, strconv.FormatBool(proxied))
 
 		if p.CustomHostnamesConfig.Enabled {
-			// sort custom hostnames in annotation to properly detect changes
-			if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 1 {
-				sort.Strings(customHostnames)
-				e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
+			if _, ok := e.GetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty); ok {
+				// sort and clean up custom hostnames in annotation to properly detect changes
+				if customHostnames := getEndpointCustomHostnames(e); len(customHostnames) > 0 {
+					sort.Strings(customHostnames)
+					e.SetProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty, strings.Join(customHostnames, ","))
+				} else {
+					e.DeleteProviderSpecificProperty(annotations.CloudflareCustomHostnameProperty)
+				}
 			}
 		} else {
 			// ignore custom hostnames annotations if not enabled
@@ -892,8 +896,7 @@ func shouldBeProxied(ep *endpoint.Endpoint, proxiedByDefault bool) bool {
 func getEndpointCustomHostnames(ep *endpoint.Endpoint) []string {
 	for _, v := range ep.ProviderSpecific {
 		if v.Name == annotations.CloudflareCustomHostnameProperty {
-			customHostnames := strings.Split(v.Value, ",")
-			return customHostnames
+			return annotations.SplitHostnameAnnotation(v.Value)
 		}
 	}
 	return []string{}
