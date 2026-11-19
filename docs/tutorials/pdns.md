@@ -11,12 +11,6 @@ functional. It expects that zones, you wish to add records to, already exist
 and are configured correctly. It does not add, remove or configure new zones in
 anyway.
 
-## Feature Support
-
-The PDNS provider currently does not support:
-
-* Dry running a configuration is not supported
-
 ## Deployment
 
 Deploying external DNS for PowerDNS is actually nearly identical to deploying
@@ -42,7 +36,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service # or ingress or both
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)

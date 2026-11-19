@@ -18,10 +18,12 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns/v2"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
@@ -66,6 +68,8 @@ type mockPrivateRecordSetsClient struct {
 	pagingHandler    azcoreruntime.PagingHandler[privatedns.RecordSetsClientListResponse]
 	deletedEndpoints []*endpoint.Endpoint
 	updatedEndpoints []*endpoint.Endpoint
+	deleteErr        error
+	updateErr        error
 }
 
 func newMockPrivateRecordSectsClient(recordSets []*privatedns.RecordSet) mockPrivateRecordSetsClient {
@@ -89,6 +93,9 @@ func (client *mockPrivateRecordSetsClient) NewListPager(_ string, _ string, _ *p
 }
 
 func (client *mockPrivateRecordSetsClient) Delete(_ context.Context, _ string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, _ *privatedns.RecordSetsClientDeleteOptions) (privatedns.RecordSetsClientDeleteResponse, error) {
+	if client.deleteErr != nil {
+		return privatedns.RecordSetsClientDeleteResponse{}, client.deleteErr
+	}
 	client.deletedEndpoints = append(
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
@@ -101,6 +108,9 @@ func (client *mockPrivateRecordSetsClient) Delete(_ context.Context, _ string, p
 }
 
 func (client *mockPrivateRecordSetsClient) CreateOrUpdate(_ context.Context, _ string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, _ *privatedns.RecordSetsClientCreateOrUpdateOptions) (privatedns.RecordSetsClientCreateOrUpdateResponse, error) {
+	if client.updateErr != nil {
+		return privatedns.RecordSetsClientCreateOrUpdateResponse{}, client.updateErr
+	}
 	var ttl endpoint.TTL
 	if parameters.Properties.TTL != nil {
 		ttl = endpoint.TTL(*parameters.Properties.TTL)
@@ -343,6 +353,33 @@ func TestAzurePrivateDNSApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 	})
+}
+
+func TestAzurePrivateDNSApplyChangesReturnsSoftError(t *testing.T) {
+	zonesClient := newMockPrivateZonesClient([]*privatedns.PrivateZone{createMockPrivateZone("example.com", "/privateDnsZones/example.com")})
+	recordsClient := mockPrivateRecordSetsClient{
+		deleteErr: errors.New("delete failed"),
+		updateErr: errors.New("update failed"),
+	}
+	p := newAzurePrivateDNSProvider(
+		endpoint.NewDomainFilter([]string{""}),
+		endpoint.NewDomainFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		"group",
+		&zonesClient,
+		&recordsClient,
+		3,
+	)
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{endpoint.NewEndpoint("new.example.com", endpoint.RecordTypeA, "1.2.3.4")},
+		Delete: []*endpoint.Endpoint{endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "1.2.3.4")},
+	})
+
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorContains(t, err, "delete failed")
+	require.ErrorContains(t, err, "update failed")
 }
 
 func TestAzurePrivateDNSApplyChangesDryRun(t *testing.T) {

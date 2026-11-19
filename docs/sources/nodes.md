@@ -9,6 +9,8 @@ The TTL of the records can be set with the `external-dns.kubernetes.io/ttl` node
 
 Nodes marked as **Unschedulable** as per [core/v1/NodeSpec](https://pkg.go.dev/k8s.io/api@v0.31.1/core/v1#NodeSpec) are excluded by default.
 As such, no DNS records are created for Unhealthy, NotReady or SchedulingDisabled (cordon) nodes (and existing ones are removed).
+Nodes being removed are excluded too: those being deleted, and those tainted `ToBeDeletedByClusterAutoscaler` (Cluster Autoscaler)
+or `karpenter.sh/disrupted` (Karpenter).
 In case you want to override the default, for example if you manage per-host DNS records via ExternalDNS, you can specify `--no-exclude-unschedulable` to always expose nodes no matter their status.
 
 ## IPv6 Behavior
@@ -23,7 +25,7 @@ spec:
   serviceAccountName: external-dns
   containers:
   - name: external-dns
-    image: registry.k8s.io/external-dns/external-dns:v0.23.0 # update this to the desired external-dns version
+    image: registry.k8s.io/external-dns/external-dns:v0.24.0 # update this to the desired external-dns version
     args:
     - --source=node # will use nodes as source
     - --provider=aws
@@ -59,7 +61,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -133,7 +135,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws

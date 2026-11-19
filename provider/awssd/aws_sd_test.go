@@ -1505,6 +1505,7 @@ func TestAWSSDProvider_ApplyChanges_ExistingAOnlyAliasDoesNotChangeRecordType(t 
 				Id:          aws.String("service1"),
 				Name:        aws.String("service1"),
 				NamespaceId: aws.String("private"),
+				Description: aws.String(withResourceLabel("ingress/default/a")),
 				DnsConfig: &sdtypes.DnsConfig{
 					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
 					DnsRecords: []sdtypes.DnsRecord{
@@ -1633,6 +1634,7 @@ func TestAWSSDProvider_ApplyChanges_MissingDNSRecordsReturnsError(t *testing.T) 
 				Id:          aws.String("service1"),
 				Name:        aws.String("service1"),
 				NamespaceId: aws.String("private"),
+				Description: aws.String(withResourceLabel("ingress/default/a")),
 			},
 		},
 	}
@@ -1686,6 +1688,7 @@ func TestAWSSDProvider_ApplyChanges_UpdatesTTLWhenSecondRecordIsStale(t *testing
 				Id:          aws.String("service1"),
 				Name:        aws.String("service1"),
 				NamespaceId: aws.String("private"),
+				Description: aws.String(withResourceLabel("ingress/default/a")),
 				DnsConfig: &sdtypes.DnsConfig{
 					RoutingPolicy: sdtypes.RoutingPolicyWeighted,
 					DnsRecords: []sdtypes.DnsRecord{
@@ -1948,4 +1951,190 @@ func TestAWSSDProvider_Records_FailedReadKeepsRecordTypeSnapshot(t *testing.T) {
 	_, err = sdProvider.AdjustEndpoints([]*endpoint.Endpoint{desiredAliasEndpoint(true)})
 	require.NoError(t, err)
 	logtest.TestHelperLogContainsWithLogLevel("has record types [A] but desired types are [A AAAA]", log.WarnLevel, logs, t)
+}
+
+type updateCountingStub struct {
+	*AWSSDClientStub
+	updates int
+}
+
+func (s *updateCountingStub) UpdateService(ctx context.Context, input *sd.UpdateServiceInput, opts ...func(*sd.Options)) (*sd.UpdateServiceOutput, error) {
+	s.updates++
+	return s.AWSSDClientStub.UpdateService(ctx, input, opts...)
+}
+
+const testOwnerID = "owner"
+
+func withResourceLabel(resource string) string {
+	return "heritage=external-dns,external-dns/owner=" + testOwnerID + ",external-dns/resource=" + resource
+}
+
+// A label-only change must rewrite Description once, then stop calling UpdateService.
+func TestAWSSDProvider_ResourceLabelNoChurn(t *testing.T) {
+	namespaces := map[string]*sdtypes.Namespace{
+		"private": {
+			Id:   aws.String("private"),
+			Name: aws.String("private.com"),
+			Type: sdtypes.NamespaceTypeDnsPrivate,
+		},
+	}
+
+	api := &updateCountingStub{AWSSDClientStub: &AWSSDClientStub{
+		namespaces: namespaces,
+		services:   make(map[string]map[string]*sdtypes.Service),
+		instances:  make(map[string]map[string]*sdtypes.Instance),
+	}}
+
+	p := newTestAWSSDProvider(
+		api,
+		endpoint.NewDomainFilter([]string{}),
+		"",
+		"owner",
+	)
+
+	var descA = withResourceLabel("service/default/a")
+	var descB = withResourceLabel("ingress/default/b")
+
+	createEP := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		RecordTTL:  60,
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: descA,
+		},
+	}
+
+	desired := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordType: endpoint.RecordTypeA,
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: descB,
+		},
+	}
+
+	ctx := t.Context()
+
+	// Round 1: create the service with the original description.
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{createEP},
+	}))
+
+	current, err := p.Records(ctx)
+	require.NoError(t, err)
+	require.Len(t, current, 1)
+	assert.Equal(t, descA, current[0].Labels[endpoint.AWSSDDescriptionLabel])
+
+	// Round 2: submit an update when endpoint.AWSSDDescriptionLabel changes
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{desired},
+		UpdateOld: current,
+	}))
+
+	assert.Equal(t, 1, api.updates)
+	// Round 3: Description already matches, so UpdateService must not run again.
+	require.NoError(t, p.ApplyChanges(ctx, &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{desired},
+		UpdateOld: current,
+	}))
+	assert.Equal(t, 1, api.updates, "unchanged Description must not call UpdateService")
+}
+
+func TestAWSSDProvider_LabelUpdateKeepsUnconfiguredTTL(t *testing.T) {
+	api := &AWSSDClientStub{
+		namespaces: map[string]*sdtypes.Namespace{
+			"private": {
+				Id:   aws.String("private"),
+				Name: aws.String("private.com"),
+				Type: sdtypes.NamespaceTypeDnsPrivate,
+			},
+		},
+		services: map[string]map[string]*sdtypes.Service{
+			"private": {
+				"app": {
+					Id:          aws.String("app"),
+					Name:        aws.String("app"),
+					NamespaceId: aws.String("private"),
+					Description: aws.String(withResourceLabel("service/default/a")),
+					DnsConfig: &sdtypes.DnsConfig{
+						DnsRecords: []sdtypes.DnsRecord{
+							{
+								Type: sdtypes.RecordTypeA,
+								TTL:  aws.Int64(60),
+							},
+						},
+					},
+				},
+			},
+		},
+		instances: make(map[string]map[string]*sdtypes.Instance),
+	}
+	p := newTestAWSSDProvider(api, endpoint.NewDomainFilter(nil), "", "owner")
+
+	old := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+	}
+	upd := &endpoint.Endpoint{
+		DNSName:    "app.private.com",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		Labels: map[string]string{
+			endpoint.AWSSDDescriptionLabel: withResourceLabel("ingress/default/b"),
+		},
+	}
+	require.NoError(t, p.ApplyChanges(t.Context(),
+		&plan.Changes{
+			UpdateOld: []*endpoint.Endpoint{old},
+			UpdateNew: []*endpoint.Endpoint{upd},
+		}),
+	)
+
+	assert.Equal(t, int64(60), *api.services["private"]["app"].DnsConfig.DnsRecords[0].TTL)
+}
+
+func TestAWSSDProvider_CreateKeepsUnownedServiceDescription(t *testing.T) {
+	api := &AWSSDClientStub{
+		namespaces: map[string]*sdtypes.Namespace{
+			"private": {
+				Id:   aws.String("private"),
+				Name: aws.String("private.com"),
+				Type: sdtypes.NamespaceTypeDnsPrivate,
+			},
+		},
+		services: map[string]map[string]*sdtypes.Service{
+			"private": {
+				"app": {
+					Id:          aws.String("app"),
+					Name:        aws.String("app"),
+					NamespaceId: aws.String("private"),
+					DnsConfig: &sdtypes.DnsConfig{
+						DnsRecords: []sdtypes.DnsRecord{
+							{Type: sdtypes.RecordTypeA, TTL: aws.Int64(60)},
+						},
+					},
+				},
+			},
+		},
+		instances: make(map[string]map[string]*sdtypes.Instance),
+	}
+	p := newTestAWSSDProvider(api, endpoint.NewDomainFilter(nil), "", "owner")
+
+	require.NoError(t, p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{{
+			DNSName:    "app.private.com",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"1.2.3.4"},
+			RecordTTL:  300,
+			Labels: map[string]string{
+				endpoint.AWSSDDescriptionLabel: withResourceLabel("service/default/a"),
+			},
+		}},
+	}))
+
+	assert.Nil(t, api.services["private"]["app"].Description)
+	assert.Equal(t, int64(60), *api.services["private"]["app"].DnsConfig.DnsRecords[0].TTL)
+	assert.Empty(t, api.instances["app"])
 }

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -241,6 +242,42 @@ func TestIsDNS1123Domain(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
 				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
+			}
+		})
+	}
+}
+
+func TestGatewayRouteHasParentRefDefaulting(t *testing.T) {
+	meta := &metav1.ObjectMeta{Namespace: "default"}
+	coreGroup := v1.Group("")
+	gatewayAPIGroup := v1.Group(gatewayGroup)
+	gatewayKindVal := v1.Kind(gatewayKind)
+	serviceKind := v1.Kind("Service")
+
+	omitted := v1.ParentReference{Name: "gw"}
+	explicitGateway := v1.ParentReference{Name: "gw", Group: &gatewayAPIGroup}
+	explicitCore := v1.ParentReference{Name: "gw", Group: &coreGroup}
+	explicitGatewayKind := v1.ParentReference{Name: "gw", Kind: &gatewayKindVal}
+	explicitServiceKind := v1.ParentReference{Name: "gw", Kind: &serviceKind}
+
+	tests := []struct {
+		desc string
+		spec v1.ParentReference
+		ref  v1.ParentReference
+		want bool
+	}{
+		{"an omitted group matches an omitted group", omitted, omitted, true},
+		{"an omitted group matches the spelled out Gateway API group", omitted, explicitGateway, true},
+		{"an omitted group does not match an explicit core group", omitted, explicitCore, false},
+		{"an explicit core group matches itself", explicitCore, explicitCore, true},
+		{"an omitted kind matches the spelled out Gateway kind", omitted, explicitGatewayKind, true},
+		{"an omitted kind does not match a Service kind", omitted, explicitServiceKind, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			if got := gwRouteHasParentRef([]v1.ParentReference{tt.spec}, tt.ref, meta); got != tt.want {
+				t.Errorf("gwRouteHasParentRef = %v, want %v", got, tt.want)
 			}
 		})
 	}

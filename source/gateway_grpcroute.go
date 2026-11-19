@@ -24,12 +24,13 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayGRPCRouteSource creates a new Gateway GRPCRoute source with the given config.
-func NewGatewayGRPCRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "GRPCRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+// NewGatewayGRPCRouteSource creates a new Gateway GRPCRoute source with the given cfg.
+func NewGatewayGRPCRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "GRPCRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayGRPCRouteInformer{factory.Gateway().V1().GRPCRoutes()}
 	})
 }

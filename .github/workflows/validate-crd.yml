@@ -17,7 +17,10 @@ on:
       - 'go.tool.mod'
       - 'go.tool.sum'
       - 'scripts/generate-crd.sh'
+      - 'scripts/crd-api.tmpl'
+      - 'docs/crd-api.md'
       - '**/dnsendpoints.externaldns.k8s.io.yaml'
+      - '**/dnsrecords.externaldns.k8s.io.yaml'
 
 permissions:
   contents: read
@@ -30,7 +33,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v6.2.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
 
@@ -42,7 +45,7 @@ jobs:
         run: |
           # Check if there are any changes to generated files
           if ! git diff --quiet; then
-            echo "::error::Generated CRD files are out of sync with go.tool.mod"
+            echo "::error::Generated CRD files or docs/crd-api.md are out of sync"
             echo ""
             echo "The following files have uncommitted changes after running 'make crd':"
             git diff .

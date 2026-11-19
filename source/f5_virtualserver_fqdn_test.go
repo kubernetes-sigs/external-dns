@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -350,7 +351,7 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 				Create(t.Context(), &vsObj, metav1.CreateOptions{})
 			require.NoError(t, err)
 
-			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+			src, err := NewF5VirtualServerSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{
 				Namespaces:     []string{defaultF5VirtualServerNamespace},
 				LabelFilter:    labels.Everything(),
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),

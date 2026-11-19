@@ -220,7 +220,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.23.0
+  registry.k8s.io/external-dns/external-dns:v0.24.0
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -273,6 +273,7 @@ The internal one should provision hostnames used on the internal network (perhap
 To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller.
 Let's assume you have two ingress controllers, `internal` and `external`.
 You can then start two ExternalDNS providers, one with `--ingress-class=internal` and one with `--ingress-class=external`.
+Some ingress controllers can serve both from a single instance through separate IngressClasses, for example the AWS Load Balancer Controller, see [Public and private hosted zones](tutorials/aws-load-balancer-controller.md#public-and-private-hosted-zones).
 
 If you need to search for multiple ingress classes, you can specify the flag multiple times, like so:
 `--ingress-class=internal --ingress-class=external`.
@@ -280,9 +281,10 @@ If you need to search for multiple ingress classes, you can specify the flag mul
 The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
 The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
 
-**Backward compatibility**
+**Filtering by annotation**
 
-The previous `--annotation-filter` flag can still be used to restrict which objects ExternalDNS considers; for example, `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`.
+The `--annotation-filter` flag can also be used to restrict which objects ExternalDNS considers, for example `--annotation-filter=alb.ingress.kubernetes.io/scheme=internet-facing`.
+Filtering on the `kubernetes.io/ingress.class` annotation, for example `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`, still works. Since Kubernetes deprecated that annotation in favor of `spec.ingressClassName`, prefer `--ingress-class`, which checks both.
 
 However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source object.
 If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source` and `--annotation-filter`.
@@ -293,7 +295,7 @@ Note: the `--ingress-class` flag cannot be used at the same time as the `--annot
 
 Filtering based on ingress class name or annotations means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
 In larger clusters with many resources which change frequently this can cause performance issues.
-If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering).
+If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class or annotation filtering.
 This means that only those resources which match the selector specified in `--label-filter` will be passed to the controller.
 
 **Split horizon DNS with custom annotation prefixes**
@@ -344,8 +346,8 @@ and a private address, both are published. To control which addresses end up in 
 - use `--target-net-filter` / `--exclude-target-net`, described below.
 
 Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
-using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to every source,
-and an endpoint whose targets are all filtered out is dropped.
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`. These flags apply to A and AAAA endpoints from every source;
+an endpoint left with no targets is dropped. Other record types pass unfiltered.
 
 ## Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 

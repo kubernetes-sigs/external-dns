@@ -352,6 +352,46 @@ func TestOvhComputeChanges(t *testing.T) {
 
 }
 
+// Records() returns the records of every managed zone. An update in one zone
+// must never touch a record of another zone that has the same type and subdomain.
+func TestOvhApplyChangesUpdateIgnoresOtherZones(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		dnsName string
+		record  string
+		sub     string
+	}{
+		{name: "apex", dnsName: "example.net", record: "/domain/zone/example.net/record/2", sub: ""},
+		{name: "subdomain", dnsName: "www.example.net", record: "/domain/zone/example.net/record/4", sub: "www"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := new(mockOvhClient)
+			provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
+
+			// example.org holds records with the same type and subdomain.
+			client.On("GetWithContext", "/domain/zone").Return([]string{"example.org", "example.net"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.org/record").Return([]uint64{1, 3}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.org/record/1").Return(ovhRecord{ID: 1, Zone: "example.org", FieldType: "A", SubDomain: "", TTL: 10, Target: "198.51.100.7"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.org/record/3").Return(ovhRecord{ID: 3, Zone: "example.org", FieldType: "A", SubDomain: "www", TTL: 10, Target: "198.51.100.7"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.net/record").Return([]uint64{2, 4}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.net/record/2").Return(ovhRecord{ID: 2, Zone: "example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone/example.net/record/4").Return(ovhRecord{ID: 4, Zone: "example.net", FieldType: "A", SubDomain: "www", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+
+			// Only the example.net record is rewritten, nothing is deleted.
+			client.On("PutWithContext", tc.record, ovhRecordFieldUpdate{SubDomain: tc.sub, TTL: 10, Target: "203.0.113.43"}).Return(nil, nil).Once()
+			client.On("PostWithContext", "/domain/zone/example.net/refresh", nil).Return(nil, nil).Once()
+
+			_, err := provider.Records(t.Context())
+			td.CmpNoError(t, err)
+			td.CmpNoError(t, provider.ApplyChanges(t.Context(), &plan.Changes{
+				UpdateOld: []*endpoint.Endpoint{{DNSName: tc.dnsName, RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}}},
+				UpdateNew: []*endpoint.Endpoint{{DNSName: tc.dnsName, RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.43"}}},
+			}))
+			client.AssertExpectations(t)
+		})
+	}
+}
+
 func TestOvhRefresh(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
@@ -427,6 +467,90 @@ func TestOvhNewChange(t *testing.T) {
 		{Action: ovhCreate, Zone: "example.net", FieldType: "A", SubDomain: "ovh", TTL: defaultTTL, Target: "203.0.113.43"},
 		{Action: ovhCreate, Zone: "example.net", FieldType: "CNAME", SubDomain: "ovh2", TTL: defaultTTL, Target: "ovh.example.com."},
 	})
+}
+
+func TestOvhNewChangeUpdate(t *testing.T) {
+	provider := &OVHProvider{}
+
+	for _, ti := range []struct {
+		title     string
+		old       []*endpoint.Endpoint
+		new       []*endpoint.Endpoint
+		existing  []ovhRecord
+		expected  []ovhChange
+		expectErr bool
+	}{
+		{
+			title: "replaced target becomes an update of an existing record",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1", "2.2.2.2")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 30, "2.2.2.2", "3.3.3.3")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 30, Target: "3.3.3.3", FieldType: "A", ID: 1, Zone: "example.net", Action: ovhUpdate},
+			},
+		},
+		{
+			title: "more new targets than freed records become an update then a create",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 0, "1.1.1.1", "2.2.2.2")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 0, "1.1.1.1", "3.3.3.3", "4.4.4.4")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 0, Target: "3.3.3.3", FieldType: "A", ID: 2, Zone: "example.net", Action: ovhUpdate},
+				{SubDomain: "sub", TTL: 0, Target: "4.4.4.4", FieldType: "A", Zone: "example.net", Action: ovhCreate},
+			},
+		},
+		{
+			title: "cname targets get a trailing dot on update and create",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeCNAME, 10, "target1.example.org")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeCNAME, 10, "target2.example.org", "target3.example.org")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "target1.example.org", FieldType: "CNAME", ID: 1, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 10, Target: "target2.example.org.", FieldType: "CNAME", ID: 1, Zone: "example.net", Action: ovhUpdate},
+				{SubDomain: "sub", TTL: 10, Target: "target3.example.org.", FieldType: "CNAME", Zone: "example.net", Action: ovhCreate},
+			},
+		},
+		{
+			title: "more freed records than new targets become an update then deletes",
+			old:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1", "2.2.2.2", "3.3.3.3")},
+			new:   []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "9.9.9.9")},
+			existing: []ovhRecord{
+				{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net"},
+				{SubDomain: "sub", TTL: 10, Target: "3.3.3.3", FieldType: "A", ID: 3, Zone: "example.net"},
+			},
+			expected: []ovhChange{
+				{SubDomain: "sub", TTL: 10, Target: "9.9.9.9", FieldType: "A", ID: 1, Zone: "example.net", Action: ovhUpdate},
+				{SubDomain: "sub", TTL: 10, Target: "2.2.2.2", FieldType: "A", ID: 2, Zone: "example.net", Action: ovhDelete},
+				{SubDomain: "sub", TTL: 10, Target: "3.3.3.3", FieldType: "A", ID: 3, Zone: "example.net", Action: ovhDelete},
+			},
+		},
+		{
+			title:     "missing endpoint in the new set is an unrecoverable error",
+			old:       []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("sub.example.net", endpoint.RecordTypeA, 10, "1.1.1.1")},
+			new:       []*endpoint.Endpoint{},
+			existing:  []ovhRecord{{SubDomain: "sub", TTL: 10, Target: "1.1.1.1", FieldType: "A", ID: 1, Zone: "example.net"}},
+			expectErr: true,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			changes, err := provider.newOvhChangeUpdate(ti.old, ti.new, "example.net", ti.existing)
+			if ti.expectErr {
+				require.Error(t, err)
+				require.Nil(t, changes)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, ti.expected, changes)
+		})
+	}
 }
 
 func TestOvhApplyChanges(t *testing.T) {

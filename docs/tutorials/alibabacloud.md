@@ -113,7 +113,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service
         - --source=ingress
@@ -190,7 +190,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service
         - --source=ingress
@@ -368,7 +368,7 @@ metadata:
   name: nginx
   annotations:
     external-dns.kubernetes.io/hostname: nginx.external-dns-test.com
-    external-dns.kubernetes.io/ttl: 60
+    external-dns.kubernetes.io/ttl: "60"
 spec:
     ...
 ```

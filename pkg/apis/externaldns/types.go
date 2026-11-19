@@ -63,6 +63,7 @@ type Config struct {
 	Namespaces                                    []string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
+	AnnotationValidationMode                      string
 	EnableLegacyAnnotationPrefix                  bool
 	LabelFilter                                   string
 	IngressClassNames                             []string
@@ -92,6 +93,7 @@ type Config struct {
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
+	GoogleRequestTimeout                          time.Duration
 	GoogleZoneVisibility                          string
 	DomainFilter                                  []string
 	DomainExclude                                 []string
@@ -240,6 +242,7 @@ var defaultConfig = &Config{
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:         "",
 	AnnotationPrefix:         annotations.DefaultAnnotationPrefix,
+	AnnotationValidationMode: "warn",
 	APIServerURL:             "",
 	AWSAPIRetries:            3,
 	AWSAssumeRole:            "",
@@ -308,6 +311,7 @@ var defaultConfig = &Config{
 	GoogleBatchChangeInterval:        time.Second,
 	GoogleBatchChangeSize:            1000,
 	GoogleProject:                    "",
+	GoogleRequestTimeout:             time.Minute,
 	GoogleZoneVisibility:             "",
 	IgnoreHostnameAnnotation:         false,
 	IgnoreIngressRulesSpec:           false,
@@ -420,7 +424,6 @@ var ProviderNames = []string{
 	ProviderGoDaddy,
 	ProviderGoogle,
 	ProviderInMemory,
-	ProviderLinode,
 	ProviderNS1,
 	ProviderOCI,
 	ProviderOVH,
@@ -444,13 +447,26 @@ func sortedAllowedSources() []string {
 // multiNamespaceSources watch every --namespace value.
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
+	"ambassador-host",
 	"connector",
+	"contour-httpproxy",
 	"crd",
 	"empty",
+	"f5-transportserver",
+	"f5-virtualserver",
 	"fake",
 	"gloo-proxy",
+	"ingress",
+	"istio-gateway",
+	"istio-virtualservice",
+	"kong-tcpingress",
 	"node",
+	"openshift-route",
+	"pod",
 	"service",
+	"skipper-routegroup",
+	"traefik-proxy",
+	"unstructured",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -551,23 +567,24 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
 	// Flags related to Gloo
-	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
+	b.StringsVar("gloo-namespace", "[DEPRECATED: gloo-proxy source is deprecated] The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
 
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
+	b.EnumVar("annotation-validation-mode", "Validation mode for all annotations (default: warn, options: off, warn, strict)", defaultConfig.AnnotationValidationMode, &cfg.AnnotationValidationMode, "off", "warn", "strict")
 	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the legacy prefix external-dns.alpha.kubernetes.io/ (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
-	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
-	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
+	b.StringVar("crd-source-apiversion", "[DEPRECATED: only the default is accepted] API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
+	b.StringVar("crd-source-kind", "[DEPRECATED: only the default is accepted] Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
-	b.StringsVar("exclude-target-net", "Exclude target nets (optional)", nil, &cfg.ExcludeTargetNets)
-	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
+	b.StringsVar("exclude-target-net", "Exclude target nets. Only applies to A/AAAA records. (optional)", nil, &cfg.ExcludeTargetNets)
+	b.BoolVar("exclude-unschedulable", "Exclude nodes that are cordoned or being removed (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
 	b.BoolVar("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)", false, &cfg.ExposeInternalIPV6)
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
 	b.StringVar("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)", defaultConfig.GatewayName, &cfg.GatewayName)
@@ -588,7 +605,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)", false, &cfg.PublishHostIP)
 	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
-	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)", nil, &cfg.TargetNetFilter)
+	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets. Only applies to A/AAAA records. (optional)", nil, &cfg.TargetNetFilter)
 	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
 	b.BoolVar("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group", defaultConfig.TraefikDisableNew, &cfg.TraefikDisableNew)
 
@@ -605,6 +622,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)
 	b.IntVar("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.", defaultConfig.GoogleBatchChangeSize, &cfg.GoogleBatchChangeSize)
 	b.DurationVar("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.", defaultConfig.GoogleBatchChangeInterval, &cfg.GoogleBatchChangeInterval)
+	b.DurationVar("google-request-timeout", "When using the Google provider, set the timeout for API requests (0 disables the timeout).", defaultConfig.GoogleRequestTimeout, &cfg.GoogleRequestTimeout)
 	b.EnumVar("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)", defaultConfig.GoogleZoneVisibility, &cfg.GoogleZoneVisibility, "", "public", "private")
 	b.StringVar("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)", defaultConfig.AlibabaCloudConfigFile, &cfg.AlibabaCloudConfigFile)
 	b.EnumVar("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)", defaultConfig.AlibabaCloudZoneType, &cfg.AlibabaCloudZoneType, "", "public", "private")

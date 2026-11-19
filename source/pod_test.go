@@ -29,16 +29,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/annotations/schema"
+	"sigs.k8s.io/external-dns/source/informers"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -785,7 +790,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(ctx, kubernetes, &Config{
+			client, err := NewPodSource(ctx, kubernetes, &config.Config{
 				Namespaces:               []string{tc.targetNamespace},
 				Compatibility:            tc.compatibility,
 				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
@@ -1004,7 +1009,7 @@ func TestPodSourceLogs(t *testing.T) {
 				}
 			}
 
-			src, err := NewPodSource(ctx, kubernetes, &Config{
+			src, err := NewPodSource(ctx, kubernetes, &config.Config{
 				IgnoreNonHostNetworkPods: tc.ignoreNonHostNetworkPods,
 			})
 			require.NoError(t, err)
@@ -1030,13 +1035,46 @@ func TestPodSourceLogs(t *testing.T) {
 	}
 }
 
+func TestPodSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	elements := []runtime.Object{&corev1.Node{
+		Name: "node1",
+		Status: corev1.NodeStatus{
+			Addresses: []corev1.NodeAddress{{Type: corev1.NodeExternalIP, Address: "54.10.11.1"}},
+		},
+	}}
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		elements = append(elements, &corev1.Pod{
+			Namespace:   namespace,
+			Name:        "pod",
+			Annotations: map[string]string{annotations.HostnameKey: namespace + ".example.org"},
+			Spec:        corev1.PodSpec{HostNetwork: true, NodeName: "node1"},
+		})
+	}
+
+	src, err := NewPodSource(t.Context(), fake.NewClientset(elements...), &config.Config{
+		Namespaces:  []string{"team-a", "team-b"},
+		LabelFilter: labels.Everything(),
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "54.10.11.1"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "54.10.11.1"),
+	})
+}
+
 func TestPodSource_AddEventHandler(t *testing.T) {
 	fakeInformer := new(fakePodInformer)
 	inf := testInformer{}
 	fakeInformer.On("Informer").Return(&inf)
 
 	pSource := &podSource{
-		podInformer: fakeInformer,
+		podInformers: informers.Single[coreinformers.PodInformer](fakeInformer),
 	}
 
 	handlerCalled := false
@@ -1106,6 +1144,95 @@ func nodesFixturesIPv4() []*corev1.Node {
 	}
 }
 
+// createTestPods returns count HostNetwork pods on "my-node1", each with a unique
+// hostname annotation, for use as informer-level test fixtures.
+func createTestPods(count int, funcs ...func([]*corev1.Pod)) []*corev1.Pod {
+	pods := make([]*corev1.Pod, count)
+	for i := range count {
+		pods[i] = &corev1.Pod{
+			Name:      fmt.Sprintf("my-pod%d", i),
+			Namespace: "kube-system",
+			Annotations: map[string]string{
+				annotations.HostnameKey: fmt.Sprintf("pod-%d.foo.example.org", i),
+			},
+			Spec: corev1.PodSpec{
+				HostNetwork: true,
+				NodeName:    "my-node1",
+			},
+			Status: corev1.PodStatus{
+				PodIP: fmt.Sprintf("10.0.2.%d", i+1),
+			},
+		}
+	}
+	for _, fn := range funcs {
+		fn(pods)
+	}
+	return pods
+}
+
+func TestPodIndexer(t *testing.T) {
+	tests := []struct {
+		name          string
+		mode          schema.Mode
+		pods          []*corev1.Pod
+		expectedCount int
+	}{
+		{
+			// Uses an invalid character, not an overlong label: a warn-mode overlong
+			// label reaches pod.go's own unguarded endpoint.NewEndpointWithTTL call,
+			// which still panics on nil today (external-dns#6589, unfixed here).
+			name:          "invalid hostname value in warn mode does not exclude pod",
+			mode:          schema.ModeWarn,
+			expectedCount: 5,
+			pods: createTestPods(5, func(pods []*corev1.Pod) {
+				pods[0].Annotations[annotations.HostnameKey] = "bad_host!.example.org"
+			}),
+		},
+		{
+			name:          "invalid hostname value in strict mode excludes pod",
+			mode:          schema.ModeStrict,
+			expectedCount: 4,
+			pods: createTestPods(5, func(pods []*corev1.Pod) {
+				pods[0].Annotations[annotations.HostnameKey] = strings.Repeat("a", 64) + ".example.org"
+			}),
+		},
+		{
+			name:          "valid set-identifier annotation on unsupported source in strict mode excludes pod",
+			mode:          schema.ModeStrict,
+			expectedCount: 4,
+			pods: createTestPods(5, func(pods []*corev1.Pod) {
+				pods[0].Annotations[annotations.SetIdentifierKey] = "primary"
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kubernetes := fake.NewClientset()
+			ctx := t.Context()
+
+			for _, node := range nodesFixturesIPv4() {
+				_, err := kubernetes.CoreV1().Nodes().Create(ctx, node, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			for _, pod := range tt.pods {
+				_, err := kubernetes.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			client, err := NewPodSource(ctx, kubernetes, &config.Config{
+				Schema: schema.New(schema.Options{Mode: tt.mode}),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints(ctx)
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
+		})
+	}
+}
+
 func TestPodTransformerInPodSource(t *testing.T) {
 	t.Run("transformer set", func(t *testing.T) {
 		ctx := t.Context()
@@ -1151,12 +1278,12 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(ctx, fakeClient, &Config{})
+		src, err := NewPodSource(ctx, fakeClient, &config.Config{})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
 
-		retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
+		retrieved, err := informerFor(t, ps.podInformers, "test-ns").Lister().Pods("test-ns").Get("test-name")
 		require.NoError(t, err)
 
 		// Metadata
@@ -1229,14 +1356,14 @@ func TestPodTransformerInPodSource(t *testing.T) {
 		require.NoError(t, err)
 
 		// Should not error when creating the source
-		src, err := NewPodSource(t.Context(), fakeClient, &Config{
+		src, err := NewPodSource(t.Context(), fakeClient, &config.Config{
 			TemplateEngine: templatetest.MustEngine(t, "template", "", "", false),
 		})
 		require.NoError(t, err)
 		ps, ok := src.(*podSource)
 		require.True(t, ok)
 
-		retrieved, err := ps.podInformer.Lister().Pods("test-ns").Get("test-name")
+		retrieved, err := informerFor(t, ps.podInformers, "test-ns").Lister().Pods("test-ns").Get("test-name")
 		require.NoError(t, err)
 
 		// Metadata
@@ -1274,7 +1401,7 @@ func TestProcessEndpoint_Pod_RefObjectExist(t *testing.T) {
 	client, err := NewPodSource(
 		t.Context(),
 		fakeClient,
-		&Config{},
+		&config.Config{},
 	)
 	require.NoError(t, err)
 

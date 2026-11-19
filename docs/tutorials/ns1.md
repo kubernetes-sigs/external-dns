@@ -46,7 +46,7 @@ Connect your `kubectl` client to the cluster with which you want to test Externa
 Begin by creating a Kubernetes secret to securely store your NS1 API key. This key will enable ExternalDNS to authenticate with NS1:
 
 ```shell
-kubectl create secret generic NS1_APIKEY --from-literal=NS1_API_KEY=YOUR_NS1_API_KEY
+kubectl create secret generic ns1-api-key --from-literal=NS1_API_KEY=YOUR_NS1_API_KEY
 ```
 
 Ensure to replace YOUR_NS1_API_KEY with your actual NS1 API key.
@@ -57,14 +57,14 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 
 Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
 
-```shell
+```yaml
 provider:
   name: ns1
 env:
   - name: NS1_APIKEY
     valueFrom:
       secretKeyRef:
-        name: NS1_APIKEY
+        name: ns1-api-key
         key: NS1_API_KEY
 ```
 
@@ -94,17 +94,17 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service # ingress is also possible
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=ns1
         env:
-       - name: NS1_APIKEY
+        - name: NS1_APIKEY
           valueFrom:
             secretKeyRef:
-              name: NS1_APIKEY
+              name: ns1-api-key
               key: NS1_API_KEY
 ```
 
@@ -165,17 +165,17 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service # ingress is also possible
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=ns1
         env:
-       - name: NS1_APIKEY
+        - name: NS1_APIKEY
           valueFrom:
             secretKeyRef:
-              name: NS1_APIKEY
+              name: ns1-api-key
               key: NS1_API_KEY
 ```
 

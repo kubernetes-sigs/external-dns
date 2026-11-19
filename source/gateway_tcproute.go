@@ -24,12 +24,13 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given config.
-func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "TCPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+// NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given cfg.
+func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "TCPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTCPRouteInformer{factory.Gateway().V1().TCPRoutes()}
 	})
 }

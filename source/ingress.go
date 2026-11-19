@@ -31,7 +31,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"sigs.k8s.io/external-dns/pkg/events"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -57,16 +59,18 @@ const (
 // +externaldns:source:description=Creates DNS entries based on Kubernetes Ingress resources
 // +externaldns:source:resources=Ingress
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
 // +externaldns:source:provider-specific=true
 // +externaldns:source:events=true
+// +externaldns:source:validation=annotation
 type ingressSource struct {
 	client                   kubernetes.Interface
 	ingressClassNames        []string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-	ingressInformer          netinformers.IngressInformer
+	ingressInformers         *informers.Informers[netinformers.IngressInformer]
+	targetFrom               *targetfrom.Resolver
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
 }
@@ -75,7 +79,7 @@ type ingressSource struct {
 func NewIngressSource(
 	ctx context.Context,
 	kubeClient kubernetes.Interface,
-	cfg *Config) (Source, error) {
+	cfg *config.Config) (Source, error) {
 	// ensure that ingress class is only set in either the ingressClassNames or
 	// annotationFilter but not both
 	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != nil && !cfg.AnnotationFilter.Empty() {
@@ -86,29 +90,34 @@ func NewIngressSource(
 			}
 		}
 	}
-	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
+	// Use shared informers to listen for add/update/delete of ingresses in the specified namespaces.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace()))
-	ingressInformer := informerFactory.Networking().V1().Ingresses()
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) kubeinformers.SharedInformerFactory {
+		return kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	})
+	ingressInformers := informers.Map(factories, func(_ string, factory kubeinformers.SharedInformerFactory) netinformers.IngressInformer {
+		return factory.Networking().V1().Ingresses()
+	})
 
-	informers.MustAddIndexers(ingressInformer.Informer(), informers.IndexerWithOptions[*networkv1.Ingress](
+	ingressInformers.MustAddIndexers(informers.IndexerWithOptions[*networkv1.Ingress](
 		informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 		informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+		informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Ingress)),
 		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*networkv1.Ingress]),
 	))
 
-	informers.MustSetTransform(ingressInformer.Informer(), informers.TransformerWithOptions[*networkv1.Ingress](
+	ingressInformers.MustSetTransform(informers.TransformerWithOptions[*networkv1.Ingress](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(ingressInformer.Informer(), informers.DefaultEventHandler())
+	ingressInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +126,8 @@ func NewIngressSource(
 		ingressClassNames:        cfg.IngressClassNames,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
-		ingressInformer:          ingressInformer,
+		ingressInformers:         ingressInformers,
+		targetFrom:               targetFromResolver(ctx, cfg),
 		ignoreIngressTLSSpec:     cfg.IgnoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   cfg.IgnoreIngressRulesSpec,
 	}, nil
@@ -125,8 +135,8 @@ func NewIngressSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.filterByIngressClass(informers.ListIndexed[*networkv1.Ingress](sc.ingressInformer.Informer().GetIndexer()))
+func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	ingresses, err := sc.filterByIngressClass(informers.ListIndexedAll[*networkv1.Ingress](sc.ingressInformers.Indexers()...))
 	if err != nil {
 		return nil, err
 	}
@@ -134,12 +144,13 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses {
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		targets := ingressTargets(ctx, sc.targetFrom, ing)
+		ingEndpoints := endpointsFromIngress(ing, targets, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
 		// apply template if host is missing on ingress
 		ingEndpoints, err = sc.templateEngine.CombineWithEndpoints(
 			ingEndpoints,
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing) },
+			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(ing, targets) },
 		)
 		if err != nil {
 			return nil, err
@@ -158,7 +169,7 @@ func (sc *ingressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	hostnames, err := sc.templateEngine.ExecFQDN(ing)
 	if err != nil {
 		return nil, err
@@ -167,11 +178,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
@@ -227,16 +233,10 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, targets endpoint.Targets, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(ing.Annotations)
-
-	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(ing.Annotations)
 
@@ -289,6 +289,16 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	return endpoints
 }
 
+func ingressTargets(ctx context.Context, targetFrom *targetfrom.Resolver, ing *networkv1.Ingress) endpoint.Targets {
+	if targets := annotations.TargetsFromTargetAnnotation(ing.Annotations); len(targets) > 0 {
+		return targets
+	}
+	if targets, ok := targetFrom.TargetsFromAnnotations(ctx, types.Ingress, ing); ok {
+		return targets
+	}
+	return targetsFromIngressStatus(ing.Status)
+}
+
 // targetsFromIngressStatus extracts targets from ingress load balancer status.
 // Both IP and Hostname can be set simultaneously (Kubernetes API does not enforce
 // mutual exclusivity), so we collect both when present.
@@ -312,5 +322,6 @@ func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	informers.MustAddEventHandler(sc.ingressInformer.Informer(), eventHandlerFunc(handler))
+	sc.ingressInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	sc.targetFrom.AddEventHandler(handler)
 }

@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
@@ -675,7 +676,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 				}
 			}
 
-			src, err := NewServiceSource(t.Context(), kubeClient, &Config{
+			src, err := NewServiceSource(t.Context(), kubeClient, &config.Config{
 				TemplateEngine:                 templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 				PublishHostIP:                  tt.publishHostIP,
 				ServiceTypeFilter:              tt.serviceTypesFilter,

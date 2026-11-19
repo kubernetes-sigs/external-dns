@@ -47,9 +47,6 @@ provider/google: provider/google*
 # Add 'provider/infoblox' in file which starts with infoblox
 provider/infoblox: provider/infoblox*
 
-# Add 'provider/linode' in file which starts with linode
-provider/linode: provider/linode*
-
 # Add 'provider/ns1' in file which starts with ns1
 provider/ns1: provider/ns1*
 

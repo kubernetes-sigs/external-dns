@@ -41,13 +41,13 @@ func TTLFromAnnotations(annotations map[string]string, resource string) endpoint
 	if !ok {
 		return ttlNotConfigured
 	}
-	ttlValue, err := parseTTL(ttlAnnotation)
+	ttlValue, err := ParseTTL(ttlAnnotation)
 	if err != nil {
 		log.Warnf("%s: %q is not a valid TTL value: %v", resource, ttlAnnotation, err)
 		return ttlNotConfigured
 	}
-	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
-		log.Warnf("TTL value %d must be between [%d, %d]", ttlValue, ttlMinimum, ttlMaximum)
+	if ttlValue < TTLMinimum || ttlValue > TTLMaximum {
+		log.Warnf("TTL value %d must be between [%d, %d]", ttlValue, TTLMinimum, TTLMaximum)
 		return ttlNotConfigured
 	}
 	return endpoint.TTL(ttlValue)
@@ -73,12 +73,12 @@ func IsControllerMatch[T metav1.Object](entity T) bool {
 	return !IsControllerMismatch(entity, "")
 }
 
-// parseTTL parses TTL from string, returning duration in seconds.
-// parseTTL supports both integers like "600" and durations based
+// ParseTTL parses TTL from string, returning duration in seconds.
+// ParseTTL supports both integers like "600" and durations based
 // on Go Duration like "10m", hence "600" and "10m" represent the same value.
 //
 // Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second for the example).
-func parseTTL(s string) (int64, error) {
+func ParseTTL(s string) (int64, error) {
 	ttlDuration, errDuration := time.ParseDuration(s)
 	if errDuration != nil {
 		ttlInt, err := strconv.ParseInt(s, 10, 64)
@@ -109,15 +109,8 @@ func ParseFilter(annotationFilter string) (labels.Selector, error) {
 // Returns empty endpoints array if none are found.
 func TargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets {
 	var targets endpoint.Targets
-	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, ok := annotations[TargetKey]
-	if ok && targetAnnotation != "" {
-		// splits the hostname annotation and removes the trailing periods
-		targetsList := SplitHostnameAnnotation(targetAnnotation)
-		for _, targetHostname := range targetsList {
-			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			targets = append(targets, targetHostname)
-		}
+	for _, target := range SplitHostnameAnnotation(annotations[TargetKey]) {
+		targets = append(targets, strings.TrimSuffix(target, "."))
 	}
 	return targets
 }
@@ -134,10 +127,9 @@ func InternalHostnamesFromAnnotations(input map[string]string) []string {
 	return extractHostnamesFromAnnotations(input, InternalHostnameKey)
 }
 
-// SplitHostnameAnnotation splits a comma-separated hostname annotation string into a slice of hostnames.
-// It trims any leading or trailing whitespace and removes any spaces within the anno
+// SplitHostnameAnnotation splits a comma-separated annotation value, removes spaces and drops empty entries.
 func SplitHostnameAnnotation(input string) []string {
-	return strings.Split(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), ",")
+	return strings.FieldsFunc(strings.TrimSpace(strings.ReplaceAll(input, " ", "")), func(r rune) bool { return r == ',' })
 }
 
 func extractHostnamesFromAnnotations(input map[string]string, key string) []string {

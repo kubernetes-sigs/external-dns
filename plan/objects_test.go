@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 func countFor(objects []PlannedObject, name string) int {
@@ -44,7 +43,7 @@ func find(objects []PlannedObject, name string) PlannedObject {
 	return PlannedObject{Endpoints: -1}
 }
 
-func crdRef(name string) *events.ObjectReference {
+func crdRef(name string) *endpoint.ObjectRef {
 	return endpoint.NewObjectRef("DNSEndpoint", "externaldns.k8s.io/v1alpha1", "ns", name, "", "crd")
 }
 

@@ -148,13 +148,17 @@ from the usage of any externally developed webhook.
 | Anexia                | https://github.com/anexia/k8s-external-dns-webhook                   |
 | Bizfly Cloud          | https://github.com/bizflycloud/external-dns-bizflycloud-webhook      |
 | ClouDNS               | https://github.com/rwunderer/external-dns-cloudns-webhook            |
+| ConnByte              | https://github.com/SteffenBarthel/external-dns-connbyte-webhook      |
+| Contabo               | https://github.com/hayone1/external-dns-contabo-webhook              |
 | deSEC                 | https://github.com/michelangelomo/external-dns-desec-provider        |
 | DigitalOcean          | https://github.com/amoniacou/external-dns-digitalocean-webhook       |
+| DNScale               | https://github.com/dnscaleou/external-dns-webhook-dnscale            |
 | Dreamhost             | https://github.com/asymingt/external-dns-dreamhost-webhook           |
 | Efficient IP          | https://github.com/EfficientIP-Labs/external-dns-efficientip-webhook |
 | Gcore                 | https://github.com/G-Core/external-dns-gcore-webhook                 |
 | GleSYS                | https://github.com/glesys/external-dns-glesys                        |
 | Hetzner               | https://github.com/mconfalonieri/external-dns-hetzner-webhook        |
+| Hostinger             | https://github.com/hayone1/external-dns-hostinger-webhook            |
 | Huawei Cloud          | https://github.com/setoru/external-dns-huaweicloud-webhook           |
 | IONOS                 | https://github.com/ionos-cloud/external-dns-ionos-webhook            |
 | Infoblox NIOS         | https://github.com/AbsaOSS/external-dns-infoblox-webhook             |
@@ -203,7 +207,6 @@ Those interested can create a webhook provider based on an _in-tree_ provider an
 | [Exoscale](https://www.exoscale.com/dns/)                                                                        |               | [guide](docs/tutorials/exoscale.md)                                                                                                                                                                                                                                                                        |
 | [GoDaddy](https://www.godaddy.com)                                                                               |               | [guide](docs/tutorials/godaddy.md)                                                                                                                                                                                                                                                                         |
 | [Google Cloud DNS](https://cloud.google.com/dns/docs/)                                                           |               | [GKE default ingress](docs/tutorials/gke.md), [GKE with nginx](docs/tutorials/gke-nginx.md)                                                                                                                                                                                                                 |
-| [Linode DNS](https://www.linode.com/docs/networking/dns/)                                                        |               | [guide](docs/tutorials/linode.md)                                                                                                                                                                                                                                                                          |
 | [NS1](https://ns1.com/)                                                                                          |               | [guide](docs/tutorials/ns1.md)                                                                                                                                                                                                                                                                             |
 | [Oracle Cloud Infrastructure DNS](https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm) |               | [guide](docs/tutorials/oracle.md)                                                                                                                                                                                                                                                                          |
 | [OVHcloud](https://www.ovhcloud.com)                                                                             | @rbeuque74    | [guide](docs/tutorials/ovh.md)                                                                                                                                                                                                                                                                             |

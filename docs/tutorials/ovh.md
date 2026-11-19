@@ -12,7 +12,7 @@ instructions for creating a zone.
 
 [Creating a zone using the OVHcloud Manager](https://help.ovhcloud.com/csm/en-gb-dns-create-dns-zone?id=kb_article_view&sysparm_article=KB0051667/)
 
-[Creating a zone using the OVHcloud API](https://api.ovh.com/console/)
+[Creating a zone using the OVHcloud API](https://api.eu.ovhcloud.com/console/)
 
 ## Creating OVHcloud Credentials
 
@@ -36,7 +36,7 @@ or check here the permissions needed :
 You can use the following `curl` request to generate & validated your `Consumer key`
 
 ```bash
-curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: application/json" https://eu.api.ovh.com/1.0/auth/credential -d '{
+curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: application/json" https://api.eu.ovhcloud.com/1.0/auth/credential -d '{
   "accessRules": [
     {
       "method": "GET",
@@ -99,7 +99,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service # ingress is also possible
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
@@ -174,7 +174,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service # ingress is also possible
         - --policy=upsert-only # prevents ExternalDNS from deleting any records, set --policy=sync to enable full synchronization (including deletions)
