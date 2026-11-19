@@ -113,6 +113,9 @@ type Config struct {
 	// of them is watched once.
 	targetFrom     *targetfrom.Resolver
 	targetFromOnce sync.Once
+
+	gatewayInformerCache     any
+	gatewayInformerCacheOnce sync.Once
 }
 
 // CRDClients returns the reader/writer built for the crd source, or nil if the
@@ -156,6 +159,15 @@ func (cfg *Config) EnsureTargetFrom(init func() *targetfrom.Resolver) *targetfro
 		}
 	})
 	return cfg.targetFrom
+}
+
+// EnsureGatewayInformerCache returns the shared Gateway informer cache, building
+// it on the first call.
+func (cfg *Config) EnsureGatewayInformerCache[T any](init func() T) T {
+	cfg.gatewayInformerCacheOnce.Do(func() {
+		cfg.gatewayInformerCache = init()
+	})
+	return cfg.gatewayInformerCache.(T)
 }
 
 // OverrideConfigOption configures a Config.
