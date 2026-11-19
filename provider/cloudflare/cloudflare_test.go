@@ -182,6 +182,18 @@ func naptrDataFromParam(data dns.NAPTRRecordDataParam) dns.NAPTRRecordData {
 	}
 }
 
+func caaContentFromParam(data dns.CAARecordDataParam) string {
+	return endpoint.NewCAATargetFromFields(uint8(data.Flags.Value), data.Tag.Value, data.Value.Value).String()
+}
+
+func caaDataFromParam(data dns.CAARecordDataParam) dns.CAARecordData {
+	return dns.CAARecordData{
+		Flags: data.Flags.Value,
+		Tag:   data.Tag.Value,
+		Value: data.Value.Value,
+	}
+}
+
 func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResponse {
 	switch b := body.(type) {
 	case dns.SRVRecordParam:
@@ -203,6 +215,15 @@ func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResp
 			Type:    dns.RecordResponseType(b.Type.Value),
 			Content: naptrContentFromParam(b.Data.Value),
 			Data:    naptrDataFromParam(b.Data.Value),
+		}
+	case dns.CAARecordParam:
+		return dns.RecordResponse{
+			ID:      generateDNSRecordID(string(b.Type.Value), b.Name.Value, caaContentFromParam(b.Data.Value)),
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: caaContentFromParam(b.Data.Value),
+			Data:    caaDataFromParam(b.Data.Value),
 		}
 	case dns.RecordNewParamsBody:
 		return dns.RecordResponse{
@@ -240,6 +261,15 @@ func recordResponseFromUpdateBody(recordID string, body dns.RecordUpdateParamsBo
 			Type:    dns.RecordResponseType(b.Type.Value),
 			Content: naptrContentFromParam(b.Data.Value),
 			Data:    naptrDataFromParam(b.Data.Value),
+		}
+	case dns.CAARecordParam:
+		return dns.RecordResponse{
+			ID:      recordID,
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: caaContentFromParam(b.Data.Value),
+			Data:    caaDataFromParam(b.Data.Value),
 		}
 	case dns.RecordUpdateParamsBody:
 		return dns.RecordResponse{

@@ -304,7 +304,7 @@ func TestCloudflareNAPTRRoundTrip(t *testing.T) {
 	}
 }
 
-// replanAfterApply applies one NAPTR endpoint, reads it back and re-plans; an empty plan proves the target converged.
+// replanAfterApply applies one endpoint, reads it back and re-plans; an empty plan proves the target converged.
 func replanAfterApply(t *testing.T, recordType, dnsName, target string) *plan.Plan {
 	t.Helper()
 	client := NewMockCloudFlareClient()
@@ -335,7 +335,7 @@ func replanAfterApply(t *testing.T, recordType, dnsName, target string) *plan.Pl
 		Current:        records,
 		Desired:        adjusted,
 		DomainFilter:   endpoint.MatchAllDomainFilters{endpoint.NewDomainFilter([]string{"bar.com"})},
-		ManagedRecords: []string{endpoint.RecordTypeNAPTR},
+		ManagedRecords: []string{recordType},
 	}
 	return pl.Calculate()
 }

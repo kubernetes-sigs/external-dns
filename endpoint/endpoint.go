@@ -56,6 +56,8 @@ const (
 	RecordTypeDNAME = "DNAME"
 	// RecordTypeTLSA is a RecordType enum value
 	RecordTypeTLSA = "TLSA"
+	// RecordTypeCAA is a RecordType enum value
+	RecordTypeCAA = "CAA"
 
 	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
 	// provider-native alias record (e.g. AWS ALIAS).
@@ -86,6 +88,7 @@ var (
 		RecordTypeNAPTR,
 		RecordTypeDNAME,
 		RecordTypeTLSA,
+		RecordTypeCAA,
 	}
 )
 
@@ -323,7 +326,7 @@ type Endpoint struct {
 	Targets Targets `json:"targets,omitempty"`
 	// RecordType is the DNS record type.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=A;AAAA;CNAME;DNAME;MX;NAPTR;NS;PTR;SRV;TLSA;TXT
+	// +kubebuilder:validation:Enum=A;AAAA;CAA;CNAME;DNAME;MX;NAPTR;NS;PTR;SRV;TLSA;TXT
 	RecordType string `json:"recordType,omitempty"`
 	// SetIdentifier distinguishes multiple records with the same name and type
 	// (e.g. Route53 records with routing policies other than 'simple').
@@ -385,8 +388,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		// Only trim trailing dots for domain name record types, not for TXT or NAPTR records
 		// TXT records can contain arbitrary text including multiple dots
 		// SRV can contain dots in their target part (RFC2782)
+		// CAA values are free text, like TXT
 		switch recordType {
-		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV:
+		case RecordTypeTXT, RecordTypeNAPTR, RecordTypeSRV, RecordTypeCAA:
 			cleanTargets[idx] = target
 		case RecordTypeMX:
 			cleanTargets[idx] = NormalizeMXTarget(target)
@@ -715,6 +719,8 @@ func (e *Endpoint) Validate() error {
 		return e.Targets.validateSRVRecord()
 	case RecordTypeNAPTR:
 		return e.Targets.validateNAPTRRecord()
+	case RecordTypeCAA:
+		return e.Targets.validateCAARecord()
 	case RecordTypePTR:
 		return e.validatePTRRecord()
 	}
