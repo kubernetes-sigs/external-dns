@@ -192,21 +192,12 @@ func (cr *CRDRegistry) Plan(changes *plan.Changes) *plan.Changes {
 	return filteredChanges
 }
 
-// PreApply writes the DNSRecord objects of created and updated endpoints and marks
-// them Accepted. The returned function sets their condition from the provider outcome
-// and deletes the DNSRecords of deleted endpoints.
+// PreApply writes the DNSRecords of created and updated endpoints and marks them Accepted before the provider call.
+// The returned function sets Programmed or Failed from the provider outcome and deletes the DNSRecords of deleted endpoints.
 //
-// Intent is recorded first: the DNSRecord objects for created and updated
-// endpoints are written and marked Accepted before the provider is called. Their
-// Programmed condition is then set from the provider outcome — True on success,
-// False with reason Failed on error. Records() treats only Programmed records as
-// current state, so an object left Accepted by a provider failure is re-applied
-// on the next reconcile rather than mistaken for an existing record — the same
-// safety the apply-first ordering gave, while making the full lifecycle
-// (Accepted, Programmed, Failed) visible on the object.
+// Records() treats only Programmed records as current state.
+// A record left Accepted by a provider failure is applied again on the next reconcile.
 func (cr *CRDRegistry) PreApply(ctx context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
-	// Write the DNSRecord objects and collect them so their Ready condition can be
-	// set from the provider outcome in finish.
 	applied := make([]*apiv1alpha1.DNSRecord, 0, len(changes.Create)+len(changes.UpdateNew))
 
 	for _, r := range changes.Create {
@@ -253,7 +244,6 @@ func (cr *CRDRegistry) PreApply(ctx context.Context, changes *plan.Changes) (*pl
 			return fmt.Errorf("provider cannot apply changes: %w", providerErr)
 		}
 
-		// Provider accepted the changes; mark the records Programmed.
 		for _, dnsrecord := range applied {
 			cr.setStatus(ctx, dnsrecord, apiv1alpha1.ProgrammedReason, "Endpoint applied to the DNS provider")
 		}

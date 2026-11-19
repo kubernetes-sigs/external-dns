@@ -1127,7 +1127,6 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	}
 }
 
-// DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
 func TestDynamoDBRegistryApplyChangesKeepsCallerCreate(t *testing.T) {
 	ep := func(name string) *endpoint.Endpoint {
 		return &endpoint.Endpoint{
@@ -1190,6 +1189,7 @@ func TestDynamoDBRegistryDryRunWritesNothing(t *testing.T) {
 	assert.Equal(t, "test-owner", changes.Create[0].Labels[endpoint.OwnerLabelKey], "Plan still sets the owner label")
 }
 
+// DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
 type DynamoDBStub struct {
 	t                *testing.T
 	stubConfig       *DynamoDBStubConfig
