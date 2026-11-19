@@ -28,6 +28,12 @@ import (
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
+type gatewayUDPRoute struct{ route v1.UDPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+
+type gatewayUDPRouteInformer struct {
+	informers_v1.UDPRouteInformer
+}
+
 // NewGatewayUDPRouteSource creates a new Gateway UDPRoute source with the given cfg.
 func NewGatewayUDPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
 	return newGatewayRouteSource(ctx, clients, cfg, "UDPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
@@ -35,18 +41,12 @@ func NewGatewayUDPRouteSource(ctx context.Context, clients ClientGenerator, cfg 
 	})
 }
 
-type gatewayUDPRoute struct{ route v1.UDPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
-
 func (rt *gatewayUDPRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayUDPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
 func (rt *gatewayUDPRoute) Hostnames() []v1.Hostname         { return nil }
 func (rt *gatewayUDPRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
 func (rt *gatewayUDPRoute) Protocol() v1.ProtocolType        { return v1.UDPProtocolType }
 func (rt *gatewayUDPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
-
-type gatewayUDPRouteInformer struct {
-	informers_v1.UDPRouteInformer
-}
 
 func (inf gatewayUDPRouteInformer) List() []gatewayRoute {
 	list := extInformers.ListIndexed[*v1.UDPRoute](inf.UDPRouteInformer.Informer().GetIndexer())

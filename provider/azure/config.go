@@ -33,6 +33,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	// Context key for request ID
+	clientRequestIDKey ctxKey = "client-request-id"
+	// Azure API Headers
+	msRequestIDHeader          = "x-ms-request-id"
+	msCorrelationRequestHeader = "x-ms-correlation-request-id"
+	msClientRequestIDHeader    = "x-ms-client-request-id"
+)
+
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
 	Cloud                        string `json:"cloud"                        yaml:"cloud"`
@@ -49,6 +58,13 @@ type config struct {
 	ResourceManagerAudience      string `json:"resourceManagerAudience"      yaml:"resourceManagerAudience"`
 	ResourceManagerEndpoint      string `json:"resourceManagerEndpoint"      yaml:"resourceManagerEndpoint"`
 }
+
+// ctxKey is a type for context keys
+// This is used to avoid collisions with other packages that may use the same key in the context.
+type ctxKey string
+
+// customHeaderPolicy adds UUID to request headers
+type customHeaderPolicy struct{}
 
 func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string) (*config, error) {
 	contents, err := os.ReadFile(configFile)
@@ -78,22 +94,6 @@ func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityCl
 	return cfg, nil
 }
 
-// ctxKey is a type for context keys
-// This is used to avoid collisions with other packages that may use the same key in the context.
-type ctxKey string
-
-const (
-	// Context key for request ID
-	clientRequestIDKey ctxKey = "client-request-id"
-	// Azure API Headers
-	msRequestIDHeader          = "x-ms-request-id"
-	msCorrelationRequestHeader = "x-ms-correlation-request-id"
-	msClientRequestIDHeader    = "x-ms-client-request-id"
-)
-
-// customHeaderPolicy adds UUID to request headers
-type customHeaderPolicy struct{}
-
 func (p *customHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
 	id := req.Raw().Header.Get(msClientRequestIDHeader)
 	if id == "" {
@@ -104,6 +104,7 @@ func (p *customHeaderPolicy) Do(req *policy.Request) (*http.Response, error) {
 	}
 	return req.Next()
 }
+
 func CustomHeaderPolicynew() policy.Policy { return &customHeaderPolicy{} }
 
 // getCredentials retrieves Azure API credentials.

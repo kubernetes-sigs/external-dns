@@ -53,6 +53,25 @@ type mockManagedZonesCreateCall struct {
 	managedZone *dns.ManagedZone
 }
 
+type mockManagedZonesListCall struct {
+	project          string
+	zonesListSoftErr error
+}
+
+type mockManagedZonesClient struct {
+	zonesErr error
+}
+
+type mockResourceRecordSetsListCall struct {
+	project            string
+	managedZone        string
+	recordsListSoftErr error
+}
+
+type mockResourceRecordSetsClient struct {
+	recordsErr error
+}
+
 func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	zoneKey := zoneKey(m.project, m.managedZone.Name)
 
@@ -63,11 +82,6 @@ func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.Managed
 	testZones[zoneKey] = m.managedZone
 
 	return m.managedZone, nil
-}
-
-type mockManagedZonesListCall struct {
-	project          string
-	zonesListSoftErr error
 }
 
 func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZonesListResponse) error) error {
@@ -86,22 +100,12 @@ func (m *mockManagedZonesListCall) Pages(_ context.Context, f func(*dns.ManagedZ
 	return f(&dns.ManagedZonesListResponse{ManagedZones: zones})
 }
 
-type mockManagedZonesClient struct {
-	zonesErr error
-}
-
 func (m *mockManagedZonesClient) Create(project string, managedZone *dns.ManagedZone) managedZonesCreateCallInterface {
 	return &mockManagedZonesCreateCall{project: project, managedZone: managedZone}
 }
 
 func (m *mockManagedZonesClient) List(project string) managedZonesListCallInterface {
 	return &mockManagedZonesListCall{project: project, zonesListSoftErr: m.zonesErr}
-}
-
-type mockResourceRecordSetsListCall struct {
-	project            string
-	managedZone        string
-	recordsListSoftErr error
 }
 
 func (m *mockResourceRecordSetsListCall) Pages(_ context.Context, f func(*dns.ResourceRecordSetsListResponse) error) error {
@@ -122,10 +126,6 @@ func (m *mockResourceRecordSetsListCall) Pages(_ context.Context, f func(*dns.Re
 	}
 
 	return f(&dns.ResourceRecordSetsListResponse{Rrsets: resp})
-}
-
-type mockResourceRecordSetsClient struct {
-	recordsErr error
 }
 
 func (m *mockResourceRecordSetsClient) List(project string, managedZone string) resourceRecordSetsListCallInterface {

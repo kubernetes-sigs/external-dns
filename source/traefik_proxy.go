@@ -119,6 +119,94 @@ type traefikSource struct {
 	targetFrom                  *targetfrom.Resolver
 }
 
+// Basic redefinition of Traefik 2's CRD: https://github.com/traefik/traefik/tree/v2.8.7/pkg/provider/kubernetes/crd/traefik/v1alpha1
+
+// traefikIngressRouteSpec defines the desired state of IngressRoute.
+type traefikIngressRouteSpec struct {
+	// Routes defines the list of routes.
+	Routes []traefikRoute `json:"routes"`
+}
+
+// traefikRoute holds the HTTP route configuration.
+type traefikRoute struct {
+	// Match defines the router's rule.
+	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule
+	Match string `json:"match"`
+}
+
+// IngressRoute is the CRD implementation of a Traefik HTTP Router.
+type IngressRoute struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec traefikIngressRouteSpec `json:"spec"`
+}
+
+// IngressRouteList is a collection of IngressRoute.
+type IngressRouteList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ListMeta `json:"metadata"`
+
+	// Items is the list of IngressRoute.
+	Items []IngressRoute `json:"items"`
+}
+
+// traefikIngressRouteTCPSpec defines the desired state of IngressRouteTCP.
+type traefikIngressRouteTCPSpec struct {
+	Routes []traefikRouteTCP `json:"routes"`
+}
+
+// traefikRouteTCP holds the TCP route configuration.
+type traefikRouteTCP struct {
+	// Match defines the router's rule.
+	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule_1
+	Match string `json:"match"`
+}
+
+// IngressRouteTCP is the CRD implementation of a Traefik TCP Router.
+type IngressRouteTCP struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec traefikIngressRouteTCPSpec `json:"spec"`
+}
+
+// IngressRouteTCPList is a collection of IngressRouteTCP.
+type IngressRouteTCPList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ListMeta `json:"metadata"`
+
+	// Items is the list of IngressRouteTCP.
+	Items []IngressRouteTCP `json:"items"`
+}
+
+// IngressRouteUDP is a CRD implementation of a Traefik UDP Router.
+type IngressRouteUDP struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata"`
+}
+
+// IngressRouteUDPList is a collection of IngressRouteUDP.
+type IngressRouteUDPList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ListMeta `json:"metadata"`
+
+	// Items is the list of IngressRouteUDP.
+	Items []IngressRouteUDP `json:"items"`
+}
+
 func NewTraefikSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
@@ -237,6 +325,33 @@ func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	log.Debug("Adding event handler for IngressRoute")
+	if ts.ingressRouteInformers != nil {
+		ts.ingressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	if ts.oldIngressRouteInformers != nil {
+		ts.oldIngressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	log.Debug("Adding event handler for IngressRouteTCP")
+	if ts.ingressRouteTcpInformers != nil {
+		ts.ingressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	if ts.oldIngressRouteTcpInformers != nil {
+		ts.oldIngressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	log.Debug("Adding event handler for IngressRouteUDP")
+	if ts.ingressRouteUdpInformers != nil {
+		ts.ingressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	if ts.oldIngressRouteUdpInformers != nil {
+		ts.oldIngressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	ts.targetFrom.AddEventHandler(handler)
 }
 
 // ingressRouteEndpoints extracts endpoints from all IngressRoute objects
@@ -409,33 +524,6 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
 }
 
-func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
-	// Right now there is no way to remove event handler from informer, see:
-	// https://github.com/kubernetes/kubernetes/issues/79610
-	log.Debug("Adding event handler for IngressRoute")
-	if ts.ingressRouteInformers != nil {
-		ts.ingressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	if ts.oldIngressRouteInformers != nil {
-		ts.oldIngressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	log.Debug("Adding event handler for IngressRouteTCP")
-	if ts.ingressRouteTcpInformers != nil {
-		ts.ingressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	if ts.oldIngressRouteTcpInformers != nil {
-		ts.oldIngressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	log.Debug("Adding event handler for IngressRouteUDP")
-	if ts.ingressRouteUdpInformers != nil {
-		ts.ingressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	if ts.oldIngressRouteUdpInformers != nil {
-		ts.oldIngressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	ts.targetFrom.AddEventHandler(handler)
-}
-
 // newTraefikUnstructuredConverter returns a new unstructuredConverter initialized
 func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	uc := &unstructuredConverter{
@@ -454,94 +542,6 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
-}
-
-// Basic redefinition of Traefik 2's CRD: https://github.com/traefik/traefik/tree/v2.8.7/pkg/provider/kubernetes/crd/traefik/v1alpha1
-
-// traefikIngressRouteSpec defines the desired state of IngressRoute.
-type traefikIngressRouteSpec struct {
-	// Routes defines the list of routes.
-	Routes []traefikRoute `json:"routes"`
-}
-
-// traefikRoute holds the HTTP route configuration.
-type traefikRoute struct {
-	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule
-	Match string `json:"match"`
-}
-
-// IngressRoute is the CRD implementation of a Traefik HTTP Router.
-type IngressRoute struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	metav1.ObjectMeta `json:"metadata"`
-
-	Spec traefikIngressRouteSpec `json:"spec"`
-}
-
-// IngressRouteList is a collection of IngressRoute.
-type IngressRouteList struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	metav1.ListMeta `json:"metadata"`
-
-	// Items is the list of IngressRoute.
-	Items []IngressRoute `json:"items"`
-}
-
-// traefikIngressRouteTCPSpec defines the desired state of IngressRouteTCP.
-type traefikIngressRouteTCPSpec struct {
-	Routes []traefikRouteTCP `json:"routes"`
-}
-
-// traefikRouteTCP holds the TCP route configuration.
-type traefikRouteTCP struct {
-	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule_1
-	Match string `json:"match"`
-}
-
-// IngressRouteTCP is the CRD implementation of a Traefik TCP Router.
-type IngressRouteTCP struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	metav1.ObjectMeta `json:"metadata"`
-
-	Spec traefikIngressRouteTCPSpec `json:"spec"`
-}
-
-// IngressRouteTCPList is a collection of IngressRouteTCP.
-type IngressRouteTCPList struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	metav1.ListMeta `json:"metadata"`
-
-	// Items is the list of IngressRouteTCP.
-	Items []IngressRouteTCP `json:"items"`
-}
-
-// IngressRouteUDP is a CRD implementation of a Traefik UDP Router.
-type IngressRouteUDP struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	metav1.ObjectMeta `json:"metadata"`
-}
-
-// IngressRouteUDPList is a collection of IngressRouteUDP.
-type IngressRouteUDPList struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	metav1.ListMeta `json:"metadata"`
-
-	// Items is the list of IngressRouteUDP.
-	Items []IngressRouteUDP `json:"items"`
 }
 
 // DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.

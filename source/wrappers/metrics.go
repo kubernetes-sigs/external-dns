@@ -43,6 +43,11 @@ var (
 	)
 )
 
+func init() {
+	metrics.RegisterMetric.MustRegister(invalidEndpoints)
+	metrics.RegisterMetric.MustRegister(deduplicatedEndpoints)
+}
+
 // endpointSource returns the source type from the endpoint's object reference,
 // or "unknown" if the reference is not set. Sources that set RefObject will
 // populate this with their name (e.g. "ingress", "service").
@@ -60,9 +65,4 @@ func endpointSource(ep *endpoint.Endpoint) string {
 func resetMetrics() {
 	invalidEndpoints.Reset()
 	deduplicatedEndpoints.Reset()
-}
-
-func init() {
-	metrics.RegisterMetric.MustRegister(invalidEndpoints)
-	metrics.RegisterMetric.MustRegister(deduplicatedEndpoints)
 }

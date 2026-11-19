@@ -48,16 +48,16 @@ var (
 	)
 )
 
-func init() {
-	metrics.RegisterMetric.MustRegister(cachedRecordsCallsTotal)
-	metrics.RegisterMetric.MustRegister(cachedApplyChangesCallsTotal)
-}
-
 type CachedProvider struct {
 	Provider
 	RefreshDelay time.Duration
 	lastRead     time.Time
 	cache        []*endpoint.Endpoint
+}
+
+func init() {
+	metrics.RegisterMetric.MustRegister(cachedRecordsCallsTotal)
+	metrics.RegisterMetric.MustRegister(cachedApplyChangesCallsTotal)
 }
 
 func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedProvider {
@@ -84,6 +84,7 @@ func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 	return c.cache, nil
 }
+
 func (c *CachedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if !changes.HasChanges() {
 		log.Info("Records cache provider: no changes to be applied")

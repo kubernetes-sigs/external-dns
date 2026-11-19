@@ -46,6 +46,12 @@ type crdClientGenerator struct {
 	restCfg *rest.Config
 }
 
+// dnsEndpointHandler is the HTTP handler for the fake Kubernetes API server.
+type dnsEndpointHandler struct {
+	mu        sync.Mutex
+	endpoints []*apiv1alpha1.DNSEndpoint
+}
+
 func (g crdClientGenerator) RESTConfig() (*rest.Config, error) {
 	return g.restCfg, nil
 }
@@ -78,12 +84,6 @@ func newFakeDNSEndpointServer(ctx context.Context, dnsEndpoints []*apiv1alpha1.D
 		srv.Close()
 	}()
 	return &rest.Config{Host: srv.URL}
-}
-
-// dnsEndpointHandler is the HTTP handler for the fake Kubernetes API server.
-type dnsEndpointHandler struct {
-	mu        sync.Mutex
-	endpoints []*apiv1alpha1.DNSEndpoint
 }
 
 func (h *dnsEndpointHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

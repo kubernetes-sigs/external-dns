@@ -16,11 +16,6 @@ limitations under the License.
 
 package plan
 
-// Policy allows to apply different rules to a set of changes.
-type Policy interface {
-	Apply(changes *Changes) *Changes
-}
-
 // Policies is a registry of available policies, keyed by name.
 var Policies = map[string]Policy{
 	"sync":        &SyncPolicy{},
@@ -28,16 +23,24 @@ var Policies = map[string]Policy{
 	"create-only": &CreateOnlyPolicy{},
 }
 
+// Policy allows to apply different rules to a set of changes.
+type Policy interface {
+	Apply(changes *Changes) *Changes
+}
+
 // SyncPolicy allows for full synchronization of DNS records.
 type SyncPolicy struct{}
+
+// UpsertOnlyPolicy allows everything but deleting DNS records.
+type UpsertOnlyPolicy struct{}
+
+// CreateOnlyPolicy allows only creating DNS records.
+type CreateOnlyPolicy struct{}
 
 // Apply is a pass-through: sync allows all changes without restriction.
 func (p *SyncPolicy) Apply(changes *Changes) *Changes {
 	return changes
 }
-
-// UpsertOnlyPolicy allows everything but deleting DNS records.
-type UpsertOnlyPolicy struct{}
 
 // Apply applies the upsert-only policy which strips out any deletions.
 func (p *UpsertOnlyPolicy) Apply(changes *Changes) *Changes {
@@ -47,9 +50,6 @@ func (p *UpsertOnlyPolicy) Apply(changes *Changes) *Changes {
 		UpdateNew: changes.UpdateNew,
 	}
 }
-
-// CreateOnlyPolicy allows only creating DNS records.
-type CreateOnlyPolicy struct{}
 
 // Apply applies the create-only policy which strips out updates and deletions.
 func (p *CreateOnlyPolicy) Apply(changes *Changes) *Changes {

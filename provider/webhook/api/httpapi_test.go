@@ -43,6 +43,10 @@ type FakeWebhookProvider struct {
 	assertChanges func(*plan.Changes)
 }
 
+// endlessBody emits an infinite stream of 'a' bytes, standing in for a client
+// that pushes a request body with no end in sight.
+type endlessBody struct{}
+
 func (p FakeWebhookProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	if p.err != nil {
 		return nil, p.err
@@ -364,10 +368,6 @@ func TestNegotiateHandler_FiltersWithSpecialEncodings(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
 }
-
-// endlessBody emits an infinite stream of 'a' bytes, standing in for a client
-// that pushes a request body with no end in sight.
-type endlessBody struct{}
 
 func (endlessBody) Read(p []byte) (int, error) {
 	for i := range p {

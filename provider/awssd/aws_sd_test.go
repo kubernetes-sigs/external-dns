@@ -36,6 +36,17 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+const recordTypeDriftWarning = "record types are immutable"
+
+const testOwnerID = "owner"
+
+type failingDiscoverClient struct{ AWSSDClient }
+
+type updateCountingStub struct {
+	*AWSSDClientStub
+	updates int
+}
+
 func TestAWSSDProvider_Records(t *testing.T) {
 	namespaces := map[string]*sdtypes.Namespace{
 		"private": {
@@ -1795,8 +1806,6 @@ func TestAWSSDProvider_AdjustEndpoints_NoReconcileLoop(t *testing.T) {
 	assert.Empty(t, changes.Delete)
 }
 
-const recordTypeDriftWarning = "record types are immutable"
-
 func newProviderWithAliasService(existing ...sdtypes.RecordType) *AWSSDProvider {
 	records := make([]sdtypes.DnsRecord, 0, len(existing))
 	for _, recordType := range existing {
@@ -1931,8 +1940,6 @@ func TestAWSSDProvider_AdjustEndpoints_DriftDoesNotChangePlan(t *testing.T) {
 	assert.Empty(t, changes.Delete)
 }
 
-type failingDiscoverClient struct{ AWSSDClient }
-
 func (failingDiscoverClient) DiscoverInstances(context.Context, *sd.DiscoverInstancesInput, ...func(*sd.Options)) (*sd.DiscoverInstancesOutput, error) {
 	return nil, errors.New("discover failed")
 }
@@ -1953,17 +1960,10 @@ func TestAWSSDProvider_Records_FailedReadKeepsRecordTypeSnapshot(t *testing.T) {
 	logtest.TestHelperLogContainsWithLogLevel("has record types [A] but desired types are [A AAAA]", log.WarnLevel, logs, t)
 }
 
-type updateCountingStub struct {
-	*AWSSDClientStub
-	updates int
-}
-
 func (s *updateCountingStub) UpdateService(ctx context.Context, input *sd.UpdateServiceInput, opts ...func(*sd.Options)) (*sd.UpdateServiceOutput, error) {
 	s.updates++
 	return s.AWSSDClientStub.UpdateService(ctx, input, opts...)
 }
-
-const testOwnerID = "owner"
 
 func withResourceLabel(resource string) string {
 	return "heritage=external-dns,external-dns/owner=" + testOwnerID + ",external-dns/resource=" + resource

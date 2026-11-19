@@ -40,6 +40,13 @@ import (
 // Overridable in tests: rest.InClusterConfig reads fixed service account paths.
 var inClusterConfig = rest.InClusterConfig
 
+// rateLimiter wraps a RateLimiter and enriches Wait errors with an
+// actionable hint so callers get a clear message without needing to inspect
+// the error string themselves.
+type rateLimiter struct {
+	delegate flowcontrol.RateLimiter
+}
+
 // InstrumentedRESTConfig builds a REST config with Prometheus transport metrics, request timeout,
 // and a token-bucket rate limiter. When qps > 0, it overrides the client-go defaults (5 QPS / 10 burst).
 func InstrumentedRESTConfig(
@@ -142,13 +149,6 @@ func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	}
 	log.Debugf("apiServerURL: %s", config.Host)
 	return config, nil
-}
-
-// rateLimiter wraps a RateLimiter and enriches Wait errors with an
-// actionable hint so callers get a clear message without needing to inspect
-// the error string themselves.
-type rateLimiter struct {
-	delegate flowcontrol.RateLimiter
 }
 
 func (r *rateLimiter) TryAccept() bool { return r.delegate.TryAccept() }

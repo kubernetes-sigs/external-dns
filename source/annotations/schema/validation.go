@@ -25,6 +25,15 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
+const (
+	// ModeOff disables schema validation; an empty Mode is treated the same.
+	ModeOff Mode = "off"
+	// ModeWarn logs a warning and falls back to a default value (the historical behavior).
+	ModeWarn Mode = "warn"
+	// ModeStrict treats an invalid value as an error, for annotations that opt in via StrictMessage.
+	ModeStrict Mode = "strict"
+)
+
 // Validator validates a raw annotation value string, returning an error describing
 // why the value is invalid, or nil if the value is acceptable.
 type Validator func(value string) error
@@ -38,6 +47,18 @@ type Config struct {
 	StrictMessage string
 	Documentation string
 }
+
+// AnnotationSpec pairs an annotation's key suffix with its Config.
+// KeySuffix stays prefix-less so Key() resolves against the current --annotation-prefix,
+// not whatever was in effect when Registry was built.
+type AnnotationSpec struct {
+	KeySuffix        string
+	SupportedSources []string
+	Config
+}
+
+// Mode controls how invalid annotation values are handled globally.
+type Mode string
 
 func (c Config) Validate(value string) error {
 	for _, validator := range c.Validators {
@@ -61,31 +82,10 @@ func (c Config) warnText() string {
 	return c.StrictMessage
 }
 
-// AnnotationSpec pairs an annotation's key suffix with its Config.
-// KeySuffix stays prefix-less so Key() resolves against the current --annotation-prefix,
-// not whatever was in effect when Registry was built.
-type AnnotationSpec struct {
-	KeySuffix        string
-	SupportedSources []string
-	Config
-}
-
 // Key returns the annotation's full key under the currently configured --annotation-prefix.
 func (a AnnotationSpec) Key() string {
 	return annotations.AnnotationKeyPrefix + a.KeySuffix
 }
-
-// Mode controls how invalid annotation values are handled globally.
-type Mode string
-
-const (
-	// ModeOff disables schema validation; an empty Mode is treated the same.
-	ModeOff Mode = "off"
-	// ModeWarn logs a warning and falls back to a default value (the historical behavior).
-	ModeWarn Mode = "warn"
-	// ModeStrict treats an invalid value as an error, for annotations that opt in via StrictMessage.
-	ModeStrict Mode = "strict"
-)
 
 // ValidateOneOf returns a Validator that accepts only the given values.
 func ValidateOneOf(values ...string) Validator {

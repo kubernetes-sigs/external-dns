@@ -44,6 +44,8 @@ type kubeObject interface {
 	metav1.Object
 }
 
+type eventHandlerFunc func()
+
 func getAccessFromAnnotations(input map[string]string) string {
 	return input[annotations.AccessKey]
 }
@@ -55,8 +57,6 @@ func getEndpointsTypeFromAnnotations(annots map[string]string) string {
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
 	return selector.Matches(labels.Set(srcAnnotations))
 }
-
-type eventHandlerFunc func()
 
 func (fn eventHandlerFunc) OnAdd(_ any, _ bool) { fn() }
 func (fn eventHandlerFunc) OnUpdate(_, _ any)   { fn() }

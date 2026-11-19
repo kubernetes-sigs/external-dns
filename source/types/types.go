@@ -20,8 +20,6 @@ import (
 	"strings"
 )
 
-type Type = string
-
 const (
 	Node                Type = "node"
 	Service             Type = "service"
@@ -59,6 +57,8 @@ var All = []Type{
 	Fake, Empty, Connector, CRD, SkipperRouteGroup, KongTCPIngress,
 	F5VirtualServer, F5TransportServer, Unstructured,
 }
+
+type Type = string
 
 // IsKnown reports whether name matches one of the known source types, case-insensitively.
 func IsKnown(name string) bool {

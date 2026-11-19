@@ -49,195 +49,6 @@ const (
 	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
 )
 
-// Config is a project-wide configuration
-type Config struct {
-	APIServerURL                                  string
-	KubeConfig                                    string
-	RequestTimeout                                time.Duration
-	KubeAPIRequestTimeout                         time.Duration
-	KubeAPIQPS                                    int
-	KubeAPIBurst                                  int
-	DefaultTargets                                []string
-	GlooNamespaces                                []string
-	Sources                                       []string
-	Namespaces                                    []string
-	AnnotationFilter                              string
-	AnnotationPrefix                              string
-	AnnotationValidationMode                      string
-	EnableLegacyAnnotationPrefix                  bool
-	LabelFilter                                   string
-	IngressClassNames                             []string
-	FQDNTemplate                                  []string
-	TargetTemplate                                []string
-	FQDNTargetTemplate                            []string
-	CombineFQDNAndAnnotation                      bool
-	IgnoreHostnameAnnotation                      bool
-	IgnoreNonHostNetworkPods                      bool
-	IgnoreIngressTLSSpec                          bool
-	IgnoreIngressRulesSpec                        bool
-	ListenEndpointEvents                          bool
-	ExposeInternalIPV6                            bool
-	GatewayName                                   string
-	GatewayNamespace                              string
-	GatewayLabelFilter                            string
-	GatewayListenerSets                           bool
-	Compatibility                                 string
-	PodSourceDomain                               string
-	PublishInternal                               bool
-	PublishHostIP                                 bool
-	AlwaysPublishNotReadyAddresses                bool
-	ConnectorSourceServer                         string
-	Provider                                      string
-	ProviderCacheTime                             time.Duration
-	CreatePTR                                     bool
-	GoogleProject                                 string
-	GoogleBatchChangeSize                         int
-	GoogleBatchChangeInterval                     time.Duration
-	GoogleRequestTimeout                          time.Duration
-	GoogleZoneVisibility                          string
-	DomainFilter                                  []string
-	DomainExclude                                 []string
-	RegexDomainFilter                             *regexp.Regexp
-	RegexDomainExclude                            *regexp.Regexp
-	ZoneNameFilter                                []string
-	ZoneIDFilter                                  []string
-	TargetNetFilter                               []string
-	ExcludeTargetNets                             []string
-	AlibabaCloudConfigFile                        string
-	AlibabaCloudZoneType                          string
-	AWSZoneType                                   string
-	AWSZoneTagFilter                              []string
-	AWSAssumeRole                                 string
-	AWSProfiles                                   []string
-	AWSAssumeRoleExternalID                       string `secure:"yes"`
-	AWSBatchChangeSize                            int
-	AWSBatchChangeSizeBytes                       int
-	AWSBatchChangeSizeValues                      int
-	AWSBatchChangeInterval                        time.Duration
-	AWSEvaluateTargetHealth                       bool
-	AWSAPIRetries                                 int
-	AWSPreferCNAME                                bool
-	AWSZoneCacheDuration                          time.Duration
-	AWSSDServiceCleanup                           bool
-	AWSSDCreateTag                                map[string]string
-	AWSZoneMatchParent                            bool
-	AWSDynamoDBRegion                             string
-	AWSDynamoDBTable                              string
-	AzureConfigFile                               string
-	AzureResourceGroup                            string
-	AzureSubscriptionID                           string
-	AzureUserAssignedIdentityClientID             string
-	AzureActiveDirectoryAuthorityHost             string
-	AzureZonesCacheDuration                       time.Duration
-	AzureMaxRetriesCount                          int
-	BatchChangeSize                               int
-	BatchChangeInterval                           time.Duration
-	CloudflareProxied                             bool
-	CloudflareCustomHostnames                     bool
-	CloudflareDNSRecordsPerPage                   int
-	CloudflareDNSRecordsComment                   string
-	CloudflareCustomHostnamesMinTLSVersion        string
-	CloudflareCustomHostnamesCertificateAuthority string
-	CloudflareRegionalServices                    bool
-	CloudflareRegionKey                           string
-	CoreDNSPrefix                                 string
-	CoreDNSStrictlyOwned                          bool
-	OCIConfigFile                                 string
-	OCICompartmentOCID                            string
-	OCIAuthInstancePrincipal                      bool
-	OCIZoneScope                                  string
-	OCIZoneCacheDuration                          time.Duration
-	InMemoryZones                                 []string
-	OVHEndpoint                                   string
-	OVHApiRateLimit                               int
-	OVHEnableCNAMERelative                        bool
-	PDNSServer                                    string
-	PDNSServerID                                  string
-	PDNSAPIKey                                    string `secure:"yes"`
-	PDNSSkipTLSVerify                             bool
-	TLSCA                                         string
-	TLSClientCert                                 string
-	TLSClientCertKey                              string
-	Policy                                        string
-	Registry                                      string
-	CRDRegistryNamespace                          string
-	TXTOwnerID                                    string
-	TXTOwnerOld                                   string
-	TXTPrefix                                     string
-	TXTSuffix                                     string
-	TXTEncryptEnabled                             bool
-	TXTEncryptAESKey                              string `secure:"yes"`
-	Interval                                      time.Duration
-	MinEventSyncInterval                          time.Duration
-	MinTTL                                        time.Duration
-	Once                                          bool
-	DryRun                                        bool
-	UpdateEvents                                  bool
-	LogFormat                                     string
-	MetricsAddress                                string
-	LogLevel                                      string
-	TXTCacheInterval                              time.Duration
-	TXTWildcardReplacement                        string
-	ExoscaleEndpoint                              string
-	ExoscaleAPIKey                                string `secure:"yes"`
-	ExoscaleAPISecret                             string `secure:"yes"`
-	ExoscaleAPIEnvironment                        string
-	ExoscaleAPIZone                               string
-	ExoscaleZoneCacheDuration                     time.Duration
-	ScalewayZonesCacheDuration                    time.Duration
-	CRDSourceAPIVersion                           string
-	CRDSourceKind                                 string
-	ServiceTypeFilter                             []string
-	ResolveServiceLoadBalancerHostname            bool
-	RFC2136Host                                   []string
-	RFC2136Port                                   int
-	RFC2136Zone                                   []string
-	RFC2136Insecure                               bool
-	RFC2136AXFRInsecure                           bool
-	RFC2136GSSTSIG                                bool
-	RFC2136KerberosRealm                          string
-	RFC2136KerberosUsername                       string
-	RFC2136KerberosPassword                       string `secure:"yes"`
-	RFC2136TSIGKeyName                            string
-	RFC2136TSIGSecret                             string `secure:"yes"`
-	RFC2136TSIGSecretAlg                          string
-	RFC2136AXFR                                   bool
-	RFC2136TAXFR                                  bool // deprecated, use RFC2136AXFR
-	RFC2136MinTTL                                 time.Duration
-	RFC2136LoadBalancingStrategy                  string
-	RFC2136BatchChangeSize                        int
-	RFC2136UseTLS                                 bool
-	RFC2136SkipTLSVerify                          bool
-	NS1Endpoint                                   string
-	NS1IgnoreSSL                                  bool
-	NS1MinTTLSeconds                              int
-	ManagedDNSRecordTypes                         []string
-	ExcludeDNSRecordTypes                         []string
-	GoDaddyAPIKey                                 string `secure:"yes"`
-	GoDaddySecretKey                              string `secure:"yes"`
-	GoDaddyTTL                                    int64
-	GoDaddyOTE                                    bool
-	OCPRouterName                                 string
-	PiholeServer                                  string
-	PiholePassword                                string `secure:"yes"`
-	PiholeTLSInsecureSkipVerify                   bool
-	WebhookProviderURL                            string
-	WebhookProviderReadTimeout                    time.Duration
-	WebhookProviderWriteTimeout                   time.Duration
-	WebhookProviderReadHeaderTimeout              time.Duration
-	WebhookProviderIdleTimeout                    time.Duration
-	WebhookProviderMaxBodySize                    int64
-	WebhookServer                                 bool
-	TraefikEnableLegacy                           bool
-	TraefikDisableNew                             bool
-	NAT64Networks                                 []string
-	ExcludeUnschedulable                          bool
-	EmitEvents                                    []string
-	ForceDefaultTargets                           bool
-	UnstructuredResources                         []string
-	PreferAlias                                   bool
-}
-
 var defaultConfig = &Config{
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:         "",
@@ -438,12 +249,6 @@ var ProviderNames = []string{
 // AllowedSources lists every value accepted by --source, alphabetically sorted.
 var AllowedSources = sortedAllowedSources()
 
-func sortedAllowedSources() []string {
-	s := slices.Clone(types.All)
-	slices.Sort(s)
-	return s
-}
-
 // multiNamespaceSources watch every --namespace value.
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
@@ -467,6 +272,201 @@ var multiNamespaceSources = []string{
 	"skipper-routegroup",
 	"traefik-proxy",
 	"unstructured",
+}
+
+// Config is a project-wide configuration
+type Config struct {
+	APIServerURL                                  string
+	KubeConfig                                    string
+	RequestTimeout                                time.Duration
+	KubeAPIRequestTimeout                         time.Duration
+	KubeAPIQPS                                    int
+	KubeAPIBurst                                  int
+	DefaultTargets                                []string
+	GlooNamespaces                                []string
+	Sources                                       []string
+	Namespaces                                    []string
+	AnnotationFilter                              string
+	AnnotationPrefix                              string
+	AnnotationValidationMode                      string
+	EnableLegacyAnnotationPrefix                  bool
+	LabelFilter                                   string
+	IngressClassNames                             []string
+	FQDNTemplate                                  []string
+	TargetTemplate                                []string
+	FQDNTargetTemplate                            []string
+	CombineFQDNAndAnnotation                      bool
+	IgnoreHostnameAnnotation                      bool
+	IgnoreNonHostNetworkPods                      bool
+	IgnoreIngressTLSSpec                          bool
+	IgnoreIngressRulesSpec                        bool
+	ListenEndpointEvents                          bool
+	ExposeInternalIPV6                            bool
+	GatewayName                                   string
+	GatewayNamespace                              string
+	GatewayLabelFilter                            string
+	GatewayListenerSets                           bool
+	Compatibility                                 string
+	PodSourceDomain                               string
+	PublishInternal                               bool
+	PublishHostIP                                 bool
+	AlwaysPublishNotReadyAddresses                bool
+	ConnectorSourceServer                         string
+	Provider                                      string
+	ProviderCacheTime                             time.Duration
+	CreatePTR                                     bool
+	GoogleProject                                 string
+	GoogleBatchChangeSize                         int
+	GoogleBatchChangeInterval                     time.Duration
+	GoogleRequestTimeout                          time.Duration
+	GoogleZoneVisibility                          string
+	DomainFilter                                  []string
+	DomainExclude                                 []string
+	RegexDomainFilter                             *regexp.Regexp
+	RegexDomainExclude                            *regexp.Regexp
+	ZoneNameFilter                                []string
+	ZoneIDFilter                                  []string
+	TargetNetFilter                               []string
+	ExcludeTargetNets                             []string
+	AlibabaCloudConfigFile                        string
+	AlibabaCloudZoneType                          string
+	AWSZoneType                                   string
+	AWSZoneTagFilter                              []string
+	AWSAssumeRole                                 string
+	AWSProfiles                                   []string
+	AWSAssumeRoleExternalID                       string `secure:"yes"`
+	AWSBatchChangeSize                            int
+	AWSBatchChangeSizeBytes                       int
+	AWSBatchChangeSizeValues                      int
+	AWSBatchChangeInterval                        time.Duration
+	AWSEvaluateTargetHealth                       bool
+	AWSAPIRetries                                 int
+	AWSPreferCNAME                                bool
+	AWSZoneCacheDuration                          time.Duration
+	AWSSDServiceCleanup                           bool
+	AWSSDCreateTag                                map[string]string
+	AWSZoneMatchParent                            bool
+	AWSDynamoDBRegion                             string
+	AWSDynamoDBTable                              string
+	AzureConfigFile                               string
+	AzureResourceGroup                            string
+	AzureSubscriptionID                           string
+	AzureUserAssignedIdentityClientID             string
+	AzureActiveDirectoryAuthorityHost             string
+	AzureZonesCacheDuration                       time.Duration
+	AzureMaxRetriesCount                          int
+	BatchChangeSize                               int
+	BatchChangeInterval                           time.Duration
+	CloudflareProxied                             bool
+	CloudflareCustomHostnames                     bool
+	CloudflareDNSRecordsPerPage                   int
+	CloudflareDNSRecordsComment                   string
+	CloudflareCustomHostnamesMinTLSVersion        string
+	CloudflareCustomHostnamesCertificateAuthority string
+	CloudflareRegionalServices                    bool
+	CloudflareRegionKey                           string
+	CoreDNSPrefix                                 string
+	CoreDNSStrictlyOwned                          bool
+	OCIConfigFile                                 string
+	OCICompartmentOCID                            string
+	OCIAuthInstancePrincipal                      bool
+	OCIZoneScope                                  string
+	OCIZoneCacheDuration                          time.Duration
+	InMemoryZones                                 []string
+	OVHEndpoint                                   string
+	OVHApiRateLimit                               int
+	OVHEnableCNAMERelative                        bool
+	PDNSServer                                    string
+	PDNSServerID                                  string
+	PDNSAPIKey                                    string `secure:"yes"`
+	PDNSSkipTLSVerify                             bool
+	TLSCA                                         string
+	TLSClientCert                                 string
+	TLSClientCertKey                              string
+	Policy                                        string
+	Registry                                      string
+	CRDRegistryNamespace                          string
+	TXTOwnerID                                    string
+	TXTOwnerOld                                   string
+	TXTPrefix                                     string
+	TXTSuffix                                     string
+	TXTEncryptEnabled                             bool
+	TXTEncryptAESKey                              string `secure:"yes"`
+	Interval                                      time.Duration
+	MinEventSyncInterval                          time.Duration
+	MinTTL                                        time.Duration
+	Once                                          bool
+	DryRun                                        bool
+	UpdateEvents                                  bool
+	LogFormat                                     string
+	MetricsAddress                                string
+	LogLevel                                      string
+	TXTCacheInterval                              time.Duration
+	TXTWildcardReplacement                        string
+	ExoscaleEndpoint                              string
+	ExoscaleAPIKey                                string `secure:"yes"`
+	ExoscaleAPISecret                             string `secure:"yes"`
+	ExoscaleAPIEnvironment                        string
+	ExoscaleAPIZone                               string
+	ExoscaleZoneCacheDuration                     time.Duration
+	ScalewayZonesCacheDuration                    time.Duration
+	CRDSourceAPIVersion                           string
+	CRDSourceKind                                 string
+	ServiceTypeFilter                             []string
+	ResolveServiceLoadBalancerHostname            bool
+	RFC2136Host                                   []string
+	RFC2136Port                                   int
+	RFC2136Zone                                   []string
+	RFC2136Insecure                               bool
+	RFC2136AXFRInsecure                           bool
+	RFC2136GSSTSIG                                bool
+	RFC2136KerberosRealm                          string
+	RFC2136KerberosUsername                       string
+	RFC2136KerberosPassword                       string `secure:"yes"`
+	RFC2136TSIGKeyName                            string
+	RFC2136TSIGSecret                             string `secure:"yes"`
+	RFC2136TSIGSecretAlg                          string
+	RFC2136AXFR                                   bool
+	RFC2136TAXFR                                  bool // deprecated, use RFC2136AXFR
+	RFC2136MinTTL                                 time.Duration
+	RFC2136LoadBalancingStrategy                  string
+	RFC2136BatchChangeSize                        int
+	RFC2136UseTLS                                 bool
+	RFC2136SkipTLSVerify                          bool
+	NS1Endpoint                                   string
+	NS1IgnoreSSL                                  bool
+	NS1MinTTLSeconds                              int
+	ManagedDNSRecordTypes                         []string
+	ExcludeDNSRecordTypes                         []string
+	GoDaddyAPIKey                                 string `secure:"yes"`
+	GoDaddySecretKey                              string `secure:"yes"`
+	GoDaddyTTL                                    int64
+	GoDaddyOTE                                    bool
+	OCPRouterName                                 string
+	PiholeServer                                  string
+	PiholePassword                                string `secure:"yes"`
+	PiholeTLSInsecureSkipVerify                   bool
+	WebhookProviderURL                            string
+	WebhookProviderReadTimeout                    time.Duration
+	WebhookProviderWriteTimeout                   time.Duration
+	WebhookProviderReadHeaderTimeout              time.Duration
+	WebhookProviderIdleTimeout                    time.Duration
+	WebhookProviderMaxBodySize                    int64
+	WebhookServer                                 bool
+	TraefikEnableLegacy                           bool
+	TraefikDisableNew                             bool
+	NAT64Networks                                 []string
+	ExcludeUnschedulable                          bool
+	EmitEvents                                    []string
+	ForceDefaultTargets                           bool
+	UnstructuredResources                         []string
+	PreferAlias                                   bool
+}
+
+func sortedAllowedSources() []string {
+	s := slices.Clone(types.All)
+	slices.Sort(s)
+	return s
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -538,6 +538,11 @@ func uniqueCommaSeparated(values []string) []string {
 	return result
 }
 
+// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
+func (cfg *Config) IsPTRSupported() bool {
+	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+}
+
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
@@ -553,11 +558,6 @@ func (cfg *Config) resolveDeprecatedFlags() {
 		logrus.Warn("--rfc2136-tsig-axfr is deprecated, use --rfc2136-axfr instead")
 		cfg.RFC2136AXFR = true
 	}
-}
-
-// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
-func (cfg *Config) IsPTRSupported() bool {
-	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
 func bindFlags(b flags.FlagBinder, cfg *Config) {

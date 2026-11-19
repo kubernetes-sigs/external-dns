@@ -74,20 +74,6 @@ type gatewayRouteInformer interface {
 	Informer() cache.SharedIndexInformer
 }
 
-func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
-	var opts []gwinformers.SharedInformerOption
-	if namespace != "" {
-		opts = append(opts, gwinformers.WithNamespace(namespace))
-	}
-	if labelSelector != nil && !labelSelector.Empty() {
-		lbls := labelSelector.String()
-		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
-			o.LabelSelector = lbls
-		}))
-	}
-	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
-}
-
 // gatewayRouteSource is an implementation of Source for Gateway API Route objects.
 //
 // +externaldns:source:name=gateway-httproute
@@ -151,6 +137,57 @@ type gatewayRouteSource struct {
 
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
+}
+
+type gatewayRouteResolver struct {
+	src     *gatewayRouteSource
+	objects map[objectRef]*listenerObject
+	nss     map[string]*corev1.Namespace
+}
+
+type objectRef struct {
+	schema.GroupKind
+	types.NamespacedName
+}
+
+type listenerObject struct {
+	gateway        *v1.Gateway
+	gatewayRef     types.NamespacedName
+	listenerSet    *v1.ListenerSet
+	ownerNamespace string
+	sections       map[v1.SectionName][]listenerSection
+	attached       bool
+	attachReason   string
+	overrides      endpoint.Targets
+}
+
+type listenerSection struct {
+	listener     v1.Listener
+	attached     bool
+	attachReason string
+}
+
+type resolvedParent struct {
+	kind      string
+	namespace string
+	ref       v1.ParentReference
+	obj       *listenerObject
+	section   v1.SectionName
+	listeners []listenerSection
+}
+
+func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
+	var opts []gwinformers.SharedInformerOption
+	if namespace != "" {
+		opts = append(opts, gwinformers.WithNamespace(namespace))
+	}
+	if labelSelector != nil && !labelSelector.Empty() {
+		lbls := labelSelector.String()
+		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
+			o.LabelSelector = lbls
+		}))
+	}
+	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
 }
 
 func newGatewayRouteSource(
@@ -345,43 +382,6 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 
 func namespacedName(namespace, name string) types.NamespacedName {
 	return types.NamespacedName{Namespace: namespace, Name: name}
-}
-
-type gatewayRouteResolver struct {
-	src     *gatewayRouteSource
-	objects map[objectRef]*listenerObject
-	nss     map[string]*corev1.Namespace
-}
-
-type objectRef struct {
-	schema.GroupKind
-	types.NamespacedName
-}
-
-type listenerObject struct {
-	gateway        *v1.Gateway
-	gatewayRef     types.NamespacedName
-	listenerSet    *v1.ListenerSet
-	ownerNamespace string
-	sections       map[v1.SectionName][]listenerSection
-	attached       bool
-	attachReason   string
-	overrides      endpoint.Targets
-}
-
-type listenerSection struct {
-	listener     v1.Listener
-	attached     bool
-	attachReason string
-}
-
-type resolvedParent struct {
-	kind      string
-	namespace string
-	ref       v1.ParentReference
-	obj       *listenerObject
-	section   v1.SectionName
-	listeners []listenerSection
 }
 
 func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {

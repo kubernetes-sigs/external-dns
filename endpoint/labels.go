@@ -25,9 +25,6 @@ import (
 	"strings"
 )
 
-// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
-var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
-
 const (
 	heritage = "external-dns"
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
@@ -47,6 +44,9 @@ const (
 	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
 	txtEncryptionNonce = "txt-encryption-nonce"
 )
+
+// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
+var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
 
 // Labels store metadata related to the endpoint
 // it is then stored in a persistent storage via serialization

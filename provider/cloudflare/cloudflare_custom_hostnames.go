@@ -33,6 +33,11 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+var recordTypeCustomHostnameSupported = sets.New[dns.RecordResponseType](
+	"A",
+	"CNAME",
+)
+
 // customHostname represents a Cloudflare custom hostname (v5 API compatible wrapper)
 type customHostname struct {
 	id                 string
@@ -68,11 +73,6 @@ type CustomHostnamesConfig struct {
 	MinTLSVersion        string
 	CertificateAuthority string
 }
-
-var recordTypeCustomHostnameSupported = sets.New[dns.RecordResponseType](
-	"A",
-	"CNAME",
-)
 
 func (z zoneService) CustomHostnames(ctx context.Context, zoneID string) autoPager[custom_hostnames.CustomHostnameListResponse] {
 	params := custom_hostnames.CustomHostnameListParams{

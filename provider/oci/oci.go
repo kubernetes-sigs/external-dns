@@ -172,6 +172,145 @@ func newProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilte
 	}, nil
 }
 
+// Records returns the list of records in a given hosted zone.
+func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	zones, err := p.zones(ctx)
+	if err != nil {
+		return nil, provider.NewSoftErrorf("getting zones: %w", err)
+	}
+
+	var endpoints []*endpoint.Endpoint
+	for _, zone := range zones {
+		var page *string
+		for {
+			resp, err := p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
+				ZoneNameOrId: zone.Id,
+				Page:         page,
+				Limit:        common.Int64(100),
+			})
+			if err != nil {
+				return nil, provider.NewSoftErrorf("getting records for zone %q: %w", *zone.Id, err)
+			}
+
+			for _, record := range resp.Items {
+				if !provider.SupportedRecordType(*record.Rtype) {
+					continue
+				}
+				endpoints = append(endpoints,
+					endpoint.NewEndpointWithTTL(
+						*record.Domain,
+						*record.Rtype,
+						endpoint.TTL(*record.Ttl),
+						*record.Rdata,
+					),
+				)
+			}
+
+			if page = resp.OpcNextPage; resp.OpcNextPage == nil {
+				break
+			}
+		}
+	}
+
+	endpoints = mergeEndpointsMultiTargets(endpoints)
+
+	return endpoints, nil
+}
+
+// ApplyChanges applies a given set of changes to a given zone.
+func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	log.Debugf("Processing changes: %+v", changes)
+
+	var ops []dns.RecordOperation
+	ops = append(ops, p.newFilteredRecordOperations(changes.Create, dns.RecordOperationOperationAdd)...)
+
+	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateNew, dns.RecordOperationOperationAdd)...)
+	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateOld, dns.RecordOperationOperationRemove)...)
+
+	ops = append(ops, p.newFilteredRecordOperations(changes.Delete, dns.RecordOperationOperationRemove)...)
+
+	if len(ops) == 0 {
+		log.Info("All records are already up to date")
+		return nil
+	}
+
+	zones, err := p.zones(ctx)
+	if err != nil {
+		return provider.NewSoftErrorf("fetching zones: %w", err)
+	}
+
+	// Separate into per-zone change sets to be passed to OCI API.
+	opsByZone := operationsByZone(zones, ops)
+	for zoneID, ops := range opsByZone {
+		log.Infof("Change zone: %q", zoneID)
+		for _, op := range ops {
+			log.Info(op)
+		}
+	}
+
+	if p.dryRun {
+		return nil
+	}
+
+	for zoneID, ops := range opsByZone {
+		if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
+			ZoneNameOrId: &zoneID,
+			Items:        ops,
+		}); err != nil {
+			return provider.NewSoftError(err)
+		}
+	}
+
+	return nil
+}
+
+// Merge Endpoints with the same Name and Type into a single endpoint with multiple Targets.
+func mergeEndpointsMultiTargets(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	endpointsByNameType := map[string][]*endpoint.Endpoint{}
+
+	for _, ep := range endpoints {
+		key := fmt.Sprintf("%s-%s", ep.DNSName, ep.RecordType)
+		endpointsByNameType[key] = append(endpointsByNameType[key], ep)
+	}
+
+	// If there were no merges, return endpoints.
+	if len(endpointsByNameType) == len(endpoints) {
+		return endpoints
+	}
+
+	// Otherwise, create a new list of endpoints with the consolidated targets.
+	var mergedEndpoints []*endpoint.Endpoint
+	for _, ep := range endpointsByNameType {
+		dnsName := ep[0].DNSName
+		recordType := ep[0].RecordType
+		recordTTL := ep[0].RecordTTL
+
+		targets := make([]string, len(ep))
+		for i, e := range ep {
+			targets[i] = e.Targets[0]
+		}
+
+		e := endpoint.NewEndpointWithTTL(dnsName, recordType, recordTTL, targets...)
+		mergedEndpoints = append(mergedEndpoints, e)
+	}
+
+	return mergedEndpoints
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the specific provider
+func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	var adjustedEndpoints []*endpoint.Endpoint
+	for _, e := range endpoints {
+		// OCI DNS does not support the set-identifier attribute, so we remove it to avoid plan failure
+		if e.SetIdentifier != "" {
+			log.Warnf("Adjusting endpoint: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
+			e.SetIdentifier = ""
+		}
+		adjustedEndpoints = append(adjustedEndpoints, e)
+	}
+	return adjustedEndpoints, nil
+}
+
 func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, error) {
 	if !p.zoneCache.Expired() {
 		log.Debug("Using cached zones list")
@@ -214,39 +353,6 @@ func (p *OCIProvider) hasFullZoneIDFilter() bool {
 		}
 	}
 	return true
-}
-
-// Merge Endpoints with the same Name and Type into a single endpoint with multiple Targets.
-func mergeEndpointsMultiTargets(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
-	endpointsByNameType := map[string][]*endpoint.Endpoint{}
-
-	for _, ep := range endpoints {
-		key := fmt.Sprintf("%s-%s", ep.DNSName, ep.RecordType)
-		endpointsByNameType[key] = append(endpointsByNameType[key], ep)
-	}
-
-	// If there were no merges, return endpoints.
-	if len(endpointsByNameType) == len(endpoints) {
-		return endpoints
-	}
-
-	// Otherwise, create a new list of endpoints with the consolidated targets.
-	var mergedEndpoints []*endpoint.Endpoint
-	for _, ep := range endpointsByNameType {
-		dnsName := ep[0].DNSName
-		recordType := ep[0].RecordType
-		recordTTL := ep[0].RecordTTL
-
-		targets := make([]string, len(ep))
-		for i, e := range ep {
-			targets[i] = e.Targets[0]
-		}
-
-		e := endpoint.NewEndpointWithTTL(dnsName, recordType, recordTTL, targets...)
-		mergedEndpoints = append(mergedEndpoints, e)
-	}
-
-	return mergedEndpoints
 }
 
 func (p *OCIProvider) addPaginatedZones(ctx context.Context, zones map[string]dns.ZoneSummary, scope dns.GetZoneScopeEnum) error {
@@ -340,112 +446,6 @@ func (p *OCIProvider) newFilteredRecordOperations(endpoints []*endpoint.Endpoint
 		}
 	}
 	return ops
-}
-
-// Records returns the list of records in a given hosted zone.
-func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.zones(ctx)
-	if err != nil {
-		return nil, provider.NewSoftErrorf("getting zones: %w", err)
-	}
-
-	var endpoints []*endpoint.Endpoint
-	for _, zone := range zones {
-		var page *string
-		for {
-			resp, err := p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
-				ZoneNameOrId: zone.Id,
-				Page:         page,
-				Limit:        common.Int64(100),
-			})
-			if err != nil {
-				return nil, provider.NewSoftErrorf("getting records for zone %q: %w", *zone.Id, err)
-			}
-
-			for _, record := range resp.Items {
-				if !provider.SupportedRecordType(*record.Rtype) {
-					continue
-				}
-				endpoints = append(endpoints,
-					endpoint.NewEndpointWithTTL(
-						*record.Domain,
-						*record.Rtype,
-						endpoint.TTL(*record.Ttl),
-						*record.Rdata,
-					),
-				)
-			}
-
-			if page = resp.OpcNextPage; resp.OpcNextPage == nil {
-				break
-			}
-		}
-	}
-
-	endpoints = mergeEndpointsMultiTargets(endpoints)
-
-	return endpoints, nil
-}
-
-// ApplyChanges applies a given set of changes to a given zone.
-func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("Processing changes: %+v", changes)
-
-	var ops []dns.RecordOperation
-	ops = append(ops, p.newFilteredRecordOperations(changes.Create, dns.RecordOperationOperationAdd)...)
-
-	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateNew, dns.RecordOperationOperationAdd)...)
-	ops = append(ops, p.newFilteredRecordOperations(changes.UpdateOld, dns.RecordOperationOperationRemove)...)
-
-	ops = append(ops, p.newFilteredRecordOperations(changes.Delete, dns.RecordOperationOperationRemove)...)
-
-	if len(ops) == 0 {
-		log.Info("All records are already up to date")
-		return nil
-	}
-
-	zones, err := p.zones(ctx)
-	if err != nil {
-		return provider.NewSoftErrorf("fetching zones: %w", err)
-	}
-
-	// Separate into per-zone change sets to be passed to OCI API.
-	opsByZone := operationsByZone(zones, ops)
-	for zoneID, ops := range opsByZone {
-		log.Infof("Change zone: %q", zoneID)
-		for _, op := range ops {
-			log.Info(op)
-		}
-	}
-
-	if p.dryRun {
-		return nil
-	}
-
-	for zoneID, ops := range opsByZone {
-		if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
-			ZoneNameOrId: &zoneID,
-			Items:        ops,
-		}); err != nil {
-			return provider.NewSoftError(err)
-		}
-	}
-
-	return nil
-}
-
-// AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	var adjustedEndpoints []*endpoint.Endpoint
-	for _, e := range endpoints {
-		// OCI DNS does not support the set-identifier attribute, so we remove it to avoid plan failure
-		if e.SetIdentifier != "" {
-			log.Warnf("Adjusting endpoint: %v. Ignoring unsupported annotation 'set-identifier': %s", *e, e.SetIdentifier)
-			e.SetIdentifier = ""
-		}
-		adjustedEndpoints = append(adjustedEndpoints, e)
-	}
-	return adjustedEndpoints, nil
 }
 
 // newRecordOperation returns a RecordOperation based on a given endpoint.

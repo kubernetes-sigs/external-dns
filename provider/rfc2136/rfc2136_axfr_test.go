@@ -39,6 +39,16 @@ const (
 	axfrTestSecret  = "c2VjcmV0"
 )
 
+type readDeadlineErrorConn struct {
+	net.Conn
+	err error
+}
+
+type readErrorConn struct {
+	net.Conn
+	err error
+}
+
 func signedAXFRStart(t *testing.T) (uint16, string, []byte) {
 	t.Helper()
 
@@ -219,18 +229,8 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 	})
 }
 
-type readDeadlineErrorConn struct {
-	net.Conn
-	err error
-}
-
 func (c readDeadlineErrorConn) SetReadDeadline(time.Time) error {
 	return c.err
-}
-
-type readErrorConn struct {
-	net.Conn
-	err error
 }
 
 func (c readErrorConn) Read([]byte) (int, error) {

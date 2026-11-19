@@ -32,6 +32,22 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+const (
+	defaultFQDNTemplate = "example.com"
+)
+
+var (
+	letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
+
+	// fakePod is a placeholder Pod used when rendering the FQDN template.
+	fakePod = v1.Pod{
+		Kind:       "Pod",
+		APIVersion: "v1",
+		Name:       types.Fake,
+		Namespace:  v1.NamespaceDefault,
+	}
+)
+
 // fakeSource is an implementation of Source that provides dummy endpoints for
 // testing/dry-running of dns providers without needing an attached Kubernetes cluster.
 //
@@ -48,22 +64,6 @@ type fakeSource struct {
 	dnsNames []string
 	rand     *rand.Rand
 }
-
-const (
-	defaultFQDNTemplate = "example.com"
-)
-
-var (
-	letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
-
-	// fakePod is a placeholder Pod used when rendering the FQDN template.
-	fakePod = v1.Pod{
-		Kind:       "Pod",
-		APIVersion: "v1",
-		Name:       types.Fake,
-		Namespace:  v1.NamespaceDefault,
-	}
-)
 
 // NewFakeSource creates a new fakeSource with the given config.
 func NewFakeSource(cfg *config.Config) (Source, error) {

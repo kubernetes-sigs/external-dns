@@ -33,16 +33,6 @@ import (
 // that this is a transient error.
 var SoftError error = errors.New("soft error") //nolint:staticcheck
 
-// NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
-func NewSoftErrorf(format string, a ...any) error {
-	return NewSoftError(fmt.Errorf(format, a...))
-}
-
-// NewSoftError creates a SoftError from the given error
-func NewSoftError(err error) error {
-	return errors.Join(SoftError, err)
-}
-
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -59,6 +49,16 @@ type Provider interface {
 }
 
 type BaseProvider struct{}
+
+// NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
+func NewSoftErrorf(format string, a ...any) error {
+	return NewSoftError(fmt.Errorf(format, a...))
+}
+
+// NewSoftError creates a SoftError from the given error
+func NewSoftError(err error) error {
+	return errors.Join(SoftError, err)
+}
 
 // AdjustEndpoints returns the endpoints unchanged. Providers that need to
 // canonicalize or transform candidate endpoints should override this method.

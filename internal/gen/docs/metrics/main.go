@@ -40,6 +40,21 @@ var (
 	templates embed.FS
 )
 
+type templateData struct {
+	Metrics        []*metrics.Metric
+	RuntimeMetrics []string
+	ColWidths      columnWidths
+	RuntimeWidth   int
+}
+
+type columnWidths struct {
+	Name      int
+	Type      int
+	Subsystem int
+	Labels    int
+	Help      int
+}
+
 func main() {
 	testPath, _ := os.Getwd()
 	path := fmt.Sprintf("%s/docs/monitoring/metrics.md", testPath)
@@ -104,21 +119,6 @@ func getRuntimeMetrics(gatherer prometheus.Gatherer) []string {
 		}
 	}
 	return runtimeMetrics
-}
-
-type templateData struct {
-	Metrics        []*metrics.Metric
-	RuntimeMetrics []string
-	ColWidths      columnWidths
-	RuntimeWidth   int
-}
-
-type columnWidths struct {
-	Name      int
-	Type      int
-	Subsystem int
-	Labels    int
-	Help      int
 }
 
 func computeColumnWidths(ms []*metrics.Metric) columnWidths {

@@ -32,16 +32,16 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-type RegionalServicesConfig struct {
-	Enabled   bool
-	RegionKey string
-}
-
 var recordTypeRegionalHostnameSupported = sets.New(
 	"A",
 	"AAAA",
 	"CNAME",
 )
+
+type RegionalServicesConfig struct {
+	Enabled   bool
+	RegionKey string
+}
 
 type regionalHostname struct {
 	hostname  string

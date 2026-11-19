@@ -52,10 +52,6 @@ type APIError struct {
 	Message string
 }
 
-func (err *APIError) Error() string {
-	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)
-}
-
 // Logger is the interface that should be implemented for loggers that wish to
 // log HTTP requests and HTTP responses.
 type Logger interface {
@@ -102,6 +98,10 @@ type GDErrorResponse struct {
 	Code    string         `json:"code"`
 	Fields  []GDErrorField `json:"fields,omitempty"`
 	Message string         `json:"message,omitempty"`
+}
+
+func (err *APIError) Error() string {
+	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)
 }
 
 func (r GDErrorResponse) String() string {

@@ -55,14 +55,24 @@ type InMemoryProvider struct {
 	OnRecords      func()
 }
 
+// InMemoryOption allows to extend in-memory provider
+// TODO: review this pattern, and consider inline with other providers
+type InMemoryOption func(*InMemoryProvider)
+
+type filter struct {
+	domain string
+}
+
+type zone map[endpoint.EndpointKey]*endpoint.Endpoint
+
+type inMemoryClient struct {
+	zones map[string]zone
+}
+
 // New creates an InMemory provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 	return newProvider(InMemoryInitZones(cfg.InMemoryZones), InMemoryWithDomain(domainFilter), InMemoryWithLogging()), nil
 }
-
-// InMemoryOption allows to extend in-memory provider
-// TODO: review this pattern, and consider inline with other providers
-type InMemoryOption func(*InMemoryProvider)
 
 // InMemoryWithLogging injects logging when ApplyChanges is called
 func InMemoryWithLogging() InMemoryOption {
@@ -220,10 +230,6 @@ func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return records
 }
 
-type filter struct {
-	domain string
-}
-
 // Zones filters map[zoneID]zoneName for names having f.domain as suffix
 func (f *filter) Zones(zones map[string]string) map[string]string {
 	result := map[string]string{}
@@ -246,12 +252,6 @@ func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]st
 		}
 	}
 	return matchZoneID
-}
-
-type zone map[endpoint.EndpointKey]*endpoint.Endpoint
-
-type inMemoryClient struct {
-	zones map[string]zone
 }
 
 func newInMemoryClient() *inMemoryClient {

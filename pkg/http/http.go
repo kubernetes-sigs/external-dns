@@ -41,12 +41,12 @@ var (
 	)
 )
 
-func init() {
-	metrics.RegisterMetric.MustRegister(RequestDurationMetric)
-}
-
 type CustomRoundTripper struct {
 	next http.RoundTripper
+}
+
+func init() {
+	metrics.RegisterMetric.MustRegister(RequestDurationMetric)
 }
 
 // CancelRequest is a no-op to satisfy interfaces that require it.

@@ -61,11 +61,6 @@ type CivoChanges struct {
 	Updates []*CivoChangeUpdate
 }
 
-// Empty returns true if there are no changes
-func (c *CivoChanges) Empty() bool {
-	return len(c.Creates) == 0 && len(c.Updates) == 0 && len(c.Deletes) == 0
-}
-
 // CivoChangeCreate Civo Domain Record Creates
 type CivoChangeCreate struct {
 	Domain  civogo.DNSDomain
@@ -83,6 +78,11 @@ type CivoChangeUpdate struct {
 type CivoChangeDelete struct {
 	Domain       civogo.DNSDomain
 	DomainRecord civogo.DNSRecord
+}
+
+// Empty returns true if there are no changes
+func (c *CivoChanges) Empty() bool {
+	return len(c.Creates) == 0 && len(c.Updates) == 0 && len(c.Deletes) == 0
 }
 
 // New creates a Civo provider from the given configuration.
@@ -164,6 +164,62 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return endpoints, nil
 }
 
+// ApplyChanges applies a given set of changes in a given zone.
+func (p *CivoProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+	var civoChange CivoChanges
+	recordsByZoneID := make(map[string][]civogo.DNSRecord)
+
+	zones, err := p.fetchZones()
+
+	if err != nil {
+		return err
+	}
+
+	zonesByID := make(map[string]civogo.DNSDomain)
+
+	zoneNameIDMapper := provider.ZoneIDName{}
+
+	for _, z := range zones {
+		zoneNameIDMapper.Add(z.ID, z.Name)
+		zonesByID[z.ID] = z
+	}
+
+	// Fetch records for each zone
+	for _, zone := range zones {
+		records, err := p.fetchRecords(zone.ID)
+
+		if err != nil {
+			return err
+		}
+
+		recordsByZoneID[zone.ID] = append(recordsByZoneID[zone.ID], records...)
+	}
+
+	createsByZone := endpointsByZone(zoneNameIDMapper, changes.Create)
+	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
+	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
+
+	// Generate Creates
+	err = processCreateActions(zonesByID, recordsByZoneID, createsByZone, &civoChange)
+	if err != nil {
+		return err
+	}
+
+	// Generate Updates
+	err = processUpdateActions(zonesByID, recordsByZoneID, updatesByZone, &civoChange)
+	if err != nil {
+		return err
+	}
+
+	// Generate Deletes
+	err = processDeleteActions(zonesByID, recordsByZoneID, deletesByZone, &civoChange)
+	if err != nil {
+		return err
+	}
+
+	return p.submitChanges(civoChange)
+}
+
 func (p *CivoProvider) fetchRecords(domainID string) ([]civogo.DNSRecord, error) {
 	records, err := p.Client.ListDNSRecords(domainID)
 	if err != nil {
@@ -190,82 +246,6 @@ func (p *CivoProvider) fetchZones() ([]civogo.DNSDomain, error) {
 	}
 
 	return zones, nil
-}
-
-// submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *CivoProvider) submitChanges(changes CivoChanges) error {
-	if changes.Empty() {
-		log.Info("All records are already up to date")
-		return nil
-	}
-
-	for _, change := range changes.Creates {
-		logFields := log.Fields{
-			logFieldType:     change.Options.Type,
-			logFieldName:     change.Options.Name,
-			logFieldValue:    change.Options.Value,
-			logFieldPriority: change.Options.Priority,
-			logFieldTTL:      change.Options.TTL,
-			logFieldAction:   "Create",
-		}
-
-		log.WithFields(logFields).Info("Creating record.")
-
-		if p.DryRun {
-			log.WithFields(logFields).Info("Would create record.")
-		} else if _, err := p.Client.CreateDNSRecord(change.Domain.ID, change.Options); err != nil {
-			log.WithFields(logFields).Errorf(
-				"Failed to Create record: %v",
-				err,
-			)
-		}
-	}
-
-	for _, change := range changes.Deletes {
-		logFields := log.Fields{
-			logFieldType:     change.DomainRecord.Type,
-			logFieldName:     change.DomainRecord.Name,
-			logFieldValue:    change.DomainRecord.Value,
-			logFieldPriority: change.DomainRecord.Priority,
-			logFieldTTL:      change.DomainRecord.TTL,
-			logFieldAction:   "Delete",
-		}
-
-		log.WithFields(logFields).Info("Deleting record.")
-
-		if p.DryRun {
-			log.WithFields(logFields).Info("Would delete record.")
-		} else if _, err := p.Client.DeleteDNSRecord(&change.DomainRecord); err != nil {
-			log.WithFields(logFields).Errorf(
-				"Failed to Delete record: %v",
-				err,
-			)
-		}
-	}
-
-	for _, change := range changes.Updates {
-		logFields := log.Fields{
-			logFieldType:     change.DomainRecord.Type,
-			logFieldName:     change.DomainRecord.Name,
-			logFieldValue:    change.DomainRecord.Value,
-			logFieldPriority: change.DomainRecord.Priority,
-			logFieldTTL:      change.DomainRecord.TTL,
-			logFieldAction:   "Update",
-		}
-
-		log.WithFields(logFields).Info("Updating record.")
-
-		if p.DryRun {
-			log.WithFields(logFields).Info("Would update record.")
-		} else if _, err := p.Client.UpdateDNSRecord(&change.DomainRecord, &change.Options); err != nil {
-			log.WithFields(logFields).Errorf(
-				"Failed to Update record: %v",
-				err,
-			)
-		}
-	}
-
-	return nil
 }
 
 // processCreateActions return a list of changes to create records.
@@ -459,60 +439,80 @@ func processDeleteActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 	return nil
 }
 
-// ApplyChanges applies a given set of changes in a given zone.
-func (p *CivoProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
-	var civoChange CivoChanges
-	recordsByZoneID := make(map[string][]civogo.DNSRecord)
-
-	zones, err := p.fetchZones()
-
-	if err != nil {
-		return err
+// submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
+func (p *CivoProvider) submitChanges(changes CivoChanges) error {
+	if changes.Empty() {
+		log.Info("All records are already up to date")
+		return nil
 	}
 
-	zonesByID := make(map[string]civogo.DNSDomain)
-
-	zoneNameIDMapper := provider.ZoneIDName{}
-
-	for _, z := range zones {
-		zoneNameIDMapper.Add(z.ID, z.Name)
-		zonesByID[z.ID] = z
-	}
-
-	// Fetch records for each zone
-	for _, zone := range zones {
-		records, err := p.fetchRecords(zone.ID)
-
-		if err != nil {
-			return err
+	for _, change := range changes.Creates {
+		logFields := log.Fields{
+			logFieldType:     change.Options.Type,
+			logFieldName:     change.Options.Name,
+			logFieldValue:    change.Options.Value,
+			logFieldPriority: change.Options.Priority,
+			logFieldTTL:      change.Options.TTL,
+			logFieldAction:   "Create",
 		}
 
-		recordsByZoneID[zone.ID] = append(recordsByZoneID[zone.ID], records...)
+		log.WithFields(logFields).Info("Creating record.")
+
+		if p.DryRun {
+			log.WithFields(logFields).Info("Would create record.")
+		} else if _, err := p.Client.CreateDNSRecord(change.Domain.ID, change.Options); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Create record: %v",
+				err,
+			)
+		}
 	}
 
-	createsByZone := endpointsByZone(zoneNameIDMapper, changes.Create)
-	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
-	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
+	for _, change := range changes.Deletes {
+		logFields := log.Fields{
+			logFieldType:     change.DomainRecord.Type,
+			logFieldName:     change.DomainRecord.Name,
+			logFieldValue:    change.DomainRecord.Value,
+			logFieldPriority: change.DomainRecord.Priority,
+			logFieldTTL:      change.DomainRecord.TTL,
+			logFieldAction:   "Delete",
+		}
 
-	// Generate Creates
-	err = processCreateActions(zonesByID, recordsByZoneID, createsByZone, &civoChange)
-	if err != nil {
-		return err
+		log.WithFields(logFields).Info("Deleting record.")
+
+		if p.DryRun {
+			log.WithFields(logFields).Info("Would delete record.")
+		} else if _, err := p.Client.DeleteDNSRecord(&change.DomainRecord); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Delete record: %v",
+				err,
+			)
+		}
 	}
 
-	// Generate Updates
-	err = processUpdateActions(zonesByID, recordsByZoneID, updatesByZone, &civoChange)
-	if err != nil {
-		return err
+	for _, change := range changes.Updates {
+		logFields := log.Fields{
+			logFieldType:     change.DomainRecord.Type,
+			logFieldName:     change.DomainRecord.Name,
+			logFieldValue:    change.DomainRecord.Value,
+			logFieldPriority: change.DomainRecord.Priority,
+			logFieldTTL:      change.DomainRecord.TTL,
+			logFieldAction:   "Update",
+		}
+
+		log.WithFields(logFields).Info("Updating record.")
+
+		if p.DryRun {
+			log.WithFields(logFields).Info("Would update record.")
+		} else if _, err := p.Client.UpdateDNSRecord(&change.DomainRecord, &change.Options); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Update record: %v",
+				err,
+			)
+		}
 	}
 
-	// Generate Deletes
-	err = processDeleteActions(zonesByID, recordsByZoneID, deletesByZone, &civoChange)
-	if err != nil {
-		return err
-	}
-
-	return p.submitChanges(civoChange)
+	return nil
 }
 
 func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
