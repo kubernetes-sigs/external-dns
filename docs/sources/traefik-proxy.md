@@ -105,15 +105,6 @@ kubectl delete -f docs/snippets/traefik-proxy/ingress-route-default.yaml
 kubectl delete -f externaldns.yaml
 ```
 
-## Additional Flags
+## Resource Listeners
 
-| Flag                    | Description                                             |
-|-------------------------|---------------------------------------------------------|
-| --traefik-enable-legacy | Enable listeners on Resources under traefik.containo.us |
-| --traefik-disable-new   | Disable listeners on Resources under traefik.io         |
-
-### Resource Listeners
-
-Traefik has deprecated the legacy API group, _traefik.containo.us_, in favor of _traefik.io_. By default the `traefik-proxy` source listen for resources under traefik.io API groups.
-
-If needed, you can enable legacy listener with `--traefik-enable-legacy` and also disable new listener with `--traefik-disable-new`.
+The `traefik-proxy` source listens for resources under the _traefik.io_ API group.
