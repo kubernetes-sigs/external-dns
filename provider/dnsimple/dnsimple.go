@@ -356,7 +356,7 @@ func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordN
 func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsimple.Zone {
 	var zone *dnsimple.Zone
 	for _, z := range zones {
-		if strings.HasSuffix(hostname, z.Name) {
+		if hostname == z.Name || strings.HasSuffix(hostname, "."+z.Name) {
 			if zone == nil || len(z.Name) > len(zone.Name) {
 				newZ := z
 				zone = &newZ
