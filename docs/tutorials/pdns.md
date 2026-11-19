@@ -11,12 +11,6 @@ functional. It expects that zones, you wish to add records to, already exist
 and are configured correctly. It does not add, remove or configure new zones in
 anyway.
 
-## Feature Support
-
-The PDNS provider currently does not support:
-
-* Dry running a configuration is not supported
-
 ## Deployment
 
 Deploying external DNS for PowerDNS is actually nearly identical to deploying
