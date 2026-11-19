@@ -372,3 +372,38 @@ func TestNS1ApplyChangesDryRun(t *testing.T) {
 	assert.Zero(t, client.updateCalls, "dry-run must not update records")
 	assert.Zero(t, client.deleteCalls, "dry-run must not delete records")
 }
+
+func TestNS1AdjustEndpoints(t *testing.T) {
+	p := &NS1Provider{}
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "_acme-challenge.foo.com", RecordType: "TXT", Targets: endpoint.Targets{"token"}, SetIdentifier: "challenge-1"},
+		{DNSName: "test.foo.com", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"}},
+	}
+
+	adjusted, err := p.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
+	require.Len(t, adjusted, 2)
+	for _, ep := range adjusted {
+		assert.Empty(t, ep.SetIdentifier)
+	}
+	assert.Equal(t, endpoint.Targets{"token"}, adjusted[0].Targets)
+}
+
+type MockNS1CreateRecordExists struct {
+	MockNS1DomainClient
+}
+
+func (m *MockNS1CreateRecordExists) CreateRecord(_ *dns.Record) (*http.Response, error) {
+	return nil, api.ErrRecordExists
+}
+
+func TestNS1ApplyChangesRecordExists(t *testing.T) {
+	p := &NS1Provider{client: &MockNS1CreateRecordExists{}}
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{{DNSName: "new.foo.com", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"}}},
+	}
+
+	err := p.ApplyChanges(t.Context(), changes)
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorIs(t, err, api.ErrRecordExists)
+}

@@ -19,6 +19,7 @@ package ns1
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -193,6 +194,19 @@ func (p *NS1Provider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// AdjustEndpoints drops set identifiers. NS1 has no field to store one, so a
+// desired endpoint carrying an identifier never matches the record Records
+// returns and the plan would create it again on every reconcile (#6922).
+func (p *NS1Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if ep.SetIdentifier != "" {
+			log.Warnf("Ignoring set identifier %q on %s record %s: NS1 does not support set identifiers", ep.SetIdentifier, ep.RecordType, ep.DNSName)
+			ep.SetIdentifier = ""
+		}
+	}
+	return endpoints, nil
+}
+
 // ns1BuildRecord returns a dns.Record for a change set
 func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	record := dns.NewRecord(zoneName, change.Endpoint.DNSName, change.Endpoint.RecordType, map[string]string{}, []string{})
@@ -243,6 +257,10 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 			switch change.Action {
 			case ns1Create:
 				_, err := p.client.CreateRecord(record)
+				if errors.Is(err, api.ErrRecordExists) {
+					// The next Records call sees the record, so exiting gains nothing.
+					return provider.NewSoftErrorf("creating %s record %s: %w", record.Type, record.Domain, err)
+				}
 				if err != nil {
 					return err
 				}
