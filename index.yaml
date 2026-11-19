@@ -3,6 +3,47 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |-
+        - kind: added
+          description: "Add value .fqdnTemplates to configure FQDN templates for generating DNS records."
+        - kind: added
+          description: "Add value eventsEmit to set the Kubernetes events ExternalDNS emits and grant the matching RBAC to create events.k8s.io events."
+        - kind: added
+          description: "Add value hostUsers to set the Pod hostUsers field, so that the Pod can run in a user namespace."
+        - kind: changed
+          description: "Update bundled DNSEndpoint and DNSRecord CRDs with admission validation."
+        - kind: changed
+          description: "Default provider.webhook.securityContext to no privilege escalation, no capabilities and a read-only root filesystem, like the external-dns container, so the Pod meets the restricted Pod Security Standard."
+        - kind: changed
+          description: "Update ExternalDNS OCI image version to v0.24.0."
+    apiVersion: v2
+    appVersion: 0.24.0
+    created: "2026-11-19T17:15:03.368885123Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: ebd3e13e32fca4aabf9d07090cca8c4bf4f73bcc89e5254e5650388bdac2e34a
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - k8s
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    - gateway
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.24.0/external-dns-1.24.0.tgz
+    version: 1.24.0
+  - annotations:
+      artifacthub.io/changes: |-
         - kind: changed
           description: "Update ExternalDNS OCI image version to v0.23.0."
     apiVersion: v2
@@ -1261,4 +1302,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2026-09-30T23:19:27.019461926Z"
+generated: "2026-11-19T17:15:03.369564688Z"
