@@ -231,6 +231,7 @@ type CloudFlareProvider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter           *endpoint.DomainFilter
 	zoneIDFilter           provider.ZoneIDFilter
+	zoneMatchParent        bool // also consider the parent zone of a domain filter entry
 	proxiedByDefault       bool
 	DryRun                 bool
 	CustomHostnamesConfig  CustomHostnamesConfig
@@ -308,6 +309,7 @@ func newProvider(
 	regionalServicesConfig RegionalServicesConfig,
 	customHostnamesConfig CustomHostnamesConfig,
 	dnsRecordsConfig DNSRecordsConfig,
+	zoneMatchParent bool,
 ) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 
@@ -341,6 +343,7 @@ func newProvider(
 		Client:                 zoneService{client},
 		domainFilter:           domainFilter,
 		zoneIDFilter:           zoneIDFilter,
+		zoneMatchParent:        zoneMatchParent,
 		proxiedByDefault:       proxiedByDefault,
 		CustomHostnamesConfig:  customHostnamesConfig,
 		DryRun:                 dryRun,
@@ -371,6 +374,7 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 			BatchChangeSize:     cfg.BatchChangeSize,
 			BatchChangeInterval: cfg.BatchChangeInterval,
 		},
+		cfg.CloudflareZoneMatchParent,
 	)
 }
 
@@ -404,8 +408,12 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]zones.Zone, error) {
 	iter := p.Client.ListZones(ctx, params)
 	for zone := range autoPagerIterator(iter) {
 		if !p.domainFilter.Match(zone.Name) {
-			log.Debugf("zone %q not in domain filter", zone.Name)
-			continue
+			// Cloudflare only exposes the apex domain as a zone, so a domain filter that targets a
+			// subdomain never matches the zone name. Optionally fall back to the parent zone.
+			if !p.zoneMatchParent || !p.domainFilter.MatchParent(zone.Name) {
+				log.Debugf("zone %q not in domain filter", zone.Name)
+				continue
+			}
 		}
 		log.WithFields(log.Fields{
 			"zoneName": zone.Name,

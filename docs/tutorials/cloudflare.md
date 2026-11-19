@@ -34,6 +34,23 @@ When using API Token authentication, the token should be granted Zone `Read`, DN
 
 If you would like to further restrict the API permissions to a specific zone (or zones), you also need to use the `--zone-id-filter` so that the underlying API requests only access the zones that you explicitly specify, as opposed to accessing all zones.
 
+## Managing only a subdomain of a zone
+
+Cloudflare exposes the apex domain of your account as a zone (for example `example.com`), and subdomains such as `dev.example.com` are not separate zones unless you delegate them (an Enterprise feature).
+By default, ExternalDNS only considers zones whose name matches `--domain-filter`, so `--domain-filter=dev.example.com` matches no zone and no records are created.
+
+Use `--cloudflare-zone-match-parent` to also consider the zone that is a parent of a `--domain-filter` entry.
+ExternalDNS then manages records for `dev.example.com` (and subdomains thereof) in the `example.com` zone, and leaves other records in that zone alone, because only names matching `--domain-filter` are planned.
+
+```yaml
+## Cloudflare zone: example.com
+--provider=cloudflare
+--domain-filter=dev.example.com
+--cloudflare-zone-match-parent
+```
+
+The flag is disabled by default, so existing setups behave exactly as before.
+
 ## Throttling
 
 Cloudflare API has a [global rate limit of 1,200 requests per five minutes](https://developers.cloudflare.com/fundamentals/api/reference/limits/). Running several fast polling ExternalDNS instances in a given account can easily hit that limit.
