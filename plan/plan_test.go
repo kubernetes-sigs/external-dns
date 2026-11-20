@@ -1197,10 +1197,10 @@ func (suite *PlanTestSuite) TestResourceLabelFollowsSelectedSource() {
 		svc   = "service/default/a"
 		ing   = "ingress/default/b"
 	)
-	newEndpoint := func(resource, owner string) *endpoint.Endpoint {
+	newEndpoint := func(resource, ownr string) *endpoint.Endpoint {
 		return endpoint.NewEndpoint("app.example.com", endpoint.RecordTypeA, "1.2.3.4").
 			WithLabel(endpoint.ResourceLabelKey, resource).
-			WithLabel(endpoint.OwnerLabelKey, owner)
+			WithLabel(endpoint.OwnerLabelKey, ownr)
 	}
 	for _, tc := range []struct {
 		name       string
