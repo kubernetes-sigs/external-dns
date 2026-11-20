@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
@@ -706,9 +707,14 @@ func (e *Endpoint) Validate() error {
 
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeA, RecordTypeAAAA:
-		if !e.isAlias() {
-			return e.Targets.validateIPRecord(recordType)
+		if e.isAlias() {
+			return e.Targets.validateHostnameRecord(recordType)
 		}
+		return e.Targets.validateIPRecord(recordType)
+	case RecordTypeCNAME, RecordTypeNS, RecordTypeDNAME:
+		return e.Targets.validateHostnameRecord(recordType)
+	case RecordTypeTLSA:
+		return e.Targets.validateTLSARecord()
 	case RecordTypeMX:
 		return e.Targets.validateMXRecord()
 	case RecordTypeSRV:
@@ -856,6 +862,38 @@ func (t Targets) validateSRVRecord() error {
 		}
 	}
 	return nil
+}
+
+func (t Targets) validateHostnameRecord(recordType string) error {
+	for _, target := range t {
+		if !isValidDomainName(target) {
+			return fmt.Errorf("target %q is not a valid domain name for record type %s", target, recordType)
+		}
+	}
+	return nil
+}
+
+func (t Targets) validateTLSARecord() error {
+	for _, target := range t {
+		if _, err := NewTLSARecord(target); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// isValidDomainName rejects whitespace and empty labels, which dns.IsDomainName
+// accepts because a label may hold any octet on the wire.
+func isValidDomainName(name string) bool {
+	if name == "" || strings.ContainsFunc(name, unicode.IsSpace) {
+		return false
+	}
+	trimmed := strings.TrimSuffix(name, ".")
+	if trimmed == "" || slices.Contains(strings.Split(trimmed, "."), "") {
+		return false
+	}
+	_, ok := dns.IsDomainName(name)
+	return ok
 }
 
 func (e *Endpoint) validatePTRRecord() error {
