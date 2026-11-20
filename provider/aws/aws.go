@@ -318,6 +318,23 @@ type AWSProvider struct {
 	failedChangesQueue map[string]Route53Changes
 }
 
+type aliasTargetKey struct {
+	dnsName       string
+	recordType    string
+	setIdentifier string
+}
+
+func aliasKey(ep *endpoint.Endpoint) (aliasTargetKey, bool) {
+	if len(ep.Targets) != 1 {
+		return aliasTargetKey{}, false
+	}
+	return aliasTargetKey{
+		dnsName:       strings.ToLower(ep.DNSName),
+		recordType:    ep.RecordType,
+		setIdentifier: ep.SetIdentifier,
+	}, true
+}
+
 // AWSConfig contains configuration to create a new AWS provider.
 type AWSConfig struct {
 	DomainFilter          *endpoint.DomainFilter
@@ -511,6 +528,11 @@ func (p *AWSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 
 func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZone) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
+	type aliasRecord struct {
+		endpoint     *endpoint.Endpoint
+		sourceZoneID string
+	}
+	aliasRecords := make(map[aliasTargetKey][]aliasRecord)
 
 	for _, z := range zones {
 		client := p.clients[z.profile]
@@ -531,7 +553,32 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					continue
 				}
 
-				endpoints = append(endpoints, newEndpointsFromResourceRecordSet(&r)...)
+				for _, ep := range newEndpointsFromResourceRecordSet(&r) {
+					endpoints = append(endpoints, ep)
+					if _, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+						if key, ok := aliasKey(ep); ok {
+							aliasRecords[key] = append(aliasRecords[key], aliasRecord{ep, cleanZoneID(aws.ToString(z.zone.Id))})
+						}
+					}
+				}
+			}
+		}
+	}
+	for _, records := range aliasRecords {
+		inferred := true
+		for _, record := range records {
+			actual, _ := record.endpoint.GetProviderSpecificProperty(providerSpecificTargetHostedZone)
+			expected := canonicalHostedZone(record.endpoint.Targets[0])
+			if expected == "" {
+				expected = record.sourceZoneID
+			}
+			if actual != expected {
+				inferred = false
+			}
+		}
+		if inferred {
+			for _, record := range records {
+				record.endpoint.DeleteProviderSpecificProperty(providerSpecificTargetHostedZone)
 			}
 		}
 	}
@@ -570,6 +617,7 @@ func newEndpointsFromResourceRecordSet(r *route53types.ResourceRecordSet) []*end
 		aliasTarget := convertOctalToAscii(wildcardUnescape(*r.AliasTarget.DNSName))
 		ep := endpoint.
 			NewEndpointWithTTL(name, string(r.Type), ttl, aliasTarget).
+			WithProviderSpecific(providerSpecificTargetHostedZone, cleanZoneID(aws.ToString(r.AliasTarget.HostedZoneId))).
 			WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", r.AliasTarget.EvaluateTargetHealth)).
 			WithAliasProperty(endpoint.AliasTrue)
 		newEndpoints = append(newEndpoints, ep)
@@ -875,7 +923,38 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 			aliasCnameAaaaEndpoints = append(aliasCnameAaaaEndpoints, aaaa)
 		}
 	}
-	return append(endpoints, aliasCnameAaaaEndpoints...), nil
+	endpoints = append(endpoints, aliasCnameAaaaEndpoints...)
+	var zones map[string]*profiledZone
+	for _, ep := range endpoints {
+		if ep.GetAliasProperty() != endpoint.AliasTrue || len(ep.Targets) != 1 {
+			continue
+		}
+		targetZone, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone)
+		if !ok {
+			continue
+		}
+		if canonical := canonicalHostedZone(ep.Targets[0]); canonical != "" {
+			if targetZone == canonical {
+				ep.DeleteProviderSpecificProperty(providerSpecificTargetHostedZone)
+			}
+			continue
+		}
+		if zones == nil {
+			var err error
+			zones, err = p.zones(context.Background())
+			if err != nil {
+				return nil, err
+			}
+		}
+		matching := suitableZones(provider.EnsureTrailingDot(ep.DNSName), zones)
+		if sourceZone, pinned := ep.GetProviderSpecificProperty(providerSpecificHostedZoneID); pinned {
+			matching = filterZonesByID(matching, cleanZoneID(sourceZone))
+		}
+		if len(matching) == 1 && targetZone == cleanZoneID(aws.ToString(matching[0].zone.Id)) {
+			ep.DeleteProviderSpecificProperty(providerSpecificTargetHostedZone)
+		}
+	}
+	return endpoints, nil
 }
 
 func (p *AWSProvider) adjustEndpointAndNewAaaaIfNeeded(ep *endpoint.Endpoint) *endpoint.Endpoint {
@@ -892,6 +971,9 @@ func (p *AWSProvider) adjustAliasRecord(ep *endpoint.Endpoint) {
 	if ep.RecordTTL.IsConfigured() {
 		log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, defaultTTL)
 		ep.RecordTTL = defaultTTL
+	}
+	if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+		ep.SetProviderSpecificProperty(providerSpecificTargetHostedZone, cleanZoneID(hostedZoneID))
 	}
 
 	if enable, exists := ep.GetBoolProviderSpecificProperty(providerSpecificEvaluateTargetHealth); exists {

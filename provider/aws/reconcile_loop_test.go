@@ -40,6 +40,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -122,10 +123,10 @@ func newReconcileLoop(t *testing.T, cfg *externaldns.Config, policyName string, 
 // restart rebuilds the provider and registry on the same Route 53 state, the way changing a
 // CLI flag such as --aws-prefer-cname does in production: a fresh process with empty caches,
 // not a mutated field. Ownership then has to be recovered from what is in the zone.
-func (h *reconcileLoop) restart(preferCNAME bool) {
+func (h *reconcileLoop) restart() {
 	h.t.Helper()
 	restarted := *h.prov
-	restarted.preferCNAME = preferCNAME
+	restarted.preferCNAME = false
 	restarted.zonesCache = blueprint.NewZoneCache[map[string]*profiledZone](1 * time.Minute)
 	restarted.failedChangesQueue = make(map[string]Route53Changes)
 	h.prov = &restarted
@@ -154,7 +155,6 @@ func (h *reconcileLoop) runOnce(desired []*endpoint.Endpoint) (*plan.Changes, er
 	if err != nil {
 		return nil, fmt.Errorf("registry.AdjustEndpoints: %w", err)
 	}
-
 	p := &plan.Plan{
 		Policies:       []plan.Policy{h.policy},
 		Current:        current,
@@ -651,6 +651,134 @@ func TestReconcileLoopMigratesLegacyAliasOwnershipTXT(t *testing.T) {
 	}
 }
 
+func TestReconcileLoopSettlesAnnotatedAliasTargetHostedZone(t *testing.T) {
+	h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+	host := "app." + reconcileZone
+	desired := func(zoneID string) []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			cnameTo("app", "target.external.example.net").
+				WithAliasProperty(endpoint.AliasTrue).
+				WithProviderSpecific(providerSpecificTargetHostedZone, zoneID),
+		}
+	}
+
+	h.mustSettle(desired("ZEXAMPLE123"))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZEXAMPLE123", h.aliasHostedZone(host, recordType))
+		require.True(t, h.ownsRecord(host, recordType))
+	}
+
+	h.mustSettle(desired("ZOTHER456"))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, "ZOTHER456", h.aliasHostedZone(host, recordType))
+		require.True(t, h.ownsRecord(host, recordType))
+	}
+	h.mustSettle(desired("/hostedzone/ZOTHER456"))
+}
+
+func TestReconcileLoopSettlesUnannotatedAliasWithCachedRecords(t *testing.T) {
+	cfg := reconcileConfig("", "")
+	cfg.TXTCacheInterval = time.Hour
+	h := newReconcileLoop(t, cfg, "upsert-only", false)
+	host := "app." + reconcileZone
+
+	h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbOld)})
+	h.restart()
+	h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbOld)})
+	h.mustSettle([]*endpoint.Endpoint{cnameTo("app", lbNewOtherReg)})
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, canonicalHostedZone(lbNewOtherReg), h.aliasHostedZone(host, recordType))
+	}
+}
+
+func TestReconcileLoopSettlesInferredTargetHostedZoneAnnotations(t *testing.T) {
+	for _, tc := range []struct {
+		name, target, zone string
+	}{
+		{"canonical", lbOld, canonicalHostedZone(lbOld)},
+		{"same-zone", "target." + reconcileZone, cleanZoneID(reconcileZoneID)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+			desired := []*endpoint.Endpoint{
+				cnameTo("app", tc.target).
+					WithAliasProperty(endpoint.AliasTrue).
+					WithProviderSpecific(providerSpecificTargetHostedZone, "/hostedzone/"+tc.zone),
+			}
+			h.mustSettle(desired)
+			for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+				require.Equal(t, tc.zone, h.aliasHostedZone("app."+reconcileZone, recordType))
+				_, annotated := h.findRecord("app."+reconcileZone, recordType).GetProviderSpecificProperty(providerSpecificTargetHostedZone)
+				require.False(t, annotated)
+			}
+		})
+	}
+}
+
+func TestReconcileLoopDryRunDoesNotRememberAliasZone(t *testing.T) {
+	h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+	desired := []*endpoint.Endpoint{
+		cnameTo("app", "target.external.example.net").
+			WithAliasProperty(endpoint.AliasTrue).
+			WithProviderSpecific(providerSpecificTargetHostedZone, "ZEXAMPLE123"),
+	}
+	h.prov.dryRun = true
+	changes, err := h.runOnce(desired)
+	require.NoError(t, err)
+	require.True(t, changes.HasChanges())
+	require.Empty(t, h.client.recordSets[reconcileZoneID])
+	h.prov.dryRun = false
+	h.mustSettle(desired)
+	require.Equal(t, "ZEXAMPLE123", h.aliasHostedZone("app."+reconcileZone, endpoint.RecordTypeA))
+}
+
+func TestReconcileLoopFailedAliasUpdateKeepsObservedZone(t *testing.T) {
+	h := newReconcileLoop(t, reconcileConfig("", ""), "upsert-only", false)
+	alias := func(zone string) []*endpoint.Endpoint {
+		return []*endpoint.Endpoint{
+			cnameTo("app", "target.external.example.net").
+				WithAliasProperty(endpoint.AliasTrue).
+				WithProviderSpecific(providerSpecificTargetHostedZone, zone),
+		}
+	}
+	h.mustSettle(alias("ZEXAMPLE123"))
+	h.client.MockMethod("ChangeResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("injected Route 53 failure"))
+	_, err := h.runOnce(alias("ZOTHER456"))
+	require.Error(t, err)
+	h.client.m.AssertCalled(t, "ChangeResourceRecordSets", mock.Anything)
+	require.Equal(t, "ZEXAMPLE123", h.aliasHostedZone("app."+reconcileZone, endpoint.RecordTypeA))
+	current := h.findRecord("app."+reconcileZone, endpoint.RecordTypeA)
+	require.NotNil(t, current)
+	zone, ok := current.GetProviderSpecificProperty(providerSpecificTargetHostedZone)
+	require.True(t, ok)
+	require.Equal(t, "ZEXAMPLE123", zone)
+}
+
+func TestReconcileLoopRevertsTargetZoneAfterAnnotationRemoval(t *testing.T) {
+	cfg := reconcileConfig("", "")
+	cfg.TXTCacheInterval = time.Hour
+	h := newReconcileLoop(t, cfg, "upsert-only", false)
+	host := "app." + reconcileZone
+	require.NoError(t, h.applyChangeBatch(route53Change(route53types.ChangeActionCreate, "target."+reconcileZone, route53types.RRTypeA, "192.0.2.1")))
+	alias := func(health bool, zone string) []*endpoint.Endpoint {
+		ep := cnameTo("app", "target."+reconcileZone).
+			WithAliasProperty(endpoint.AliasTrue).
+			WithProviderSpecific(providerSpecificEvaluateTargetHealth, strconv.FormatBool(health))
+		if zone != "" {
+			ep.WithProviderSpecific(providerSpecificTargetHostedZone, zone)
+		}
+		return []*endpoint.Endpoint{ep}
+	}
+
+	h.mustSettle(alias(false, "ZEXAMPLE123"))
+	h.restart()
+	h.mustSettle(alias(false, ""))
+	h.mustSettle(alias(true, ""))
+	for _, recordType := range []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA} {
+		require.Equal(t, cleanZoneID(reconcileZoneID), h.aliasHostedZone(host, recordType))
+	}
+}
+
 // TestReconcileLoopKeepsOwnershipWhenPreferCNAMEIsDropped covers an operator removing
 // --aws-prefer-cname, which turns a hostname that was a plain CNAME into an A ALIAS
 // without anything in Kubernetes changing. That rewrites the record type, and with it
@@ -676,7 +804,7 @@ func TestReconcileLoopKeepsOwnershipWhenPreferCNAMEIsDropped(t *testing.T) {
 
 			// Dropping the flag restarts the process, so rebuild the provider and
 			// registry on the same zone rather than mutating the field in place.
-			h.restart(false)
+			h.restart()
 
 			h.mustSettle(desired)
 
