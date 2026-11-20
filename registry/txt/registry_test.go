@@ -2461,12 +2461,26 @@ func TestTXTRecordNameMatchesGeneratedTXT(t *testing.T) {
 	}
 }
 
+// A key that cannot encrypt must not take the process down: the ownership TXT record is skipped.
+func TestTXTRegistryGenerateTXTRecordEncryptionFailure(t *testing.T) {
+	aesKey := []byte("passphrasewhichneedstobe32bytes!")
+	r, err := newRegistry(inmemory.NewInMemoryProvider(), "", "", "owner", time.Hour, "", []string{}, []string{}, true, aesKey, "")
+	require.NoError(t, err)
+
+	ep := newEndpointWithOwner("foo.test-zone.example.org", "192.0.2.1", endpoint.RecordTypeA, "owner")
+	require.Len(t, r.generateTXTRecord(ep), 1)
+
+	r.txtEncryptAESKey = []byte("wrong-key")
+	require.Empty(t, r.generateTXTRecord(ep))
+}
+
 // With encryption on, Records() must still flag records whose current-format TXT record is missing,
 // and leave alone the ones that have it.
 func TestTXTRegistryRecordsForceUpdateOnMigrationWithEncryption(t *testing.T) {
 	const dnsName = "foo.test-zone.example.org"
 	aesKey := []byte("passphrasewhichneedstobe32bytes!")
-	owner := endpoint.Labels{endpoint.OwnerLabelKey: "owner"}.Serialize(true, true, aesKey)
+	owner, err := endpoint.Labels{endpoint.OwnerLabelKey: "owner"}.Serialize(true, true, aesKey)
+	require.NoError(t, err)
 
 	aRecord := func(setID string) *endpoint.Endpoint {
 		return newEndpointWithOwner(dnsName, "192.0.2.1", endpoint.RecordTypeA, "owner").WithSetIdentifier(setID)

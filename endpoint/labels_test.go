@@ -17,12 +17,10 @@ limitations under the License.
 package endpoint
 
 import (
-	"bytes"
 	"crypto/rand"
 	"fmt"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -67,12 +65,30 @@ func (suite *LabelsSuite) SetupTest() {
 func (suite *LabelsSuite) TestSerialize() {
 	suite.Equal(suite.fooAsText, suite.foo.SerializePlain(false), "should serializeLabel")
 	suite.Equal(suite.fooAsTextWithQuotes, suite.foo.SerializePlain(true), "should serializeLabel")
-	suite.Equal(suite.fooAsText, suite.foo.Serialize(false, false, nil), "should serializeLabel")
-	suite.Equal(suite.fooAsTextWithQuotes, suite.foo.Serialize(true, false, nil), "should serializeLabel")
-	suite.Equal(suite.fooAsText, suite.foo.Serialize(false, false, suite.aesKey), "should serializeLabel")
-	suite.Equal(suite.fooAsTextWithQuotes, suite.foo.Serialize(true, false, suite.aesKey), "should serializeLabel")
-	suite.NotEqual(suite.fooAsText, suite.foo.Serialize(false, true, suite.aesKey), "should serializeLabel and encrypt")
-	suite.NotEqual(suite.fooAsTextWithQuotes, suite.foo.Serialize(true, true, suite.aesKey), "should serializeLabel and encrypt")
+
+	for _, tc := range []struct {
+		withQuotes bool
+		encrypt    bool
+		key        []byte
+		want       string
+	}{
+		{false, false, nil, suite.fooAsText},
+		{true, false, nil, suite.fooAsTextWithQuotes},
+		{false, false, suite.aesKey, suite.fooAsText},
+		{true, false, suite.aesKey, suite.fooAsTextWithQuotes},
+	} {
+		got, err := suite.foo.Serialize(tc.withQuotes, tc.encrypt, tc.key)
+		suite.Require().NoError(err)
+		suite.Equal(tc.want, got, "should serializeLabel")
+	}
+
+	got, err := suite.foo.Serialize(false, true, suite.aesKey)
+	suite.Require().NoError(err)
+	suite.NotEqual(suite.fooAsText, got, "should serializeLabel and encrypt")
+
+	got, err = suite.foo.Serialize(true, true, suite.aesKey)
+	suite.Require().NoError(err)
+	suite.NotEqual(suite.fooAsTextWithQuotes, got, "should serializeLabel and encrypt")
 }
 
 func (suite *LabelsSuite) TestSerializeOmitsAWSSDDualstackLabel() {
@@ -88,7 +104,8 @@ func (suite *LabelsSuite) TestSerializeOmitsAWSSDDualstackLabel() {
 func (suite *LabelsSuite) TestEncryptionNonceReUsage() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
 	suite.Require().NoError(err, "should succeed for valid label text")
-	serialized := foo.Serialize(false, true, suite.aesKey)
+	serialized, err := foo.Serialize(false, true, suite.aesKey)
+	suite.Require().NoError(err)
 	suite.Equal(serialized, suite.fooAsTextEncrypted, "serialized result should be equal")
 }
 
@@ -96,7 +113,8 @@ func (suite *LabelsSuite) TestEncryptionKeyChanged() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
 	suite.Require().NoError(err, "should succeed for valid label text")
 
-	serialised := foo.Serialize(false, true, []byte("passphrasewhichneedstobe32bytes!"))
+	serialised, err := foo.Serialize(false, true, []byte("passphrasewhichneedstobe32bytes!"))
+	suite.Require().NoError(err)
 	suite.NotEqual(serialised, suite.fooAsTextEncrypted, "serialized result should be equal")
 }
 
@@ -104,18 +122,11 @@ func (suite *LabelsSuite) TestEncryptionFailed() {
 	foo, err := NewLabelsFromString(suite.fooAsTextEncrypted, suite.aesKey)
 	suite.Require().NoError(err, "should succeed for valid label text")
 
-	defer func() { log.StandardLogger().ExitFunc = nil }()
+	got, err := foo.Serialize(false, true, []byte("wrong-key"))
 
-	b := new(bytes.Buffer)
-
-	var fatalCrash bool
-	log.StandardLogger().ExitFunc = func(int) { fatalCrash = true }
-	log.StandardLogger().SetOutput(b)
-
-	_ = foo.Serialize(false, true, []byte("wrong-key"))
-
-	suite.True(fatalCrash, "should fail if encryption key is wrong")
-	suite.Contains(b.String(), "Failed to encrypt the text:")
+	suite.Require().Error(err, "should fail if encryption key is wrong")
+	suite.Contains(err.Error(), "failed to encrypt the text")
+	suite.Empty(got)
 }
 
 func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {
@@ -126,24 +137,16 @@ func (suite *LabelsSuite) TestEncryptionFailedFaultyReader() {
 	delete(foo, txtEncryptionNonce)
 
 	originalRandReader := rand.Reader
-	defer func() {
-		log.StandardLogger().ExitFunc = nil
-		rand.Reader = originalRandReader
-	}()
+	defer func() { rand.Reader = originalRandReader }()
 
 	// Replace rand.Reader with a faulty reader
 	rand.Reader = &faultyReader{}
 
-	b := new(bytes.Buffer)
+	got, err := foo.Serialize(false, true, suite.aesKey)
 
-	var fatalCrash bool
-	log.StandardLogger().ExitFunc = func(int) { fatalCrash = true }
-	log.StandardLogger().SetOutput(b)
-
-	_ = foo.Serialize(false, true, suite.aesKey)
-
-	suite.True(fatalCrash)
-	suite.Contains(b.String(), "Failed to generate cryptographic nonce")
+	suite.Require().Error(err)
+	suite.Contains(err.Error(), "failed to generate cryptographic nonce")
+	suite.Empty(got)
 }
 
 func (suite *LabelsSuite) TestDeserialize() {

@@ -129,10 +129,11 @@ func (l Labels) SerializePlain(withQuotes bool) string {
 	return strings.Join(tokens, ",")
 }
 
-// Serialize same to SerializePlain, but encrypt data, if encryption enabled
-func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte) string {
+// Serialize same to SerializePlain, but encrypt data, if encryption enabled.
+// It returns an error if the nonce cannot be generated or the text cannot be encrypted.
+func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte) (string, error) {
 	if !txtEncryptEnabled {
-		return l.SerializePlain(withQuotes)
+		return l.SerializePlain(withQuotes), nil
 	}
 
 	encryptionNonce, ok := l[txtEncryptionNonce]
@@ -140,7 +141,7 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 		var err error
 		encryptionNonce, err = GenerateNonce()
 		if err != nil {
-			log.Fatalf("Failed to generate cryptographic nonce: %v", err)
+			return "", fmt.Errorf("failed to generate cryptographic nonce: %w", err)
 		}
 		l[txtEncryptionNonce] = encryptionNonce
 	}
@@ -150,14 +151,12 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 	var err error
 	text, err = EncryptText(text, aesKey, encryptionNonce)
 	if err != nil {
-		// TODO: review if we could return error instead of crashing the external-dns
-		// if encryption failed, the external-dns will crash
-		log.Fatalf("Failed to encrypt the text: %v", err)
+		return "", fmt.Errorf("failed to encrypt the text: %w", err)
 	}
 
 	if withQuotes {
 		text = fmt.Sprintf("\"%s\"", text)
 	}
 	log.Debugf("Serialized text after encryption is %#v.", text)
-	return text
+	return text, nil
 }

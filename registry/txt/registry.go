@@ -361,7 +361,13 @@ func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter 
 		return endpoints
 	}
 
-	txtNew := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	value, err := r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey)
+	if err != nil {
+		log.Errorf("Cannot create ownership TXT record for %s: %v", r.DNSName, err)
+		return endpoints
+	}
+
+	txtNew := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, value)
 	txtNew.WithSetIdentifier(r.SetIdentifier)
 	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 	txtNew.ProviderSpecific = r.ProviderSpecific
