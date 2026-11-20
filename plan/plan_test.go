@@ -1190,3 +1190,53 @@ func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 	}
 	suite.False(changes.HasChanges())
 }
+
+func (suite *PlanTestSuite) TestResourceLabelFollowsSelectedSource() {
+	const (
+		owner = "pwner"
+		svc   = "service/default/a"
+		ing   = "ingress/default/b"
+	)
+	newEndpoint := func(resource, ownr string) *endpoint.Endpoint {
+		return endpoint.NewEndpoint("app.example.com", endpoint.RecordTypeA, "1.2.3.4").
+			WithLabel(endpoint.ResourceLabelKey, resource).
+			WithLabel(endpoint.OwnerLabelKey, ownr)
+	}
+	for _, tc := range []struct {
+		name       string
+		ownerID    string
+		current    string
+		desired    string
+		wantUpdate bool
+	}{
+		{name: "noop registry: label added", desired: svc},
+		{name: "noop registry: label changed", current: svc, desired: ing},
+		{name: "noop registry: label removed", current: svc},
+		{name: "noop registry: no label"},
+		{name: "label added", ownerID: owner, desired: svc, wantUpdate: true},
+		{name: "label changed", ownerID: owner, current: svc, desired: ing, wantUpdate: true},
+		{name: "label removed (pod source)", ownerID: owner, current: ing, wantUpdate: true},
+		{name: "same label", ownerID: owner, current: svc, desired: svc},
+		{name: "no label", ownerID: owner},
+	} {
+		suite.Run(tc.name, func() {
+			current := newEndpoint(tc.current, tc.ownerID)
+			changes := (&Plan{
+				Policies:       []Policy{&SyncPolicy{}},
+				Current:        []*endpoint.Endpoint{current},
+				Desired:        []*endpoint.Endpoint{newEndpoint(tc.desired, "")},
+				ManagedRecords: []string{endpoint.RecordTypeA},
+				OwnerID:        tc.ownerID,
+			}).Calculate().Changes
+
+			if !tc.wantUpdate {
+				suite.False(changes.HasChanges())
+				return
+			}
+			validateEntries(suite.T(), changes.Create, nil)
+			validateEntries(suite.T(), changes.Delete, nil)
+			validateEntries(suite.T(), changes.UpdateOld, []*endpoint.Endpoint{current})
+			validateEntries(suite.T(), changes.UpdateNew, []*endpoint.Endpoint{newEndpoint(tc.desired, tc.ownerID)})
+		})
+	}
+}
