@@ -809,9 +809,8 @@ func TestPodSource(t *testing.T) {
 			testutils.ValidateEndpoints(t, endpoints, tc.expected)
 
 			for _, ep := range endpoints {
-				// TODO: source should always set the resource label key. currently not supported by the pod source.
-				require.Empty(t, ep.Labels, "Labels should not be empty for endpoint %s", ep.DNSName)
-				require.NotContains(t, ep.Labels, endpoint.ResourceLabelKey)
+				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey, "resource label missing for endpoint %s", ep.DNSName)
+				require.Regexp(t, `^pod/[^/]+/[^/]+$`, ep.Labels[endpoint.ResourceLabelKey])
 			}
 		})
 	}
@@ -1063,8 +1062,8 @@ func TestPodSourceMultipleNamespaces(t *testing.T) {
 	require.NoError(t, err)
 
 	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "54.10.11.1"),
-		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "54.10.11.1"),
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "54.10.11.1").WithLabel(endpoint.ResourceLabelKey, "pod/team-a/pod"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "54.10.11.1").WithLabel(endpoint.ResourceLabelKey, "pod/team-b/pod"),
 	})
 }
 

@@ -148,6 +148,10 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 			return nil, err
 		}
 
+		for _, ep := range podEndpoints {
+			ep.WithLabel(endpoint.ResourceLabelKey, fmt.Sprintf("pod/%s/%s", pod.Namespace, pod.Name))
+		}
+
 		endpoint.AttachRefObject(podEndpoints, events.NewObjectReference(pod, types.Pod))
 
 		endpoints = append(endpoints, podEndpoints...)
