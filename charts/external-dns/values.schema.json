@@ -24,7 +24,7 @@
       ]
     },
     "automountServiceAccountToken": {
-      "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`.",
+      "description": "Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`. As _ExternalDNS_ needs the Kubernetes API, the chart then mounts a projected `ServiceAccount` token into the `external-dns` container only, unless `extraVolumeMounts` already mounts `/var/run/secrets/kubernetes.io/serviceaccount`.",
       "type": "boolean"
     },
     "commonLabels": {
