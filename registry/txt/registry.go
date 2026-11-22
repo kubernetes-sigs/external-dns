@@ -18,7 +18,6 @@ package txt
 
 import (
 	"context"
-	b64 "encoding/base64"
 	"errors"
 	"maps"
 	"strings"
@@ -149,14 +148,9 @@ func newRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID strin
 		return nil, errors.New("owner id cannot be empty")
 	}
 
-	// TODO: encryption logic duplicated in DynamoDB registry; refactor into common utility function.
-	if len(txtEncryptAESKey) == 0 {
-		txtEncryptAESKey = nil
-	} else if len(txtEncryptAESKey) != 32 {
-		var err error
-		if txtEncryptAESKey, err = b64.StdEncoding.DecodeString(string(txtEncryptAESKey)); err != nil || len(txtEncryptAESKey) != 32 {
-			return nil, errors.New("the AES Encryption key must be 32 bytes long, in either plain text or base64-encoded format")
-		}
+	txtEncryptAESKey, err := endpoint.ParseAESKey(txtEncryptAESKey)
+	if err != nil {
+		return nil, err
 	}
 
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
