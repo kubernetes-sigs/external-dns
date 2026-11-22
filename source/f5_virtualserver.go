@@ -152,12 +152,12 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		var vsEndpoints []*endpoint.Endpoint
 
 		annotationTargets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
-		targets := append(endpoint.Targets{}, annotationTargets...)
+		targets := annotationTargets
 		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
+			targets = endpoint.Targets{virtualServer.Spec.VirtualServerAddress}
 		}
 		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
-			targets = append(targets, virtualServer.Status.VSAddress)
+			targets = endpoint.Targets{virtualServer.Status.VSAddress}
 		}
 
 		if hasValidVirtualServerIP(virtualServer) {

@@ -153,12 +153,12 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 		var tsEndpoints []*endpoint.Endpoint
 
 		annotationTargets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
-		targets := append(endpoint.Targets{}, annotationTargets...)
+		targets := annotationTargets
 		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, transportServer.Spec.VirtualServerAddress)
+			targets = endpoint.Targets{transportServer.Spec.VirtualServerAddress}
 		}
 		if len(targets) == 0 && transportServer.Status.VSAddress != "" {
-			targets = append(targets, transportServer.Status.VSAddress)
+			targets = endpoint.Targets{transportServer.Status.VSAddress}
 		}
 
 		if hasValidTransportServerIP(transportServer) {

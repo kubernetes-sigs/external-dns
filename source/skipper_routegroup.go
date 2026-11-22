@@ -132,7 +132,8 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 	for _, rg := range routeGroups {
 		eps := sc.endpointsFromRouteGroup(rg)
 
-		rgTargets := annotations.TargetsFromTargetAnnotation(rg.Annotations)
+		annotationTargets := annotations.TargetsFromTargetAnnotation(rg.Annotations)
+		rgTargets := annotationTargets
 		if len(rgTargets) == 0 {
 			rgTargets = targetsFromRouteGroupStatus(rg.Status)
 		}
@@ -142,7 +143,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 			eps,
 			&routeGroupWrapper{rg},
 			template.WithResourceTargets(rgTargets),
-			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(rg.Annotations)),
+			template.WithAnnotationTargets(annotationTargets),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(rg, hostnames, targets), nil
 			}),

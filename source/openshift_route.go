@@ -121,7 +121,8 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	var endpoints []*endpoint.Endpoint
 
 	for _, ocpRoute := range ocpRoutes {
-		routeTargets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
+		annotationTargets := annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)
+		routeTargets := annotationTargets
 		if len(routeTargets) == 0 {
 			routeTargets, _ = ors.getTargetsFromRouteStatus(ocpRoute.Status)
 		}
@@ -131,7 +132,7 @@ func (ors *ocpRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation),
 			ocpRoute,
 			template.WithResourceTargets(routeTargets),
-			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(ocpRoute.Annotations)),
+			template.WithAnnotationTargets(annotationTargets),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return ors.endpointsFromTemplate(ocpRoute, hostnames, targets), nil
 			}),

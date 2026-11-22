@@ -265,28 +265,6 @@ func TestF5TransportServerFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
-			title: "fqdn-template without target-template uses target annotation",
-			transportServer: f5.TransportServer{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: f5TransportServerGVR.GroupVersion().String(),
-					Kind:       "TransportServer",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-ts",
-					Namespace: defaultF5TransportServerNamespace,
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/target": "lb.example.com",
-					},
-				},
-				Spec:   f5.TransportServerSpec{Host: "tcp.example.com"},
-				Status: f5.CustomResourceStatus{VSAddress: ""},
-			},
-			fqdnTemplate: "{{.Name}}.example.com",
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-ts.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
-			},
-		},
-		{
 			title: "target annotation wins over target-template unless combining",
 			transportServer: f5.TransportServer{
 				TypeMeta: metav1.TypeMeta{

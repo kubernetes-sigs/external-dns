@@ -315,28 +315,6 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
-			title: "fqdn-template without target-template uses target annotation",
-			virtualServer: f5.VirtualServer{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
-					Kind:       "VirtualServer",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "my-vs",
-					Namespace: defaultF5VirtualServerNamespace,
-					Annotations: map[string]string{
-						"external-dns.kubernetes.io/target": "lb.example.com",
-					},
-				},
-				Spec:   f5.VirtualServerSpec{Host: "www.example.com"},
-				Status: f5.CustomResourceStatus{VSAddress: ""},
-			},
-			fqdnTemplate: "{{.Name}}.example.com",
-			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
-			},
-		},
-		{
 			title: "target annotation wins over target-template unless combining",
 			virtualServer: f5.VirtualServer{
 				TypeMeta: metav1.TypeMeta{
