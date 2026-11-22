@@ -64,9 +64,10 @@ func warnCNAMEConflict(candidates []*endpoint.Endpoint, selected *endpoint.Endpo
 	if selected.RecordType != endpoint.RecordTypeCNAME && selected.RecordType != endpoint.RecordTypeDNAME {
 		return
 	}
+	selectedTargets := slices.Clone(selected.Targets)
 	discarded := make([]string, 0, len(candidates)-1)
 	for _, candidate := range candidates {
-		if candidate == selected || candidate.Targets.Same(selected.Targets) {
+		if candidate == selected || slices.Clone(candidate.Targets).Same(selectedTargets) {
 			continue
 		}
 		discarded = append(discarded, fmt.Sprintf("%s (%s)",
