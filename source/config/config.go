@@ -85,8 +85,6 @@ type Config struct {
 	OCPRouterName                  string
 	UpdateEvents                   bool
 	ResolveLoadBalancerHostname    bool
-	TraefikEnableLegacy            bool
-	TraefikDisableNew              bool
 	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
 	ExcludeTargetNets              []string
@@ -223,8 +221,6 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
-		TraefikEnableLegacy:            cfg.TraefikEnableLegacy,
-		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
 		ExcludeTargetNets:              cfg.ExcludeTargetNets,
