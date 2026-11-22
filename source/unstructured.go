@@ -183,6 +183,7 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 
 		edps, err := us.templateEngine.Apply(annotationEdps, el,
 			template.WithAnnotationTargets(addrs),
+			template.WithResourceTargets(addrs),
 		)
 		if err != nil {
 			return nil, err
