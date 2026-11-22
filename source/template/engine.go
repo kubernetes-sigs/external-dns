@@ -72,8 +72,7 @@ type fqdnTemplateData struct {
 	Object      map[string]any
 }
 
-// EndpointBuilder renders hostnames and targets into source-specific endpoints,
-// stamping resource, TTL, ProviderSpecific and SetIdentifier.
+// EndpointBuilder renders hostnames and targets into source-specific endpoints.
 type EndpointBuilder func(hostnames, targets []string) ([]*endpoint.Endpoint, error)
 
 type applyConfig struct {
