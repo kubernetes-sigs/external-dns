@@ -19,7 +19,7 @@ package aws
 // These tests drive the reconciliation core the controller runs once a source has
 // produced its endpoints:
 //
-//	registry.Records() -> registry.AdjustEndpoints() -> plan.Calculate() -> registry.ApplyChanges()
+//	registry.Records() -> registry.AdjustEndpoints() -> plan.Calculate() -> registry.Apply()
 //
 // over the real TXT registry and the real AWS provider. Repeating it is the point. A
 // steady desired state has to stop producing changes, the previous target has to be gone
@@ -168,8 +168,8 @@ func (h *reconcileLoop) runOnce(desired []*endpoint.Endpoint) (*plan.Changes, er
 	p = p.Calculate()
 
 	if p.Changes.HasChanges() {
-		if err := h.reg.ApplyChanges(ctx, p.Changes); err != nil {
-			return p.Changes, fmt.Errorf("registry.ApplyChanges: %w", err)
+		if err := registry.Apply(ctx, h.reg, p.Changes, false); err != nil {
+			return p.Changes, fmt.Errorf("registry.Apply: %w", err)
 		}
 	}
 	return p.Changes, nil

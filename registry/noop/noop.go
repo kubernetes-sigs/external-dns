@@ -58,9 +58,24 @@ func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 	return im.provider.Records(ctx)
 }
 
+// Provider returns the dns provider.
+func (im *NoopRegistry) Provider() provider.Provider {
+	return im.provider
+}
+
+// Plan returns the changes unchanged, as the noop registry does not track ownership.
+func (im *NoopRegistry) Plan(changes *plan.Changes) *plan.Changes {
+	return changes
+}
+
+// PreApply has nothing to write.
+func (im *NoopRegistry) PreApply(_ context.Context, changes *plan.Changes) (*plan.Changes, registry.FinishFunc, error) {
+	return changes, registry.NoFinish, nil
+}
+
 // ApplyChanges propagates changes to the dns provider
 func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	return im.provider.ApplyChanges(ctx, changes)
+	return registry.Apply(ctx, im, changes, false)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider

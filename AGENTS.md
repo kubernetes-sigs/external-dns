@@ -42,7 +42,7 @@ Entry point: `main.go` → `controller.Execute()`. Four key abstractions:
 2. `Source.Endpoints()` → desired DNS state
 3. `Registry.AdjustEndpoints()` → normalize/adapt endpoints
 4. `plan.Plan{}` → calc diff (create/update/delete)
-5. `Registry.ApplyChanges()` → apply diff
+5. `registry.Apply()` → apply diff (`Plan`, `PreApply`, provider `ApplyChanges`, `finish`. `--dry-run` skips `PreApply` and `finish`)
 
 Main loop in `controller.Run()` calls `RunOnce()` on interval (default 1 min), optionally on Kubernetes watch events (`--update-events`), throttled by `--min-event-sync-interval`.
 
