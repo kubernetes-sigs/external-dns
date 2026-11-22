@@ -18,8 +18,10 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -107,6 +109,7 @@ var (
 type traefikSource struct {
 	dynamicKubeClient           dynamic.Interface
 	kubeClient                  kubernetes.Interface
+	ingressClassNames           []string
 	ignoreHostnameAnnotation    bool
 	templateEngine              template.Engine
 	ingressRouteInformers       *informers.Informers[kubeinformers.GenericInformer]
@@ -125,6 +128,17 @@ func NewTraefikSource(
 	kubeClient kubernetes.Interface,
 	cfg *config.Config,
 ) (Source, error) {
+	// ensure that ingress class is only set in either the ingressClassNames or
+	// annotationFilter but not both
+	if cfg.IngressClassNames != nil && cfg.AnnotationFilter != nil && !cfg.AnnotationFilter.Empty() {
+		requirements, _ := cfg.AnnotationFilter.Requirements()
+		for _, requirement := range requirements {
+			if requirement.Key() == IngressClassAnnotationKey {
+				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")
+			}
+		}
+	}
+
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
@@ -176,6 +190,7 @@ func NewTraefikSource(
 
 	return &traefikSource{
 		ignoreHostnameAnnotation:    cfg.IgnoreHostnameAnnotation,
+		ingressClassNames:           cfg.IngressClassNames,
 		templateEngine:              cfg.TemplateEngine,
 		dynamicKubeClient:           dynamicKubeClient,
 		ingressRouteInformers:       ingressRouteInformers,
@@ -244,11 +259,13 @@ func (ts *traefikSource) ingressRouteEndpoints(ctx context.Context) ([]*endpoint
 	return extractEndpoints(
 		ctx,
 		ts.targetFrom,
+		ts.ingressClassNames,
 		ts.ingressRouteInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
 			typed := &IngressRoute{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		func(route *IngressRoute) string { return route.Spec.IngressClassName },
 		ts.endpointsFromIngressRoute,
 	)
 }
@@ -258,11 +275,13 @@ func (ts *traefikSource) ingressRouteTCPEndpoints(ctx context.Context) ([]*endpo
 	return extractEndpoints(
 		ctx,
 		ts.targetFrom,
+		ts.ingressClassNames,
 		ts.ingressRouteTcpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
 			typed := &IngressRouteTCP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		func(route *IngressRouteTCP) string { return route.Spec.IngressClassName },
 		ts.endpointsFromIngressRouteTCP,
 	)
 }
@@ -272,11 +291,13 @@ func (ts *traefikSource) ingressRouteUDPEndpoints(ctx context.Context) ([]*endpo
 	return extractEndpoints(
 		ctx,
 		ts.targetFrom,
+		ts.ingressClassNames,
 		ts.ingressRouteUdpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		func(route *IngressRouteUDP) string { return route.Spec.IngressClassName },
 		ts.endpointsFromIngressRouteUDP,
 	)
 }
@@ -286,11 +307,13 @@ func (ts *traefikSource) oldIngressRouteEndpoints(ctx context.Context) ([]*endpo
 	return extractEndpoints(
 		ctx,
 		ts.targetFrom,
+		ts.ingressClassNames,
 		ts.oldIngressRouteInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRoute, error) {
 			typed := &IngressRoute{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		func(route *IngressRoute) string { return route.Spec.IngressClassName },
 		ts.endpointsFromIngressRoute,
 	)
 }
@@ -300,11 +323,13 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints(ctx context.Context) ([]*en
 	return extractEndpoints(
 		ctx,
 		ts.targetFrom,
+		ts.ingressClassNames,
 		ts.oldIngressRouteTcpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
 			typed := &IngressRouteTCP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		func(route *IngressRouteTCP) string { return route.Spec.IngressClassName },
 		ts.endpointsFromIngressRouteTCP,
 	)
 }
@@ -314,11 +339,13 @@ func (ts *traefikSource) oldIngressRouteUDPEndpoints(ctx context.Context) ([]*en
 	return extractEndpoints(
 		ctx,
 		ts.targetFrom,
+		ts.ingressClassNames,
 		ts.oldIngressRouteUdpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
 		},
+		func(route *IngressRouteUDP) string { return route.Spec.IngressClassName },
 		ts.endpointsFromIngressRouteUDP,
 	)
 }
@@ -460,6 +487,7 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 
 // traefikIngressRouteSpec defines the desired state of IngressRoute.
 type traefikIngressRouteSpec struct {
+	IngressClassName string `json:"ingressClassName,omitempty"`
 	// Routes defines the list of routes.
 	Routes []traefikRoute `json:"routes"`
 }
@@ -494,7 +522,8 @@ type IngressRouteList struct {
 
 // traefikIngressRouteTCPSpec defines the desired state of IngressRouteTCP.
 type traefikIngressRouteTCPSpec struct {
-	Routes []traefikRouteTCP `json:"routes"`
+	IngressClassName string            `json:"ingressClassName,omitempty"`
+	Routes           []traefikRouteTCP `json:"routes"`
 }
 
 // traefikRouteTCP holds the TCP route configuration.
@@ -531,6 +560,12 @@ type IngressRouteUDP struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	metav1.ObjectMeta `json:"metadata"`
+
+	Spec traefikIngressRouteUDPSpec `json:"spec"`
+}
+
+type traefikIngressRouteUDPSpec struct {
+	IngressClassName string `json:"ingressClassName,omitempty"`
 }
 
 // IngressRouteUDPList is a collection of IngressRouteUDP.
@@ -818,8 +853,10 @@ func extractEndpoints[T interface {
 }](
 	ctx context.Context,
 	targetFrom *targetfrom.Resolver,
+	ingressClassNames []string,
 	indexers []cache.Indexer,
 	convertFunc func(*unstructured.Unstructured) (T, error),
+	getIngressClassName func(T) string,
 	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
@@ -830,6 +867,10 @@ func extractEndpoints[T interface {
 			return nil, err
 		}
 		typed.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+
+		if !matchesTraefikIngressClass(typed, ingressClassNames, getIngressClassName(typed)) {
+			continue
+		}
 
 		targets := annotations.TargetsFromTargetAnnotation(typed.GetAnnotations())
 		if len(targets) == 0 {
@@ -860,6 +901,17 @@ func extractEndpoints[T interface {
 	}
 
 	return endpoints, nil
+}
+
+func matchesTraefikIngressClass(obj metav1.Object, ingressClassNames []string, ingressClassName string) bool {
+	if len(ingressClassNames) == 0 {
+		return true
+	}
+	if ingressClassName == "" {
+		ingressClassName = obj.GetAnnotations()[IngressClassAnnotationKey]
+	}
+
+	return slices.Contains(ingressClassNames, ingressClassName)
 }
 
 func getObjectFullName(obj any) string {

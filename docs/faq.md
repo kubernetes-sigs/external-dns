@@ -278,7 +278,7 @@ Some ingress controllers can serve both from a single instance through separate 
 If you need to search for multiple ingress classes, you can specify the flag multiple times, like so:
 `--ingress-class=internal --ingress-class=external`.
 
-The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
+The `--ingress-class` flag checks both the `spec.ingressClassName` field on Kubernetes Ingresses and Traefik routes, and the deprecated `kubernetes.io/ingress.class` annotation.
 The `spec.ingressClassName` takes precedence over the annotation if both are supplied.
 
 **Filtering by annotation**
