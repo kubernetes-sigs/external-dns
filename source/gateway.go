@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
@@ -153,6 +155,120 @@ type gatewayRouteSource struct {
 	ignoreHostnameAnnotation bool
 }
 
+type gatewayInformerCache struct {
+	mu sync.Mutex
+
+	factories          []gatewayInformerFactory
+	gateways           []gatewayInformerEntry
+	listenerSet        informers_v1.ListenerSetInformer
+	listenerSetFactory gwinformers.SharedInformerFactory
+	namespace          coreinformers.NamespaceInformer
+	kubeFactory        kubeinformers.SharedInformerFactory
+}
+
+type gatewayInformerFactory struct {
+	namespace string
+	selector  labels.Selector
+	factory   gwinformers.SharedInformerFactory
+}
+
+type gatewayInformerEntry struct {
+	namespace string
+	selector  labels.Selector
+	informer  informers_v1.GatewayInformer
+}
+
+func (cache *gatewayInformerCache) factoryLocked(client gateway.Interface, namespace string, selector labels.Selector) gwinformers.SharedInformerFactory {
+	for _, entry := range cache.factories {
+		if entry.namespace == namespace && gatewaySelectorsEqual(entry.selector, selector) {
+			return entry.factory
+		}
+	}
+
+	factory := newGatewayInformerFactory(client, namespace, selector)
+	cache.factories = append(cache.factories, gatewayInformerFactory{
+		namespace: namespace,
+		selector:  selector,
+		factory:   factory,
+	})
+	return factory
+}
+
+func (cache *gatewayInformerCache) gatewayInformer(client gateway.Interface, namespace string, selector labels.Selector) (gwinformers.SharedInformerFactory, informers_v1.GatewayInformer) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	factory := cache.factoryLocked(client, namespace, selector)
+	for _, entry := range cache.gateways {
+		if entry.namespace == namespace && gatewaySelectorsEqual(entry.selector, selector) {
+			return factory, entry.informer
+		}
+	}
+
+	informer := factory.Gateway().V1().Gateways()
+	informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
+		informers.IndexSelectorWithLabelSelector(selector),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
+	))
+	cache.gateways = append(cache.gateways, gatewayInformerEntry{
+		namespace: namespace,
+		selector:  selector,
+		informer:  informer,
+	})
+	return factory, informer
+}
+
+func (cache *gatewayInformerCache) listenerSetInformer(client gateway.Interface, factory gwinformers.SharedInformerFactory, gatewayNamespace string, gatewayLabels labels.Selector, enabled bool) (informers_v1.ListenerSetInformer, gwinformers.SharedInformerFactory) {
+	if !enabled {
+		return nil, factory
+	}
+
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	if cache.listenerSet != nil {
+		return cache.listenerSet, cache.listenerSetFactory
+	}
+
+	// ListenerSets are cluster-wide and unfiltered, regardless of Gateway or Route filters.
+	if gatewayNamespace != "" || (gatewayLabels != nil && !gatewayLabels.Empty()) {
+		factory = cache.factoryLocked(client, "", nil)
+	}
+	informer := factory.Gateway().V1().ListenerSets()
+	informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+	))
+	informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
+	))
+	cache.listenerSet = informer
+	cache.listenerSetFactory = factory
+	return informer, factory
+}
+
+func (cache *gatewayInformerCache) namespaceInformer(client kubernetes.Interface) (kubeinformers.SharedInformerFactory, coreinformers.NamespaceInformer) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	if cache.namespace != nil {
+		return cache.kubeFactory, cache.namespace
+	}
+
+	cache.kubeFactory = kubeinformers.NewSharedInformerFactory(client, 0)
+	cache.namespace = cache.kubeFactory.Core().V1().Namespaces()
+	informers.MustSetTransform(cache.namespace.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(cache.namespace.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
+	return cache.kubeFactory, cache.namespace
+}
+
 func newGatewayRouteSource(
 	ctx context.Context,
 	clients ClientGenerator,
@@ -177,20 +293,17 @@ func newGatewayRouteSource(
 		return nil, err
 	}
 
-	gwInformerFactory := newGatewayInformerFactory(client, cfg.GatewayNamespace, gwLabels)
-	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-
-	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
-		informers.TransformRemoveManagedFields(),
-		informers.TransformRemoveLastAppliedConfig(),
-		informers.TransformRemoveStatusConditions(),
-	))
-	informers.MustAddIndexers(gwInformer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
-		informers.IndexSelectorWithLabelSelector(gwLabels),
-		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
-	))
-
-	lsInformer, lsInformerFactory := newListenerSetInformer(client, gwInformerFactory, cfg, gwLabels)
+	informerCache := cfg.EnsureGatewayInformerCache(func() *gatewayInformerCache {
+		return &gatewayInformerCache{}
+	})
+	gwInformerFactory, gwInformer := informerCache.gatewayInformer(client, cfg.GatewayNamespace, gwLabels)
+	lsInformer, lsInformerFactory := informerCache.listenerSetInformer(
+		client,
+		gwInformerFactory,
+		cfg.GatewayNamespace,
+		gwLabels,
+		cfg.GatewayListenerSets,
+	)
 
 	rtNamespace := cfg.Namespace()
 	rtInformerFactory := gwInformerFactory
@@ -214,14 +327,7 @@ func newGatewayRouteSource(
 		return nil, err
 	}
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
-	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
-	informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
-		informers.TransformRemoveManagedFields(),
-		informers.TransformRemoveLastAppliedConfig(),
-		informers.TransformRemoveStatusConditions(),
-	))
-	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
+	kubeInformerFactory, nsInformer := informerCache.namespaceInformer(kubeClient)
 
 	if err := startAndSyncInformers(ctx, gwInformerFactory, lsInformerFactory, rtInformerFactory, kubeInformerFactory); err != nil {
 		return nil, err
@@ -241,27 +347,6 @@ func newGatewayRouteSource(
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 	}
 	return src, nil
-}
-
-func newListenerSetInformer(client gateway.Interface, gwInformerFactory gwinformers.SharedInformerFactory, cfg *config.Config, gwLabels labels.Selector) (informers_v1.ListenerSetInformer, gwinformers.SharedInformerFactory) {
-	var lsInformer informers_v1.ListenerSetInformer
-	lsInformerFactory := gwInformerFactory
-	if cfg.GatewayListenerSets {
-		// Gateway filters should apply only to Gateways, not ListenerSets.
-		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
-		if cfg.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
-			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
-		}
-		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
-		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
-			informers.TransformRemoveManagedFields(),
-			informers.TransformRemoveLastAppliedConfig(),
-		))
-		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
-			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
-		))
-	}
-	return lsInformer, lsInformerFactory
 }
 
 func startAndSyncInformers(ctx context.Context, gwInformerFactory, lsInformerFactory, rtInformerFactory gwinformers.SharedInformerFactory, kubeInformerFactory kubeinformers.SharedInformerFactory) error {
@@ -1004,4 +1089,14 @@ func selectorsEqual(a, b labels.Selector) bool {
 		}
 	}
 	return true
+}
+
+func gatewaySelectorsEqual(a, b labels.Selector) bool {
+	if a == nil || a.Empty() {
+		return b == nil || b.Empty()
+	}
+	if b == nil || b.Empty() {
+		return false
+	}
+	return selectorsEqual(a, b)
 }
