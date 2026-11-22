@@ -170,6 +170,13 @@ func (p *CivoProvider) fetchRecords(domainID string) ([]civogo.DNSRecord, error)
 		return nil, err
 	}
 
+	// Civo names apex records "@"; ExternalDNS expects "".
+	for i := range records {
+		if records[i].Name == "@" {
+			records[i].Name = ""
+		}
+	}
+
 	return records, nil
 }
 
