@@ -164,7 +164,7 @@ Use `internal/sets` for set semantics (`sets.New[string]()`, `Insert`, `Has`, `S
 
 Self-check the change against this guide before handing it back:
 
-- Reviewe each comment against the "explains what code can't show" standard.
+- Review each comment against [Comments](#comments).
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
 - Data flow: validation and normalization on `endpoint.*`, status writes
