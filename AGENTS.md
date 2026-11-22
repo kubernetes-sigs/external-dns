@@ -91,34 +91,31 @@ guide.
 
 ## Data Flow and Layering
 
-Reconcile pipeline (one `RunOnce()`):
-
-```text
-Source → source wrappers → Registry.AdjustEndpoints → Plan → Registry.ApplyChanges → Provider.ApplyChanges → DNS
-                                                       ↑
-                                       Registry.Records (current state)
-```
-
-Source wrappers live in `source/`: `multi`, `dedup`, `nat64`, `ptr`,
-`target-filter`, `post-processor` — see
-[source-wrappers.md](docs/contributing/source-wrappers.md).
+The reconcile pipeline is in [Architecture](#architecture) above. Source
+wrappers live in `source/wrappers/`: `multi`, `dedup`, `nat64`, `ptr`,
+`target-filter`, `post-processor` (see
+[source-wrappers.md](docs/contributing/source-wrappers.md)).
 
 Three layering concerns, kept separate:
 
-- **Domain** (`endpoint/`) — pure functions on `Endpoint`. Validation,
-  normalization, labels. No I/O, no logging.
-- **Source** (`source/`) — produces `[]*endpoint.Endpoint`. Iterates spec,
-  calls domain ops, hands results to the writer. No K8s writes of its own.
-- **Writer** (`pkg/<kind>/status.go`) — formats and writes status conditions,
+- **Domain** (`endpoint/`), functions on `Endpoint`: validation,
+  normalization, labels. No I/O, and no logging in new code.
+- **Source** (`source/`), produces `[]*endpoint.Endpoint`. Iterates spec,
+  calls domain ops, hands results to the writer. New Sources should not
+  call the K8s API themselves.
+- **Writer** (`pkg/<kind>/status.go`), formats and writes status conditions,
   events and metrics. Owns the K8s client calls on that path.
 
-Rules of thumb: validation and normalization live on `endpoint.*`, not
-duplicated in sources; sources produce, they do not write; writers take
-orchestration output (counts, reasons), not raw objects.
+Rules of thumb for new code: put validation on `(*Endpoint).Validate`
+rather than inline it in `source/<x>.go`; have new Sources hand status
+and events to a writer type instead of a bare K8s client; writers take
+orchestration output (counts, reasons), not raw objects. Existing
+Sources (notably the crd source) do not yet follow these; don't
+rewrite them under this guide.
 
-Signals the rule is being broken: a `validateX` helper inside a `source/`
-file, a source that calls the K8s API to patch status, a `switch RecordType`
-in a source doing per-type normalization.
+Signals for new code: a new `validateX` helper inside a `source/` file,
+a new Source that calls the K8s API to patch status, or a new `switch
+RecordType` in a Source doing per-type normalization.
 
 Full rules and examples in
 [`docs/contributing/sources-and-providers.md#data-flow-and-layering`](docs/contributing/sources-and-providers.md#data-flow-and-layering).

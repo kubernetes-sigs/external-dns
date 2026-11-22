@@ -187,9 +187,9 @@ Each stage has one job:
 | Stage                      | Package     | Does                                                                                                 |
 |----------------------------|-------------|------------------------------------------------------------------------------------------------------|
 | `Source.Endpoints`         | `source/`   | Kubernetes object → `[]*endpoint.Endpoint`.                                                          |
-| Source wrappers            | `source/`   | `multi`, `dedup`, `nat64`, `ptr`, `target-filter`, `post-processor`. See [source-wrappers.md](source-wrappers.md). |
+| Source wrappers            | `source/wrappers/` | `multi`, `dedup`, `nat64`, `ptr`, `target-filter`, `post-processor`. See [source-wrappers.md](source-wrappers.md). |
 | `Registry.Records`         | `registry/` | Current DNS state from the provider, annotated with ownership (TXT, AWS SD, DynamoDB).               |
-| `Registry.AdjustEndpoints` | `registry/` | Normalize desired endpoints for the registry's view (ownership labels, naming rules).                |
+| `Registry.AdjustEndpoints` | `registry/` | Pass-through to `Provider.AdjustEndpoints`: provider-specific canonicalization of the desired set.    |
 | `plan.Plan`                | `plan/`     | Diff current and desired → `Create`, `UpdateOld`, `UpdateNew`, `Delete`.                             |
 | `Registry.ApplyChanges`    | `registry/` | Wrap the diff with ownership bookkeeping, forward to the provider.                                   |
 | `Provider.ApplyChanges`    | `provider/` | Translate the diff to DNS backend calls (Route53, Cloud DNS, Cloudflare, ...).                       |
@@ -202,9 +202,9 @@ purity. Within one `RunOnce()`:
 
 | Layer  | Package                                                                     | Responsibility                                                                                                        |
 |--------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| Domain | `endpoint/`                                                                 | Pure functions on `Endpoint`. No I/O, no logging, no formatting. Validation, normalization, labels.                   |
+| Domain | `endpoint/`                                                                 | Functions on `Endpoint`: validation, normalization, labels. No I/O or formatting; keep new code free of logging too.  |
 | Source | `source/`                                                                   | Produces `[]*endpoint.Endpoint`. Thin coordinator — iterates spec, calls domain ops, hands results to the writer.     |
-| Writer | `pkg/<kind>/status.go` (conditions), `pkg/events/` (`Normal`/`Warning` events) | Takes orchestration output (counts, reasons) and writes conditions, events, metrics. Owns the K8s client calls.    |
+| Writer | `pkg/<kind>/status.go` (conditions), `pkg/events/` (`Normal`/`Warning` events) | Writes status conditions, events and metrics; owns the K8s client calls on that path. Writes land at two points: at source time, for conditions the Source decides while planning, and after `Registry.ApplyChanges`, where the controller knows the outcome. |
 
 The other packages belong to the pipeline shown above: `controller/`
 sequences `RunOnce`, `plan/` is a pure diff, `registry/` layers ownership on
@@ -213,46 +213,63 @@ belong inside a Source.
 
 ### Why this shape
 
-* **One source of truth for invariants.** `endpoint.Validate` and
-  `endpoint.Normalize` are defined once; every Source and wrapper agrees. A
-  bug in a validation rule lives in one file; there is no per-source drift to
-  chase.
-* **Pure domain functions are testable without a cluster.** `Validate(ep)`
-  takes an endpoint and returns an error — no fake client, no reconcile loop.
-* **The write path is swappable.** A dedicated writer is the only path back
-  to Kubernetes. Tests stub it; alternate deployments can replace it
-  (metrics-only, dry-run, structured-log) or disable it — none of that
-  reaches the producer.
-* **Sources stay thin.** Adding a new Source means a loop and two function
-  calls, not a copy of the validation rules and a status-writing routine.
+* **One source of truth for invariants.** `(*Endpoint).Validate` is defined
+  once so every Source and wrapper can agree, and a new validation rule
+  lands in one file rather than being re-derived per Source.
+* **Pure domain functions are testable without a cluster.** `ep.Validate()`
+  takes an endpoint and returns an error, no fake client, no reconcile loop.
+* **The write path is swappable.** The controller writes post-apply
+  outcomes through `StatusReporter` and `EventEmitter`; new source-time
+  writes should take the same shape. A dedicated writer type is stubbed in
+  tests and can be replaced (metrics-only, dry-run, structured-log) or
+  disabled without reshaping the producer.
+* **Sources stay thin.** Adding a new Source means a loop and a handful of
+  function calls, not a copy of the validation rules and the status-writing
+  routine that goes with them.
 
-### Rules
+### Rules for new code
 
-1. **Validation and normalization live on the domain type.** If a Source needs
-   an invariant checked, add it to `endpoint/` and call it. Do not inline the
-   check in `source/<x>.go`. The same `endpoint.Validate` is called by Sources,
-   by `dedupSource`, and anywhere else that handles endpoints.
-2. **Sources produce, they do not write.** A Source's job ends at returning
-   `[]*endpoint.Endpoint`. Status conditions, events, and metrics go through a
-   writer the Source holds as a field. The Source does not call the Kubernetes
-   API directly to update status.
+These apply when you add or change code under `source/`. Existing Sources
+may not follow them yet (notably the crd source, which inlines validation
+helpers and writes status through a K8s client); don't rewrite them under
+this guide.
+
+1. **Validation lives on the domain type.** If a new Source needs an
+   invariant checked, add it to `endpoint/` and call `ep.Validate()` rather
+   than inline a check in `source/<x>.go`. Provider-specific canonicalization
+   belongs in `Provider.AdjustEndpoints`, which `Registry.AdjustEndpoints`
+   delegates to.
+2. **Sources produce, writers write.** A new Source's job ends at returning
+   `[]*endpoint.Endpoint`. Status conditions, events and metrics should go
+   through a writer type rather than a bare K8s client. The controller
+   already uses `StatusReporter` and `EventEmitter` for post-apply outcomes
+   (`Ready`, record events); for conditions the Source itself decides,
+   inject a writer type in the same spirit.
 3. **Writers take orchestration output, not raw objects.** A method like
-   `ReportValidation(ctx, obj, accepted int, rejections []string)` takes
-   summary data — counts and reasons — not the intermediate state the Source
-   used to decide. This keeps the writer independent of how the Source arrived
-   at the result.
+   `StatusWriter.ReportStatus(ctx, objects []plan.PlannedObject, applyErr error)`
+   takes summary data (planned-object refs, counts, an error), not the
+   intermediate state the Source used to decide. This keeps the writer
+   independent of how the Source arrived at the result.
 
-### Signals the rule is being broken
+### Signals for new code
 
-* A `validateX` or `isValidX` function inside a `source/*.go` file whose logic
-  also exists (or should exist) on `endpoint.Endpoint`.
-* A Source that imports a Kubernetes client to update status, record events,
-  or patch conditions on the objects it reads.
-* A `switch ep.RecordType` in a Source doing per-record-type normalization
-  (trailing dots, SRV targets, MX preference). That belongs on
-  `endpoint.Normalize`.
+These are shapes to avoid when you add or change code under `source/`. They
+are not a verdict on existing Sources: some of the signals below already
+appear in current code (for example the crd source builds `metav1.Condition`
+inline and does per-record-type checks), and rewriting them is not implied
+by this guide.
+
+* A new `validateX` or `isValidX` function inside a `source/*.go` file whose
+  logic belongs on `(*Endpoint).Validate` instead.
+* A new Source that imports a Kubernetes client to update status, record
+  events or patch conditions on the objects it reads, rather than taking a
+  writer type.
+* A new `switch ep.RecordType` in a Source doing per-record-type
+  normalization. Generic normalization belongs on `endpoint/` (see
+  `NormalizeMXTarget`); provider-specific canonicalization belongs in
+  `Provider.AdjustEndpoints`.
 * Status-formatting logic (building `metav1.Condition`, choosing reason
-  strings) scattered across Source files instead of one writer.
+  strings) added to a Source instead of to its writer.
 
 ### When the rule bends
 
@@ -613,8 +630,7 @@ methods make the sequence explicit.
 
 ### Linter versus shape
 
-`gocyclo`, `funlen`, `gocognit`, `nestif`, `maintidx` and their peers are
-advisory. When one trips, the choice is to disable the rule or to reshape —
-and a reshape must be justified by the design practices in this section
-(coupling, cohesion, hidden state, call-order, locality), not by the metric.
-If the only reason to split is "the linter complained", don't split.
+The complexity linter in `.golangci.yml` is enforced by `make go-lint` and
+CI, so a tripped rule has to be addressed. Any reshape must be justified
+by the practices in this section, not by the metric: find a design
+reason, or raise the threshold.
