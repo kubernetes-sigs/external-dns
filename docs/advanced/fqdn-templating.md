@@ -58,6 +58,7 @@ Every source marked `true` in the FQDN Template column of [Supported Sources](..
 - Target precedence: `external-dns.alpha.kubernetes.io/target` annotation, then `--target-template`, then the resource's own targets. With `--combine-fqdn-annotation`, `--target-template` comes first.
 - `--fqdn-target-template` returns `host:target` pairs, each published as an exact record.
 - The template passes run only when the resource yields no records of its own, unless `--combine-fqdn-annotation` is set. When both templates are set without combining, `host:target` pairs take precedence over `--fqdn-template` hostnames.
+- If a resource has defined hostnames but no targets yet (e.g., a pending load balancer), the template still runs and publishes a transient record that is replaced once the resource's own targets appear; with `--policy=upsert-only`, the transient record is not deleted.
 - Gateway API routes: both `--fqdn-template` hostnames and `host:target` pairs are published only when they match an attached listener.
 
 ```yaml
