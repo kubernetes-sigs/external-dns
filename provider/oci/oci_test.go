@@ -36,6 +36,25 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+type mockOCIDNSClient struct {
+	listZonesCalls           int
+	getZoneCalls             int
+	getZoneRequests          []dns.GetZoneRequest
+	getZoneErrors            map[string]error
+	getZoneResponses         map[string]dns.GetZoneResponse
+	patchZoneRecordsRequests []dns.PatchZoneRecordsRequest
+}
+
+type mockOCIServiceError struct {
+	statusCode int
+	code       string
+}
+
+type mutableMockOCIDNSClient struct {
+	zones   map[string]dns.ZoneSummary
+	records map[string]map[string]dns.Record
+}
+
 var (
 	compartmentID             = "ocid1.compartment.oc1..aaaaaaaaujjg4lf3v6uaqeml7xfk7stzvrxeweaeyolhh75exuoqxpqjb4qq"
 	zoneIdQux                 = "ocid1.dns-zone.oc1..123456ef0bfbb5c251b9713fd7bf8959"
@@ -59,25 +78,6 @@ var (
 		Name: new("bar.com"),
 	}
 )
-
-type mockOCIDNSClient struct {
-	listZonesCalls           int
-	getZoneCalls             int
-	getZoneRequests          []dns.GetZoneRequest
-	getZoneErrors            map[string]error
-	getZoneResponses         map[string]dns.GetZoneResponse
-	patchZoneRecordsRequests []dns.PatchZoneRecordsRequest
-}
-
-type mockOCIServiceError struct {
-	statusCode int
-	code       string
-}
-
-type mutableMockOCIDNSClient struct {
-	zones   map[string]dns.ZoneSummary
-	records map[string]map[string]dns.Record
-}
 
 func (e mockOCIServiceError) Error() string {
 	return e.code

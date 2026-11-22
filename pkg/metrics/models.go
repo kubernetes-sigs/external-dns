@@ -27,11 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
-const (
-	metricTypeGauge   = "gauge"
-	metricTypeCounter = "counter"
-)
-
 type MetricRegistry struct {
 	Registerer prometheus.Registerer
 	Metrics    []*Metric
@@ -81,6 +76,11 @@ type SummaryVecMetric struct {
 	Metric
 	SummaryVec prometheus.SummaryVec
 }
+
+const (
+	metricTypeGauge   = "gauge"
+	metricTypeCounter = "counter"
+)
 
 func NewGaugeWithOpts(opts prometheus.GaugeOpts) GaugeMetric {
 	opts.Namespace = Namespace

@@ -16,13 +16,6 @@ limitations under the License.
 
 package plan
 
-// Policies is a registry of available policies, keyed by name.
-var Policies = map[string]Policy{
-	"sync":        &SyncPolicy{},
-	"upsert-only": &UpsertOnlyPolicy{},
-	"create-only": &CreateOnlyPolicy{},
-}
-
 // Policy allows to apply different rules to a set of changes.
 type Policy interface {
 	Apply(changes *Changes) *Changes
@@ -36,6 +29,13 @@ type UpsertOnlyPolicy struct{}
 
 // CreateOnlyPolicy allows only creating DNS records.
 type CreateOnlyPolicy struct{}
+
+// Policies is a registry of available policies, keyed by name.
+var Policies = map[string]Policy{
+	"sync":        &SyncPolicy{},
+	"upsert-only": &UpsertOnlyPolicy{},
+	"create-only": &CreateOnlyPolicy{},
+}
 
 // Apply is a pass-through: sync allows all changes without restriction.
 func (p *SyncPolicy) Apply(changes *Changes) *Changes {

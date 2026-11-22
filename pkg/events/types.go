@@ -36,25 +36,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
-const (
-	ActionCreate  Action = "Created"
-	ActionUpdate  Action = "Updated"
-	ActionDelete  Action = "Deleted"
-	ActionFailed  Action = "FailedSync"
-	RecordReady   Reason = "RecordReady"
-	RecordDeleted Reason = "RecordDeleted"
-	RecordError   Reason = "RecordError"
-
-	EventTypeNormal  EventType = EventType(apiv1.EventTypeNormal)
-	EventTypeWarning EventType = EventType(apiv1.EventTypeWarning)
-)
-
-var (
-	invalidChars           = regexp.MustCompile(`[^a-z0-9.\-]`)
-	startsWithAlphaNumeric = regexp.MustCompile(`^[a-z0-9]`)
-	endsWithAlphaNumeric   = regexp.MustCompile(`[a-z0-9]$`)
-)
-
 type (
 	// Action values for actions
 	Action string
@@ -89,6 +70,25 @@ type (
 		GetOwner() string
 		RefObjects() []*ObjectReference
 	}
+)
+
+const (
+	ActionCreate  Action = "Created"
+	ActionUpdate  Action = "Updated"
+	ActionDelete  Action = "Deleted"
+	ActionFailed  Action = "FailedSync"
+	RecordReady   Reason = "RecordReady"
+	RecordDeleted Reason = "RecordDeleted"
+	RecordError   Reason = "RecordError"
+
+	EventTypeNormal  EventType = EventType(apiv1.EventTypeNormal)
+	EventTypeWarning EventType = EventType(apiv1.EventTypeWarning)
+)
+
+var (
+	invalidChars           = regexp.MustCompile(`[^a-z0-9.\-]`)
+	startsWithAlphaNumeric = regexp.MustCompile(`^[a-z0-9]`)
+	endsWithAlphaNumeric   = regexp.MustCompile(`[a-z0-9]$`)
 )
 
 func NewObjectReference(obj runtime.Object, source string) *ObjectReference {

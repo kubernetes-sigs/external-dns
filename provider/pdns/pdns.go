@@ -41,33 +41,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL = 300
-
-	// PdnsDelete : PowerDNS changetype used for deleting rrsets
-	// ref: https://doc.powerdns.com/authoritative/http-api/zone.html#rrset (see "changetype")
-	PdnsDelete pdnsChangeType = "DELETE"
-	// PdnsReplace : PowerDNS changetype for creating, updating and patching rrsets
-	PdnsReplace pdnsChangeType = "REPLACE"
-	// Number of times to retry failed PDNS requests
-	retryLimit = 3
-	// time in milliseconds
-	retryAfterTime = 250 * time.Millisecond
-	// defaultRequestTimeout is the default HTTP request timeout for PowerDNS API calls
-	defaultRequestTimeout = 30 * time.Second
-)
-
-// record types which require to have trailing dot
-var trailingTypes = []string{
-	endpoint.RecordTypeCNAME,
-	endpoint.RecordTypeDNAME,
-	endpoint.RecordTypeMX,
-	endpoint.RecordTypeSRV,
-	endpoint.RecordTypeNS,
-	endpoint.RecordTypePTR,
-	"ALIAS",
-}
-
 type pdnsChangeType string
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
@@ -117,6 +90,33 @@ type PDNSProvider struct {
 	dryRun       bool
 	client       PDNSAPIProvider
 	domainFilter *endpoint.DomainFilter
+}
+
+const (
+	defaultTTL = 300
+
+	// PdnsDelete : PowerDNS changetype used for deleting rrsets
+	// ref: https://doc.powerdns.com/authoritative/http-api/zone.html#rrset (see "changetype")
+	PdnsDelete pdnsChangeType = "DELETE"
+	// PdnsReplace : PowerDNS changetype for creating, updating and patching rrsets
+	PdnsReplace pdnsChangeType = "REPLACE"
+	// Number of times to retry failed PDNS requests
+	retryLimit = 3
+	// time in milliseconds
+	retryAfterTime = 250 * time.Millisecond
+	// defaultRequestTimeout is the default HTTP request timeout for PowerDNS API calls
+	defaultRequestTimeout = 30 * time.Second
+)
+
+// record types which require to have trailing dot
+var trailingTypes = []string{
+	endpoint.RecordTypeCNAME,
+	endpoint.RecordTypeDNAME,
+	endpoint.RecordTypeMX,
+	endpoint.RecordTypeSRV,
+	endpoint.RecordTypeNS,
+	endpoint.RecordTypePTR,
+	"ALIAS",
 }
 
 func (tlsConfig *TLSConfig) newHTTPClient() (*http.Client, error) {

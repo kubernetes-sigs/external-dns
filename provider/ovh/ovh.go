@@ -42,18 +42,6 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-const (
-	defaultTTL = 0
-	ovhCreate  = iota
-	ovhDelete
-	ovhUpdate
-)
-
-var (
-	// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
-	ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
-)
-
 // OVHProvider is an implementation of Provider for OVH DNS.
 type OVHProvider struct {
 	provider.BaseProvider
@@ -125,6 +113,18 @@ type ovhSoa struct {
 	Serial  uint32 `json:"serial"`
 	records []ovhRecord
 }
+
+const (
+	defaultTTL = 0
+	ovhCreate  = iota
+	ovhDelete
+	ovhUpdate
+)
+
+var (
+	// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
+	ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
+)
 
 func (r ovhRecord) String() string {
 	return "record#" + strconv.Itoa(int(r.ID)) + ": " + r.FieldType + " | " + r.SubDomain + " => " + r.Target + " (" + strconv.Itoa(int(r.TTL)) + ")"

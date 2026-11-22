@@ -34,11 +34,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	axfrTestKeyName = "key.example.com."
-	axfrTestSecret  = "c2VjcmV0"
-)
-
 type readDeadlineErrorConn struct {
 	net.Conn
 	err error
@@ -48,6 +43,11 @@ type readErrorConn struct {
 	net.Conn
 	err error
 }
+
+const (
+	axfrTestKeyName = "key.example.com."
+	axfrTestSecret  = "c2VjcmV0"
+)
 
 func signedAXFRStart(t *testing.T) (uint16, string, []byte) {
 	t.Helper()

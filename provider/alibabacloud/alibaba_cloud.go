@@ -40,15 +40,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL                              = 600
-	defaultAlibabaCloudPrivateZoneRecordTTL = 60
-	defaultAlibabaCloudPageSize             = 50
-	nullHostAlibabaCloud                    = "@"
-	pVTZDoamin                              = "pvtz.aliyuncs.com"
-	defaultAlibabaCloudRequestScheme        = "https"
-)
-
 // AlibabaCloudDNSAPI is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
 // See https://help.aliyun.com/document_detail/29739.html for descriptions of all of its methods.
 type AlibabaCloudDNSAPI interface {
@@ -101,6 +92,15 @@ type alibabaPrivateZone struct {
 	pvtz.Zone
 	records []pvtz.Record
 }
+
+const (
+	defaultTTL                              = 600
+	defaultAlibabaCloudPrivateZoneRecordTTL = 60
+	defaultAlibabaCloudPageSize             = 50
+	nullHostAlibabaCloud                    = "@"
+	pVTZDoamin                              = "pvtz.aliyuncs.com"
+	defaultAlibabaCloudRequestScheme        = "https"
+)
 
 // New creates an Alibaba Cloud provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

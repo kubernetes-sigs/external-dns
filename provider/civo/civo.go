@@ -32,20 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	logFieldType       = "Type"
-	logFieldName       = "Name"
-	logFieldValue      = "Value"
-	logFieldPriority   = "Priority"
-	logFieldTTL        = "TTL"
-	logFieldAction     = "action"
-	logFieldZoneID     = "zoneID"
-	logFieldZoneName   = "zoneName"
-	logFieldDNSName    = "dnsName"
-	logFieldRecordType = "recordType"
-	logFieldTarget     = "target"
-)
-
 // CivoProvider is an implementation of Provider for Civo's DNS.
 type CivoProvider struct {
 	provider.BaseProvider
@@ -79,6 +65,20 @@ type CivoChangeDelete struct {
 	Domain       civogo.DNSDomain
 	DomainRecord civogo.DNSRecord
 }
+
+const (
+	logFieldType       = "Type"
+	logFieldName       = "Name"
+	logFieldValue      = "Value"
+	logFieldPriority   = "Priority"
+	logFieldTTL        = "TTL"
+	logFieldAction     = "action"
+	logFieldZoneID     = "zoneID"
+	logFieldZoneName   = "zoneName"
+	logFieldDNSName    = "dnsName"
+	logFieldRecordType = "recordType"
+	logFieldTarget     = "target"
+)
 
 // Empty returns true if there are no changes
 func (c *CivoChanges) Empty() bool {

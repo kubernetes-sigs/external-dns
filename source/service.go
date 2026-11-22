@@ -46,15 +46,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-var (
-	knownServiceTypes = sets.New(
-		v1.ServiceTypeClusterIP,    // Default service type exposes the service on a cluster-internal IP.
-		v1.ServiceTypeNodePort,     // Exposes the service on each node's IP at a static port.
-		v1.ServiceTypeLoadBalancer, // Exposes the service externally using a cloud provider's load balancer.
-		v1.ServiceTypeExternalName, // Maps the service to an external DNS name.
-	)
-)
-
 // serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
@@ -99,6 +90,15 @@ type serviceTypes struct {
 	enabled bool
 	types   sets.Set[v1.ServiceType]
 }
+
+var (
+	knownServiceTypes = sets.New(
+		v1.ServiceTypeClusterIP,    // Default service type exposes the service on a cluster-internal IP.
+		v1.ServiceTypeNodePort,     // Exposes the service on each node's IP at a static port.
+		v1.ServiceTypeLoadBalancer, // Exposes the service externally using a cloud provider's load balancer.
+		v1.ServiceTypeExternalName, // Maps the service to an external DNS name.
+	)
+)
 
 // NewServiceSource creates a new serviceSource with the given cfg.
 func NewServiceSource(

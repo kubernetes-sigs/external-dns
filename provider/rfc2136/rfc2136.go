@@ -44,28 +44,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	// maximum time DNS client can be off from server for an update to succeed
-	clockSkew = 300
-)
-
-const (
-	nameserverOpList nameserverOp = iota
-	nameserverOpSend
-)
-
-// Map of supported TSIG algorithms
-var tsigAlgs = map[string]string{
-	"hmac-sha1":   dns.HmacSHA1,
-	"hmac-sha224": dns.HmacSHA224,
-	"hmac-sha256": dns.HmacSHA256,
-	"hmac-sha384": dns.HmacSHA384,
-	"hmac-sha512": dns.HmacSHA512,
-}
-
-// txtEscaper escapes a TXT value for use inside a quoted character-string.
-var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
-
 // rfc2136 provider type
 type rfc2136Provider struct {
 	provider.BaseProvider
@@ -128,6 +106,28 @@ type rfc2136Actions interface {
 	SendMessage(msg *dns.Msg) error
 	IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error)
 }
+
+const (
+	// maximum time DNS client can be off from server for an update to succeed
+	clockSkew = 300
+)
+
+const (
+	nameserverOpList nameserverOp = iota
+	nameserverOpSend
+)
+
+// Map of supported TSIG algorithms
+var tsigAlgs = map[string]string{
+	"hmac-sha1":   dns.HmacSHA1,
+	"hmac-sha224": dns.HmacSHA224,
+	"hmac-sha256": dns.HmacSHA256,
+	"hmac-sha384": dns.HmacSHA384,
+	"hmac-sha512": dns.HmacSHA512,
+}
+
+// txtEscaper escapes a TXT value for use inside a quoted character-string.
+var txtEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
 // New creates an RFC2136 provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

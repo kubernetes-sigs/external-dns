@@ -40,6 +40,83 @@ import (
 	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
+// Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
+// https://github.com/aws/aws-sdk-go-v2/tree/main/service/route53
+type Route53API interface {
+	ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error)
+	ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error)
+	CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error)
+	ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error)
+	ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error)
+}
+
+// Route53Change wrapper to handle ownership relation throughout the provider implementation
+type Route53Change struct {
+	route53types.Change
+	OwnedRecord  string
+	hostedZoneID string
+	sizeBytes    int
+	sizeValues   int
+}
+
+type Route53Changes []*Route53Change
+
+type profiledZone struct {
+	profile string
+	zone    *route53types.HostedZone
+}
+
+type geoProximity struct {
+	location *route53types.GeoProximityLocation
+	endpoint *endpoint.Endpoint
+	isSet    bool
+}
+
+type zoneTags map[string]map[string]string
+
+// AWSProvider is an implementation of Provider for AWS Route53.
+type AWSProvider struct {
+	provider.BaseProvider
+	clients               map[string]Route53API
+	dryRun                bool
+	batchChangeSize       int
+	batchChangeSizeBytes  int
+	batchChangeSizeValues int
+	batchChangeInterval   time.Duration
+	evaluateTargetHealth  bool
+	// only consider hosted zones managing domains ending in this suffix
+	domainFilter *endpoint.DomainFilter
+	// filter hosted zones by id
+	zoneIDFilter provider.ZoneIDFilter
+	// filter hosted zones by type (e.g. private or public)
+	zoneTypeFilter provider.ZoneTypeFilter
+	// filter hosted zones by tags
+	zoneTagFilter provider.ZoneTagFilter
+	// extend filter for subdomains in the zone (e.g. first.us-east-1.example.com)
+	zoneMatchParent bool
+	preferCNAME     bool
+	zonesCache      *blueprint.ZoneCache[map[string]*profiledZone]
+	// queue for collecting changes to submit them in the next iteration, but after all other changes
+	failedChangesQueue map[string]Route53Changes
+}
+
+// AWSConfig contains configuration to create a new AWS provider.
+type AWSConfig struct {
+	DomainFilter          *endpoint.DomainFilter
+	ZoneIDFilter          provider.ZoneIDFilter
+	ZoneTypeFilter        provider.ZoneTypeFilter
+	ZoneTagFilter         provider.ZoneTagFilter
+	ZoneMatchParent       bool
+	BatchChangeSize       int
+	BatchChangeSizeBytes  int
+	BatchChangeSizeValues int
+	BatchChangeInterval   time.Duration
+	EvaluateTargetHealth  bool
+	PreferCNAME           bool
+	DryRun                bool
+	ZoneCacheDuration     time.Duration
+}
+
 const (
 	defaultAWSProfile = "default"
 	defaultTTL        = 300
@@ -227,83 +304,6 @@ var canonicalHostedZones = map[string]string{
 	"execute-api.sa-east-1.amazonaws.com":      "ZCMLWB8V5SYIT",
 	"execute-api.us-gov-east-1.amazonaws.com":  "Z3SE9ATJYCRCZJ",
 	"execute-api.us-gov-west-1.amazonaws.com":  "Z1K6XKP9SAGWDV",
-}
-
-// Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
-// https://github.com/aws/aws-sdk-go-v2/tree/main/service/route53
-type Route53API interface {
-	ListResourceRecordSets(ctx context.Context, input *route53.ListResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ListResourceRecordSetsOutput, error)
-	ChangeResourceRecordSets(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, optFns ...func(options *route53.Options)) (*route53.ChangeResourceRecordSetsOutput, error)
-	CreateHostedZone(ctx context.Context, input *route53.CreateHostedZoneInput, optFns ...func(*route53.Options)) (*route53.CreateHostedZoneOutput, error)
-	ListHostedZones(ctx context.Context, input *route53.ListHostedZonesInput, optFns ...func(options *route53.Options)) (*route53.ListHostedZonesOutput, error)
-	ListTagsForResources(ctx context.Context, input *route53.ListTagsForResourcesInput, optFns ...func(options *route53.Options)) (*route53.ListTagsForResourcesOutput, error)
-}
-
-// Route53Change wrapper to handle ownership relation throughout the provider implementation
-type Route53Change struct {
-	route53types.Change
-	OwnedRecord  string
-	hostedZoneID string
-	sizeBytes    int
-	sizeValues   int
-}
-
-type Route53Changes []*Route53Change
-
-type profiledZone struct {
-	profile string
-	zone    *route53types.HostedZone
-}
-
-type geoProximity struct {
-	location *route53types.GeoProximityLocation
-	endpoint *endpoint.Endpoint
-	isSet    bool
-}
-
-type zoneTags map[string]map[string]string
-
-// AWSProvider is an implementation of Provider for AWS Route53.
-type AWSProvider struct {
-	provider.BaseProvider
-	clients               map[string]Route53API
-	dryRun                bool
-	batchChangeSize       int
-	batchChangeSizeBytes  int
-	batchChangeSizeValues int
-	batchChangeInterval   time.Duration
-	evaluateTargetHealth  bool
-	// only consider hosted zones managing domains ending in this suffix
-	domainFilter *endpoint.DomainFilter
-	// filter hosted zones by id
-	zoneIDFilter provider.ZoneIDFilter
-	// filter hosted zones by type (e.g. private or public)
-	zoneTypeFilter provider.ZoneTypeFilter
-	// filter hosted zones by tags
-	zoneTagFilter provider.ZoneTagFilter
-	// extend filter for subdomains in the zone (e.g. first.us-east-1.example.com)
-	zoneMatchParent bool
-	preferCNAME     bool
-	zonesCache      *blueprint.ZoneCache[map[string]*profiledZone]
-	// queue for collecting changes to submit them in the next iteration, but after all other changes
-	failedChangesQueue map[string]Route53Changes
-}
-
-// AWSConfig contains configuration to create a new AWS provider.
-type AWSConfig struct {
-	DomainFilter          *endpoint.DomainFilter
-	ZoneIDFilter          provider.ZoneIDFilter
-	ZoneTypeFilter        provider.ZoneTypeFilter
-	ZoneTagFilter         provider.ZoneTagFilter
-	ZoneMatchParent       bool
-	BatchChangeSize       int
-	BatchChangeSizeBytes  int
-	BatchChangeSizeValues int
-	BatchChangeInterval   time.Duration
-	EvaluateTargetHealth  bool
-	PreferCNAME           bool
-	DryRun                bool
-	ZoneCacheDuration     time.Duration
 }
 
 func (cs Route53Changes) Route53Changes() []route53types.Change {

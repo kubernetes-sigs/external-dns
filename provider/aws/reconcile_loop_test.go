@@ -52,6 +52,16 @@ import (
 	"sigs.k8s.io/external-dns/registry/txt"
 )
 
+// reconcileLoop runs repeated reconciliations over one provider and registry pair.
+type reconcileLoop struct {
+	t      *testing.T
+	prov   *AWSProvider
+	client *Route53APIStub
+	reg    registry.Registry
+	policy plan.Policy
+	cfg    *externaldns.Config
+}
+
 const (
 	reconcileZone   = "zone-1.ext-dns-test-2.teapot.zalan.do"
 	reconcileZoneID = "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."
@@ -88,16 +98,6 @@ var txtAffixes = []struct {
 	{"suffix", "", "-extdns"},
 	{"record-type-prefix", "%{record_type}-extdns-", ""},
 	{"record-type-suffix", "", "-extdns-%{record_type}"},
-}
-
-// reconcileLoop runs repeated reconciliations over one provider and registry pair.
-type reconcileLoop struct {
-	t      *testing.T
-	prov   *AWSProvider
-	client *Route53APIStub
-	reg    registry.Registry
-	policy plan.Policy
-	cfg    *externaldns.Config
 }
 
 func reconcileConfig(prefix, suffix string) *externaldns.Config {

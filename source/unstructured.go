@@ -42,20 +42,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-// commonInitialisms are the field-name segments Kubernetes' code generator
-// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
-// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
-// staticcheck/golint treat as standard Go convention.
-var commonInitialisms = map[string]bool{
-	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
-	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
-	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
-	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
-	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
-	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
-	"xml": true, "yaml": true,
-}
-
 // unstructuredSource is a Source that creates DNS records from unstructured resources.
 //
 // +externaldns:source:name=unstructured
@@ -92,6 +78,20 @@ type unstructuredWrapper struct {
 	Metadata map[string]any
 	Spec     map[string]any
 	Status   map[string]any
+}
+
+// commonInitialisms are the field-name segments Kubernetes' code generator
+// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
+// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
+// staticcheck/golint treat as standard Go convention.
+var commonInitialisms = map[string]bool{
+	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
+	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
+	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
+	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
+	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
+	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
+	"xml": true, "yaml": true,
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.

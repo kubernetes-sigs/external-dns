@@ -28,11 +28,6 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// SoftError is an error, that provider will only log as error instead
-// of fatal. It is meant for error propagation from providers to tell
-// that this is a transient error.
-var SoftError error = errors.New("soft error") //nolint:staticcheck
-
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -49,6 +44,11 @@ type Provider interface {
 }
 
 type BaseProvider struct{}
+
+// SoftError is an error, that provider will only log as error instead
+// of fatal. It is meant for error propagation from providers to tell
+// that this is a transient error.
+var SoftError error = errors.New("soft error") //nolint:staticcheck
 
 // NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
 func NewSoftErrorf(format string, a ...any) error {

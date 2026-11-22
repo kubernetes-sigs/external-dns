@@ -42,12 +42,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-var (
-	testZones                    = map[string]*dns.ManagedZone{}
-	testRecords                  = map[string]map[string]*dns.ResourceRecordSet{}
-	googleDefaultBatchChangeSize = 4000
-)
-
 type mockManagedZonesCreateCall struct {
 	project     string
 	managedZone *dns.ManagedZone
@@ -71,6 +65,12 @@ type mockResourceRecordSetsListCall struct {
 type mockResourceRecordSetsClient struct {
 	recordsErr error
 }
+
+var (
+	testZones                    = map[string]*dns.ManagedZone{}
+	testRecords                  = map[string]map[string]*dns.ResourceRecordSet{}
+	googleDefaultBatchChangeSize = 4000
+)
 
 func (m *mockManagedZonesCreateCall) Do(_ ...googleapi.CallOption) (*dns.ManagedZone, error) {
 	zoneKey := zoneKey(m.project, m.managedZone.Name)

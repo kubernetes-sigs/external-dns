@@ -31,19 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-var (
-	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
-	ErrZoneAlreadyExists = errors.New("specified zone already exists")
-	// ErrZoneNotFound error returned when specified zone does not exists
-	ErrZoneNotFound = errors.New("specified zone not found")
-	// ErrRecordAlreadyExists when create request is sent but record already exists
-	ErrRecordAlreadyExists = errors.New("record already exists")
-	// ErrRecordNotFound when update/delete request is sent but record not found
-	ErrRecordNotFound = errors.New("record not found")
-	// ErrDuplicateRecordFound when record is repeated in create/update/delete
-	ErrDuplicateRecordFound = errors.New("invalid batch request")
-)
-
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
@@ -68,6 +55,19 @@ type zone map[endpoint.EndpointKey]*endpoint.Endpoint
 type inMemoryClient struct {
 	zones map[string]zone
 }
+
+var (
+	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
+	ErrZoneAlreadyExists = errors.New("specified zone already exists")
+	// ErrZoneNotFound error returned when specified zone does not exists
+	ErrZoneNotFound = errors.New("specified zone not found")
+	// ErrRecordAlreadyExists when create request is sent but record already exists
+	ErrRecordAlreadyExists = errors.New("record already exists")
+	// ErrRecordNotFound when update/delete request is sent but record not found
+	ErrRecordNotFound = errors.New("record not found")
+	// ErrDuplicateRecordFound when record is repeated in create/update/delete
+	ErrDuplicateRecordFound = errors.New("invalid batch request")
+)
 
 // New creates an InMemory provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

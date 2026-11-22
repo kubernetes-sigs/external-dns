@@ -32,12 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
-const (
-	dnsEndpointListKind = "DNSEndpointList"
-	dnsEndpointResource = "dnsendpoints"
-	initialEventsEndKey = "k8s.io/initial-events-end"
-)
-
 // crdClientGenerator wraps a StubClientGenerator and overrides RESTConfig to
 // return a fake API server's config, enabling the CRD source's controller-runtime
 // cache to connect without a real cluster.
@@ -51,6 +45,12 @@ type dnsEndpointHandler struct {
 	mu        sync.Mutex
 	endpoints []*apiv1alpha1.DNSEndpoint
 }
+
+const (
+	dnsEndpointListKind = "DNSEndpointList"
+	dnsEndpointResource = "dnsendpoints"
+	initialEventsEndKey = "k8s.io/initial-events-end"
+)
 
 func (g crdClientGenerator) RESTConfig() (*rest.Config, error) {
 	return g.restCfg, nil

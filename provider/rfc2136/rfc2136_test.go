@@ -43,11 +43,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	txtDMARC    = "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
-	txtRegistry = "heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.foo.com"
-)
-
 type rfc2136Stub struct {
 	output                []*dns.Envelope
 	updateMsgs            []*dns.Msg
@@ -85,6 +80,11 @@ type axfrTsigStripStub struct {
 	calls  int
 	signed []bool
 }
+
+const (
+	txtDMARC    = "v=DMARC1; p=quarantine; rua=mailto:postmaster@foo.com; sp=none; fo=1; ri=604800"
+	txtRegistry = "heritage=external-dns,external-dns/owner=default,external-dns/resource=crd/default/mail.foo.com"
+)
 
 func TestFindMsgZone(t *testing.T) {
 	tests := []struct {

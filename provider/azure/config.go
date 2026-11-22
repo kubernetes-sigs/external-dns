@@ -33,15 +33,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// Context key for request ID
-	clientRequestIDKey ctxKey = "client-request-id"
-	// Azure API Headers
-	msRequestIDHeader          = "x-ms-request-id"
-	msCorrelationRequestHeader = "x-ms-correlation-request-id"
-	msClientRequestIDHeader    = "x-ms-client-request-id"
-)
-
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
 	Cloud                        string `json:"cloud"                        yaml:"cloud"`
@@ -65,6 +56,15 @@ type ctxKey string
 
 // customHeaderPolicy adds UUID to request headers
 type customHeaderPolicy struct{}
+
+const (
+	// Context key for request ID
+	clientRequestIDKey ctxKey = "client-request-id"
+	// Azure API Headers
+	msRequestIDHeader          = "x-ms-request-id"
+	msCorrelationRequestHeader = "x-ms-correlation-request-id"
+	msClientRequestIDHeader    = "x-ms-client-request-id"
+)
 
 func getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost string) (*config, error) {
 	contents, err := os.ReadFile(configFile)

@@ -33,15 +33,15 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+type mockDnsimpleZoneServiceInterface struct {
+	mock.Mock
+}
+
 var (
 	mockProvider                     dnsimpleProvider
 	dnsimpleListZonesResponse        dnsimple.ZonesResponse
 	dnsimpleListZonesFromEnvResponse dnsimple.ZonesResponse
 )
-
-type mockDnsimpleZoneServiceInterface struct {
-	mock.Mock
-}
 
 func TestDnsimpleServices(t *testing.T) {
 	// Setup example responses

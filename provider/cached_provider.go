@@ -28,6 +28,13 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+type CachedProvider struct {
+	Provider
+	RefreshDelay time.Duration
+	lastRead     time.Time
+	cache        []*endpoint.Endpoint
+}
+
 var (
 	cachedRecordsCallsTotal = metrics.NewCounterVecWithOpts(
 		prometheus.CounterOpts{
@@ -47,13 +54,6 @@ var (
 		},
 	)
 )
-
-type CachedProvider struct {
-	Provider
-	RefreshDelay time.Duration
-	lastRead     time.Time
-	cache        []*endpoint.Endpoint
-}
 
 func init() {
 	metrics.RegisterMetric.MustRegister(cachedRecordsCallsTotal)

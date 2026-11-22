@@ -34,14 +34,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	dnsimpleCreate = "CREATE"
-	dnsimpleDelete = "DELETE"
-	dnsimpleUpdate = "UPDATE"
-
-	defaultTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
-)
-
 type dnsimpleIdentityService struct {
 	service *dnsimple.IdentityService
 }
@@ -73,6 +65,14 @@ type dnsimpleChange struct {
 	Action            string
 	ResourceRecordSet dnsimple.ZoneRecord
 }
+
+const (
+	dnsimpleCreate = "CREATE"
+	dnsimpleDelete = "DELETE"
+	dnsimpleUpdate = "UPDATE"
+
+	defaultTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+)
 
 func (i dnsimpleIdentityService) Whoami(ctx context.Context) (*dnsimple.WhoamiResponse, error) {
 	return i.service.Whoami(ctx)

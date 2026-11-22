@@ -32,12 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-var recordTypeRegionalHostnameSupported = sets.New(
-	"A",
-	"AAAA",
-	"CNAME",
-)
-
 type RegionalServicesConfig struct {
 	Enabled   bool
 	RegionKey string
@@ -55,6 +49,12 @@ type regionalHostnameChange struct {
 	action changeAction
 	regionalHostname
 }
+
+var recordTypeRegionalHostnameSupported = sets.New(
+	"A",
+	"AAAA",
+	"CNAME",
+)
 
 func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
 	return z.service.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)

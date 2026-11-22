@@ -23,15 +23,15 @@ import (
 	"github.com/miekg/dns"
 )
 
-// RFC 8945 section 5.3.1 requires a signed message at least every 100 messages.
-const maxUnsignedAXFRMessages = 99
-
 // miekg omits unsigned AXFR packets from the MAC chain, so insert them after the prior MAC.
 type axfrTsigProvider struct {
 	provider         dns.TsigProvider
 	priorMACLen      int
 	unsignedMessages [][]byte
 }
+
+// RFC 8945 section 5.3.1 requires a signed message at least every 100 messages.
+const maxUnsignedAXFRMessages = 99
 
 func signAndSendAXFRRequest(conn *dns.Conn, message *dns.Msg, provider dns.TsigProvider) (string, error) {
 	wire, requestMAC, err := dns.TsigGenerateWithProvider(message, provider, "", false)

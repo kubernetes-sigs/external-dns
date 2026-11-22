@@ -45,18 +45,6 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
-const (
-	// ambHostAnnotation is the annotation in the Host that maps to a Service
-	ambHostAnnotation = "external-dns.ambassador-service"
-	// groupName is the group name for the Ambassador API
-	groupName = "getambassador.io"
-)
-
-var (
-	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
-	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
-)
-
 // ambassadorHostSource is an implementation of Source for Ambassador Host objects.
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use annotations.TargetKey to explicitly set Endpoint.
@@ -84,6 +72,18 @@ type unstructuredConverter struct {
 	// scheme holds an initializer for converting Unstructured to a type
 	scheme *runtime.Scheme
 }
+
+const (
+	// ambHostAnnotation is the annotation in the Host that maps to a Service
+	ambHostAnnotation = "external-dns.ambassador-service"
+	// groupName is the group name for the Ambassador API
+	groupName = "getambassador.io"
+)
+
+var (
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
+	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
+)
 
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
 func NewAmbassadorHostSource(

@@ -44,6 +44,8 @@ import (
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
 const (
 	testReadTimeout  = 5 * time.Second
 	testWriteTimeout = 5 * time.Second
@@ -51,8 +53,6 @@ const (
 )
 
 var testBackoff = wait.Backoff{Duration: time.Millisecond, Factor: 1.5, Steps: 5}
-
-type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func TestNewWebhookProvider_InvalidURL(t *testing.T) {
 	_, err := newProvider(t.Context(), "://invalid-url", testReadTimeout, testWriteTimeout, testMaxBodySize, false)

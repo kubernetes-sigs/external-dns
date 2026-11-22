@@ -31,14 +31,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
-	ContentTypeHeader         = "Content-Type"
-	UrlAdjustEndpoints        = "/adjustendpoints"
-	UrlApplyChanges           = "/applychanges"
-	UrlRecords                = "/records"
-)
-
 type WebhookServer struct {
 	Provider provider.Provider
 	// MaxBodySize caps decoded request body bytes; <= 0 disables the limit.
@@ -59,6 +51,14 @@ type ServerOptions struct {
 	// MaxBodySize caps request body bytes; <= 0 disables the limit.
 	MaxBodySize int64
 }
+
+const (
+	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
+	ContentTypeHeader         = "Content-Type"
+	UrlAdjustEndpoints        = "/adjustendpoints"
+	UrlApplyChanges           = "/applychanges"
+	UrlRecords                = "/records"
+)
 
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {

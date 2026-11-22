@@ -28,6 +28,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
+type CustomRoundTripper struct {
+	next http.RoundTripper
+}
+
 var (
 	RequestDurationMetric = metrics.NewSummaryVecWithOpts(
 		prometheus.SummaryOpts{
@@ -40,10 +44,6 @@ var (
 		[]string{metrics.LabelScheme, metrics.LabelHost, metrics.LabelPath, metrics.LabelMethod, metrics.LabelStatus},
 	)
 )
-
-type CustomRoundTripper struct {
-	next http.RoundTripper
-}
 
 func init() {
 	metrics.RegisterMetric.MustRegister(RequestDurationMetric)

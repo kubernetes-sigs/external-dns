@@ -47,6 +47,27 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
+type MockAction struct {
+	Name             string
+	ZoneId           string
+	RecordId         string
+	RecordData       dns.RecordResponse
+	RegionalHostname regionalHostname
+}
+
+type mockCloudFlareClient struct {
+	Zones                map[string]string
+	Records              map[string]map[string]dns.RecordResponse
+	Actions              []MockAction
+	BatchDNSRecordsCalls int
+	listZonesError       error // For v4 ListZones
+	getZoneError         error // For v4 GetZone
+	dnsRecordsError      error
+	customHostnames      map[string][]customHostname
+	regionalHostnames    map[string][]regionalHostname
+	dnsRecordsListParams dns.RecordListParams
+}
+
 var ExampleDomain = []dns.RecordResponse{
 	{
 		ID:      "1234567890",
@@ -73,27 +94,6 @@ var ExampleDomain = []dns.RecordResponse{
 		Content: "2.3.4.5",
 		Proxied: false,
 	},
-}
-
-type MockAction struct {
-	Name             string
-	ZoneId           string
-	RecordId         string
-	RecordData       dns.RecordResponse
-	RegionalHostname regionalHostname
-}
-
-type mockCloudFlareClient struct {
-	Zones                map[string]string
-	Records              map[string]map[string]dns.RecordResponse
-	Actions              []MockAction
-	BatchDNSRecordsCalls int
-	listZonesError       error // For v4 ListZones
-	getZoneError         error // For v4 GetZone
-	dnsRecordsError      error
-	customHostnames      map[string][]customHostname
-	regionalHostnames    map[string][]regionalHostname
-	dnsRecordsListParams dns.RecordListParams
 }
 
 // newCloudflareError creates a cloudflare.Error suitable for testing.

@@ -47,19 +47,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultBatchChangeSize       = 4000
-	defaultBatchChangeSizeBytes  = 32000
-	defaultBatchChangeSizeValues = 1000
-	defaultBatchChangeInterval   = time.Second
-	defaultEvaluateTargetHealth  = true
-)
-
-const stubZoneID = "/hostedzone/example.com."
-
-// Compile time check for interface conformance
-var _ Route53API = &Route53APIStub{}
-
 // Route53APIStub is a minimal implementation of Route53API, used primarily for unit testing.
 // See http://http://docs.aws.amazon.com/sdk-for-go/api/service/route53.html for descriptions
 // of all of its methods.
@@ -84,6 +71,19 @@ type Route53APICounter struct {
 type dynamicMock struct {
 	mock.Mock
 }
+
+const (
+	defaultBatchChangeSize       = 4000
+	defaultBatchChangeSizeBytes  = 32000
+	defaultBatchChangeSizeValues = 1000
+	defaultBatchChangeInterval   = time.Second
+	defaultEvaluateTargetHealth  = true
+)
+
+const stubZoneID = "/hostedzone/example.com."
+
+// Compile time check for interface conformance
+var _ Route53API = &Route53APIStub{}
 
 // NewRoute53APIStub returns an initialized Route53APIStub
 func NewRoute53APIStub(t *testing.T) *Route53APIStub {

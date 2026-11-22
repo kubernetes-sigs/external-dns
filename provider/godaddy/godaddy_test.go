@@ -31,6 +31,11 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+type mockGoDaddyClient struct {
+	mock.Mock
+	currentTest *testing.T
+}
+
 const (
 	operationFailedTestErrCode = "GD500"
 	operationFailedTestReason  = "Could not apply request"
@@ -42,11 +47,6 @@ var (
 	zoneNameExampleOrg string = "example.org"
 	zoneNameExampleNet string = "example.net"
 )
-
-type mockGoDaddyClient struct {
-	mock.Mock
-	currentTest *testing.T
-}
 
 func newMockGoDaddyClient(t *testing.T) *mockGoDaddyClient {
 	return &mockGoDaddyClient{

@@ -28,6 +28,12 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
+type requestMetrics struct {
+	StartTime time.Time
+}
+
+type requestMetricsKey struct{}
+
 var initializeTimedOperationMiddleware = middleware.InitializeMiddlewareFunc("timedOperation", func(
 	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
 ) (middleware.InitializeOutput, middleware.Metadata, error) {
@@ -65,12 +71,6 @@ var extractAWSRequestParameters = middleware.DeserializeMiddlewareFunc("extractA
 
 	return out, metadata, err
 })
-
-type requestMetrics struct {
-	StartTime time.Time
-}
-
-type requestMetricsKey struct{}
 
 func getRequestMetric(ctx context.Context) requestMetrics {
 	requestMetrics, _ := middleware.GetStackValue(ctx, requestMetricsKey{}).(requestMetrics)

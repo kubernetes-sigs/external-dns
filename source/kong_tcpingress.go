@@ -41,12 +41,6 @@ import (
 	"sigs.k8s.io/external-dns/source/informers"
 )
 
-var kongGroupdVersionResource = schema.GroupVersionResource{
-	Group:    "configuration.konghq.com",
-	Version:  "v1beta1",
-	Resource: "tcpingresses",
-}
-
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
 //
 // +externaldns:source:name=kong-tcpingress
@@ -107,6 +101,12 @@ type tcpIngressRule struct {
 type tcpIngressBackend struct {
 	ServiceName string `json:"serviceName"`
 	ServicePort int    `json:"servicePort"`
+}
+
+var kongGroupdVersionResource = schema.GroupVersionResource{
+	Group:    "configuration.konghq.com",
+	Version:  "v1beta1",
+	Resource: "tcpingresses",
 }
 
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.

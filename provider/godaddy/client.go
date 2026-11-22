@@ -34,18 +34,6 @@ import (
 	"sigs.k8s.io/external-dns/pkg/version"
 )
 
-const (
-	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
-
-	// DefaultTimeout api requests after
-	DefaultTimeout = 180 * time.Second
-)
-
-// Errors
-var (
-	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
-)
-
 // APIError error
 type APIError struct {
 	Code    string
@@ -99,6 +87,18 @@ type GDErrorResponse struct {
 	Fields  []GDErrorField `json:"fields,omitempty"`
 	Message string         `json:"message,omitempty"`
 }
+
+const (
+	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
+
+	// DefaultTimeout api requests after
+	DefaultTimeout = 180 * time.Second
+)
+
+// Errors
+var (
+	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
+)
 
 func (err *APIError) Error() string {
 	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)

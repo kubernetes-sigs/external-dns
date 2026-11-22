@@ -46,54 +46,6 @@ import (
 	"sigs.k8s.io/external-dns/source/targetfrom"
 )
 
-const (
-	traefikAPIGroup       = "traefik.io"
-	traefikLegacyAPIGroup = "traefik.containo.us"
-	traefikAPIVersion     = "v1alpha1"
-)
-
-var (
-	ingressRouteGVR = schema.GroupVersionResource{
-		Group:    traefikAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressroutes",
-	}
-	ingressRouteTCPGVR = schema.GroupVersionResource{
-		Group:    traefikAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressroutetcps",
-	}
-	ingressRouteUDPGVR = schema.GroupVersionResource{
-		Group:    traefikAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressrouteudps",
-	}
-	// TODO: traefik.containo.us CRDs were removed in Traefik v3 (released 2024).
-	// Traefik v2 active support ended 2025-04-29; security support ends 2026-02-01.
-	// Remove these GVRs and the --traefik-enable-legacy flag after 2026-02-01.
-	// See https://doc.traefik.io/traefik/deprecation/releases/
-	oldIngressRouteGVR = schema.GroupVersionResource{
-		Group:    traefikLegacyAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressroutes",
-	}
-	oldIngressRouteTCPGVR = schema.GroupVersionResource{
-		Group:    traefikLegacyAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressroutetcps",
-	}
-	oldIngressRouteUDPGVR = schema.GroupVersionResource{
-		Group:    traefikLegacyAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressrouteudps",
-	}
-)
-
-var (
-	traefikHostExtractor  = regexp.MustCompile(`(?:HostSNI|HostHeader|Host)\s*\(\s*(\x60.*?\x60)\s*\)`)
-	traefikValueProcessor = regexp.MustCompile(`\x60([^,\x60]+)\x60`)
-)
-
 // +externaldns:source:name=traefik-proxy
 // +externaldns:source:category=Ingress Controllers
 // +externaldns:source:description=Creates DNS entries from Traefik IngressRoute, IngressRouteTCP, and IngressRouteUDP resources
@@ -206,6 +158,54 @@ type IngressRouteUDPList struct {
 	// Items is the list of IngressRouteUDP.
 	Items []IngressRouteUDP `json:"items"`
 }
+
+const (
+	traefikAPIGroup       = "traefik.io"
+	traefikLegacyAPIGroup = "traefik.containo.us"
+	traefikAPIVersion     = "v1alpha1"
+)
+
+var (
+	ingressRouteGVR = schema.GroupVersionResource{
+		Group:    traefikAPIGroup,
+		Version:  traefikAPIVersion,
+		Resource: "ingressroutes",
+	}
+	ingressRouteTCPGVR = schema.GroupVersionResource{
+		Group:    traefikAPIGroup,
+		Version:  traefikAPIVersion,
+		Resource: "ingressroutetcps",
+	}
+	ingressRouteUDPGVR = schema.GroupVersionResource{
+		Group:    traefikAPIGroup,
+		Version:  traefikAPIVersion,
+		Resource: "ingressrouteudps",
+	}
+	// TODO: traefik.containo.us CRDs were removed in Traefik v3 (released 2024).
+	// Traefik v2 active support ended 2025-04-29; security support ends 2026-02-01.
+	// Remove these GVRs and the --traefik-enable-legacy flag after 2026-02-01.
+	// See https://doc.traefik.io/traefik/deprecation/releases/
+	oldIngressRouteGVR = schema.GroupVersionResource{
+		Group:    traefikLegacyAPIGroup,
+		Version:  traefikAPIVersion,
+		Resource: "ingressroutes",
+	}
+	oldIngressRouteTCPGVR = schema.GroupVersionResource{
+		Group:    traefikLegacyAPIGroup,
+		Version:  traefikAPIVersion,
+		Resource: "ingressroutetcps",
+	}
+	oldIngressRouteUDPGVR = schema.GroupVersionResource{
+		Group:    traefikLegacyAPIGroup,
+		Version:  traefikAPIVersion,
+		Resource: "ingressrouteudps",
+	}
+)
+
+var (
+	traefikHostExtractor  = regexp.MustCompile(`(?:HostSNI|HostHeader|Host)\s*\(\s*(\x60.*?\x60)\s*\)`)
+	traefikValueProcessor = regexp.MustCompile(`\x60([^,\x60]+)\x60`)
+)
 
 func NewTraefikSource(
 	ctx context.Context,

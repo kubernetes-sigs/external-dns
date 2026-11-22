@@ -36,12 +36,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
-const (
-	defaultTTL              uint32 = 300
-	scalewayDefaultPriority uint32 = 0
-	scalewayPriorityKey     string = "scw/priority"
-)
-
 // ScalewayProvider implements the DNS provider for Scaleway DNS
 type ScalewayProvider struct {
 	provider.BaseProvider
@@ -57,6 +51,12 @@ type ScalewayChange struct {
 	Action string
 	Record []domain.Record
 }
+
+const (
+	defaultTTL              uint32 = 300
+	scalewayDefaultPriority uint32 = 0
+	scalewayPriorityKey     string = "scw/priority"
+)
 
 // New creates a Scaleway provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

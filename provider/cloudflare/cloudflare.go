@@ -45,52 +45,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-const (
-	// Environment variable names for CloudFlare authentication
-	cfAPIEmailEnvKey = "CF_API_EMAIL"
-	cfAPIKeyEnvKey   = "CF_API_KEY"
-	cfAPITokenEnvKey = "CF_API_TOKEN"
-
-	// cloudFlareCreate is a ChangeAction enum value
-	cloudFlareCreate changeAction = iota
-	// cloudFlareDelete is a ChangeAction enum value
-	cloudFlareDelete
-	// cloudFlareUpdate is a ChangeAction enum value
-	cloudFlareUpdate
-	// defaultTTL 1 = automatic
-	defaultTTL = 1
-
-	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
-	freeZoneMaxCommentLength = 100
-	paidZoneMaxCommentLength = 500
-)
-
-const (
-	logFieldRecord  = "record"
-	logFieldType    = "type"
-	logFieldTTL     = "ttl"
-	logFieldContent = "content"
-	logFieldAction  = "action"
-	logFieldZone    = "zone"
-)
-
-var changeActionNames = map[changeAction]string{
-	cloudFlareCreate: "CREATE",
-	cloudFlareDelete: "DELETE",
-	cloudFlareUpdate: "UPDATE",
-}
-
-var recordTypeProxyNotSupported = sets.New(
-	"LOC",
-	"MX",
-	"NAPTR",
-	"NS",
-	"SPF",
-	"TXT",
-	"SRV",
-	"TLSA",
-)
-
 type changeAction int
 
 type DNSRecordIndex struct {
@@ -153,6 +107,52 @@ type cloudFlareChange struct {
 	CustomHostnames     map[string]customHostname
 	CustomHostnamesPrev []string
 }
+
+const (
+	// Environment variable names for CloudFlare authentication
+	cfAPIEmailEnvKey = "CF_API_EMAIL"
+	cfAPIKeyEnvKey   = "CF_API_KEY"
+	cfAPITokenEnvKey = "CF_API_TOKEN"
+
+	// cloudFlareCreate is a ChangeAction enum value
+	cloudFlareCreate changeAction = iota
+	// cloudFlareDelete is a ChangeAction enum value
+	cloudFlareDelete
+	// cloudFlareUpdate is a ChangeAction enum value
+	cloudFlareUpdate
+	// defaultTTL 1 = automatic
+	defaultTTL = 1
+
+	// Cloudflare tier limitations https://developers.cloudflare.com/dns/manage-dns-records/reference/record-attributes/#availability
+	freeZoneMaxCommentLength = 100
+	paidZoneMaxCommentLength = 500
+)
+
+const (
+	logFieldRecord  = "record"
+	logFieldType    = "type"
+	logFieldTTL     = "ttl"
+	logFieldContent = "content"
+	logFieldAction  = "action"
+	logFieldZone    = "zone"
+)
+
+var changeActionNames = map[changeAction]string{
+	cloudFlareCreate: "CREATE",
+	cloudFlareDelete: "DELETE",
+	cloudFlareUpdate: "UPDATE",
+}
+
+var recordTypeProxyNotSupported = sets.New(
+	"LOC",
+	"MX",
+	"NAPTR",
+	"NS",
+	"SPF",
+	"TXT",
+	"SRV",
+	"TLSA",
+)
 
 func (action changeAction) String() string {
 	return changeActionNames[action]

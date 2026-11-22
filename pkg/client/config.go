@@ -37,15 +37,15 @@ import (
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
-// Overridable in tests: rest.InClusterConfig reads fixed service account paths.
-var inClusterConfig = rest.InClusterConfig
-
 // rateLimiter wraps a RateLimiter and enriches Wait errors with an
 // actionable hint so callers get a clear message without needing to inspect
 // the error string themselves.
 type rateLimiter struct {
 	delegate flowcontrol.RateLimiter
 }
+
+// Overridable in tests: rest.InClusterConfig reads fixed service account paths.
+var inClusterConfig = rest.InClusterConfig
 
 // InstrumentedRESTConfig builds a REST config with Prometheus transport metrics, request timeout,
 // and a token-bucket rate limiter. When qps > 0, it overrides the client-go defaults (5 QPS / 10 burst).

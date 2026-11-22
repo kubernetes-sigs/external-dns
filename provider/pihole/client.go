@@ -37,12 +37,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	contentTypeJSON = "application/json"
-	apiAuthPath     = "/api/auth"
-	apiConfigDNS    = "/api/config/dns"
-)
-
 // piholeAPI is the interface for interacting with Pi-hole's DNS records.
 type piholeAPI interface {
 	listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error)
@@ -90,6 +84,12 @@ type ApiRecordsResponse struct {
 	} `json:"config"`
 	Took float64 `json:"took"`
 }
+
+const (
+	contentTypeJSON = "application/json"
+	apiAuthPath     = "/api/auth"
+	apiConfigDNS    = "/api/config/dns"
+)
 
 // newPiholeClient creates a new Pi-hole API client.
 func newPiholeClient(cfg PiholeConfig) (piholeAPI, error) {

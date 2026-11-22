@@ -43,10 +43,6 @@ import (
 	"sigs.k8s.io/external-dns/registry"
 )
 
-// nameInvalidChars matches every character that is not allowed in the readable
-// part of a DNSRecord object name (anything outside lowercase RFC 1123 alphanumerics).
-var nameInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
-
 // CRDRegistry implements registry interface with ownership implemented via associated custom resource records (DNSRecord)
 type CRDRegistry struct {
 	// crReader serves the bulk Records() list from a controller-runtime cache
@@ -62,6 +58,10 @@ type CRDRegistry struct {
 	provider  provider.Provider
 	ownerID   string // refers to the owner id of the current instance
 }
+
+// nameInvalidChars matches every character that is not allowed in the readable
+// part of a DNSRecord object name (anything outside lowercase RFC 1123 alphanumerics).
+var nameInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
 
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
 	namespace := cfg.CRDRegistryNamespace

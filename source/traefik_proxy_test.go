@@ -46,11 +46,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-const defaultTraefikNamespace = "traefik"
-
-// This is a compile-time validation that traefikSource is a Source.
-var _ Source = &traefikSource{}
-
 type FakeInformer struct {
 	mock.Mock
 	lister cache.GenericLister
@@ -61,6 +56,11 @@ type testInformer struct {
 
 	times int
 }
+
+const defaultTraefikNamespace = "traefik"
+
+// This is a compile-time validation that traefikSource is a Source.
+var _ Source = &traefikSource{}
 
 func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 	t.Parallel()

@@ -31,13 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
-const (
-	workers            = 1
-	controllerName     = "external-dns"
-	maxRetriesPerEvent = 3
-	maxQueuedEvents    = 100
-)
-
 type EventEmitter interface {
 	Add(...Event)
 }
@@ -49,6 +42,13 @@ type Controller struct {
 	maxQueuedEvents int
 	createOpts      metav1.CreateOptions
 }
+
+const (
+	workers            = 1
+	controllerName     = "external-dns"
+	maxRetriesPerEvent = 3
+	maxQueuedEvents    = 100
+)
 
 func NewEventController(client v1.EventsV1Interface, cfg *Config) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(

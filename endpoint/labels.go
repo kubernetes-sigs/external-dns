@@ -25,6 +25,10 @@ import (
 	"strings"
 )
 
+// Labels store metadata related to the endpoint
+// it is then stored in a persistent storage via serialization
+type Labels map[string]string
+
 const (
 	heritage = "external-dns"
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
@@ -47,10 +51,6 @@ const (
 
 // ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
 var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
-
-// Labels store metadata related to the endpoint
-// it is then stored in a persistent storage via serialization
-type Labels map[string]string
 
 // NewLabels returns empty Labels
 func NewLabels() Labels {

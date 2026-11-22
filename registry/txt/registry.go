@@ -35,10 +35,6 @@ import (
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
-const (
-	providerSpecificForceUpdate = "txt/force-update"
-)
-
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
@@ -84,6 +80,10 @@ type recordKey struct {
 	dnsName       string
 	setIdentifier string
 }
+
+const (
+	providerSpecificForceUpdate = "txt/force-update"
+)
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{

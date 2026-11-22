@@ -39,10 +39,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL = 300
-)
-
 type managedZonesCreateCallInterface interface {
 	Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error)
 }
@@ -98,6 +94,10 @@ type GoogleProvider struct {
 	// The context parameter to be passed for gcloud API calls.
 	ctx context.Context
 }
+
+const (
+	defaultTTL = 300
+)
 
 func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
 	return r.service.List(project, managedZone)

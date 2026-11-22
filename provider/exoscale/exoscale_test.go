@@ -32,6 +32,33 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+type createRecordExoscale struct {
+	domainID v3.UUID
+	req      v3.CreateDNSDomainRecordRequest
+}
+
+type deleteRecordExoscale struct {
+	domainID v3.UUID
+	recordID v3.UUID
+}
+
+type updateRecordExoscale struct {
+	domainID v3.UUID
+	recordID v3.UUID
+	req      v3.UpdateDNSDomainRecordRequest
+}
+
+type ExoscaleClientStub struct{}
+
+// ExoscaleClientApexStub serves a single domain with one apex record for apex-specific tests.
+type ExoscaleClientApexStub struct{}
+
+// errListDomainsStub always errors on ListDNSDomains.
+type errListDomainsStub struct{}
+
+// errListRecordsStub returns one domain but errors on ListDNSDomainRecords.
+type errListRecordsStub struct{}
+
 var (
 	createExoscale []createRecordExoscale
 	deleteExoscale []deleteRecordExoscale
@@ -59,33 +86,6 @@ var groups = map[string][]v3.DNSDomainRecord{
 		{ID: v3.UUID(uuid.New().String()), Name: "", Type: v3.DNSDomainRecordTypeA, Content: "1.2.3.4", Ttl: 3600},
 	},
 }
-
-type createRecordExoscale struct {
-	domainID v3.UUID
-	req      v3.CreateDNSDomainRecordRequest
-}
-
-type deleteRecordExoscale struct {
-	domainID v3.UUID
-	recordID v3.UUID
-}
-
-type updateRecordExoscale struct {
-	domainID v3.UUID
-	recordID v3.UUID
-	req      v3.UpdateDNSDomainRecordRequest
-}
-
-type ExoscaleClientStub struct{}
-
-// ExoscaleClientApexStub serves a single domain with one apex record for apex-specific tests.
-type ExoscaleClientApexStub struct{}
-
-// errListDomainsStub always errors on ListDNSDomains.
-type errListDomainsStub struct{}
-
-// errListRecordsStub returns one domain but errors on ListDNSDomainRecords.
-type errListRecordsStub struct{}
 
 func NewExoscaleClientStub() EgoscaleClientI {
 	return &ExoscaleClientStub{}

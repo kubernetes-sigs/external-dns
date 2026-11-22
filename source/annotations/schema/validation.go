@@ -25,15 +25,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-const (
-	// ModeOff disables schema validation; an empty Mode is treated the same.
-	ModeOff Mode = "off"
-	// ModeWarn logs a warning and falls back to a default value (the historical behavior).
-	ModeWarn Mode = "warn"
-	// ModeStrict treats an invalid value as an error, for annotations that opt in via StrictMessage.
-	ModeStrict Mode = "strict"
-)
-
 // Validator validates a raw annotation value string, returning an error describing
 // why the value is invalid, or nil if the value is acceptable.
 type Validator func(value string) error
@@ -59,6 +50,15 @@ type AnnotationSpec struct {
 
 // Mode controls how invalid annotation values are handled globally.
 type Mode string
+
+const (
+	// ModeOff disables schema validation; an empty Mode is treated the same.
+	ModeOff Mode = "off"
+	// ModeWarn logs a warning and falls back to a default value (the historical behavior).
+	ModeWarn Mode = "warn"
+	// ModeStrict treats an invalid value as an error, for annotations that opt in via StrictMessage.
+	ModeStrict Mode = "strict"
+)
 
 func (c Config) Validate(value string) error {
 	for _, validator := range c.Validators {

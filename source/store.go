@@ -40,9 +40,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-// ErrSourceNotFound is returned when a requested source doesn't exist.
-var ErrSourceNotFound = errors.New("source not found")
-
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
 // This interface abstracts client creation and enables dependency injection for testing.
 // It uses the singleton pattern to ensure only one instance of each client is created
@@ -103,6 +100,9 @@ type SingletonClientGenerator struct {
 	dynCliOnce         sync.Once
 	openshiftOnce      sync.Once
 }
+
+// ErrSourceNotFound is returned when a requested source doesn't exist.
+var ErrSourceNotFound = errors.New("source not found")
 
 // WithClientGenerator sets a custom ClientGenerator, overriding the default
 // SingletonClientGenerator. Intended for testing.

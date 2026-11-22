@@ -38,10 +38,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
-const (
-	testZone = "test-zone.example.org"
-)
-
 // DynamoDBAPIStub is a minimal implementation of DynamoDBAPI, used primarily for unit testing.
 type DynamoDBStub struct {
 	t                *testing.T
@@ -62,6 +58,10 @@ type wrappedProvider struct {
 	provider.Provider
 	stub *DynamoDBStub
 }
+
+const (
+	testZone = "test-zone.example.org"
+)
 
 func TestDynamoDBRegistryNew(t *testing.T) {
 	api, p := newDynamoDBAPIStub(t, nil)

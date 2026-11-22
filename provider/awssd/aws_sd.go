@@ -40,29 +40,6 @@ import (
 	extdnsaws "sigs.k8s.io/external-dns/provider/aws"
 )
 
-const (
-	defaultTTL = 300
-
-	// https://github.com/aws/aws-sdk-go-v2/blob/cf8509382340d6afdc93612550d56d685181bbb3/service/servicediscovery/api_op_ListServices.go#L42
-	maxResults = 100
-
-	sdNamespaceTypePublic  = "public"
-	sdNamespaceTypePrivate = "private"
-
-	sdInstanceAttrIPV4  = "AWS_INSTANCE_IPV4"
-	sdInstanceAttrIPV6  = "AWS_INSTANCE_IPV6"
-	sdInstanceAttrCname = "AWS_INSTANCE_CNAME"
-	sdInstanceAttrAlias = "AWS_ALIAS_DNS_NAME"
-)
-
-var (
-	// matches ELB with hostname format load-balancer.us-east-1.elb.amazonaws.com
-	sdElbHostnameRegex = regexp.MustCompile(`.+\.[^.]+\.elb\.amazonaws\.com$`)
-
-	// matches NLB with hostname format load-balancer.elb.us-east-1.amazonaws.com
-	sdNlbHostnameRegex = regexp.MustCompile(`.+\.elb\.[^.]+\.amazonaws\.com$`)
-)
-
 // AWSSDClient is the subset of the AWS Cloud Map API that we actually use. Add methods as required.
 // Signatures must match exactly. Taken from https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/servicediscovery
 type AWSSDClient interface {
@@ -96,6 +73,29 @@ type AWSSDProvider struct {
 	// observedRecordTypes caches Cloud Map record types for drift warnings.
 	observedRecordTypes map[string][]sdtypes.RecordType
 }
+
+const (
+	defaultTTL = 300
+
+	// https://github.com/aws/aws-sdk-go-v2/blob/cf8509382340d6afdc93612550d56d685181bbb3/service/servicediscovery/api_op_ListServices.go#L42
+	maxResults = 100
+
+	sdNamespaceTypePublic  = "public"
+	sdNamespaceTypePrivate = "private"
+
+	sdInstanceAttrIPV4  = "AWS_INSTANCE_IPV4"
+	sdInstanceAttrIPV6  = "AWS_INSTANCE_IPV6"
+	sdInstanceAttrCname = "AWS_INSTANCE_CNAME"
+	sdInstanceAttrAlias = "AWS_ALIAS_DNS_NAME"
+)
+
+var (
+	// matches ELB with hostname format load-balancer.us-east-1.elb.amazonaws.com
+	sdElbHostnameRegex = regexp.MustCompile(`.+\.[^.]+\.elb\.amazonaws\.com$`)
+
+	// matches NLB with hostname format load-balancer.elb.us-east-1.amazonaws.com
+	sdNlbHostnameRegex = regexp.MustCompile(`.+\.elb\.[^.]+\.amazonaws\.com$`)
+)
 
 // New creates an AWS Service Discovery provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

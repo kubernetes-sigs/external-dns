@@ -38,11 +38,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL        = 300
-	ociZoneOCIDPrefix = "ocid1.dns-zone."
-)
-
 // OCIAuthConfig holds connection parameters for the OCI API.
 type OCIAuthConfig struct {
 	Region               string `yaml:"region"`
@@ -83,6 +78,11 @@ type ociDNSClient interface {
 	GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (response dns.GetZoneRecordsResponse, err error)
 	PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error)
 }
+
+const (
+	defaultTTL        = 300
+	ociZoneOCIDPrefix = "ocid1.dns-zone."
+)
 
 // New creates an OCI provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

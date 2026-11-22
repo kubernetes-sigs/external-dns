@@ -42,8 +42,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const toggleRegistryFailureCount = 3
-
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
 	provider.BaseProvider
@@ -64,6 +62,8 @@ type toggleRegistry struct {
 	failCount   int
 	failCountMu sync.Mutex // protects failCount
 }
+
+const toggleRegistryFailureCount = 3
 
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter

@@ -24,6 +24,11 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
+type dnsKey struct {
+	name       string
+	recordType string
+}
+
 const (
 	subsystemRegistry   = "registry"
 	subsystemSource     = "source"
@@ -134,11 +139,6 @@ var (
 		},
 	)
 )
-
-type dnsKey struct {
-	name       string
-	recordType string
-}
 
 func init() {
 	metrics.RegisterMetric.MustRegister(registryErrorsTotal)

@@ -44,14 +44,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-const (
-	gatewayGroup                               = "gateway.networking.k8s.io"
-	gatewayKind                                = "Gateway"
-	listenerSetKind                            = "ListenerSet"
-	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
-	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
-)
-
 type gatewayRoute interface {
 	// Object returns the underlying route object to be used by templates.
 	Object() kubeObject
@@ -175,6 +167,14 @@ type resolvedParent struct {
 	section   v1.SectionName
 	listeners []listenerSection
 }
+
+const (
+	gatewayGroup                               = "gateway.networking.k8s.io"
+	gatewayKind                                = "Gateway"
+	listenerSetKind                            = "ListenerSet"
+	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
+	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
+)
 
 func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
 	var opts []gwinformers.SharedInformerOption

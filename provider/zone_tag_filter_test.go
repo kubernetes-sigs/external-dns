@@ -23,6 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// test doubles
+type filterZoneTags struct {
+	ZoneTagFilter
+	inputTags map[string]string
+}
+
 var basicZoneTags = []struct {
 	name       string
 	tagsFilter []string
@@ -72,12 +78,6 @@ var benchFixtures = []struct {
 	{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
 	{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
 	{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
-}
-
-// test doubles
-type filterZoneTags struct {
-	ZoneTagFilter
-	inputTags map[string]string
 }
 
 func TestZoneTagFilterMatch(t *testing.T) {

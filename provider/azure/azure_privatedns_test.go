@@ -32,10 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	recordTTL = 300
-)
-
 // mockPrivateZonesClient implements the methods of the Azure Private DNS Zones Client which are used in the Azure Private DNS Provider
 // and returns static results which are defined per test
 type mockPrivateZonesClient struct {
@@ -51,6 +47,10 @@ type mockPrivateRecordSetsClient struct {
 	deleteErr        error
 	updateErr        error
 }
+
+const (
+	recordTTL = 300
+)
 
 func newMockPrivateZonesClient(zones []*privatedns.PrivateZone) mockPrivateZonesClient {
 	pagingHandler := azcoreruntime.PagingHandler[privatedns.PrivateZonesClientListByResourceGroupResponse]{

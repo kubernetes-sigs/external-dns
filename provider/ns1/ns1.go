@@ -35,17 +35,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	// ns1Create is a ChangeAction enum value
-	ns1Create = "CREATE"
-	// ns1Delete is a ChangeAction enum value
-	ns1Delete = "DELETE"
-	// ns1Update is a ChangeAction enum value
-	ns1Update = "UPDATE"
-	// defaultTTL is the default ttl for ttls that are not set
-	defaultTTL = 10
-)
-
 // NS1DomainClient is a subset of the NS1 API the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
@@ -85,6 +74,17 @@ type ns1Change struct {
 	Action   string
 	Endpoint *endpoint.Endpoint
 }
+
+const (
+	// ns1Create is a ChangeAction enum value
+	ns1Create = "CREATE"
+	// ns1Delete is a ChangeAction enum value
+	ns1Delete = "DELETE"
+	// ns1Update is a ChangeAction enum value
+	ns1Update = "UPDATE"
+	// defaultTTL is the default ttl for ttls that are not set
+	defaultTTL = 10
+)
 
 // CreateRecord wraps the Create method of the API's Record service
 func (n NS1DomainService) CreateRecord(r *dns.Record) (*http.Response, error) {

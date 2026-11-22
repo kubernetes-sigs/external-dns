@@ -33,75 +33,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 )
 
-const (
-	// RecordTypeA is a RecordType enum value
-	RecordTypeA = "A"
-	// RecordTypeAAAA is a RecordType enum value
-	RecordTypeAAAA = "AAAA"
-	// RecordTypeCNAME is a RecordType enum value
-	RecordTypeCNAME = "CNAME"
-	// RecordTypeTXT is a RecordType enum value
-	RecordTypeTXT = "TXT"
-	// RecordTypeSRV is a RecordType enum value
-	RecordTypeSRV = "SRV"
-	// RecordTypeNS is a RecordType enum value
-	RecordTypeNS = "NS"
-	// RecordTypePTR is a RecordType enum value
-	RecordTypePTR = "PTR"
-	// RecordTypeMX is a RecordType enum value
-	RecordTypeMX = "MX"
-	// RecordTypeNAPTR is a RecordType enum value
-	RecordTypeNAPTR = "NAPTR"
-	// RecordTypeDNAME is a RecordType enum value
-	RecordTypeDNAME = "DNAME"
-	// RecordTypeTLSA is a RecordType enum value
-	RecordTypeTLSA = "TLSA"
-
-	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
-	// provider-native alias record (e.g. AWS ALIAS).
-	ProviderSpecificAlias = "alias"
-
-	// ProviderSpecificRecordType is the provider-specific property name used to
-	// request a particular DNS record type (e.g. "ptr") on an endpoint.
-	ProviderSpecificRecordType = "record-type"
-)
-
-const (
-	logFieldTargets           = "targets"
-	logFieldComparisonTargets = "comparisonTargets"
-)
-
-const (
-	// AliasNone indicates alias property is not set
-	AliasNone AliasType = ""
-	// AliasFalse indicates alias property is set to false
-	AliasFalse AliasType = "false"
-	// AliasTrue indicates alias property is set to true (both A and AAAA)
-	AliasTrue AliasType = "true"
-	// AliasA indicates alias property is set to A record only
-	AliasA AliasType = "A"
-	// AliasAAAA indicates alias property is set to AAAA record only
-	AliasAAAA AliasType = "AAAA"
-)
-
-var (
-	// Adding a type here also requires it in the Enum marker on Endpoint.RecordType,
-	// then `make crd`. A type missing from that enum is rejected at admission.
-	KnownRecordTypes = []string{
-		RecordTypeA,
-		RecordTypeAAAA,
-		RecordTypeCNAME,
-		RecordTypeTXT,
-		RecordTypeSRV,
-		RecordTypeNS,
-		RecordTypePTR,
-		RecordTypeMX,
-		RecordTypeNAPTR,
-		RecordTypeDNAME,
-		RecordTypeTLSA,
-	}
-)
-
 // TTL is a structure defining the TTL of a DNS record
 type TTL int64
 
@@ -227,6 +158,75 @@ type Endpoint struct {
 }
 
 type AliasType string
+
+const (
+	// RecordTypeA is a RecordType enum value
+	RecordTypeA = "A"
+	// RecordTypeAAAA is a RecordType enum value
+	RecordTypeAAAA = "AAAA"
+	// RecordTypeCNAME is a RecordType enum value
+	RecordTypeCNAME = "CNAME"
+	// RecordTypeTXT is a RecordType enum value
+	RecordTypeTXT = "TXT"
+	// RecordTypeSRV is a RecordType enum value
+	RecordTypeSRV = "SRV"
+	// RecordTypeNS is a RecordType enum value
+	RecordTypeNS = "NS"
+	// RecordTypePTR is a RecordType enum value
+	RecordTypePTR = "PTR"
+	// RecordTypeMX is a RecordType enum value
+	RecordTypeMX = "MX"
+	// RecordTypeNAPTR is a RecordType enum value
+	RecordTypeNAPTR = "NAPTR"
+	// RecordTypeDNAME is a RecordType enum value
+	RecordTypeDNAME = "DNAME"
+	// RecordTypeTLSA is a RecordType enum value
+	RecordTypeTLSA = "TLSA"
+
+	// ProviderSpecificAlias indicates whether a CNAME endpoint maps to a
+	// provider-native alias record (e.g. AWS ALIAS).
+	ProviderSpecificAlias = "alias"
+
+	// ProviderSpecificRecordType is the provider-specific property name used to
+	// request a particular DNS record type (e.g. "ptr") on an endpoint.
+	ProviderSpecificRecordType = "record-type"
+)
+
+const (
+	logFieldTargets           = "targets"
+	logFieldComparisonTargets = "comparisonTargets"
+)
+
+const (
+	// AliasNone indicates alias property is not set
+	AliasNone AliasType = ""
+	// AliasFalse indicates alias property is set to false
+	AliasFalse AliasType = "false"
+	// AliasTrue indicates alias property is set to true (both A and AAAA)
+	AliasTrue AliasType = "true"
+	// AliasA indicates alias property is set to A record only
+	AliasA AliasType = "A"
+	// AliasAAAA indicates alias property is set to AAAA record only
+	AliasAAAA AliasType = "AAAA"
+)
+
+var (
+	// Adding a type here also requires it in the Enum marker on Endpoint.RecordType,
+	// then `make crd`. A type missing from that enum is rejected at admission.
+	KnownRecordTypes = []string{
+		RecordTypeA,
+		RecordTypeAAAA,
+		RecordTypeCNAME,
+		RecordTypeTXT,
+		RecordTypeSRV,
+		RecordTypeNS,
+		RecordTypePTR,
+		RecordTypeMX,
+		RecordTypeNAPTR,
+		RecordTypeDNAME,
+		RecordTypeTLSA,
+	}
+)
 
 // IsConfigured returns true if TTL is configured, false otherwise
 func (ttl TTL) IsConfigured() bool {

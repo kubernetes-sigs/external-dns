@@ -24,6 +24,27 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+// Options configures a Schema at construction time. Fields correspond to runtime
+// flags that change what the schema validates.
+type Options struct {
+	// Mode is the active validation mode. ModeOff disables all validation.
+	Mode Mode
+	// IgnoreHostnameAnnotation mirrors --ignore-hostname-annotation: when true,
+	// IsValid skips the hostname (and, for the service source, internal-hostname)
+	// annotation checks, because the source will not read those values at runtime.
+	IgnoreHostnameAnnotation bool
+}
+
+// Schema validates annotations against a fixed list of AnnotationSpecs under a
+// fixed set of Options. Constructed once and shared across sources; each source
+// binds a per-call identity via WithSource.
+type Schema struct {
+	specs                    []AnnotationSpec
+	mode                     Mode
+	ignoreHostnameAnnotation bool
+	source                   string
+}
+
 const defaultStrictMessage = "the resource will not receive a DNS record"
 
 // defaultSpecs lists each supported annotation, the sources that consume it,
@@ -146,27 +167,6 @@ var defaultSpecs = []AnnotationSpec{
 		StrictMessage:    "the ingress will not receive any DNS records",
 		Documentation:    `Controls which hostnames are used for the ingress: "defined-hosts-only" or "annotation-only" (case-insensitive).`,
 	},
-}
-
-// Options configures a Schema at construction time. Fields correspond to runtime
-// flags that change what the schema validates.
-type Options struct {
-	// Mode is the active validation mode. ModeOff disables all validation.
-	Mode Mode
-	// IgnoreHostnameAnnotation mirrors --ignore-hostname-annotation: when true,
-	// IsValid skips the hostname (and, for the service source, internal-hostname)
-	// annotation checks, because the source will not read those values at runtime.
-	IgnoreHostnameAnnotation bool
-}
-
-// Schema validates annotations against a fixed list of AnnotationSpecs under a
-// fixed set of Options. Constructed once and shared across sources; each source
-// binds a per-call identity via WithSource.
-type Schema struct {
-	specs                    []AnnotationSpec
-	mode                     Mode
-	ignoreHostnameAnnotation bool
-	source                   string
 }
 
 // NewWithSpecs returns a Schema with an explicit spec list — intended for tests

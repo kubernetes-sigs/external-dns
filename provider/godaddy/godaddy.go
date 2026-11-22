@@ -33,21 +33,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL = 600
-	gdCreate   = 0
-	gdReplace  = 1
-	gdDelete   = 2
-
-	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
-)
-
-var actionNames = []string{
-	"create",
-	"replace",
-	"delete",
-}
-
 type gdClient interface {
 	Patch(string, any, any) error
 	Post(string, any, any) error
@@ -118,6 +103,21 @@ type gdZone struct {
 }
 
 type gdZoneIDName map[string]*gdRecords
+
+const (
+	defaultTTL = 600
+	gdCreate   = 0
+	gdReplace  = 1
+	gdDelete   = 2
+
+	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
+)
+
+var actionNames = []string{
+	"create",
+	"replace",
+	"delete",
+}
 
 func (z gdZoneIDName) add(zoneID string, zoneRecord *gdRecords) {
 	z[zoneID] = zoneRecord

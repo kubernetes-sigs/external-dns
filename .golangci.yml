@@ -41,7 +41,8 @@ linters:
     - usetesting # Reports uses of functions with replacement inside the testing package.
   settings:
     decorder:
-      dec-order: [const, var, type, func]
+      dec-order: [type, const, var, func]
+      ignore-underscore-vars: true
       # Enforce top-level declaration order and init() first; multiple const/var/type blocks stay allowed.
       disable-dec-order-check: false
       disable-init-func-first-check: false

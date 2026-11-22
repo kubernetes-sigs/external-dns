@@ -41,11 +41,6 @@ import (
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
-const dynamodbAttributeMigrate = "dynamodb/needs-migration"
-
-// DynamoDB allows a maximum batch size of 25 items.
-var dynamodbMaxBatchSize uint8 = 25
-
 // DynamoDBAPI is the subset of the AWS DynamoDB API that we actually use.  Add methods as required. Signatures must match exactly.
 type DynamoDBAPI interface {
 	DescribeTable(context.Context, *awsdynamodb.DescribeTableInput, ...func(*awsdynamodb.Options)) (*awsdynamodb.DescribeTableOutput, error)
@@ -77,6 +72,11 @@ type DynamoDBRegistry struct {
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
 }
+
+const dynamodbAttributeMigrate = "dynamodb/needs-migration"
+
+// DynamoDB allows a maximum batch size of 25 items.
+var dynamodbMaxBatchSize uint8 = 25
 
 // New creates a DynamoDBRegistry from the given configuration.
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {

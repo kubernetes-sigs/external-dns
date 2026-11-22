@@ -40,15 +40,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
-const (
-	testZone = "test-zone.example.org"
-)
-
-const (
-	storedDNSName = "foo." + testZone
-	storedTXTName = "cname-foo." + testZone
-)
-
 // errProvider is a provider whose Records call always returns an error.
 type errProvider struct {
 	provider.BaseProvider
@@ -59,6 +50,15 @@ type errProvider struct {
 type nilLabelsProvider struct {
 	provider.BaseProvider
 }
+
+const (
+	testZone = "test-zone.example.org"
+)
+
+const (
+	storedDNSName = "foo." + testZone
+	storedTXTName = "cname-foo." + testZone
+)
 
 func TestTXTRegistry(t *testing.T) {
 	t.Run("TestNewTXTRegistry", testTXTRegistryNew)

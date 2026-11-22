@@ -36,16 +36,16 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const recordTypeDriftWarning = "record types are immutable"
-
-const testOwnerID = "owner"
-
 type failingDiscoverClient struct{ AWSSDClient }
 
 type updateCountingStub struct {
 	*AWSSDClientStub
 	updates int
 }
+
+const recordTypeDriftWarning = "record types are immutable"
+
+const testOwnerID = "owner"
 
 func TestAWSSDProvider_Records(t *testing.T) {
 	namespaces := map[string]*sdtypes.Namespace{

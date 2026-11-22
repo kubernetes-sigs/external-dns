@@ -35,11 +35,6 @@ import (
 	_ "sigs.k8s.io/external-dns/provider/webhook"
 )
 
-var (
-	//go:embed "templates/*"
-	templates embed.FS
-)
-
 type templateData struct {
 	Metrics        []*metrics.Metric
 	RuntimeMetrics []string
@@ -54,6 +49,11 @@ type columnWidths struct {
 	Labels    int
 	Help      int
 }
+
+var (
+	//go:embed "templates/*"
+	templates embed.FS
+)
 
 func main() {
 	testPath, _ := os.Getwd()

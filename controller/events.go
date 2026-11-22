@@ -25,6 +25,20 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
+type deletedEndpoint struct {
+	*endpoint.Endpoint
+	ref *events.ObjectReference
+}
+
+// StatusReporter receives each sync's outcome, which only exists after
+// ApplyChanges, e.g. to set DNSEndpoint conditions.
+type StatusReporter interface {
+	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
+	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
+	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
+}
+
 // Delete events are reported by the registry: the source object is usually gone.
 const registrySource = "registry"
 
@@ -54,20 +68,6 @@ var resourceKinds = map[string]string{
 	"host":               "Host",
 	"f5-virtualserver":   "VirtualServer",
 	"f5-transportserver": "TransportServer",
-}
-
-// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
-type deletedEndpoint struct {
-	*endpoint.Endpoint
-	ref *events.ObjectReference
-}
-
-// StatusReporter receives each sync's outcome, which only exists after
-// ApplyChanges, e.g. to set DNSEndpoint conditions.
-type StatusReporter interface {
-	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
-	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
-	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
 }
 
 // emitChangeEvent emits a Kubernetes event for each DNS record change.

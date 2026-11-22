@@ -41,14 +41,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-const (
-	// Possible values for the ingress-hostname-source annotation
-	IngressHostnameSourceAnnotationOnlyValue   = "annotation-only"
-	IngressHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
-
-	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
-)
-
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Use annotations.TargetKey to explicitly set Endpoint. (useful if the ingress
@@ -74,6 +66,14 @@ type ingressSource struct {
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
 }
+
+const (
+	// Possible values for the ingress-hostname-source annotation
+	IngressHostnameSourceAnnotationOnlyValue   = "annotation-only"
+	IngressHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
+
+	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
+)
 
 // NewIngressSource creates a new ingressSource with the given config.
 func NewIngressSource(

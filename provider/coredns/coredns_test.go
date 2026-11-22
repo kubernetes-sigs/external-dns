@@ -38,8 +38,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const defaultCoreDNSPrefix = "/skydns/"
-
 type fakeETCDClient struct {
 	services    map[string]Service
 	deletedKeys []string
@@ -49,6 +47,8 @@ type MockEtcdKV struct {
 	etcdcv3.KV
 	mock.Mock
 }
+
+const defaultCoreDNSPrefix = "/skydns/"
 
 func (c *fakeETCDClient) GetServices(_ context.Context, prefix string) ([]*Service, error) {
 	var result []*Service

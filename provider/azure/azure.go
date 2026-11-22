@@ -39,14 +39,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL = 300
-	// Azure-specific provider properties
-	providerSpecificAzureTags      = "azure/tags"
-	providerSpecificMetadataPrefix = "azure/metadata-"
-	providerSpecificMetadataKeys   = "azure/metadata-keys"
-)
-
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
 	NewListByResourceGroupPager(resourceGroupName string, options *dns.ZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[dns.ZonesClientListByResourceGroupResponse]
@@ -76,6 +68,14 @@ type AzureProvider struct {
 }
 
 type azureChangeMap map[string][]*endpoint.Endpoint
+
+const (
+	defaultTTL = 300
+	// Azure-specific provider properties
+	providerSpecificAzureTags      = "azure/tags"
+	providerSpecificMetadataPrefix = "azure/metadata-"
+	providerSpecificMetadataKeys   = "azure/metadata-keys"
+)
 
 // New creates an Azure DNS provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

@@ -31,27 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
-const (
-	annotationPrefix           = "+externaldns:source:"
-	annotationName             = annotationPrefix + "name="
-	annotationCategory         = annotationPrefix + "category="
-	annotationDesc             = annotationPrefix + "description="
-	annotationResources        = annotationPrefix + "resources="
-	annotationFilters          = annotationPrefix + "filters="
-	annotationNamespace        = annotationPrefix + "namespace="
-	annotationFQDNTemplate     = annotationPrefix + "fqdn-template="
-	annotationEvents           = annotationPrefix + "events="
-	annotationProviderSpecific = annotationPrefix + "provider-specific="
-	annotationValidation       = annotationPrefix + "validation="
-)
-
-var (
-	//go:embed "templates/*"
-	templates embed.FS
-	// Regex to match source type names (must end with "Source")
-	sourceTypeRegex = regexp.MustCompile(`^(\w+)Source$`)
-)
-
 // Source represents metadata about a source implementation
 type Source struct {
 	Name             string // e.g., "service", "ingress", "crd"
@@ -86,6 +65,27 @@ type templateData struct {
 	Sources   Sources
 	ColWidths columnWidths
 }
+
+const (
+	annotationPrefix           = "+externaldns:source:"
+	annotationName             = annotationPrefix + "name="
+	annotationCategory         = annotationPrefix + "category="
+	annotationDesc             = annotationPrefix + "description="
+	annotationResources        = annotationPrefix + "resources="
+	annotationFilters          = annotationPrefix + "filters="
+	annotationNamespace        = annotationPrefix + "namespace="
+	annotationFQDNTemplate     = annotationPrefix + "fqdn-template="
+	annotationEvents           = annotationPrefix + "events="
+	annotationProviderSpecific = annotationPrefix + "provider-specific="
+	annotationValidation       = annotationPrefix + "validation="
+)
+
+var (
+	//go:embed "templates/*"
+	templates embed.FS
+	// Regex to match source type names (must end with "Source")
+	sourceTypeRegex = regexp.MustCompile(`^(\w+)Source$`)
+)
 
 // ValidationCell returns the Validation value with a footnote reference per kind
 // (e.g., `annotation[^val-annotation]`), so the generated table links each kind
