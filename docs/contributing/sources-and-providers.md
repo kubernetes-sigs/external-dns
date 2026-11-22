@@ -218,13 +218,14 @@ helpers and writes status through a K8s client); don't rewrite them under
 this guide.
 
 1. **Validation lives on the domain type.** If a new Source needs an
-   invariant checked, add it to `endpoint/` and call `Endpoint.Validate`
-   rather than inline a check in `source/<x>.go`. Provider-specific
-   canonicalization belongs in `Provider.AdjustEndpoints`, which
-   `Registry.AdjustEndpoints` delegates to.
+   invariant checked, add it to `Endpoint.Validate` rather than inline a
+   check in `source/<x>.go`; the dedup wrapper runs it for every Source.
+   Provider-specific canonicalization belongs in
+   `Provider.AdjustEndpoints`, which `Registry.AdjustEndpoints` delegates to.
    Signal: a new `validateX` or `isValidX` function inside a `source/*.go`
    file, or a new `switch ep.RecordType` in a Source doing per-record-type
-   normalization (see `NormalizeMXTarget`).
+   normalization. Build endpoints with `endpoint.NewEndpoint*`, which
+   normalizes per record type (see `NormalizeMXTarget`).
 2. **A Source does not write to Kubernetes.** A new Source's job ends at
    returning `[]*endpoint.Endpoint`. Status and events belong to the
    post-apply writers (`StatusReporter`, `EventEmitter`), see the Writer
@@ -593,7 +594,7 @@ methods make the sequence explicit.
 
 ### Linter versus shape
 
-The complexity linter in `.golangci.yml` is enforced by `make go-lint` and
+`cyclop` in `.golangci.yml` is enforced by `make go-lint` and
 CI, so a tripped rule has to be addressed. Any reshape must be justified
 by the practices in this section, not by the metric: find a design
 reason, or raise the threshold.

@@ -102,7 +102,7 @@ Three layering concerns, kept separate:
 - **Source** (`source/`), produces `[]*endpoint.Endpoint`. New Sources
   should not write to the K8s API themselves.
 - **Writer** (`pkg/crd/status.go`, `pkg/events/`), writes status
-  conditions and events post-apply; see the full guide.
+  conditions and events post-apply.
 
 Existing Sources (notably the crd source) do not yet follow these;
 don't rewrite them under this guide.
@@ -140,9 +140,7 @@ Self-check the change against this guide before handing it back:
 - Review each comment against [Comments](#comments).
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
-- Refactors follow the rules in [Refactoring](#refactoring) — no helpers with
-  the signature or call-order smells listed there, and no reshape driven by a
-  single metric.
+- Refactors follow [Refactoring](#refactoring).
 - Ran `make go-lint` locally, and `go test -race ./<pkg>/...` for every package
   you touched (`make test` for cross-cutting changes). Both green.
 - PR title follows Conventional Commits.
