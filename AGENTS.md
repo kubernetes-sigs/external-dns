@@ -174,9 +174,6 @@ Self-check the change against this guide before handing it back:
 - Review each comment against [Comments](#comments).
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
-- Data flow: validation and normalization on `endpoint.*`, status writes
-  through a writer type — not duplicated in sources. See
-  [Data Flow and Layering](#data-flow-and-layering).
 - Refactors follow the rules in [Refactoring](#refactoring) — no helpers with
   the signature or call-order smells listed there, and no reshape driven by a
   single metric.
