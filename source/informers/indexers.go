@@ -115,6 +115,8 @@ func (c *schemaValidationCache) isValid(entity metav1.Object, s *schema.Schema) 
 	return valid
 }
 
+// IndexerWithOptions returns the IndexWithSelectors indexer for resources of type T.
+// Objects rejected by the given options are left out of the index.
 func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOptions)) cache.Indexers {
 	options := IndexSelectorOptions{}
 	for _, fn := range optFns {

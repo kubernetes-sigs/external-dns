@@ -68,7 +68,7 @@ type traefikSource struct {
 	targetFrom               *targetfrom.Resolver
 }
 
-// Basic redefinition of Traefik 2's CRD: https://github.com/traefik/traefik/tree/v2.8.7/pkg/provider/kubernetes/crd/traefik/v1alpha1
+// Basic redefinition of Traefik 3's CRD: https://github.com/traefik/traefik/tree/v3.5.0/pkg/provider/kubernetes/crd/traefikio/v1alpha1
 
 // traefikIngressRouteSpec defines the desired state of IngressRoute.
 type traefikIngressRouteSpec struct {
@@ -79,7 +79,7 @@ type traefikIngressRouteSpec struct {
 // traefikRoute holds the HTTP route configuration.
 type traefikRoute struct {
 	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule
+	// More info: https://doc.traefik.io/traefik/v3.5/reference/routing-configuration/http/routing/rules-and-priority/
 	Match string `json:"match"`
 }
 
@@ -112,7 +112,7 @@ type traefikIngressRouteTCPSpec struct {
 // traefikRouteTCP holds the TCP route configuration.
 type traefikRouteTCP struct {
 	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule_1
+	// More info: https://doc.traefik.io/traefik/v3.5/reference/routing-configuration/tcp/routing/rules-and-priority/
 	Match string `json:"match"`
 }
 
