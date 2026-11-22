@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/config"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
@@ -36,6 +37,9 @@ type gatewayRouteTemplateCase struct {
 	targetTemplate     string
 	fqdnTargetTemplate string
 	combine            bool
+	routeAnnotations   map[string]string
+	gwName             string
+	routeNotAccepted   bool
 	expected           []*endpoint.Endpoint
 }
 
@@ -60,6 +64,24 @@ func TestGatewayRouteFQDNTargetTemplate(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				newTestEndpoint("spec.example.internal", "1.2.3.4"),
 			},
+		},
+		{
+			title:              "pairs dropped when hostname-source is annotation-only without hostname annotation",
+			routeAnnotations:   map[string]string{annotations.GatewayHostnameSourceKey: "annotation-only"},
+			fqdnTargetTemplate: "{{.Name}}.example.internal:5.6.7.8",
+			expected:           nil,
+		},
+		{
+			title:              "pairs dropped when --gateway-name filter excludes the parent",
+			gwName:             "other",
+			fqdnTargetTemplate: "{{.Name}}.example.internal:5.6.7.8",
+			expected:           nil,
+		},
+		{
+			title:              "pairs dropped when route is not accepted",
+			routeNotAccepted:   true,
+			fqdnTargetTemplate: "{{.Name}}.example.internal:5.6.7.8",
+			expected:           nil,
 		},
 	})
 }
@@ -107,15 +129,20 @@ func runGatewayRouteTemplateCases(t *testing.T, cases []gatewayRouteTemplateCase
 			}, metav1.CreateOptions{})
 			require.NoError(t, err)
 
+			status := httpRouteStatus(gwParentRef("default", "test"))
+			if tt.routeNotAccepted {
+				status = rsWithoutAccepted(status)
+			}
 			_, err = gwClient.GatewayV1().HTTPRoutes("default").Create(t.Context(), &v1.HTTPRoute{
 				Namespace: "default", Name: "templated-route",
+				Annotations: tt.routeAnnotations,
 				Spec: v1.HTTPRouteSpec{
 					CommonRouteSpec: v1.CommonRouteSpec{
 						ParentRefs: []v1.ParentReference{gwParentRef("default", "test")},
 					},
 					Hostnames: tt.hostnames,
 				},
-				Status: httpRouteStatus(gwParentRef("default", "test")),
+				Status: status,
 			}, metav1.CreateOptions{})
 			require.NoError(t, err)
 
@@ -130,6 +157,7 @@ func runGatewayRouteTemplateCases(t *testing.T, cases []gatewayRouteTemplateCase
 			clients.On("KubeClient").Return(kubeClient, nil)
 
 			src, err := NewGatewayHTTPRouteSource(t.Context(), clients, &config.Config{
+				GatewayName:    tt.gwName,
 				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 			})
 			require.NoError(t, err)
