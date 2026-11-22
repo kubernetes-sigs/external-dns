@@ -2,6 +2,18 @@
 
 Guidance for AI coding agents working in this repo.
 
+## Before You Change Anything
+
+Read this file end-to-end before editing, and when the change touches:
+
+- a Source or source wrapper, re-read [Data Flow and Layering](#data-flow-and-layering) and the
+  linked [`docs/contributing/sources-and-providers.md`](docs/contributing/sources-and-providers.md).
+- error handling in the reconcile loop, re-read [Error Handling](#error-handling).
+- a refactor that trips a linter, re-read [Refactoring](#refactoring).
+- comments, re-read [Comments](#comments).
+
+The [Before You Finish](#before-you-finish) checklist at the bottom is the exit gate.
+
 ## What ExternalDNS Does
 
 ExternalDNS = Kubernetes controller. Syncs exposed resources (Services, Ingresses, CRDs, Gateway API routes) with external DNS providers (AWS Route53, Google Cloud DNS, Azure DNS, Cloudflare, 20+ others). Tracks ownership via TXT record markers — safe for non-empty hosted zones.
@@ -106,7 +118,7 @@ Three layering concerns, kept separate:
 - **Writer** (`pkg/<kind>/status.go`), formats and writes status conditions,
   events and metrics. Owns the K8s client calls on that path.
 
-Rules of thumb for new code: put validation on `(*Endpoint).Validate`
+Rules of thumb for new code: put validation on `Endpoint.Validate`
 rather than inline it in `source/<x>.go`; have new Sources hand status
 and events to a writer type instead of a bare K8s client; writers take
 orchestration output (counts, reasons), not raw objects. Existing

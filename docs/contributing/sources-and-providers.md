@@ -171,7 +171,7 @@ factory.Start(ctx.Done())                                    // 4. start — Mus
 
 ### The reconcile pipeline
 
-Each `controller.RunOnce()` moves endpoints through a fixed pipeline:
+Each `controller.RunOnce` moves endpoints through a fixed pipeline:
 
 ```text
 Source  ──▶  source wrappers  ──▶  Registry.AdjustEndpoints  ──┐
@@ -198,7 +198,7 @@ Each stage has one job:
 
 The pipeline above names every package. This section covers the stratification
 *within* the producer side — how code around a Source splits by side-effect
-purity. Within one `RunOnce()`:
+purity. Within one `RunOnce`:
 
 | Layer  | Package                                                                     | Responsibility                                                                                                        |
 |--------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
@@ -213,10 +213,10 @@ belong inside a Source.
 
 ### Why this shape
 
-* **One source of truth for invariants.** `(*Endpoint).Validate` is defined
+* **One source of truth for invariants.** `Endpoint.Validate` is defined
   once so every Source and wrapper can agree, and a new validation rule
   lands in one file rather than being re-derived per Source.
-* **Pure domain functions are testable without a cluster.** `ep.Validate()`
+* **Pure domain functions are testable without a cluster.** `Endpoint.Validate`
   takes an endpoint and returns an error, no fake client, no reconcile loop.
 * **The write path is swappable.** The controller writes post-apply
   outcomes through `StatusReporter` and `EventEmitter`; new source-time
@@ -235,10 +235,10 @@ helpers and writes status through a K8s client); don't rewrite them under
 this guide.
 
 1. **Validation lives on the domain type.** If a new Source needs an
-   invariant checked, add it to `endpoint/` and call `ep.Validate()` rather
-   than inline a check in `source/<x>.go`. Provider-specific canonicalization
-   belongs in `Provider.AdjustEndpoints`, which `Registry.AdjustEndpoints`
-   delegates to.
+   invariant checked, add it to `endpoint/` and call `Endpoint.Validate`
+   rather than inline a check in `source/<x>.go`. Provider-specific
+   canonicalization belongs in `Provider.AdjustEndpoints`, which
+   `Registry.AdjustEndpoints` delegates to.
 2. **Sources produce, writers write.** A new Source's job ends at returning
    `[]*endpoint.Endpoint`. Status conditions, events and metrics should go
    through a writer type rather than a bare K8s client. The controller
@@ -246,10 +246,10 @@ this guide.
    (`Ready`, record events); for conditions the Source itself decides,
    inject a writer type in the same spirit.
 3. **Writers take orchestration output, not raw objects.** A method like
-   `StatusWriter.ReportStatus(ctx, objects []plan.PlannedObject, applyErr error)`
-   takes summary data (planned-object refs, counts, an error), not the
-   intermediate state the Source used to decide. This keeps the writer
-   independent of how the Source arrived at the result.
+   `StatusWriter.ReportStatus` takes summary data (planned-object refs,
+   counts, an error), not the intermediate state the Source used to
+   decide. This keeps the writer independent of how the Source arrived
+   at the result.
 
 ### Signals for new code
 
@@ -260,7 +260,7 @@ inline and does per-record-type checks), and rewriting them is not implied
 by this guide.
 
 * A new `validateX` or `isValidX` function inside a `source/*.go` file whose
-  logic belongs on `(*Endpoint).Validate` instead.
+  logic belongs on `Endpoint.Validate` instead.
 * A new Source that imports a Kubernetes client to update status, record
   events or patch conditions on the objects it reads, rather than taking a
   writer type.
