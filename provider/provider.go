@@ -72,17 +72,6 @@ func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return &endpoint.DomainFilter{}
 }
 
-type contextKey struct {
-	name string
-}
-
-func (k *contextKey) String() string { return "provider context value " + k.name }
-
-// RecordsContextKey is a context key. It can be used during ApplyChanges
-// to access previously cached records. The associated value will be of
-// type []*endpoint.Endpoint.
-var RecordsContextKey = &contextKey{"records"}
-
 // EnsureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
 func EnsureTrailingDot(hostname string) string {
 	if net.ParseIP(hostname) != nil {

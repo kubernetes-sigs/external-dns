@@ -338,7 +338,6 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		if res.fallbackAllowed && len(res.defined) == 0 && !templateRendered && len(routeEndpoints) == 0 {
 			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, []string{""}, nil))
 		}
-		// TODO: does not follow the pattern of other sources to log empty endpoints
 		if len(routeEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue

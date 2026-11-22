@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source/annotations"
 )
@@ -52,6 +53,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		validatorFunc(validateKubeAPILimits),
 		validatorFunc(validatePTRConfig),
 		validatorFunc(validateNamespaces),
+		validatorFunc(validateCRDSourceGVK),
 	}
 
 	var errs field.ErrorList
@@ -141,6 +143,20 @@ func validateNamespaces(cfg *externaldns.Config) field.ErrorList {
 		return field.ErrorList{field.Invalid(field.NewPath("namespace"), cfg.Namespaces, "--namespace accepts a single value with the following sources: "+strings.Join(unsupported, ", "))}
 	}
 	return nil
+}
+
+// The CRD source ignores these flags, so fail fast.
+func validateCRDSourceGVK(cfg *externaldns.Config) field.ErrorList {
+	const msg = "custom CRDs are no longer supported, the CRD source reads only " +
+		v1alpha1.DNSEndpointKind + " objects; remove the flag or use the unstructured source"
+	var errs field.ErrorList
+	if cfg.CRDSourceAPIVersion != "" && cfg.CRDSourceAPIVersion != v1alpha1.GroupVersion.String() {
+		errs = append(errs, field.Invalid(field.NewPath("crd-source-apiversion"), cfg.CRDSourceAPIVersion, msg))
+	}
+	if cfg.CRDSourceKind != "" && cfg.CRDSourceKind != v1alpha1.DNSEndpointKind {
+		errs = append(errs, field.Invalid(field.NewPath("crd-source-kind"), cfg.CRDSourceKind, msg))
+	}
+	return errs
 }
 
 func preValidateConfig(cfg *externaldns.Config) field.ErrorList {

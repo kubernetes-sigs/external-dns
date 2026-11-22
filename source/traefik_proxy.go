@@ -47,9 +47,8 @@ import (
 )
 
 const (
-	traefikAPIGroup       = "traefik.io"
-	traefikLegacyAPIGroup = "traefik.containo.us"
-	traefikAPIVersion     = "v1alpha1"
+	traefikAPIGroup   = "traefik.io"
+	traefikAPIVersion = "v1alpha1"
 )
 
 var (
@@ -65,25 +64,6 @@ var (
 	}
 	ingressRouteUDPGVR = schema.GroupVersionResource{
 		Group:    traefikAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressrouteudps",
-	}
-	// TODO: traefik.containo.us CRDs were removed in Traefik v3 (released 2024).
-	// Traefik v2 active support ended 2025-04-29; security support ends 2026-02-01.
-	// Remove these GVRs and the --traefik-enable-legacy flag after 2026-02-01.
-	// See https://doc.traefik.io/traefik/deprecation/releases/
-	oldIngressRouteGVR = schema.GroupVersionResource{
-		Group:    traefikLegacyAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressroutes",
-	}
-	oldIngressRouteTCPGVR = schema.GroupVersionResource{
-		Group:    traefikLegacyAPIGroup,
-		Version:  traefikAPIVersion,
-		Resource: "ingressroutetcps",
-	}
-	oldIngressRouteUDPGVR = schema.GroupVersionResource{
-		Group:    traefikLegacyAPIGroup,
 		Version:  traefikAPIVersion,
 		Resource: "ingressrouteudps",
 	}
@@ -105,18 +85,15 @@ var (
 // +externaldns:source:provider-specific=true
 // +externaldns:source:validation=annotation
 type traefikSource struct {
-	dynamicKubeClient           dynamic.Interface
-	kubeClient                  kubernetes.Interface
-	ignoreHostnameAnnotation    bool
-	templateEngine              template.Engine
-	ingressRouteInformers       *informers.Informers[kubeinformers.GenericInformer]
-	ingressRouteTcpInformers    *informers.Informers[kubeinformers.GenericInformer]
-	ingressRouteUdpInformers    *informers.Informers[kubeinformers.GenericInformer]
-	oldIngressRouteInformers    *informers.Informers[kubeinformers.GenericInformer]
-	oldIngressRouteTcpInformers *informers.Informers[kubeinformers.GenericInformer]
-	oldIngressRouteUdpInformers *informers.Informers[kubeinformers.GenericInformer]
-	unstructuredConverter       *unstructuredConverter
-	targetFrom                  *targetfrom.Resolver
+	dynamicKubeClient        dynamic.Interface
+	kubeClient               kubernetes.Interface
+	ignoreHostnameAnnotation bool
+	templateEngine           template.Engine
+	ingressRouteInformers    *informers.Informers[kubeinformers.GenericInformer]
+	ingressRouteTcpInformers *informers.Informers[kubeinformers.GenericInformer]
+	ingressRouteUdpInformers *informers.Informers[kubeinformers.GenericInformer]
+	unstructuredConverter    *unstructuredConverter
+	targetFrom               *targetfrom.Resolver
 }
 
 func NewTraefikSource(
@@ -149,18 +126,9 @@ func NewTraefikSource(
 		inf.MustAddEventHandler(informers.DefaultEventHandler())
 		return inf
 	}
-	var ingressRouteInformers, ingressRouteTcpInformers, ingressRouteUdpInformers *informers.Informers[kubeinformers.GenericInformer]
-	var oldIngressRouteInformers, oldIngressRouteTcpInformers, oldIngressRouteUdpInformers *informers.Informers[kubeinformers.GenericInformer]
-	if !cfg.TraefikDisableNew {
-		ingressRouteInformers = forResource(ingressRouteGVR)
-		ingressRouteTcpInformers = forResource(ingressRouteTCPGVR)
-		ingressRouteUdpInformers = forResource(ingressRouteUDPGVR)
-	}
-	if cfg.TraefikEnableLegacy {
-		oldIngressRouteInformers = forResource(oldIngressRouteGVR)
-		oldIngressRouteTcpInformers = forResource(oldIngressRouteTCPGVR)
-		oldIngressRouteUdpInformers = forResource(oldIngressRouteUDPGVR)
-	}
+	ingressRouteInformers := forResource(ingressRouteGVR)
+	ingressRouteTcpInformers := forResource(ingressRouteTCPGVR)
+	ingressRouteUdpInformers := forResource(ingressRouteUDPGVR)
 
 	factories.Start(ctx.Done())
 
@@ -175,66 +143,38 @@ func NewTraefikSource(
 	}
 
 	return &traefikSource{
-		ignoreHostnameAnnotation:    cfg.IgnoreHostnameAnnotation,
-		templateEngine:              cfg.TemplateEngine,
-		dynamicKubeClient:           dynamicKubeClient,
-		ingressRouteInformers:       ingressRouteInformers,
-		ingressRouteTcpInformers:    ingressRouteTcpInformers,
-		ingressRouteUdpInformers:    ingressRouteUdpInformers,
-		oldIngressRouteInformers:    oldIngressRouteInformers,
-		oldIngressRouteTcpInformers: oldIngressRouteTcpInformers,
-		oldIngressRouteUdpInformers: oldIngressRouteUdpInformers,
-		kubeClient:                  kubeClient,
-		unstructuredConverter:       uc,
-		targetFrom:                  targetFromResolver(ctx, cfg),
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		templateEngine:           cfg.TemplateEngine,
+		dynamicKubeClient:        dynamicKubeClient,
+		ingressRouteInformers:    ingressRouteInformers,
+		ingressRouteTcpInformers: ingressRouteTcpInformers,
+		ingressRouteUdpInformers: ingressRouteUdpInformers,
+		kubeClient:               kubeClient,
+		unstructuredConverter:    uc,
+		targetFrom:               targetFromResolver(ctx, cfg),
 	}, nil
 }
 
 func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	if ts.ingressRouteInformers != nil {
-		ingressRouteEndpoints, err := ts.ingressRouteEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, ingressRouteEndpoints...)
+	ingressRouteEndpoints, err := ts.ingressRouteEndpoints(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if ts.oldIngressRouteInformers != nil {
-		oldIngressRouteEndpoints, err := ts.oldIngressRouteEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, oldIngressRouteEndpoints...)
+	endpoints = append(endpoints, ingressRouteEndpoints...)
+
+	ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if ts.ingressRouteTcpInformers != nil {
-		ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, ingressRouteTcpEndpoints...)
+	endpoints = append(endpoints, ingressRouteTcpEndpoints...)
+
+	ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if ts.oldIngressRouteTcpInformers != nil {
-		oldIngressRouteTcpEndpoints, err := ts.oldIngressRouteTCPEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, oldIngressRouteTcpEndpoints...)
-	}
-	if ts.ingressRouteUdpInformers != nil {
-		ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, ingressRouteUdpEndpoints...)
-	}
-	if ts.oldIngressRouteUdpInformers != nil {
-		oldIngressRouteUdpEndpoints, err := ts.oldIngressRouteUDPEndpoints(ctx)
-		if err != nil {
-			return nil, err
-		}
-		endpoints = append(endpoints, oldIngressRouteUdpEndpoints...)
-	}
+	endpoints = append(endpoints, ingressRouteUdpEndpoints...)
 
 	return endpoint.MergeEndpoints(endpoints), nil
 }
@@ -273,48 +213,6 @@ func (ts *traefikSource) ingressRouteUDPEndpoints(ctx context.Context) ([]*endpo
 		ctx,
 		ts.targetFrom,
 		ts.ingressRouteUdpInformers.Indexers(),
-		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
-			typed := &IngressRouteUDP{}
-			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
-		},
-		ts.endpointsFromIngressRouteUDP,
-	)
-}
-
-// oldIngressRouteEndpoints extracts endpoints from all IngressRoute objects
-func (ts *traefikSource) oldIngressRouteEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return extractEndpoints(
-		ctx,
-		ts.targetFrom,
-		ts.oldIngressRouteInformers.Indexers(),
-		func(u *unstructured.Unstructured) (*IngressRoute, error) {
-			typed := &IngressRoute{}
-			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
-		},
-		ts.endpointsFromIngressRoute,
-	)
-}
-
-// oldIngressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
-func (ts *traefikSource) oldIngressRouteTCPEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return extractEndpoints(
-		ctx,
-		ts.targetFrom,
-		ts.oldIngressRouteTcpInformers.Indexers(),
-		func(u *unstructured.Unstructured) (*IngressRouteTCP, error) {
-			typed := &IngressRouteTCP{}
-			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
-		},
-		ts.endpointsFromIngressRouteTCP,
-	)
-}
-
-// oldIngressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
-func (ts *traefikSource) oldIngressRouteUDPEndpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return extractEndpoints(
-		ctx,
-		ts.targetFrom,
-		ts.oldIngressRouteUdpInformers.Indexers(),
 		func(u *unstructured.Unstructured) (*IngressRouteUDP, error) {
 			typed := &IngressRouteUDP{}
 			return typed, ts.unstructuredConverter.scheme.Convert(u, typed, nil)
@@ -413,26 +311,11 @@ func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")
-	if ts.ingressRouteInformers != nil {
-		ts.ingressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	if ts.oldIngressRouteInformers != nil {
-		ts.oldIngressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
+	ts.ingressRouteInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	log.Debug("Adding event handler for IngressRouteTCP")
-	if ts.ingressRouteTcpInformers != nil {
-		ts.ingressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	if ts.oldIngressRouteTcpInformers != nil {
-		ts.oldIngressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
+	ts.ingressRouteTcpInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	log.Debug("Adding event handler for IngressRouteUDP")
-	if ts.ingressRouteUdpInformers != nil {
-		ts.ingressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-	if ts.oldIngressRouteUdpInformers != nil {
-		ts.oldIngressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
-	}
+	ts.ingressRouteUdpInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	ts.targetFrom.AddEventHandler(handler)
 }
 
@@ -444,11 +327,8 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 
 	// Add the core types we need
 	uc.scheme.AddKnownTypes(ingressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
-	uc.scheme.AddKnownTypes(oldIngressRouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
 	uc.scheme.AddKnownTypes(ingressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(oldIngressRouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
 	uc.scheme.AddKnownTypes(ingressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
-	uc.scheme.AddKnownTypes(oldIngressRouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
 	if err := scheme.AddToScheme(uc.scheme); err != nil {
 		return nil, err
 	}
@@ -456,7 +336,7 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	return uc, nil
 }
 
-// Basic redefinition of Traefik 2's CRD: https://github.com/traefik/traefik/tree/v2.8.7/pkg/provider/kubernetes/crd/traefik/v1alpha1
+// Basic redefinition of Traefik 3's CRD: https://github.com/traefik/traefik/tree/v3.5.0/pkg/provider/kubernetes/crd/traefikio/v1alpha1
 
 // traefikIngressRouteSpec defines the desired state of IngressRoute.
 type traefikIngressRouteSpec struct {
@@ -467,7 +347,7 @@ type traefikIngressRouteSpec struct {
 // traefikRoute holds the HTTP route configuration.
 type traefikRoute struct {
 	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule
+	// More info: https://doc.traefik.io/traefik/v3.5/reference/routing-configuration/http/routing/rules-and-priority/
 	Match string `json:"match"`
 }
 
@@ -500,7 +380,7 @@ type traefikIngressRouteTCPSpec struct {
 // traefikRouteTCP holds the TCP route configuration.
 type traefikRouteTCP struct {
 	// Match defines the router's rule.
-	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule_1
+	// More info: https://doc.traefik.io/traefik/v3.5/reference/routing-configuration/tcp/routing/rules-and-priority/
 	Match string `json:"match"`
 }
 

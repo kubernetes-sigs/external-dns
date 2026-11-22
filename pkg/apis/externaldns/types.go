@@ -228,8 +228,6 @@ type Config struct {
 	WebhookProviderIdleTimeout                    time.Duration
 	WebhookProviderMaxBodySize                    int64
 	WebhookServer                                 bool
-	TraefikEnableLegacy                           bool
-	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
 	EmitEvents                                    []string
@@ -385,8 +383,6 @@ var defaultConfig = &Config{
 	TLSCA:                            "",
 	TLSClientCert:                    "",
 	TLSClientCertKey:                 "",
-	TraefikEnableLegacy:              false,
-	TraefikDisableNew:                false,
 	TXTCacheInterval:                 0,
 	TXTEncryptAESKey:                 "",
 	TXTEncryptEnabled:                false,
@@ -577,8 +573,8 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the legacy prefix external-dns.alpha.kubernetes.io/ (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
-	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
-	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
+	b.StringVar("crd-source-apiversion", "[DEPRECATED: only the default is accepted] API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
+	b.StringVar("crd-source-kind", "[DEPRECATED: only the default is accepted] Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
@@ -606,8 +602,6 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
 	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets. Only applies to A/AAAA records. (optional)", nil, &cfg.TargetNetFilter)
-	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
-	b.BoolVar("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group", defaultConfig.TraefikDisableNew, &cfg.TraefikDisableNew)
 
 	b.StringsVar("unstructured-resource", "When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources", nil, &cfg.UnstructuredResources)
 	b.StringsVar("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)", defaultConfig.EmitEvents, &cfg.EmitEvents)

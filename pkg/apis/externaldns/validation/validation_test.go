@@ -741,3 +741,26 @@ func TestValidatePTRConfig(t *testing.T) {
 		require.Empty(t, validatePTRConfig(cfg))
 	})
 }
+
+func TestValidateCRDSourceGVK(t *testing.T) {
+	tests := []struct {
+		name       string
+		apiVersion string
+		kind       string
+		wantErrs   int
+	}{
+		{"unset", "", "", 0},
+		{"default", "externaldns.k8s.io/v1alpha1", "DNSEndpoint", 0},
+		{"custom apiVersion", "externaldns.nginx.org/v1", "DNSEndpoint", 1},
+		{"custom kind", "externaldns.k8s.io/v1alpha1", "Endpoint", 1},
+		{"custom both", "test.k8s.io/v1alpha1", "Endpoint", 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newValidConfig(t)
+			cfg.CRDSourceAPIVersion = tt.apiVersion
+			cfg.CRDSourceKind = tt.kind
+			assert.Len(t, validateCRDSourceGVK(cfg), tt.wantErrs)
+		})
+	}
+}

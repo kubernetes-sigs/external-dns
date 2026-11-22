@@ -75,21 +75,6 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 				Resource: "transportservers",
 			}: "TransportServersList",
 			{
-				Group:    "traefik.containo.us",
-				Version:  "v1alpha1",
-				Resource: "ingressroutes",
-			}: "IngressRouteList",
-			{
-				Group:    "traefik.containo.us",
-				Version:  "v1alpha1",
-				Resource: "ingressroutetcps",
-			}: "IngressRouteTCPList",
-			{
-				Group:    "traefik.containo.us",
-				Version:  "v1alpha1",
-				Resource: "ingressrouteudps",
-			}: "IngressRouteUDPList",
-			{
 				Group:    "traefik.io",
 				Version:  "v1alpha1",
 				Resource: "ingressroutes",
