@@ -151,9 +151,6 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-<<<<<<< HEAD
-func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
-=======
 func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for httpproxy")
 
@@ -162,13 +159,7 @@ func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
 	sc.httpProxyInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
-func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(httpProxy)
-	if err != nil {
-		return nil, err
-	}
-
->>>>>>> master
+func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)

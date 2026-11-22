@@ -72,6 +72,19 @@ type fqdnTemplateData struct {
 	Object      map[string]any
 }
 
+// EndpointBuilder renders hostnames and targets into source-specific endpoints,
+// stamping resource, TTL, ProviderSpecific and SetIdentifier.
+type EndpointBuilder func(hostnames, targets []string) ([]*endpoint.Endpoint, error)
+
+type applyConfig struct {
+	resourceTargets   []string
+	annotationTargets []string
+	build             EndpointBuilder
+}
+
+// ApplyOption configures a single Engine.Apply call.
+type ApplyOption func(*applyConfig)
+
 // NewEngine parses the provided Go template strings into a Engine.
 // An empty string leaves the corresponding template unset; IsConfigured reflects
 // whether the FQDN template was provided. Returns an error on the first parse failure.
@@ -144,42 +157,6 @@ func (e Engine) ExecFQDN(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdn, obj)
 }
 
-func (e Engine) combineWithEndpoints(
-	endpoints []*endpoint.Endpoint,
-	templateFunc func() ([]*endpoint.Endpoint, error),
-) ([]*endpoint.Endpoint, error) {
-	if e.fqdn == nil && e.target == nil && e.fqdnTarget == nil {
-		return endpoints, nil
-	}
-
-	if !e.combine && len(endpoints) > 0 {
-		return endpoints, nil
-	}
-
-	templatedEndpoints, err := templateFunc()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
-	}
-
-	if e.combine {
-		return append(endpoints, templatedEndpoints...), nil
-	}
-	return templatedEndpoints, nil
-}
-
-// EndpointBuilder renders hostnames and targets into source-specific endpoints,
-// stamping resource, TTL, ProviderSpecific and SetIdentifier.
-type EndpointBuilder func(hostnames, targets []string) ([]*endpoint.Endpoint, error)
-
-type applyConfig struct {
-	resourceTargets   []string
-	annotationTargets []string
-	build             EndpointBuilder
-}
-
-// ApplyOption configures a single Engine.Apply call.
-type ApplyOption func(*applyConfig)
-
 // WithResourceTargets sets the fallback targets passed to the EndpointBuilder when
 // --target-template produces no output. Target-template output wins over these.
 func WithResourceTargets(targets []string) ApplyOption {
@@ -235,6 +212,29 @@ func (e Engine) Apply(existing []*endpoint.Endpoint, obj kubeObject, opts ...App
 		}
 		return cfg.build(hostnames, targets)
 	})
+}
+
+func (e Engine) combineWithEndpoints(
+	endpoints []*endpoint.Endpoint,
+	templateFunc func() ([]*endpoint.Endpoint, error),
+) ([]*endpoint.Endpoint, error) {
+	if e.fqdn == nil && e.target == nil && e.fqdnTarget == nil {
+		return endpoints, nil
+	}
+
+	if !e.combine && len(endpoints) > 0 {
+		return endpoints, nil
+	}
+
+	templatedEndpoints, err := templateFunc()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoints from template: %w", err)
+	}
+
+	if e.combine {
+		return append(endpoints, templatedEndpoints...), nil
+	}
+	return templatedEndpoints, nil
 }
 
 func (e Engine) execTarget(obj kubeObject) ([]string, error) {

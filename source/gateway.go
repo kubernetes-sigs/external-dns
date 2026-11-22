@@ -168,6 +168,15 @@ type resolvedParent struct {
 	listeners []listenerSection
 }
 
+// hostnameResolution is what resolveHostnames reports: the hostnames the route
+// spec and annotations defined, plus whether the FQDN template and the listener
+// wildcard fallback are allowed to add more.
+type hostnameResolution struct {
+	defined         []string
+	templateAllowed bool
+	fallbackAllowed bool
+}
+
 const (
 	gatewayGroup                               = "gateway.networking.k8s.io"
 	gatewayKind                                = "Gateway"
@@ -575,15 +584,6 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts, te
 // An unset type defaults to IPAddress; other types are implementation-specific.
 func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
 	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
-}
-
-// hostnameResolution is what resolveHostnames reports: the hostnames the route
-// spec and annotations defined, plus whether the FQDN template and the listener
-// wildcard fallback are allowed to add more.
-type hostnameResolution struct {
-	defined         []string
-	templateAllowed bool
-	fallbackAllowed bool
 }
 
 func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) hostnameResolution {

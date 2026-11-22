@@ -174,9 +174,6 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-<<<<<<< HEAD
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
-=======
 func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 	log.Debug("Adding event handler for ingress")
 
@@ -186,13 +183,7 @@ func (sc *ingressSource) AddEventHandler(_ context.Context, handler func()) {
 	sc.targetFrom.AddEventHandler(handler)
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(ing)
-	if err != nil {
-		return nil, err
-	}
-
->>>>>>> master
+func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := annotations.TTLFromAnnotations(ing.Annotations, resource)
