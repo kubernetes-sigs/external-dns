@@ -382,20 +382,27 @@ func TestNodeFQDNTemplate(t *testing.T) {
 	}
 }
 
-// Node targets are resolved before Apply, so a node without addresses fails even when templates supply targets.
-func TestNodeFQDNTemplateRequiresNodeAddress(t *testing.T) {
+// A node without addresses still yields records when the template supplies the target.
+func TestNodeFQDNTemplateSkipsAddressLookupWhenTargetsSupplied(t *testing.T) {
 	for _, tt := range []struct {
 		title              string
 		targetTemplate     string
 		fqdnTargetTemplate string
+		expected           []*endpoint.Endpoint
 	}{
 		{
 			title:          "with target-template",
 			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
 		},
 		{
 			title:              "with fqdn-target-template pairs",
 			fqdnTargetTemplate: "{{.Name}}.pair.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.pair.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
@@ -409,8 +416,9 @@ func TestNodeFQDNTemplateRequiresNodeAddress(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			_, err = src.Endpoints(t.Context())
-			require.ErrorContains(t, err, "failed to get node address from no-address")
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
 		})
 	}
 }

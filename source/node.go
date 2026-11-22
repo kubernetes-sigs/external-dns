@@ -117,25 +117,39 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		// Only generate node name endpoints when there's no template or when combining
 		nodeNameEndpoints := !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining()
 
-		var nodeTargets []string
-		var err error
-		if nodeNameEndpoints || ns.templateEngine.IsConfigured() {
-			nodeTargets, err = ns.targetsForNode(node)
-			if err != nil {
-				return nil, err
+		var cachedTargets []string
+		var cachedErr error
+		var resolved bool
+		resolveTargets := func() ([]string, error) {
+			if !resolved {
+				cachedTargets, cachedErr = ns.targetsForNode(node)
+				resolved = true
 			}
+			return cachedTargets, cachedErr
 		}
 
 		var nodeEndpoints []*endpoint.Endpoint
 		if nodeNameEndpoints {
-			nodeEndpoints = ns.endpointsForDNSNames(node, []string{node.Name}, nodeTargets)
+			addrs, err := resolveTargets()
+			if err != nil {
+				log.Debugf("Skipping node %s: %v", node.Name, err)
+				continue
+			}
+			nodeEndpoints = ns.endpointsForDNSNames(node, []string{node.Name}, addrs)
 		}
 
-		nodeEndpoints, err = ns.templateEngine.Apply(
+		nodeEndpoints, err := ns.templateEngine.Apply(
 			nodeEndpoints,
 			node,
-			template.WithResourceTargets(nodeTargets),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				if len(targets) == 0 {
+					addrs, err := resolveTargets()
+					if err != nil {
+						log.Debugf("Skipping node %s: %v", node.Name, err)
+						return nil, nil
+					}
+					targets = addrs
+				}
 				return ns.endpointsForDNSNames(node, hostnames, targets), nil
 			}),
 		)
