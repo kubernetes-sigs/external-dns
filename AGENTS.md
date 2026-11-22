@@ -114,7 +114,7 @@ Three layering concerns, kept separate:
   normalization, labels. No I/O, and no logging in new code.
 - **Source** (`source/`), produces `[]*endpoint.Endpoint`. Iterates spec,
   calls domain ops, hands results to the writer. New Sources should not
-  call the K8s API themselves.
+  write to the K8s API themselves.
 - **Writer** (`pkg/<kind>/status.go`), formats and writes status conditions,
   events and metrics. Owns the K8s client calls on that path.
 

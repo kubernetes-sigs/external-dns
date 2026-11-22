@@ -196,9 +196,8 @@ Each stage has one job:
 
 ### Layering (producer side)
 
-The pipeline above names every package. This section covers the stratification
-*within* the producer side — how code around a Source splits by side-effect
-purity. Within one `RunOnce`:
+The pipeline above names every package. This section covers how the code
+around a Source splits. Within one `RunOnce`:
 
 | Layer  | Package                                                                     | Responsibility                                                                                                        |
 |--------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
@@ -271,7 +270,7 @@ by this guide.
 * Status-formatting logic (building `metav1.Condition`, choosing reason
   strings) added to a Source instead of to its writer.
 
-### When the rule bends
+### Mapping is not validation
 
 Sources interpret Kubernetes objects — reading annotations, labels, Service
 IPs, Ingress rules — and build endpoints from them. That is a mapping step,
