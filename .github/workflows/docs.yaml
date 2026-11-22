@@ -35,7 +35,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
 
-      # To update dependencies, edit docs/scripts/requirements.in and run:
+      # Keep python-version in sync with .github/renovate.json5. After editing requirements.in, run:
       #   pip-compile --generate-hashes --strip-extras --output-file=docs/scripts/requirements.txt docs/scripts/requirements.in
       - run: pip install --require-hashes -r docs/scripts/requirements.txt
 

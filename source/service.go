@@ -78,7 +78,6 @@ type serviceSource struct {
 	publishInternal                bool
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
-	resolveLoadBalancerHostname    bool
 	listenEndpointEvents           bool
 	serviceInformers               *informers.Informers[coreinformers.ServiceInformer]
 	endpointSlicesInformers        *informers.Informers[discoveryinformers.EndpointSliceInformer]
@@ -91,6 +90,9 @@ type serviceSource struct {
 
 	// process Services with legacy annotations
 	compatibility string
+
+	// lookupIP resolves load balancer hostnames; nil disables resolution. Swapped in tests so they don't depend on real DNS.
+	lookupIP func(host string) ([]net.IP, error)
 }
 
 // NewServiceSource creates a new serviceSource with the given cfg.
@@ -190,6 +192,11 @@ func NewServiceSource(
 		}
 	}
 
+	var lookupIP func(string) ([]net.IP, error)
+	if cfg.ResolveLoadBalancerHostname {
+		lookupIP = net.LookupIP
+	}
+
 	return &serviceSource{
 		client:                         kubeClient,
 		compatibility:                  cfg.Compatibility,
@@ -203,10 +210,10 @@ func NewServiceSource(
 		podInformers:                   podInformers,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              sTypesFilter,
-		resolveLoadBalancerHostname:    cfg.ResolveLoadBalancerHostname,
 		listenEndpointEvents:           cfg.ListenEndpointEvents,
 		exposeInternalIPv6:             cfg.ExposeInternalIPv6,
 		excludeUnschedulable:           cfg.ExcludeUnschedulable,
+		lookupIP:                       lookupIP,
 	}, nil
 }
 
@@ -555,7 +562,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			if useClusterIP {
 				targets = extractServiceIps(svc)
 			} else {
-				targets = extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname)
+				targets = extractLoadBalancerTargets(svc, sc.lookupIP)
 			}
 		case v1.ServiceTypeClusterIP:
 			if svc.Spec.ClusterIP == v1.ClusterIPNone {
@@ -602,7 +609,7 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
-func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
+func extractLoadBalancerTargets(svc *v1.Service, lookupIP func(string) ([]net.IP, error)) endpoint.Targets {
 	if len(svc.Spec.ExternalIPs) > 0 {
 		return svc.Spec.ExternalIPs
 	}
@@ -614,8 +621,8 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 			targets = append(targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			if resolveLoadBalancerHostname {
-				ips, err := net.LookupIP(lb.Hostname)
+			if lookupIP != nil {
+				ips, err := lookupIP(lb.Hostname)
 				if err != nil {
 					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
 					continue
@@ -666,6 +673,10 @@ func (sc *serviceSource) nodesExternalTrafficPolicyTypeLocal(svc *v1.Service) []
 		node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
 		if err != nil {
 			log.Debugf("Skipping pod %s/%s: node %s not found", v.Namespace, v.Name, v.Spec.NodeName)
+			continue
+		}
+		// Drop excluded nodes before ranking, so a lower tier on an eligible node can still be used.
+		if !sc.isNodeTargetable(node) {
 			continue
 		}
 
@@ -730,18 +741,18 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
 		nodes = sc.nodesExternalTrafficPolicyTypeLocal(svc)
 	} else {
-		var err error
-		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
+		allNodes, err := sc.nodeInformer.Lister().List(labels.Everything())
 		if err != nil {
 			return nil, err
+		}
+		for _, node := range allNodes {
+			if sc.isNodeTargetable(node) {
+				nodes = append(nodes, node)
+			}
 		}
 	}
 
 	for _, node := range nodes {
-		if node.Spec.Unschedulable && sc.excludeUnschedulable {
-			log.Debugf("Skipping node %s - unschedulable", node.Name)
-			continue
-		}
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:
@@ -774,6 +785,21 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	}
 
 	return internalIPs, nil
+}
+
+// isNodeTargetable reports whether the Node can be a NodePort target.
+func (sc *serviceSource) isNodeTargetable(node *v1.Node) bool {
+	if sc.excludeUnschedulable {
+		if reason := unschedulableReason(node); reason != "" {
+			log.Debugf("Skipping node %s - %s", node.Name, reason)
+			return false
+		}
+	}
+	if isExcludedFromLoadBalancers(node) {
+		log.Debugf("Skipping node %s - labeled %s", node.Name, v1.LabelNodeExcludeBalancers)
+		return false
+	}
+	return true
 }
 
 func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
@@ -815,6 +841,10 @@ func (sc *serviceSource) AddEventHandler(_ context.Context, handler func()) {
 	sc.serviceInformers.MustAddEventHandler(eventHandlerFunc(handler))
 	if sc.listenEndpointEvents && sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort, v1.ServiceTypeClusterIP) {
 		sc.endpointSlicesInformers.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+	// NodePort targets follow Node changes, e.g. a Node being added, tainted for removal or deleted.
+	if sc.serviceTypeFilter.isRequired(v1.ServiceTypeNodePort) {
+		informers.MustAddEventHandler(sc.nodeInformer.Informer(), nodePortEventHandler(handler))
 	}
 }
 

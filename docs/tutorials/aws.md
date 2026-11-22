@@ -753,6 +753,8 @@ This is not a complete list, but a few selected items.
 
 `aws-zone-type` allows filtering for private and public zones
 
+For setups that publish to both, see [same domain for public and private zones](aws-public-private-route53.md) (nginx) or [Public and private hosted zones](aws-load-balancer-controller.md#public-and-private-hosted-zones) (AWS Load Balancer Controller).
+
 ## Annotations
 
 Annotations which are specific to AWS.

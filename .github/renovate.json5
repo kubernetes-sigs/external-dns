@@ -11,6 +11,8 @@
   // Re-runs pip-compile so new transitive dependencies get pinned with hashes.
   'pip-compile': {
     managerFilePatterns: ['/^docs/scripts/requirements\\.txt$/'],
+    // Match python-version in .github/workflows/docs.yaml.
+    constraints: { python: '==3.15' },
   },
   packageRules: [
     {

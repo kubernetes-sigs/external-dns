@@ -237,6 +237,98 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:      "HostnameWithImplementationSpecificAddress",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+					{Type: new(v1.HostnameAddressType), Value: "alb-123.example.com"},
+					{Type: new(v1.AddressType("alb.gateway.k8s.alibaba/LoadBalancerID")), Value: "alb-123"},
+				}},
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("test.example.internal", endpoint.RecordTypeCNAME, 0, "alb-123.example.com"),
+			},
+			logExpectations: []string{
+				`Skipping Gateway default/test address "alb-123" of type alb.gateway.k8s.alibaba/LoadBalancerID`,
+			},
+		},
+		{
+			title:      "UntypedIPAddress",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+					{Value: "1.2.3.4"},
+				}},
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "OnlyImplementationSpecificAddress",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+					{Type: new(v1.AddressType("alb.gateway.k8s.alibaba/LoadBalancerID")), Value: "alb-123"},
+				}},
+			}},
+			routes: []*v1.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("test.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{},
+			logExpectations: []string{
+				`Skipping Gateway default/test address "alb-123" of type alb.gateway.k8s.alibaba/LoadBalancerID`,
+			},
+		},
+		{
 			title: "GatewayNameNoneAccepted",
 			config: &config.Config{
 				GatewayName: "gateway-name",
@@ -1123,6 +1215,41 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "IgnoreHostnameAnnotationWithAnnotationOnly",
+			config: &config.Config{
+				IgnoreHostnameAnnotation: true,
+			},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{Protocol: v1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotation-only-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "annotation.with-hostname.internal",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("with-hostname.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: nil,
+			logExpectations: []string{
+				`"external-dns.kubernetes.io/gateway-hostname-source" is "annotation-only" on HTTPRoute default/annotation-only-route, but --ignore-hostname-annotation is set, so the route has no hostnames.`,
+			},
+		},
+		{
 			title: "FQDNTemplate",
 			config: &config.Config{
 				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ", "", "", false),
@@ -1936,6 +2063,74 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				newTestEndpoint("test.org.internal", "1.2.3.4"),
 			},
+		},
+		{
+			// An empty entry would act as the listener-fallback sentinel and publish the wildcard.
+			title:      "OnlyAnnotationHostTrailingCommaWildcardListener",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("*.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "app.example.internal,",
+				},
+				Spec: v1.HTTPRouteSpec{
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("app.example.internal", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "OnlyAnnotationHostEmptyValue",
+			config:     &config.Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1.GatewaySpec{
+					Listeners: []v1.Listener{{
+						Protocol: v1.HTTPProtocolType,
+						Hostname: new(v1.Hostname("listener.example.internal")),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1.HTTPRoute{{
+				Name:      "annotated-route",
+				Namespace: "default",
+				Annotations: map[string]string{
+					annotations.GatewayHostnameSourceKey: "annotation-only",
+					annotations.HostnameKey:              "",
+				},
+				Spec: v1.HTTPRouteSpec{
+					Hostnames: hostnames("listener.example.internal"),
+					CommonRouteSpec: v1.CommonRouteSpec{
+						ParentRefs: []v1.ParentReference{
+							gwParentRef("default", "test"),
+						},
+					},
+				},
+				Status: httpRouteStatus(gwParentRef("default", "test")),
+			}},
+			endpoints: nil,
 		},
 		{
 			title:      "InvalidSourceAnnotation",

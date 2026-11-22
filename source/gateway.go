@@ -538,12 +538,21 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		hostTargets[host] = append(hostTargets[host], override...)
 		if len(override) == 0 {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
+				if !gwAddressIsDNSTarget(addr) {
+					log.Debugf("Skipping Gateway %s/%s address %q of type %s", parent.obj.gateway.Namespace, parent.obj.gateway.Name, addr.Value, *addr.Type)
+					continue
+				}
 				hostTargets[host] = append(hostTargets[host], addr.Value)
 			}
 		}
 		match = true
 	}
 	return match
+}
+
+// An unset type defaults to IPAddress; other types are implementation-specific.
+func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
+	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
 }
 
 // appendFQDNTemplate appends the template-generated hostnames, unless another source already
@@ -573,6 +582,9 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
+				// The flag wins, which leaves the route with no hostnames at all, so make that visible.
+				log.Warnf("%q is %q on %s %s/%s, but --ignore-hostname-annotation is set, so the route has no hostnames.",
+					annotations.GatewayHostnameSourceKey, hostNameAnnotation, c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
 				return []string{}, nil
 			}
 			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
@@ -587,12 +599,7 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	}
 
 	if !c.src.ignoreHostnameAnnotation {
-		// Skip empty values so an empty annotation does not gate the template below.
-		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
-			if hostname != "" {
-				hostnames = append(hostnames, hostname)
-			}
-		}
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
 	if err != nil {

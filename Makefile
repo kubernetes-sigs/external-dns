@@ -67,10 +67,15 @@ webhook-deps:
 validate-json-yaml:
 	bash scripts/validate-json-yaml.sh
 
-#? crd: Generates CRD using controller-gen and copy it into chart
+#? crd: Generates CRD using controller-gen
 .PHONY: crd
 crd:
 	@./scripts/generate-crd.sh
+
+#? crd-chart: Generates CRD and copies it into the chart, once a release supports it
+.PHONY: crd-chart
+crd-chart:
+	@./scripts/generate-crd.sh --chart
 
 # go.tool.mod is not tracked by Renovate; update it by hand
 #? update-tools-deps: Update go tools defined in go.tool.mod to latest versions
@@ -94,7 +99,7 @@ go-test:
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
-IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
+IMAGE_STAGING  = us-central1-docker.pkg.dev/k8s-staging-images/external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
 IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
@@ -216,6 +221,26 @@ helm-template:
 helm-lint:
 	scripts/helm-tools.sh --schema
 	scripts/helm-tools.sh --docs
+
+HELM            ?= helm
+HELM_CHART_DIR  ?= charts/external-dns
+HELM_CHART_REPO ?= us-central1-docker.pkg.dev/k8s-staging-images/external-dns/charts
+
+.PHONY: helm
+helm:
+	@command -v $(HELM) >/dev/null 2>&1 || go install helm.sh/helm/v3/cmd/helm@latest
+
+.PHONY: helm-package
+#? helm-package: Package the Helm chart
+helm-package: helm
+	mkdir -p build
+	$(HELM) package $(HELM_CHART_DIR) -d build
+
+.PHONY: helm-push
+#? helm-push: Package and push the Helm chart to an OCI registry
+helm-push: helm-package
+	chart_version=$$(grep -E '^version: ' $(HELM_CHART_DIR)/Chart.yaml | cut -d' ' -f2); \
+	$(HELM) push build/external-dns-$${chart_version}.tgz oci://$(HELM_CHART_REPO)
 
 .PHONY: go-dependency
 #? go-dependency: Dependency maintenance

@@ -1491,7 +1491,7 @@ func cleanZoneID(id string) string {
 
 func (p *AWSProvider) SupportedRecordType(recordType route53types.RRType) bool {
 	switch recordType {
-	case route53types.RRTypeMx, route53types.RRTypeNaptr:
+	case route53types.RRTypeMx, route53types.RRTypeNaptr, route53types.RRTypePtr:
 		return true
 	default:
 		return provider.SupportedRecordType(string(recordType))

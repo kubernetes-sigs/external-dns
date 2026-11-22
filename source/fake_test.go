@@ -131,7 +131,7 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 				t.Helper()
 				assert.True(t, strings.HasPrefix(ep.DNSName, "_sip._udp."), "SRV DNSName %q should start with _sip._udp.", ep.DNSName)
 				require.Len(t, ep.Targets, 1)
-				assert.True(t, ep.Targets.ValidateSRVRecord(), "SRV target %q is invalid", ep.Targets[0])
+				assert.NoError(t, ep.Validate())
 			},
 		},
 		{
@@ -148,7 +148,7 @@ func TestFakeSource_RecordTypes(t *testing.T) {
 			recordType: endpoint.RecordTypePTR,
 			check: func(t *testing.T, ep *endpoint.Endpoint) {
 				t.Helper()
-				assert.True(t, ep.ValidatePTRRecord(), "PTR record is invalid: %v", ep)
+				assert.NoError(t, ep.Validate())
 			},
 		},
 		{
