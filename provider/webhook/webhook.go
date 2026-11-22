@@ -40,6 +40,22 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+type WebhookProvider struct {
+	client          *http.Client
+	remoteServerURL *url.URL
+	DomainFilter    *endpoint.DomainFilter
+	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
+	maxBodySize int64
+	dryRun      bool
+}
+
+// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
+// past the limit instead of reporting EOF like io.LimitReader.
+type maxBytesReader struct {
+	r         io.Reader
+	remaining int64 // bytes still allowed; negative once the limit is passed
+}
+
 const (
 	acceptHeader = "Accept"
 
@@ -91,18 +107,18 @@ var (
 	)
 )
 
-type WebhookProvider struct {
-	client          *http.Client
-	remoteServerURL *url.URL
-	DomainFilter    *endpoint.DomainFilter
-	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
-	maxBodySize int64
-	dryRun      bool
-}
-
 // errResponseTooLarge distinguishes an over-limit body from a malformed or
 // truncated one, which io.LimitReader would report as a plain EOF.
 var errResponseTooLarge = errors.New("webhook response body exceeds the configured max size (--webhook-provider-max-body-size)")
+
+func init() {
+	metrics.RegisterMetric.MustRegister(recordsErrorsGauge)
+	metrics.RegisterMetric.MustRegister(recordsRequestsGauge)
+	metrics.RegisterMetric.MustRegister(applyChangesErrorsGauge)
+	metrics.RegisterMetric.MustRegister(applyChangesRequestsGauge)
+	metrics.RegisterMetric.MustRegister(adjustEndpointsErrorsGauge)
+	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
+}
 
 // limitBody caps response body reads at maxBodySize, failing with
 // errResponseTooLarge once exceeded; a non-positive limit disables the cap.
@@ -111,13 +127,6 @@ func limitBody(r io.Reader, maxBodySize int64) io.Reader {
 		return r
 	}
 	return &maxBytesReader{r: r, remaining: maxBodySize}
-}
-
-// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
-// past the limit instead of reporting EOF like io.LimitReader.
-type maxBytesReader struct {
-	r         io.Reader
-	remaining int64 // bytes still allowed; negative once the limit is passed
 }
 
 func (l *maxBytesReader) Read(p []byte) (int, error) {
@@ -135,15 +144,6 @@ func (l *maxBytesReader) Read(p []byte) (int, error) {
 		return n, errResponseTooLarge
 	}
 	return n, err
-}
-
-func init() {
-	metrics.RegisterMetric.MustRegister(recordsErrorsGauge)
-	metrics.RegisterMetric.MustRegister(recordsRequestsGauge)
-	metrics.RegisterMetric.MustRegister(applyChangesErrorsGauge)
-	metrics.RegisterMetric.MustRegister(applyChangesRequestsGauge)
-	metrics.RegisterMetric.MustRegister(adjustEndpointsErrorsGauge)
-	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
 }
 
 // New creates a webhook provider from the given configuration.

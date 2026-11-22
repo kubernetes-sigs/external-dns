@@ -22,45 +22,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-const (
-	// RecordOwnerLabel ties a DNSRecord to the external-dns instance that owns it.
-	// The record identity (name, type, set identifier) is encoded in the object
-	// name instead of labels, so it is not subject to the 63-character label-value
-	// limit and records are looked up directly by name.
-	RecordOwnerLabel string = "externaldns.k8s.io/owner"
-
-	// ReadyCondition reports whether the endpoint is live in the DNS provider.
-	// Its reason captures the lifecycle stage and is surfaced as the Status print
-	// column: AcceptedReason while external-dns has taken the endpoint into its
-	// plan but not yet programmed it (Ready=False), ProgrammedReason once the
-	// provider has applied it (Ready=True), or FailedReason when the provider
-	// rejected the batch it belonged to (Ready=False).
-	ReadyCondition string = "Ready"
-
-	// Reasons for the Ready condition. They double as the human-readable value of
-	// the Status print column.
-	AcceptedReason   string = "Accepted"
-	ProgrammedReason string = "Programmed"
-	FailedReason     string = "Failed"
-)
-
 // DNSRecordSpec defines the desired state of DNSRecord
 // +kubebuilder:object:generate=true
 type DNSRecordSpec struct {
 	Endpoint endpoint.Endpoint `json:"endpoint"`
-}
-
-// MergeProviderLabels overwrites the record's endpoint labels with the labels
-// the provider stored, preserving the external-dns owner and resource labels.
-// Some providers (e.g. coredns) rewrite labels on apply, so the provider copy
-// is authoritative for everything except ownership/resource identity.
-func (r *DNSRecord) MergeProviderLabels(providerLabels endpoint.Labels, ownerID string) {
-	resource := r.Spec.Endpoint.Labels[endpoint.ResourceLabelKey]
-	r.Spec.Endpoint.Labels = providerLabels
-	r.Spec.Endpoint.WithLabel(endpoint.OwnerLabelKey, ownerID)
-	if resource != "" {
-		r.Spec.Endpoint.WithLabel(endpoint.ResourceLabelKey, resource)
-	}
 }
 
 // DNSRecordStatus defines the observed state of DNSRecord
@@ -104,4 +69,39 @@ type DNSRecordList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DNSRecord `json:"items"`
+}
+
+const (
+	// RecordOwnerLabel ties a DNSRecord to the external-dns instance that owns it.
+	// The record identity (name, type, set identifier) is encoded in the object
+	// name instead of labels, so it is not subject to the 63-character label-value
+	// limit and records are looked up directly by name.
+	RecordOwnerLabel string = "externaldns.k8s.io/owner"
+
+	// ReadyCondition reports whether the endpoint is live in the DNS provider.
+	// Its reason captures the lifecycle stage and is surfaced as the Status print
+	// column: AcceptedReason while external-dns has taken the endpoint into its
+	// plan but not yet programmed it (Ready=False), ProgrammedReason once the
+	// provider has applied it (Ready=True), or FailedReason when the provider
+	// rejected the batch it belonged to (Ready=False).
+	ReadyCondition string = "Ready"
+
+	// Reasons for the Ready condition. They double as the human-readable value of
+	// the Status print column.
+	AcceptedReason   string = "Accepted"
+	ProgrammedReason string = "Programmed"
+	FailedReason     string = "Failed"
+)
+
+// MergeProviderLabels overwrites the record's endpoint labels with the labels
+// the provider stored, preserving the external-dns owner and resource labels.
+// Some providers (e.g. coredns) rewrite labels on apply, so the provider copy
+// is authoritative for everything except ownership/resource identity.
+func (r *DNSRecord) MergeProviderLabels(providerLabels endpoint.Labels, ownerID string) {
+	resource := r.Spec.Endpoint.Labels[endpoint.ResourceLabelKey]
+	r.Spec.Endpoint.Labels = providerLabels
+	r.Spec.Endpoint.WithLabel(endpoint.OwnerLabelKey, ownerID)
+	if resource != "" {
+		r.Spec.Endpoint.WithLabel(endpoint.ResourceLabelKey, resource)
+	}
 }

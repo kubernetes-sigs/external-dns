@@ -36,16 +36,23 @@ type mockGoDaddyClient struct {
 	currentTest *testing.T
 }
 
-func newMockGoDaddyClient(t *testing.T) *mockGoDaddyClient {
-	return &mockGoDaddyClient{
-		currentTest: t,
-	}
-}
+const (
+	operationFailedTestErrCode = "GD500"
+	operationFailedTestReason  = "Could not apply request"
+	recordNotFoundErrCode      = "GD404"
+	recordNotFoundReason       = "The requested record is not found in DNS zone"
+)
 
 var (
 	zoneNameExampleOrg string = "example.org"
 	zoneNameExampleNet string = "example.net"
 )
+
+func newMockGoDaddyClient(t *testing.T) *mockGoDaddyClient {
+	return &mockGoDaddyClient{
+		currentTest: t,
+	}
+}
 
 func (c *mockGoDaddyClient) Post(endpoint string, input any, output any) error {
 	log.Infof("POST: %s - %v", endpoint, input)
@@ -388,13 +395,6 @@ func TestGoDaddyChange(t *testing.T) {
 
 	client.AssertExpectations(t)
 }
-
-const (
-	operationFailedTestErrCode = "GD500"
-	operationFailedTestReason  = "Could not apply request"
-	recordNotFoundErrCode      = "GD404"
-	recordNotFoundReason       = "The requested record is not found in DNS zone"
-)
 
 func TestGoDaddyErrorResponse(t *testing.T) {
 	client := newMockGoDaddyClient(t)

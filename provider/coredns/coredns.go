@@ -41,21 +41,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	priority    = 10 // default priority when nothing is set
-	etcdTimeout = 5 * time.Second
-
-	randomPrefixLabel     = "prefix"
-	providerSpecificGroup = "coredns/group"
-	originalTextLabel     = "originalText"
-)
-
-var (
-	// avoids allocating a new slice on every call
-	// prevents unwanted deletion of etcd keys based on labels
-	skipLabels = []string{originalTextLabel, randomPrefixLabel, "resource", endpoint.OwnerLabelKey}
-)
-
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
 type coreDNSClient interface {
 	GetServices(ctx context.Context, prefix string) ([]*Service, error)
@@ -106,6 +91,21 @@ type etcdClient struct {
 	owner         string
 	strictlyOwned bool
 }
+
+const (
+	priority    = 10 // default priority when nothing is set
+	etcdTimeout = 5 * time.Second
+
+	randomPrefixLabel     = "prefix"
+	providerSpecificGroup = "coredns/group"
+	originalTextLabel     = "originalText"
+)
+
+var (
+	// avoids allocating a new slice on every call
+	// prevents unwanted deletion of etcd keys based on labels
+	skipLabels = []string{originalTextLabel, randomPrefixLabel, "resource", endpoint.OwnerLabelKey}
+)
 
 var _ coreDNSClient = etcdClient{}
 

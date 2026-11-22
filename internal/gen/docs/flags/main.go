@@ -26,16 +26,27 @@ import (
 	cfg "sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
-var (
-	//go:embed "templates/*"
-	templates embed.FS
-)
-
 type Flag struct {
 	Name        string
 	Description string
 }
+
 type Flags []Flag
+
+type columnWidths struct {
+	Flag        int
+	Description int
+}
+
+type templateData struct {
+	Flags     Flags
+	ColWidths columnWidths
+}
+
+var (
+	//go:embed "templates/*"
+	templates embed.FS
+)
 
 // addFlag adds a new flag to the Flags slice.
 func (f *Flags) addFlag(name, description string) {
@@ -85,21 +96,11 @@ func computeFlags() Flags {
 	return flags
 }
 
-type columnWidths struct {
-	Flag        int
-	Description int
-}
-
 func computeFlagColumnWidths(flags Flags) columnWidths {
 	return columnWidths{
 		Flag:        render.MapColumn("Flag", flags, func(f Flag) string { return f.Name }),
 		Description: render.MapColumn("Description", flags, func(f Flag) string { return f.Description }),
 	}
-}
-
-type templateData struct {
-	Flags     Flags
-	ColWidths columnWidths
 }
 
 func (f *Flags) generateMarkdownTable() (string, error) {

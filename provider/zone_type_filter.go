@@ -16,17 +16,17 @@ limitations under the License.
 
 package provider
 
+// ZoneTypeFilter holds a zone type to filter for.
+type ZoneTypeFilter struct {
+	zoneType string
+}
+
 const (
 	// ZoneTypePublic is the zone type providers report for publicly resolvable zones.
 	ZoneTypePublic = "public"
 	// ZoneTypePrivate is the zone type providers report for private zones.
 	ZoneTypePrivate = "private"
 )
-
-// ZoneTypeFilter holds a zone type to filter for.
-type ZoneTypeFilter struct {
-	zoneType string
-}
 
 // NewZoneTypeFilter returns a new ZoneTypeFilter given a zone type to filter for.
 func NewZoneTypeFilter(zoneType string) ZoneTypeFilter {

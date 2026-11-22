@@ -43,12 +43,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-var f5TransportServerGVR = schema.GroupVersionResource{
-	Group:    "cis.f5.com",
-	Version:  "v1",
-	Resource: "transportservers",
-}
-
 // transportServerSource is an implementation of Source for F5 TransportServer objects.
 //
 // +externaldns:source:name=f5-transportserver
@@ -65,6 +59,12 @@ type f5TransportServerSource struct {
 	kubeClient               kubernetes.Interface
 	templateEngine           template.Engine
 	unstructuredConverter    *unstructuredConverter
+}
+
+var f5TransportServerGVR = schema.GroupVersionResource{
+	Group:    "cis.f5.com",
+	Version:  "v1",
+	Resource: "transportservers",
 }
 
 func NewF5TransportServerSource(

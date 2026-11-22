@@ -32,6 +32,8 @@ import (
 	"sigs.k8s.io/external-dns/provider/blueprint"
 )
 
+var _ Route53API = &Route53APIFixtureStub{}
+
 type HostedZones struct {
 	Zones []*HostedZone `yaml:"zones"`
 }
@@ -41,8 +43,6 @@ type HostedZone struct {
 	ID   string
 	Tags []route53types.Tag `yaml:"tags"`
 }
-
-var _ Route53API = &Route53APIFixtureStub{}
 
 type Route53APIFixtureStub struct {
 	zones    map[string]*route53types.HostedZone

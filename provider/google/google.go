@@ -39,10 +39,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL = 300
-)
-
 type managedZonesCreateCallInterface interface {
 	Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error)
 }
@@ -68,20 +64,8 @@ type resourceRecordSetsService struct {
 	service *dns.ResourceRecordSetsService
 }
 
-func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
-	return r.service.List(project, managedZone)
-}
-
 type managedZonesService struct {
 	service *dns.ManagedZonesService
-}
-
-func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
-	return m.service.Create(project, managedzone)
-}
-
-func (m managedZonesService) List(project string) managedZonesListCallInterface {
-	return m.service.List(project)
 }
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
@@ -109,6 +93,22 @@ type GoogleProvider struct {
 	changesService *dns.ChangesService
 	// The context parameter to be passed for gcloud API calls.
 	ctx context.Context
+}
+
+const (
+	defaultTTL = 300
+)
+
+func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
+	return r.service.List(project, managedZone)
+}
+
+func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
+	return m.service.Create(project, managedzone)
+}
+
+func (m managedZonesService) List(project string) managedZonesListCallInterface {
+	return m.service.List(project)
 }
 
 // New creates a Google Cloud DNS provider from the given configuration.

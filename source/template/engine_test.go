@@ -32,6 +32,23 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
+type testObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
+type hostnamesSpec struct {
+	Hostnames []string `json:"hostnames"`
+}
+
+// hostnamesObject mimics a typed API object with JSON tag names that differ
+// from Go exported field names (same shape as Gateway API HTTPRouteSpec).
+type hostnamesObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+	Spec hostnamesSpec `json:"spec"`
+}
+
 func TestNewEngine(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
@@ -780,28 +797,11 @@ func TestValidateTemplates(t *testing.T) {
 	}
 }
 
-type testObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-}
-
 func (t *testObject) DeepCopyObject() runtime.Object {
 	return &testObject{
 		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
-}
-
-type hostnamesSpec struct {
-	Hostnames []string `json:"hostnames"`
-}
-
-// hostnamesObject mimics a typed API object with JSON tag names that differ
-// from Go exported field names (same shape as Gateway API HTTPRouteSpec).
-type hostnamesObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-	Spec hostnamesSpec `json:"spec"`
 }
 
 func (h *hostnamesObject) DeepCopyObject() runtime.Object {

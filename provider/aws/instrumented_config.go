@@ -34,15 +34,6 @@ type requestMetrics struct {
 
 type requestMetricsKey struct{}
 
-func getRequestMetric(ctx context.Context) requestMetrics {
-	requestMetrics, _ := middleware.GetStackValue(ctx, requestMetricsKey{}).(requestMetrics)
-	return requestMetrics
-}
-
-func setRequestMetric(ctx context.Context, requestMetrics requestMetrics) context.Context {
-	return middleware.WithStackValue(ctx, requestMetricsKey{}, requestMetrics)
-}
-
 var initializeTimedOperationMiddleware = middleware.InitializeMiddlewareFunc("timedOperation", func(
 	ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler,
 ) (middleware.InitializeOutput, middleware.Metadata, error) {
@@ -80,6 +71,15 @@ var extractAWSRequestParameters = middleware.DeserializeMiddlewareFunc("extractA
 
 	return out, metadata, err
 })
+
+func getRequestMetric(ctx context.Context) requestMetrics {
+	requestMetrics, _ := middleware.GetStackValue(ctx, requestMetricsKey{}).(requestMetrics)
+	return requestMetrics
+}
+
+func setRequestMetric(ctx context.Context, requestMetrics requestMetrics) context.Context {
+	return middleware.WithStackValue(ctx, requestMetricsKey{}, requestMetrics)
+}
 
 func GetInstrumentationMiddlewares() []func(*middleware.Stack) error {
 	return []func(s *middleware.Stack) error{

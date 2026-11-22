@@ -39,16 +39,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	passwordMask  = "******"
-	LogFormatText = "text"
-	LogFormatJSON = "json"
-
-	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
-	// record, so ~60k records). Override with --webhook-provider-max-body-size.
-	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
-)
-
 // Config is a project-wide configuration
 type Config struct {
 	APIServerURL                                  string
@@ -235,6 +225,16 @@ type Config struct {
 	UnstructuredResources                         []string
 	PreferAlias                                   bool
 }
+
+const (
+	passwordMask  = "******"
+	LogFormatText = "text"
+	LogFormatJSON = "json"
+
+	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
+	// record, so ~60k records). Override with --webhook-provider-max-body-size.
+	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
+)
 
 var defaultConfig = &Config{
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
@@ -434,12 +434,6 @@ var ProviderNames = []string{
 // AllowedSources lists every value accepted by --source, alphabetically sorted.
 var AllowedSources = sortedAllowedSources()
 
-func sortedAllowedSources() []string {
-	s := slices.Clone(types.All)
-	slices.Sort(s)
-	return s
-}
-
 // multiNamespaceSources watch every --namespace value.
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
@@ -463,6 +457,12 @@ var multiNamespaceSources = []string{
 	"skipper-routegroup",
 	"traefik-proxy",
 	"unstructured",
+}
+
+func sortedAllowedSources() []string {
+	s := slices.Clone(types.All)
+	slices.Sort(s)
+	return s
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -534,6 +534,11 @@ func uniqueCommaSeparated(values []string) []string {
 	return result
 }
 
+// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
+func (cfg *Config) IsPTRSupported() bool {
+	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+}
+
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
@@ -549,11 +554,6 @@ func (cfg *Config) resolveDeprecatedFlags() {
 		logrus.Warn("--rfc2136-tsig-axfr is deprecated, use --rfc2136-axfr instead")
 		cfg.RFC2136AXFR = true
 	}
-}
-
-// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
-func (cfg *Config) IsPTRSupported() bool {
-	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
 func bindFlags(b flags.FlagBinder, cfg *Config) {
