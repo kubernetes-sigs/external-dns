@@ -204,7 +204,7 @@ purity. Within one `RunOnce`:
 |--------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | Domain | `endpoint/`                                                                 | Functions on `Endpoint`: validation, normalization, labels. No I/O or formatting; keep new code free of logging too.  |
 | Source | `source/`                                                                   | Produces `[]*endpoint.Endpoint`. Thin coordinator — iterates spec, calls domain ops, hands results to the writer.     |
-| Writer | `pkg/<kind>/status.go` (conditions), `pkg/events/` (`Normal`/`Warning` events) | Writes status conditions, events and metrics; owns the K8s client calls on that path. Writes land at two points: at source time, for conditions the Source decides while planning, and after `Registry.ApplyChanges`, where the controller knows the outcome. |
+| Writer | `pkg/<kind>/status.go` (conditions), `pkg/events/` (`Normal`/`Warning` events) | Writes status conditions, events and metrics; owns K8s client calls on that path. Two write points: source time (conditions the Source decides) and post-apply (where the controller knows the outcome). |
 
 The other packages belong to the pipeline shown above: `controller/`
 sequences `RunOnce`, `plan/` is a pure diff, `registry/` layers ownership on
