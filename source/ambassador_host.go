@@ -46,18 +46,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-const (
-	// ambHostAnnotation is the annotation in the Host that maps to a Service
-	ambHostAnnotation = "external-dns.ambassador-service"
-	// groupName is the group name for the Ambassador API
-	groupName = "getambassador.io"
-)
-
-var (
-	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
-	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
-)
-
 // ambassadorHostSource is an implementation of Source for Ambassador Host objects.
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use annotations.TargetKey to explicitly set Endpoint.
@@ -80,6 +68,24 @@ type ambassadorHostSource struct {
 	labelSelector           labels.Selector
 	templateEngine          template.Engine
 }
+
+// unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types
+type unstructuredConverter struct {
+	// scheme holds an initializer for converting Unstructured to a type
+	scheme *runtime.Scheme
+}
+
+const (
+	// ambHostAnnotation is the annotation in the Host that maps to a Service
+	ambHostAnnotation = "external-dns.ambassador-service"
+	// groupName is the group name for the Ambassador API
+	groupName = "getambassador.io"
+)
+
+var (
+	schemeGroupVersion = schema.GroupVersion{Group: groupName, Version: "v3alpha1"}
+	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
+)
 
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
 func NewAmbassadorHostSource(
@@ -204,6 +210,9 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
+func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
+}
+
 // endpointsFromHost extracts the endpoints from a Host object
 func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) []*endpoint.Endpoint {
 	if host.Spec == nil || host.Spec.Hostname == "" {
@@ -222,22 +231,6 @@ func (sc *ambassadorHostSource) endpointsForHostnames(host *ambassador.Host, hos
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints
-}
-
-func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
-	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
-	if err != nil {
-		return nil, err
-	}
-
-	svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	targets := extractLoadBalancerTargets(svc, nil)
-
-	return targets, nil
 }
 
 // parseAmbLoadBalancerService returns a name/namespace tuple from the annotation in
@@ -286,13 +279,20 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 	return "", "", fmt.Errorf("invalid external-dns service: %s", service)
 }
 
-func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
-}
+func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
+	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
+	if err != nil {
+		return nil, err
+	}
 
-// unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types
-type unstructuredConverter struct {
-	// scheme holds an initializer for converting Unstructured to a type
-	scheme *runtime.Scheme
+	svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	targets := extractLoadBalancerTargets(svc, nil)
+
+	return targets, nil
 }
 
 // newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized

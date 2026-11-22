@@ -59,6 +59,41 @@ type unstructuredSource struct {
 	informers      []*informers.Informers[kubeinformers.GenericInformer]
 }
 
+// unstructuredWrapper wraps an unstructured.Unstructured to provide both
+// typed-style template access ({{ .Name }}, {{ .Namespace }}) and raw map access
+// ({{ .Spec.field }}, {{ index .Status.interfaces 0 "ipAddress" }}).
+// By embedding *unstructured.Unstructured, it implements kubeObject (runtime.Object + metav1.Object).
+type unstructuredWrapper struct {
+	*unstructured.Unstructured
+
+	// Typed-style convenience fields (like typed Kubernetes objects)
+	Name        string
+	Namespace   string
+	Kind        string
+	APIVersion  string
+	Labels      map[string]string
+	Annotations map[string]string
+
+	// Raw map sections for custom field access
+	Metadata map[string]any
+	Spec     map[string]any
+	Status   map[string]any
+}
+
+// commonInitialisms are the field-name segments Kubernetes' code generator
+// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
+// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
+// staticcheck/golint treat as standard Go convention.
+var commonInitialisms = map[string]bool{
+	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
+	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
+	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
+	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
+	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
+	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
+	"xml": true, "yaml": true,
+}
+
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
 func NewUnstructuredFQDNSource(
 	ctx context.Context,
@@ -127,6 +162,13 @@ func (us *unstructuredSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint
 	return endpoints, nil
 }
 
+// AddEventHandler adds an event handler that is called when resources change.
+func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
+	for _, resourceInformer := range us.informers {
+		resourceInformer.MustAddEventHandler(eventHandlerFunc(handler))
+	}
+}
+
 // endpointsFromInformer returns endpoints for a single resource type.
 func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.GenericInformer) ([]*endpoint.Endpoint, error) {
 	// Get objects that match the indexer filter (annotation and label selectors)
@@ -160,34 +202,6 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
-}
-
-// AddEventHandler adds an event handler that is called when resources change.
-func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
-	for _, resourceInformer := range us.informers {
-		resourceInformer.MustAddEventHandler(eventHandlerFunc(handler))
-	}
-}
-
-// unstructuredWrapper wraps an unstructured.Unstructured to provide both
-// typed-style template access ({{ .Name }}, {{ .Namespace }}) and raw map access
-// ({{ .Spec.field }}, {{ index .Status.interfaces 0 "ipAddress" }}).
-// By embedding *unstructured.Unstructured, it implements kubeObject (runtime.Object + metav1.Object).
-type unstructuredWrapper struct {
-	*unstructured.Unstructured
-
-	// Typed-style convenience fields (like typed Kubernetes objects)
-	Name        string
-	Namespace   string
-	Kind        string
-	APIVersion  string
-	Labels      map[string]string
-	Annotations map[string]string
-
-	// Raw map sections for custom field access
-	Metadata map[string]any
-	Spec     map[string]any
-	Status   map[string]any
 }
 
 func (u *unstructuredWrapper) GetObjectMeta() metav1.Object {
@@ -244,20 +258,6 @@ func withTitleCaseAliases(m map[string]any) map[string]any {
 		out[title] = out[k]
 	}
 	return out
-}
-
-// commonInitialisms are the field-name segments Kubernetes' code generator
-// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
-// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
-// staticcheck/golint treat as standard Go convention.
-var commonInitialisms = map[string]bool{
-	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
-	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
-	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
-	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
-	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
-	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
-	"xml": true, "yaml": true,
 }
 
 // titleCaseKey converts a lowerCamelCase JSON key into its Go-convention

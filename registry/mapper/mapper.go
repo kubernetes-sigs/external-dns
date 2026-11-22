@@ -24,6 +24,20 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+// NameMapper is the interface for mapping between the endpoint for the source
+// and the endpoint for the TXT record.
+type NameMapper interface {
+	ToEndpointName(string) (string, string)
+	ToTXTName(string, string) string
+}
+
+// AffixNameMapper is a name mapper based on prefix/suffix affixes.
+type AffixNameMapper struct {
+	prefix              string
+	suffix              string
+	wildcardReplacement string
+}
+
 const (
 	recordTemplate = "%{record_type}"
 )
@@ -43,20 +57,6 @@ var (
 		endpoint.RecordTypeTLSA,
 	}
 )
-
-// NameMapper is the interface for mapping between the endpoint for the source
-// and the endpoint for the TXT record.
-type NameMapper interface {
-	ToEndpointName(string) (string, string)
-	ToTXTName(string, string) string
-}
-
-// AffixNameMapper is a name mapper based on prefix/suffix affixes.
-type AffixNameMapper struct {
-	prefix              string
-	suffix              string
-	wildcardReplacement string
-}
 
 // NewAffixNameMapper returns a new AffixNameMapper.
 func NewAffixNameMapper(prefix, suffix, wildcardReplacement string) AffixNameMapper {

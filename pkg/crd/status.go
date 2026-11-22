@@ -35,13 +35,13 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-const dnsEndpointKind = "DNSEndpoint"
-
 // StatusWriter reports each sync's outcome on the DNSEndpoints behind it.
 type StatusWriter struct {
 	clients *CRDClients
 	dryRun  bool
 }
+
+const dnsEndpointKind = "DNSEndpoint"
 
 // NewStatusWriter returns a StatusWriter using the crd source's clients.
 func NewStatusWriter(clients *CRDClients, dryRun bool) *StatusWriter {

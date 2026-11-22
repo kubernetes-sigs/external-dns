@@ -39,15 +39,15 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+type AmbassadorSuite struct {
+	suite.Suite
+}
+
 const defaultAmbassadorNamespace = "ambassador"
 const defaultAmbassadorServiceName = "ambassador"
 
 // This is a compile-time validation that ambassadorHostSource is a Source.
 var _ Source = &ambassadorHostSource{}
-
-type AmbassadorSuite struct {
-	suite.Suite
-}
 
 func TestAmbassadorSource(t *testing.T) {
 	suite.Run(t, new(AmbassadorSuite))

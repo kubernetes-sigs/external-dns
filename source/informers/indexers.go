@@ -27,10 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations/schema"
 )
 
-const (
-	IndexWithSelectors = "withSelectors"
-)
-
 type IndexSelectorOptions struct {
 	annotationFilter labels.Selector
 	labelSelector    labels.Selector
@@ -41,6 +37,20 @@ type IndexSelectorOptions struct {
 	conditions      []func(metav1.Object) bool
 	schema          *schema.Schema
 }
+
+// schemaValidationCache suppresses the duplicate warning emitted when client-go's
+// ThreadSafeStore.Update recomputes the index for the old and new object back-to-back
+// under its single write lock. One slot is enough because that lock serializes callers.
+type schemaValidationCache struct {
+	mu          sync.Mutex
+	key         string
+	annotations map[string]string
+	valid       bool
+}
+
+const (
+	IndexWithSelectors = "withSelectors"
+)
 
 func IndexSelectorWithAnnotationFilter(input labels.Selector) func(options *IndexSelectorOptions) {
 	return func(options *IndexSelectorOptions) {
@@ -90,33 +100,6 @@ func IndexSelectorWithLabelKey(key string) func(options *IndexSelectorOptions) {
 	}
 }
 
-// IndexerWithOptions is a generic function that allows adding multiple indexers
-// to a SharedIndexInformer for a specific Kubernetes resource type T. It accepts
-// a variadic list of indexer functions, which define custom indexing logic.
-//
-// Each indexer function is applied to objects of type T, enabling flexible and
-// reusable indexing based on annotations, labels, or other criteria.
-//
-// Example usage:
-// err := IndexerWithOptions[*v1.Pod](
-//
-//	IndexSelectorWithAnnotationFilter("example-annotation"),
-//	IndexSelectorWithLabelSelector(labels.SelectorFromSet(labels.Set{"app": "my-app"})),
-//
-// )
-//
-// This function ensures type safety and simplifies the process of adding
-// custom indexers to informers.
-// schemaValidationCache suppresses the duplicate warning emitted when client-go's
-// ThreadSafeStore.Update recomputes the index for the old and new object back-to-back
-// under its single write lock. One slot is enough because that lock serializes callers.
-type schemaValidationCache struct {
-	mu          sync.Mutex
-	key         string
-	annotations map[string]string
-	valid       bool
-}
-
 func (c *schemaValidationCache) isValid(entity metav1.Object, s *schema.Schema) bool {
 	key := entity.GetNamespace() + "/" + entity.GetName()
 	annots := entity.GetAnnotations()
@@ -132,6 +115,8 @@ func (c *schemaValidationCache) isValid(entity metav1.Object, s *schema.Schema) 
 	return valid
 }
 
+// IndexerWithOptions returns the IndexWithSelectors indexer for resources of type T.
+// Objects rejected by the given options are left out of the index.
 func IndexerWithOptions[T metav1.Object](optFns ...func(options *IndexSelectorOptions)) cache.Indexers {
 	options := IndexSelectorOptions{}
 	for _, fn := range optFns {

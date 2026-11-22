@@ -35,17 +35,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	// ns1Create is a ChangeAction enum value
-	ns1Create = "CREATE"
-	// ns1Delete is a ChangeAction enum value
-	ns1Delete = "DELETE"
-	// ns1Update is a ChangeAction enum value
-	ns1Update = "UPDATE"
-	// defaultTTL is the default ttl for ttls that are not set
-	defaultTTL = 10
-)
-
 // NS1DomainClient is a subset of the NS1 API the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
@@ -59,6 +48,43 @@ type NS1DomainClient interface {
 type NS1DomainService struct {
 	service *api.Client
 }
+
+// NS1Config passes cli args to the NS1Provider
+type NS1Config struct {
+	DomainFilter  *endpoint.DomainFilter
+	ZoneIDFilter  provider.ZoneIDFilter
+	NS1Endpoint   string
+	NS1IgnoreSSL  bool
+	DryRun        bool
+	MinTTLSeconds int
+}
+
+// NS1Provider is the NS1 provider
+type NS1Provider struct {
+	provider.BaseProvider
+	client        NS1DomainClient
+	domainFilter  *endpoint.DomainFilter
+	zoneIDFilter  provider.ZoneIDFilter
+	dryRun        bool
+	minTTLSeconds int
+}
+
+// ns1Change differentiates between ChangeActions
+type ns1Change struct {
+	Action   string
+	Endpoint *endpoint.Endpoint
+}
+
+const (
+	// ns1Create is a ChangeAction enum value
+	ns1Create = "CREATE"
+	// ns1Delete is a ChangeAction enum value
+	ns1Delete = "DELETE"
+	// ns1Update is a ChangeAction enum value
+	ns1Update = "UPDATE"
+	// defaultTTL is the default ttl for ttls that are not set
+	defaultTTL = 10
+)
 
 // CreateRecord wraps the Create method of the API's Record service
 func (n NS1DomainService) CreateRecord(r *dns.Record) (*http.Response, error) {
@@ -83,26 +109,6 @@ func (n NS1DomainService) GetZone(zone string) (*dns.Zone, *http.Response, error
 // ListZones wraps the List method of the API's Zones service
 func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 	return n.service.Zones.List()
-}
-
-// NS1Config passes cli args to the NS1Provider
-type NS1Config struct {
-	DomainFilter  *endpoint.DomainFilter
-	ZoneIDFilter  provider.ZoneIDFilter
-	NS1Endpoint   string
-	NS1IgnoreSSL  bool
-	DryRun        bool
-	MinTTLSeconds int
-}
-
-// NS1Provider is the NS1 provider
-type NS1Provider struct {
-	provider.BaseProvider
-	client        NS1DomainClient
-	domainFilter  *endpoint.DomainFilter
-	zoneIDFilter  provider.ZoneIDFilter
-	dryRun        bool
-	minTTLSeconds int
 }
 
 // New creates an NS1 provider from the given configuration.
@@ -191,6 +197,17 @@ func (p *NS1Provider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	}
 
 	return endpoints, nil
+}
+
+// ApplyChanges applies a given set of changes in a given zone.
+func (p *NS1Provider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+	combinedChanges := make([]*ns1Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+
+	combinedChanges = append(combinedChanges, newNS1Changes(ns1Create, changes.Create)...)
+	combinedChanges = append(combinedChanges, newNS1Changes(ns1Update, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, newNS1Changes(ns1Delete, changes.Delete)...)
+
+	return p.ns1SubmitChanges(combinedChanges)
 }
 
 // ns1BuildRecord returns a dns.Record for a change set
@@ -282,23 +299,6 @@ func (p *NS1Provider) zonesFiltered() ([]*dns.Zone, error) {
 	}
 
 	return toReturn, nil
-}
-
-// ns1Change differentiates between ChangeActions
-type ns1Change struct {
-	Action   string
-	Endpoint *endpoint.Endpoint
-}
-
-// ApplyChanges applies a given set of changes in a given zone.
-func (p *NS1Provider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
-	combinedChanges := make([]*ns1Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
-
-	combinedChanges = append(combinedChanges, newNS1Changes(ns1Create, changes.Create)...)
-	combinedChanges = append(combinedChanges, newNS1Changes(ns1Update, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, newNS1Changes(ns1Delete, changes.Delete)...)
-
-	return p.ns1SubmitChanges(combinedChanges)
 }
 
 // newNS1Changes returns a collection of Changes based on the given records and action.

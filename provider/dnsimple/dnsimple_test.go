@@ -33,6 +33,10 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+type mockDnsimpleZoneServiceInterface struct {
+	mock.Mock
+}
+
 var (
 	mockProvider                     dnsimpleProvider
 	dnsimpleListZonesResponse        dnsimple.ZonesResponse
@@ -479,10 +483,6 @@ func validateDnsimpleZones(t *testing.T, zones map[string]dnsimple.Zone, expecte
 	for _, e := range expected {
 		assert.Equal(t, zones[int64ToString(e.ID)].Name, e.Name)
 	}
-}
-
-type mockDnsimpleZoneServiceInterface struct {
-	mock.Mock
 }
 
 func (_m *mockDnsimpleZoneServiceInterface) CreateRecord(ctx context.Context, accountID string, zoneID string, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error) {

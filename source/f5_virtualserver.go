@@ -42,12 +42,6 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-var f5VirtualServerGVR = schema.GroupVersionResource{
-	Group:    "cis.f5.com",
-	Version:  "v1",
-	Resource: "virtualservers",
-}
-
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
 //
 // +externaldns:source:name=f5-virtualserver
@@ -64,6 +58,12 @@ type f5VirtualServerSource struct {
 	kubeClient             kubernetes.Interface
 	templateEngine         template.Engine
 	unstructuredConverter  *unstructuredConverter
+}
+
+var f5VirtualServerGVR = schema.GroupVersionResource{
+	Group:    "cis.f5.com",
+	Version:  "v1",
+	Resource: "virtualservers",
 }
 
 func NewF5VirtualServerSource(

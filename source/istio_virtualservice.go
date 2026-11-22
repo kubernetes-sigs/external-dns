@@ -47,9 +47,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-// IstioMeshGateway is the built in gateway for all sidecars
-const IstioMeshGateway = "mesh"
-
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
 // Use annotations.TargetKey to explicitly set Endpoint.
@@ -72,6 +69,9 @@ type virtualServiceSource struct {
 	ingressInformers         *informers.Informers[netinformers.IngressInformer]
 	targetFrom               *targetfrom.Resolver
 }
+
+// IstioMeshGateway is the built in gateway for all sidecars
+const IstioMeshGateway = "mesh"
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
 func NewIstioVirtualServiceSource(

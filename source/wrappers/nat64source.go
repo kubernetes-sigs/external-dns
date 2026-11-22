@@ -27,15 +27,15 @@ import (
 	"sigs.k8s.io/external-dns/source"
 )
 
-var (
-	addrFromSlice = netip.AddrFromSlice
-)
-
 // nat64Source is a Source that adds A endpoints for AAAA records including an NAT64 address.
 type nat64Source struct {
 	source        source.Source
 	nat64Prefixes []netip.Prefix
 }
+
+var (
+	addrFromSlice = netip.AddrFromSlice
+)
 
 // NewNAT64Source creates a new nat64Source wrapping the provided Source.
 func NewNAT64Source(source source.Source, nat64Prefixes []string) (source.Source, error) {

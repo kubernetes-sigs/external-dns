@@ -47,6 +47,24 @@ type exoscaleClient struct {
 	c *v3.Client
 }
 
+// ExoscaleProvider initialized as dns provider with no records
+type ExoscaleProvider struct {
+	provider.BaseProvider
+	domain         *endpoint.DomainFilter
+	client         EgoscaleClientI
+	filter         *zoneFilter
+	zoneCache      *blueprint.ZoneCache[map[string]string]
+	OnApplyChanges func(changes *plan.Changes)
+	dryRun         bool
+}
+
+// ExoscaleOption for Provider options
+type ExoscaleOption func(*ExoscaleProvider)
+
+type zoneFilter struct {
+	domain string
+}
+
 func (w *exoscaleClient) ListDNSDomains(ctx context.Context) ([]v3.DNSDomain, error) {
 	resp, err := w.c.ListDNSDomains(ctx)
 	if err != nil {
@@ -89,20 +107,6 @@ func (w *exoscaleClient) UpdateDNSDomainRecord(ctx context.Context, domainID v3.
 	_, err = w.c.Wait(ctx, op, v3.OperationStateSuccess)
 	return err
 }
-
-// ExoscaleProvider initialized as dns provider with no records
-type ExoscaleProvider struct {
-	provider.BaseProvider
-	domain         *endpoint.DomainFilter
-	client         EgoscaleClientI
-	filter         *zoneFilter
-	zoneCache      *blueprint.ZoneCache[map[string]string]
-	OnApplyChanges func(changes *plan.Changes)
-	dryRun         bool
-}
-
-// ExoscaleOption for Provider options
-type ExoscaleOption func(*ExoscaleProvider)
 
 // New creates an Exoscale provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
@@ -148,25 +152,6 @@ func NewExoscaleProviderWithClient(client EgoscaleClientI, dryRun bool, zoneCach
 		opt(ep)
 	}
 	return ep
-}
-
-func (ep *ExoscaleProvider) getZones(ctx context.Context) (map[string]string, error) {
-	if !ep.zoneCache.Expired() {
-		return ep.zoneCache.Get(), nil
-	}
-
-	domains, err := ep.client.ListDNSDomains(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	zones := map[string]string{}
-	for _, domain := range domains {
-		zones[string(domain.ID)] = domain.UnicodeName
-	}
-
-	ep.zoneCache.Reset(zones)
-	return zones, nil
 }
 
 // GetDomainFilter returns the domain filter built from the zones the provider actually manages.
@@ -217,6 +202,59 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 
 	return ep.deleteRecords(ctx, zones, changes.Delete)
+}
+
+// Records returns the list of endpoints
+func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	zones, err := ep.getZones(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
+
+	for zoneID, zoneName := range zones {
+		records, err := ep.client.ListDNSDomainRecords(ctx, v3.UUID(zoneID))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, record := range records {
+			if string(record.Type) != endpoint.RecordTypeA && string(record.Type) != endpoint.RecordTypeCNAME && string(record.Type) != endpoint.RecordTypeTXT {
+				continue
+			}
+
+			fqdn := zoneName
+			if record.Name != "" {
+				fqdn = record.Name + "." + zoneName
+			}
+
+			e := endpoint.NewEndpointWithTTL(fqdn, string(record.Type), endpoint.TTL(record.Ttl), record.Content)
+			endpoints = append(endpoints, e)
+		}
+	}
+
+	log.Infof("Called Records() with %d items", len(endpoints))
+	return endpoints, nil
+}
+
+func (ep *ExoscaleProvider) getZones(ctx context.Context) (map[string]string, error) {
+	if !ep.zoneCache.Expired() {
+		return ep.zoneCache.Get(), nil
+	}
+
+	domains, err := ep.client.ListDNSDomains(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	zones := map[string]string{}
+	for _, domain := range domains {
+		zones[string(domain.ID)] = domain.UnicodeName
+	}
+
+	ep.zoneCache.Reset(zones)
+	return zones, nil
 }
 
 // createRecords adds a DNS record for every endpoint that resolves to a known zone.
@@ -333,40 +371,6 @@ func (ep *ExoscaleProvider) findRecordID(ctx context.Context, zoneID, name, reco
 	return "", false, nil
 }
 
-// Records returns the list of endpoints
-func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := ep.getZones(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0)
-
-	for zoneID, zoneName := range zones {
-		records, err := ep.client.ListDNSDomainRecords(ctx, v3.UUID(zoneID))
-		if err != nil {
-			return nil, err
-		}
-
-		for _, record := range records {
-			if string(record.Type) != endpoint.RecordTypeA && string(record.Type) != endpoint.RecordTypeCNAME && string(record.Type) != endpoint.RecordTypeTXT {
-				continue
-			}
-
-			fqdn := zoneName
-			if record.Name != "" {
-				fqdn = record.Name + "." + zoneName
-			}
-
-			e := endpoint.NewEndpointWithTTL(fqdn, string(record.Type), endpoint.TTL(record.Ttl), record.Content)
-			endpoints = append(endpoints, e)
-		}
-	}
-
-	log.Infof("Called Records() with %d items", len(endpoints))
-	return endpoints, nil
-}
-
 // ExoscaleWithDomain modifies the domain on which dns zones are filtered
 func ExoscaleWithDomain(domainFilter *endpoint.DomainFilter) ExoscaleOption {
 	return func(p *ExoscaleProvider) {
@@ -392,10 +396,6 @@ func ExoscaleWithLogging() ExoscaleOption {
 			}
 		}
 	}
-}
-
-type zoneFilter struct {
-	domain string
 }
 
 // Zones filters map[zoneID]zoneName for names having f.domain as suffix

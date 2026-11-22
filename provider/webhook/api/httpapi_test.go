@@ -35,13 +35,17 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-var records []*endpoint.Endpoint
-
 type FakeWebhookProvider struct {
 	err           error
 	domainFilter  *endpoint.DomainFilter
 	assertChanges func(*plan.Changes)
 }
+
+// endlessBody emits an infinite stream of 'a' bytes, standing in for a client
+// that pushes a request body with no end in sight.
+type endlessBody struct{}
+
+var records []*endpoint.Endpoint
 
 func (p FakeWebhookProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	if p.err != nil {
@@ -364,10 +368,6 @@ func TestNegotiateHandler_FiltersWithSpecialEncodings(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
 }
-
-// endlessBody emits an infinite stream of 'a' bytes, standing in for a client
-// that pushes a request body with no end in sight.
-type endlessBody struct{}
 
 func (endlessBody) Read(p []byte) (int, error) {
 	for i := range p {

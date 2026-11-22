@@ -272,6 +272,11 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	return im.executeStatements(ctx, statements, im.deleteStatementError)
 }
 
+// AdjustEndpoints modifies the endpoints as needed by the specific provider.
+func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return im.provider.AdjustEndpoints(endpoints)
+}
+
 // Also writes im.labels and the records cache.
 func (im *DynamoDBRegistry) planCreateStatements(changes *plan.Changes) []dynamodbtypes.BatchStatementRequest {
 	statements := make([]dynamodbtypes.BatchStatementRequest, 0, len(changes.Create)+len(changes.UpdateNew))
@@ -383,11 +388,6 @@ func (im *DynamoDBRegistry) deleteStatementError(request dynamodbtypes.BatchStat
 		return fmt.Errorf("deleting dynamodb record: %w", err)
 	}
 	return fmt.Errorf("deleting dynamodb record %v: %s: %s", record, response.Error.Code, *response.Error.Message)
-}
-
-// AdjustEndpoints modifies the endpoints as needed by the specific provider.
-func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return im.provider.AdjustEndpoints(endpoints)
 }
 
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {

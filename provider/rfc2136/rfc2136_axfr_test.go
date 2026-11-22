@@ -34,6 +34,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type readDeadlineErrorConn struct {
+	net.Conn
+	err error
+}
+
+type readErrorConn struct {
+	net.Conn
+	err error
+}
+
 const (
 	axfrTestKeyName = "key.example.com."
 	axfrTestSecret  = "c2VjcmV0"
@@ -219,18 +229,8 @@ func TestReadSignedAXFRRejectsInvalidMessages(t *testing.T) {
 	})
 }
 
-type readDeadlineErrorConn struct {
-	net.Conn
-	err error
-}
-
 func (c readDeadlineErrorConn) SetReadDeadline(time.Time) error {
 	return c.err
-}
-
-type readErrorConn struct {
-	net.Conn
-	err error
 }
 
 func (c readErrorConn) Read([]byte) (int, error) {

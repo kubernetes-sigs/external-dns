@@ -151,7 +151,24 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
+<<<<<<< HEAD
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
+=======
+func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
+	log.Debug("Adding event handler for httpproxy")
+
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	sc.httpProxyInformers.MustAddEventHandler(eventHandlerFunc(handler))
+}
+
+func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
+	hostnames, err := sc.templateEngine.ExecFQDN(httpProxy)
+	if err != nil {
+		return nil, err
+	}
+
+>>>>>>> master
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
@@ -208,12 +225,4 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 	}
 
 	return endpoints
-}
-
-func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
-	log.Debug("Adding event handler for httpproxy")
-
-	// Right now there is no way to remove event handler from informer, see:
-	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.httpProxyInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }

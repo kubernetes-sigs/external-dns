@@ -57,6 +57,14 @@ type filteredMockProvider struct {
 	ApplyChangesCalls []*plan.Changes
 }
 
+type toggleRegistry struct {
+	noop.NoopRegistry
+	failCount   int
+	failCountMu sync.Mutex // protects failCount
+}
+
+const toggleRegistryFailureCount = 3
+
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
@@ -492,14 +500,6 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 		},
 	)
 }
-
-type toggleRegistry struct {
-	noop.NoopRegistry
-	failCount   int
-	failCountMu sync.Mutex // protects failCount
-}
-
-const toggleRegistryFailureCount = 3
 
 func (r *toggleRegistry) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
 	r.failCountMu.Lock()
