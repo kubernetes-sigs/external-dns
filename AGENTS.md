@@ -2,18 +2,6 @@
 
 Guidance for AI coding agents working in this repo.
 
-## Before You Change Anything
-
-Read this file end-to-end before editing, and when the change touches:
-
-- a Source or source wrapper, re-read [Data Flow and Layering](#data-flow-and-layering) and the
-  linked [`docs/contributing/sources-and-providers.md`](docs/contributing/sources-and-providers.md).
-- error handling in the reconcile loop, re-read [Error Handling](#error-handling).
-- a refactor that trips a linter, re-read [Refactoring](#refactoring).
-- comments, re-read [Comments](#comments).
-
-The [Before You Finish](#before-you-finish) checklist at the bottom is the exit gate.
-
 ## What ExternalDNS Does
 
 ExternalDNS = Kubernetes controller. Syncs exposed resources (Services, Ingresses, CRDs, Gateway API routes) with external DNS providers (AWS Route53, Google Cloud DNS, Azure DNS, Cloudflare, 20+ others). Tracks ownership via TXT record markers — safe for non-empty hosted zones.
@@ -104,52 +92,31 @@ guide.
 ## Data Flow and Layering
 
 The reconcile pipeline is in [Architecture](#architecture) above. Source
-wrappers live in `source/wrappers/`: `multi`, `dedup`, `nat64`, `ptr`,
-`target-filter`, `post-processor` (see
+wrappers live in `source/wrappers/` (see
 [source-wrappers.md](docs/contributing/source-wrappers.md)).
 
 Three layering concerns, kept separate:
 
 - **Domain** (`endpoint/`), functions on `Endpoint`: validation,
-  normalization, labels. No I/O, and no logging in new code.
-- **Source** (`source/`), produces `[]*endpoint.Endpoint`. Iterates spec,
-  calls domain ops, hands results to the writer. New Sources should not
-  write to the K8s API themselves.
-- **Writer** (`pkg/<kind>/status.go`), formats and writes status conditions,
-  events and metrics. Owns the K8s client calls on that path.
+  normalization, labels. No I/O in new code.
+- **Source** (`source/`), produces `[]*endpoint.Endpoint`. New Sources
+  should not write to the K8s API themselves.
+- **Writer** (`pkg/crd/status.go`, `pkg/events/`), post-apply: writes
+  status conditions and events once `Registry.ApplyChanges` knows the
+  outcome. Owns the K8s client calls on that path.
 
-Rules of thumb for new code: put validation on `Endpoint.Validate`
-rather than inline it in `source/<x>.go`; have new Sources hand status
-and events to a writer type instead of a bare K8s client; writers take
-orchestration output (counts, reasons), not raw objects. Existing
-Sources (notably the crd source) do not yet follow these; don't
-rewrite them under this guide.
+Existing Sources (notably the crd source) do not yet follow these;
+don't rewrite them under this guide.
 
-Signals for new code: a new `validateX` helper inside a `source/` file,
-a new Source that calls the K8s API to patch status, or a new `switch
-RecordType` in a Source doing per-type normalization.
-
-Full rules and examples in
+Full rules in
 [`docs/contributing/sources-and-providers.md#data-flow-and-layering`](docs/contributing/sources-and-providers.md#data-flow-and-layering).
 
 ## Refactoring
 
-No single metric is the goal — not cyclomatic complexity, function length,
+No single metric is the goal, not cyclomatic complexity, function length,
 cognitive complexity, nesting depth, or parameter count. Overall complexity
 is: coupling, cohesion, signature width, hidden state, call-order, locality.
 A refactor that lowers one axis while raising any of the others is a loss.
-
-Watch for the shapes a metric-chase produces:
-
-- Helpers that take one argument and return three values.
-- Helpers that mutate a parameter and return a value.
-- Pure-looking helpers that write receiver state.
-- Pairs bound only by a "must match X" or "inverse of Y" comment.
-- One-line wrappers used from exactly one call site.
-- Chains of helpers that must run in a fixed order through caller-held maps.
-
-If any appear, leave the code inline or introduce a type that makes the
-shared state visible.
 
 Full rules in `docs/contributing/sources-and-providers.md`, "Refactoring".
 
