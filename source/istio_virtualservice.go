@@ -236,7 +236,6 @@ func (sc *virtualServiceSource) lookupGateway(namespace, name string) (*networki
 	return gatewayInformer.Lister().Gateways(namespace).Get(name)
 }
 
-// Non-empty templateTargets win over the per-host gateway targets.
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1.VirtualService, hostnames []string, templateTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
 

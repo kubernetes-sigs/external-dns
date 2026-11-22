@@ -428,7 +428,6 @@ func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, li
 	}
 }
 
-// Non-empty templateTargets win over the parent's targets.
 func (c *gatewayRouteResolver) resolve(rt gatewayRoute, rtHosts, templateTargets []string) map[string]endpoint.Targets {
 	hostTargets := make(map[string]endpoint.Targets)
 

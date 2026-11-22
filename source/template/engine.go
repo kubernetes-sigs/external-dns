@@ -174,11 +174,7 @@ func WithEndpointBuilder(b EndpointBuilder) ApplyOption {
 
 // Apply runs the fqdn-target pass, then fqdn+target via the configured EndpointBuilder;
 // target-template output wins over any WithResourceTargets value.
-func (e Engine) Apply(
-	existing []*endpoint.Endpoint,
-	obj kubeObject,
-	opts ...ApplyOption,
-) ([]*endpoint.Endpoint, error) {
+func (e Engine) Apply(existing []*endpoint.Endpoint, obj kubeObject, opts ...ApplyOption) ([]*endpoint.Endpoint, error) {
 	cfg := applyConfig{
 		build: func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 			return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil

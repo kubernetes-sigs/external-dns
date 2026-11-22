@@ -260,7 +260,6 @@ func (ps *podSource) addPodNodeEndpointsToEndpointMap(endpointMap map[endpoint.E
 	}
 }
 
-// Non-empty templateTargets win over the pod IPs.
 func (ps *podSource) hostsFromTemplate(pod *v1.Pod, hostnames []string, templateTargets endpoint.Targets) map[endpoint.EndpointKey][]string {
 	result := make(map[endpoint.EndpointKey][]string)
 	if len(templateTargets) > 0 {

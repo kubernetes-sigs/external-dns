@@ -500,7 +500,6 @@ func buildHeadlessEndpoints(svc *v1.Service, targetsByHeadlessDomainAndType map[
 	return endpoints
 }
 
-// Non-empty templateTargets win over the resource's own targets.
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, hostnames []string, templateTargets endpoint.Targets) []*endpoint.Endpoint {
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(svc.Annotations)
 
