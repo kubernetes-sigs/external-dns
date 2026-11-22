@@ -293,6 +293,73 @@ func TestF5VirtualServerFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
+			title: "fqdn-template without target-template uses spec VirtualServerAddress when no valid IP",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+				},
+				Spec: f5.VirtualServerSpec{
+					Host:                 "www.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate: "{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-vs.example.com", endpoint.RecordTypeA, "192.168.1.100"),
+			},
+		},
+		{
+			title: "fqdn-template without target-template uses target annotation",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "lb.example.com",
+					},
+				},
+				Spec:   f5.VirtualServerSpec{Host: "www.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate: "{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-vs.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "target annotation wins over target-template unless combining",
+			virtualServer: f5.VirtualServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5VirtualServerGVR.GroupVersion().String(),
+					Kind:       "VirtualServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-vs",
+					Namespace: defaultF5VirtualServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "annotation-lb.example.com",
+					},
+				},
+				Spec:   f5.VirtualServerSpec{Host: "www.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "template-lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-vs.example.com", endpoint.RecordTypeCNAME, "annotation-lb.example.com"),
+			},
+		},
+		{
 			title: "fqdn-template can reference .Kind",
 			virtualServer: f5.VirtualServer{
 				TypeMeta: metav1.TypeMeta{

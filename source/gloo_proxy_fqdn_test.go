@@ -193,13 +193,11 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 		{
 			title: "fqdn-template without target-template uses target annotation",
 			customProxy: &proxy{
-				APIVersion: proxyGVR.GroupVersion().String(),
-				Kind:       "Proxy",
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "annotated-proxy",
-					Namespace:   ns,
-					Annotations: map[string]string{"external-dns.kubernetes.io/target": "annotation-lb.example.com"},
-				},
+				APIVersion:  proxyGVR.GroupVersion().String(),
+				Kind:        "Proxy",
+				Name:        "annotated-proxy",
+				Namespace:   ns,
+				Annotations: map[string]string{"external-dns.kubernetes.io/target": "annotation-lb.example.com"},
 			},
 			svc:          makeEmptySvc("annotated-proxy"),
 			fqdnTemplate: "{{.Name}}.example.com",
@@ -210,13 +208,11 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 		{
 			title: "target annotation wins over target-template unless combining",
 			customProxy: &proxy{
-				APIVersion: proxyGVR.GroupVersion().String(),
-				Kind:       "Proxy",
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        "annotated-proxy",
-					Namespace:   ns,
-					Annotations: map[string]string{"external-dns.kubernetes.io/target": "annotation-lb.example.com"},
-				},
+				APIVersion:  proxyGVR.GroupVersion().String(),
+				Kind:        "Proxy",
+				Name:        "annotated-proxy",
+				Namespace:   ns,
+				Annotations: map[string]string{"external-dns.kubernetes.io/target": "annotation-lb.example.com"},
 			},
 			svc:            makeEmptySvc("annotated-proxy"),
 			fqdnTemplate:   "{{.Name}}.example.com",
