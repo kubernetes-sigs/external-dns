@@ -76,7 +76,9 @@ func warnCNAMEConflict(candidates []*endpoint.Endpoint, selected *endpoint.Endpo
 		return
 	}
 	slices.Sort(discarded)
-	// This runs after the plan's domain/record filters; MergeEndpoints sees unfiltered, per-source endpoints (#6529).
+	discarded = slices.Compact(discarded)
+
+	// This runs after the plan's domain/record filters; MergeEndpoints sees unfiltered, per-source endpoints.
 	// TODO: add metric for CNAME/DNAME conflicts
 	log.Warnf("Domain %s has conflicting %s targets; selected %s (%s), discarded %s",
 		selected.DNSName, selected.RecordType, selected.Targets.String(), selected.Labels[endpoint.ResourceLabelKey], strings.Join(discarded, ", "))

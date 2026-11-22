@@ -373,6 +373,7 @@ func TestPerResource_ResolveCNAMEConflicts(t *testing.T) {
 	cnameA := endpointFor("a.example.net", "service/default/a")
 	cnameB := endpointFor("b.example.net", "service/default/b")
 	cnameC := endpointFor("c.example.net", "service/default/c")
+	cnameBAgain := endpointFor("b.example.net", "service/default/b")
 	cnameUpper := endpointFor("A.EXAMPLE.NET", "service/default/upper")
 
 	tests := []struct {
@@ -384,6 +385,12 @@ func TestPerResource_ResolveCNAMEConflicts(t *testing.T) {
 		{
 			name:        "create keeps the minimum CNAME target",
 			candidates:  []*endpoint.Endpoint{cnameC, cnameB, cnameA},
+			want:        cnameA,
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b), c.example.net (service/default/c)",
+		},
+		{
+			name:        "a repeated target and resource is listed once",
+			candidates:  []*endpoint.Endpoint{cnameC, cnameB, cnameBAgain, cnameA},
 			want:        cnameA,
 			wantWarning: "Domain app.example.org has conflicting CNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b), c.example.net (service/default/c)",
 		},
