@@ -221,7 +221,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
-			title:        "fqdn-template target annotation does not override pod IPs",
+			title:        "fqdn-template target annotation wins over pod IPs",
 			fqdnTemplate: "{{ .Name }}.example.org",
 			pods: []*v1.Pod{
 				{
@@ -231,7 +231,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "pod-1.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
+				{DNSName: "pod-1.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.2.45.22"}},
 			},
 		},
 		{

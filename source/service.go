@@ -239,6 +239,7 @@ func (sc *serviceSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, err
 		svcEndpoints, err = sc.templateEngine.Apply(
 			svcEndpoints,
 			svc,
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(svc.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(svc, hostnames, targets), nil
 			}),

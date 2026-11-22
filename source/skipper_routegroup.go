@@ -142,6 +142,7 @@ func (sc *routeGroupSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, 
 			eps,
 			&routeGroupWrapper{rg},
 			template.WithResourceTargets(rgTargets),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(rg.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(rg, hostnames, targets), nil
 			}),

@@ -138,6 +138,7 @@ func (ps *podSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) 
 		podEndpoints, err := ps.templateEngine.Apply(
 			podEndpoints,
 			pod,
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(pod.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return ps.endpointsFromPodTemplate(pod, hostnames, targets), nil
 			}),

@@ -183,6 +183,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 		hostEndpoints, err := sc.templateEngine.Apply(sc.endpointsFromHost(host, targets), host,
 			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(host.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsForHostnames(host, hostnames, targets), nil
 			}),

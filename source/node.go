@@ -141,6 +141,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		nodeEndpoints, err := ns.templateEngine.Apply(
 			nodeEndpoints,
 			node,
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(node.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				if len(targets) == 0 {
 					addrs, err := resolveTargets()

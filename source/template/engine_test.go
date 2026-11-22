@@ -804,6 +804,38 @@ func TestApply(t *testing.T) {
 	}
 }
 
+// WithAnnotationTargets wins over --target-template unless --combine-fqdn-annotation
+// is set, matching the hostname-annotation precedence governed by the same flag.
+func TestApplyAnnotationTargetsPrecedence(t *testing.T) {
+	svc := &corev1.Service{Name: "svc", Namespace: "ns"}
+	for _, tt := range []struct {
+		title       string
+		combine     bool
+		wantTargets []string
+	}{
+		{title: "annotation wins without combine", combine: false, wantTargets: []string{"1.2.3.4"}},
+		{title: "template wins with combine", combine: true, wantTargets: []string{"lb.example.com"}},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			engine, err := NewEngine([]string{"{{.Name}}.example.com"}, []string{"lb.example.com"}, nil, tt.combine)
+			require.NoError(t, err)
+
+			var gotTargets []string
+			build := func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				gotTargets = append([]string(nil), targets...)
+				return endpoint.EndpointsForHostsAndTargets(hostnames, targets), nil
+			}
+
+			_, err = engine.Apply(nil, svc,
+				WithAnnotationTargets([]string{"1.2.3.4"}),
+				WithEndpointBuilder(build),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantTargets, gotTargets)
+		})
+	}
+}
+
 // Pairs run through the configured builder once each so source metadata (TTL,
 // set-identifier, provider-specific, resource label) lands on pair records too.
 func TestApplyPairsInvokeBuilderPerPair(t *testing.T) {

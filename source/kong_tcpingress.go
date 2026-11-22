@@ -151,6 +151,7 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 
 		ingressEndpoints, err := sc.templateEngine.Apply(sc.endpointsFromTCPIngress(tcpIngress, targets), tcpIngress,
 			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return endpointsForTCPIngressHostnames(tcpIngress, hostnames, targets), nil
 			}),

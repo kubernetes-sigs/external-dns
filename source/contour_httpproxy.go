@@ -129,6 +129,7 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 			sc.endpointsFromHTTPProxy(hp),
 			hp,
 			template.WithResourceTargets(targetsFromHTTPProxy(hp)),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(hp.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(hp, hostnames, targets), nil
 			}),

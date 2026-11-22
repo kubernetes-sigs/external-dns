@@ -152,6 +152,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			ingEndpoints,
 			ing,
 			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(ing.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(ing, hostnames, targets), nil
 			}),

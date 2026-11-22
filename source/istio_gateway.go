@@ -159,6 +159,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
 			gateway,
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(gateway.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				if len(targets) > 0 {
 					return sc.endpointsForHostnames(hostnames, targets, gateway), nil

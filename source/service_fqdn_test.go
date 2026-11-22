@@ -135,14 +135,14 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
-			title: "target-template wins over the target annotation",
+			title: "target annotation wins over target-template when --combine-fqdn-annotation is off",
 			services: []*v1.Service{makeSvc(map[string]string{
 				annotations.TargetKey: "9.9.9.9",
 			})},
 			fqdnTemplate:   "{{.Name}}.example.com",
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
-				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"9.9.9.9"}},
 			},
 		},
 		// ── fqdn-template cases ───────────────────────────────────────────────

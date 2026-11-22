@@ -152,8 +152,9 @@ func (e Engine) combineWithEndpoints(
 type EndpointBuilder func(hostnames, targets []string) ([]*endpoint.Endpoint, error)
 
 type applyConfig struct {
-	resourceTargets []string
-	build           EndpointBuilder
+	resourceTargets   []string
+	annotationTargets []string
+	build             EndpointBuilder
 }
 
 // ApplyOption configures a single Engine.Apply call.
@@ -163,6 +164,13 @@ type ApplyOption func(*applyConfig)
 // --target-template produces no output. Target-template output wins over these.
 func WithResourceTargets(targets []string) ApplyOption {
 	return func(c *applyConfig) { c.resourceTargets = targets }
+}
+
+// WithAnnotationTargets declares the per-resource target annotation. When
+// --combine-fqdn-annotation is off (default), these win over --target-template,
+// matching the hostname-annotation precedence governed by the same flag.
+func WithAnnotationTargets(targets []string) ApplyOption {
+	return func(c *applyConfig) { c.annotationTargets = targets }
 }
 
 // WithEndpointBuilder overrides the function that turns rendered hostnames+targets
@@ -198,6 +206,9 @@ func (e Engine) Apply(existing []*endpoint.Endpoint, obj kubeObject, opts ...App
 		targets, err := e.execTarget(obj)
 		if err != nil {
 			return nil, err
+		}
+		if len(cfg.annotationTargets) > 0 && !e.combine {
+			targets = cfg.annotationTargets
 		}
 		if len(targets) == 0 {
 			targets = cfg.resourceTargets

@@ -170,6 +170,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		gwEndpoints, err = sc.templateEngine.Apply(
 			gwEndpoints,
 			vService,
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(vService.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(ctx, vService, hostnames, targets)
 			}),
