@@ -453,6 +453,17 @@ const (
 	AliasAAAA AliasType = "AAAA"
 )
 
+// NormalizeAliasType returns the canonical AliasType for v, ignoring case.
+// It returns AliasNone when v is not a known alias value.
+func NormalizeAliasType(v string) AliasType {
+	for _, alias := range []AliasType{AliasTrue, AliasFalse, AliasA, AliasAAAA} {
+		if strings.EqualFold(v, string(alias)) {
+			return alias
+		}
+	}
+	return AliasNone
+}
+
 func (e *Endpoint) GetAliasProperty() AliasType {
 	switch a, ok := e.GetProviderSpecificProperty("alias"); {
 	case a == "true" && ok:

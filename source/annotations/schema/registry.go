@@ -64,6 +64,27 @@ var defaultSpecs = []AnnotationSpec{
 		Documentation: `Opts the resource in or out of PTR record generation (--create-ptr). Accepted values: "ptr" to opt in, "" to opt out. See docs/advanced/ptr-records.md.`,
 	},
 	{
+		KeySuffix: annotations.AliasSuffix,
+		SupportedSources: []string{
+			types.AmbassadorHost, types.ContourHTTPProxy,
+			types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute,
+			types.GlooProxy,
+			types.Ingress,
+			types.IstioGateway, types.IstioVirtualService,
+			types.KongTCPIngress,
+			types.OpenShiftRoute,
+			types.Service,
+			types.SkipperRouteGroup,
+			types.TraefikProxy,
+		},
+		Validators: []Validator{ValidateOneOfFold(
+			string(endpoint.AliasTrue), string(endpoint.AliasFalse), string(endpoint.AliasA), string(endpoint.AliasAAAA),
+		)},
+		WarnMessage:   "the annotation is ignored and the record type falls back to the provider's default",
+		StrictMessage: defaultStrictMessage,
+		Documentation: `Controls alias record creation (case-insensitive). "true" requests alias records; "A" or "AAAA" requests a single alias record type. "false" is accepted but currently has no effect.`,
+	},
+	{
 		KeySuffix: annotations.SetIdentifierSuffix,
 		SupportedSources: []string{
 			types.AmbassadorHost, types.ContourHTTPProxy,

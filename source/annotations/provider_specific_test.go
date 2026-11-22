@@ -311,13 +311,13 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 		title         string
 		annotations   map[string]string
 		expectedKey   string
-		expectedValue bool
+		expectedValue string
 	}{
 		{
 			title:         "alias annotation is set correctly to true",
 			annotations:   map[string]string{AliasKey: "true"},
 			expectedKey:   AliasKey,
-			expectedValue: true,
+			expectedValue: "true",
 		},
 		{
 			title: "alias annotation among another annotations is set correctly to true",
@@ -327,14 +327,26 @@ func TestGetProviderSpecificAliasAnnotations(t *testing.T) {
 				"random annotation 2": "random value 2",
 			},
 			expectedKey:   AliasKey,
-			expectedValue: true,
+			expectedValue: "true",
+		},
+		{
+			title:         "alias annotation is set correctly to A",
+			annotations:   map[string]string{AliasKey: "A"},
+			expectedKey:   AliasKey,
+			expectedValue: "A",
+		},
+		{
+			title:         "alias annotation is set correctly to AAAA",
+			annotations:   map[string]string{AliasKey: "AAAA"},
+			expectedKey:   AliasKey,
+			expectedValue: "AAAA",
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			providerSpecificAnnotations, _ := ProviderSpecificAnnotations(tc.annotations)
 			for _, providerSpecificAnnotation := range providerSpecificAnnotations {
 				if providerSpecificAnnotation.Name == endpoint.ProviderSpecificAlias {
-					assert.Equal(t, strconv.FormatBool(tc.expectedValue), providerSpecificAnnotation.Value)
+					assert.Equal(t, tc.expectedValue, providerSpecificAnnotation.Value)
 					return
 				}
 			}
