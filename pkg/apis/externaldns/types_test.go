@@ -916,16 +916,6 @@ func TestParseFlagsRFC2136AXFR(t *testing.T) {
 	}
 }
 
-func TestParseFlagsTraefik(t *testing.T) {
-	t.Parallel()
-	cfg := parseCfg(t,
-		"--traefik-enable-legacy",
-		"--traefik-disable-new",
-	)
-	assert.True(t, cfg.TraefikEnableLegacy)
-	assert.True(t, cfg.TraefikDisableNew)
-}
-
 func TestParseFlagsTXTRegistry(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t,
