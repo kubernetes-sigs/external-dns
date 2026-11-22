@@ -205,10 +205,7 @@ around a Source splits. Within one `RunOnce`:
 | Source | `source/`                                         | Produces `[]*endpoint.Endpoint`. Thin coordinator: iterates spec, calls domain ops, returns results.                   |
 | Writer | `pkg/crd/status.go`, `pkg/events/`                | Post-apply: writes status conditions and events once `Registry.ApplyChanges` knows the outcome. Owns the K8s client calls on that path. |
 
-The other packages belong to the pipeline shown above: `controller/`
-sequences `RunOnce`, `plan/` is a pure diff, `registry/` layers ownership on
-top of a provider, and `provider/` abstracts the DNS backend. None of them
-belong inside a Source.
+None of them belong inside a Source.
 
 ### Rules for new code
 
