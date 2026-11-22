@@ -172,8 +172,8 @@ func WithEndpointBuilder(b EndpointBuilder) ApplyOption {
 	return func(c *applyConfig) { c.build = b }
 }
 
-// Apply runs the fqdn-target pass, then fqdn+target via the configured EndpointBuilder;
-// target-template output wins over any WithResourceTargets value.
+// Apply runs the fqdn-target pass, then fqdn+target; both pass through the configured
+// EndpointBuilder, and target-template output wins over any WithResourceTargets value.
 func (e Engine) Apply(existing []*endpoint.Endpoint, obj kubeObject, opts ...ApplyOption) ([]*endpoint.Endpoint, error) {
 	cfg := applyConfig{
 		build: func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
@@ -185,7 +185,7 @@ func (e Engine) Apply(existing []*endpoint.Endpoint, obj kubeObject, opts ...App
 	}
 
 	eps, err := e.combineWithEndpoints(existing, func() ([]*endpoint.Endpoint, error) {
-		return e.endpointsFromFQDNTargetTemplate(obj)
+		return e.endpointsFromFQDNTargetTemplate(obj, cfg.build)
 	})
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (e Engine) execFQDNTarget(obj kubeObject) ([]string, error) {
 	return execTemplate(e.fqdnTarget, obj)
 }
 
-func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.Endpoint, error) {
+func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject, build EndpointBuilder) ([]*endpoint.Endpoint, error) {
 	pairs, err := e.execFQDNTarget(obj)
 	if err != nil || len(pairs) == 0 {
 		return nil, err
@@ -235,7 +235,11 @@ func (e Engine) endpointsFromFQDNTargetTemplate(obj kubeObject) ([]*endpoint.End
 				pair, kind, obj.GetNamespace(), obj.GetName())
 			continue
 		}
-		eps = append(eps, endpoint.NewEndpoint(host, endpoint.SuitableType(target), target))
+		built, err := build([]string{host}, []string{target})
+		if err != nil {
+			return nil, err
+		}
+		eps = append(eps, built...)
 	}
 	return endpoint.MergeEndpoints(eps), nil
 }

@@ -42,10 +42,15 @@ type gatewayRouteTemplateCase struct {
 func TestGatewayRouteFQDNTargetTemplate(t *testing.T) {
 	runGatewayRouteTemplateCases(t, []gatewayRouteTemplateCase{
 		{
-			title:              "pairs are published without listener matching",
+			title:              "pairs outside any listener hostname are dropped",
 			fqdnTargetTemplate: "{{.Name}}.other.org:5.6.7.8",
+			expected:           nil,
+		},
+		{
+			title:              "pairs matching a listener hostname are published",
+			fqdnTargetTemplate: "{{.Name}}.example.internal:5.6.7.8",
 			expected: []*endpoint.Endpoint{
-				newTestEndpoint("templated-route.other.org", "5.6.7.8"),
+				newTestEndpoint("templated-route.example.internal", "5.6.7.8"),
 			},
 		},
 		{

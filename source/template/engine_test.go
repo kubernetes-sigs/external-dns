@@ -712,8 +712,10 @@ func TestApply(t *testing.T) {
 		wantErr            string
 	}{
 		{
-			name:               "fqdn-target template generates pairs without calling build",
+			name:               "fqdn-target template routes each pair through build",
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
+			wantBuildCalled:    true,
+			wantBuildTargets:   []string{"1.2.3.4"},
 			want: []*endpoint.Endpoint{
 				endpoint.NewEndpoint("svc.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
@@ -799,6 +801,38 @@ func TestApply(t *testing.T) {
 			assert.Equal(t, tt.wantBuildTargets, buildTargets)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+// Pairs run through the configured builder once each so source metadata (TTL,
+// set-identifier, provider-specific, resource label) lands on pair records too.
+func TestApplyPairsInvokeBuilderPerPair(t *testing.T) {
+	svc := &corev1.Service{Name: "svc", Namespace: "ns"}
+	engine, err := NewEngine(nil, nil, []string{"{{.Name}}-a.example.com:1.2.3.4,{{.Name}}-b.example.com:5.6.7.8"}, false)
+	require.NoError(t, err)
+
+	var calls [][2][]string
+	build := func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+		calls = append(calls, [2][]string{append([]string(nil), hostnames...), append([]string(nil), targets...)})
+		eps := endpoint.EndpointsForHostsAndTargets(hostnames, targets)
+		for _, ep := range eps {
+			ep.RecordTTL = 300
+			ep.WithLabel(endpoint.ResourceLabelKey, "service/ns/svc")
+		}
+		return eps, nil
+	}
+
+	got, err := engine.Apply(nil, svc, WithEndpointBuilder(build))
+	require.NoError(t, err)
+
+	assert.Equal(t, [][2][]string{
+		{{"svc-a.example.com"}, {"1.2.3.4"}},
+		{{"svc-b.example.com"}, {"5.6.7.8"}},
+	}, calls)
+	require.Len(t, got, 2)
+	for _, ep := range got {
+		assert.Equal(t, endpoint.TTL(300), ep.RecordTTL)
+		assert.Equal(t, "service/ns/svc", ep.Labels[endpoint.ResourceLabelKey])
 	}
 }
 
