@@ -50,7 +50,8 @@ kubectl explain pod.spec.containers
 
 ## Supported Sources
 
-Every source marked `true` in the FQDN Template column of [Supported Sources](../sources/index.md) supports `--fqdn-template`, `--target-template`, `--fqdn-target-template` and `--combine-fqdn-annotation`. The `unstructured` source has no spec- or status-level target source, so `--fqdn-template` alone will not produce a record there: provide `--target-template` or an `external-dns.alpha.kubernetes.io/target` annotation.
+Every source marked `true` in the FQDN Template column of [Supported Sources](../sources/index.md) supports `--fqdn-template`, `--target-template`, `--fqdn-target-template` and `--combine-fqdn-annotation`.
+The `unstructured` source has no spec- or status-level target source, so `--fqdn-template` alone will not produce a record there: provide `--target-template` or an `external-dns.alpha.kubernetes.io/target` annotation.
 
 ## Target Templates
 
@@ -59,7 +60,8 @@ Every source marked `true` in the FQDN Template column of [Supported Sources](..
 - `--fqdn-target-template` returns `host:target` pairs, each published as an exact record.
 - The template passes run only when the resource yields no records of its own, unless `--combine-fqdn-annotation` is set. When both templates are set without combining, `host:target` pairs take precedence over `--fqdn-template` hostnames.
 - If a resource has defined hostnames but no targets yet (e.g., a pending load balancer), the template still runs and publishes a transient record that is replaced once the resource's own targets appear; with `--policy=upsert-only`, the transient record is not deleted.
-- With multiple `--source` flags set, `--target-template` and `--fqdn-target-template` are evaluated against every source. If the template references source-specific fields (e.g. `.Status.atProvider.*`), guard those branches with [`isSource`](#using-issource-for-conditional-templating-by-source); otherwise an eval error on an unrelated source is fatal and exits the pod.
+- With multiple `--source` flags set, `--target-template` and `--fqdn-target-template` are evaluated against every source.
+  If the template references source-specific fields (e.g. `.Status.atProvider.*`), guard those branches with [`isSource`](#using-issource-for-conditional-templating-by-source); otherwise an eval error on an unrelated source is fatal and exits the pod.
 - Gateway API routes: both `--fqdn-template` hostnames and `host:target` pairs are published only when they match an attached listener.
 
 ```yaml
