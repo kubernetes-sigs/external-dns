@@ -83,6 +83,13 @@ func newAXFRTestQuery() *dns.Msg {
 	return query
 }
 
+// newUnsignedAXFRTestQuery is the request IncomeTransfer receives; it signs it itself.
+func newUnsignedAXFRTestQuery() *dns.Msg {
+	query := new(dns.Msg)
+	query.SetAxfr("example.com.")
+	return query
+}
+
 func readAXFRPackets(t *testing.T, id uint16, requestMAC string, packets ...[]byte) ([]dns.RR, error) {
 	t.Helper()
 	client, server := net.Pipe()
@@ -345,8 +352,8 @@ func TestIncomeTransferSetupErrors(t *testing.T) {
 			}
 		}()
 
-		r := &rfc2136Provider{tsigKeyName: axfrTestKeyName, tsigSecret: "invalid-base64"}
-		_, err = r.IncomeTransfer(newAXFRTestQuery(), listener.Addr().String())
+		r := &rfc2136Provider{tsigKeyName: axfrTestKeyName, tsigSecret: "invalid-base64", tsigSecretAlg: dns.HmacSHA256}
+		_, err = r.IncomeTransfer(newUnsignedAXFRTestQuery(), listener.Addr().String())
 		require.ErrorContains(t, err, "failed to sign AXFR request")
 		select {
 		case conn := <-accepted:
@@ -421,9 +428,8 @@ func TestIncomeTransferReturnsSignedStream(t *testing.T) {
 		serverErr <- writeErr
 	}()
 
-	query := newAXFRTestQuery()
-	r := &rfc2136Provider{tsigKeyName: axfrTestKeyName, tsigSecret: axfrTestSecret}
-	envelopes, err := r.IncomeTransfer(query, listener.Addr().String())
+	r := &rfc2136Provider{tsigKeyName: axfrTestKeyName, tsigSecret: axfrTestSecret, tsigSecretAlg: dns.HmacSHA256}
+	envelopes, err := r.IncomeTransfer(newUnsignedAXFRTestQuery(), listener.Addr().String())
 	require.NoError(t, err)
 	var records []dns.RR
 	for envelope := range envelopes {
@@ -439,6 +445,6 @@ func TestIncomeTransferUnsignedTLSSetupError(t *testing.T) {
 		axfrInsecure: true,
 		tlsConfig:    TLSConfig{UseTLS: true, CAFilePath: "/does/not/exist"},
 	}
-	_, err := r.IncomeTransfer(newAXFRTestQuery(), "127.0.0.1:53")
+	_, err := r.IncomeTransfer(newUnsignedAXFRTestQuery(), "127.0.0.1:53")
 	assert.ErrorContains(t, err, "error setting up TLS")
 }
