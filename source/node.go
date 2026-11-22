@@ -117,16 +117,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		// Only generate node name endpoints when there's no template or when combining
 		nodeNameEndpoints := !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining()
 
-		var cachedTargets []string
-		var cachedErr error
-		var resolved bool
-		resolveTargets := func() ([]string, error) {
-			if !resolved {
-				cachedTargets, cachedErr = ns.targetsForNode(node)
-				resolved = true
-			}
-			return cachedTargets, cachedErr
-		}
+		resolveTargets := sync.OnceValues(func() ([]string, error) { return ns.targetsForNode(node) })
 
 		var nodeEndpoints []*endpoint.Endpoint
 		if nodeNameEndpoints {
