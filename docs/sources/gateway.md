@@ -31,7 +31,18 @@ The set of domain names from a \*Route is sourced from the following places:
 
 - If no endpoints were produced by the previous steps
   or the `--combine-fqdn-annotation` flag was specified, then adds hostnames
-  generated from any`--fqdn-template` flag.
+  generated from any`--fqdn-template` flag. Hostnames from `--fqdn-template`
+  are published only when they match an attached listener's `hostname`; they
+  take their targets from the Gateway listener addresses, unless
+  `--target-template` is set (whose output then wins over the listener
+  targets, with a per-route `external-dns.alpha.kubernetes.io/target`
+  annotation winning over `--target-template` unless
+  `--combine-fqdn-annotation` is set).
+
+- Independently of the hostname rules above, `--fqdn-target-template`
+  emits `host:target` pairs; each pair is published as an exact record,
+  subject to listener-hostname matching (pairs whose host does not overlap
+  any attached listener are dropped).
 
 - If no endpoints were produced by the previous steps, each
   attached Gateway listener will use its `hostname`, if present.

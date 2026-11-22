@@ -50,7 +50,7 @@ kubectl explain pod.spec.containers
 
 ## Supported Sources
 
-Every source marked `true` in the FQDN Template column of [Supported Sources](../sources/index.md) supports `--fqdn-template`, `--target-template`, `--fqdn-target-template` and `--combine-fqdn-annotation`.
+Every source marked `true` in the FQDN Template column of [Supported Sources](../sources/index.md) supports `--fqdn-template`, `--target-template`, `--fqdn-target-template` and `--combine-fqdn-annotation`. The `unstructured` source has no spec- or status-level target source, so `--fqdn-template` alone will not produce a record there: provide `--target-template` or an `external-dns.alpha.kubernetes.io/target` annotation.
 
 ## Target Templates
 

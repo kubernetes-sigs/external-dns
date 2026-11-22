@@ -315,7 +315,10 @@ func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targ
 		}
 	}
 
-	return gs.templateEngine.Apply(endpoints, p)
+	return gs.templateEngine.Apply(endpoints, p,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(p.Annotations)),
+	)
 }
 
 func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (map[string]string, error) {

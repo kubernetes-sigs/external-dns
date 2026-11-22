@@ -161,6 +161,49 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			},
 		},
 		{
+			title: "fqdn-template without target-template uses target annotation",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "lb.example.com",
+						"kubernetes.io/ingress.class":       "traefik",
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
+			title: "target annotation wins over target-template unless combining",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "annotation-lb.example.com",
+						"kubernetes.io/ingress.class":       "traefik",
+					},
+				},
+			},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "template-lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-app.example.com", endpoint.RecordTypeCNAME, "annotation-lb.example.com"),
+			},
+		},
+		{
 			title: "fqdn-template can reference .Kind",
 			ingressRoute: IngressRoute{
 				TypeMeta: metav1.TypeMeta{
@@ -336,6 +379,27 @@ func TestTraefikFQDNTemplateIngressRouteTCP(t *testing.T) {
 			},
 		},
 		{
+			title: "fqdn-template without target-template uses target annotation",
+			ingressRouteTCP: IngressRouteTCP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteTCPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteTCP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-tcp-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "lb.example.com",
+						"kubernetes.io/ingress.class":       "traefik",
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-tcp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+			},
+		},
+		{
 			title: "fqdn-template can reference .Kind",
 			ingressRouteTCP: IngressRouteTCP{
 				TypeMeta: metav1.TypeMeta{
@@ -504,6 +568,27 @@ func TestTraefikFQDNTemplateIngressRouteUDP(t *testing.T) {
 					Labels:           endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{},
 				},
+			},
+		},
+		{
+			title: "fqdn-template without target-template uses target annotation",
+			ingressRouteUDP: IngressRouteUDP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteUDPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteUDP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-udp-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "lb.example.com",
+						"kubernetes.io/ingress.class":       "traefik",
+					},
+				},
+			},
+			fqdnTemplate: "{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-udp-app.example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
 			},
 		},
 		{

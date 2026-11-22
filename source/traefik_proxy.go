@@ -251,7 +251,10 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 		}
 	}
 
-	return ts.templateEngine.Apply(endpoints, ingressRoute)
+	return ts.templateEngine.Apply(endpoints, ingressRoute,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(ingressRoute.Annotations)),
+	)
 }
 
 // endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
@@ -284,7 +287,10 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 		}
 	}
 
-	return ts.templateEngine.Apply(endpoints, ingressRoute)
+	return ts.templateEngine.Apply(endpoints, ingressRoute,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(ingressRoute.Annotations)),
+	)
 }
 
 // endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
@@ -304,7 +310,10 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 		}
 	}
 
-	return ts.templateEngine.Apply(endpoints, ingressRoute)
+	return ts.templateEngine.Apply(endpoints, ingressRoute,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(ingressRoute.Annotations)),
+	)
 }
 
 func (ts *traefikSource) AddEventHandler(_ context.Context, handler func()) {

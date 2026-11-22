@@ -152,24 +152,28 @@ func (ts *f5TransportServerSource) endpointsFromTransportServers(transportServer
 	for _, transportServer := range transportServers {
 		var tsEndpoints []*endpoint.Endpoint
 
+		annotationTargets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
+		targets := append(endpoint.Targets{}, annotationTargets...)
+		if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
+			targets = append(targets, transportServer.Spec.VirtualServerAddress)
+		}
+		if len(targets) == 0 && transportServer.Status.VSAddress != "" {
+			targets = append(targets, transportServer.Status.VSAddress)
+		}
+
 		if hasValidTransportServerIP(transportServer) {
 			resource := fmt.Sprintf("f5-transportserver/%s/%s", transportServer.Namespace, transportServer.Name)
 
 			ttl := annotations.TTLFromAnnotations(transportServer.Annotations, resource)
 
-			targets := annotations.TargetsFromTargetAnnotation(transportServer.Annotations)
-			if len(targets) == 0 && transportServer.Spec.VirtualServerAddress != "" {
-				targets = append(targets, transportServer.Spec.VirtualServerAddress)
-			}
-			if len(targets) == 0 && transportServer.Status.VSAddress != "" {
-				targets = append(targets, transportServer.Status.VSAddress)
-			}
-
 			tsEndpoints = append(tsEndpoints, endpoint.EndpointsForHostname(transportServer.Spec.Host, targets, ttl, nil, "", resource)...)
 		}
 
 		var err error
-		tsEndpoints, err = ts.templateEngine.Apply(tsEndpoints, transportServer)
+		tsEndpoints, err = ts.templateEngine.Apply(tsEndpoints, transportServer,
+			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotationTargets),
+		)
 		if err != nil {
 			return nil, err
 		}

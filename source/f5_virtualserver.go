@@ -151,18 +151,19 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	for _, virtualServer := range virtualServers {
 		var vsEndpoints []*endpoint.Endpoint
 
+		annotationTargets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
+		targets := append(endpoint.Targets{}, annotationTargets...)
+		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
+			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
+		}
+		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
+			targets = append(targets, virtualServer.Status.VSAddress)
+		}
+
 		if hasValidVirtualServerIP(virtualServer) {
 			resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
 
 			ttl := annotations.TTLFromAnnotations(virtualServer.Annotations, resource)
-
-			targets := annotations.TargetsFromTargetAnnotation(virtualServer.Annotations)
-			if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
-				targets = append(targets, virtualServer.Spec.VirtualServerAddress)
-			}
-			if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
-				targets = append(targets, virtualServer.Status.VSAddress)
-			}
 
 			vsEndpoints = append(vsEndpoints, endpoint.EndpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
 			for _, alias := range virtualServer.Spec.HostAliases {
@@ -173,7 +174,10 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 		}
 
 		var err error
-		vsEndpoints, err = vs.templateEngine.Apply(vsEndpoints, virtualServer)
+		vsEndpoints, err = vs.templateEngine.Apply(vsEndpoints, virtualServer,
+			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotationTargets),
+		)
 		if err != nil {
 			return nil, err
 		}
