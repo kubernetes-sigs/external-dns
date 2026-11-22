@@ -179,7 +179,7 @@ Source  ──▶  source wrappers  ──▶  Registry.AdjustEndpoints  ──�
                                                                ▼
                                                              Plan  ──▶  Registry.ApplyChanges  ──▶  Provider.ApplyChanges  ──▶  DNS
                                                                ▲
-Registry.Records (current DNS state) ─────────────────────────┘
+Registry.Records (current DNS state) ──────────────────────────┘
 ```
 
 Each stage has one job:
