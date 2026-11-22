@@ -152,8 +152,6 @@ squashed commit and feeds the release changelog, so the type and scope matter.
 Common types: `feat`, `fix`, `docs`, `chore`, `ci`, `refactor`, `test`. See
 `CONTRIBUTING.md`.
 
-Comments explain *why*, not *what* — no prose mirroring an `if` condition.
-
 ## Linting Notes
 
 Uses `golangci-lint` with strict `.golangci.yml` (32+ linters). Key rules: `testifylint` (use `assert`/`require` helpers correctly), `errorlint` (wrap errors properly), `gocritic`, `gochecknoinits` (no `init()` functions). All new Go files need Apache 2.0 license header.
