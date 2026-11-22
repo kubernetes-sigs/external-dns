@@ -115,7 +115,7 @@ type LoadedResources struct {
 // ToEndpoint converts an ExpectedEndpoint to a plain *endpoint.Endpoint for use
 // with the standard field validation helpers.
 func (e *ExpectedEndpoint) ToEndpoint() *endpoint.Endpoint {
-	ep := &endpoint.Endpoint{
+	return &endpoint.Endpoint{
 		DNSName:          e.DNSName,
 		Targets:          e.Targets,
 		RecordType:       e.RecordType,
@@ -124,5 +124,4 @@ func (e *ExpectedEndpoint) ToEndpoint() *endpoint.Endpoint {
 		Labels:           e.Labels,
 		ProviderSpecific: e.ProviderSpecific,
 	}
-	return ep
 }
