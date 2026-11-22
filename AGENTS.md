@@ -101,9 +101,8 @@ Three layering concerns, kept separate:
   normalization, labels. No I/O in new code.
 - **Source** (`source/`), produces `[]*endpoint.Endpoint`. New Sources
   should not write to the K8s API themselves.
-- **Writer** (`pkg/crd/status.go`, `pkg/events/`), post-apply: writes
-  status conditions and events once `Registry.ApplyChanges` knows the
-  outcome. Owns the K8s client calls on that path.
+- **Writer** (`pkg/crd/status.go`, `pkg/events/`), writes status
+  conditions and events post-apply; see the full guide.
 
 Existing Sources (notably the crd source) do not yet follow these;
 don't rewrite them under this guide.

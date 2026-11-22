@@ -226,9 +226,9 @@ this guide.
    file, or a new `switch ep.RecordType` in a Source doing per-record-type
    normalization (see `NormalizeMXTarget`).
 2. **A Source does not write to Kubernetes.** A new Source's job ends at
-   returning `[]*endpoint.Endpoint`. Status conditions and events run
-   post-apply, through `StatusReporter` and `EventEmitter` in the
-   controller, once `Registry.ApplyChanges` knows the outcome.
+   returning `[]*endpoint.Endpoint`. Status and events belong to the
+   post-apply writers (`StatusReporter`, `EventEmitter`), see the Writer
+   row above.
    Signal: a new Source that imports a Kubernetes client to update status,
    record events or patch conditions on the objects it reads, or
    status-formatting logic (building `metav1.Condition`, choosing reason
