@@ -31,10 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// testWait bounds every wait in these tests so that a bug fails the test
-// instead of hanging it.
-const testWait = 5 * time.Second
-
 // The tests below exercise the shutdown of the webhook HTTP API:
 //
 //  1. startTestServer runs serveHTTPAPI on a random local port.
@@ -53,6 +49,32 @@ type testServer struct {
 	result   chan error    // receives the error returned by serveHTTPAPI
 	done     chan struct{} // closed when serveHTTPAPI has returned
 }
+
+type getResult struct {
+	status int
+	err    error
+}
+
+// trackingListener reports when the server closes it, which is the first step
+// of http.Server.Shutdown: from then on, no new connections are accepted.
+type trackingListener struct {
+	net.Listener
+	closed chan struct{}
+	once   sync.Once
+}
+
+// blockingRecordsProvider blocks in Records until UnblockRecords is called,
+// to keep a GET /records request active during the shutdown.
+type blockingRecordsProvider struct {
+	FakeWebhookProvider
+	recordsCalled chan struct{}
+	unblock       chan struct{}
+	unblockOnce   sync.Once
+}
+
+// testWait bounds every wait in these tests so that a bug fails the test
+// instead of hanging it.
+const testWait = 5 * time.Second
 
 // startTestServer starts serveHTTPAPI with opts and stops it at the end of the
 // test. It uses FakeWebhookProvider when opts.Provider is nil.
@@ -126,11 +148,6 @@ func (s *testServer) Get(path string) <-chan getResult {
 	return result
 }
 
-type getResult struct {
-	status int
-	err    error
-}
-
 func waitGet(t *testing.T, result <-chan getResult) getResult {
 	t.Helper()
 	select {
@@ -140,14 +157,6 @@ func waitGet(t *testing.T, result <-chan getResult) getResult {
 		t.Fatal("HTTP request did not complete")
 		return getResult{}
 	}
-}
-
-// trackingListener reports when the server closes it, which is the first step
-// of http.Server.Shutdown: from then on, no new connections are accepted.
-type trackingListener struct {
-	net.Listener
-	closed chan struct{}
-	once   sync.Once
 }
 
 func (l *trackingListener) Close() error {
@@ -163,15 +172,6 @@ func (l *trackingListener) WaitClosed(t *testing.T) {
 	case <-time.After(testWait):
 		t.Fatal("server did not stop accepting connections")
 	}
-}
-
-// blockingRecordsProvider blocks in Records until UnblockRecords is called,
-// to keep a GET /records request active during the shutdown.
-type blockingRecordsProvider struct {
-	FakeWebhookProvider
-	recordsCalled chan struct{}
-	unblock       chan struct{}
-	unblockOnce   sync.Once
 }
 
 // newBlockingRecordsProvider returns a provider whose Records call is released
