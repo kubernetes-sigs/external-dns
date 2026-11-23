@@ -396,10 +396,9 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpo
 	return im.provider.AdjustEndpoints(endpoints)
 }
 
-// txtOutsideZones reports whether txtName falls outside the provider zones
-// while dnsName is inside them, and warns once per txtName. The provider drops
-// such a TXT, so the record cannot get its ownership TXT. Typical case: a zone
-// apex with the default TXT prefix.
+// txtOutsideZones reports whether txtName falls outside the provider zones while dnsName is inside them, and warns once per txtName.
+// The provider drops such a TXT, so the record cannot get its ownership TXT.
+// Typical case: a zone apex with the default TXT prefix.
 func (im *TXTRegistry) txtOutsideZones(zones endpoint.DomainFilterInterface, dnsName, txtName string) bool {
 	if !zones.Match(dnsName) || zones.Match(txtName) {
 		return false
