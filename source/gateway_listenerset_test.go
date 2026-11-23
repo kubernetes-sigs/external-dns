@@ -292,8 +292,7 @@ func TestGatewayHTTPRouteWithListenerSetDisabled(t *testing.T) {
 	_, err = gwClient.GatewayV1().ListenerSets(ls.Namespace).Create(ctx, ls, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	// Route with a ListenerSet parentRef, but feature is disabled. Its Gateway parentRef
-	// must still produce records.
+	// Route with a ListenerSet parentRef, but feature is disabled. Its Gateway parentRef must still produce records.
 	rt := &v1.HTTPRoute{
 		Name: "rt", Namespace: "default",
 		Spec: v1.HTTPRouteSpec{
