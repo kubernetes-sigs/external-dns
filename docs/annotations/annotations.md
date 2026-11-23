@@ -381,6 +381,8 @@ Specifies where to get the domain for a `Route` resource. This annotation should
 If the value is `defined-hosts-only`, use only the domains from the `Route` spec.
 
 If the value is `annotation-only`, use only the domains from the `Route` annotations.
+These hostnames name DNS records rather than routed hosts, so they are published as
+written and are not narrowed to the parent listener's `hostname`.
 
 If the annotation is not present, use the domains from both the spec and annotations.
 
