@@ -12,13 +12,13 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.107
 	github.com/aws/aws-sdk-go-v2 v1.48.0
-	github.com/aws/aws-sdk-go-v2/config v1.33.20
-	github.com/aws/aws-sdk-go-v2/credentials v1.21.2
+	github.com/aws/aws-sdk-go-v2/config v1.33.21
+	github.com/aws/aws-sdk-go-v2/credentials v1.21.3
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.21.23
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.74.1
-	github.com/aws/aws-sdk-go-v2/service/route53 v1.71.0
+	github.com/aws/aws-sdk-go-v2/service/route53 v1.73.0
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.50.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.52.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.53.0
 	github.com/aws/smithy-go v1.28.9
 	github.com/bodgit/tsig v1.3.1
 	github.com/civo/civogo v0.7.6
@@ -28,7 +28,7 @@ require (
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/emissary-ingress/emissary/v3 v3.10.0
-	github.com/exoscale/egoscale/v3 v3.1.63
+	github.com/exoscale/egoscale/v3 v3.1.65
 	github.com/go-logr/logr v1.4.4
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
@@ -36,7 +36,7 @@ require (
 	github.com/joeig/go-powerdns/v3 v3.24.0
 	github.com/maxatome/go-testdeep v1.16.0
 	github.com/miekg/dns v1.1.73
-	github.com/openshift/api v0.0.0-20261118203153-ca0b115da1b1
+	github.com/openshift/api v0.0.0-20261123012947-9ac77f18ba5d
 	github.com/openshift/client-go v0.0.0-20261117110410-e591d492769c
 	github.com/oracle/oci-go-sdk/v65 v65.131.0
 	github.com/ovh/go-ovh v1.10.0
@@ -48,8 +48,8 @@ require (
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 	github.com/szuecs/routegroup-client v0.37.2
-	go.etcd.io/etcd/api/v3 v3.7.3
-	go.etcd.io/etcd/client/v3 v3.7.3
+	go.etcd.io/etcd/api/v3 v3.7.4
+	go.etcd.io/etcd/client/v3 v3.7.4
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.63.0
 	golang.org/x/oauth2 v0.38.0
@@ -170,8 +170,8 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.7.3 // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.7.4 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
