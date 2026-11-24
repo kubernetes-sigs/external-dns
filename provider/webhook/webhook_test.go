@@ -452,6 +452,62 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	require.ErrorIs(t, err, provider.SoftError)
 }
 
+func TestRecords_TransportErrorIsSoftError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		w.Write([]byte(`{}`))
+	}))
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	require.NoError(t, err)
+
+	svr.Close()
+
+	_, err = p.Records(t.Context())
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
+}
+
+func TestApplyChanges_TransportErrorIsSoftError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		w.Write([]byte(`{}`))
+	}))
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	require.NoError(t, err)
+
+	svr.Close()
+
+	err = p.ApplyChanges(t.Context(), &plan.Changes{})
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
+}
+
+func TestAdjustEndpoints_TransportErrorIsSoftError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+		w.Write([]byte(`{}`))
+	}))
+
+	p, err := newProvider(t.Context(), svr.URL, testReadTimeout, testWriteTimeout, testMaxBodySize)
+	require.NoError(t, err)
+
+	svr.Close()
+
+	endpoints := []*endpoint.Endpoint{
+		{
+			DNSName:    "test.example.com",
+			RecordTTL:  10,
+			RecordType: "A",
+			Targets:    endpoint.Targets{"127.0.0.1"},
+		},
+	}
+	_, err = p.AdjustEndpoints(endpoints)
+	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
+}
+
 // test apply changes with an endpoint with a provider specific property
 func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
