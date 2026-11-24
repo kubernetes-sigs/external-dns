@@ -454,7 +454,7 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 		}
 
 		for _, record := range response.DomainRecords.Record {
-			domainName := record.RR + "." + record.DomainName
+			domainName := p.getDNSName(record.RR, record.DomainName)
 			recordType := record.Type
 
 			if !p.domainFilter.Match(domainName) {
