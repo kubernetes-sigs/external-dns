@@ -558,57 +558,6 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	return endpoints
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool, targets endpoint.Targets) []*endpoint.Endpoint {
-	hostname = strings.TrimSuffix(hostname, ".")
-
-	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
-
-	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
-
-	if len(targets) == 0 {
-		targets = annotations.TargetsFromTargetAnnotation(svc.Annotations)
-	}
-
-	endpoints := make([]*endpoint.Endpoint, 0)
-
-	if len(targets) == 0 {
-		switch svc.Spec.Type {
-		case v1.ServiceTypeLoadBalancer:
-			if useClusterIP {
-				targets = extractServiceIps(svc)
-			} else {
-				targets = extractLoadBalancerTargets(svc, sc.lookupIP)
-			}
-		case v1.ServiceTypeClusterIP:
-			if svc.Spec.ClusterIP == v1.ClusterIPNone {
-				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
-			} else if useClusterIP || sc.publishInternal {
-				targets = extractServiceIps(svc)
-			}
-		case v1.ServiceTypeNodePort:
-			// add the nodeTargets and extract an SRV endpoint
-			var err error
-			targets, err = sc.extractNodePortTargets(svc)
-			if err != nil {
-				log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
-				return endpoints
-			}
-			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, hostname, ttl)...)
-		case v1.ServiceTypeExternalName:
-			targets = extractServiceExternalName(svc)
-		}
-
-		for _, en := range endpoints {
-			en.ProviderSpecific = providerSpecific
-			en.SetIdentifier = setIdentifier
-		}
-	}
-
-	endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
-
-	return endpoints
-}
-
 func extractServiceIps(svc *v1.Service) endpoint.Targets {
 	if svc.Spec.ClusterIP == v1.ClusterIPNone {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
@@ -661,6 +610,57 @@ func isPodStatusReady(status v1.PodStatus) bool {
 		}
 	}
 	return false
+}
+
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool, targets endpoint.Targets) []*endpoint.Endpoint {
+	hostname = strings.TrimSuffix(hostname, ".")
+
+	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
+
+	ttl := annotations.TTLFromAnnotations(svc.Annotations, resource)
+
+	if len(targets) == 0 {
+		targets = annotations.TargetsFromTargetAnnotation(svc.Annotations)
+	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
+
+	if len(targets) == 0 {
+		switch svc.Spec.Type {
+		case v1.ServiceTypeLoadBalancer:
+			if useClusterIP {
+				targets = extractServiceIps(svc)
+			} else {
+				targets = extractLoadBalancerTargets(svc, sc.lookupIP)
+			}
+		case v1.ServiceTypeClusterIP:
+			if svc.Spec.ClusterIP == v1.ClusterIPNone {
+				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
+			} else if useClusterIP || sc.publishInternal {
+				targets = extractServiceIps(svc)
+			}
+		case v1.ServiceTypeNodePort:
+			// add the nodeTargets and extract an SRV endpoint
+			var err error
+			targets, err = sc.extractNodePortTargets(svc)
+			if err != nil {
+				log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
+				return endpoints
+			}
+			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, hostname, ttl)...)
+		case v1.ServiceTypeExternalName:
+			targets = extractServiceExternalName(svc)
+		}
+
+		for _, en := range endpoints {
+			en.ProviderSpecific = providerSpecific
+			en.SetIdentifier = setIdentifier
+		}
+	}
+
+	endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+
+	return endpoints
 }
 
 // nodesExternalTrafficPolicyTypeLocal returns nodes that have running pods for the given
