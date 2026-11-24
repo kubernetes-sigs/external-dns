@@ -32,12 +32,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
-const (
-	dnsEndpointListKind = "DNSEndpointList"
-	dnsEndpointResource = "dnsendpoints"
-	initialEventsEndKey = "k8s.io/initial-events-end"
-)
-
 // crdClientGenerator wraps a StubClientGenerator and overrides RESTConfig to
 // return a fake API server's config, enabling the CRD source's controller-runtime
 // cache to connect without a real cluster.
@@ -45,6 +39,18 @@ type crdClientGenerator struct {
 	testutils.StubClientGenerator
 	restCfg *rest.Config
 }
+
+// dnsEndpointHandler is the HTTP handler for the fake Kubernetes API server.
+type dnsEndpointHandler struct {
+	mu        sync.Mutex
+	endpoints []*apiv1alpha1.DNSEndpoint
+}
+
+const (
+	dnsEndpointListKind = "DNSEndpointList"
+	dnsEndpointResource = "dnsendpoints"
+	initialEventsEndKey = "k8s.io/initial-events-end"
+)
 
 func (g crdClientGenerator) RESTConfig() (*rest.Config, error) {
 	return g.restCfg, nil
@@ -78,12 +84,6 @@ func newFakeDNSEndpointServer(ctx context.Context, dnsEndpoints []*apiv1alpha1.D
 		srv.Close()
 	}()
 	return &rest.Config{Host: srv.URL}
-}
-
-// dnsEndpointHandler is the HTTP handler for the fake Kubernetes API server.
-type dnsEndpointHandler struct {
-	mu        sync.Mutex
-	endpoints []*apiv1alpha1.DNSEndpoint
 }
 
 func (h *dnsEndpointHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

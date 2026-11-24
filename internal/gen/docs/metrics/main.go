@@ -35,6 +35,21 @@ import (
 	_ "sigs.k8s.io/external-dns/provider/webhook"
 )
 
+type templateData struct {
+	Metrics        []*metrics.Metric
+	RuntimeMetrics []string
+	ColWidths      columnWidths
+	RuntimeWidth   int
+}
+
+type columnWidths struct {
+	Name      int
+	Type      int
+	Subsystem int
+	Labels    int
+	Help      int
+}
+
 var (
 	//go:embed "templates/*"
 	templates embed.FS
@@ -104,21 +119,6 @@ func getRuntimeMetrics(gatherer prometheus.Gatherer) []string {
 		}
 	}
 	return runtimeMetrics
-}
-
-type templateData struct {
-	Metrics        []*metrics.Metric
-	RuntimeMetrics []string
-	ColWidths      columnWidths
-	RuntimeWidth   int
-}
-
-type columnWidths struct {
-	Name      int
-	Type      int
-	Subsystem int
-	Labels    int
-	Help      int
 }
 
 func computeColumnWidths(ms []*metrics.Metric) columnWidths {

@@ -33,21 +33,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL = 600
-	gdCreate   = 0
-	gdReplace  = 1
-	gdDelete   = 2
-
-	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
-)
-
-var actionNames = []string{
-	"create",
-	"replace",
-	"delete",
-}
-
 type gdClient interface {
 	Patch(string, any, any) error
 	Post(string, any, any) error
@@ -119,6 +104,21 @@ type gdZone struct {
 
 type gdZoneIDName map[string]*gdRecords
 
+const (
+	defaultTTL = 600
+	gdCreate   = 0
+	gdReplace  = 1
+	gdDelete   = 2
+
+	domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
+)
+
+var actionNames = []string{
+	"create",
+	"replace",
+	"delete",
+}
+
 func (z gdZoneIDName) add(zoneID string, zoneRecord *gdRecords) {
 	z[zoneID] = zoneRecord
 }
@@ -156,6 +156,89 @@ func newProvider(domainFilter *endpoint.DomainFilter, ttl int64, apiKey, apiSecr
 // New creates a GoDaddy provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 	return newProvider(domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
+}
+
+// Records returns the list of records in all relevant zones.
+func (p *GDProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	_, records, err := p.zonesRecords(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints := p.groupByNameAndType(records)
+
+	log.Infof("GoDaddy: %d endpoints have been found", len(endpoints))
+
+	return endpoints, nil
+}
+
+// ApplyChanges applies a given set of changes in a given zone.
+func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if countTargets(changes) == 0 {
+		return nil
+	}
+
+	_, records, err := p.zonesRecords(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	changedZoneRecords := make([]*gdRecords, len(records))
+
+	for i := range records {
+		changedZoneRecords[i] = &records[i]
+	}
+
+	var allChanges []gdEndpoint
+
+	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
+
+	iOldSkip := sets.New[int]()
+	iNewSkip := sets.New[int]()
+
+	for iOld, recOld := range changes.UpdateOld {
+		for iNew, recNew := range changes.UpdateNew {
+			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
+				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
+				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
+				iOldSkip.Insert(iOld)
+				iNewSkip.Insert(iNew)
+				break
+			}
+		}
+	}
+
+	for iOld, recOld := range changes.UpdateOld {
+		if iOldSkip.Has(iOld) {
+			continue
+		}
+		for iNew, recNew := range changes.UpdateNew {
+			if iNewSkip.Has(iNew) {
+				continue
+			}
+
+			if recOld.DNSName != recNew.DNSName {
+				continue
+			}
+
+			DeleteEndpoints := []*endpoint.Endpoint{recOld}
+			CreateEndpoints := []*endpoint.Endpoint{recNew}
+			allChanges = p.appendChange(gdDelete, DeleteEndpoints, allChanges)
+			allChanges = p.appendChange(gdCreate, CreateEndpoints, allChanges)
+
+			break
+		}
+	}
+
+	allChanges = p.appendChange(gdCreate, changes.Create, allChanges)
+
+	log.Infof("GoDaddy: %d changes will be done", len(allChanges))
+
+	if err = p.changeAllRecords(allChanges, changedZoneRecords); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *GDProvider) zones() ([]string, error) {
@@ -315,20 +398,6 @@ func (p *GDProvider) groupByNameAndType(zoneRecords []gdRecords) []*endpoint.End
 	return endpoints
 }
 
-// Records returns the list of records in all relevant zones.
-func (p *GDProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	_, records, err := p.zonesRecords(ctx, false)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoints := p.groupByNameAndType(records)
-
-	log.Infof("GoDaddy: %d endpoints have been found", len(endpoints))
-
-	return endpoints, nil
-}
-
 func (p *GDProvider) appendChange(action int, endpoints []*endpoint.Endpoint, allChanges []gdEndpoint) []gdEndpoint {
 	for _, e := range endpoints {
 		allChanges = append(allChanges, gdEndpoint{
@@ -371,75 +440,6 @@ func (p *GDProvider) changeAllRecords(endpoints []gdEndpoint, zoneRecords []*gdR
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-// ApplyChanges applies a given set of changes in a given zone.
-func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	if countTargets(changes) == 0 {
-		return nil
-	}
-
-	_, records, err := p.zonesRecords(ctx, true)
-	if err != nil {
-		return err
-	}
-
-	changedZoneRecords := make([]*gdRecords, len(records))
-
-	for i := range records {
-		changedZoneRecords[i] = &records[i]
-	}
-
-	var allChanges []gdEndpoint
-
-	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
-
-	iOldSkip := sets.New[int]()
-	iNewSkip := sets.New[int]()
-
-	for iOld, recOld := range changes.UpdateOld {
-		for iNew, recNew := range changes.UpdateNew {
-			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
-				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
-				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
-				iOldSkip.Insert(iOld)
-				iNewSkip.Insert(iNew)
-				break
-			}
-		}
-	}
-
-	for iOld, recOld := range changes.UpdateOld {
-		if iOldSkip.Has(iOld) {
-			continue
-		}
-		for iNew, recNew := range changes.UpdateNew {
-			if iNewSkip.Has(iNew) {
-				continue
-			}
-
-			if recOld.DNSName != recNew.DNSName {
-				continue
-			}
-
-			DeleteEndpoints := []*endpoint.Endpoint{recOld}
-			CreateEndpoints := []*endpoint.Endpoint{recNew}
-			allChanges = p.appendChange(gdDelete, DeleteEndpoints, allChanges)
-			allChanges = p.appendChange(gdCreate, CreateEndpoints, allChanges)
-
-			break
-		}
-	}
-
-	allChanges = p.appendChange(gdCreate, changes.Create, allChanges)
-
-	log.Infof("GoDaddy: %d changes will be done", len(allChanges))
-
-	if err = p.changeAllRecords(allChanges, changedZoneRecords); err != nil {
-		return err
 	}
 
 	return nil

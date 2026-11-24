@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/annotations/schema"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/template"
 )
 
@@ -84,8 +85,6 @@ type Config struct {
 	OCPRouterName                  string
 	UpdateEvents                   bool
 	ResolveLoadBalancerHostname    bool
-	TraefikEnableLegacy            bool
-	TraefikDisableNew              bool
 	ExcludeUnschedulable           bool
 	ExposeInternalIPv6             bool
 	ExcludeTargetNets              []string
@@ -107,44 +106,15 @@ type Config struct {
 	// crdClients lets callers outside this package reuse the crd source's client
 	// instead of building a second one.
 	crdClients *crd.CRDClients
-}
 
-// CRDClients returns the reader/writer built for the crd source, or nil if the
-// crd source was not built.
-func (cfg *Config) CRDClients() *crd.CRDClients {
-	return cfg.crdClients
-}
-
-// SetCRDClients records the crd source's clients for reuse by CRDClients.
-func (cfg *Config) SetCRDClients(cc *crd.CRDClients) {
-	cfg.crdClients = cc
-}
-
-// SetClientGen sets the Kubernetes client factory. gen must be a source.ClientGenerator.
-func (cfg *Config) SetClientGen(gen any) {
-	cfg.clientGen = gen
-}
-
-// EnsureClientGen returns the client factory, building it with init on the
-// first call if none was set. It panics if the stored value is not a T.
-func (cfg *Config) EnsureClientGen[T any](init func() T) T {
-	cfg.clientGenOnce.Do(func() {
-		if cfg.clientGen == nil {
-			cfg.clientGen = init()
-		}
-	})
-	return cfg.clientGen.(T)
+	// targetFrom is shared by all sources so a resource referenced from several
+	// of them is watched once.
+	targetFrom     *targetfrom.Resolver
+	targetFromOnce sync.Once
 }
 
 // OverrideConfigOption configures a Config.
 type OverrideConfigOption func(*Config)
-
-// WithCRDClients overrides the crd source's clients. Intended for testing.
-func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
-	return func(cfg *Config) {
-		cfg.crdClients = cc
-	}
-}
 
 // NewSourceConfig builds a Config from the parsed CLI configuration. It
 // validates label and annotation filters and compiles the template engine so
@@ -201,8 +171,6 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
-		TraefikEnableLegacy:            cfg.TraefikEnableLegacy,
-		TraefikDisableNew:              cfg.TraefikDisableNew,
 		ExcludeUnschedulable:           cfg.ExcludeUnschedulable,
 		ExposeInternalIPv6:             cfg.ExposeInternalIPV6,
 		ExcludeTargetNets:              cfg.ExcludeTargetNets,
@@ -220,6 +188,56 @@ func NewSourceConfig(cfg *externaldns.Config, opts ...OverrideConfigOption) (*Co
 		opt(c)
 	}
 	return c, nil
+}
+
+// CRDClients returns the reader/writer built for the crd source, or nil if the
+// crd source was not built.
+func (cfg *Config) CRDClients() *crd.CRDClients {
+	return cfg.crdClients
+}
+
+// SetCRDClients records the crd source's clients for reuse by CRDClients.
+func (cfg *Config) SetCRDClients(cc *crd.CRDClients) {
+	cfg.crdClients = cc
+}
+
+// SetClientGen sets the Kubernetes client factory. gen must be a source.ClientGenerator.
+func (cfg *Config) SetClientGen(gen any) {
+	cfg.clientGen = gen
+}
+
+// WithCRDClients overrides the crd source's clients. Intended for testing.
+func WithCRDClients(cc *crd.CRDClients) OverrideConfigOption {
+	return func(cfg *Config) {
+		cfg.crdClients = cc
+	}
+}
+
+// EnsureClientGen returns the client factory, building it with init on the
+// first call if none was set. It panics if the stored value is not a T.
+func (cfg *Config) EnsureClientGen[T any](init func() T) T {
+	cfg.clientGenOnce.Do(func() {
+		if cfg.clientGen == nil {
+			cfg.clientGen = init()
+		}
+	})
+	return cfg.clientGen.(T)
+}
+
+// SetTargetFrom sets the shared target-from resolver. Intended for testing.
+func (cfg *Config) SetTargetFrom(r *targetfrom.Resolver) {
+	cfg.targetFrom = r
+}
+
+// EnsureTargetFrom returns the shared target-from resolver, building it with
+// init on the first call if none was set.
+func (cfg *Config) EnsureTargetFrom(init func() *targetfrom.Resolver) *targetfrom.Resolver {
+	cfg.targetFromOnce.Do(func() {
+		if cfg.targetFrom == nil {
+			cfg.targetFrom = init()
+		}
+	})
+	return cfg.targetFrom
 }
 
 // Namespace returns the namespace watched by sources supporting a single one,

@@ -28,6 +28,17 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+type testPiholeClient struct {
+	endpoints []*endpoint.Endpoint
+	requests  *requestTracker
+	trigger   string
+}
+
+type requestTracker struct {
+	createRequests []*endpoint.Endpoint
+	deleteRequests []*endpoint.Endpoint
+}
+
 var (
 	endpointSort = cmpopts.SortSlices(func(x, y *endpoint.Endpoint) bool {
 		if x.DNSName < y.DNSName {
@@ -51,12 +62,6 @@ func assertEndpointsEqual(t *testing.T, got, want []*endpoint.Endpoint) {
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(endpoint.Endpoint{}), endpointSort); diff != "" {
 		t.Error(diff)
 	}
-}
-
-type testPiholeClient struct {
-	endpoints []*endpoint.Endpoint
-	requests  *requestTracker
-	trigger   string
 }
 
 func (t *testPiholeClient) listRecords(_ context.Context, rtype string) ([]*endpoint.Endpoint, error) {
@@ -94,11 +99,6 @@ func (t *testPiholeClient) deleteRecord(_ context.Context, ep *endpoint.Endpoint
 	t.endpoints = newEPs
 	t.requests.deleteRequests = append(t.requests.deleteRequests, ep)
 	return nil
-}
-
-type requestTracker struct {
-	createRequests []*endpoint.Endpoint
-	deleteRequests []*endpoint.Endpoint
 }
 
 func (r *requestTracker) clear() {

@@ -37,6 +37,17 @@ type MockNS1DomainClient struct {
 	mock.Mock
 }
 
+type MockNS1GetZoneFail struct{}
+
+type MockNS1ListZonesFail struct{}
+
+type MockNS1DryRunClient struct {
+	MockNS1DomainClient
+	createCalls int
+	deleteCalls int
+	updateCalls int
+}
+
 func (m *MockNS1DomainClient) CreateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
 }
@@ -78,8 +89,6 @@ func (m *MockNS1DomainClient) ListZones() ([]*dns.Zone, *http.Response, error) {
 	return zones, nil, nil
 }
 
-type MockNS1GetZoneFail struct{}
-
 func (m *MockNS1GetZoneFail) CreateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
 }
@@ -103,8 +112,6 @@ func (m *MockNS1GetZoneFail) ListZones() ([]*dns.Zone, *http.Response, error) {
 	}
 	return zones, nil, nil
 }
-
-type MockNS1ListZonesFail struct{}
 
 func (m *MockNS1ListZonesFail) CreateRecord(_ *dns.Record) (*http.Response, error) {
 	return &http.Response{}, nil
@@ -316,13 +323,6 @@ func TestNewNS1ChangesByZone(t *testing.T) {
 	changes := ns1ChangesByZone(zones, changeSets)
 	assert.Len(t, changes["bar.com"], 1)
 	assert.Len(t, changes["foo.com"], 3)
-}
-
-type MockNS1DryRunClient struct {
-	MockNS1DomainClient
-	createCalls int
-	deleteCalls int
-	updateCalls int
 }
 
 func (m *MockNS1DryRunClient) CreateRecord(_ *dns.Record) (*http.Response, error) {

@@ -30,6 +30,13 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
+type MockInitializeHandler struct {
+	CapturedContext context.Context
+}
+
+type MockDeserializeHandler struct {
+}
+
 func Test_GetInstrumentationMiddlewares(t *testing.T) {
 	t.Run("adds expected middlewares", func(t *testing.T) {
 		stack := middleware.NewStack("test-stack", nil)
@@ -51,10 +58,6 @@ func Test_GetInstrumentationMiddlewares(t *testing.T) {
 	})
 }
 
-type MockInitializeHandler struct {
-	CapturedContext context.Context
-}
-
 func (mock *MockInitializeHandler) HandleInitialize(ctx context.Context, _ middleware.InitializeInput) (middleware.InitializeOutput, middleware.Metadata, error) {
 	mock.CapturedContext = ctx
 
@@ -70,9 +73,6 @@ func Test_InitializedTimedOperationMiddleware(t *testing.T) {
 
 	requestMetrics := middleware.GetStackValue(mockInitializeHandler.CapturedContext, requestMetricsKey{}).(requestMetrics)
 	require.NotNil(t, requestMetrics.StartTime)
-}
-
-type MockDeserializeHandler struct {
 }
 
 func (mock *MockDeserializeHandler) HandleDeserialize(_ context.Context, _ middleware.DeserializeInput) (middleware.DeserializeOutput, middleware.Metadata, error) {

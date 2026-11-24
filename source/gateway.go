@@ -44,14 +44,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-const (
-	gatewayGroup                               = "gateway.networking.k8s.io"
-	gatewayKind                                = "Gateway"
-	listenerSetKind                            = "ListenerSet"
-	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
-	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
-)
-
 type gatewayRoute interface {
 	// Object returns the underlying route object to be used by templates.
 	Object() kubeObject
@@ -72,20 +64,6 @@ type newGatewayRouteInformerFunc func(gwinformers.SharedInformerFactory) gateway
 type gatewayRouteInformer interface {
 	List() []gatewayRoute
 	Informer() cache.SharedIndexInformer
-}
-
-func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
-	var opts []gwinformers.SharedInformerOption
-	if namespace != "" {
-		opts = append(opts, gwinformers.WithNamespace(namespace))
-	}
-	if labelSelector != nil && !labelSelector.Empty() {
-		lbls := labelSelector.String()
-		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
-			o.LabelSelector = lbls
-		}))
-	}
-	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
 }
 
 // gatewayRouteSource is an implementation of Source for Gateway API Route objects.
@@ -151,6 +129,65 @@ type gatewayRouteSource struct {
 
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
+}
+
+type gatewayRouteResolver struct {
+	src     *gatewayRouteSource
+	objects map[objectRef]*listenerObject
+	nss     map[string]*corev1.Namespace
+}
+
+type objectRef struct {
+	schema.GroupKind
+	types.NamespacedName
+}
+
+type listenerObject struct {
+	gateway        *v1.Gateway
+	gatewayRef     types.NamespacedName
+	listenerSet    *v1.ListenerSet
+	ownerNamespace string
+	sections       map[v1.SectionName][]listenerSection
+	attached       bool
+	attachReason   string
+	overrides      endpoint.Targets
+}
+
+type listenerSection struct {
+	listener     v1.Listener
+	attached     bool
+	attachReason string
+}
+
+type resolvedParent struct {
+	kind      string
+	namespace string
+	ref       v1.ParentReference
+	obj       *listenerObject
+	section   v1.SectionName
+	listeners []listenerSection
+}
+
+const (
+	gatewayGroup                               = "gateway.networking.k8s.io"
+	gatewayKind                                = "Gateway"
+	listenerSetKind                            = "ListenerSet"
+	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
+	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
+)
+
+func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
+	var opts []gwinformers.SharedInformerOption
+	if namespace != "" {
+		opts = append(opts, gwinformers.WithNamespace(namespace))
+	}
+	if labelSelector != nil && !labelSelector.Empty() {
+		lbls := labelSelector.String()
+		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
+			o.LabelSelector = lbls
+		}))
+	}
+	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
 }
 
 func newGatewayRouteSource(
@@ -320,7 +357,6 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		if err != nil {
 			return nil, err
 		}
-		// TODO: does not follow the pattern of other sources to log empty hostTargets
 		if len(hostTargets) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
 			continue
@@ -345,43 +381,6 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 
 func namespacedName(namespace, name string) types.NamespacedName {
 	return types.NamespacedName{Namespace: namespace, Name: name}
-}
-
-type gatewayRouteResolver struct {
-	src     *gatewayRouteSource
-	objects map[objectRef]*listenerObject
-	nss     map[string]*corev1.Namespace
-}
-
-type objectRef struct {
-	schema.GroupKind
-	types.NamespacedName
-}
-
-type listenerObject struct {
-	gateway        *v1.Gateway
-	gatewayRef     types.NamespacedName
-	listenerSet    *v1.ListenerSet
-	ownerNamespace string
-	sections       map[v1.SectionName][]listenerSection
-	attached       bool
-	attachReason   string
-	overrides      endpoint.Targets
-}
-
-type listenerSection struct {
-	listener     v1.Listener
-	attached     bool
-	attachReason string
-}
-
-type resolvedParent struct {
-	kind      string
-	namespace string
-	ref       v1.ParentReference
-	obj       *listenerObject
-	section   v1.SectionName
-	listeners []listenerSection
 }
 
 func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {
@@ -538,12 +537,21 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		hostTargets[host] = append(hostTargets[host], override...)
 		if len(override) == 0 {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
+				if !gwAddressIsDNSTarget(addr) {
+					log.Debugf("Skipping Gateway %s/%s address %q of type %s", parent.obj.gateway.Namespace, parent.obj.gateway.Name, addr.Value, *addr.Type)
+					continue
+				}
 				hostTargets[host] = append(hostTargets[host], addr.Value)
 			}
 		}
 		match = true
 	}
 	return match
+}
+
+// An unset type defaults to IPAddress; other types are implementation-specific.
+func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
+	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
 }
 
 // appendFQDNTemplate appends the template-generated hostnames, unless another source already
@@ -573,6 +581,9 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
+				// The flag wins, which leaves the route with no hostnames at all, so make that visible.
+				log.Warnf("%q is %q on %s %s/%s, but --ignore-hostname-annotation is set, so the route has no hostnames.",
+					annotations.GatewayHostnameSourceKey, hostNameAnnotation, c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
 				return []string{}, nil
 			}
 			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil

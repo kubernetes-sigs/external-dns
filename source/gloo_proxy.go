@@ -48,34 +48,11 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-var (
-	proxyGVR = schema.GroupVersionResource{
-		Group:    "gloo.solo.io",
-		Version:  "v1",
-		Resource: "proxies",
-	}
-	virtualServiceGVR = schema.GroupVersionResource{
-		Group:    "gateway.solo.io",
-		Version:  "v1",
-		Resource: "virtualservices",
-	}
-	gatewayGVR = schema.GroupVersionResource{
-		Group:    "gateway.solo.io",
-		Version:  "v1",
-		Resource: "gateways",
-	}
-)
-
 // Basic redefinition of "Proxy" CRD : https://github.com/solo-io/gloo/blob/v1.4.6/projects/gloo/pkg/api/v1/proxy.pb.go
 type proxy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              proxySpec `json:"spec"`
-}
-
-func (p *proxy) DeepCopyObject() runtime.Object {
-	cp := *p
-	return &cp
 }
 
 type proxySpec struct {
@@ -170,6 +147,29 @@ type glooSource struct {
 	virtualServiceInformer kubeinformers.GenericInformer
 	gatewayInformer        kubeinformers.GenericInformer
 	templateEngine         template.Engine
+}
+
+var (
+	proxyGVR = schema.GroupVersionResource{
+		Group:    "gloo.solo.io",
+		Version:  "v1",
+		Resource: "proxies",
+	}
+	virtualServiceGVR = schema.GroupVersionResource{
+		Group:    "gateway.solo.io",
+		Version:  "v1",
+		Resource: "virtualservices",
+	}
+	gatewayGVR = schema.GroupVersionResource{
+		Group:    "gateway.solo.io",
+		Version:  "v1",
+		Resource: "gateways",
+	}
+)
+
+func (p *proxy) DeepCopyObject() runtime.Object {
+	cp := *p
+	return &cp
 }
 
 // NewGlooSource creates a new glooSource with the given config

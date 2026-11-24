@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	rgversioned "github.com/szuecs/routegroup-client/client/clientset/versioned"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,37 +36,9 @@ import (
 	kubeclient "sigs.k8s.io/external-dns/pkg/client"
 	"sigs.k8s.io/external-dns/pkg/crd"
 	"sigs.k8s.io/external-dns/source/config"
+	"sigs.k8s.io/external-dns/source/targetfrom"
 	"sigs.k8s.io/external-dns/source/types"
 )
-
-// ErrSourceNotFound is returned when a requested source doesn't exist.
-var ErrSourceNotFound = errors.New("source not found")
-
-// WithClientGenerator sets a custom ClientGenerator, overriding the default
-// SingletonClientGenerator. Intended for testing.
-func WithClientGenerator(gen ClientGenerator) config.OverrideConfigOption {
-	return func(cfg *config.Config) {
-		cfg.SetClientGen(gen)
-	}
-}
-
-// ClientGeneratorFor returns cfg's ClientGenerator, lazily building a SingletonClientGenerator if none was injected.
-func ClientGeneratorFor(cfg *config.Config) ClientGenerator {
-	return cfg.EnsureClientGen(func() ClientGenerator {
-		return &SingletonClientGenerator{
-			KubeConfig:   cfg.KubeConfig,
-			APIServerURL: cfg.APIServerURL,
-			RequestTimeout: func() time.Duration {
-				if cfg.UpdateEvents {
-					return 0
-				}
-				return cfg.KubeAPIRequestTimeout
-			}(),
-			QPS:   cfg.KubeAPIQPS,
-			Burst: cfg.KubeAPIBurst,
-		}
-	})
-}
 
 // ClientGenerator provides clients for various Kubernetes APIs and external services.
 // This interface abstracts client creation and enables dependency injection for testing.
@@ -126,6 +99,54 @@ type SingletonClientGenerator struct {
 	istioOnce          sync.Once
 	dynCliOnce         sync.Once
 	openshiftOnce      sync.Once
+}
+
+// ErrSourceNotFound is returned when a requested source doesn't exist.
+var ErrSourceNotFound = errors.New("source not found")
+
+// WithClientGenerator sets a custom ClientGenerator, overriding the default
+// SingletonClientGenerator. Intended for testing.
+func WithClientGenerator(gen ClientGenerator) config.OverrideConfigOption {
+	return func(cfg *config.Config) {
+		cfg.SetClientGen(gen)
+	}
+}
+
+// ClientGeneratorFor returns cfg's ClientGenerator, lazily building a SingletonClientGenerator if none was injected.
+func ClientGeneratorFor(cfg *config.Config) ClientGenerator {
+	return cfg.EnsureClientGen(func() ClientGenerator {
+		return &SingletonClientGenerator{
+			KubeConfig:   cfg.KubeConfig,
+			APIServerURL: cfg.APIServerURL,
+			RequestTimeout: func() time.Duration {
+				if cfg.UpdateEvents {
+					return 0
+				}
+				return cfg.KubeAPIRequestTimeout
+			}(),
+			QPS:   cfg.KubeAPIQPS,
+			Burst: cfg.KubeAPIBurst,
+		}
+	})
+}
+
+// targetFromResolver returns cfg's shared target-from resolver. Its clients are
+// built on the first reference, so sources pay nothing unless it is used.
+func targetFromResolver(ctx context.Context, cfg *config.Config) *targetfrom.Resolver {
+	return cfg.EnsureTargetFrom(func() *targetfrom.Resolver {
+		gen := ClientGeneratorFor(cfg)
+		return targetfrom.NewResolver(ctx, func() (dynamic.Interface, discovery.DiscoveryInterface, error) {
+			dyn, err := gen.DynamicKubernetesClient()
+			if err != nil {
+				return nil, nil, err
+			}
+			kube, err := gen.KubeClient()
+			if err != nil {
+				return nil, nil, err
+			}
+			return dyn, kube.Discovery(), nil
+		})
+	})
 }
 
 // KubeClient generates a kube client if it was not created before

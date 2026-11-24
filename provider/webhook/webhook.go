@@ -40,6 +40,22 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+type WebhookProvider struct {
+	client          *http.Client
+	remoteServerURL *url.URL
+	DomainFilter    *endpoint.DomainFilter
+	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
+	maxBodySize int64
+	dryRun      bool
+}
+
+// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
+// past the limit instead of reporting EOF like io.LimitReader.
+type maxBytesReader struct {
+	r         io.Reader
+	remaining int64 // bytes still allowed; negative once the limit is passed
+}
+
 const (
 	acceptHeader = "Accept"
 
@@ -91,17 +107,18 @@ var (
 	)
 )
 
-type WebhookProvider struct {
-	client          *http.Client
-	remoteServerURL *url.URL
-	DomainFilter    *endpoint.DomainFilter
-	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
-	maxBodySize int64
-}
-
 // errResponseTooLarge distinguishes an over-limit body from a malformed or
 // truncated one, which io.LimitReader would report as a plain EOF.
 var errResponseTooLarge = errors.New("webhook response body exceeds the configured max size (--webhook-provider-max-body-size)")
+
+func init() {
+	metrics.RegisterMetric.MustRegister(recordsErrorsGauge)
+	metrics.RegisterMetric.MustRegister(recordsRequestsGauge)
+	metrics.RegisterMetric.MustRegister(applyChangesErrorsGauge)
+	metrics.RegisterMetric.MustRegister(applyChangesRequestsGauge)
+	metrics.RegisterMetric.MustRegister(adjustEndpointsErrorsGauge)
+	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
+}
 
 // limitBody caps response body reads at maxBodySize, failing with
 // errResponseTooLarge once exceeded; a non-positive limit disables the cap.
@@ -110,13 +127,6 @@ func limitBody(r io.Reader, maxBodySize int64) io.Reader {
 		return r
 	}
 	return &maxBytesReader{r: r, remaining: maxBodySize}
-}
-
-// maxBytesReader is a client-side http.MaxBytesReader: it errors on the byte
-// past the limit instead of reporting EOF like io.LimitReader.
-type maxBytesReader struct {
-	r         io.Reader
-	remaining int64 // bytes still allowed; negative once the limit is passed
 }
 
 func (l *maxBytesReader) Read(p []byte) (int, error) {
@@ -136,21 +146,12 @@ func (l *maxBytesReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func init() {
-	metrics.RegisterMetric.MustRegister(recordsErrorsGauge)
-	metrics.RegisterMetric.MustRegister(recordsRequestsGauge)
-	metrics.RegisterMetric.MustRegister(applyChangesErrorsGauge)
-	metrics.RegisterMetric.MustRegister(applyChangesRequestsGauge)
-	metrics.RegisterMetric.MustRegister(adjustEndpointsErrorsGauge)
-	metrics.RegisterMetric.MustRegister(adjustEndpointsRequestsGauge)
-}
-
 // New creates a webhook provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize)
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize, cfg.DryRun)
 }
 
-func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64) (*WebhookProvider, error) {
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64, dryRun bool) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -188,6 +189,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 		remoteServerURL: parsedURL,
 		DomainFilter:    df,
 		maxBodySize:     maxBodySize,
+		dryRun:          dryRun,
 	}, nil
 }
 
@@ -282,6 +284,19 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if p.dryRun {
+		for _, e := range changes.Create {
+			log.Infof("Dry run: skipping CREATE %s", e)
+		}
+		for _, e := range changes.UpdateNew {
+			log.Infof("Dry run: skipping UPDATE %s", e)
+		}
+		for _, e := range changes.Delete {
+			log.Infof("Dry run: skipping DELETE %s", e)
+		}
+		return nil
+	}
+
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 

@@ -28,6 +28,12 @@ import (
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
+type gatewayGRPCRoute struct{ route v1.GRPCRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+
+type gatewayGRPCRouteInformer struct {
+	informers_v1.GRPCRouteInformer
+}
+
 // NewGatewayGRPCRouteSource creates a new Gateway GRPCRoute source with the given cfg.
 func NewGatewayGRPCRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
 	return newGatewayRouteSource(ctx, clients, cfg, "GRPCRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
@@ -35,18 +41,12 @@ func NewGatewayGRPCRouteSource(ctx context.Context, clients ClientGenerator, cfg
 	})
 }
 
-type gatewayGRPCRoute struct{ route v1.GRPCRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
-
 func (rt *gatewayGRPCRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayGRPCRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
 func (rt *gatewayGRPCRoute) Hostnames() []v1.Hostname         { return rt.route.Spec.Hostnames }
 func (rt *gatewayGRPCRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
 func (rt *gatewayGRPCRoute) Protocol() v1.ProtocolType        { return v1.HTTPSProtocolType }
 func (rt *gatewayGRPCRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
-
-type gatewayGRPCRouteInformer struct {
-	informers_v1.GRPCRouteInformer
-}
 
 func (inf gatewayGRPCRouteInformer) List() []gatewayRoute {
 	list := extInformers.ListIndexed[*v1.GRPCRoute](inf.GRPCRouteInformer.Informer().GetIndexer())

@@ -31,6 +31,41 @@ import (
 	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
+// Source represents metadata about a source implementation
+type Source struct {
+	Name             string // e.g., "service", "ingress", "crd"
+	Type             string // e.g., "serviceSource"
+	File             string // e.g., "source/service.go"
+	Description      string // Description of what this source does
+	Category         string // e.g., "Kubernetes", "Gateway", "Service Mesh", "Wrapper"
+	Resources        string // Kubernetes resources watched, e.g., "Service", "Ingress"
+	Filters          string // Supported filters, e.g., "annotation,label"
+	Namespace        string // Namespace support: "all", "single", "multiple"
+	FQDNTemplate     string // FQDN template support: "true", "false"
+	Events           string // Events support: "true", "false"
+	ProviderSpecific string // Provider-specific properties support: "true", "false"
+	Validation       string // Comma-separated validation kinds enabled, e.g., "annotation"
+}
+
+type Sources []Source
+
+type columnWidths struct {
+	Name             int
+	Resources        int
+	Filters          int
+	Namespace        int
+	FQDNTemplate     int
+	Events           int
+	ProviderSpecific int
+	Validation       int
+	Category         int
+}
+
+type templateData struct {
+	Sources   Sources
+	ColWidths columnWidths
+}
+
 const (
 	annotationPrefix           = "+externaldns:source:"
 	annotationName             = annotationPrefix + "name="
@@ -51,22 +86,6 @@ var (
 	// Regex to match source type names (must end with "Source")
 	sourceTypeRegex = regexp.MustCompile(`^(\w+)Source$`)
 )
-
-// Source represents metadata about a source implementation
-type Source struct {
-	Name             string // e.g., "service", "ingress", "crd"
-	Type             string // e.g., "serviceSource"
-	File             string // e.g., "source/service.go"
-	Description      string // Description of what this source does
-	Category         string // e.g., "Kubernetes", "Gateway", "Service Mesh", "Wrapper"
-	Resources        string // Kubernetes resources watched, e.g., "Service", "Ingress"
-	Filters          string // Supported filters, e.g., "annotation,label"
-	Namespace        string // Namespace support: "all", "single", "multiple"
-	FQDNTemplate     string // FQDN template support: "true", "false"
-	Events           string // Events support: "true", "false"
-	ProviderSpecific string // Provider-specific properties support: "true", "false"
-	Validation       string // Comma-separated validation kinds enabled, e.g., "annotation"
-}
 
 // ValidationCell returns the Validation value with a footnote reference per kind
 // (e.g., `annotation[^val-annotation]`), so the generated table links each kind
@@ -124,8 +143,6 @@ func (s Source) NamespaceCell() string {
 	return s.Namespace + footnote
 }
 
-type Sources []Source
-
 // main generates a markdown file with the supported sources
 // and writes it to the 'docs/sources/index.md' file.
 // To re-generate, execute 'go run internal/gen/docs/sources/main.go'.
@@ -164,18 +181,6 @@ func discoverSources(dir string) (Sources, error) {
 	return sources, nil
 }
 
-type columnWidths struct {
-	Name             int
-	Resources        int
-	Filters          int
-	Namespace        int
-	FQDNTemplate     int
-	Events           int
-	ProviderSpecific int
-	Validation       int
-	Category         int
-}
-
 func computeColumnWidths(sources Sources) columnWidths {
 	return columnWidths{
 		Name:             render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
@@ -188,11 +193,6 @@ func computeColumnWidths(sources Sources) columnWidths {
 		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.ValidationCell() }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
-}
-
-type templateData struct {
-	Sources   Sources
-	ColWidths columnWidths
 }
 
 func (s *Sources) generateMarkdown() (string, error) {

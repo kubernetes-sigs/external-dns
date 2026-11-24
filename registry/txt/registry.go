@@ -35,10 +35,6 @@ import (
 	"sigs.k8s.io/external-dns/registry/mapper"
 )
 
-const (
-	providerSpecificForceUpdate = "txt/force-update"
-)
-
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
@@ -84,6 +80,10 @@ type recordKey struct {
 	dnsName       string
 	setIdentifier string
 }
+
+const (
+	providerSpecificForceUpdate = "txt/force-update"
+)
 
 func newExistingTXTs() *existingTXTs {
 	return &existingTXTs{
@@ -299,7 +299,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if len(im.existingTXTs.entries) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Name only: rendering the value would encrypt every owned record's labels on each call.
-				if txtName := im.txtRecordName(ep); txtName != "" && !im.existingTXTs.has(txtName, ep.SetIdentifier) {
+				if txtName, ok := im.txtRecordName(ep); ok && !im.existingTXTs.has(txtName, ep.SetIdentifier) {
 					ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 				}
 			}
@@ -320,76 +320,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func isAliasARecord(ep *endpoint.Endpoint) bool {
 	aliasType := ep.GetAliasProperty()
 	return (aliasType == endpoint.AliasTrue || aliasType == endpoint.AliasA) && ep.RecordType == endpoint.RecordTypeA
-}
-
-// warnObsoleteAliasTXT logs, once per record, that a legacy "cname-" alias TXT can be removed.
-func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
-	legacyName := im.mapper.ToTXTName(dnsName, endpoint.RecordTypeCNAME)
-	if im.obsoleteTXTWarned.Has(legacyName) {
-		return
-	}
-	im.obsoleteTXTWarned.Insert(legacyName)
-	log.Warnf("Obsolete legacy TXT record %q for A ALIAS %q can be removed; now using %q (see scripts/aws-cleanup-legacy-txt-records.py).",
-		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
-}
-
-// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
-// depending on the newFormatOnly configuration. The old format is maintained for backwards
-// compatibility but can be disabled to reduce the number of DNS records.
-func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
-}
-
-// txtRecordName returns the name of r's ownership TXT record without rendering its value,
-// or "" if a label exceeds 63 characters.
-func (im *TXTRegistry) txtRecordName(r *endpoint.Endpoint) string {
-	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
-	name := im.mapper.ToTXTName(r.DNSName, r.RecordType)
-	for label := range strings.SplitSeq(name, ".") {
-		if len(label) > 63 {
-			return ""
-		}
-	}
-	return strings.TrimSuffix(name, ".")
-}
-
-func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
-	endpoints := make([]*endpoint.Endpoint, 0)
-
-	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-	}
-
-	name := im.txtRecordName(r)
-	if name == "" {
-		log.Errorf("Cannot create ownership TXT record for %s: a label of %q is longer than 63 characters", r.DNSName, im.mapper.ToTXTName(r.DNSName, r.RecordType))
-		return endpoints
-	}
-
-	txtNew := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	txtNew.WithSetIdentifier(r.SetIdentifier)
-	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-	txtNew.ProviderSpecific = r.ProviderSpecific
-	if filter(txtNew) {
-		endpoints = append(endpoints, txtNew)
-	}
-	return endpoints
-}
-
-// generateTXTRecordForRemoval builds the TXT records to delete alongside an endpoint, preferring
-// the value read from the provider over a regenerated one, as deletes match by value.
-// With gzip output, a regenerated one can differ between two Go standard library implementations.
-func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	txts := im.generateTXTRecord(r)
-	for _, txt := range txts {
-		stored, ok := im.existingTXTs.storedValue(txt)
-		if !ok {
-			// Records() saw no TXT under this name; keep the generated value.
-			continue
-		}
-		txt.Targets = endpoint.Targets{stored}
-	}
-	return txts
 }
 
 // ApplyChanges updates dns provider with the changes, and updates ownership TXT records accordingly
@@ -441,16 +371,77 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 	}
 
-	// when caching is enabled, disable the provider from using the cache
-	if im.cacheInterval > 0 {
-		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
-	}
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
+}
+
+// warnObsoleteAliasTXT logs, once per record, that a legacy "cname-" alias TXT can be removed.
+func (im *TXTRegistry) warnObsoleteAliasTXT(dnsName string) {
+	legacyName := im.mapper.ToTXTName(dnsName, endpoint.RecordTypeCNAME)
+	if im.obsoleteTXTWarned.Has(legacyName) {
+		return
+	}
+	im.obsoleteTXTWarned.Insert(legacyName)
+	log.Warnf("Obsolete legacy TXT record %q for A ALIAS %q can be removed; now using %q (see scripts/aws-cleanup-legacy-txt-records.py).",
+		legacyName, dnsName, im.mapper.ToTXTName(dnsName, endpoint.RecordTypeA))
+}
+
+// generateTXTRecord generates TXT records in either both formats (old and new) or new format only,
+// depending on the newFormatOnly configuration. The old format is maintained for backwards
+// compatibility but can be disabled to reduce the number of DNS records.
+func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.generateTXTRecordWithFilter(r, func(_ *endpoint.Endpoint) bool { return true })
+}
+
+// txtRecordName returns the name of r's ownership TXT record without rendering its value.
+// ok is false if a label of the name is longer than 63 characters.
+func (im *TXTRegistry) txtRecordName(r *endpoint.Endpoint) (string, bool) {
+	// Key the TXT record on the endpoint's actual record type (e.g. "a-" for A ALIAS records).
+	name := strings.TrimSuffix(im.mapper.ToTXTName(r.DNSName, r.RecordType), ".")
+	return name, endpoint.OverlongDNSLabel(name) == ""
+}
+
+func (im *TXTRegistry) generateTXTRecordWithFilter(r *endpoint.Endpoint, filter func(*endpoint.Endpoint) bool) []*endpoint.Endpoint {
+	endpoints := make([]*endpoint.Endpoint, 0)
+
+	if im.oldOwnerID != "" && r.Labels[endpoint.OwnerLabelKey] == im.oldOwnerID {
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+	}
+
+	name, ok := im.txtRecordName(r)
+	if !ok {
+		log.Errorf("Cannot create ownership TXT record for %s: a label of %q is longer than 63 characters", r.DNSName, name)
+		return endpoints
+	}
+
+	txtNew := endpoint.NewEndpoint(name, endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	txtNew.WithSetIdentifier(r.SetIdentifier)
+	txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+	txtNew.ProviderSpecific = r.ProviderSpecific
+	if filter(txtNew) {
+		endpoints = append(endpoints, txtNew)
+	}
+	return endpoints
+}
+
+// generateTXTRecordForRemoval builds the TXT records to delete alongside an endpoint, preferring
+// the value read from the provider over a regenerated one, as deletes match by value.
+// With gzip output, a regenerated one can differ between two Go standard library implementations.
+func (im *TXTRegistry) generateTXTRecordForRemoval(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	txts := im.generateTXTRecord(r)
+	for _, txt := range txts {
+		stored, ok := im.existingTXTs.storedValue(txt)
+		if !ok {
+			// Records() saw no TXT under this name; keep the generated value.
+			continue
+		}
+		txt.Targets = endpoint.Targets{stored}
+	}
+	return txts
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {

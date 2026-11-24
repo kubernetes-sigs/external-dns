@@ -31,14 +31,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
-	ContentTypeHeader         = "Content-Type"
-	UrlAdjustEndpoints        = "/adjustendpoints"
-	UrlApplyChanges           = "/applychanges"
-	UrlRecords                = "/records"
-)
-
 type WebhookServer struct {
 	Provider provider.Provider
 	// MaxBodySize caps decoded request body bytes; <= 0 disables the limit.
@@ -59,6 +51,14 @@ type ServerOptions struct {
 	// MaxBodySize caps request body bytes; <= 0 disables the limit.
 	MaxBodySize int64
 }
+
+const (
+	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
+	ContentTypeHeader         = "Content-Type"
+	UrlAdjustEndpoints        = "/adjustendpoints"
+	UrlApplyChanges           = "/applychanges"
+	UrlRecords                = "/records"
+)
 
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
@@ -125,11 +125,11 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 }
 
-// limitRequestBody caps the request body with MaxBytesReader so oversized
-// bodies fail with 413; a non-positive cap leaves the body unchanged.
-func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Request) {
-	if p.MaxBodySize > 0 {
-		req.Body = http.MaxBytesReader(w, req.Body, p.MaxBodySize)
+func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
+	err := json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -142,11 +142,11 @@ func requestBodyStatus(err error) int {
 	return http.StatusBadRequest
 }
 
-func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
-	err := json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+// limitRequestBody caps the request body with MaxBytesReader so oversized
+// bodies fail with 413; a non-positive cap leaves the body unchanged.
+func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Request) {
+	if p.MaxBodySize > 0 {
+		req.Body = http.MaxBytesReader(w, req.Body, p.MaxBodySize)
 	}
 }
 

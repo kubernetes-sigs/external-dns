@@ -32,15 +32,25 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	recordTTL = 300
-)
-
 // mockPrivateZonesClient implements the methods of the Azure Private DNS Zones Client which are used in the Azure Private DNS Provider
 // and returns static results which are defined per test
 type mockPrivateZonesClient struct {
 	pagingHandler azcoreruntime.PagingHandler[privatedns.PrivateZonesClientListByResourceGroupResponse]
 }
+
+// mockPrivateRecordSetsClient implements the methods of the Azure Private DNS RecordSet Client which are used in the Azure Private DNS Provider
+// and returns static results which are defined per test
+type mockPrivateRecordSetsClient struct {
+	pagingHandler    azcoreruntime.PagingHandler[privatedns.RecordSetsClientListResponse]
+	deletedEndpoints []*endpoint.Endpoint
+	updatedEndpoints []*endpoint.Endpoint
+	deleteErr        error
+	updateErr        error
+}
+
+const (
+	recordTTL = 300
+)
 
 func newMockPrivateZonesClient(zones []*privatedns.PrivateZone) mockPrivateZonesClient {
 	pagingHandler := azcoreruntime.PagingHandler[privatedns.PrivateZonesClientListByResourceGroupResponse]{
@@ -60,16 +70,6 @@ func newMockPrivateZonesClient(zones []*privatedns.PrivateZone) mockPrivateZones
 
 func (client *mockPrivateZonesClient) NewListByResourceGroupPager(_ string, _ *privatedns.PrivateZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[privatedns.PrivateZonesClientListByResourceGroupResponse] {
 	return azcoreruntime.NewPager(client.pagingHandler)
-}
-
-// mockPrivateRecordSetsClient implements the methods of the Azure Private DNS RecordSet Client which are used in the Azure Private DNS Provider
-// and returns static results which are defined per test
-type mockPrivateRecordSetsClient struct {
-	pagingHandler    azcoreruntime.PagingHandler[privatedns.RecordSetsClientListResponse]
-	deletedEndpoints []*endpoint.Endpoint
-	updatedEndpoints []*endpoint.Endpoint
-	deleteErr        error
-	updateErr        error
 }
 
 func newMockPrivateRecordSectsClient(recordSets []*privatedns.RecordSet) mockPrivateRecordSetsClient {
