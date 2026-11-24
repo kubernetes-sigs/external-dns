@@ -388,6 +388,7 @@ func TestNodeFQDNTemplateSkipsAddressLookupWhenTargetsSupplied(t *testing.T) {
 		title              string
 		targetTemplate     string
 		fqdnTargetTemplate string
+		combine            bool
 		expected           []*endpoint.Endpoint
 	}{
 		{
@@ -404,6 +405,22 @@ func TestNodeFQDNTemplateSkipsAddressLookupWhenTargetsSupplied(t *testing.T) {
 				{DNSName: "no-address.pair.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
+		{
+			title:          "with target-template and combine",
+			targetTemplate: "lb.example.com",
+			combine:        true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:              "with fqdn-target-template pairs and combine",
+			fqdnTargetTemplate: "{{.Name}}.pair.example.com:1.2.3.4",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.pair.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient := fake.NewClientset()
@@ -411,7 +428,7 @@ func TestNodeFQDNTemplateSkipsAddressLookupWhenTargetsSupplied(t *testing.T) {
 			require.NoError(t, err)
 
 			src, err := NewNodeSource(t.Context(), kubeClient, &config.Config{
-				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.example.com", tt.targetTemplate, tt.fqdnTargetTemplate, false),
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.example.com", tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
 				LabelFilter:    labels.Everything(),
 			})
 			require.NoError(t, err)

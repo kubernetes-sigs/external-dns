@@ -122,12 +122,12 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 		var nodeEndpoints []*endpoint.Endpoint
 		if nodeNameEndpoints {
-			addrs, err := resolveTargets()
-			if err != nil {
+			// Template targets can still yield records for a node without address.
+			if addrs, err := resolveTargets(); err == nil {
+				nodeEndpoints = ns.endpointsForDNSNames(node, []string{node.Name}, addrs)
+			} else {
 				log.Debugf("Skipping node %s: %v", node.Name, err)
-				continue
 			}
-			nodeEndpoints = ns.endpointsForDNSNames(node, []string{node.Name}, addrs)
 		}
 
 		nodeEndpoints, err := ns.templateEngine.Apply(
