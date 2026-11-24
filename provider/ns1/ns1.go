@@ -211,14 +211,27 @@ func (p *NS1Provider) ApplyChanges(_ context.Context, changes *plan.Changes) err
 	return p.ns1SubmitChanges(combinedChanges)
 }
 
-// AdjustEndpoints drops set identifiers. NS1 has no field to store one, so a
-// desired endpoint carrying an identifier never matches the record Records
-// returns and the plan would create it again on every reconcile (#6922).
+// AdjustEndpoints drops set identifiers. NS1 cannot store one, so the desired
+// endpoint would never match the record that Records returns.
 func (p *NS1Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	type row struct{ dnsName, recordType string }
+	count := make(map[row]int)
+	stripped := make(map[row][]string)
 	for _, ep := range endpoints {
-		if ep.SetIdentifier != "" {
-			log.Warnf("Ignoring set identifier %q on %s record %s: NS1 does not support set identifiers", ep.SetIdentifier, ep.RecordType, ep.DNSName)
-			ep.SetIdentifier = ""
+		r := row{ep.DNSName, ep.RecordType}
+		count[r]++
+		if ep.SetIdentifier == "" {
+			continue
+		}
+		log.Warnf("Ignoring set identifier %q on %s record %s: NS1 does not support set identifiers", ep.SetIdentifier, ep.RecordType, ep.DNSName)
+		stripped[r] = append(stripped[r], ep.SetIdentifier)
+		ep.SetIdentifier = ""
+	}
+	// Without the identifiers these endpoints share one plan row, and the
+	// conflict resolver keeps one of them without a log line of its own.
+	for r, ids := range stripped {
+		if count[r] > 1 {
+			log.Warnf("%s record %s: %d endpoints collide after dropping the set identifiers (%s); only one of them will be applied", r.recordType, r.dnsName, count[r], strings.Join(ids, ", "))
 		}
 	}
 	return endpoints, nil
