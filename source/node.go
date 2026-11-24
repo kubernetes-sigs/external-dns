@@ -118,7 +118,17 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		// Only generate node name endpoints when there's no template or when combining
 		nodeNameEndpoints := !ns.templateEngine.HasDNSNameTemplate() || ns.templateEngine.Combining()
 
-		resolveTargets := sync.OnceValues(func() ([]string, error) { return ns.targetsForNode(node) })
+		annotationTargets := annotations.TargetsFromTargetAnnotation(node.Annotations)
+		resolveTargets := sync.OnceValues(func() ([]string, error) {
+			if len(annotationTargets) > 0 {
+				return annotationTargets, nil
+			}
+			addrs, err := ns.nodeAddresses(node)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
+			}
+			return addrs, nil
+		})
 
 		var nodeEndpoints []*endpoint.Endpoint
 		if nodeNameEndpoints {
@@ -133,7 +143,7 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		nodeEndpoints, err := ns.templateEngine.Apply(
 			nodeEndpoints,
 			node,
-			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(node.Annotations)),
+			template.WithAnnotationTargets(annotationTargets),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				if len(targets) == 0 {
 					addrs, err := resolveTargets()
@@ -165,17 +175,6 @@ func (ns *nodeSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 
 func (ns *nodeSource) AddEventHandler(_ context.Context, handler func()) {
 	informers.MustAddEventHandler(ns.nodeInformer.Informer(), eventHandlerFunc(handler))
-}
-
-func (ns *nodeSource) targetsForNode(node *v1.Node) ([]string, error) {
-	if addrs := annotations.TargetsFromTargetAnnotation(node.Annotations); len(addrs) > 0 {
-		return addrs, nil
-	}
-	addrs, err := ns.nodeAddresses(node)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
-	}
-	return addrs, nil
 }
 
 func (ns *nodeSource) endpointsForDNSNames(node *v1.Node, dnsNames []string, addrs []string) []*endpoint.Endpoint {

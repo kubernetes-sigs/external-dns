@@ -363,7 +363,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		res := resolver.resolveHostnames(rt)
 		var routeEndpoints []*endpoint.Endpoint
 		if len(res.defined) > 0 {
-			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, res.defined, nil))
+			routeEndpoints = src.routeEndpoints(rt, kind, resolver.resolve(rt, res.defined, nil))
 		}
 
 		templateRendered := false
@@ -374,7 +374,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 					return nil, nil
 				}
 				templateRendered = true
-				return src.routeEndpoints(rt, resolver.resolve(rt, hostnames, targets)), nil
+				return src.routeEndpoints(rt, kind, resolver.resolve(rt, hostnames, targets)), nil
 			}),
 		)
 		if err != nil {
@@ -382,7 +382,7 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 		}
 		// Only when nothing named a host, else a wildcard listener hostname is published beside annotated ones.
 		if res.fallbackAllowed && len(res.defined) == 0 && !templateRendered && len(routeEndpoints) == 0 {
-			routeEndpoints = src.routeEndpoints(rt, resolver.resolve(rt, []string{""}, nil))
+			routeEndpoints = src.routeEndpoints(rt, kind, resolver.resolve(rt, []string{""}, nil))
 		}
 		if len(routeEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
@@ -397,12 +397,12 @@ func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoin
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (src *gatewayRouteSource) routeEndpoints(rt gatewayRoute, hostTargets map[string]endpoint.Targets) []*endpoint.Endpoint {
+func (src *gatewayRouteSource) routeEndpoints(rt gatewayRoute, kind string, hostTargets map[string]endpoint.Targets) []*endpoint.Endpoint {
 	if len(hostTargets) == 0 {
 		return nil
 	}
 	meta := rt.Metadata()
-	resource := fmt.Sprintf("%s/%s/%s", strings.ToLower(src.rtKind), meta.Namespace, meta.Name)
+	resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(meta.Annotations)
 	ttl := annotations.TTLFromAnnotations(meta.Annotations, resource)
 	var endpoints []*endpoint.Endpoint

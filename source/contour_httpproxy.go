@@ -124,11 +124,12 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	var endpoints []*endpoint.Endpoint
 
 	for _, hp := range httpProxies {
+		targets := targetsFromHTTPProxy(hp)
 		// apply template if fqdn is missing on HTTPProxy
 		hpEndpoints, err := sc.templateEngine.Apply(
-			sc.endpointsFromHTTPProxy(hp),
+			sc.endpointsFromHTTPProxy(hp, targets),
 			hp,
-			template.WithResourceTargets(targetsFromHTTPProxy(hp)),
+			template.WithResourceTargets(targets),
 			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(hp.Annotations)),
 			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
 				return sc.endpointsFromTemplate(hp, hostnames, targets), nil
@@ -190,12 +191,10 @@ func targetsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) endpoint.Targets 
 }
 
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object
-func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) []*endpoint.Endpoint {
+func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
-
-	targets := targetsFromHTTPProxy(httpProxy)
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(httpProxy.Annotations)
 

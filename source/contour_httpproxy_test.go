@@ -262,7 +262,8 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			source, err := newTestHTTPProxySource(t)
 			require.NoError(t, err)
 
-			endpoints := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy())
+			hp := ti.httpProxy.HTTPProxy()
+			endpoints := source.endpointsFromHTTPProxy(hp, targetsFromHTTPProxy(hp))
 			testutils.ValidateEndpoints(t, endpoints, ti.expected)
 		})
 	}
