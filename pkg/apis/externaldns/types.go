@@ -234,9 +234,9 @@ const (
 	LogFormatText = "text"
 	LogFormatJSON = "json"
 
-	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
-	// record, so ~60k records). Override with --webhook-provider-max-body-size.
-	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
+	// defaultWebhookMaxBodySize caps decoded webhook bodies (~0.5 KiB per
+	// record, so ~60k records) for the provider and the source webhook alike.
+	defaultWebhookMaxBodySize int64 = 32 << 20 // 32 MiB
 )
 
 var defaultConfig = &Config{
@@ -282,7 +282,7 @@ var defaultConfig = &Config{
 	ConnectorSourceServer:            "localhost:8080",
 	WebhookSourceURLs:                []string{"http://localhost:8889"},
 	WebhookSourceTimeout:             15 * time.Second,
-	WebhookSourceMaxBodySize:         defaultWebhookProviderMaxBodySize,
+	WebhookSourceMaxBodySize:         defaultWebhookMaxBodySize,
 	CoreDNSPrefix:                    "/skydns/",
 	CoreDNSStrictlyOwned:             false,
 	CRDSourceAPIVersion:              "externaldns.k8s.io/v1alpha1",
@@ -403,7 +403,7 @@ var defaultConfig = &Config{
 	WebhookProviderWriteTimeout:      10 * time.Second,
 	WebhookProviderReadHeaderTimeout: 5 * time.Second,
 	WebhookProviderIdleTimeout:       30 * time.Second,
-	WebhookProviderMaxBodySize:       defaultWebhookProviderMaxBodySize,
+	WebhookProviderMaxBodySize:       defaultWebhookMaxBodySize,
 	WebhookServer:                    false,
 	ZoneIDFilter:                     []string{},
 	ForceDefaultTargets:              false,

@@ -29,7 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+type retryRoundTripper func(*http.Request) (*http.Response, error)
+
 var testBackoff = wait.Backoff{Duration: time.Millisecond, Factor: 1.5, Steps: 5}
+
+func (f retryRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestRequestWithRetry_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -106,10 +110,6 @@ func TestRequestWithRetry_RetriesExhausted(t *testing.T) {
 	require.Nil(t, resp)
 	require.Equal(t, testBackoff.Steps, attempts)
 }
-
-type retryRoundTripper func(*http.Request) (*http.Response, error)
-
-func (f retryRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestRequestWithRetry_CancelledAfterServerError(t *testing.T) {
 	ctx, cancel := context.WithCancelCause(t.Context())

@@ -81,10 +81,12 @@ Source-level flags such as `--namespace`, `--label-filter`, `--annotation-filter
 - **All or nothing.** With several webhooks, a failure of one skips the whole iteration for every
   source. Applying a partial result would delete the records of the webhook that failed.
 - **Validation.** Every endpoint must carry a name without overlong labels, a record type ExternalDNS
-  knows, a TTL that is not negative, and pass the same checks the in-tree sources rely on (at least
-  one target, valid IP addresses for `A` and `AAAA`, well-formed `MX`, `SRV`, `NAPTR` and `PTR`
-  targets). One invalid entry rejects the whole response: dropping only that entry would turn a
-  malformed record into the deletion of its existing one at the next plan.
+  knows and a TTL that is not negative. Its targets then pass the checks of the
+  [DNSEndpoint CRD source](crd.md): at least one target, a trailing dot only where the record type
+  requires one, valid IP addresses for `A` and `AAAA`, well-formed `MX`, `SRV`, `NAPTR` and `PTR`
+  targets. `MX` targets are normalized the same way. One invalid entry rejects the whole response:
+  dropping only that entry would turn a malformed record into the deletion of its existing one at the
+  next plan.
 - **Labels.** The `labels` field of the response is discarded. ExternalDNS sets the `resource`
   label to `webhook/<host:port>` itself, so a webhook cannot impersonate another source or decide
   conflicts in its favor.

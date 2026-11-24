@@ -26,6 +26,7 @@ import (
 	"net/netip"
 	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,15 +40,39 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+// webhookSource fetches the desired endpoints from one or more out-of-process
+// webhooks over HTTP/JSON, the source-side counterpart of the provider webhook.
+//
+// +externaldns:source:name=webhook
+// +externaldns:source:category=Special
+// +externaldns:source:description=Fetches DNS endpoints over HTTP/JSON from a webhook sidecar on loopback
+// +externaldns:source:resources=Remote HTTP server
+// +externaldns:source:filters=
+// +externaldns:source:namespace=
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false
+// +externaldns:source:provider-specific=false
+type webhookSource struct {
+	webhooks []*webhookClient
+}
+
+// webhookClient talks to a single source webhook.
+type webhookClient struct {
+	client  *http.Client
+	baseURL *url.URL
+	// name is the host:port of the webhook; it labels the metrics and the
+	// resource label of every endpoint the webhook returns.
+	name        string
+	maxBodySize int64
+}
+
 const (
-	// WebhookSourceMediaType is the media type a source webhook answers with. It
-	// differs from the provider webhook's so that a URL pointing at the wrong
-	// kind of webhook fails negotiation instead of misbehaving later.
-	WebhookSourceMediaType = "application/external.dns.webhook.source+json"
-	// WebhookSourceMediaTypeVersion is the contract version this client speaks.
-	WebhookSourceMediaTypeVersion = "1"
-	// WebhookSourceAccept is the exact Accept header value ExternalDNS sends.
-	WebhookSourceAccept = WebhookSourceMediaType + ";version=" + WebhookSourceMediaTypeVersion
+	// webhookSourceMediaType differs from the provider webhook's so that a URL
+	// pointing at the wrong kind of webhook fails negotiation instead of
+	// misbehaving later. The contract is documented in docs/sources/webhook.md.
+	webhookSourceMediaType        = "application/external.dns.webhook.source+json"
+	webhookSourceMediaTypeVersion = "1"
+	webhookSourceAccept           = webhookSourceMediaType + ";version=" + webhookSourceMediaTypeVersion
 
 	webhookSourceEndpointsPath = "/endpoints"
 	webhookSourceSubsystem     = "webhook_source"
@@ -81,32 +106,6 @@ func init() {
 	metrics.RegisterMetric.MustRegister(webhookSourceErrors)
 }
 
-// webhookSource fetches the desired endpoints from one or more out-of-process
-// webhooks over HTTP/JSON, the source-side counterpart of the provider webhook.
-//
-// +externaldns:source:name=webhook
-// +externaldns:source:category=Special
-// +externaldns:source:description=Fetches DNS endpoints over HTTP/JSON from a webhook sidecar on loopback
-// +externaldns:source:resources=Remote HTTP server
-// +externaldns:source:filters=
-// +externaldns:source:namespace=
-// +externaldns:source:fqdn-template=false
-// +externaldns:source:events=false
-// +externaldns:source:provider-specific=false
-type webhookSource struct {
-	webhooks []*webhookClient
-}
-
-// webhookClient talks to a single source webhook.
-type webhookClient struct {
-	client  *http.Client
-	baseURL *url.URL
-	// name is the host:port of the webhook; it labels the metrics and the
-	// resource label of every endpoint the webhook returns.
-	name        string
-	maxBodySize int64
-}
-
 // NewWebhookSource validates the URLs, negotiates the media type with every
 // webhook and returns a Source that polls all of them on each reconcile.
 func NewWebhookSource(ctx context.Context, urls []string, timeout time.Duration, maxBodySize int64) (Source, error) {
@@ -116,14 +115,16 @@ func NewWebhookSource(ctx context.Context, urls []string, timeout time.Duration,
 	seen := sets.New[string]()
 	parsed := make([]*url.URL, 0, len(urls))
 	for _, raw := range urls {
-		if seen.Has(raw) {
-			return nil, fmt.Errorf("webhook source: duplicate --webhook-source-url %q", raw)
-		}
-		seen.Insert(raw)
 		u, err := parseWebhookSourceURL(raw)
 		if err != nil {
 			return nil, err
 		}
+		// host:port is the webhook's identity; two URLs on one host would poll
+		// the same webhook twice and share a metric and resource label.
+		if seen.Has(u.Host) {
+			return nil, fmt.Errorf("webhook source: duplicate --webhook-source-url host %q", u.Host)
+		}
+		seen.Insert(u.Host)
 		parsed = append(parsed, u)
 	}
 
@@ -159,7 +160,7 @@ func parseWebhookSourceURL(raw string) (*url.URL, error) {
 	if u.Scheme != "http" {
 		return nil, fmt.Errorf("webhook source: --webhook-source-url %q must use the http scheme", raw)
 	}
-	if host := u.Hostname(); host != "localhost" {
+	if host := u.Hostname(); !strings.EqualFold(strings.TrimSuffix(host, "."), "localhost") {
 		addr, err := netip.ParseAddr(host)
 		if err != nil || !addr.IsLoopback() {
 			return nil, fmt.Errorf("webhook source: --webhook-source-url %q must point at a loopback host (localhost, 127.0.0.0/8 or ::1)", raw)
@@ -175,14 +176,14 @@ func (wc *webhookClient) negotiate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("webhook source %s: %w", wc.name, err)
 	}
-	req.Header.Set("Accept", WebhookSourceAccept)
+	req.Header.Set("Accept", webhookSourceAccept)
 	resp, err := extdnshttp.RequestWithRetry(wc.client, req, webhookSourceBackoff)
 	if err != nil {
 		return fmt.Errorf("webhook source %s: negotiation failed: %w", wc.name, err)
 	}
 	defer extdnshttp.DrainAndClose(resp.Body)
 	if ct := resp.Header.Get("Content-Type"); !isWebhookSourceMediaType(ct) {
-		return fmt.Errorf("webhook source %s: wrong content type %q, want %s", wc.name, ct, WebhookSourceAccept)
+		return fmt.Errorf("webhook source %s: wrong content type %q, want %s", wc.name, ct, webhookSourceAccept)
 	}
 	return nil
 }
@@ -194,7 +195,7 @@ func isWebhookSourceMediaType(contentType string) bool {
 	if err != nil {
 		return false
 	}
-	return mediaType == WebhookSourceMediaType && params["version"] == WebhookSourceMediaTypeVersion
+	return mediaType == webhookSourceMediaType && params["version"] == webhookSourceMediaTypeVersion
 }
 
 // Endpoints returns the endpoints of every webhook. It fails as a whole when
@@ -233,7 +234,7 @@ func (wc *webhookClient) fetch(ctx context.Context) ([]*endpoint.Endpoint, error
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", WebhookSourceAccept)
+	req.Header.Set("Accept", webhookSourceAccept)
 	resp, err := wc.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -280,8 +281,9 @@ func (wc *webhookClient) fetch(ctx context.Context) ([]*endpoint.Endpoint, error
 		if ep.RecordTTL < 0 {
 			return nil, fmt.Errorf("endpoint %q: negative TTL %d", ep.DNSName, ep.RecordTTL)
 		}
-		if err := ep.Validate(); err != nil {
-			return nil, fmt.Errorf("endpoint %q: %w", ep.DNSName, err)
+		normalizeTargets(ep)
+		if reason := targetRejectionReason(ep); reason != "" {
+			return nil, fmt.Errorf("endpoint %q: %s", ep.DNSName, reason)
 		}
 		// Labels from the webhook are discarded. The resource label decides
 		// conflicts and ownership, and a webhook must not impersonate another source.

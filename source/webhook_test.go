@@ -48,7 +48,7 @@ func newWebhookServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set("Content-Type", WebhookSourceAccept)
+			w.Header().Set("Content-Type", webhookSourceAccept)
 			_, _ = w.Write([]byte(`{}`))
 			return
 		}
@@ -58,7 +58,7 @@ func newWebhookServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 
 func serveEndpoints(body string) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", WebhookSourceAccept)
+		w.Header().Set("Content-Type", webhookSourceAccept)
 		_, _ = w.Write([]byte(body))
 	}
 }
@@ -74,6 +74,8 @@ func newTestWebhookSource(t *testing.T, srv *httptest.Server) Source {
 func TestParseWebhookSourceURL(t *testing.T) {
 	for _, raw := range []string{
 		"http://localhost:8889",
+		"http://LOCALHOST:8889",
+		"http://localhost.:8889",
 		"http://127.0.0.1:8889",
 		"http://127.1.2.3:8889/prefix",
 		"http://[::1]:8889",
@@ -101,8 +103,8 @@ func TestNewWebhookSource_ValidatesBeforeConnecting(t *testing.T) {
 	_, err := NewWebhookSource(t.Context(), nil, time.Second, testWebhookMaxBodySize)
 	require.ErrorContains(t, err, "at least one --webhook-source-url")
 
-	_, err = NewWebhookSource(t.Context(), []string{"http://localhost:8889", "http://localhost:8889"}, time.Second, testWebhookMaxBodySize)
-	require.ErrorContains(t, err, "duplicate --webhook-source-url")
+	_, err = NewWebhookSource(t.Context(), []string{"http://localhost:8889", "http://localhost:8889/"}, time.Second, testWebhookMaxBodySize)
+	require.ErrorContains(t, err, `duplicate --webhook-source-url host "localhost:8889"`)
 
 	_, err = NewWebhookSource(t.Context(), []string{"http://localhost:8889", "https://localhost:8890"}, time.Second, testWebhookMaxBodySize)
 	require.ErrorContains(t, err, "must use the http scheme")
@@ -135,12 +137,12 @@ func TestNewWebhookSource_RetriesNegotiation(t *testing.T) {
 	attempts := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempts++
-		assert.Equal(t, WebhookSourceAccept, r.Header.Get("Accept"))
+		assert.Equal(t, webhookSourceAccept, r.Header.Get("Accept"))
 		if attempts < 2 {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
-		w.Header().Set("Content-Type", WebhookSourceAccept+"; charset=utf-8")
+		w.Header().Set("Content-Type", webhookSourceAccept+"; charset=utf-8")
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
@@ -153,13 +155,14 @@ func TestNewWebhookSource_RetriesNegotiation(t *testing.T) {
 func TestWebhookSource_Endpoints(t *testing.T) {
 	srv := newWebhookServer(t, func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/endpoints", r.URL.Path)
-		assert.Equal(t, WebhookSourceAccept, r.Header.Get("Accept"))
-		w.Header().Set("Content-Type", WebhookSourceAccept+"; charset=utf-8")
+		assert.Equal(t, webhookSourceAccept, r.Header.Get("Accept"))
+		w.Header().Set("Content-Type", webhookSourceAccept+"; charset=utf-8")
 		_, _ = w.Write([]byte(`[
 			{"dnsName": "app.example.com", "recordType": "A", "targets": ["192.0.2.10"], "recordTTL": 300,
 			 "labels": {"resource": "ingress/default/forged", "owner": "someone-else"}},
 			{"dnsName": "_acme-challenge.app.example.com", "recordType": "CNAME", "targets": ["app.example.com.acme.example.net"],
-			 "setIdentifier": "id-1", "providerSpecific": [{"name": "alias", "value": "false"}]}
+			 "setIdentifier": "id-1", "providerSpecific": [{"name": "alias", "value": "false"}]},
+			{"dnsName": "example.com", "recordType": "MX", "targets": ["10 mail.example.com."]}
 		]`))
 	})
 	defer srv.Close()
@@ -183,6 +186,12 @@ func TestWebhookSource_Endpoints(t *testing.T) {
 			SetIdentifier:    "id-1",
 			ProviderSpecific: endpoint.ProviderSpecific{{Name: "alias", Value: "false"}},
 			Labels:           endpoint.Labels{endpoint.ResourceLabelKey: "webhook/" + host},
+		},
+		{
+			DNSName:    "example.com",
+			RecordType: endpoint.RecordTypeMX,
+			Targets:    endpoint.Targets{"10 mail.example.com"},
+			Labels:     endpoint.Labels{endpoint.ResourceLabelKey: "webhook/" + host},
 		},
 	}, eps)
 }
@@ -248,7 +257,7 @@ func TestWebhookSource_SoftErrors(t *testing.T) {
 		},
 		"wrong version": {
 			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", WebhookSourceMediaType+";version=2")
+				w.Header().Set("Content-Type", webhookSourceMediaType+";version=2")
 				_, _ = w.Write([]byte(`[]`))
 			},
 			want: "wrong content type",
@@ -292,6 +301,10 @@ func TestWebhookSource_SoftErrors(t *testing.T) {
 			handler: serveEndpoints(`[{"dnsName": "a.example.com", "recordType": "TXT"}]`),
 			want:    "needs at least one target",
 		},
+		"trailing dot on an NS target": {
+			handler: serveEndpoints(`[{"dnsName": "example.com", "recordType": "NS", "targets": ["ns1.example.com."]}]`),
+			want:    `target "ns1.example.com." must not end with a dot for a NS record`,
+		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -319,7 +332,7 @@ func TestWebhookSource_ConnectionErrorIsSoft(t *testing.T) {
 func TestWebhookSource_BodyOverLimit(t *testing.T) {
 	const limit = 1 << 20
 	srv := newWebhookServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", WebhookSourceAccept)
+		w.Header().Set("Content-Type", webhookSourceAccept)
 		_, _ = w.Write([]byte(`[{"dnsName":"`))
 		_, _ = w.Write(bytes.Repeat([]byte("a"), 2*limit))
 		_, _ = w.Write([]byte(`","recordType":"A","targets":["192.0.2.1"]}]`))
@@ -358,17 +371,12 @@ func TestWebhookSource_MultipleWebhooks(t *testing.T) {
 	assert.Nil(t, eps)
 }
 
-func TestWebhookSource_AddEventHandlerIsNoop(t *testing.T) {
-	src := &webhookSource{}
-	src.AddEventHandler(t.Context(), func() { t.Fatal("handler must never be called") })
-}
-
 func TestIsWebhookSourceMediaType(t *testing.T) {
-	assert.True(t, isWebhookSourceMediaType(WebhookSourceAccept))
-	assert.True(t, isWebhookSourceMediaType(WebhookSourceMediaType+"; version=1; charset=utf-8"))
+	assert.True(t, isWebhookSourceMediaType(webhookSourceAccept))
+	assert.True(t, isWebhookSourceMediaType(webhookSourceMediaType+"; version=1; charset=utf-8"))
 	assert.True(t, isWebhookSourceMediaType("Application/External.DNS.Webhook.Source+JSON;version=1"))
-	assert.False(t, isWebhookSourceMediaType(WebhookSourceMediaType))
-	assert.False(t, isWebhookSourceMediaType(WebhookSourceMediaType+";version=2"))
+	assert.False(t, isWebhookSourceMediaType(webhookSourceMediaType))
+	assert.False(t, isWebhookSourceMediaType(webhookSourceMediaType+";version=2"))
 	assert.False(t, isWebhookSourceMediaType("application/external.dns.webhook+json;version=1"))
 	assert.False(t, isWebhookSourceMediaType(""))
 }
