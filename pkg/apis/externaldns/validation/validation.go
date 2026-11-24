@@ -71,12 +71,17 @@ func validateHostnameConfig(cfg *externaldns.Config) field.ErrorList {
 	return nil
 }
 
-// validateTXTRegistryConfig ensures the TXT registry prefix and suffix are not set together.
+// validateTXTRegistryConfig ensures the TXT registry prefix and suffix are not set together,
+// and that the owner to migrate from differs from the current owner.
 func validateTXTRegistryConfig(cfg *externaldns.Config) field.ErrorList {
+	var errs field.ErrorList
 	if len(cfg.TXTPrefix) > 0 && len(cfg.TXTSuffix) > 0 {
-		return field.ErrorList{field.Invalid(field.NewPath("txt-prefix"), cfg.TXTPrefix, "txt-prefix and txt-suffix are mutual exclusive")}
+		errs = append(errs, field.Invalid(field.NewPath("txt-prefix"), cfg.TXTPrefix, "txt-prefix and txt-suffix are mutual exclusive"))
 	}
-	return nil
+	if len(cfg.TXTOwnerOld) > 0 && cfg.TXTOwnerOld == cfg.TXTOwnerID {
+		errs = append(errs, field.Invalid(field.NewPath("migrate-from-txt-owner"), cfg.TXTOwnerOld, "migrate-from-txt-owner must differ from txt-owner-id"))
+	}
+	return errs
 }
 
 // validateLabelSelectors ensures the label and annotation filters are valid selectors.
