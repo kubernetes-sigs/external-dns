@@ -51,6 +51,19 @@ type IngressSuite struct {
 	fooWithTargets *networkv1.Ingress
 }
 
+// ingress specific helper functions
+type fakeIngress struct {
+	dnsnames         []string
+	tlsdnsnames      [][]string
+	ips              []string
+	hostnames        []string
+	namespace        string
+	name             string
+	annotations      map[string]string
+	labels           map[string]string
+	ingressClassName string
+}
+
 func (suite *IngressSuite) SetupTest() {
 	fakeClient := fake.NewClientset()
 
@@ -262,7 +275,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ingressTargets(t.Context(), nil, realIngress), ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
 		})
 	}
 }
@@ -361,7 +374,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			testutils.ValidateEndpoints(t, endpointsFromIngress(realIngress, ingressTargets(t.Context(), nil, realIngress), false, false, false), ti.expected)
 		})
 	}
 }
@@ -1472,19 +1485,6 @@ func testIngressEndpoints(t *testing.T) {
 			}
 		})
 	}
-}
-
-// ingress specific helper functions
-type fakeIngress struct {
-	dnsnames         []string
-	tlsdnsnames      [][]string
-	ips              []string
-	hostnames        []string
-	namespace        string
-	name             string
-	annotations      map[string]string
-	labels           map[string]string
-	ingressClassName string
 }
 
 func (ing fakeIngress) Ingress() *networkv1.Ingress {

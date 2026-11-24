@@ -28,21 +28,6 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-// SoftError is an error, that provider will only log as error instead
-// of fatal. It is meant for error propagation from providers to tell
-// that this is a transient error.
-var SoftError error = errors.New("soft error") //nolint:staticcheck
-
-// NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
-func NewSoftErrorf(format string, a ...any) error {
-	return NewSoftError(fmt.Errorf(format, a...))
-}
-
-// NewSoftError creates a SoftError from the given error
-func NewSoftError(err error) error {
-	return errors.Join(SoftError, err)
-}
-
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -60,6 +45,21 @@ type Provider interface {
 
 type BaseProvider struct{}
 
+// SoftError is an error, that provider will only log as error instead
+// of fatal. It is meant for error propagation from providers to tell
+// that this is a transient error.
+var SoftError error = errors.New("soft error") //nolint:staticcheck
+
+// NewSoftErrorf creates a SoftError with formats according to a format specifier and returns the string as a
+func NewSoftErrorf(format string, a ...any) error {
+	return NewSoftError(fmt.Errorf(format, a...))
+}
+
+// NewSoftError creates a SoftError from the given error
+func NewSoftError(err error) error {
+	return errors.Join(SoftError, err)
+}
+
 // AdjustEndpoints returns the endpoints unchanged. Providers that need to
 // canonicalize or transform candidate endpoints should override this method.
 func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
@@ -71,17 +71,6 @@ func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return &endpoint.DomainFilter{}
 }
-
-type contextKey struct {
-	name string
-}
-
-func (k *contextKey) String() string { return "provider context value " + k.name }
-
-// RecordsContextKey is a context key. It can be used during ApplyChanges
-// to access previously cached records. The associated value will be of
-// type []*endpoint.Endpoint.
-var RecordsContextKey = &contextKey{"records"}
 
 // EnsureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
 func EnsureTrailingDot(hostname string) string {

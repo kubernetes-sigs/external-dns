@@ -23,6 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// test doubles
+type filterZoneTags struct {
+	ZoneTagFilter
+	inputTags map[string]string
+}
+
 var basicZoneTags = []struct {
 	name       string
 	tagsFilter []string
@@ -59,6 +65,19 @@ var basicZoneTags = []struct {
 	{
 		"tag filter without key and equal sign", []string{"tag1=value1", "=haha"}, map[string]string{"tag1": "value1"}, true,
 	},
+}
+
+var benchFixtures = []struct {
+	source filterZoneTags
+}{
+	// match
+	{generateTagFilterAndZoneTagsForMatch(10, 30)},
+	{generateTagFilterAndZoneTagsForMatch(5, 40)},
+	{generateTagFilterAndZoneTagsForMatch(30, 50)},
+	// 	no match
+	{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
+	{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
+	{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
 }
 
 func TestZoneTagFilterMatch(t *testing.T) {
@@ -178,31 +197,12 @@ func BenchmarkZoneTagFilterMatchBasic(b *testing.B) {
 	}
 }
 
-var benchFixtures = []struct {
-	source filterZoneTags
-}{
-	// match
-	{generateTagFilterAndZoneTagsForMatch(10, 30)},
-	{generateTagFilterAndZoneTagsForMatch(5, 40)},
-	{generateTagFilterAndZoneTagsForMatch(30, 50)},
-	// 	no match
-	{generateTagFilterAndZoneTagsForNotMatch(10, 30)},
-	{generateTagFilterAndZoneTagsForNotMatch(5, 40)},
-	{generateTagFilterAndZoneTagsForNotMatch(30, 50)},
-}
-
 func BenchmarkZoneTagFilterComplex(b *testing.B) {
 	for _, tc := range benchFixtures {
 		for b.Loop() {
 			tc.source.ZoneTagFilter.Match(tc.source.inputTags)
 		}
 	}
-}
-
-// test doubles
-type filterZoneTags struct {
-	ZoneTagFilter
-	inputTags map[string]string
 }
 
 // generateTagFilterAndZoneTagsForMatch generates filter tags and zone tags that do match.

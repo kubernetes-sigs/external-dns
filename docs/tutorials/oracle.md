@@ -29,6 +29,20 @@ empty:
 --oci-zone-scope=
 ```
 
+## Selecting OCI DNS Zones by OCID
+
+To manage specific zones, pass their complete OCIDs with `--zone-id-filter`.
+Repeat the flag to select multiple zones:
+
+```sh
+--zone-id-filter=ocid1.dns-zone.oc1..example1
+--zone-id-filter=ocid1.dns-zone.oc1..example2
+```
+
+When every zone ID filter is a complete zone OCID, the OCI provider calls
+`GetZone` for each distinct OCID instead of listing all zones in the
+compartment. This is especially useful when managing zones in compartments with thousands of zones.
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.

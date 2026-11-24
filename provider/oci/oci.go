@@ -38,8 +38,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const defaultTTL = 300
-
 // OCIAuthConfig holds connection parameters for the OCI API.
 type OCIAuthConfig struct {
 	Region               string `yaml:"region"`
@@ -76,9 +74,15 @@ type OCIProvider struct {
 // ociDNSClient is the subset of the OCI DNS API required by the OCI Provider.
 type ociDNSClient interface {
 	ListZones(ctx context.Context, request dns.ListZonesRequest) (response dns.ListZonesResponse, err error)
+	GetZone(ctx context.Context, request dns.GetZoneRequest) (response dns.GetZoneResponse, err error)
 	GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (response dns.GetZoneRecordsResponse, err error)
 	PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error)
 }
+
+const (
+	defaultTTL        = 300
+	ociZoneOCIDPrefix = "ocid1.dns-zone."
+)
 
 // New creates an OCI provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
@@ -166,114 +170,6 @@ func newProvider(cfg OCIConfig, domainFilter *endpoint.DomainFilter, zoneIDFilte
 		},
 		dryRun: dryRun,
 	}, nil
-}
-
-func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, error) {
-	if !p.zoneCache.Expired() {
-		log.Debug("Using cached zones list")
-		return p.zoneCache.zones, nil
-	}
-	zones := make(map[string]dns.ZoneSummary)
-	scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
-	// If the zone scope is empty, list all zones types.
-	if p.zoneScope == "" {
-		scopes = dns.GetGetZoneScopeEnumValues()
-	}
-	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
-	for _, scope := range scopes {
-		if err := p.addPaginatedZones(ctx, zones, scope); err != nil {
-			return nil, err
-		}
-	}
-	if len(zones) == 0 {
-		log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter)
-	}
-	p.zoneCache.Reset(zones)
-	return zones, nil
-}
-
-// Merge Endpoints with the same Name and Type into a single endpoint with multiple Targets.
-func mergeEndpointsMultiTargets(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
-	endpointsByNameType := map[string][]*endpoint.Endpoint{}
-
-	for _, ep := range endpoints {
-		key := fmt.Sprintf("%s-%s", ep.DNSName, ep.RecordType)
-		endpointsByNameType[key] = append(endpointsByNameType[key], ep)
-	}
-
-	// If there were no merges, return endpoints.
-	if len(endpointsByNameType) == len(endpoints) {
-		return endpoints
-	}
-
-	// Otherwise, create a new list of endpoints with the consolidated targets.
-	var mergedEndpoints []*endpoint.Endpoint
-	for _, ep := range endpointsByNameType {
-		dnsName := ep[0].DNSName
-		recordType := ep[0].RecordType
-		recordTTL := ep[0].RecordTTL
-
-		targets := make([]string, len(ep))
-		for i, e := range ep {
-			targets[i] = e.Targets[0]
-		}
-
-		e := endpoint.NewEndpointWithTTL(dnsName, recordType, recordTTL, targets...)
-		mergedEndpoints = append(mergedEndpoints, e)
-	}
-
-	return mergedEndpoints
-}
-
-func (p *OCIProvider) addPaginatedZones(ctx context.Context, zones map[string]dns.ZoneSummary, scope dns.GetZoneScopeEnum) error {
-	var page *string
-	// Loop until we have listed all zones.
-	for {
-		resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
-			CompartmentId: &p.cfg.CompartmentID,
-			ZoneType:      dns.ListZonesZoneTypePrimary,
-			Scope:         dns.ListZonesScopeEnum(scope),
-			Page:          page,
-		})
-		if err != nil {
-			return provider.NewSoftErrorf("listing zones in %s: %w", p.cfg.CompartmentID, err)
-		}
-		for _, zone := range resp.Items {
-			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
-				zones[*zone.Id] = zone
-				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
-			} else {
-				log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
-			}
-		}
-		if page = resp.OpcNextPage; resp.OpcNextPage == nil {
-			break
-		}
-	}
-	return nil
-}
-
-func (p *OCIProvider) newFilteredRecordOperations(endpoints []*endpoint.Endpoint, opType dns.RecordOperationOperationEnum) []dns.RecordOperation {
-	var ops []dns.RecordOperation
-	for _, ep := range endpoints {
-		if ep == nil {
-			continue
-		}
-		if p.domainFilter.Match(ep.DNSName) {
-			for _, t := range ep.Targets {
-				singleTargetEp := &endpoint.Endpoint{
-					DNSName:          ep.DNSName,
-					Targets:          []string{t},
-					RecordType:       ep.RecordType,
-					RecordTTL:        ep.RecordTTL,
-					Labels:           ep.Labels,
-					ProviderSpecific: ep.ProviderSpecific,
-				}
-				ops = append(ops, newRecordOperation(singleTargetEp, opType))
-			}
-		}
-	}
-	return ops
 }
 
 // Records returns the list of records in a given hosted zone.
@@ -368,6 +264,39 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	return nil
 }
 
+// Merge Endpoints with the same Name and Type into a single endpoint with multiple Targets.
+func mergeEndpointsMultiTargets(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	endpointsByNameType := map[string][]*endpoint.Endpoint{}
+
+	for _, ep := range endpoints {
+		key := fmt.Sprintf("%s-%s", ep.DNSName, ep.RecordType)
+		endpointsByNameType[key] = append(endpointsByNameType[key], ep)
+	}
+
+	// If there were no merges, return endpoints.
+	if len(endpointsByNameType) == len(endpoints) {
+		return endpoints
+	}
+
+	// Otherwise, create a new list of endpoints with the consolidated targets.
+	var mergedEndpoints []*endpoint.Endpoint
+	for _, ep := range endpointsByNameType {
+		dnsName := ep[0].DNSName
+		recordType := ep[0].RecordType
+		recordTTL := ep[0].RecordTTL
+
+		targets := make([]string, len(ep))
+		for i, e := range ep {
+			targets[i] = e.Targets[0]
+		}
+
+		e := endpoint.NewEndpointWithTTL(dnsName, recordType, recordTTL, targets...)
+		mergedEndpoints = append(mergedEndpoints, e)
+	}
+
+	return mergedEndpoints
+}
+
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	var adjustedEndpoints []*endpoint.Endpoint
@@ -380,6 +309,143 @@ func (p *OCIProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints, nil
+}
+
+func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, error) {
+	if !p.zoneCache.Expired() {
+		log.Debug("Using cached zones list")
+		return p.zoneCache.zones, nil
+	}
+	zones := make(map[string]dns.ZoneSummary)
+	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
+	if p.hasFullZoneIDFilter() {
+		if err := p.addZonesByID(ctx, zones); err != nil {
+			return nil, err
+		}
+	} else {
+		scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
+		// If the zone scope is empty, list all zone types.
+		if p.zoneScope == "" {
+			scopes = dns.GetGetZoneScopeEnumValues()
+		}
+		for _, scope := range scopes {
+			if err := p.addPaginatedZones(ctx, zones, scope); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if len(zones) == 0 {
+		log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter)
+	}
+	p.zoneCache.Reset(zones)
+	return zones, nil
+}
+
+// hasFullZoneIDFilter reports whether all configured zone filters are OCI zone OCIDs
+func (p *OCIProvider) hasFullZoneIDFilter() bool {
+	if !p.zoneIDFilter.IsConfigured() {
+		return false
+	}
+
+	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+		if !strings.HasPrefix(zoneID, ociZoneOCIDPrefix) {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *OCIProvider) addPaginatedZones(ctx context.Context, zones map[string]dns.ZoneSummary, scope dns.GetZoneScopeEnum) error {
+	var page *string
+	// Loop until we have listed all zones.
+	for {
+		resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
+			CompartmentId: &p.cfg.CompartmentID,
+			ZoneType:      dns.ListZonesZoneTypePrimary,
+			Scope:         dns.ListZonesScopeEnum(scope),
+			Page:          page,
+		})
+		if err != nil {
+			return provider.NewSoftErrorf("listing zones in %s: %w", p.cfg.CompartmentID, err)
+		}
+		for _, zone := range resp.Items {
+			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
+				zones[*zone.Id] = zone
+				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
+			} else {
+				log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
+			}
+		}
+		if page = resp.OpcNextPage; resp.OpcNextPage == nil {
+			break
+		}
+	}
+	return nil
+}
+
+func (p *OCIProvider) addZonesByID(ctx context.Context, zones map[string]dns.ZoneSummary) error {
+	seen := make(map[string]struct{}, len(p.zoneIDFilter.ZoneIDs))
+	for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+		if _, ok := seen[zoneID]; ok {
+			continue
+		}
+		seen[zoneID] = struct{}{}
+
+		// A zone OCID is unique; verify the returned scope rather than relying on
+		// the scope query parameter to filter an OCID lookup.
+		resp, err := p.client.GetZone(ctx, dns.GetZoneRequest{ZoneNameOrId: &zoneID})
+		if err != nil {
+			return provider.NewSoftErrorf("getting zone %q: %w", zoneID, err)
+		}
+
+		if p.zoneScope != "" && resp.Scope != dns.ScopeEnum(p.zoneScope) {
+			log.Warnf("Skipping configured zone %q: scope %q does not match configured scope %q", zoneID, resp.Scope, p.zoneScope)
+			continue
+		}
+		if resp.ZoneType != dns.ZoneZoneTypePrimary {
+			log.Warnf("Skipping configured zone %q: zone type %q is not PRIMARY", zoneID, resp.ZoneType)
+			continue
+		}
+		if *resp.CompartmentId != p.cfg.CompartmentID {
+			log.Warnf("Skipping configured zone %q: compartment %q does not match configured compartment %q", zoneID, *resp.CompartmentId, p.cfg.CompartmentID)
+			continue
+		}
+		if resp.LifecycleState != dns.ZoneLifecycleStateActive && resp.LifecycleState != dns.ZoneLifecycleStateUpdating {
+			log.Warnf("Skipping configured zone %q: lifecycle state %q is neither ACTIVE nor UPDATING", zoneID, resp.LifecycleState)
+			continue
+		}
+		if !p.domainFilter.Match(*resp.Name) {
+			log.Warnf("Skipping configured zone %q (%q): name does not match domain filters %v", zoneID, *resp.Name, p.domainFilter.Filters)
+			continue
+		}
+
+		zones[*resp.Id] = dns.ZoneSummary{Id: resp.Id, Name: resp.Name}
+		log.Debugf("Matched %q (%q)", *resp.Name, *resp.Id)
+	}
+	return nil
+}
+
+func (p *OCIProvider) newFilteredRecordOperations(endpoints []*endpoint.Endpoint, opType dns.RecordOperationOperationEnum) []dns.RecordOperation {
+	var ops []dns.RecordOperation
+	for _, ep := range endpoints {
+		if ep == nil {
+			continue
+		}
+		if p.domainFilter.Match(ep.DNSName) {
+			for _, t := range ep.Targets {
+				singleTargetEp := &endpoint.Endpoint{
+					DNSName:          ep.DNSName,
+					Targets:          []string{t},
+					RecordType:       ep.RecordType,
+					RecordTTL:        ep.RecordTTL,
+					Labels:           ep.Labels,
+					ProviderSpecific: ep.ProviderSpecific,
+				}
+				ops = append(ops, newRecordOperation(singleTargetEp, opType))
+			}
+		}
+	}
+	return ops
 }
 
 // newRecordOperation returns a RecordOperation based on a given endpoint.

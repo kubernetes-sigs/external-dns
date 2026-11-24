@@ -37,6 +37,13 @@ import (
 	extdnshttp "sigs.k8s.io/external-dns/pkg/http"
 )
 
+// rateLimiter wraps a RateLimiter and enriches Wait errors with an
+// actionable hint so callers get a clear message without needing to inspect
+// the error string themselves.
+type rateLimiter struct {
+	delegate flowcontrol.RateLimiter
+}
+
 // Overridable in tests: rest.InClusterConfig reads fixed service account paths.
 var inClusterConfig = rest.InClusterConfig
 
@@ -142,13 +149,6 @@ func buildRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	}
 	log.Debugf("apiServerURL: %s", config.Host)
 	return config, nil
-}
-
-// rateLimiter wraps a RateLimiter and enriches Wait errors with an
-// actionable hint so callers get a clear message without needing to inspect
-// the error string themselves.
-type rateLimiter struct {
-	delegate flowcontrol.RateLimiter
 }
 
 func (r *rateLimiter) TryAccept() bool { return r.delegate.TryAccept() }

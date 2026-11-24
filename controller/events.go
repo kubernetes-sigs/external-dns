@@ -25,6 +25,20 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
+type deletedEndpoint struct {
+	*endpoint.Endpoint
+	ref *events.ObjectReference
+}
+
+// StatusReporter receives each sync's outcome, which only exists after
+// ApplyChanges, e.g. to set DNSEndpoint conditions.
+type StatusReporter interface {
+	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
+	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
+	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
+}
+
 // Delete events are reported by the registry: the source object is usually gone.
 const registrySource = "registry"
 
@@ -81,12 +95,6 @@ func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reas
 	}
 }
 
-// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
-type deletedEndpoint struct {
-	*endpoint.Endpoint
-	ref *events.ObjectReference
-}
-
 func (d deletedEndpoint) RefObjects() []*events.ObjectReference {
 	return []*events.ObjectReference{d.ref}
 }
@@ -112,14 +120,6 @@ func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 		kind = k
 	}
 	return endpoint.NewObjectRef(kind, "", namespace, name, "", registrySource)
-}
-
-// StatusReporter receives each sync's outcome, which only exists after
-// ApplyChanges, e.g. to set DNSEndpoint conditions.
-type StatusReporter interface {
-	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
-	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
-	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
 }
 
 func reportSyncStatus(ctx context.Context, r StatusReporter, p *plan.Plan, applyErr error) {
