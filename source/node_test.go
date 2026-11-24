@@ -49,6 +49,14 @@ import (
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
+type fakeNodeInformer struct {
+	mock.Mock
+}
+
+type nodeListBuilder struct {
+	nodes []v1.Node
+}
+
 func TestNodeSource(t *testing.T) {
 	t.Parallel()
 
@@ -70,6 +78,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 		excludeUnschedulable bool // default to false
 		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
 		unschedulable        bool // default to false
+		taints               []v1.Taint
+		deletionTimestamp    *metav1.Time
 		expected             []*endpoint.Endpoint
 		expectError          bool
 		expectedLogs         []string
@@ -358,6 +368,60 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:                "node tainted by Karpenter returns nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			taints:               []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is tainted karpenter.sh/disrupted",
+			},
+		},
+		{
+			title:                "node tainted by the Cluster Autoscaler returns nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			taints:               []v1.Taint{{Key: "ToBeDeletedByClusterAutoscaler", Value: "1700000000", Effect: v1.TaintEffectNoSchedule}},
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is tainted ToBeDeletedByClusterAutoscaler",
+			},
+		},
+		{
+			title:                "node being deleted returns nothing with excludeUnschedulable=true",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			deletionTimestamp:    &metav1.Time{Time: time.Unix(1700000000, 0)},
+			excludeUnschedulable: true,
+			expected:             []*endpoint.Endpoint{},
+			expectedLogs: []string{
+				"Skipping node node1 because it is being deleted",
+			},
+		},
+		{
+			title:                "node tainted by Karpenter returns node with excludeUnschedulable=false",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			taints:               []v1.Taint{{Key: "karpenter.sh/disrupted", Effect: v1.TaintEffectNoSchedule}},
+			excludeUnschedulable: false,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			// The label is about load balancing through NodePorts; it doesn't remove a Node's own records.
+			title:                "node labeled exclude-from-external-load-balancers is still published",
+			nodeName:             "node1",
+			nodeAddresses:        []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			labels:               map[string]string{v1.LabelNodeExcludeBalancers: "true"},
+			excludeUnschedulable: true,
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
 			title:              "provider-specific annotation is not supported and is ignored",
 			nodeName:           "node1",
 			exposeInternalIPv6: true,
@@ -384,11 +448,13 @@ func testNodeSourceEndpoints(t *testing.T) {
 			kubeClient := fake.NewClientset()
 
 			node := &v1.Node{
-				Name:        tc.nodeName,
-				Labels:      tc.labels,
-				Annotations: tc.annotations,
+				Name:              tc.nodeName,
+				Labels:            tc.labels,
+				Annotations:       tc.annotations,
+				DeletionTimestamp: tc.deletionTimestamp,
 				Spec: v1.NodeSpec{
 					Unschedulable: tc.unschedulable,
+					Taints:        tc.taints,
 				},
 				Status: v1.NodeStatus{
 					Addresses: tc.nodeAddresses,
@@ -677,10 +743,6 @@ func TestNodeSource_AddEventHandler(t *testing.T) {
 	assert.Equal(t, 1, inf.times)
 }
 
-type fakeNodeInformer struct {
-	mock.Mock
-}
-
 func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
 	args := f.Called()
 	return args.Get(0).(cache.SharedIndexInformer)
@@ -688,10 +750,6 @@ func (f *fakeNodeInformer) Informer() cache.SharedIndexInformer {
 
 func (f *fakeNodeInformer) Lister() corev1lister.NodeLister {
 	return corev1lister.NewNodeLister(f.Informer().GetIndexer())
-}
-
-type nodeListBuilder struct {
-	nodes []v1.Node
 }
 
 func helperNodeBuilder() *nodeListBuilder {

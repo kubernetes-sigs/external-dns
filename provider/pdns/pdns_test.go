@@ -18,24 +18,83 @@ package pdns
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	pgo "github.com/joeig/go-powerdns/v3"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/sets"
+	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
+	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
 
 // FIXME: What do we do about labels?
+
+/******************************************************************************/
+// API that returns a zone with multiple record types
+type PDNSAPIClientStub struct{}
+
+/******************************************************************************/
+// API that returns a zones with no records
+type PDNSAPIClientStubEmptyZones struct {
+	// Keep track of all zones we receive via PatchZone
+	patchedZones []pgo.Zone
+}
+
+/******************************************************************************/
+// API that returns error on PatchZone()
+type PDNSAPIClientStubPatchZoneFailure struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// API that returns error on ListZone()
+type PDNSAPIClientStubListZoneFailure struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// API that returns error on ListZones() (Zones - plural)
+type PDNSAPIClientStubListZonesFailure struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// API that returns zone partitions given DomainFilter(s)
+type PDNSAPIClientStubPartitionZones struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+/******************************************************************************/
+// Configurable API stub that performs real domain-filter partitioning.
+// Use it to test the intersection logic between ListZones results and the
+// provider's domain filter.
+type PDNSAPIClientStubConfigurable struct {
+	zones   []pgo.Zone
+	listErr error
+}
+
+/******************************************************************************/
+
+type NewPDNSProviderTestSuite struct {
+	suite.Suite
+}
 
 var (
 	// Simple RRSets that contain 1 A record and 1 TXT record
@@ -589,10 +648,6 @@ var (
 	RegexDomainFilter = endpoint.NewRegexDomainFilter(regexp.MustCompile("example.com"), nil)
 )
 
-/******************************************************************************/
-// API that returns a zone with multiple record types
-type PDNSAPIClientStub struct{}
-
 func (c *PDNSAPIClientStub) ListZones(_ context.Context) ([]pgo.Zone, error) {
 	return []pgo.Zone{ZoneMixed}, nil
 }
@@ -603,13 +658,6 @@ func (c *PDNSAPIClientStub) ListZone(_ context.Context, _ string) (*pgo.Zone, er
 
 func (c *PDNSAPIClientStub) PatchZone(_ context.Context, _ string, _ *pgo.Zone) error {
 	return nil
-}
-
-/******************************************************************************/
-// API that returns a zones with no records
-type PDNSAPIClientStubEmptyZones struct {
-	// Keep track of all zones we receive via PatchZone
-	patchedZones []pgo.Zone
 }
 
 func (c *PDNSAPIClientStubEmptyZones) ListZones(_ context.Context) ([]pgo.Zone, error) {
@@ -633,23 +681,9 @@ func (c *PDNSAPIClientStubEmptyZones) PatchZone(_ context.Context, _ string, zon
 	return nil
 }
 
-/******************************************************************************/
-// API that returns error on PatchZone()
-type PDNSAPIClientStubPatchZoneFailure struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
-}
-
 // Just overwrite the PatchZone method to introduce a failure
 func (c *PDNSAPIClientStubPatchZoneFailure) PatchZone(_ context.Context, _ string, _ *pgo.Zone) error {
 	return provider.NewSoftErrorf("Generic PDNS Error")
-}
-
-/******************************************************************************/
-// API that returns error on ListZone()
-type PDNSAPIClientStubListZoneFailure struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
 }
 
 // Just overwrite the ListZone method to introduce a failure
@@ -657,23 +691,9 @@ func (c *PDNSAPIClientStubListZoneFailure) ListZone(_ context.Context, _ string)
 	return &pgo.Zone{}, provider.NewSoftErrorf("Generic PDNS Error")
 }
 
-/******************************************************************************/
-// API that returns error on ListZones() (Zones - plural)
-type PDNSAPIClientStubListZonesFailure struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
-}
-
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubListZonesFailure) ListZones(_ context.Context) ([]pgo.Zone, error) {
 	return []pgo.Zone{}, provider.NewSoftErrorf("Generic PDNS Error")
-}
-
-/******************************************************************************/
-// API that returns zone partitions given DomainFilter(s)
-type PDNSAPIClientStubPartitionZones struct {
-	// Anonymous struct for composition
-	PDNSAPIClientStubEmptyZones
 }
 
 func (c *PDNSAPIClientStubPartitionZones) ListZones(_ context.Context) ([]pgo.Zone, error) {
@@ -692,15 +712,6 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(_ context.Context, zoneID str
 	return &pgo.Zone{}, nil
 }
 
-/******************************************************************************/
-// Configurable API stub that performs real domain-filter partitioning.
-// Use it to test the intersection logic between ListZones results and the
-// provider's domain filter.
-type PDNSAPIClientStubConfigurable struct {
-	zones   []pgo.Zone
-	listErr error
-}
-
 func (c *PDNSAPIClientStubConfigurable) ListZones(_ context.Context) ([]pgo.Zone, error) {
 	if c.listErr != nil {
 		return nil, c.listErr
@@ -714,12 +725,6 @@ func (c *PDNSAPIClientStubConfigurable) ListZone(_ context.Context, _ string) (*
 
 func (c *PDNSAPIClientStubConfigurable) PatchZone(_ context.Context, _ string, _ *pgo.Zone) error {
 	return nil
-}
-
-/******************************************************************************/
-
-type NewPDNSProviderTestSuite struct {
-	suite.Suite
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
@@ -748,7 +753,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			DryRun:       true,
 		})
-	suite.Require().Error(err, "--dry-run should raise an error")
+	suite.Require().NoError(err, "--dry-run should be supported")
 
 	// This is our "regular" code path, no error should be thrown
 	_, err = newProvider(
@@ -1448,5 +1453,85 @@ func TestPDNSContextCancellationInFlight(t *testing.T) {
 		require.Error(t, err)
 	case <-time.After(2 * time.Second):
 		t.Fatal("ListZones did not abort on context cancellation")
+	}
+}
+
+func TestPDNSApplyChangesDryRun(t *testing.T) {
+	oldEndpoint := endpoint.NewEndpointWithTTL("app.example.com", endpoint.RecordTypeA, 300, "192.0.2.1")
+	newEndpoint := endpoint.NewEndpointWithTTL("app.example.com", endpoint.RecordTypeA, 300, "192.0.2.2")
+	for _, tt := range []struct {
+		name       string
+		changes    *plan.Changes
+		changeType pdnsChangeType
+		logMessage string
+	}{
+		{"create", &plan.Changes{Create: []*endpoint.Endpoint{newEndpoint}}, PdnsReplace, "CREATE:"},
+		{"update", &plan.Changes{UpdateOld: []*endpoint.Endpoint{oldEndpoint}, UpdateNew: []*endpoint.Endpoint{newEndpoint}}, PdnsReplace, "UPDATE-NEW:"},
+		{"delete", &plan.Changes{Delete: []*endpoint.Endpoint{oldEndpoint}}, PdnsDelete, "DELETE:"},
+	} {
+		for _, dryRun := range []bool{true, false} {
+			mode := "live"
+			if dryRun {
+				mode = "dry-run"
+			}
+			t.Run(tt.name+"/"+mode, func(t *testing.T) {
+				hook := logtest.LogsUnderTestWithLogLevel(log.InfoLevel, t)
+				var mu sync.Mutex
+				var methods []string
+				var patches []pgo.RRsets
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					mu.Lock()
+					defer mu.Unlock()
+					methods = append(methods, r.Method)
+					w.Header().Set("Content-Type", "application/json")
+					switch r.Method {
+					case http.MethodGet:
+						assert.Equal(t, "/api/v1/servers/localhost/zones", r.URL.Path)
+						_, err := w.Write([]byte(`[{"id":"example.com.","name":"example.com.","type":"Zone"}]`))
+						assert.NoError(t, err)
+					case http.MethodPatch:
+						assert.Equal(t, "/api/v1/servers/localhost/zones/example.com.", r.URL.Path)
+						var patch pgo.RRsets
+						assert.NoError(t, json.NewDecoder(r.Body).Decode(&patch))
+						patches = append(patches, patch)
+						w.WriteHeader(http.StatusNoContent)
+					default:
+						t.Errorf("unexpected request method: %s", r.Method)
+						w.WriteHeader(http.StatusMethodNotAllowed)
+					}
+				}))
+				defer server.Close()
+
+				p, err := newProvider(t.Context(), PDNSConfig{
+					Server:       server.URL,
+					ServerID:     "localhost",
+					APIKey:       "test",
+					DryRun:       dryRun,
+					DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+				})
+				require.NoError(t, err)
+				require.NoError(t, p.ApplyChanges(t.Context(), tt.changes))
+				mu.Lock()
+				defer mu.Unlock()
+				logtest.TestHelperLogContains(tt.logMessage, hook, t)
+				if dryRun {
+					assert.Equal(t, []string{http.MethodGet}, methods)
+					assert.Empty(t, patches)
+					logtest.TestHelperLogContains("Dry run: skipping changes to PowerDNS zone example.com.", hook, t)
+					logtest.TestHelperLogNotContains("Changes pushed out to PowerDNS", hook, t)
+				} else {
+					logtest.TestHelperLogContains("Changes pushed out to PowerDNS", hook, t)
+					assert.Equal(t, []string{http.MethodGet, http.MethodPatch}, methods)
+					require.Len(t, patches, 1)
+					require.Len(t, patches[0].Sets, 1)
+					assert.Equal(t, string(tt.changeType), string(*patches[0].Sets[0].ChangeType))
+					assert.Equal(t, "app.example.com.", pgo.StringValue(patches[0].Sets[0].Name))
+					if tt.changeType == PdnsReplace {
+						require.Len(t, patches[0].Sets[0].Records, 1)
+						assert.Equal(t, "192.0.2.2", pgo.StringValue(patches[0].Sets[0].Records[0].Content))
+					}
+				}
+			})
+		}
 	}
 }

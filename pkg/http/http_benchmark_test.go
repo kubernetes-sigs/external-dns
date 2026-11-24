@@ -28,6 +28,11 @@ import (
 
 type roundTripFunc func(req *http.Request) *http.Response
 
+type apiUnderTest struct {
+	client  *http.Client
+	baseURL string
+}
+
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req), nil
 }
@@ -37,11 +42,6 @@ func newTestClient(fn roundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: NewInstrumentedTransport(fn),
 	}
-}
-
-type apiUnderTest struct {
-	client  *http.Client
-	baseURL string
 }
 
 func (api *apiUnderTest) doStuff() ([]byte, error) {

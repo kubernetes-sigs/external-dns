@@ -28,6 +28,13 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+type CachedProvider struct {
+	Provider
+	RefreshDelay time.Duration
+	lastRead     time.Time
+	cache        []*endpoint.Endpoint
+}
+
 var (
 	cachedRecordsCallsTotal = metrics.NewCounterVecWithOpts(
 		prometheus.CounterOpts{
@@ -51,13 +58,6 @@ var (
 func init() {
 	metrics.RegisterMetric.MustRegister(cachedRecordsCallsTotal)
 	metrics.RegisterMetric.MustRegister(cachedApplyChangesCallsTotal)
-}
-
-type CachedProvider struct {
-	Provider
-	RefreshDelay time.Duration
-	lastRead     time.Time
-	cache        []*endpoint.Endpoint
 }
 
 func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedProvider {
@@ -84,6 +84,7 @@ func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 	return c.cache, nil
 }
+
 func (c *CachedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if !changes.HasChanges() {
 		log.Info("Records cache provider: no changes to be applied")

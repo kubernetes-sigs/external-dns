@@ -261,10 +261,6 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	// When caching is enabled, disable the provider from using the cache.
-	if im.cacheInterval > 0 {
-		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
-	}
 	err = im.provider.ApplyChanges(ctx, filteredChanges)
 	if err != nil {
 		im.recordsCache = nil
@@ -274,6 +270,11 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 	statements = im.planDeleteStatements(filteredChanges)
 	return im.executeStatements(ctx, statements, im.deleteStatementError)
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the specific provider.
+func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return im.provider.AdjustEndpoints(endpoints)
 }
 
 // Also writes im.labels and the records cache.
@@ -387,11 +388,6 @@ func (im *DynamoDBRegistry) deleteStatementError(request dynamodbtypes.BatchStat
 		return fmt.Errorf("deleting dynamodb record: %w", err)
 	}
 	return fmt.Errorf("deleting dynamodb record %v: %s: %s", record, response.Error.Code, *response.Error.Message)
-}
-
-// AdjustEndpoints modifies the endpoints as needed by the specific provider.
-func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	return im.provider.AdjustEndpoints(endpoints)
 }
 
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {

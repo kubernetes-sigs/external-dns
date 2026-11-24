@@ -28,10 +28,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-// ErrNoPiholeServer is returned when there is no Pihole server configured
-// in the environment.
-var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
-
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
 	provider.BaseProvider
@@ -57,6 +53,10 @@ type piholeEntryKey struct {
 	Target     string
 	RecordType string
 }
+
+// ErrNoPiholeServer is returned when there is no Pihole server configured
+// in the environment.
+var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
 
 // New creates a Pi-hole provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {

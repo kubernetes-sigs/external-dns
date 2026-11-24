@@ -24,6 +24,27 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+// Options configures a Schema at construction time. Fields correspond to runtime
+// flags that change what the schema validates.
+type Options struct {
+	// Mode is the active validation mode. ModeOff disables all validation.
+	Mode Mode
+	// IgnoreHostnameAnnotation mirrors --ignore-hostname-annotation: when true,
+	// IsValid skips the hostname (and, for the service source, internal-hostname)
+	// annotation checks, because the source will not read those values at runtime.
+	IgnoreHostnameAnnotation bool
+}
+
+// Schema validates annotations against a fixed list of AnnotationSpecs under a
+// fixed set of Options. Constructed once and shared across sources; each source
+// binds a per-call identity via WithSource.
+type Schema struct {
+	specs                    []AnnotationSpec
+	mode                     Mode
+	ignoreHostnameAnnotation bool
+	source                   string
+}
+
 const defaultStrictMessage = "the resource will not receive a DNS record"
 
 // defaultSpecs lists each supported annotation, the sources that consume it,
@@ -124,6 +145,14 @@ var defaultSpecs = []AnnotationSpec{
 		Documentation: "Comma-separated list of desired hostnames for the resource. Each must be a valid DNS name (RFC 1123).",
 	},
 	{
+		KeySuffix:        annotations.TargetFromSuffix,
+		SupportedSources: []string{types.Ingress, types.IstioGateway, types.IstioVirtualService, types.TraefikProxy},
+		Validators:       []Validator{ValidateTargetFrom},
+		WarnMessage:      "the reference cannot be resolved and the resource gets no record",
+		StrictMessage:    defaultStrictMessage,
+		Documentation:    "Reads the record's targets from another resource: <resource>[.<group>]/[<namespace>/]<name>#<template>. See docs/annotations/annotations.md.",
+	},
+	{
 		KeySuffix:        annotations.InternalHostnameSuffix,
 		SupportedSources: []string{types.Pod, types.Service},
 		Validators:       []Validator{ValidateHostnames},
@@ -140,25 +169,19 @@ var defaultSpecs = []AnnotationSpec{
 	},
 }
 
-// Options configures a Schema at construction time. Fields correspond to runtime
-// flags that change what the schema validates.
-type Options struct {
-	// Mode is the active validation mode. ModeOff disables all validation.
-	Mode Mode
-	// IgnoreHostnameAnnotation mirrors --ignore-hostname-annotation: when true,
-	// IsValid skips the hostname (and, for the service source, internal-hostname)
-	// annotation checks, because the source will not read those values at runtime.
-	IgnoreHostnameAnnotation bool
+// NewWithSpecs returns a Schema with an explicit spec list — intended for tests
+// and future schema extensions that supply their own specs.
+func NewWithSpecs(specs []AnnotationSpec, opts Options) *Schema {
+	return &Schema{
+		specs:                    specs,
+		mode:                     opts.Mode,
+		ignoreHostnameAnnotation: opts.IgnoreHostnameAnnotation,
+	}
 }
 
-// Schema validates annotations against a fixed list of AnnotationSpecs under a
-// fixed set of Options. Constructed once and shared across sources; each source
-// binds a per-call identity via WithSource.
-type Schema struct {
-	specs                    []AnnotationSpec
-	mode                     Mode
-	ignoreHostnameAnnotation bool
-	source                   string
+// New returns a Schema using the default spec list and the given options.
+func New(opts Options) *Schema {
+	return NewWithSpecs(defaultSpecs, opts)
 }
 
 // WithSource returns a shallow copy of s bound to the given source name
@@ -170,21 +193,6 @@ func (s *Schema) WithSource(name string) *Schema {
 	cp := *s
 	cp.source = name
 	return &cp
-}
-
-// New returns a Schema using the default spec list and the given options.
-func New(opts Options) *Schema {
-	return NewWithSpecs(defaultSpecs, opts)
-}
-
-// NewWithSpecs returns a Schema with an explicit spec list — intended for tests
-// and future schema extensions that supply their own specs.
-func NewWithSpecs(specs []AnnotationSpec, opts Options) *Schema {
-	return &Schema{
-		specs:                    specs,
-		mode:                     opts.Mode,
-		ignoreHostnameAnnotation: opts.IgnoreHostnameAnnotation,
-	}
 }
 
 // Mode reports the Schema's active validation mode.

@@ -29,7 +29,6 @@ package aws
 // which a source never produces.
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"sort"
@@ -52,6 +51,16 @@ import (
 	"sigs.k8s.io/external-dns/registry/mapper"
 	"sigs.k8s.io/external-dns/registry/txt"
 )
+
+// reconcileLoop runs repeated reconciliations over one provider and registry pair.
+type reconcileLoop struct {
+	t      *testing.T
+	prov   *AWSProvider
+	client *Route53APIStub
+	reg    registry.Registry
+	policy plan.Policy
+	cfg    *externaldns.Config
+}
 
 const (
 	reconcileZone   = "zone-1.ext-dns-test-2.teapot.zalan.do"
@@ -77,14 +86,18 @@ const (
 	settledRounds = 2
 )
 
-// reconcileLoop runs repeated reconciliations over one provider and registry pair.
-type reconcileLoop struct {
-	t      *testing.T
-	prov   *AWSProvider
-	client *Route53APIStub
-	reg    registry.Registry
-	policy plan.Policy
-	cfg    *externaldns.Config
+// txtAffixes covers the supported --txt-prefix and --txt-suffix modes, because the
+// ownership TXT name is what decides whether a record is still recognised as ours.
+// Wildcard replacement and encryption are left to the registry's own tests.
+var txtAffixes = []struct {
+	name           string
+	prefix, suffix string
+}{
+	{"no-affix", "", ""},
+	{"prefix", "extdns-", ""},
+	{"suffix", "", "-extdns"},
+	{"record-type-prefix", "%{record_type}-extdns-", ""},
+	{"record-type-suffix", "", "-extdns-%{record_type}"},
 }
 
 func reconcileConfig(prefix, suffix string) *externaldns.Config {
@@ -144,7 +157,6 @@ func (h *reconcileLoop) runOnce(desired []*endpoint.Endpoint) (*plan.Changes, er
 	if err != nil {
 		return nil, fmt.Errorf("registry.Records: %w", err)
 	}
-	ctx = context.WithValue(ctx, provider.RecordsContextKey, current)
 
 	// A source rebuilds its endpoints every loop, and AdjustEndpoints mutates them.
 	source := make([]*endpoint.Endpoint, 0, len(desired))
@@ -445,20 +457,6 @@ func describeEndpoints(endpoints []*endpoint.Endpoint) string {
 	}
 	sort.Strings(lines)
 	return strings.Join(lines, "\n  ")
-}
-
-// txtAffixes covers the supported --txt-prefix and --txt-suffix modes, because the
-// ownership TXT name is what decides whether a record is still recognised as ours.
-// Wildcard replacement and encryption are left to the registry's own tests.
-var txtAffixes = []struct {
-	name           string
-	prefix, suffix string
-}{
-	{"no-affix", "", ""},
-	{"prefix", "extdns-", ""},
-	{"suffix", "", "-extdns"},
-	{"record-type-prefix", "%{record_type}-extdns-", ""},
-	{"record-type-suffix", "", "-extdns-%{record_type}"},
 }
 
 // TestReconcileLoopReplacesLoadBalancerTargetOfSameRecordType covers a load balancer

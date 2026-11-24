@@ -7,6 +7,9 @@ tags: ["source", "area/fqdn", "area/source", "templating", "unstructured"]
 The `unstructured` source creates DNS records from any Kubernetes resource using Go templates.
 It works with custom resources (CRDs) without requiring typed Go clients.
 
+To keep a built-in source and only take the record's targets from another resource,
+use the [`target-from`](../annotations/annotations.md#external-dnskubernetesiotarget-from) annotation instead.
+
 ## Use Cases
 
 Use this source when:

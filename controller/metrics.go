@@ -24,6 +24,11 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
+type dnsKey struct {
+	name       string
+	recordType string
+}
+
 const (
 	subsystemRegistry   = "registry"
 	subsystemSource     = "source"
@@ -151,11 +156,6 @@ func init() {
 	metrics.RegisterMetric.MustRegister(verifiedRecords)
 
 	metrics.RegisterMetric.MustRegister(consecutiveSoftErrors)
-}
-
-type dnsKey struct {
-	name       string
-	recordType string
 }
 
 // countMatchingAddressRecords counts records that exist in both endpoints and registry.
