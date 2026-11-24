@@ -40,6 +40,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+type WebhookProvider struct {
+	client          *http.Client
+	remoteServerURL *url.URL
+	DomainFilter    *endpoint.DomainFilter
+	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
+	maxBodySize int64
+	dryRun      bool
+}
+
 const (
 	acceptHeader = "Accept"
 
@@ -91,14 +100,6 @@ var (
 	)
 )
 
-type WebhookProvider struct {
-	client          *http.Client
-	remoteServerURL *url.URL
-	DomainFilter    *endpoint.DomainFilter
-	// maxBodySize caps decoded response body bytes; <= 0 disables the limit.
-	maxBodySize int64
-}
-
 func init() {
 	metrics.RegisterMetric.MustRegister(recordsErrorsGauge)
 	metrics.RegisterMetric.MustRegister(recordsRequestsGauge)
@@ -120,10 +121,10 @@ func decodeBody(body io.Reader, maxBodySize int64, v any) error {
 
 // New creates a webhook provider from the given configuration.
 func New(ctx context.Context, cfg *externaldns.Config, _ *endpoint.DomainFilter) (provider.Provider, error) {
-	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize)
+	return newProvider(ctx, cfg.WebhookProviderURL, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, cfg.WebhookProviderMaxBodySize, cfg.DryRun)
 }
 
-func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64) (*WebhookProvider, error) {
+func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.Duration, maxBodySize int64, dryRun bool) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -161,6 +162,7 @@ func newProvider(ctx context.Context, u string, readTimeout, writeTimeout time.D
 		remoteServerURL: parsedURL,
 		DomainFilter:    df,
 		maxBodySize:     maxBodySize,
+		dryRun:          dryRun,
 	}, nil
 }
 
@@ -205,6 +207,19 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if p.dryRun {
+		for _, e := range changes.Create {
+			log.Infof("Dry run: skipping CREATE %s", e)
+		}
+		for _, e := range changes.UpdateNew {
+			log.Infof("Dry run: skipping UPDATE %s", e)
+		}
+		for _, e := range changes.Delete {
+			log.Infof("Dry run: skipping DELETE %s", e)
+		}
+		return nil
+	}
+
 	applyChangesRequestsGauge.Gauge.Inc()
 	u := p.remoteServerURL.JoinPath(webhookapi.UrlRecords).String()
 

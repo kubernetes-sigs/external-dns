@@ -65,6 +65,8 @@ type AzurePrivateDNSProvider struct {
 	maxRetriesCount              int
 }
 
+type azurePrivateDNSChangeMap map[string][]*endpoint.Endpoint
+
 // newPrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
@@ -232,8 +234,6 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 	p.zonesCache.Reset(zones)
 	return zones, nil
 }
-
-type azurePrivateDNSChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, changes *plan.Changes) (azurePrivateDNSChangeMap, azurePrivateDNSChangeMap) {
 	ignored := sets.New[string]()

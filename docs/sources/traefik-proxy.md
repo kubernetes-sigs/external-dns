@@ -33,7 +33,9 @@ ExternalDNS uses this annotation to determine what services should be registered
 Traefik `IngressRoute`, `IngressRouteTCP`, and `IngressRouteUDP` resources do
 not expose a load balancer IP or hostname in their status. Because of that,
 the `traefik-proxy` source requires an explicit
-`external-dns.kubernetes.io/target` annotation. Without it, no endpoint is
+`external-dns.kubernetes.io/target` annotation, or
+[`external-dns.kubernetes.io/target-from`](../annotations/annotations.md#external-dnskubernetesiotarget-from)
+to read it from Traefik's own LoadBalancer Service. Without either, no endpoint is
 generated and `--default-targets` cannot apply.
 
 If you want to use `--default-targets`, use the `crd` source with
@@ -103,15 +105,6 @@ kubectl delete -f docs/snippets/traefik-proxy/ingress-route-default.yaml
 kubectl delete -f externaldns.yaml
 ```
 
-## Additional Flags
+## Resource Listeners
 
-| Flag                    | Description                                             |
-|-------------------------|---------------------------------------------------------|
-| --traefik-enable-legacy | Enable listeners on Resources under traefik.containo.us |
-| --traefik-disable-new   | Disable listeners on Resources under traefik.io         |
-
-### Resource Listeners
-
-Traefik has deprecated the legacy API group, _traefik.containo.us_, in favor of _traefik.io_. By default the `traefik-proxy` source listen for resources under traefik.io API groups.
-
-If needed, you can enable legacy listener with `--traefik-enable-legacy` and also disable new listener with `--traefik-disable-new`.
+The `traefik-proxy` source listens for resources under the _traefik.io_ API group.

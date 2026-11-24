@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD060 -->
 
-![Version: 1.23.0](https://img.shields.io/badge/Version-1.23.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.23.0](https://img.shields.io/badge/AppVersion-0.23.0-informational?style=flat-square)
+![Version: 1.24.0](https://img.shields.io/badge/Version-1.24.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.24.0](https://img.shields.io/badge/AppVersion-0.24.0-informational?style=flat-square)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -29,7 +29,7 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 After you've installed the repo you can install the chart.
 
 ```shell
-helm upgrade --install external-dns external-dns/external-dns --version 1.23.0
+helm upgrade --install external-dns external-dns/external-dns --version 1.24.0
 ```
 
 ## Providers
@@ -112,6 +112,7 @@ If `namespaced` is set to `true`, please ensure that `sources` only contains sup
 | extraContainers | list | `[]` | Extra containers to add to the `Deployment`. |
 | extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `external-dns` container. |
 | extraVolumes | list | `[]` | Extra [volumes](https://kubernetes.io/docs/concepts/storage/volumes/) for the `Pod`. |
+| fqdnTemplates | list | `[]` | [FQDN templates](https://kubernetes-sigs.github.io/external-dns/latest/docs/advanced/fqdn-templating) to use for generating DNS records. |
 | fullnameOverride | string | `nil` | Override the full name of the chart. |
 | gatewayNamespace | string | `nil` | _Gateway API_ gateway namespace to watch. When `namespaced=true`, setting this value avoids creating any cluster-scoped RBAC (no ClusterRole/ClusterRoleBinding) for Gateway sources. |
 | global.imagePullSecrets | list | `[]` | Global image pull secrets. |

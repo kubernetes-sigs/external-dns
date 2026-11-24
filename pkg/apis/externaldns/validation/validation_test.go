@@ -18,6 +18,7 @@ package validation
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -183,6 +184,30 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	require.NoError(t, ValidateConfig(cfg))
 
 	return cfg
+}
+
+func TestValidateGoogleProviderConfig(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.Provider = externaldns.ProviderGoogle
+	cfg.GoogleBatchChangeSize = 1
+	cfg.GoogleBatchChangeInterval = time.Second
+	cfg.GoogleRequestTimeout = time.Minute
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg.GoogleBatchChangeInterval = 0
+	cfg.GoogleRequestTimeout = 0
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg.GoogleBatchChangeSize = -1
+	require.ErrorContains(t, ValidateConfig(cfg), "--google-batch-change-size")
+
+	cfg.GoogleBatchChangeSize = 1
+	cfg.GoogleBatchChangeInterval = -time.Second
+	require.ErrorContains(t, ValidateConfig(cfg), "--google-batch-change-interval")
+
+	cfg.GoogleBatchChangeInterval = time.Second
+	cfg.GoogleRequestTimeout = -time.Second
+	require.ErrorContains(t, ValidateConfig(cfg), "--google-request-timeout")
 }
 
 func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
@@ -455,13 +480,13 @@ func TestValidateConfigForRfc2136(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateConfigForRfc2136(&tt.cfg)
+			err := validateConfigForRfc2136(&tt.cfg).ToAggregate()
 
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 				return
 			}
-			require.EqualError(t, err, tt.wantErr)
+			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }
@@ -576,6 +601,166 @@ func TestValidateNamespaces(t *testing.T) {
 				return
 			}
 			assert.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
+}
+
+func TestValidateHostnameConfig(t *testing.T) {
+	tests := []struct {
+		name             string
+		ignoreAnnotation bool
+		fqdnTemplate     []string
+		wantErr          bool
+	}{
+		{"not ignoring annotations", false, nil, false},
+		{"ignoring annotations with template", true, []string{"{{.Name}}"}, false},
+		{"ignoring annotations without template", true, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{IgnoreHostnameAnnotation: tt.ignoreAnnotation, FQDNTemplate: tt.fqdnTemplate}
+			if tt.wantErr {
+				require.NotEmpty(t, validateHostnameConfig(cfg))
+			} else {
+				require.Empty(t, validateHostnameConfig(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateTXTRegistryConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		prefix  string
+		suffix  string
+		wantErr bool
+	}{
+		{"neither set", "", "", false},
+		{"prefix only", "pre-", "", false},
+		{"suffix only", "", "-suf", false},
+		{"both set", "pre-", "-suf", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{TXTPrefix: tt.prefix, TXTSuffix: tt.suffix}
+			if tt.wantErr {
+				require.NotEmpty(t, validateTXTRegistryConfig(cfg))
+			} else {
+				require.Empty(t, validateTXTRegistryConfig(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateLabelSelectors(t *testing.T) {
+	tests := []struct {
+		name             string
+		labelFilter      string
+		annotationFilter string
+		wantErr          bool
+	}{
+		{"both empty", "", "", false},
+		{"valid label filter", "foo=bar", "", false},
+		{"invalid label filter", "#invalid-selector", "", true},
+		{"invalid annotation filter", "", "kubernetes.io/gateway.name in (a b)", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{LabelFilter: tt.labelFilter, AnnotationFilter: tt.annotationFilter}
+			if tt.wantErr {
+				require.NotEmpty(t, validateLabelSelectors(cfg))
+			} else {
+				require.Empty(t, validateLabelSelectors(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateAnnotationPrefix(t *testing.T) {
+	tests := []struct {
+		name    string
+		prefix  string
+		wantErr bool
+	}{
+		{"valid", "external-dns.kubernetes.io/", false},
+		{"empty", "", true},
+		{"missing trailing slash", "custom.io", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{AnnotationPrefix: tt.prefix}
+			if tt.wantErr {
+				require.NotEmpty(t, validateAnnotationPrefix(cfg))
+			} else {
+				require.Empty(t, validateAnnotationPrefix(cfg))
+			}
+		})
+	}
+}
+
+func TestValidateKubeAPILimits(t *testing.T) {
+	tests := []struct {
+		name    string
+		qps     int
+		burst   int
+		wantErr bool
+	}{
+		{"valid", 5, 10, false},
+		{"zero qps", 0, 10, true},
+		{"negative qps", -1, 10, true},
+		{"zero burst", 5, 0, true},
+		{"negative burst", 5, -1, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &externaldns.Config{KubeAPIQPS: tt.qps, KubeAPIBurst: tt.burst}
+			if tt.wantErr {
+				require.NotEmpty(t, validateKubeAPILimits(cfg))
+			} else {
+				require.Empty(t, validateKubeAPILimits(cfg))
+			}
+		})
+	}
+}
+
+func TestValidatePTRConfig(t *testing.T) {
+	t.Run("create-ptr disabled", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.CreatePTR = false
+		require.Empty(t, validatePTRConfig(cfg))
+	})
+	t.Run("create-ptr without PTR managed", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.CreatePTR = true
+		require.NotEmpty(t, validatePTRConfig(cfg))
+	})
+	t.Run("create-ptr with PTR managed", func(t *testing.T) {
+		cfg := newValidConfig(t)
+		cfg.CreatePTR = true
+		cfg.ManagedDNSRecordTypes = append(cfg.ManagedDNSRecordTypes, "PTR")
+		require.Empty(t, validatePTRConfig(cfg))
+	})
+}
+
+func TestValidateCRDSourceGVK(t *testing.T) {
+	tests := []struct {
+		name       string
+		apiVersion string
+		kind       string
+		wantErrs   int
+	}{
+		{"unset", "", "", 0},
+		{"default", "externaldns.k8s.io/v1alpha1", "DNSEndpoint", 0},
+		{"custom apiVersion", "externaldns.nginx.org/v1", "DNSEndpoint", 1},
+		{"custom kind", "externaldns.k8s.io/v1alpha1", "Endpoint", 1},
+		{"custom both", "test.k8s.io/v1alpha1", "Endpoint", 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newValidConfig(t)
+			cfg.CRDSourceAPIVersion = tt.apiVersion
+			cfg.CRDSourceKind = tt.kind
+			assert.Len(t, validateCRDSourceGVK(cfg), tt.wantErrs)
 		})
 	}
 }

@@ -25,8 +25,9 @@ import (
 	"strings"
 )
 
-// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
-var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
+// Labels store metadata related to the endpoint
+// it is then stored in a persistent storage via serialization
+type Labels map[string]string
 
 const (
 	heritage = "external-dns"
@@ -48,9 +49,8 @@ const (
 	txtEncryptionNonce = "txt-encryption-nonce"
 )
 
-// Labels store metadata related to the endpoint
-// it is then stored in a persistent storage via serialization
-type Labels map[string]string
+// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
+var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
 
 // NewLabels returns empty Labels
 func NewLabels() Labels {

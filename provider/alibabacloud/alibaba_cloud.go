@@ -40,15 +40,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	defaultTTL                              = 600
-	defaultAlibabaCloudPrivateZoneRecordTTL = 60
-	defaultAlibabaCloudPageSize             = 50
-	nullHostAlibabaCloud                    = "@"
-	pVTZDoamin                              = "pvtz.aliyuncs.com"
-	defaultAlibabaCloudRequestScheme        = "https"
-)
-
 // AlibabaCloudDNSAPI is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
 // See https://help.aliyun.com/document_detail/29739.html for descriptions of all of its methods.
 type AlibabaCloudDNSAPI interface {
@@ -96,6 +87,20 @@ type alibabaCloudConfig struct {
 	StsToken        string    `json:"-"               yaml:"-"`
 	ExpireTime      time.Time `json:"-"               yaml:"-"`
 }
+
+type alibabaPrivateZone struct {
+	pvtz.Zone
+	records []pvtz.Record
+}
+
+const (
+	defaultTTL                              = 600
+	defaultAlibabaCloudPrivateZoneRecordTTL = 60
+	defaultAlibabaCloudPageSize             = 50
+	nullHostAlibabaCloud                    = "@"
+	pVTZDoamin                              = "pvtz.aliyuncs.com"
+	defaultAlibabaCloudRequestScheme        = "https"
+)
 
 // New creates an Alibaba Cloud provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
@@ -216,6 +221,32 @@ func getCloudConfigFromStsToken() (alibabaCloudConfig, error) {
 	return cfg, nil
 }
 
+// Records gets the current records.
+//
+// Returns the current records or an error if the operation failed.
+func (p *AlibabaCloudProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
+	if p.privateZone {
+		return p.privateZoneRecords()
+	} else {
+		return p.recordsForDNS()
+	}
+}
+
+// ApplyChanges applies the given changes.
+//
+// Returns nil if the operation was successful or an error if the operation failed.
+func (p *AlibabaCloudProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
+	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew) == 0 {
+		// No op
+		return nil
+	}
+
+	if p.privateZone {
+		return p.applyChangesForPrivateZone(changes)
+	}
+	return p.applyChangesForDNS(changes)
+}
+
 func (p *AlibabaCloudProvider) getDNSClient() AlibabaCloudDNSAPI {
 	p.clientLock.RLock()
 	defer p.clientLock.RUnlock()
@@ -287,32 +318,6 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 		p.nextExpire = cfg.ExpireTime
 		p.clientLock.Unlock()
 	}
-}
-
-// Records gets the current records.
-//
-// Returns the current records or an error if the operation failed.
-func (p *AlibabaCloudProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) {
-	if p.privateZone {
-		return p.privateZoneRecords()
-	} else {
-		return p.recordsForDNS()
-	}
-}
-
-// ApplyChanges applies the given changes.
-//
-// Returns nil if the operation was successful or an error if the operation failed.
-func (p *AlibabaCloudProvider) ApplyChanges(_ context.Context, changes *plan.Changes) error {
-	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew) == 0 {
-		// No op
-		return nil
-	}
-
-	if p.privateZone {
-		return p.applyChangesForPrivateZone(changes)
-	}
-	return p.applyChangesForDNS(changes)
 }
 
 func (p *AlibabaCloudProvider) getDNSName(rr, domain string) string {
@@ -744,11 +749,6 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 		}
 	}
 	return zones, nil
-}
-
-type alibabaPrivateZone struct {
-	pvtz.Zone
-	records []pvtz.Record
 }
 
 func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone, error) {

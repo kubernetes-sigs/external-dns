@@ -42,18 +42,6 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-const (
-	defaultTTL = 0
-	ovhCreate  = iota
-	ovhDelete
-	ovhUpdate
-)
-
-var (
-	// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
-	ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
-)
-
 // OVHProvider is an implementation of Provider for OVH DNS.
 type OVHProvider struct {
 	provider.BaseProvider
@@ -115,13 +103,31 @@ type ovhRecord struct {
 	Zone string `json:"zone"`
 }
 
-func (r ovhRecord) String() string {
-	return "record#" + strconv.Itoa(int(r.ID)) + ": " + r.FieldType + " | " + r.SubDomain + " => " + r.Target + " (" + strconv.Itoa(int(r.TTL)) + ")"
-}
-
 type ovhChange struct {
 	ovhRecord
 	Action int
+}
+
+type ovhSoa struct {
+	Server  string `json:"server"`
+	Serial  uint32 `json:"serial"`
+	records []ovhRecord
+}
+
+const (
+	defaultTTL = 0
+	ovhCreate  = iota
+	ovhDelete
+	ovhUpdate
+)
+
+var (
+	// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
+	ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
+)
+
+func (r ovhRecord) String() string {
+	return "record#" + strconv.Itoa(int(r.ID)) + ": " + r.FieldType + " | " + r.SubDomain + " => " + r.Target + " (" + strconv.Itoa(int(r.TTL)) + ")"
 }
 
 // New creates an OVH provider from the given configuration.
@@ -219,6 +225,59 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) (map[string]*p
 	return output, nil
 }
 
+// ApplyChanges applies a given set of changes in a given zone.
+func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	zones, records := p.lastRunZones, p.lastRunRecords
+	defer func() {
+		p.lastRunRecords = []ovhRecord{}
+		p.lastRunZones = []string{}
+	}()
+
+	if log.IsLevelEnabled(log.DebugLevel) {
+		for _, change := range changes.Create {
+			log.Debugf("OVH: changes CREATE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
+		}
+		for _, change := range changes.UpdateOld {
+			log.Debugf("OVH: changes UPDATEOLD dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
+		}
+		for _, change := range changes.UpdateNew {
+			log.Debugf("OVH: changes UPDATENEW dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
+		}
+		for _, change := range changes.Delete {
+			log.Debugf("OVH: changes DELETE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
+		}
+	}
+
+	changesByZoneName, err := planChangesByZoneName(zones, changes)
+	if err != nil {
+		return err
+	}
+	recordsByZone := ovhRecordsByZone(records)
+	eg, ctx := errgroup.WithContext(ctx)
+
+	for zoneName, changes := range changesByZoneName {
+		eg.Go(func() error {
+			return p.handleSingleZoneUpdate(ctx, zoneName, recordsByZone[zoneName], changes)
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return provider.NewSoftError(err)
+	}
+
+	return nil
+}
+
+// ovhRecordsByZone keeps each zone's changes from matching other zones' records.
+func ovhRecordsByZone(records []ovhRecord) map[string][]ovhRecord {
+	byZone := map[string][]ovhRecord{}
+	for _, record := range records {
+		byZone[record.Zone] = append(byZone[record.Zone], record)
+	}
+	return byZone
+}
+
+// existingRecords must belong to zoneName.
 func (p *OVHProvider) computeSingleZoneChanges(_ context.Context, zoneName string, existingRecords []ovhRecord, changes *plan.Changes) ([]ovhChange, error) {
 	allChanges := []ovhChange{}
 	var computedChanges []ovhChange
@@ -263,48 +322,6 @@ func (p *OVHProvider) handleSingleZoneUpdate(ctx context.Context, zoneName strin
 	}
 
 	return err
-}
-
-// ApplyChanges applies a given set of changes in a given zone.
-func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	zones, records := p.lastRunZones, p.lastRunRecords
-	defer func() {
-		p.lastRunRecords = []ovhRecord{}
-		p.lastRunZones = []string{}
-	}()
-
-	if log.IsLevelEnabled(log.DebugLevel) {
-		for _, change := range changes.Create {
-			log.Debugf("OVH: changes CREATE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
-		}
-		for _, change := range changes.UpdateOld {
-			log.Debugf("OVH: changes UPDATEOLD dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
-		}
-		for _, change := range changes.UpdateNew {
-			log.Debugf("OVH: changes UPDATENEW dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
-		}
-		for _, change := range changes.Delete {
-			log.Debugf("OVH: changes DELETE dns:%q / targets:%v / type:%s", change.DNSName, change.Targets, change.RecordType)
-		}
-	}
-
-	changesByZoneName, err := planChangesByZoneName(zones, changes)
-	if err != nil {
-		return err
-	}
-	eg, ctx := errgroup.WithContext(ctx)
-
-	for zoneName, changes := range changesByZoneName {
-		eg.Go(func() error {
-			return p.handleSingleZoneUpdate(ctx, zoneName, records, changes)
-		})
-	}
-
-	if err := eg.Wait(); err != nil {
-		return provider.NewSoftError(err)
-	}
-
-	return nil
 }
 
 func (p *OVHProvider) refresh(ctx context.Context, zone string) error {
@@ -404,12 +421,6 @@ func (p *OVHProvider) zones(ctx context.Context) ([]string, error) {
 	}
 	log.Infof("OVH: %d zones found", len(filteredZones))
 	return filteredZones, nil
-}
-
-type ovhSoa struct {
-	Server  string `json:"server"`
-	Serial  uint32 `json:"serial"`
-	records []ovhRecord
 }
 
 func (p *OVHProvider) records(ctx context.Context, zone *string, records chan<- []ovhRecord) error {
@@ -546,7 +557,7 @@ func (p *OVHProvider) newOvhChangeCreateDelete(action int, endpoints []*endpoint
 			// same OVH record, we remove a record from the list when a match is found.
 			if action == ovhDelete {
 				for i, rec := range existingRecords {
-					if rec.Zone == change.Zone && rec.SubDomain == change.SubDomain && rec.FieldType == change.FieldType && rec.Target == change.Target && !slices.Contains(toDeleteIds, i) {
+					if rec.SubDomain == change.SubDomain && rec.FieldType == change.FieldType && rec.Target == change.Target && !slices.Contains(toDeleteIds, i) {
 						change.ID = rec.ID
 						toDeleteIds = append(toDeleteIds, i)
 						break
