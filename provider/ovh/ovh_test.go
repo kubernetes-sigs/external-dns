@@ -369,13 +369,13 @@ func TestOvhApplyChangesUpdateIgnoresOtherZones(t *testing.T) {
 			provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
 
 			// example.org holds records with the same type and subdomain.
-			client.On("GetWithContext", "/domain/zone").Return([]string{"example.org", "example.net"}, nil).Once()
-			client.On("GetWithContext", "/domain/zone/example.org/record").Return([]uint64{1, 3}, nil).Once()
-			client.On("GetWithContext", "/domain/zone/example.org/record/1").Return(ovhRecord{ID: 1, Zone: "example.org", FieldType: "A", SubDomain: "", TTL: 10, Target: "198.51.100.7"}, nil).Once()
-			client.On("GetWithContext", "/domain/zone/example.org/record/3").Return(ovhRecord{ID: 3, Zone: "example.org", FieldType: "A", SubDomain: "www", TTL: 10, Target: "198.51.100.7"}, nil).Once()
-			client.On("GetWithContext", "/domain/zone/example.net/record").Return([]uint64{2, 4}, nil).Once()
-			client.On("GetWithContext", "/domain/zone/example.net/record/2").Return(ovhRecord{ID: 2, Zone: "example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}, nil).Once()
-			client.On("GetWithContext", "/domain/zone/example.net/record/4").Return(ovhRecord{ID: 4, Zone: "example.net", FieldType: "A", SubDomain: "www", TTL: 10, Target: "203.0.113.42"}, nil).Once()
+			client.On("GetWithContext", "/domain/zone").Return([]string{"example.org", "example.net"}, nil).Twice()
+			client.On("GetWithContext", "/domain/zone/example.org/record").Return([]uint64{1, 3}, nil).Twice()
+			client.On("GetWithContext", "/domain/zone/example.org/record/1").Return(ovhRecord{ID: 1, Zone: "example.org", FieldType: "A", SubDomain: "", TTL: 10, Target: "198.51.100.7"}, nil).Twice()
+			client.On("GetWithContext", "/domain/zone/example.org/record/3").Return(ovhRecord{ID: 3, Zone: "example.org", FieldType: "A", SubDomain: "www", TTL: 10, Target: "198.51.100.7"}, nil).Twice()
+			client.On("GetWithContext", "/domain/zone/example.net/record").Return([]uint64{2, 4}, nil).Twice()
+			client.On("GetWithContext", "/domain/zone/example.net/record/2").Return(ovhRecord{ID: 2, Zone: "example.net", FieldType: "A", SubDomain: "", TTL: 10, Target: "203.0.113.42"}, nil).Twice()
+			client.On("GetWithContext", "/domain/zone/example.net/record/4").Return(ovhRecord{ID: 4, Zone: "example.net", FieldType: "A", SubDomain: "www", TTL: 10, Target: "203.0.113.42"}, nil).Twice()
 
 			// Only the example.net record is rewritten, nothing is deleted.
 			client.On("PutWithContext", tc.record, ovhRecordFieldUpdate{SubDomain: tc.sub, TTL: 10, Target: "203.0.113.43"}).Return(nil, nil).Once()
