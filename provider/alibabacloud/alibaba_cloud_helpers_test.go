@@ -41,6 +41,13 @@ type fakeDescribeDomainsClient struct {
 	calls      int
 }
 
+// fakeZoneInfoClient overrides DescribeZoneInfo only.
+type fakeZoneInfoClient struct {
+	AlibabaCloudPrivateZoneAPI
+	vpcIDs []string
+	err    error
+}
+
 func (f *fakeDescribeDomainsClient) DescribeDomains(request *alidns.DescribeDomainsRequest) (*alidns.DescribeDomainsResponse, error) {
 	f.calls++
 	if f.err != nil {
@@ -58,13 +65,6 @@ func (f *fakeDescribeDomainsClient) DescribeDomains(request *alidns.DescribeDoma
 	response.PageNumber = pageNumber
 	response.TotalCount = f.totalCount
 	return response, nil
-}
-
-// fakeZoneInfoClient overrides DescribeZoneInfo only.
-type fakeZoneInfoClient struct {
-	AlibabaCloudPrivateZoneAPI
-	vpcIDs []string
-	err    error
 }
 
 func (f *fakeZoneInfoClient) DescribeZoneInfo(_ *pvtz.DescribeZoneInfoRequest) (*pvtz.DescribeZoneInfoResponse, error) {
