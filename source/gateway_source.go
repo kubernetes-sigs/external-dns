@@ -30,13 +30,14 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	srctypes "sigs.k8s.io/external-dns/source/types"
 )
 
-func NewGatewaySource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewaySource(ctx, clients, config, newGatewayInformerFactory)
+func NewGatewaySource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewaySource(ctx, clients, cfg, newGatewayInformerFactory)
 }
 
 // +externaldns:source:name=gateway
@@ -61,14 +62,14 @@ type gatewaySource struct {
 func newGatewaySource(
 	ctx context.Context,
 	clients ClientGenerator,
-	config *Config,
+	cfg *config.Config,
 	newInformerFactory func(gateway.Interface, string, labels.Selector) gwinformers.SharedInformerFactory,
 ) (Source, error) {
-	gwLabels := config.LabelFilter
+	gwLabels := cfg.LabelFilter
 	if gwLabels == nil {
 		gwLabels = labels.Everything()
 	}
-	gwAnnotations := config.AnnotationFilter
+	gwAnnotations := cfg.AnnotationFilter
 	if gwAnnotations == nil {
 		gwAnnotations = labels.Everything()
 	}
@@ -78,7 +79,7 @@ func newGatewaySource(
 		return nil, err
 	}
 
-	gwInformerFactory := newInformerFactory(client, config.Namespace(), gwLabels)
+	gwInformerFactory := newInformerFactory(client, cfg.Namespace(), gwLabels)
 	gwInformer := gwInformerFactory.Gateway().V1().Gateways()
 	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
 		informers.TransformRemoveManagedFields(),
@@ -92,13 +93,13 @@ func newGatewaySource(
 	}
 
 	return &gatewaySource{
-		gwName:                   config.GatewayName,
-		gwNamespace:              config.Namespace(),
+		gwName:                   cfg.GatewayName,
+		gwNamespace:              cfg.Namespace(),
 		gwLabels:                 gwLabels,
 		gwAnnotations:            gwAnnotations,
 		gwInformer:               gwInformer,
-		templateEngine:           config.TemplateEngine,
-		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
+		templateEngine:           cfg.TemplateEngine,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 	}, nil
 }
 
@@ -153,7 +154,7 @@ func (src *gatewaySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, er
 		for _, host := range hostnames {
 			gwEndpoints = append(gwEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
-		if endpoint.HasNoEmptyEndpoints(gwEndpoints, srctypes.Gateway, gw) {
+		if endpoint.IsEmptyEndpoints(gwEndpoints, srctypes.Gateway, gw) {
 			continue
 		}
 		log.Debugf("Endpoints generated from Gateway %s/%s: %v", gw.Namespace, gw.Name, gwEndpoints)

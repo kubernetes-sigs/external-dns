@@ -59,7 +59,6 @@ import (
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type istioGatewaySource struct {
-	namespace                string
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
 	serviceInformers         *informers.Informers[coreinformers.ServiceInformer]
@@ -130,7 +129,6 @@ func NewIstioGatewaySource(
 	}
 
 	return &istioGatewaySource{
-		namespace:                namespace,
 		templateEngine:           cfg.TemplateEngine,
 		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		serviceInformers:         serviceInformers,

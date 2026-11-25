@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 )
 
 var _ Source = &gatewaySource{}
@@ -62,13 +63,13 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 
 	tests := []struct {
 		title     string
-		config    *Config
+		config    *config.Config
 		gateways  []*v1.Gateway
 		endpoints []*endpoint.Endpoint
 	}{
 		{
 			title:  "IP address in status produces A record",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4"), nil),
 			},
@@ -78,7 +79,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "hostname address in status produces CNAME record",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatusHostname("lb.example.com"), nil),
 			},
@@ -88,7 +89,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "IPv6 address in status produces AAAA record",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("2001:db8::1"), nil),
 			},
@@ -98,7 +99,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "multiple hostnames in annotation produce multiple endpoints",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("a.example.com", "b.example.com"), gatewayStatus("1.2.3.4"), nil),
 			},
@@ -109,7 +110,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "multiple gateways produce multiple endpoints",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
 				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
@@ -121,7 +122,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "GatewayName filter skips non-matching gateways",
-			config: &Config{GatewayName: "gw1"},
+			config: &config.Config{GatewayName: "gw1"},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
 				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
@@ -132,7 +133,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "Namespace filter limits to configured namespace",
-			config: &Config{Namespaces: []string{"ns1"}},
+			config: &config.Config{Namespaces: []string{"ns1"}},
 			gateways: []*v1.Gateway{
 				makeGateway("ns1", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
 				makeGateway("ns2", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
@@ -143,7 +144,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "LabelFilter skips gateways without matching label",
-			config: &Config{LabelFilter: mustGetLabelSelector("env=prod")},
+			config: &config.Config{LabelFilter: mustGetLabelSelector("env=prod")},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), map[string]string{"env": "prod"}),
 				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), map[string]string{"env": "staging"}),
@@ -154,7 +155,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "AnnotationFilter skips gateways without matching annotation",
-			config: &Config{AnnotationFilter: parseAnnotationFilterOrNil("custom=yes")},
+			config: &config.Config{AnnotationFilter: parseAnnotationFilterOrNil("custom=yes")},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", map[string]string{
 					annotations.HostnameKey: "a.example.com",
@@ -168,7 +169,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "IgnoreHostnameAnnotation produces no endpoints",
-			config: &Config{IgnoreHostnameAnnotation: true},
+			config: &config.Config{IgnoreHostnameAnnotation: true},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4"), nil),
 			},
@@ -176,7 +177,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "no hostname annotation produces no endpoints",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", nil, gatewayStatus("1.2.3.4"), nil),
 			},
@@ -184,7 +185,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "no status addresses produces no endpoints",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), v1.GatewayStatus{}, nil),
 			},
@@ -192,7 +193,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "target override annotation replaces status addresses",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", map[string]string{
 					annotations.HostnameKey: "foo.example.com",
@@ -205,7 +206,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "TTL annotation is applied to endpoints",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", map[string]string{
 					annotations.HostnameKey: "foo.example.com",
@@ -218,7 +219,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "controller annotation mismatch skips gateway",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", map[string]string{
 					annotations.HostnameKey:   "foo.example.com",
@@ -229,7 +230,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "same hostname from two gateways merges targets",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw1", hostnameAnnotation("shared.example.com"), gatewayStatus("1.2.3.4"), nil),
 				makeGateway("default", "gw2", hostnameAnnotation("shared.example.com"), gatewayStatus("5.6.7.8"), nil),
@@ -240,7 +241,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "multiple IP addresses produce multi-value A record",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4", "5.6.7.8"), nil),
 			},
@@ -250,7 +251,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "mixed IP and hostname addresses uses only IPs",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
 					ipTyp := v1.IPAddressType
@@ -267,7 +268,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "nil address type treated as IPAddress",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), v1.GatewayStatus{
 					Addresses: []v1.GatewayStatusAddress{
@@ -281,7 +282,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "NamedAddress type is skipped",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
 					namedTyp := v1.NamedAddressType
@@ -294,7 +295,7 @@ func TestGatewaySourceEndpoints(t *testing.T) {
 		},
 		{
 			title:  "empty address value is skipped",
-			config: &Config{},
+			config: &config.Config{},
 			gateways: []*v1.Gateway{
 				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
 					ipTyp := v1.IPAddressType
