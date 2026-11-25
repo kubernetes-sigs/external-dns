@@ -17,12 +17,27 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/plan"
 )
+
+// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
+type deletedEndpoint struct {
+	*endpoint.Endpoint
+	ref *events.ObjectReference
+}
+
+// StatusReporter receives each sync's outcome, which only exists after
+// ApplyChanges, e.g. to set DNSEndpoint conditions.
+type StatusReporter interface {
+	// ReportStatus gets every object behind a desired endpoint, from any source, changed or not.
+	// applyErr is nil on success and only concerns objects with PlannedObject.Changed set.
+	ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error)
+}
 
 // Delete events are reported by the registry: the source object is usually gone.
 const registrySource = "registry"
@@ -80,12 +95,6 @@ func emitChangeEvent(e events.EventEmitter, ch *plan.Changes, reason events.Reas
 	}
 }
 
-// deletedEndpoint attaches a ref rebuilt from the resource label, as registry records carry none.
-type deletedEndpoint struct {
-	*endpoint.Endpoint
-	ref *events.ObjectReference
-}
-
 func (d deletedEndpoint) RefObjects() []*events.ObjectReference {
 	return []*events.ObjectReference{d.ref}
 }
@@ -110,5 +119,14 @@ func refFromResourceLabel(resource, crdKind string) *events.ObjectReference {
 	} else if k, ok := resourceKinds[strings.ToLower(kind)]; ok {
 		kind = k
 	}
-	return events.NewObjectReferenceFromParts(kind, "", namespace, name, "", registrySource)
+	return endpoint.NewObjectRef(kind, "", namespace, name, "", registrySource)
+}
+
+func reportSyncStatus(ctx context.Context, r StatusReporter, p *plan.Plan, applyErr error) {
+	if r == nil {
+		return
+	}
+	if objects := p.PlannedObjects(); len(objects) > 0 {
+		r.ReportStatus(ctx, objects, applyErr)
+	}
 }

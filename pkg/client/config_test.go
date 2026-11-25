@@ -19,8 +19,6 @@ package kubeclient
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,23 +33,19 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 )
 
-func TestGetRestConfig_WithKubeConfig(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	defer svr.Close()
+const testKubeAPIServerURL = "https://8119d24c-db6b-4d45-9aa4-64075b2b0de5:6443"
 
-	kubeCfgPath := writeKubeConfig(t, svr.URL)
+func TestGetRestConfig_WithKubeConfig(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
 
 	config, err := buildRestConfig(kubeCfgPath, "")
 	require.NoError(t, err)
 	require.NotNil(t, config)
-	assert.Equal(t, svr.URL, config.Host)
+	assert.Equal(t, testKubeAPIServerURL, config.Host)
 }
 
 func TestNewKubeClient(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	defer svr.Close()
-
-	config, err := InstrumentedRESTConfig(writeKubeConfig(t, svr.URL), "", 30*time.Second, 0, 0)
+	config, err := InstrumentedRESTConfig(writeKubeConfig(t), "", 30*time.Second, 0, 0)
 	require.NoError(t, err)
 
 	client, err := NewKubeClient(config)
@@ -60,11 +54,8 @@ func TestNewKubeClient(t *testing.T) {
 }
 
 func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	defer svr.Close()
-
 	timeout := 30 * time.Second
-	config, err := InstrumentedRESTConfig(writeKubeConfig(t, svr.URL), "", timeout, 0, 0)
+	config, err := InstrumentedRESTConfig(writeKubeConfig(t), "", timeout, 0, 0)
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
@@ -74,47 +65,83 @@ func TestInstrumentedRESTConfig_AddsMetrics(t *testing.T) {
 }
 
 func TestGetRestConfig_RecommendedHomeFile(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	defer svr.Close()
+	kubeCfgPath := writeKubeConfig(t)
 
-	mockKubeCfgDir := filepath.Join(t.TempDir(), ".kube")
-	mockKubeCfgPath := filepath.Join(mockKubeCfgDir, "config")
-	err := os.MkdirAll(mockKubeCfgDir, 0755)
-	require.NoError(t, err)
-
-	kubeCfgTemplate := `apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: %s
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-`
-	err = os.WriteFile(mockKubeCfgPath, fmt.Appendf(nil, kubeCfgTemplate, svr.URL), 0644)
-	require.NoError(t, err)
-
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
 	prevRecommendedHomeFile := clientcmd.RecommendedHomeFile
 	t.Cleanup(func() {
 		clientcmd.RecommendedHomeFile = prevRecommendedHomeFile
 	})
-	clientcmd.RecommendedHomeFile = mockKubeCfgPath
+	clientcmd.RecommendedHomeFile = kubeCfgPath
 
 	config, err := buildRestConfig("", "")
 	require.NoError(t, err)
 	require.NotNil(t, config)
-	assert.Equal(t, svr.URL, config.Host)
+	assert.Equal(t, testKubeAPIServerURL, config.Host)
+}
+
+func TestGetRestConfig_RecommendedConfigPathEnvVar(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	t.Setenv(clientcmd.RecommendedConfigPathEnvVar, kubeCfgPath)
+
+	config, err := buildRestConfig("", "")
+	require.NoError(t, err)
+	require.NotNil(t, config)
+	assert.Equal(t, testKubeAPIServerURL, config.Host)
+}
+
+func TestGetRestConfig_ServerOverridesKubeConfig(t *testing.T) {
+	kubeCfgPath := writeKubeConfig(t)
+
+	config, err := buildRestConfig(kubeCfgPath, "https://override:6443")
+	require.NoError(t, err)
+	assert.Equal(t, "https://override:6443", config.Host)
+}
+
+func TestGetRestConfig_WithoutKubeConfig(t *testing.T) {
+	inCluster := func() (*rest.Config, error) {
+		return &rest.Config{Host: "https://10.0.0.1:443", BearerTokenFile: "/token"}, nil
+	}
+	notInCluster := func() (*rest.Config, error) { return nil, rest.ErrNotInCluster }
+
+	tests := []struct {
+		name         string
+		inCluster    func() (*rest.Config, error)
+		apiServerURL string
+		wantHost     string
+		wantToken    string
+		wantErr      error
+	}{
+		{name: "in-cluster", inCluster: inCluster, wantHost: "https://10.0.0.1:443", wantToken: "/token"},
+		{name: "in-cluster with server override keeps credentials", inCluster: inCluster, apiServerURL: "https://override:6443", wantHost: "https://override:6443", wantToken: "/token"},
+		{name: "out of cluster with server only", inCluster: notInCluster, apiServerURL: "http://127.0.0.1:8001", wantHost: "http://127.0.0.1:8001"},
+		{name: "out of cluster without server", inCluster: notInCluster, wantErr: rest.ErrNotInCluster},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(clientcmd.RecommendedConfigPathEnvVar, "")
+			prevRecommendedHomeFile, prevInClusterConfig := clientcmd.RecommendedHomeFile, inClusterConfig
+			t.Cleanup(func() {
+				clientcmd.RecommendedHomeFile, inClusterConfig = prevRecommendedHomeFile, prevInClusterConfig
+			})
+			clientcmd.RecommendedHomeFile = filepath.Join(t.TempDir(), "missing")
+			inClusterConfig = tt.inCluster
+
+			config, err := buildRestConfig("", tt.apiServerURL)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantHost, config.Host)
+			assert.Equal(t, tt.wantToken, config.BearerTokenFile)
+		})
+	}
 }
 
 func TestInstrumentedRESTConfig_QPSAndBurstApplied(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	defer svr.Close()
-
-	kubeCfgPath := writeKubeConfig(t, svr.URL)
+	kubeCfgPath := writeKubeConfig(t)
 
 	config, err := InstrumentedRESTConfig(kubeCfgPath, "", 30*time.Second, 20, 40)
 	require.NoError(t, err)
@@ -127,10 +154,7 @@ func TestInstrumentedRESTConfig_QPSAndBurstApplied(t *testing.T) {
 }
 
 func TestInstrumentedRESTConfig_ZeroQPSKeepsConfigDefaults(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	defer svr.Close()
-
-	kubeCfgPath := writeKubeConfig(t, svr.URL)
+	kubeCfgPath := writeKubeConfig(t)
 
 	config, err := InstrumentedRESTConfig(kubeCfgPath, "", 30*time.Second, 0, 0)
 	require.NoError(t, err)
@@ -224,7 +248,7 @@ func isolateKubeConfig(t *testing.T) {
 // given namespace, omitting it entirely when empty, and returns the path.
 func writeKubeConfigWithNamespace(t *testing.T, namespace string) string {
 	t.Helper()
-	path := writeKubeConfig(t, "https://localhost:6443")
+	path := writeKubeConfig(t)
 	if namespace == "" {
 		return path
 	}
@@ -241,7 +265,7 @@ func writeKubeConfigWithNamespace(t *testing.T, namespace string) string {
 
 // writeKubeConfig writes a minimal kubeconfig pointing at serverURL into a temp dir
 // and returns the path.
-func writeKubeConfig(t *testing.T, serverURL string) string {
+func writeKubeConfig(t *testing.T) string {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), ".kube")
 	path := filepath.Join(dir, "config")
@@ -263,6 +287,6 @@ users:
   user:
     token: fake-token
 `
-	require.NoError(t, os.WriteFile(path, fmt.Appendf(nil, tmpl, serverURL), 0644))
+	require.NoError(t, os.WriteFile(path, fmt.Appendf(nil, tmpl, testKubeAPIServerURL), 0644))
 	return path
 }

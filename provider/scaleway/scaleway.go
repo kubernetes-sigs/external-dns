@@ -30,15 +30,10 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/blueprint"
-)
-
-const (
-	defaultTTL              uint32 = 300
-	scalewayDefaultPriority uint32 = 0
-	scalewayPriorityKey     string = "scw/priority"
 )
 
 // ScalewayProvider implements the DNS provider for Scaleway DNS
@@ -56,6 +51,12 @@ type ScalewayChange struct {
 	Action string
 	Record []domain.Record
 }
+
+const (
+	defaultTTL              uint32 = 300
+	scalewayDefaultPriority uint32 = 0
+	scalewayPriorityKey     string = "scw/priority"
+)
 
 // New creates a Scaleway provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
@@ -88,7 +89,7 @@ func newProvider(domainFilter *endpoint.DomainFilter, dryRun bool, zonesCacheDur
 	scwClient, err := scw.NewClient(
 		scw.WithProfile(p),
 		scw.WithEnv(),
-		scw.WithUserAgent(externaldns.UserAgent()),
+		scw.WithUserAgent(version.UserAgent()),
 		scw.WithDefaultPageSize(uint32(defaultPageSize)),
 	)
 	if err != nil {
@@ -133,37 +134,6 @@ func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*e
 	return eps, nil
 }
 
-// apexNames returns the apex name of every zone handled by the provider.
-func (p *ScalewayProvider) apexNames(ctx context.Context) (map[string]struct{}, error) {
-	zones, err := p.Zones(ctx)
-	if err != nil {
-		return nil, err
-	}
-	names := make(map[string]struct{}, len(zones))
-	for _, zone := range zones {
-		names[getCompleteZoneName(zone)] = struct{}{}
-	}
-	return names, nil
-}
-
-// adjustAliasProperty sets alias=true on CNAME endpoints written as ALIAS and
-// drops it elsewhere, so desired endpoints match what Records returns.
-func adjustAliasProperty(ep *endpoint.Endpoint, apexNames map[string]struct{}) {
-	_, atApex := apexNames[ep.DNSName]
-	if isAliasCNAME(ep, atApex) {
-		ep.WithAliasProperty(endpoint.AliasTrue)
-	} else {
-		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
-	}
-}
-
-// isAliasCNAME reports whether a CNAME endpoint is written as ALIAS: Scaleway
-// rejects CNAME at the zone apex, elsewhere it is opt-in via the alias property.
-func isAliasCNAME(ep *endpoint.Endpoint, atApex bool) bool {
-	return ep.RecordType == endpoint.RecordTypeCNAME &&
-		(atApex || ep.GetAliasProperty() == endpoint.AliasTrue)
-}
-
 // Zones returns the list of hosted zones.
 func (p *ScalewayProvider) Zones(ctx context.Context) ([]*domain.DNSZone, error) {
 	if !p.zonesCache.Expired() {
@@ -186,6 +156,24 @@ func (p *ScalewayProvider) Zones(ctx context.Context) ([]*domain.DNSZone, error)
 	p.zonesCache.Reset(res)
 
 	return res, nil
+}
+
+// adjustAliasProperty sets alias=true on CNAME endpoints written as ALIAS and
+// drops it elsewhere, so desired endpoints match what Records returns.
+func adjustAliasProperty(ep *endpoint.Endpoint, apexNames map[string]struct{}) {
+	_, atApex := apexNames[ep.DNSName]
+	if isAliasCNAME(ep, atApex) {
+		ep.WithAliasProperty(endpoint.AliasTrue)
+	} else {
+		ep.DeleteProviderSpecificProperty(endpoint.ProviderSpecificAlias)
+	}
+}
+
+// isAliasCNAME reports whether a CNAME endpoint is written as ALIAS: Scaleway
+// rejects CNAME at the zone apex, elsewhere it is opt-in via the alias property.
+func isAliasCNAME(ep *endpoint.Endpoint, atApex bool) bool {
+	return ep.RecordType == endpoint.RecordTypeCNAME &&
+		(atApex || ep.GetAliasProperty() == endpoint.AliasTrue)
 }
 
 // Records returns the list of records in a given zone.
@@ -268,6 +256,19 @@ func (p *ScalewayProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 		}
 	}
 	return nil
+}
+
+// apexNames returns the apex name of every zone handled by the provider.
+func (p *ScalewayProvider) apexNames(ctx context.Context) (map[string]struct{}, error) {
+	zones, err := p.Zones(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[string]struct{}, len(zones))
+	for _, zone := range zones {
+		names[getCompleteZoneName(zone)] = struct{}{}
+	}
+	return names, nil
 }
 
 func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *plan.Changes) ([]*domain.UpdateDNSZoneRecordsRequest, error) {

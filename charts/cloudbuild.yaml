@@ -1,0 +1,10 @@
+# See https://cloud.google.com/cloud-build/docs/build-config
+timeout: 1200s
+options:
+  substitution_option: ALLOW_LOOSE
+steps:
+  - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud@sha256:ff388e0dc16351e96f8464e2e185b74a7578a5ccb7a112cf3393468e59e6e2d2'
+    entrypoint: make
+    args:
+      - helm-push
+serviceAccount: projects/k8s-staging-images/serviceAccounts/external-dns-sa@k8s-staging-images.iam.gserviceaccount.com

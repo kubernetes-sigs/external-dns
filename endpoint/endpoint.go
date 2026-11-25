@@ -18,7 +18,9 @@ package endpoint
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
+	"maps"
 	"net/netip"
 	"slices"
 	"sort"
@@ -29,8 +31,133 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
+
+// TTL is a structure defining the TTL of a DNS record
+type TTL int64
+
+// Targets is a representation of a list of targets for an endpoint.
+//
+// The bounds must stay wide enough for every endpoint external-dns can build: a
+// headless Service produces one target per backend, and a TXT target routinely
+// exceeds one DNS character-string (DKIM, long SPF), which external-dns hands to
+// the provider unsplit.
+//
+// MaxItems also caps the admission cost of the all() rules on Endpoint, which the
+// API server estimates as DNSEndpointSpec.Endpoints MaxItems x this one. At 1000
+// endpoints per object the CRD stops installing somewhere under 2000 targets, so
+// raising either bound needs both re-checked together. MaxLength barely moves the
+// estimate.
+// +kubebuilder:validation:MaxItems=1000
+// +kubebuilder:validation:items:MinLength=1
+// +kubebuilder:validation:items:MaxLength=4096
+type Targets []string
+
+// MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
+type MXTarget struct {
+	priority uint16
+	host     string
+}
+
+// SRVTarget represents a single SRV record target, including its priority, weight, port, and host.
+type SRVTarget struct {
+	priority uint16
+	weight   uint16
+	port     uint16
+	host     string
+}
+
+// ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
+type ProviderSpecificProperty struct {
+	// Name of the provider-specific property. Accepted names are provider
+	// dependent; see the tutorial for the provider in use.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Name string `json:"name,omitempty"`
+	// Value of the provider-specific property.
+	// +optional
+	// +kubebuilder:validation:MaxLength=4096
+	Value string `json:"value,omitempty"`
+}
+
+// ProviderSpecific holds configuration which is specific to individual DNS providers
+// +kubebuilder:validation:MaxItems=100
+type ProviderSpecific []ProviderSpecificProperty
+
+// EndpointKey is the type of a map key for separating endpoints or targets.
+type EndpointKey struct {
+	DNSName       string
+	RecordType    string
+	SetIdentifier string
+	RecordTTL     TTL
+	Target        string
+}
+
+// This schema also validates the DNSRecord objects the crd registry writes, where
+// external-dns is the author: a rejected write is not user feedback, it aborts
+// ApplyChanges before the provider is called.
+//
+// So a rule may only reject what external-dns cannot legitimately build. That rules
+// out counting targets — a Service whose load balancer publishes several hostnames
+// yields a multi-target CNAME — and constraining A/AAAA targets, which are hostnames
+// on providers with native alias records.
+//
+// The rules avoid matches(): the API server estimates a regex rule's admission
+// cost as maxItems x maxLength x regex size, which blows the per-schema budget.
+// The SRV, MX and NAPTR field grammar is left to Endpoint.Validate, which the CRD source and the dedup wrapper run.
+//
+// DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
+// pattern accepts the trailing dot of an absolute name; its rule enforces the real
+// limit. The bound cannot be dropped: an unbounded string prices the PTR rule below
+// at the maximum request size.
+
+// Endpoint is a high-level way of a connection between a service and an IP
+// +kubebuilder:object:generate=true
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="NAPTR targets must be absolute and end with a dot"
+// +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'"
+type Endpoint struct {
+	// DNSName is the hostname of the DNS record. It is at most 253 characters, or 254
+	// written as an absolute name with a trailing dot.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=254
+	// +kubebuilder:validation:XValidation:rule="self.size() <= (self.endsWith('.') ? 254 : 253)",message="dnsName must be at most 253 characters, or 254 including the trailing dot"
+	// +kubebuilder:validation:Pattern=`^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$`
+	DNSName string `json:"dnsName,omitempty"`
+	// Targets are the values the DNS record points to. Leaving it empty is only
+	// meaningful when --default-targets is configured.
+	// +optional
+	Targets Targets `json:"targets,omitempty"`
+	// RecordType is the DNS record type.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=A;AAAA;CNAME;DNAME;MX;NAPTR;NS;PTR;SRV;TLSA;TXT
+	RecordType string `json:"recordType,omitempty"`
+	// SetIdentifier distinguishes multiple records with the same name and type
+	// (e.g. Route53 records with routing policies other than 'simple').
+	// +optional
+	// +kubebuilder:validation:MaxLength=255
+	SetIdentifier string `json:"setIdentifier,omitempty"`
+	// RecordTTL is the TTL of the record in seconds. 0 means "not set" and lets
+	// the provider apply its own default. The upper bound is the RFC 2181 §8 maximum.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=2147483647
+	RecordTTL TTL `json:"recordTTL,omitempty"`
+	// Labels stores labels defined for the Endpoint
+	// +optional
+	Labels Labels `json:"labels,omitempty"`
+	// ProviderSpecific stores provider specific config
+	// +optional
+	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// refObjects stores the set of unique Kubernetes objects this endpoint was derived from.
+	// An endpoint merged from multiple sources will have more than one entry.
+	// +optional
+	refObjects []*ObjectRef `json:"-"`
+}
+
+type AliasType string
 
 const (
 	// RecordTypeA is a RecordType enum value
@@ -70,6 +197,19 @@ const (
 	logFieldComparisonTargets = "comparisonTargets"
 )
 
+const (
+	// AliasNone indicates alias property is not set
+	AliasNone AliasType = ""
+	// AliasFalse indicates alias property is set to false
+	AliasFalse AliasType = "false"
+	// AliasTrue indicates alias property is set to true (both A and AAAA)
+	AliasTrue AliasType = "true"
+	// AliasA indicates alias property is set to A record only
+	AliasA AliasType = "A"
+	// AliasAAAA indicates alias property is set to AAAA record only
+	AliasAAAA AliasType = "AAAA"
+)
+
 var (
 	// Adding a type here also requires it in the Enum marker on Endpoint.RecordType,
 	// then `make crd`. A type missing from that enum is rejected at admission.
@@ -88,43 +228,9 @@ var (
 	}
 )
 
-// TTL is a structure defining the TTL of a DNS record
-type TTL int64
-
 // IsConfigured returns true if TTL is configured, false otherwise
 func (ttl TTL) IsConfigured() bool {
 	return ttl > 0
-}
-
-// Targets is a representation of a list of targets for an endpoint.
-//
-// The bounds must stay wide enough for every endpoint external-dns can build: a
-// headless Service produces one target per backend, and a TXT target routinely
-// exceeds one DNS character-string (DKIM, long SPF), which external-dns hands to
-// the provider unsplit.
-//
-// MaxItems also caps the admission cost of the all() rules on Endpoint, which the
-// API server estimates as DNSEndpointSpec.Endpoints MaxItems x this one. At 1000
-// endpoints per object the CRD stops installing somewhere under 2000 targets, so
-// raising either bound needs both re-checked together. MaxLength barely moves the
-// estimate.
-// +kubebuilder:validation:MaxItems=1000
-// +kubebuilder:validation:items:MinLength=1
-// +kubebuilder:validation:items:MaxLength=4096
-type Targets []string
-
-// MXTarget represents a single MX (Mail Exchange) record target, including its priority and host.
-type MXTarget struct {
-	priority uint16
-	host     string
-}
-
-// SRVTarget represents a single SRV record target, including its priority, weight, port, and host.
-type SRVTarget struct {
-	priority uint16
-	weight   uint16
-	port     uint16
-	host     string
 }
 
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings.
@@ -253,106 +359,24 @@ func (t Targets) IsLess(o Targets) bool {
 	return false
 }
 
-// ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
-type ProviderSpecificProperty struct {
-	// Name of the provider-specific property. Accepted names are provider
-	// dependent; see the tutorial for the provider in use.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=253
-	Name string `json:"name,omitempty"`
-	// Value of the provider-specific property.
-	// +optional
-	// +kubebuilder:validation:MaxLength=4096
-	Value string `json:"value,omitempty"`
-}
-
-// ProviderSpecific holds configuration which is specific to individual DNS providers
-// +kubebuilder:validation:MaxItems=100
-type ProviderSpecific []ProviderSpecificProperty
-
-// EndpointKey is the type of a map key for separating endpoints or targets.
-type EndpointKey struct {
-	DNSName       string
-	RecordType    string
-	SetIdentifier string
-	RecordTTL     TTL
-	Target        string
-}
-
 func (ep EndpointKey) String() string {
 	return fmt.Sprintf(`{%q %q %q "%d" %q}`, ep.DNSName, ep.RecordType, ep.SetIdentifier, ep.RecordTTL, ep.Target)
-}
-
-type ObjectRef = events.ObjectReference
-
-// This schema also validates the DNSRecord objects the crd registry writes, where
-// external-dns is the author: a rejected write is not user feedback, it aborts
-// ApplyChanges before the provider is called.
-//
-// So a rule may only reject what external-dns cannot legitimately build. That rules
-// out counting targets — a Service whose load balancer publishes several hostnames
-// yields a multi-target CNAME — and constraining A/AAAA targets, which are hostnames
-// on providers with native alias records.
-//
-// The rules avoid matches(): the API server estimates a regex rule's admission
-// cost as maxItems x maxLength x regex size, which blows the per-schema budget.
-// The SRV and MX field grammar is therefore left to Targets.ValidateSRVRecord /
-// ValidateMXRecord, which the sources run when they read the object.
-//
-// DNSName is bounded at 254, one over the RFC 1035 §2.3.4 limit of 253, because the
-// pattern accepts the trailing dot of an absolute name; its rule enforces the real
-// limit. The bound cannot be dropped: an unbounded string prices the PTR rule below
-// at the maximum request size.
-
-// Endpoint is a high-level way of a connection between a service and an IP
-// +kubebuilder:object:generate=true
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'SRV' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="SRV targets must be '<priority> <weight> <port> <host>' with an absolute host, e.g. '10 5 5060 sip.example.com.'"
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'NAPTR' || !has(self.targets) || self.targets.all(t, t.endsWith('.'))",message="NAPTR targets must be absolute and end with a dot"
-// +kubebuilder:validation:XValidation:rule="self.recordType != 'PTR' || self.dnsName.lowerAscii().endsWith('.in-addr.arpa') || self.dnsName.lowerAscii().endsWith('.ip6.arpa')",message="PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa, written without a trailing dot, e.g. '1.0.0.10.in-addr.arpa'"
-type Endpoint struct {
-	// DNSName is the hostname of the DNS record. It is at most 253 characters, or 254
-	// written as an absolute name with a trailing dot.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=254
-	// +kubebuilder:validation:XValidation:rule="self.size() <= (self.endsWith('.') ? 254 : 253)",message="dnsName must be at most 253 characters, or 254 including the trailing dot"
-	// +kubebuilder:validation:Pattern=`^(\*\.)?([a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.)*[a-zA-Z0-9_]([-a-zA-Z0-9_]{0,61}[a-zA-Z0-9_])?\.?$`
-	DNSName string `json:"dnsName,omitempty"`
-	// Targets are the values the DNS record points to. Leaving it empty is only
-	// meaningful when --default-targets is configured.
-	// +optional
-	Targets Targets `json:"targets,omitempty"`
-	// RecordType is the DNS record type.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=A;AAAA;CNAME;DNAME;MX;NAPTR;NS;PTR;SRV;TLSA;TXT
-	RecordType string `json:"recordType,omitempty"`
-	// SetIdentifier distinguishes multiple records with the same name and type
-	// (e.g. Route53 records with routing policies other than 'simple').
-	// +optional
-	// +kubebuilder:validation:MaxLength=255
-	SetIdentifier string `json:"setIdentifier,omitempty"`
-	// RecordTTL is the TTL of the record in seconds. 0 means "not set" and lets
-	// the provider apply its own default. The upper bound is the RFC 2181 §8 maximum.
-	// +optional
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=2147483647
-	RecordTTL TTL `json:"recordTTL,omitempty"`
-	// Labels stores labels defined for the Endpoint
-	// +optional
-	Labels Labels `json:"labels,omitempty"`
-	// ProviderSpecific stores provider specific config
-	// +optional
-	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
-	// refObjects stores the set of unique Kubernetes objects this endpoint was derived from.
-	// An endpoint merged from multiple sources will have more than one entry.
-	// +optional
-	refObjects []*ObjectRef `json:"-"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
+}
+
+// OverlongDNSLabel returns the first label in dnsName exceeding the RFC 1035 63-character
+// limit, or "" if none do.
+func OverlongDNSLabel(dnsName string) string {
+	for label := range strings.SplitSeq(dnsName, ".") {
+		if len(label) > 63 {
+			return label
+		}
+	}
+	return ""
 }
 
 // NormalizeMXTarget renders an MX target as "<preference> <host>", the form providers read back.
@@ -386,11 +410,9 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		}
 	}
 
-	for label := range strings.SplitSeq(dnsName, ".") {
-		if len(label) > 63 {
-			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
-			return nil
-		}
+	if label := OverlongDNSLabel(dnsName); label != "" {
+		log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+		return nil
 	}
 
 	return &Endpoint{
@@ -400,6 +422,17 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,
 	}
+}
+
+// NewPTREndpoint creates a PTR endpoint from a forward IP target and one or more hostnames.
+// It computes the reverse DNS name (in-addr.arpa / ip6.arpa) from the target IP.
+func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, error) {
+	revAddr, err := dns.ReverseAddr(target)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute reverse address for %s: %w", target, err)
+	}
+	ptrName := strings.TrimSuffix(revAddr, ".")
+	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
 }
 
 // WithSetIdentifier applies the given set identifier to the endpoint.
@@ -430,21 +463,6 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	}
 	return "", false
 }
-
-type AliasType string
-
-const (
-	// AliasNone indicates alias property is not set
-	AliasNone AliasType = ""
-	// AliasFalse indicates alias property is set to false
-	AliasFalse AliasType = "false"
-	// AliasTrue indicates alias property is set to true (both A and AAAA)
-	AliasTrue AliasType = "true"
-	// AliasA indicates alias property is set to A record only
-	AliasA AliasType = "A"
-	// AliasAAAA indicates alias property is set to AAAA record only
-	AliasAAAA AliasType = "AAAA"
-)
 
 func (e *Endpoint) GetAliasProperty() AliasType {
 	switch a, ok := e.GetProviderSpecificProperty("alias"); {
@@ -554,12 +572,12 @@ func (e *Endpoint) WithLabel(key, value string) *Endpoint {
 
 // WithRefObject adds obj to the endpoint's set of reference objects, deduplicating by Key().
 // Calling it multiple times with the same object is safe — it is added at most once.
-func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
+func (e *Endpoint) WithRefObject(obj *ObjectRef) *Endpoint {
 	if obj == nil {
 		return e
 	}
 	key := obj.Key()
-	if slices.ContainsFunc(e.refObjects, func(r *events.ObjectReference) bool {
+	if slices.ContainsFunc(e.refObjects, func(r *ObjectRef) bool {
 		return r.Key() == key
 	}) {
 		return e
@@ -569,8 +587,23 @@ func (e *Endpoint) WithRefObject(obj *events.ObjectReference) *Endpoint {
 }
 
 // RefObjects returns all Kubernetes object references associated with this endpoint.
-func (e *Endpoint) RefObjects() []*events.ObjectReference {
+func (e *Endpoint) RefObjects() []*ObjectRef {
 	return e.refObjects
+}
+
+// Equal reports whether a and b describe the same DNS record. refObjects is
+// ignored because it only tracks provenance. Nil and empty collections are equal.
+func Equal(a, b *Endpoint) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.DNSName == b.DNSName &&
+		a.RecordType == b.RecordType &&
+		a.SetIdentifier == b.SetIdentifier &&
+		a.RecordTTL == b.RecordTTL &&
+		slices.Equal(a.Targets, b.Targets) &&
+		maps.Equal(a.Labels, b.Labels) &&
+		slices.Equal(a.ProviderSpecific, b.ProviderSpecific)
 }
 
 // Key returns the EndpointKey of the Endpoint.
@@ -600,17 +633,6 @@ func (e *Endpoint) GetNakedDomain() string {
 		return e.DNSName
 	}
 	return parts[1]
-}
-
-// NewPTREndpoint creates a PTR endpoint from a forward IP target and one or more hostnames.
-// It computes the reverse DNS name (in-addr.arpa / ip6.arpa) from the target IP.
-func NewPTREndpoint(target string, ttl TTL, hostnames ...string) (*Endpoint, error) {
-	revAddr, err := dns.ReverseAddr(target)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute reverse address for %s: %w", target, err)
-	}
-	ptrName := strings.TrimSuffix(revAddr, ".")
-	return NewEndpointWithTTL(ptrName, RecordTypePTR, ttl, hostnames...), nil
 }
 
 // String returns a human-readable representation of the endpoint in zone-file style.
@@ -669,50 +691,34 @@ func (e *Endpoint) RequestedRecordType() (string, bool) {
 	return e.GetProviderSpecificProperty(ProviderSpecificRecordType)
 }
 
-// TODO: rename to Validate
-// CheckEndpoint Check if endpoint is properly formatted according to RFC standards
-func (e *Endpoint) CheckEndpoint() bool {
+// Validate returns the first reason why the endpoint does not follow the grammar of its record type, or nil.
+func (e *Endpoint) Validate() error {
 	// Several providers index Targets[0] and would panic.
 	if len(e.Targets) == 0 {
-		log.Debugf("Endpoint %s of type %s has no targets", e.DNSName, e.RecordType)
-		return false
+		return fmt.Errorf("%s record needs at least one target", e.RecordType)
 	}
 
 	if !e.supportsAlias() {
 		if _, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias); ok {
-			log.Warnf("Endpoint %s of type %s does not support alias records", e.DNSName, e.RecordType)
-			return false
+			return fmt.Errorf("%s record does not support the %q provider-specific property", e.RecordType, ProviderSpecificAlias)
 		}
 	}
 
 	switch recordType := e.RecordType; recordType {
 	case RecordTypeA, RecordTypeAAAA:
 		if !e.isAlias() {
-			return e.Targets.ValidateIPRecord(recordType)
+			return e.Targets.validateIPRecord(recordType)
 		}
 	case RecordTypeMX:
-		return e.Targets.ValidateMXRecord()
+		return e.Targets.validateMXRecord()
 	case RecordTypeSRV:
-		return e.Targets.ValidateSRVRecord()
+		return e.Targets.validateSRVRecord()
+	case RecordTypeNAPTR:
+		return e.Targets.validateNAPTRRecord()
 	case RecordTypePTR:
-		return e.ValidatePTRRecord()
+		return e.validatePTRRecord()
 	}
-	return true
-}
-
-// isAlias returns true if the endpoint has the alias provider-specific property set to true.
-func (e *Endpoint) isAlias() bool {
-	val, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias)
-	return ok && val
-}
-
-func (e *Endpoint) supportsAlias() bool {
-	switch e.RecordType {
-	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
-		return true
-	default:
-		return false
-	}
+	return nil
 }
 
 // WithMinTTL sets the endpoint's TTL to the given value if the current TTL is not configured.
@@ -723,17 +729,27 @@ func (e *Endpoint) WithMinTTL(ttl int64) {
 	}
 }
 
+// GetDNSName returns the DNS name of the endpoint.
+func (e *Endpoint) GetDNSName() string {
+	return e.DNSName
+}
+
+// GetRecordType returns the record type of the endpoint.
+func (e *Endpoint) GetRecordType() string {
+	return e.RecordType
+}
+
 // NewMXRecord parses a string representation of an MX record target (e.g., "10 mail.example.com")
 // and returns an MXTarget struct. Returns an error if the input is invalid.
 func NewMXRecord(target string) (*MXTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid MX record target: %s. MX records must have a preference value and a host, e.g. '10 example.com'", target)
+		return nil, fmt.Errorf("invalid MX record target %q: MX records must have a preference value and a host, e.g. '10 example.com'", target)
 	}
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid integer value in target: %s", target)
+		return nil, fmt.Errorf("invalid MX record target %q: preference %q is not an integer between 0 and 65535", target, parts[0])
 	}
 
 	return &MXTarget{
@@ -747,23 +763,23 @@ func NewMXRecord(target string) (*MXTarget, error) {
 func NewSRVRecord(target string) (*SRVTarget, error) {
 	parts := strings.Fields(strings.TrimSpace(target))
 	if len(parts) != 4 {
-		return nil, fmt.Errorf("invalid SRV record target: %s. SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
+		return nil, fmt.Errorf("invalid SRV record target %q: SRV records must have a priority, weight, port, and target host, e.g. '10 5 5060 example.com.'", target)
 	}
 	if !strings.HasSuffix(parts[3], ".") {
-		return nil, fmt.Errorf("invalid SRV record target: %s. Target host does not end with a dot", target)
+		return nil, fmt.Errorf("invalid SRV record target %q: target host does not end with a dot", target)
 	}
 
 	priority, err := strconv.ParseUint(parts[0], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV priority %q: %w", parts[0], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: priority %q is not an integer between 0 and 65535", target, parts[0])
 	}
 	weight, err := strconv.ParseUint(parts[1], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV weight %q: %w", parts[1], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: weight %q is not an integer between 0 and 65535", target, parts[1])
 	}
 	port, err := strconv.ParseUint(parts[2], 10, 16)
 	if err != nil {
-		return nil, fmt.Errorf("invalid SRV port %q: %w", parts[2], err)
+		return nil, fmt.Errorf("invalid SRV record target %q: port %q is not an integer between 0 and 65535", target, parts[2])
 	}
 
 	return &SRVTarget{
@@ -804,74 +820,42 @@ func (s *SRVTarget) GetHost() string {
 	return s.host
 }
 
-// ValidateIPRecord reports whether all targets are valid IP addresses of the given record type (A or AAAA).
-func (t Targets) ValidateIPRecord(recordType string) bool {
+func (t Targets) validateIPRecord(recordType string) error {
 	for _, target := range t {
 		addr, err := netip.ParseAddr(target)
-		if err != nil {
-			log.Debugf("Invalid %s record target: %s is not a valid IP address", recordType, target)
-			return false
-		}
-		if recordType == RecordTypeA && addr.Is6() {
-			log.Debugf("Invalid A record target: %s is an IPv6 address", target)
-			return false
-		}
-		if recordType == RecordTypeAAAA && addr.Is4() {
-			log.Debugf("Invalid AAAA record target: %s is an IPv4 address", target)
-			return false
+		switch {
+		case err != nil:
+			return fmt.Errorf("target %q is not an IP address for record type %s; set the %q provider-specific property for a provider-native alias", target, recordType, ProviderSpecificAlias)
+		case recordType == RecordTypeA && addr.Is6():
+			return fmt.Errorf("target %q is an IPv6 address, use an AAAA record", target)
+		case recordType == RecordTypeAAAA && addr.Is4():
+			return fmt.Errorf("target %q is an IPv4 address, use an A record", target)
 		}
 	}
-	return true
+	return nil
 }
 
-// ValidateMXRecord reports whether all targets are valid MX record values (priority + host).
-func (t Targets) ValidateMXRecord() bool {
+func (t Targets) validateMXRecord() error {
 	for _, target := range t {
-		_, err := NewMXRecord(target)
-		if err != nil {
-			log.Debugf("Invalid MX record target: %s. %v", target, err)
-			return false
+		if _, err := NewMXRecord(target); err != nil {
+			return err
 		}
 	}
-
-	return true
+	return nil
 }
 
-// ValidateSRVRecord reports whether all targets are valid SRV record values (priority weight port host).
-func (t Targets) ValidateSRVRecord() bool {
+func (t Targets) validateSRVRecord() error {
 	for _, target := range t {
-		_, err := NewSRVRecord(target)
-		if err != nil {
-			log.Debugf("Invalid SRV record target: %s. %v", target, err)
-			return false
+		if _, err := NewSRVRecord(target); err != nil {
+			return err
 		}
 	}
-	return true
+	return nil
 }
 
-// ValidatePTRRecord checks that a PTR endpoint has a valid reverse DNS name
-// (ending in .in-addr.arpa or .ip6.arpa) and that targets are non-empty hostnames.
-func (e *Endpoint) ValidatePTRRecord() bool {
-	name := strings.ToLower(e.DNSName)
-	if !isReverseDNSName(name) {
-		log.Debugf("Invalid PTR record: DNSName %q must be a valid reverse DNS name under .in-addr.arpa or .ip6.arpa", e.DNSName)
-		return false
-	}
-	if len(e.Targets) == 0 {
-		log.Debugf("Invalid PTR record: at least one target is required for %s", e.DNSName)
-		return false
-	}
-	for _, target := range e.Targets {
-		if strings.TrimSpace(target) == "" {
-			log.Debugf("Invalid PTR record: target must not be empty for %s", e.DNSName)
-			return false
-		}
-		if _, err := netip.ParseAddr(target); err == nil {
-			log.Debugf("Invalid PTR record: target %q for %s must be a hostname, not an IP address", target, e.DNSName)
-			return false
-		}
-	}
-	return true
+// GetRecordTTL returns the TTL of the endpoint as int64.
+func (e *Endpoint) GetRecordTTL() int64 {
+	return int64(e.RecordTTL)
 }
 
 // isReverseDNSName checks that name ends with .in-addr.arpa or .ip6.arpa
@@ -885,21 +869,6 @@ func isReverseDNSName(name string) bool {
 	return false
 }
 
-// GetDNSName returns the DNS name of the endpoint.
-func (e *Endpoint) GetDNSName() string {
-	return e.DNSName
-}
-
-// GetRecordType returns the record type of the endpoint.
-func (e *Endpoint) GetRecordType() string {
-	return e.RecordType
-}
-
-// GetRecordTTL returns the TTL of the endpoint as int64.
-func (e *Endpoint) GetRecordTTL() int64 {
-	return int64(e.RecordTTL)
-}
-
 // GetTargets returns the targets of the endpoint.
 func (e *Endpoint) GetTargets() []string {
 	return e.Targets
@@ -911,4 +880,34 @@ func (e *Endpoint) GetOwner() string {
 		return val
 	}
 	return e.SetIdentifier
+}
+
+// isAlias returns true if the endpoint has the alias provider-specific property set to true.
+func (e *Endpoint) isAlias() bool {
+	val, ok := e.GetBoolProviderSpecificProperty(ProviderSpecificAlias)
+	return ok && val
+}
+
+func (e *Endpoint) supportsAlias() bool {
+	switch e.RecordType {
+	case RecordTypeA, RecordTypeAAAA, RecordTypeCNAME:
+		return true
+	default:
+		return false
+	}
+}
+
+func (e *Endpoint) validatePTRRecord() error {
+	if !isReverseDNSName(strings.ToLower(e.DNSName)) {
+		return errors.New("PTR dnsName must be a reverse DNS name under .in-addr.arpa or .ip6.arpa")
+	}
+	for _, target := range e.Targets {
+		if strings.TrimSpace(target) == "" {
+			return errors.New("PTR target must not be empty")
+		}
+		if _, err := netip.ParseAddr(target); err == nil {
+			return fmt.Errorf("PTR target %q must be a hostname, not an IP address", target)
+		}
+	}
+	return nil
 }

@@ -24,17 +24,22 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given config.
-func NewGatewayHTTPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "HTTPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+type gatewayHTTPRoute struct{ route v1.HTTPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+
+type gatewayHTTPRouteInformer struct {
+	informers_v1.HTTPRouteInformer
+}
+
+// NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given cfg.
+func NewGatewayHTTPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "HTTPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayHTTPRouteInformer{factory.Gateway().V1().HTTPRoutes()}
 	})
 }
-
-type gatewayHTTPRoute struct{ route v1.HTTPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
 func (rt *gatewayHTTPRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayHTTPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
@@ -42,10 +47,6 @@ func (rt *gatewayHTTPRoute) Hostnames() []v1.Hostname         { return rt.route.
 func (rt *gatewayHTTPRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
 func (rt *gatewayHTTPRoute) Protocol() v1.ProtocolType        { return v1.HTTPProtocolType }
 func (rt *gatewayHTTPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
-
-type gatewayHTTPRouteInformer struct {
-	informers_v1.HTTPRouteInformer
-}
 
 func (inf gatewayHTTPRouteInformer) List() []gatewayRoute {
 	list := extInformers.ListIndexed[*v1.HTTPRoute](inf.HTTPRouteInformer.Informer().GetIndexer())

@@ -27,10 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-const (
-	dialTimeout = 30 * time.Second
-)
-
 // connectorSource is an implementation of Source that provides endpoints by connecting
 // to a remote tcp server. The encoding/decoding is done using encoder/gob package.
 //
@@ -41,10 +37,15 @@ const (
 // +externaldns:source:filters=
 // +externaldns:source:namespace=
 // +externaldns:source:fqdn-template=false
+// +externaldns:source:events=false
 // +externaldns:source:provider-specific=false
 type connectorSource struct {
 	remoteServer string
 }
+
+const (
+	dialTimeout = 30 * time.Second
+)
 
 // NewConnectorSource creates a new connectorSource with the given config.
 func NewConnectorSource(remoteServer string) (Source, error) {

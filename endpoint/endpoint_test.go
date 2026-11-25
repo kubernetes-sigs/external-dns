@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -1080,8 +1079,7 @@ func TestPDNScheckEndpoint(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := tt.endpoint.CheckEndpoint()
-		assert.Equal(t, tt.expected, actual)
+		assert.Equal(t, tt.expected, tt.endpoint.Validate() == nil)
 	}
 }
 
@@ -1207,7 +1205,7 @@ func TestSRVTarget_Getters(t *testing.T) {
 	assert.Equal(t, "service.example.com.", s.GetHost())
 }
 
-func TestCheckEndpoint(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		description string
 		endpoint    Endpoint
@@ -1547,166 +1545,119 @@ func TestCheckEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			actual := tt.endpoint.CheckEndpoint()
-			assert.Equal(t, tt.expected, actual)
+			assert.Equal(t, tt.expected, tt.endpoint.Validate() == nil)
 		})
 	}
 }
 
-func TestCheckEndpoint_AliasWarningLog(t *testing.T) {
+func TestValidate_ErrorMessage(t *testing.T) {
 	tests := []struct {
 		name    string
 		ep      Endpoint
-		wantLog bool
+		wantErr string
 	}{
 		{
-			name: "unsupported type with alias logs warning",
+			name: "alias on unsupported type",
 			ep: Endpoint{
 				DNSName:          "example.com",
 				RecordType:       RecordTypeMX,
 				Targets:          Targets{"10 mail.example.com"},
 				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
 			},
-			wantLog: true,
+			wantErr: `MX record does not support the "alias" provider-specific property`,
 		},
 		{
-			name: "supported type with alias does not log",
-			ep: Endpoint{
-				DNSName:          "example.com",
-				RecordType:       RecordTypeA,
-				Targets:          Targets{"my-elb-123.us-east-1.elb.amazonaws.com"},
-				ProviderSpecific: ProviderSpecific{{Name: ProviderSpecificAlias, Value: "true"}},
-			},
-			wantLog: false,
+			name:    "no targets",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeCNAME},
+			wantErr: "CNAME record needs at least one target",
 		},
 		{
-			name: "unsupported type without alias does not log",
-			ep: Endpoint{
-				DNSName:    "example.com",
-				RecordType: RecordTypeMX,
-				Targets:    Targets{"10 mail.example.com"},
-			},
-			wantLog: false,
+			name:    "A target is a hostname",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeA, Targets: Targets{"lb.example.com"}},
+			wantErr: `target "lb.example.com" is not an IP address for record type A`,
+		},
+		{
+			name:    "A target is IPv6",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeA, Targets: Targets{"::1"}},
+			wantErr: `target "::1" is an IPv6 address, use an AAAA record`,
+		},
+		{
+			name:    "AAAA target is IPv4",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeAAAA, Targets: Targets{"1.2.3.4"}},
+			wantErr: `target "1.2.3.4" is an IPv4 address, use an A record`,
+		},
+		{
+			name:    "MX without preference",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeMX, Targets: Targets{"mail.example.com"}},
+			wantErr: "MX records must have a preference value and a host",
+		},
+		{
+			name:    "SRV relative host",
+			ep:      Endpoint{DNSName: "_sip._udp.example.com", RecordType: RecordTypeSRV, Targets: Targets{"10 5 5060 sip.example.com"}},
+			wantErr: "target host does not end with a dot",
+		},
+		{
+			name:    "NAPTR malformed",
+			ep:      Endpoint{DNSName: "example.com", RecordType: RecordTypeNAPTR, Targets: Targets{"10 20"}},
+			wantErr: `invalid NAPTR target "10 20"`,
+		},
+		{
+			name:    "PTR forward name",
+			ep:      Endpoint{DNSName: "web.example.com", RecordType: RecordTypePTR, Targets: Targets{"other.example.com"}},
+			wantErr: "must be a reverse DNS name",
+		},
+		{
+			name:    "PTR IP target",
+			ep:      Endpoint{DNSName: "1.0.0.10.in-addr.arpa", RecordType: RecordTypePTR, Targets: Targets{"10.0.0.1"}},
+			wantErr: "must be a hostname, not an IP address",
+		},
+		{
+			name:    "PTR empty target",
+			ep:      Endpoint{DNSName: "1.0.0.10.in-addr.arpa", RecordType: RecordTypePTR, Targets: Targets{""}},
+			wantErr: "must not be empty",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
-
-			tt.ep.CheckEndpoint()
-
-			warnMsg := "does not support alias records"
-			if tt.wantLog {
-				logtest.TestHelperLogContains(warnMsg, hook, t)
-			} else {
-				logtest.TestHelperLogNotContains(warnMsg, hook, t)
-			}
-		})
-	}
-}
-
-func TestCheckEndpoint_PTRValidationLog(t *testing.T) {
-	tests := []struct {
-		name    string
-		ep      Endpoint
-		wantLog string
-	}{
-		{
-			name: "non-reverse DNS name logs invalid",
-			ep: Endpoint{
-				DNSName:    "web.example.com",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{"other.example.com"},
-			},
-			wantLog: "must be a valid reverse DNS name",
-		},
-		{
-			name: "IP address target logs invalid",
-			ep: Endpoint{
-				DNSName:    "1.0.0.10.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{"10.0.0.1"},
-			},
-			wantLog: "must be a hostname, not an IP address",
-		},
-		{
-			name: "empty target logs invalid",
-			ep: Endpoint{
-				DNSName:    "1.0.0.10.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{""},
-			},
-			wantLog: "target must not be empty",
-		},
-		{
-			name: "no targets logs invalid",
-			ep: Endpoint{
-				DNSName:    "1.0.0.10.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{},
-			},
-			wantLog: "has no targets",
-		},
-		{
-			name: "valid PTR does not log",
-			ep: Endpoint{
-				DNSName:    "2.49.168.192.in-addr.arpa",
-				RecordType: RecordTypePTR,
-				Targets:    Targets{"web.example.com"},
-			},
-			wantLog: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
-
-			tt.ep.CheckEndpoint()
-
-			if tt.wantLog != "" {
-				logtest.TestHelperLogContains(tt.wantLog, hook, t)
-			} else {
-				logtest.TestHelperLogNotContains("Invalid PTR record", hook, t)
-			}
+			assert.ErrorContains(t, tt.ep.Validate(), tt.wantErr)
 		})
 	}
 }
 
 func TestEndpoint_WithRefObject(t *testing.T) {
-	ref1 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-a", "uid-1", "service")
-	ref2 := events.NewObjectReferenceFromParts("Service", "v1", "default", "svc-b", "uid-2", "service")
+	ref1 := NewObjectRef("Service", "v1", "default", "svc-a", "uid-1", "service")
+	ref2 := NewObjectRef("Service", "v1", "default", "svc-b", "uid-2", "service")
 
 	tests := []struct {
 		name     string
-		add      []*events.ObjectReference
+		add      []*ObjectRef
 		wantLen  int
-		wantRefs []*events.ObjectReference
+		wantRefs []*ObjectRef
 	}{
 		{
 			name:     "nil ref is a no-op",
-			add:      []*events.ObjectReference{nil},
+			add:      []*ObjectRef{nil},
 			wantLen:  0,
 			wantRefs: nil,
 		},
 		{
 			name:     "single ref is stored",
-			add:      []*events.ObjectReference{ref1},
+			add:      []*ObjectRef{ref1},
 			wantLen:  1,
-			wantRefs: []*events.ObjectReference{ref1},
+			wantRefs: []*ObjectRef{ref1},
 		},
 		{
 			name:     "same ref added twice is deduplicated",
-			add:      []*events.ObjectReference{ref1, ref1},
+			add:      []*ObjectRef{ref1, ref1},
 			wantLen:  1,
-			wantRefs: []*events.ObjectReference{ref1},
+			wantRefs: []*ObjectRef{ref1},
 		},
 		{
 			name:     "distinct refs are added in insertion order",
-			add:      []*events.ObjectReference{ref1, ref2},
+			add:      []*ObjectRef{ref1, ref2},
 			wantLen:  2,
-			wantRefs: []*events.ObjectReference{ref1, ref2},
+			wantRefs: []*ObjectRef{ref1, ref2},
 		},
 	}
 
@@ -1870,7 +1821,7 @@ func TestNewEndpointWithTTLMXTargets(t *testing.T) {
 		})
 	}
 
-	assert.True(t, Targets{"0 ."}.ValidateMXRecord(), "null MX must stay a valid MX target")
+	assert.NoError(t, Targets{"0 ."}.validateMXRecord(), "null MX must stay a valid MX target")
 }
 
 func TestGetAliasProperty(t *testing.T) {
@@ -2291,4 +2242,67 @@ func TestEndpointKey_String(t *testing.T) {
 			assert.Equal(t, tt.want, tt.key.String())
 		})
 	}
+}
+
+func TestEndpointEqual(t *testing.T) {
+	base := func() *Endpoint {
+		return NewEndpointWithTTL("example.org", RecordTypeA, TTL(300), "1.2.3.4").
+			WithSetIdentifier("id").
+			WithLabel(OwnerLabelKey, "owner").
+			WithProviderSpecific("alias", "false")
+	}
+
+	tests := []struct {
+		name   string
+		a, b   *Endpoint
+		modify func(*Endpoint)
+		want   bool
+	}{
+		{name: "identical", a: base(), b: base(), want: true},
+		{name: "both nil", want: true},
+		{name: "one nil", a: base(), want: false},
+		{name: "DNSName", a: base(), b: base(), modify: func(e *Endpoint) { e.DNSName = "other.org" }},
+		{name: "RecordType", a: base(), b: base(), modify: func(e *Endpoint) { e.RecordType = RecordTypeAAAA }},
+		{name: "SetIdentifier", a: base(), b: base(), modify: func(e *Endpoint) { e.SetIdentifier = "other" }},
+		{name: "RecordTTL", a: base(), b: base(), modify: func(e *Endpoint) { e.RecordTTL = 60 }},
+		{name: "Targets", a: base(), b: base(), modify: func(e *Endpoint) { e.Targets = Targets{"5.6.7.8"} }},
+		{name: "Labels", a: base(), b: base(), modify: func(e *Endpoint) { e.Labels[OwnerLabelKey] = "other" }},
+		{name: "ProviderSpecific", a: base(), b: base(), modify: func(e *Endpoint) { e.SetProviderSpecificProperty("alias", "true") }},
+		{
+			name: "refObjects ignored", a: base(), b: base(), want: true,
+			modify: func(e *Endpoint) {
+				e.WithRefObject(NewObjectRef("Service", "v1", "default", "svc", "", "service"))
+			},
+		},
+		{
+			name: "nil and empty collections equal", want: true,
+			a: &Endpoint{DNSName: "example.org"},
+			b: &Endpoint{DNSName: "example.org", Targets: Targets{}, Labels: Labels{}, ProviderSpecific: ProviderSpecific{}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.modify != nil {
+				tt.modify(tt.b)
+			}
+			assert.Equal(t, tt.want, Equal(tt.a, tt.b))
+			assert.Equal(t, tt.want, Equal(tt.b, tt.a))
+		})
+	}
+}
+
+// TestEndpointEqualCoversAllFields fails when a field is added to Endpoint, so
+// the author has to decide whether Equal compares it.
+func TestEndpointEqualCoversAllFields(t *testing.T) {
+	handled := []string{
+		// compared by Equal
+		"DNSName", "Targets", "RecordType", "SetIdentifier", "RecordTTL", "Labels", "ProviderSpecific",
+		// intentionally ignored
+		"refObjects",
+	}
+	var fields []string
+	for f := range reflect.TypeFor[Endpoint]().Fields() {
+		fields = append(fields, f.Name)
+	}
+	assert.ElementsMatch(t, handled, fields, "update Equal and this list")
 }

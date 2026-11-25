@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package externaldns
+// Package version reports the build identity of external-dns.
+// Stdlib-only to keep the import lightweight for webhook providers.
+package version
 
 import (
 	"fmt"
@@ -26,16 +28,21 @@ const (
 )
 
 var (
-	Version          = "unknown" // Set at the build time via `-ldflags "-X main.Version=<value>"`
-	GitCommit        = "unknown" // Set at the build time via `-ldflags "-X main.GitCommitSHA=<value>"`
+	// Version is the release version, set via -ldflags -X.
+	Version = "unknown"
+	// GitCommit is the short commit hash, set via -ldflags -X.
+	GitCommit = "unknown"
+	// UserAgentProduct prefixes UserAgent; webhook providers may override it.
 	UserAgentProduct = "ExternalDNS"
 	goVersion        = runtime.Version()
 )
 
+// UserAgent returns the HTTP User-Agent, "<UserAgentProduct>/<Version>".
 func UserAgent() string {
 	return fmt.Sprintf("%s/%s", UserAgentProduct, Version)
 }
 
+// Banner returns a one-line summary of the build for startup logs.
 func Banner() string {
 	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 	return fmt.Sprintf(

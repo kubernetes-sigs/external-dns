@@ -59,6 +59,10 @@ type CRDRegistry struct {
 	ownerID   string // refers to the owner id of the current instance
 }
 
+// nameInvalidChars matches every character that is not allowed in the readable
+// part of a DNSRecord object name (anything outside lowercase RFC 1123 alphanumerics).
+var nameInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
+
 func New(cfg *externaldns.Config, p provider.Provider) (registry.Registry, error) {
 	namespace := cfg.CRDRegistryNamespace
 	if namespace == "" {
@@ -290,10 +294,6 @@ func (cr *CRDRegistry) getDNSRecord(ctx context.Context, record *endpoint.Endpoi
 	return &dnsrecord, nil
 }
 
-// nameInvalidChars matches every character that is not allowed in the readable
-// part of a DNSRecord object name (anything outside lowercase RFC 1123 alphanumerics).
-var nameInvalidChars = regexp.MustCompile(`[^a-z0-9]+`)
-
 // recordObjectName builds a deterministic, RFC 1123 compliant object name for a
 // DNSRecord. The dashed DNS name is kept as a readable prefix so records remain
 // discoverable with `kubectl get dnsrecords`, while a short hash of the full
@@ -435,10 +435,6 @@ func buildCacheOptions(namespace string) (crcache.Options, error) {
 	if err := apiv1alpha1.AddToScheme(scheme); err != nil {
 		return crcache.Options{}, err
 	}
-	// metav1.AddToGroupVersion registers ListOptions (and other meta types) so
-	// that watch/list requests for this group can be encoded.
-	metav1.AddToGroupVersion(scheme, apiv1alpha1.GroupVersion)
-
 	return crcache.Options{
 		Scheme: scheme,
 		ByObject: map[client.Object]crcache.ByObject{

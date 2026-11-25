@@ -37,12 +37,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	contentTypeJSON = "application/json"
-	apiAuthPath     = "/api/auth"
-	apiConfigDNS    = "/api/config/dns"
-)
-
 // piholeAPI is the interface for interacting with Pi-hole's DNS records.
 type piholeAPI interface {
 	listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error)
@@ -56,6 +50,46 @@ type piholeClient struct {
 	httpClient *http.Client
 	token      string
 }
+
+// ApiAuthResponse Define a struct to match the JSON response /auth/app structure
+type ApiAuthResponse struct {
+	Session struct {
+		Valid    bool   `json:"valid"`
+		TOTP     bool   `json:"totp"`
+		SID      string `json:"sid"`
+		CSRF     string `json:"csrf"`
+		Validity int    `json:"validity"`
+		Message  string `json:"message"`
+	} `json:"session"`
+	Took float64 `json:"took"`
+}
+
+// ApiErrorResponse Define struct to match the JSON structure
+type ApiErrorResponse struct {
+	Error struct {
+		Key     string `json:"key"`
+		Message string `json:"message"`
+		Hint    string `json:"hint"`
+	} `json:"error"`
+	Took float64 `json:"took"`
+}
+
+// ApiRecordsResponse Define struct to match JSON structure
+type ApiRecordsResponse struct {
+	Config struct {
+		DNS struct {
+			Hosts        []string `json:"hosts"`
+			CnameRecords []string `json:"cnameRecords"`
+		} `json:"dns"`
+	} `json:"config"`
+	Took float64 `json:"took"`
+}
+
+const (
+	contentTypeJSON = "application/json"
+	apiAuthPath     = "/api/auth"
+	apiConfigDNS    = "/api/config/dns"
+)
 
 // newPiholeClient creates a new Pi-hole API client.
 func newPiholeClient(cfg PiholeConfig) (piholeAPI, error) {
@@ -194,40 +228,6 @@ func (p *piholeClient) urlForRecordType(rtype string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported record type: %s", rtype)
 	}
-}
-
-// ApiAuthResponse Define a struct to match the JSON response /auth/app structure
-type ApiAuthResponse struct {
-	Session struct {
-		Valid    bool   `json:"valid"`
-		TOTP     bool   `json:"totp"`
-		SID      string `json:"sid"`
-		CSRF     string `json:"csrf"`
-		Validity int    `json:"validity"`
-		Message  string `json:"message"`
-	} `json:"session"`
-	Took float64 `json:"took"`
-}
-
-// ApiErrorResponse Define struct to match the JSON structure
-type ApiErrorResponse struct {
-	Error struct {
-		Key     string `json:"key"`
-		Message string `json:"message"`
-		Hint    string `json:"hint"`
-	} `json:"error"`
-	Took float64 `json:"took"`
-}
-
-// ApiRecordsResponse Define struct to match JSON structure
-type ApiRecordsResponse struct {
-	Config struct {
-		DNS struct {
-			Hosts        []string `json:"hosts"`
-			CnameRecords []string `json:"cnameRecords"`
-		} `json:"dns"`
-	} `json:"config"`
-	Took float64 `json:"took"`
 }
 
 func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {

@@ -47,21 +47,25 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// newCloudflareError creates a cloudflare.Error suitable for testing.
-// The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
-// so this helper initializes them properly.
-func newCloudflareError(statusCode int) *cloudflare.Error {
-	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.com/client/v4/zones", nil)
-	resp := &http.Response{
-		StatusCode: statusCode,
-		Status:     http.StatusText(statusCode),
-		Request:    req,
-	}
-	return &cloudflare.Error{
-		StatusCode: statusCode,
-		Request:    req,
-		Response:   resp,
-	}
+type MockAction struct {
+	Name             string
+	ZoneId           string
+	RecordId         string
+	RecordData       dns.RecordResponse
+	RegionalHostname regionalHostname
+}
+
+type mockCloudFlareClient struct {
+	Zones                map[string]string
+	Records              map[string]map[string]dns.RecordResponse
+	Actions              []MockAction
+	BatchDNSRecordsCalls int
+	listZonesError       error // For v4 ListZones
+	getZoneError         error // For v4 GetZone
+	dnsRecordsError      error
+	customHostnames      map[string][]customHostname
+	regionalHostnames    map[string][]regionalHostname
+	dnsRecordsListParams dns.RecordListParams
 }
 
 var ExampleDomain = []dns.RecordResponse{
@@ -92,25 +96,21 @@ var ExampleDomain = []dns.RecordResponse{
 	},
 }
 
-type MockAction struct {
-	Name             string
-	ZoneId           string
-	RecordId         string
-	RecordData       dns.RecordResponse
-	RegionalHostname regionalHostname
-}
-
-type mockCloudFlareClient struct {
-	Zones                map[string]string
-	Records              map[string]map[string]dns.RecordResponse
-	Actions              []MockAction
-	BatchDNSRecordsCalls int
-	listZonesError       error // For v4 ListZones
-	getZoneError         error // For v4 GetZone
-	dnsRecordsError      error
-	customHostnames      map[string][]customHostname
-	regionalHostnames    map[string][]regionalHostname
-	dnsRecordsListParams dns.RecordListParams
+// newCloudflareError creates a cloudflare.Error suitable for testing.
+// The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
+// so this helper initializes them properly.
+func newCloudflareError(statusCode int) *cloudflare.Error {
+	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.com/client/v4/zones", nil)
+	resp := &http.Response{
+		StatusCode: statusCode,
+		Status:     http.StatusText(statusCode),
+		Request:    req,
+	}
+	return &cloudflare.Error{
+		StatusCode: statusCode,
+		Request:    req,
+		Response:   resp,
+	}
 }
 
 func NewMockCloudFlareClient() *mockCloudFlareClient {
@@ -160,6 +160,28 @@ func srvDataFromParam(data dns.SRVRecordDataParam) dns.SRVRecordData {
 	}
 }
 
+func naptrContentFromParam(data dns.NAPTRRecordDataParam) string {
+	return endpoint.NewNAPTRTargetFromFields(
+		uint16(data.Order.Value),
+		uint16(data.Preference.Value),
+		data.Flags.Value,
+		data.Service.Value,
+		data.Regex.Value,
+		data.Replacement.Value,
+	).String()
+}
+
+func naptrDataFromParam(data dns.NAPTRRecordDataParam) dns.NAPTRRecordData {
+	return dns.NAPTRRecordData{
+		Order:       data.Order.Value,
+		Preference:  data.Preference.Value,
+		Flags:       data.Flags.Value,
+		Service:     data.Service.Value,
+		Regex:       data.Regex.Value,
+		Replacement: data.Replacement.Value,
+	}
+}
+
 func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResponse {
 	switch b := body.(type) {
 	case dns.SRVRecordParam:
@@ -171,6 +193,16 @@ func recordResponseFromNewBody(body dns.RecordNewParamsBodyUnion) dns.RecordResp
 			Type:    dns.RecordResponseType(b.Type.Value),
 			Content: srvContentFromParam(b.Data.Value),
 			Data:    srvDataFromParam(b.Data.Value),
+		}
+	case dns.NAPTRRecordParam:
+		return dns.RecordResponse{
+			ID:      generateDNSRecordID(string(b.Type.Value), b.Name.Value, naptrContentFromParam(b.Data.Value)),
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Proxied: b.Proxied.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: naptrContentFromParam(b.Data.Value),
+			Data:    naptrDataFromParam(b.Data.Value),
 		}
 	case dns.RecordNewParamsBody:
 		return dns.RecordResponse{
@@ -198,6 +230,16 @@ func recordResponseFromUpdateBody(recordID string, body dns.RecordUpdateParamsBo
 			Type:    dns.RecordResponseType(b.Type.Value),
 			Content: srvContentFromParam(b.Data.Value),
 			Data:    srvDataFromParam(b.Data.Value),
+		}
+	case dns.NAPTRRecordParam:
+		return dns.RecordResponse{
+			ID:      recordID,
+			Name:    b.Name.Value,
+			TTL:     b.TTL.Value,
+			Proxied: b.Proxied.Value,
+			Type:    dns.RecordResponseType(b.Type.Value),
+			Content: naptrContentFromParam(b.Data.Value),
+			Data:    naptrDataFromParam(b.Data.Value),
 		}
 	case dns.RecordUpdateParamsBody:
 		return dns.RecordResponse{
@@ -973,7 +1015,7 @@ func TestCloudflareProvider(t *testing.T) {
 		cfAPITokenEnvKey: "",
 	})
 
-	tokenFile := "/tmp/cf_api_token"
+	tokenFile := filepath.Join(t.TempDir(), "cf_api_token")
 	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
 	}
@@ -1020,7 +1062,7 @@ func TestCloudflareProvider(t *testing.T) {
 		{
 			Name: "use_credentials_in_missing_file",
 			Environment: []EnvVar{
-				{Key: cfAPITokenEnvKey, Value: "file:/tmp/cf_api_token"},
+				{Key: cfAPITokenEnvKey, Value: "file:" + tokenFile},
 			},
 			ShouldFail: false,
 		},
@@ -1903,6 +1945,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	assert.True(t, provider.RegionalServicesConfig.Enabled, "expect regional services to be enabled")
 	assert.Equal(t, "us", provider.RegionalServicesConfig.RegionKey, "expected region key to be 'us'")
 }
+
 func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	t.Parallel()
 
@@ -2354,6 +2397,9 @@ func TestZoneHasPaidPlan(t *testing.T) {
 func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 	hook := logtest.LogsUnderTestWithLogLevel(log.ErrorLevel, t)
 
+	// The package identifier is shadowed by the provider variable below.
+	softError := provider.SoftError
+
 	client := NewMockCloudFlareClient()
 	provider := &CloudFlareProvider{
 		Client: client,
@@ -2483,7 +2529,8 @@ func TestCloudflareApplyChanges_AllErrorLogPaths(t *testing.T) {
 			}
 			hook.Reset()
 			err := provider.ApplyChanges(t.Context(), tc.changes)
-			require.NoError(t, err, "ApplyChanges should not return error for newCloudFlareChange error (it should log and continue)")
+			require.Error(t, err, "a skipped change must surface an error so the controller retries")
+			require.ErrorIs(t, err, softError)
 			errorLogCount := 0
 			for _, entry := range hook.Entries {
 				if entry.Level == log.ErrorLevel &&
@@ -2980,6 +3027,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 		})
 	}
 }
+
 func TestCloudFlareZonesDomainFilter(t *testing.T) {
 	// Create a domain filter that only matches "bar.com"
 	// This should filter out "foo.com" and trigger the debug log
@@ -3583,4 +3631,63 @@ func TestNewCloudFlareChangeMXTrailingDot(t *testing.T) {
 			assert.InDelta(t, tt.priority, change.ResourceRecord.Priority, 0)
 		})
 	}
+}
+
+func TestCloudflareInvalidCreateReturnsSoftError(t *testing.T) {
+	tests := []struct {
+		name       string
+		recordType string
+		target     string
+	}{
+		// A malformed NAPTR target is rejected while the change is built.
+		{"NAPTR with missing fields", endpoint.RecordTypeNAPTR, "10 20"},
+		// A malformed TLSA target passes change building and is rejected while the batch create param is built.
+		{"TLSA with unparseable target", endpoint.RecordTypeTLSA, "not a tlsa record"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			client := NewMockCloudFlareClient()
+			p := &CloudFlareProvider{Client: client}
+
+			endpoints := []*endpoint.Endpoint{{
+				DNSName:    "bar.com",
+				RecordType: tc.recordType,
+				Targets:    endpoint.Targets{tc.target},
+				RecordTTL:  120,
+			}}
+
+			err := p.ApplyChanges(t.Context(), &plan.Changes{Create: endpoints})
+			require.Error(t, err, "invalid create must not be silently swallowed")
+			require.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
+
+			records, rerr := p.Records(t.Context())
+			require.NoError(t, rerr)
+			assert.Empty(t, records)
+		})
+	}
+}
+
+func TestCloudflareUpdateMissingRecordReturnsSoftError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	p := &CloudFlareProvider{Client: client}
+
+	old := &endpoint.Endpoint{
+		DNSName:    "bar.com",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordTTL:  120,
+	}
+	desired := &endpoint.Endpoint{
+		DNSName:    "bar.com",
+		RecordType: endpoint.RecordTypeA,
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordTTL:  300,
+	}
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{old},
+		UpdateNew: []*endpoint.Endpoint{desired},
+	})
+	require.Error(t, err, "an update whose record no longer exists must not be silently dropped")
+	require.ErrorIs(t, err, provider.SoftError, "must be a soft error so the controller retries")
 }

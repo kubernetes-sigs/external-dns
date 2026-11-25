@@ -44,6 +44,7 @@ var (
 		Sources:                                []string{"service"},
 		Namespaces:                             nil,
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
+		AnnotationValidationMode:               "warn",
 		EnableLegacyAnnotationPrefix:           false,
 		FQDNTemplate:                           nil,
 		Compatibility:                          "",
@@ -51,6 +52,7 @@ var (
 		GoogleProject:                          "",
 		GoogleBatchChangeSize:                  1000,
 		GoogleBatchChangeInterval:              time.Second,
+		GoogleRequestTimeout:                   time.Minute,
 		GoogleZoneVisibility:                   "",
 		DomainFilter:                           []string{""},
 		DomainExclude:                          []string{""},
@@ -145,6 +147,7 @@ var (
 		Sources:                                []string{"service", "ingress", "connector"},
 		Namespaces:                             []string{"namespace"},
 		AnnotationPrefix:                       "external-dns.kubernetes.io/",
+		AnnotationValidationMode:               "warn",
 		EnableLegacyAnnotationPrefix:           true,
 		IgnoreHostnameAnnotation:               true,
 		IgnoreNonHostNetworkPods:               true,
@@ -156,6 +159,7 @@ var (
 		GoogleProject:                          "project",
 		GoogleBatchChangeSize:                  100,
 		GoogleBatchChangeInterval:              time.Second * 2,
+		GoogleRequestTimeout:                   time.Second * 17,
 		GoogleZoneVisibility:                   "private",
 		DomainFilter:                           []string{"example.org", "company.com"},
 		DomainExclude:                          []string{"xapi.example.org", "xapi.company.com"},
@@ -318,6 +322,7 @@ func TestParseFlags(t *testing.T) {
 				"--google-project=project",
 				"--google-batch-change-size=100",
 				"--google-batch-change-interval=2s",
+				"--google-request-timeout=17s",
 				"--google-zone-visibility=private",
 				"--azure-config-file=azure.json",
 				"--azure-resource-group=arg",
@@ -442,6 +447,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_GOOGLE_PROJECT":                                    "project",
 				"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_SIZE":                          "100",
 				"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_INTERVAL":                      "2s",
+				"EXTERNAL_DNS_GOOGLE_REQUEST_TIMEOUT":                            "17s",
 				"EXTERNAL_DNS_GOOGLE_ZONE_VISIBILITY":                            "private",
 				"EXTERNAL_DNS_AZURE_CONFIG_FILE":                                 "azure.json",
 				"EXTERNAL_DNS_AZURE_RESOURCE_GROUP":                              "arg",
@@ -908,16 +914,6 @@ func TestParseFlagsRFC2136AXFR(t *testing.T) {
 			assert.Equal(t, tc.wantDeprecated, cfg.RFC2136TAXFR)
 		})
 	}
-}
-
-func TestParseFlagsTraefik(t *testing.T) {
-	t.Parallel()
-	cfg := parseCfg(t,
-		"--traefik-enable-legacy",
-		"--traefik-disable-new",
-	)
-	assert.True(t, cfg.TraefikEnableLegacy)
-	assert.True(t, cfg.TraefikDisableNew)
 }
 
 func TestParseFlagsTXTRegistry(t *testing.T) {

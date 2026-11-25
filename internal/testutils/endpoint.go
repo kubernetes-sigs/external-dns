@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"maps"
 	"math/rand"
-	"net/netip"
 	"reflect"
 	"slices"
 	"strings"
@@ -106,15 +105,6 @@ func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
 func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 	return SameEndpoints(a["Create"], b["Create"]) && SameEndpoints(a["Delete"], b["Delete"]) &&
 		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
-}
-
-// NewTargetsFromAddr convert an array of netip.Addr to Targets (array of string)
-func NewTargetsFromAddr(targets []netip.Addr) endpoint.Targets {
-	t := make(endpoint.Targets, len(targets))
-	for i, target := range targets {
-		t[i] = target.String()
-	}
-	return t
 }
 
 // GenerateTestEndpointsByType generates a shuffled slice of test Endpoints for each record type and count specified in typeCounts.
@@ -212,7 +202,7 @@ func NewEndpointWithRef(dns, target string, obj ctrlclient.Object, source string
 // expected endpoint via WithRefObject to opt into ValidateEndpoints' RefObject check,
 // which asserts the actual endpoint has a non-nil RefObject with this Source and a non-empty UID.
 func RefSource(source string) *events.ObjectReference {
-	return events.NewObjectReferenceFromParts("", "", "", "", "", source)
+	return endpoint.NewObjectRef("", "", "", "", "", source)
 }
 
 // AssertEndpointsHaveRefObject asserts that endpoints have the expected count

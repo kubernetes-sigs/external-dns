@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service
         - --source=ingress
@@ -105,7 +105,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         args:
         - --source=service
         - --source=ingress
@@ -265,6 +265,8 @@ To get the targets to the extracted DNS names, external-dns is able to gather in
 Please take a look at the [source service documentation](../sources/service.md) for more information on this.
 
 It is also possible to set the targets manually by using the `external-dns.kubernetes.io/target` annotation on the Istio Ingress Gateway resource or the Istio VirtualService.
+To read them from another resource, use
+[`external-dns.kubernetes.io/target-from`](../annotations/annotations.md#external-dnskubernetesiotarget-from) on either one.
 
 ### Access the sample service using `curl`
 

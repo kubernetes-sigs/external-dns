@@ -42,27 +42,10 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
-)
-
-var (
-	proxyGVR = schema.GroupVersionResource{
-		Group:    "gloo.solo.io",
-		Version:  "v1",
-		Resource: "proxies",
-	}
-	virtualServiceGVR = schema.GroupVersionResource{
-		Group:    "gateway.solo.io",
-		Version:  "v1",
-		Resource: "virtualservices",
-	}
-	gatewayGVR = schema.GroupVersionResource{
-		Group:    "gateway.solo.io",
-		Version:  "v1",
-		Resource: "gateways",
-	}
 )
 
 // Basic redefinition of "Proxy" CRD : https://github.com/solo-io/gloo/blob/v1.4.6/projects/gloo/pkg/api/v1/proxy.pb.go
@@ -70,11 +53,6 @@ type proxy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              proxySpec `json:"spec"`
-}
-
-func (p *proxy) DeepCopyObject() runtime.Object {
-	cp := *p
-	return &cp
 }
 
 type proxySpec struct {
@@ -159,8 +137,8 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 // +externaldns:source:description=Creates DNS entries from Gloo Proxy resources
 // +externaldns:source:resources=Proxy.gloo.solo.io
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type glooSource struct {
 	serviceInformer        coreinformers.ServiceInformer
@@ -171,12 +149,36 @@ type glooSource struct {
 	templateEngine         template.Engine
 }
 
+var (
+	proxyGVR = schema.GroupVersionResource{
+		Group:    "gloo.solo.io",
+		Version:  "v1",
+		Resource: "proxies",
+	}
+	virtualServiceGVR = schema.GroupVersionResource{
+		Group:    "gateway.solo.io",
+		Version:  "v1",
+		Resource: "virtualservices",
+	}
+	gatewayGVR = schema.GroupVersionResource{
+		Group:    "gateway.solo.io",
+		Version:  "v1",
+		Resource: "gateways",
+	}
+)
+
+func (p *proxy) DeepCopyObject() runtime.Object {
+	cp := *p
+	return &cp
+}
+
 // NewGlooSource creates a new glooSource with the given config
 func NewGlooSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config) (Source, error) {
+	cfg *config.Config) (Source, error) {
+	log.Warn("The gloo-proxy source is deprecated and will be removed after Gloo OSS end of life (2026-12-31). Migrate to kgateway with the gateway-* sources.")
 	informerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	serviceInformer := informerFactory.Core().V1().Services()
 	ingressInformer := informerFactory.Networking().V1().Ingresses()

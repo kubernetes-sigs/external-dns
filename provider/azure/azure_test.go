@@ -18,11 +18,13 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/provider/blueprint"
 
@@ -36,6 +38,16 @@ import (
 // and returns static results which are defined per test
 type mockZonesClient struct {
 	pagingHandler azcoreruntime.PagingHandler[dns.ZonesClientListByResourceGroupResponse]
+}
+
+// mockZonesClient implements the methods of the Azure DNS RecordSet Client which are used in the Azure Provider
+// and returns static results which are defined per test
+type mockRecordSetsClient struct {
+	pagingHandler    azcoreruntime.PagingHandler[dns.RecordSetsClientListAllByDNSZoneResponse]
+	deletedEndpoints []*endpoint.Endpoint
+	updatedEndpoints []*endpoint.Endpoint
+	deleteErr        error
+	updateErr        error
 }
 
 func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
@@ -56,14 +68,6 @@ func newMockZonesClient(zones []*dns.Zone) mockZonesClient {
 
 func (client *mockZonesClient) NewListByResourceGroupPager(_ string, _ *dns.ZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[dns.ZonesClientListByResourceGroupResponse] {
 	return azcoreruntime.NewPager(client.pagingHandler)
-}
-
-// mockZonesClient implements the methods of the Azure DNS RecordSet Client which are used in the Azure Provider
-// and returns static results which are defined per test
-type mockRecordSetsClient struct {
-	pagingHandler    azcoreruntime.PagingHandler[dns.RecordSetsClientListAllByDNSZoneResponse]
-	deletedEndpoints []*endpoint.Endpoint
-	updatedEndpoints []*endpoint.Endpoint
 }
 
 func newMockRecordSetsClient(recordSets []*dns.RecordSet) mockRecordSetsClient {
@@ -87,6 +91,9 @@ func (client *mockRecordSetsClient) NewListAllByDNSZonePager(_ string, _ string,
 }
 
 func (client *mockRecordSetsClient) Delete(_ context.Context, _ string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, _ *dns.RecordSetsClientDeleteOptions) (dns.RecordSetsClientDeleteResponse, error) {
+	if client.deleteErr != nil {
+		return dns.RecordSetsClientDeleteResponse{}, client.deleteErr
+	}
 	client.deletedEndpoints = append(
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
@@ -99,6 +106,9 @@ func (client *mockRecordSetsClient) Delete(_ context.Context, _ string, zoneName
 }
 
 func (client *mockRecordSetsClient) CreateOrUpdate(_ context.Context, _ string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, _ *dns.RecordSetsClientCreateOrUpdateOptions) (dns.RecordSetsClientCreateOrUpdateResponse, error) {
+	if client.updateErr != nil {
+		return dns.RecordSetsClientCreateOrUpdateResponse{}, client.updateErr
+	}
 	var ttl endpoint.TTL
 	if parameters.Properties.TTL != nil {
 		ttl = endpoint.TTL(*parameters.Properties.TTL)
@@ -379,6 +389,35 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("metadata.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 	})
+}
+
+func TestAzureApplyChangesReturnsSoftError(t *testing.T) {
+	zonesClient := newMockZonesClient([]*dns.Zone{createMockZone("example.com", "/dnszones/example.com")})
+	recordsClient := mockRecordSetsClient{
+		deleteErr: errors.New("delete failed"),
+		updateErr: errors.New("update failed"),
+	}
+	p := newAzureProvider(
+		endpoint.NewDomainFilter([]string{""}),
+		endpoint.NewDomainFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		"group",
+		"",
+		"",
+		&zonesClient,
+		&recordsClient,
+		3,
+	)
+
+	err := p.ApplyChanges(t.Context(), &plan.Changes{
+		Create: []*endpoint.Endpoint{endpoint.NewEndpoint("new.example.com", endpoint.RecordTypeA, "1.2.3.4")},
+		Delete: []*endpoint.Endpoint{endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "1.2.3.4")},
+	})
+
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorContains(t, err, "delete failed")
+	require.ErrorContains(t, err, "update failed")
 }
 
 func TestAzureApplyChangesDryRun(t *testing.T) {

@@ -31,29 +31,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-)
-
-const (
-	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
-
-	// DefaultTimeout api requests after
-	DefaultTimeout = 180 * time.Second
-)
-
-// Errors
-var (
-	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
+	"sigs.k8s.io/external-dns/pkg/version"
 )
 
 // APIError error
 type APIError struct {
 	Code    string
 	Message string
-}
-
-func (err *APIError) Error() string {
-	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)
 }
 
 // Logger is the interface that should be implemented for loggers that wish to
@@ -102,6 +86,22 @@ type GDErrorResponse struct {
 	Code    string         `json:"code"`
 	Fields  []GDErrorField `json:"fields,omitempty"`
 	Message string         `json:"message,omitempty"`
+}
+
+const (
+	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
+
+	// DefaultTimeout api requests after
+	DefaultTimeout = 180 * time.Second
+)
+
+// Errors
+var (
+	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
+)
+
+func (err *APIError) Error() string {
+	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)
 }
 
 func (r GDErrorResponse) String() string {
@@ -223,7 +223,7 @@ func (c *Client) NewRequest(method, path string, reqBody any) (*http.Request, er
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("sso-key %s:%s", c.APIKey, c.APISecret))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", externaldns.UserAgent())
+	req.Header.Set("User-Agent", version.UserAgent())
 
 	// Send the request with requested timeout
 	c.Client.Timeout = c.Timeout

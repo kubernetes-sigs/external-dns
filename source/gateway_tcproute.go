@@ -24,17 +24,22 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given config.
-func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "TCPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+type gatewayTCPRoute struct{ route v1.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+
+type gatewayTCPRouteInformer struct {
+	informers_v1.TCPRouteInformer
+}
+
+// NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given cfg.
+func NewGatewayTCPRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "TCPRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTCPRouteInformer{factory.Gateway().V1().TCPRoutes()}
 	})
 }
-
-type gatewayTCPRoute struct{ route v1.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
 func (rt *gatewayTCPRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
@@ -42,10 +47,6 @@ func (rt *gatewayTCPRoute) Hostnames() []v1.Hostname         { return nil }
 func (rt *gatewayTCPRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
 func (rt *gatewayTCPRoute) Protocol() v1.ProtocolType        { return v1.TCPProtocolType }
 func (rt *gatewayTCPRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
-
-type gatewayTCPRouteInformer struct {
-	informers_v1.TCPRouteInformer
-}
 
 func (inf gatewayTCPRouteInformer) List() []gatewayRoute {
 	list := extInformers.ListIndexed[*v1.TCPRoute](inf.TCPRouteInformer.Informer().GetIndexer())

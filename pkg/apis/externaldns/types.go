@@ -31,21 +31,12 @@ import (
 	"sigs.k8s.io/external-dns/internal/sets"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/version"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	passwordMask  = "******"
-	LogFormatText = "text"
-	LogFormatJSON = "json"
-
-	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
-	// record, so ~60k records). Override with --webhook-provider-max-body-size.
-	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
 )
 
 // Config is a project-wide configuration
@@ -62,6 +53,7 @@ type Config struct {
 	Namespaces                                    []string
 	AnnotationFilter                              string
 	AnnotationPrefix                              string
+	AnnotationValidationMode                      string
 	EnableLegacyAnnotationPrefix                  bool
 	LabelFilter                                   string
 	IngressClassNames                             []string
@@ -91,6 +83,7 @@ type Config struct {
 	GoogleProject                                 string
 	GoogleBatchChangeSize                         int
 	GoogleBatchChangeInterval                     time.Duration
+	GoogleRequestTimeout                          time.Duration
 	GoogleZoneVisibility                          string
 	DomainFilter                                  []string
 	DomainExclude                                 []string
@@ -225,8 +218,6 @@ type Config struct {
 	WebhookProviderIdleTimeout                    time.Duration
 	WebhookProviderMaxBodySize                    int64
 	WebhookServer                                 bool
-	TraefikEnableLegacy                           bool
-	TraefikDisableNew                             bool
 	NAT64Networks                                 []string
 	ExcludeUnschedulable                          bool
 	EmitEvents                                    []string
@@ -235,10 +226,21 @@ type Config struct {
 	PreferAlias                                   bool
 }
 
+const (
+	passwordMask  = "******"
+	LogFormatText = "text"
+	LogFormatJSON = "json"
+
+	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
+	// record, so ~60k records). Override with --webhook-provider-max-body-size.
+	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
+)
+
 var defaultConfig = &Config{
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
 	AnnotationFilter:         "",
 	AnnotationPrefix:         annotations.DefaultAnnotationPrefix,
+	AnnotationValidationMode: "warn",
 	APIServerURL:             "",
 	AWSAPIRetries:            3,
 	AWSAssumeRole:            "",
@@ -307,6 +309,7 @@ var defaultConfig = &Config{
 	GoogleBatchChangeInterval:        time.Second,
 	GoogleBatchChangeSize:            1000,
 	GoogleProject:                    "",
+	GoogleRequestTimeout:             time.Minute,
 	GoogleZoneVisibility:             "",
 	IgnoreHostnameAnnotation:         false,
 	IgnoreIngressRulesSpec:           false,
@@ -380,8 +383,6 @@ var defaultConfig = &Config{
 	TLSCA:                            "",
 	TLSClientCert:                    "",
 	TLSClientCertKey:                 "",
-	TraefikEnableLegacy:              false,
-	TraefikDisableNew:                false,
 	TXTCacheInterval:                 0,
 	TXTEncryptAESKey:                 "",
 	TXTEncryptEnabled:                false,
@@ -419,7 +420,6 @@ var ProviderNames = []string{
 	ProviderGoDaddy,
 	ProviderGoogle,
 	ProviderInMemory,
-	ProviderLinode,
 	ProviderNS1,
 	ProviderOCI,
 	ProviderOVH,
@@ -434,20 +434,35 @@ var ProviderNames = []string{
 // AllowedSources lists every value accepted by --source, alphabetically sorted.
 var AllowedSources = sortedAllowedSources()
 
+// multiNamespaceSources watch every --namespace value.
+// Others ignore the flag or aren't migrated yet, so watch at most one.
+var multiNamespaceSources = []string{
+	"ambassador-host",
+	"connector",
+	"contour-httpproxy",
+	"crd",
+	"empty",
+	"f5-transportserver",
+	"f5-virtualserver",
+	"fake",
+	"gloo-proxy",
+	"ingress",
+	"istio-gateway",
+	"istio-virtualservice",
+	"kong-tcpingress",
+	"node",
+	"openshift-route",
+	"pod",
+	"service",
+	"skipper-routegroup",
+	"traefik-proxy",
+	"unstructured",
+}
+
 func sortedAllowedSources() []string {
 	s := slices.Clone(types.All)
 	slices.Sort(s)
 	return s
-}
-
-// multiNamespaceSources watch every --namespace value.
-// Others ignore the flag or aren't migrated yet, so watch at most one.
-var multiNamespaceSources = []string{
-	"connector",
-	"empty",
-	"fake",
-	"gloo-proxy",
-	"node",
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -519,6 +534,11 @@ func uniqueCommaSeparated(values []string) []string {
 	return result
 }
 
+// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
+func (cfg *Config) IsPTRSupported() bool {
+	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+}
+
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
@@ -536,11 +556,6 @@ func (cfg *Config) resolveDeprecatedFlags() {
 	}
 }
 
-// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
-func (cfg *Config) IsPTRSupported() bool {
-	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
-}
-
 func bindFlags(b flags.FlagBinder, cfg *Config) {
 	// Flags related to Kubernetes
 	b.StringVar("server", "The Kubernetes API server to connect to (default: auto-detect)", defaultConfig.APIServerURL, &cfg.APIServerURL)
@@ -548,23 +563,24 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("listen-endpoint-events", "Trigger a reconcile on changes to EndpointSlices, for Service source (default: false)", false, &cfg.ListenEndpointEvents)
 
 	// Flags related to Gloo
-	b.StringsVar("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
+	b.StringsVar("gloo-namespace", "[DEPRECATED: gloo-proxy source is deprecated] The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)", []string{"gloo-system"}, &cfg.GlooNamespaces)
 
 	// Flags related to processing source
 	b.BoolVar("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)", false, &cfg.AlwaysPublishNotReadyAddresses)
 	b.StringVar("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics", defaultConfig.AnnotationFilter, &cfg.AnnotationFilter)
 	b.StringVar("annotation-prefix", "Annotation prefix for external-dns annotations (default: external-dns.kubernetes.io/)", defaultConfig.AnnotationPrefix, &cfg.AnnotationPrefix)
+	b.EnumVar("annotation-validation-mode", "Validation mode for all annotations (default: warn, options: off, warn, strict)", defaultConfig.AnnotationValidationMode, &cfg.AnnotationValidationMode, "off", "warn", "strict")
 	b.BoolVar("enable-legacy-annotation-prefix", "Also read annotations using the legacy prefix external-dns.alpha.kubernetes.io/ (default: disabled)", false, &cfg.EnableLegacyAnnotationPrefix)
 	b.EnumVar("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule, kops-dns-controller)", defaultConfig.Compatibility, &cfg.Compatibility, "", "mate", "molecule", "kops-dns-controller")
 	b.StringVar("connector-source-server", "The server to connect for connector source, valid only when using connector source", defaultConfig.ConnectorSourceServer, &cfg.ConnectorSourceServer)
-	b.StringVar("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
-	b.StringVar("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
+	b.StringVar("crd-source-apiversion", "[DEPRECATED: only the default is accepted] API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source", defaultConfig.CRDSourceAPIVersion, &cfg.CRDSourceAPIVersion)
+	b.StringVar("crd-source-kind", "[DEPRECATED: only the default is accepted] Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion", defaultConfig.CRDSourceKind, &cfg.CRDSourceKind)
 	b.StringsVar("default-targets", "Set globally default host/IP used as a target for endpoints whose source provided none (typically crd DNSEndpoint resources); --force-default-targets also overrides source-provided targets. Specify multiple times for multiple targets (optional)", nil, &cfg.DefaultTargets)
 	b.BoolVar("force-default-targets", "Force the application of --default-targets, overriding any targets provided by the source (DEPRECATED: This reverts to (improved) legacy behavior which allows empty CRD targets for migration to new state)", defaultConfig.ForceDefaultTargets, &cfg.ForceDefaultTargets)
 	b.BoolVar("prefer-alias", "When enabled, CNAME records will have the alias annotation set, signaling providers that support ALIAS records to use them instead of CNAMEs. Supported by: PowerDNS, AWS (with --aws-prefer-cname disabled), Scaleway", defaultConfig.PreferAlias, &cfg.PreferAlias)
 	b.StringsVar("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)", nil, &cfg.ExcludeDNSRecordTypes)
-	b.StringsVar("exclude-target-net", "Exclude target nets (optional)", nil, &cfg.ExcludeTargetNets)
-	b.BoolVar("exclude-unschedulable", "Exclude nodes that are considered unschedulable (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
+	b.StringsVar("exclude-target-net", "Exclude target nets. Only applies to A/AAAA records. (optional)", nil, &cfg.ExcludeTargetNets)
+	b.BoolVar("exclude-unschedulable", "Exclude nodes that are cordoned or being removed (default: true)", defaultConfig.ExcludeUnschedulable, &cfg.ExcludeUnschedulable)
 	b.BoolVar("expose-internal-ipv6", "When using the node source, expose internal IPv6 addresses (optional, default: false)", false, &cfg.ExposeInternalIPV6)
 	b.StringVar("gateway-label-filter", "Filter Gateways of Route endpoints via label selector (default: all gateways)", defaultConfig.GatewayLabelFilter, &cfg.GatewayLabelFilter)
 	b.StringVar("gateway-name", "Limit Gateways of Route endpoints to a specific name (default: all names)", defaultConfig.GatewayName, &cfg.GatewayName)
@@ -585,9 +601,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)", false, &cfg.PublishHostIP)
 	b.BoolVar("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)", false, &cfg.PublishInternal)
 	b.StringsVar("service-type-filter", "The service types to filter by. Specify multiple times for multiple filters to be applied. (optional, default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)", defaultConfig.ServiceTypeFilter, &cfg.ServiceTypeFilter)
-	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)", nil, &cfg.TargetNetFilter)
-	b.BoolVar("traefik-enable-legacy", "Enable legacy listeners on Resources under the traefik.containo.us API Group", defaultConfig.TraefikEnableLegacy, &cfg.TraefikEnableLegacy)
-	b.BoolVar("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group", defaultConfig.TraefikDisableNew, &cfg.TraefikDisableNew)
+	b.StringsVar("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets. Only applies to A/AAAA records. (optional)", nil, &cfg.TargetNetFilter)
 
 	b.StringsVar("unstructured-resource", "When using the unstructured source, specify resources in resource.version.group format (e.g., virtualmachineinstances.v1.kubevirt.io, configmap.v1); specify multiple times for multiple resources", nil, &cfg.UnstructuredResources)
 	b.StringsVar("events-emit", "Events that should be emitted. Specify multiple times for multiple events support (optional, default: none, expected: RecordReady, RecordDeleted, RecordError)", defaultConfig.EmitEvents, &cfg.EmitEvents)
@@ -602,6 +616,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.", defaultConfig.GoogleProject, &cfg.GoogleProject)
 	b.IntVar("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.", defaultConfig.GoogleBatchChangeSize, &cfg.GoogleBatchChangeSize)
 	b.DurationVar("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.", defaultConfig.GoogleBatchChangeInterval, &cfg.GoogleBatchChangeInterval)
+	b.DurationVar("google-request-timeout", "When using the Google provider, set the timeout for API requests (0 disables the timeout).", defaultConfig.GoogleRequestTimeout, &cfg.GoogleRequestTimeout)
 	b.EnumVar("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)", defaultConfig.GoogleZoneVisibility, &cfg.GoogleZoneVisibility, "", "public", "private")
 	b.StringVar("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)", defaultConfig.AlibabaCloudConfigFile, &cfg.AlibabaCloudConfigFile)
 	b.EnumVar("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)", defaultConfig.AlibabaCloudZoneType, &cfg.AlibabaCloudZoneType, "", "public", "private")
@@ -714,7 +729,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)", defaultConfig.TXTWildcardReplacement, &cfg.TXTWildcardReplacement)
 	b.BoolVar("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)", defaultConfig.TXTEncryptEnabled, &cfg.TXTEncryptEnabled)
 	b.StringVar("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)", defaultConfig.TXTEncryptAESKey, &cfg.TXTEncryptAESKey)
-	b.StringVar("migrate-from-txt-owner", "Old txt-owner-id that needs to be overwritten (default: default)", defaultConfig.TXTOwnerOld, &cfg.TXTOwnerOld)
+	b.StringVar("migrate-from-txt-owner", "When using the TXT registry, old txt-owner-id to migrate records from (optional)", defaultConfig.TXTOwnerOld, &cfg.TXTOwnerOld)
 	b.StringVar("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)", cfg.AWSDynamoDBRegion, &cfg.AWSDynamoDBRegion)
 	b.StringVar("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")", defaultConfig.AWSDynamoDBTable, &cfg.AWSDynamoDBTable)
 
@@ -748,7 +763,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringsVar("fqdn-target-template", "A template that returns host:target pairs (e.g., '{{range .Object.endpoints}}{{.targetRef.name}}.svc.example.com:{{index .addresses 0}},{{end}}'). Specify multiple times for multiple pairs.", defaultConfig.FQDNTargetTemplate, &cfg.FQDNTargetTemplate)
 
 	// kube client config flags
-	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)", defaultConfig.KubeConfig, &cfg.KubeConfig)
+	b.StringVar("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: $KUBECONFIG, ~/.kube/config, in-cluster)", defaultConfig.KubeConfig, &cfg.KubeConfig)
 	b.DurationVar("request-timeout", "[DEPRECATED: use --kube-api-request-timeout] Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.RequestTimeout, &cfg.RequestTimeout)
 	b.DurationVar("kube-api-request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout", defaultConfig.KubeAPIRequestTimeout, &cfg.KubeAPIRequestTimeout)
 	b.IntVar("kube-api-qps", "Maximum QPS to the Kubernetes API server from this client.", defaultConfig.KubeAPIQPS, &cfg.KubeAPIQPS)
@@ -757,7 +772,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 
 func App(cfg *Config) *kingpin.Application {
 	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.\n\nNote that all flags may be replaced with env vars - `--flag` -> `EXTERNAL_DNS_FLAG=1` or `--flag value` -> `EXTERNAL_DNS_FLAG=value`")
-	app.Version(Version)
+	app.Version(version.Version)
 	app.DefaultEnvars()
 
 	bindFlags(flags.NewKingpinBinder(app), cfg)

@@ -20,65 +20,134 @@ package crd
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiv1alpha1 "sigs.k8s.io/external-dns/apis/v1alpha1"
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
 
-const dnsEndpointKind = "DNSEndpoint"
-
-type refCounts struct {
-	created, updated int
+// StatusWriter reports each sync's outcome on the DNSEndpoints behind it.
+type StatusWriter struct {
+	clients *CRDClients
+	dryRun  bool
 }
 
-// SyncStatus stands in for the eventual status-condition write, deferred until
-// kubernetes-sigs/external-dns#6609 settles that schema.
-//
-// changes.Delete carries no RefObjects (it comes from registry state, not source
-// state — see plan/plan.go's Delete construction) and is not attributed here.
-func SyncStatus(ctx context.Context, cl *CRDClients, changes *plan.Changes) {
-	if cl == nil || cl.reader == nil || changes == nil {
-		return
-	}
-	if len(changes.Create) == 0 && len(changes.UpdateNew) == 0 {
-		return
-	}
+const dnsEndpointKind = "DNSEndpoint"
 
-	counts := make(map[types.NamespacedName]*refCounts)
-	tally(counts, changes.Create, func(c *refCounts) *int { return &c.created })
-	tally(counts, changes.UpdateNew, func(c *refCounts) *int { return &c.updated })
+// NewStatusWriter returns a StatusWriter using the crd source's clients.
+func NewStatusWriter(clients *CRDClients, dryRun bool) *StatusWriter {
+	return &StatusWriter{clients: clients, dryRun: dryRun}
+}
 
-	for key, c := range counts {
-		var dnsEndpoint apiv1alpha1.DNSEndpoint
-		if err := cl.reader.Get(ctx, key, &dnsEndpoint); err != nil {
+// ReportStatus sets the Ready condition of every DNSEndpoint behind the sync.
+func (w *StatusWriter) ReportStatus(ctx context.Context, objects []plan.PlannedObject, applyErr error) {
+	for _, obj := range objects {
+		if obj.Ref == nil || obj.Ref.Kind() != dnsEndpointKind {
+			continue
+		}
+
+		key := client.ObjectKey{Namespace: obj.Ref.Namespace(), Name: obj.Ref.Name()}
+		dnsEndpoint := &apiv1alpha1.DNSEndpoint{}
+		if err := w.clients.Reader().Get(ctx, key, dnsEndpoint); err != nil {
+			// Deleted since the plan.
 			if !apierrors.IsNotFound(err) {
 				log.Warnf("Could not get DNSEndpoint %s: %v", key, err)
 			}
 			continue
 		}
-		log.Debugf("DNSEndpoint %s: %d created, %d updated (generation=%d, observedGeneration=%d)",
-			key, c.created, c.updated, dnsEndpoint.Generation, dnsEndpoint.Status.ObservedGeneration)
+
+		err := applyErr
+		if !obj.Changed {
+			// Not in the failed batch: its records are already in place.
+			err = nil
+		}
+
+		condition := readyCondition(obj.Endpoints, err, w.dryRun)
+		// The plan was built from the spec the crd source last validated, not from any later edit.
+		condition.ObservedGeneration = dnsEndpoint.Status.ObservedGeneration
+
+		// Logged only: the crd source hits the same error and fails the sync.
+		if err := UpdateStatus(ctx, w.clients.Writer(), dnsEndpoint, func(status *apiv1alpha1.DNSEndpointStatus) {
+			meta.SetStatusCondition(&status.Conditions, condition)
+		}); err != nil {
+			log.Error(err)
+		}
 	}
 }
 
-func tally(counts map[types.NamespacedName]*refCounts, eps []*endpoint.Endpoint, field func(*refCounts) *int) {
-	for _, ep := range eps {
-		for _, ref := range ep.RefObjects() {
-			if ref.Kind() != dnsEndpointKind {
-				continue
-			}
-			key := types.NamespacedName{Namespace: ref.Namespace(), Name: ref.Name()}
-			c, ok := counts[key]
-			if !ok {
-				c = &refCounts{}
-				counts[key] = c
-			}
-			*field(c)++
-		}
+// readyCondition describes what became of the endpoints an object contributed.
+func readyCondition(planned int, applyErr error, dryRun bool) metav1.Condition {
+	condition := metav1.Condition{Type: apiv1alpha1.ReadyCondition}
+
+	switch {
+	case planned == 0:
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = apiv1alpha1.FilteredReason
+		condition.Message = "No endpoint reached the DNS provider: --domain-filter, --managed-record-types or another owner's records excluded all of them"
+	case applyErr != nil:
+		condition.Status = metav1.ConditionFalse
+		condition.Reason = apiv1alpha1.FailedReason
+		condition.Message = TruncateConditionMessage(fmt.Sprintf("Provider rejected the batch: %v", applyErr))
+	case dryRun:
+		condition.Status = metav1.ConditionUnknown
+		condition.Reason = apiv1alpha1.DryRunReason
+		condition.Message = fmt.Sprintf("%d endpoint(s) planned; --dry-run kept them from the DNS provider", planned)
+	default:
+		condition.Status = metav1.ConditionTrue
+		condition.Reason = apiv1alpha1.ProgrammedReason
+		condition.Message = fmt.Sprintf("%d endpoint(s) applied to the DNS provider", planned)
 	}
+
+	return condition
+}
+
+// UpdateStatus writes the mutated status only if it changed. A conflict means
+// the cached copy is stale: no retry, the next sync reads the fresh object.
+// It fails when the API server prunes the conditions (CRD older than this
+// binary): else every sync rewrites every object.
+func UpdateStatus(ctx context.Context, writer client.Client, dnsEndpoint *apiv1alpha1.DNSEndpoint, mutate func(*apiv1alpha1.DNSEndpointStatus)) error {
+	status := dnsEndpoint.Status.DeepCopy()
+	mutate(status)
+	if apiequality.Semantic.DeepEqual(&dnsEndpoint.Status, status) {
+		return nil
+	}
+
+	updated := dnsEndpoint.DeepCopy()
+	updated.Status = *status
+	err := writer.Status().Update(ctx, updated)
+	switch {
+	case apierrors.IsConflict(err):
+		log.Debugf("Status of [%s/%s/%s] changed since last sync, will retry on next sync",
+			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name)
+	case err != nil:
+		log.Warnf("Could not update status of [%s/%s/%s]: %v",
+			"dnsendpoint", dnsEndpoint.Namespace, dnsEndpoint.Name, err)
+	case len(status.Conditions) > 0 && len(updated.Status.Conditions) == 0:
+		return errors.New("the installed DNSEndpoint CRD has no status.conditions: " +
+			"apply config/crd/standard/dnsendpoints.externaldns.k8s.io.yaml from the release of this binary")
+	}
+
+	return nil
+}
+
+// TruncateConditionMessage fits the API server's 32768-character limit on
+// Condition.Message, cutting on a rune boundary since it quotes user input.
+func TruncateConditionMessage(msg string) string {
+	const maxConditionMessageLength = 32768
+	if utf8.RuneCountInString(msg) <= maxConditionMessageLength {
+		return msg
+	}
+
+	runes := []rune(msg)
+
+	return string(runes[:maxConditionMessageLength-3]) + "..."
 }

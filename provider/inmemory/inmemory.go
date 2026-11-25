@@ -31,6 +31,31 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+// InMemoryProvider - dns provider only used for testing purposes
+// initialized as dns provider with no records
+type InMemoryProvider struct {
+	provider.BaseProvider
+	domain         endpoint.DomainFilterInterface
+	client         *inMemoryClient
+	filter         *filter
+	OnApplyChanges func(changes *plan.Changes)
+	OnRecords      func()
+}
+
+// InMemoryOption allows to extend in-memory provider
+// TODO: review this pattern, and consider inline with other providers
+type InMemoryOption func(*InMemoryProvider)
+
+type filter struct {
+	domain string
+}
+
+type zone map[endpoint.EndpointKey]*endpoint.Endpoint
+
+type inMemoryClient struct {
+	zones map[string]zone
+}
+
 var (
 	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
 	ErrZoneAlreadyExists = errors.New("specified zone already exists")
@@ -44,30 +69,15 @@ var (
 	ErrDuplicateRecordFound = errors.New("invalid batch request")
 )
 
-// InMemoryProvider - dns provider only used for testing purposes
-// initialized as dns provider with no records
-type InMemoryProvider struct {
-	provider.BaseProvider
-	domain         endpoint.DomainFilterInterface
-	client         *inMemoryClient
-	filter         *filter
-	OnApplyChanges func(ctx context.Context, changes *plan.Changes)
-	OnRecords      func()
-}
-
 // New creates an InMemory provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
 	return newProvider(InMemoryInitZones(cfg.InMemoryZones), InMemoryWithDomain(domainFilter), InMemoryWithLogging()), nil
 }
 
-// InMemoryOption allows to extend in-memory provider
-// TODO: review this pattern, and consider inline with other providers
-type InMemoryOption func(*InMemoryProvider)
-
 // InMemoryWithLogging injects logging when ApplyChanges is called
 func InMemoryWithLogging() InMemoryOption {
 	return func(p *InMemoryProvider) {
-		p.OnApplyChanges = func(_ context.Context, changes *plan.Changes) {
+		p.OnApplyChanges = func(changes *plan.Changes) {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
@@ -111,7 +121,7 @@ func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 func newProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
-		OnApplyChanges: func(_ context.Context, _ *plan.Changes) {},
+		OnApplyChanges: func(_ *plan.Changes) {},
 		OnRecords:      func() {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
@@ -154,7 +164,7 @@ func (im *InMemoryProvider) Records(_ context.Context) ([]*endpoint.Endpoint, er
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
 func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	defer im.OnApplyChanges(ctx, changes)
+	defer im.OnApplyChanges(changes)
 
 	perZoneChanges := map[string]*plan.Changes{}
 
@@ -220,10 +230,6 @@ func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return records
 }
 
-type filter struct {
-	domain string
-}
-
 // Zones filters map[zoneID]zoneName for names having f.domain as suffix
 func (f *filter) Zones(zones map[string]string) map[string]string {
 	result := map[string]string{}
@@ -246,12 +252,6 @@ func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]st
 		}
 	}
 	return matchZoneID
-}
-
-type zone map[endpoint.EndpointKey]*endpoint.Endpoint
-
-type inMemoryClient struct {
-	zones map[string]zone
 }
 
 func newInMemoryClient() *inMemoryClient {

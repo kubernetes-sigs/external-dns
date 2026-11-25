@@ -31,26 +31,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/gen/docs/render"
 )
 
-const (
-	annotationPrefix           = "+externaldns:source:"
-	annotationName             = annotationPrefix + "name="
-	annotationCategory         = annotationPrefix + "category="
-	annotationDesc             = annotationPrefix + "description="
-	annotationResources        = annotationPrefix + "resources="
-	annotationFilters          = annotationPrefix + "filters="
-	annotationNamespace        = annotationPrefix + "namespace="
-	annotationFQDNTemplate     = annotationPrefix + "fqdn-template="
-	annotationEvents           = annotationPrefix + "events="
-	annotationProviderSpecific = annotationPrefix + "provider-specific="
-)
-
-var (
-	//go:embed "templates/*"
-	templates embed.FS
-	// Regex to match source type names (must end with "Source")
-	sourceTypeRegex = regexp.MustCompile(`^(\w+)Source$`)
-)
-
 // Source represents metadata about a source implementation
 type Source struct {
 	Name             string // e.g., "service", "ingress", "crd"
@@ -64,9 +44,104 @@ type Source struct {
 	FQDNTemplate     string // FQDN template support: "true", "false"
 	Events           string // Events support: "true", "false"
 	ProviderSpecific string // Provider-specific properties support: "true", "false"
+	Validation       string // Comma-separated validation kinds enabled, e.g., "annotation"
 }
 
 type Sources []Source
+
+type columnWidths struct {
+	Name             int
+	Resources        int
+	Filters          int
+	Namespace        int
+	FQDNTemplate     int
+	Events           int
+	ProviderSpecific int
+	Validation       int
+	Category         int
+}
+
+type templateData struct {
+	Sources   Sources
+	ColWidths columnWidths
+}
+
+const (
+	annotationPrefix           = "+externaldns:source:"
+	annotationName             = annotationPrefix + "name="
+	annotationCategory         = annotationPrefix + "category="
+	annotationDesc             = annotationPrefix + "description="
+	annotationResources        = annotationPrefix + "resources="
+	annotationFilters          = annotationPrefix + "filters="
+	annotationNamespace        = annotationPrefix + "namespace="
+	annotationFQDNTemplate     = annotationPrefix + "fqdn-template="
+	annotationEvents           = annotationPrefix + "events="
+	annotationProviderSpecific = annotationPrefix + "provider-specific="
+	annotationValidation       = annotationPrefix + "validation="
+)
+
+var (
+	//go:embed "templates/*"
+	templates embed.FS
+	// Regex to match source type names (must end with "Source")
+	sourceTypeRegex = regexp.MustCompile(`^(\w+)Source$`)
+)
+
+// ValidationCell returns the Validation value with a footnote reference per kind
+// (e.g., `annotation[^val-annotation]`), so the generated table links each kind
+// to its explanation at the bottom of the page. Empty when no validation applies.
+func (s Source) ValidationCell() string {
+	if s.Validation == "" {
+		return ""
+	}
+	parts := strings.Split(s.Validation, ",")
+	for i, p := range parts {
+		p = strings.TrimSpace(p)
+		parts[i] = fmt.Sprintf("%s[^val-%s]", p, p)
+	}
+	return strings.Join(parts, ",")
+}
+
+// EventsCell links the Events value to the --events-emit footnote.
+func (s Source) EventsCell() string {
+	if s.Events == "true" {
+		return "true[^events-emit]"
+	}
+	return s.Events
+}
+
+// FQDNTemplateCell links the FQDN Template value to the --fqdn-template footnote.
+func (s Source) FQDNTemplateCell() string {
+	if s.FQDNTemplate == "true" {
+		return "true[^fqdn-template]"
+	}
+	return s.FQDNTemplate
+}
+
+// FiltersCell links each filter kind to its controlling-flag footnote.
+func (s Source) FiltersCell() string {
+	if s.Filters == "" {
+		return ""
+	}
+	parts := strings.Split(s.Filters, ",")
+	for i, p := range parts {
+		p = strings.TrimSpace(p)
+		parts[i] = fmt.Sprintf("%s[^filter-%s]", p, p)
+	}
+	return strings.Join(parts, ",")
+}
+
+// NamespaceCell links the Namespace value to the --namespace footnote.
+func (s Source) NamespaceCell() string {
+	if s.Namespace == "" {
+		return ""
+	}
+	footnote := "[^namespace]"
+	if strings.Contains(s.Namespace, "multiple") {
+		footnote = "[^namespaces]"
+	}
+	return s.Namespace + footnote
+}
 
 // main generates a markdown file with the supported sources
 // and writes it to the 'docs/sources/index.md' file.
@@ -106,33 +181,18 @@ func discoverSources(dir string) (Sources, error) {
 	return sources, nil
 }
 
-type columnWidths struct {
-	Name             int
-	Resources        int
-	Filters          int
-	Namespace        int
-	FQDNTemplate     int
-	Events           int
-	ProviderSpecific int
-	Category         int
-}
-
 func computeColumnWidths(sources Sources) columnWidths {
 	return columnWidths{
 		Name:             render.MapColumn("**Source Name**", sources, func(s Source) string { return "**" + s.Name + "**" }),
 		Resources:        render.MapColumn("Resources", sources, func(s Source) string { return strings.ReplaceAll(s.Resources, ",", "<br/>") }),
-		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.Filters }),
-		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.Namespace }),
-		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplate }),
-		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.Events }),
+		Filters:          render.MapColumn("Filters", sources, func(s Source) string { return s.FiltersCell() }),
+		Namespace:        render.MapColumn("Namespace", sources, func(s Source) string { return s.NamespaceCell() }),
+		FQDNTemplate:     render.MapColumn("FQDN Template", sources, func(s Source) string { return s.FQDNTemplateCell() }),
+		Events:           render.MapColumn("Events", sources, func(s Source) string { return s.EventsCell() }),
 		ProviderSpecific: render.MapColumn("Provider Specific", sources, func(s Source) string { return s.ProviderSpecific }),
+		Validation:       render.MapColumn("Validation", sources, func(s Source) string { return s.ValidationCell() }),
 		Category:         render.MapColumn("Category", sources, func(s Source) string { return strings.ToLower(s.Category) }),
 	}
-}
-
-type templateData struct {
-	Sources   Sources
-	ColWidths columnWidths
 }
 
 func (s *Sources) generateMarkdown() (string, error) {
@@ -304,6 +364,8 @@ func extractSourcesFromComments(comments, typeName, filePath string) (Sources, e
 			currentSource.Events = strings.TrimPrefix(line, annotationEvents)
 		case strings.HasPrefix(line, annotationProviderSpecific):
 			currentSource.ProviderSpecific = strings.TrimPrefix(line, annotationProviderSpecific)
+		case strings.HasPrefix(line, annotationValidation):
+			currentSource.Validation = strings.TrimPrefix(line, annotationValidation)
 		}
 	}
 

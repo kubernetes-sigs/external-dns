@@ -37,13 +37,18 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-// This is a compile-time validation that glooSource is a Source.
-var _ Source = &glooSource{}
+type fakeGlooProxyInformer struct {
+	inf *testInformer
+}
 
 const defaultGlooNamespace = "gloo-system"
+
+// This is a compile-time validation that glooSource is a Source.
+var _ Source = &glooSource{}
 
 var (
 	// Internal proxy test
@@ -536,7 +541,7 @@ func TestGlooSource(t *testing.T) {
 	_, err = fakeDynamicClient.Resource(gatewayGVR).Namespace(gatewayIngressAnnotatedProxyGateway.Namespace).Create(t.Context(), &gatewayIngressAnnotatedProxyGatewayUnstructured, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &Config{
+	source, err := NewGlooSource(t.Context(), fakeDynamicClient, fakeKubernetesClient, &config.Config{
 		GlooNamespaces: []string{defaultGlooNamespace},
 	})
 	require.NoError(t, err)
@@ -671,7 +676,7 @@ func TestGlooSource(t *testing.T) {
 func TestTransformerInGlooSource(t *testing.T) {
 	newSource := func(t *testing.T, dClient *fakeDynamic.FakeDynamicClient, kClient *fakeKube.Clientset, ns ...string) *glooSource {
 		t.Helper()
-		src, err := NewGlooSource(t.Context(), dClient, kClient, &Config{GlooNamespaces: ns})
+		src, err := NewGlooSource(t.Context(), dClient, kClient, &config.Config{GlooNamespaces: ns})
 		require.NoError(t, err)
 		gs, ok := src.(*glooSource)
 		require.True(t, ok)
@@ -925,7 +930,7 @@ func TestGlooProxyIndexer(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			src, err := NewGlooSource(t.Context(), dynClient, fakeKube.NewSimpleClientset(), &Config{
+			src, err := NewGlooSource(t.Context(), dynClient, fakeKube.NewSimpleClientset(), &config.Config{
 				GlooNamespaces:   tt.glooNamespaces,
 				AnnotationFilter: parseAnnotationFilterOrNil(tt.annotationFilter),
 				LabelFilter:      labelSel,
@@ -946,10 +951,6 @@ func TestGlooSource_AddEventHandler(t *testing.T) {
 	}
 	gs.AddEventHandler(t.Context(), func() {})
 	assert.Equal(t, 1, inf.times)
-}
-
-type fakeGlooProxyInformer struct {
-	inf *testInformer
 }
 
 func (f *fakeGlooProxyInformer) Informer() cache.SharedIndexInformer { return f.inf }

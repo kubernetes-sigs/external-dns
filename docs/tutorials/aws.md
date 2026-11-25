@@ -676,7 +676,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.23.0
+          image: registry.k8s.io/external-dns/external-dns:v0.24.0
           args:
             - --source=service
             - --source=ingress
@@ -752,6 +752,8 @@ This is not a complete list, but a few selected items.
 ### aws-zone-type
 
 `aws-zone-type` allows filtering for private and public zones
+
+For setups that publish to both, see [same domain for public and private zones](aws-public-private-route53.md) (nginx) or [Public and private hosted zones](aws-load-balancer-controller.md#public-and-private-hosted-zones) (AWS Load Balancer Controller).
 
 ## Annotations
 
@@ -1331,7 +1333,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: registry.k8s.io/external-dns/external-dns:v0.23.0
+        image: registry.k8s.io/external-dns/external-dns:v0.24.0
         command:
         - /bin/sh
         - -c

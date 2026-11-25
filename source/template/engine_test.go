@@ -32,6 +32,23 @@ import (
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
 )
 
+type testObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
+type hostnamesSpec struct {
+	Hostnames []string `json:"hostnames"`
+}
+
+// hostnamesObject mimics a typed API object with JSON tag names that differ
+// from Go exported field names (same shape as Gateway API HTTPRouteSpec).
+type hostnamesObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+	Spec hostnamesSpec `json:"spec"`
+}
+
 func TestNewEngine(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
@@ -780,28 +797,11 @@ func TestValidateTemplates(t *testing.T) {
 	}
 }
 
-type testObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-}
-
 func (t *testObject) DeepCopyObject() runtime.Object {
 	return &testObject{
 		TypeMeta:   t.TypeMeta,
 		ObjectMeta: *t.ObjectMeta.DeepCopy(),
 	}
-}
-
-type hostnamesSpec struct {
-	Hostnames []string `json:"hostnames"`
-}
-
-// hostnamesObject mimics a typed API object with JSON tag names that differ
-// from Go exported field names (same shape as Gateway API HTTPRouteSpec).
-type hostnamesObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-	Spec hostnamesSpec `json:"spec"`
 }
 
 func (h *hostnamesObject) DeepCopyObject() runtime.Object {
@@ -857,4 +857,24 @@ func TestExecFQDNFailsClosedOnUnknownField(t *testing.T) {
 		assert.Contains(t, err.Error(), "can't evaluate field address")
 		assert.Empty(t, eps)
 	})
+}
+
+func TestExecUnstructured(t *testing.T) {
+	content := map[string]any{"status": map[string]any{
+		"addresses": []any{map[string]any{"value": "1.2.3.4"}, map[string]any{"value": " lb.example.com. "}, map[string]any{"value": "1.2.3.4"}},
+	}}
+
+	got, err := ExecUnstructured(`{{ range .status.addresses }}{{ .value }},{{ end }}`, content)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"1.2.3.4", "lb.example.com"}, got)
+
+	_, err = ExecUnstructured(`{{ .status.hostname }}`, content)
+	require.ErrorContains(t, err, `map has no entry for key "hostname"`)
+
+	got, err = ExecUnstructured(`{{ with index .status "hostname" }}{{ . }}{{ end }}`, content)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	_, err = ExecUnstructured(`{{ .status`, content)
+	require.Error(t, err)
 }

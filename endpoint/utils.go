@@ -20,17 +20,20 @@ import (
 	"maps"
 	"net/netip"
 	"slices"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/internal/sets"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
 
-const (
-	msg = "No endpoints could be generated from '%s/%s/%s'"
-)
+// namedObject is the subset of metav1.Object that IsEmptyEndpoints logs. It is
+// declared here so endpoint does not import k8s.io/apimachinery/pkg/apis/meta/v1,
+// which would pull the Kubernetes client stack into every webhook provider.
+type namedObject interface {
+	GetNamespace() string
+	GetName() string
+}
 
 // SuitableType returns the DNS record type for the given target:
 // A for IPv4, AAAA for IPv6, CNAME for everything else.
@@ -58,14 +61,11 @@ func RequiresTrailingDot(recordType string) bool {
 	}
 }
 
-// HasNoEmptyEndpoints checks if the endpoint list is empty and logs
-// a debug message if so. Returns true if empty, false otherwise.
-func HasNoEmptyEndpoints(
-	endpoints []*Endpoint,
-	rType string, entity metav1.ObjectMetaAccessor,
-) bool {
+// IsEmptyEndpoints reports whether endpoints is empty, logging at debug level
+// so a source object that yields no records is still traceable.
+func IsEmptyEndpoints(endpoints []*Endpoint, rType string, entity namedObject) bool {
 	if len(endpoints) == 0 {
-		log.Debugf(msg, rType, entity.GetObjectMeta().GetNamespace(), entity.GetObjectMeta().GetName())
+		log.Debugf("No endpoints could be generated from '%s/%s/%s'", rType, entity.GetNamespace(), entity.GetName())
 		return true
 	}
 	return false
@@ -99,10 +99,10 @@ func EndpointsForHostname(hostname string, targets Targets, ttl TTL, providerSpe
 	return endpoints
 }
 
-// AttachRefObject sets the same ObjectReference on every endpoint in eps.
+// AttachRefObject sets the same ObjectRef on every endpoint in eps.
 // The reference is shared across all endpoints, so callers should create it once
 // per source object rather than once per endpoint.
-func AttachRefObject(eps []*Endpoint, ref *events.ObjectReference) {
+func AttachRefObject(eps []*Endpoint, ref *ObjectRef) {
 	for _, ep := range eps {
 		ep.WithRefObject(ref)
 	}
@@ -147,15 +147,22 @@ func EndpointsForHostsAndTargets(hostnames, targets []string) []*Endpoint {
 // by combining their targets. CNAME endpoints are not merged (per DNS spec) but are deduplicated.
 // This is useful when multiple resources (e.g., pods, nodes) contribute targets to the same DNS record.
 //
-// When several endpoints merge into one, the first endpoint's scalar metadata (TTL, ProviderSpecific,
-// Labels, ...) is retained. RefObjects from all contributing endpoints are accumulated, so the merged
-// record references every source object that contributed to it. "First" follows the input slice order.
+// When several endpoints merge into one, the endpoint with the lowest resource label keeps its
+// scalar metadata (TTL, ProviderSpecific, Labels, ...), or the first in input order when none has one.
+// RefObjects from all of them are accumulated, so the merged record references every source object that contributed to it.
+//
+// The result is ordered by resource label (unlabelled last), then input order:
+// dedupSource keeps the first duplicate, so this order picks the winner.
 func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 	if len(endpoints) == 0 {
 		return endpoints
 	}
 
+	endpoints = slices.Clone(endpoints)
+	slices.SortStableFunc(endpoints, compareResource)
+
 	endpointMap := make(map[EndpointKey]*Endpoint)
+	result := make([]*Endpoint, 0, len(endpoints))
 	singleTargets := make(map[string]string) // recordType/DNSName+SetIdentifier -> first target seen
 
 	for _, ep := range endpoints {
@@ -187,15 +194,30 @@ func MergeEndpoints(endpoints []*Endpoint) []*Endpoint {
 			}
 		} else {
 			endpointMap[key] = ep
+			result = append(result, ep)
 		}
 	}
 
-	result := make([]*Endpoint, 0, len(endpointMap))
-	for _, ep := range endpointMap {
+	for _, ep := range result {
 		slices.Sort(ep.Targets)
 		ep.Targets = slices.Compact(ep.Targets)
-		result = append(result, ep)
 	}
 
 	return result
+}
+
+// compareResource orders endpoints by resource label, unlabelled last, so the merge base is the
+// same on every sync: sources list objects in informer order, which changes between calls, and
+// the base's labels reach the registry.
+func compareResource(a, b *Endpoint) int {
+	ra, rb := a.Labels[ResourceLabelKey], b.Labels[ResourceLabelKey]
+	switch {
+	case ra == rb:
+		return 0
+	case ra == "":
+		return 1
+	case rb == "":
+		return -1
+	}
+	return strings.Compare(ra, rb)
 }

@@ -24,17 +24,22 @@ import (
 	gwinformers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
+	"sigs.k8s.io/external-dns/source/config"
 	extInformers "sigs.k8s.io/external-dns/source/informers"
 )
 
-// NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given config.
-func NewGatewayTLSRouteSource(ctx context.Context, clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(ctx, clients, config, "TLSRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
+type gatewayTLSRoute struct{ route v1.TLSRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
+
+type gatewayTLSRouteInformer struct {
+	informers_v1.TLSRouteInformer
+}
+
+// NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given cfg.
+func NewGatewayTLSRouteSource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewayRouteSource(ctx, clients, cfg, "TLSRoute", func(factory gwinformers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTLSRouteInformer{factory.Gateway().V1().TLSRoutes()}
 	})
 }
-
-type gatewayTLSRoute struct{ route v1.TLSRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
 func (rt *gatewayTLSRoute) Object() kubeObject               { return &rt.route }
 func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
@@ -42,10 +47,6 @@ func (rt *gatewayTLSRoute) Hostnames() []v1.Hostname         { return rt.route.S
 func (rt *gatewayTLSRoute) ParentRefs() []v1.ParentReference { return rt.route.Spec.ParentRefs }
 func (rt *gatewayTLSRoute) Protocol() v1.ProtocolType        { return v1.TLSProtocolType }
 func (rt *gatewayTLSRoute) RouteStatus() v1.RouteStatus      { return rt.route.Status.RouteStatus }
-
-type gatewayTLSRouteInformer struct {
-	informers_v1.TLSRouteInformer
-}
 
 func (inf gatewayTLSRouteInformer) List() []gatewayRoute {
 	list := extInformers.ListIndexed[*v1.TLSRoute](inf.TLSRouteInformer.Informer().GetIndexer())

@@ -16,10 +16,12 @@ package source
 import (
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/source/informers"
 )
 
 // EndpointTargetsFromServices retrieves endpoint targets from services in a given namespace
@@ -53,6 +55,19 @@ func EndpointTargetsFromServices(svcInformer coreinformers.ServiceInformer, name
 				targets = append(targets, lb.Hostname)
 			}
 		}
+	}
+	return endpoint.NewTargets(targets...), nil
+}
+
+// endpointTargetsFromServiceInformers is EndpointTargetsFromServices across every watched namespace.
+func endpointTargetsFromServiceInformers(svcInformers *informers.Informers[coreinformers.ServiceInformer], selector map[string]string) (endpoint.Targets, error) {
+	var targets endpoint.Targets
+	for _, svcInformer := range svcInformers.All() {
+		nsTargets, err := EndpointTargetsFromServices(svcInformer, v1.NamespaceAll, selector)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, nsTargets...)
 	}
 	return endpoint.NewTargets(targets...), nil
 }

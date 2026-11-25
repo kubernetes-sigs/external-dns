@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
 	"sigs.k8s.io/external-dns/source/types"
@@ -48,13 +49,49 @@ import (
 // +externaldns:source:description=Creates DNS entries from unstructured Kubernetes resources
 // +externaldns:source:resources=Unstructured
 // +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
+// +externaldns:source:namespace=all,single,multiple
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=false
-// +externaldns:source:events=false
+// +externaldns:source:validation=annotation
 type unstructuredSource struct {
 	templateEngine template.Engine
-	informers      []kubeinformers.GenericInformer
+	informers      []*informers.Informers[kubeinformers.GenericInformer]
+}
+
+// unstructuredWrapper wraps an unstructured.Unstructured to provide both
+// typed-style template access ({{ .Name }}, {{ .Namespace }}) and raw map access
+// ({{ .Spec.field }}, {{ index .Status.interfaces 0 "ipAddress" }}).
+// By embedding *unstructured.Unstructured, it implements kubeObject (runtime.Object + metav1.Object).
+type unstructuredWrapper struct {
+	*unstructured.Unstructured
+
+	// Typed-style convenience fields (like typed Kubernetes objects)
+	Name        string
+	Namespace   string
+	Kind        string
+	APIVersion  string
+	Labels      map[string]string
+	Annotations map[string]string
+
+	// Raw map sections for custom field access
+	Metadata map[string]any
+	Spec     map[string]any
+	Status   map[string]any
+}
+
+// commonInitialisms are the field-name segments Kubernetes' code generator
+// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
+// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
+// staticcheck/golint treat as standard Go convention.
+var commonInitialisms = map[string]bool{
+	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
+	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
+	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
+	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
+	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
+	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
+	"xml": true, "yaml": true,
 }
 
 // NewUnstructuredFQDNSource creates a new unstructuredSource.
@@ -62,43 +99,43 @@ func NewUnstructuredFQDNSource(
 	ctx context.Context,
 	dynamicClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
 	gvrs, err := discoverResources(kubeClient, cfg.UnstructuredResources)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a single informer factory for all resources
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
-		dynamicClient,
-		0,
-		cfg.Namespace(),
-		nil,
-	)
+	// Create one informer factory per watched namespace, shared by all resources
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicClient, 0, namespace, nil)
+	})
 
 	// Create informers for each resource
-	resourceInformers := make([]kubeinformers.GenericInformer, 0, len(gvrs))
+	resourceInformers := make([]*informers.Informers[kubeinformers.GenericInformer], 0, len(gvrs))
 	for _, gvr := range gvrs {
-		informer := informerFactory.ForResource(gvr)
+		resourceInformer := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+			return factory.ForResource(gvr)
+		})
 
 		// Add indexers for efficient lookups by namespace and labels (must be before AddEventHandler)
-		informers.MustAddIndexers(informer.Informer(), informers.IndexerWithOptions[*unstructured.Unstructured](
+		resourceInformer.MustAddIndexers(informers.IndexerWithOptions[*unstructured.Unstructured](
 			informers.IndexSelectorWithAnnotationFilter(cfg.AnnotationFilter),
 			informers.IndexSelectorWithLabelSelector(cfg.LabelFilter),
+			informers.IndexSelectorWithAnnotationValidation(cfg.Schema.WithSource(types.Unstructured)),
 			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*unstructured.Unstructured]),
 		))
-		informers.MustSetTransform(informer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+		resourceInformer.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 			informers.TransformRemoveManagedFields(),
 			informers.TransformRemoveLastAppliedConfig(),
 		))
 
-		informers.MustAddEventHandler(informer.Informer(), informers.DefaultEventHandler())
-		resourceInformers = append(resourceInformers, informer)
+		resourceInformer.MustAddEventHandler(informers.DefaultEventHandler())
+		resourceInformers = append(resourceInformers, resourceInformer)
 	}
 
-	informerFactory.Start(ctx.Done())
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	factories.Start(ctx.Done())
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -112,15 +149,24 @@ func NewUnstructuredFQDNSource(
 func (us *unstructuredSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	for _, informer := range us.informers {
-		resourceEndpoints, err := us.endpointsFromInformer(informer)
-		if err != nil {
-			return nil, err
+	for _, resourceInformer := range us.informers {
+		for _, informer := range resourceInformer.All() {
+			resourceEndpoints, err := us.endpointsFromInformer(informer)
+			if err != nil {
+				return nil, err
+			}
+			endpoints = append(endpoints, resourceEndpoints...)
 		}
-		endpoints = append(endpoints, resourceEndpoints...)
 	}
 
 	return endpoints, nil
+}
+
+// AddEventHandler adds an event handler that is called when resources change.
+func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
+	for _, resourceInformer := range us.informers {
+		resourceInformer.MustAddEventHandler(eventHandlerFunc(handler))
+	}
 }
 
 // endpointsFromInformer returns endpoints for a single resource type.
@@ -154,34 +200,6 @@ func (us *unstructuredSource) endpointsFromInformer(informer kubeinformers.Gener
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
-}
-
-// AddEventHandler adds an event handler that is called when resources change.
-func (us *unstructuredSource) AddEventHandler(_ context.Context, handler func()) {
-	for _, informer := range us.informers {
-		informers.MustAddEventHandler(informer.Informer(), eventHandlerFunc(handler))
-	}
-}
-
-// unstructuredWrapper wraps an unstructured.Unstructured to provide both
-// typed-style template access ({{ .Name }}, {{ .Namespace }}) and raw map access
-// ({{ .Spec.field }}, {{ index .Status.interfaces 0 "ipAddress" }}).
-// By embedding *unstructured.Unstructured, it implements kubeObject (runtime.Object + metav1.Object).
-type unstructuredWrapper struct {
-	*unstructured.Unstructured
-
-	// Typed-style convenience fields (like typed Kubernetes objects)
-	Name        string
-	Namespace   string
-	Kind        string
-	APIVersion  string
-	Labels      map[string]string
-	Annotations map[string]string
-
-	// Raw map sections for custom field access
-	Metadata map[string]any
-	Spec     map[string]any
-	Status   map[string]any
 }
 
 func (u *unstructuredWrapper) GetObjectMeta() metav1.Object {
@@ -238,20 +256,6 @@ func withTitleCaseAliases(m map[string]any) map[string]any {
 		out[title] = out[k]
 	}
 	return out
-}
-
-// commonInitialisms are the field-name segments Kubernetes' code generator
-// spells fully upper-case in Go structs (DNSNames, not DnsNames; URL, not
-// Url), taken from the CRD/API-machinery-relevant subset of the initialisms
-// staticcheck/golint treat as standard Go convention.
-var commonInitialisms = map[string]bool{
-	"acl": true, "api": true, "arn": true, "ca": true, "cidr": true,
-	"cpu": true, "crd": true, "db": true, "dns": true, "http": true,
-	"https": true, "id": true, "ip": true, "json": true, "jwk": true,
-	"jwt": true, "os": true, "pem": true, "rbac": true, "sql": true,
-	"ssl": true, "tcp": true, "tls": true, "ttl": true, "udp": true,
-	"uid": true, "uuid": true, "uri": true, "url": true, "vm": true,
-	"xml": true, "yaml": true,
 }
 
 // titleCaseKey converts a lowerCamelCase JSON key into its Go-convention

@@ -37,12 +37,6 @@ type RegionalServicesConfig struct {
 	RegionKey string
 }
 
-var recordTypeRegionalHostnameSupported = sets.New(
-	"A",
-	"AAAA",
-	"CNAME",
-)
-
 type regionalHostname struct {
 	hostname  string
 	regionKey string
@@ -55,6 +49,12 @@ type regionalHostnameChange struct {
 	action changeAction
 	regionalHostname
 }
+
+var recordTypeRegionalHostnameSupported = sets.New(
+	"A",
+	"AAAA",
+	"CNAME",
+)
 
 func (z zoneService) ListDataLocalizationRegionalHostnames(ctx context.Context, params addressing.RegionalHostnameListParams) autoPager[addressing.RegionalHostnameListResponse] {
 	return z.service.Addressing.RegionalHostnames.ListAutoPaging(ctx, params)

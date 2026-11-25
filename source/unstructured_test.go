@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"testing"
 
@@ -37,12 +38,32 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/source/annotations"
+	annotationschema "sigs.k8s.io/external-dns/source/annotations/schema"
+	"sigs.k8s.io/external-dns/source/informers"
 	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
+
+// fakeTestIndexer is a minimal cache.Indexer that returns a wrong-type object,
+// causing ListIndexed[*unstructured.Unstructured]'s internal type assertion to fail.
+type fakeTestIndexer struct {
+	cache.Indexer // nil embed; only overridden methods are called in tests
+}
+
+// fakeTestSharedIndexInformer wraps a cache.SharedIndexInformer with a custom indexer.
+type fakeTestSharedIndexInformer struct {
+	cache.SharedIndexInformer // nil embed
+	indexer                   cache.Indexer
+}
+
+// fakeTestGenericInformer implements kubeinformers.GenericInformer with a custom shared informer.
+type fakeTestGenericInformer struct {
+	inf cache.SharedIndexInformer
+}
 
 func TestUnstructuredWrapperImplementsKubeObject(t *testing.T) {
 	u := &unstructured.Unstructured{
@@ -462,7 +483,7 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				&Config{
+				&config.Config{
 					AnnotationFilter:      parseAnnotationFilterOrNil(tt.cfg.annotationFilter),
 					LabelFilter:           labelSelector,
 					UnstructuredResources: tt.cfg.resources,
@@ -479,6 +500,109 @@ func TestUnstructured_DifferentScenarios(t *testing.T) {
 			for _, ep := range endpoints {
 				require.Contains(t, ep.Labels, endpoint.ResourceLabelKey)
 			}
+		})
+	}
+}
+
+func makeUnstructuredVM(name string, ann map[string]any) *unstructured.Unstructured {
+	base := map[string]any{
+		annotations.HostnameKey: name + ".example.com",
+		annotations.TargetKey:   "10.0.0.1",
+	}
+	maps.Copy(base, ann)
+	return &unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "kubevirt.io/v1",
+			"kind":       "VirtualMachineInstance",
+			"metadata": map[string]any{
+				"name":        name,
+				"namespace":   "default",
+				"annotations": base,
+			},
+		},
+	}
+}
+
+func TestUnstructuredIndexer(t *testing.T) {
+	tests := []struct {
+		name                     string
+		annotationFilter         string
+		labelFilter              string
+		annotationValidationMode annotationschema.Mode
+		objects                  []*unstructured.Unstructured
+		expectedCount            int
+	}{
+		{
+			name:          "no filters returns all objects",
+			expectedCount: 3,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", nil),
+				makeUnstructuredVM("vm-2", nil),
+				makeUnstructuredVM("vm-3", nil),
+			},
+		},
+		{
+			name:          "controller mismatch excludes object",
+			expectedCount: 1,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", nil),
+				makeUnstructuredVM("vm-2", map[string]any{annotations.ControllerKey: "other-controller"}),
+			},
+		},
+		{
+			// record-type's SupportedSources does not include "unstructured"; in warn
+			name:                     "record-type annotation on unsupported source in warn mode does not exclude object",
+			annotationValidationMode: annotationschema.ModeWarn,
+			expectedCount:            2,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", map[string]any{annotations.RecordTypeKey: "A"}),
+				makeUnstructuredVM("vm-2", nil),
+			},
+		},
+		{
+			name:                     "record-type annotation on unsupported source in strict mode excludes object",
+			annotationValidationMode: annotationschema.ModeStrict,
+			expectedCount:            1,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", map[string]any{annotations.RecordTypeKey: "A"}),
+				makeUnstructuredVM("vm-2", nil),
+			},
+		},
+		{
+			name:                     "valid set-identifier annotation on unsupported source in strict mode excludes object",
+			annotationValidationMode: annotationschema.ModeStrict,
+			expectedCount:            1,
+			objects: []*unstructured.Unstructured{
+				makeUnstructuredVM("vm-1", map[string]any{annotations.SetIdentifierKey: "primary"}),
+				makeUnstructuredVM("vm-2", nil),
+			},
+		},
+	}
+
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, tt.objects)
+
+			labelSel := labels.Everything()
+			if tt.labelFilter != "" {
+				var err error
+				labelSel, err = labels.Parse(tt.labelFilter)
+				require.NoError(t, err)
+			}
+
+			src, err := NewUnstructuredFQDNSource(t.Context(), dynamicClient, kubeClient, &config.Config{
+				AnnotationFilter:      parseAnnotationFilterOrNil(tt.annotationFilter),
+				LabelFilter:           labelSel,
+				UnstructuredResources: resources,
+				TemplateEngine:        templatetest.MustEngine(t, "", "", "", false),
+				Schema:                annotationschema.New(annotationschema.Options{Mode: tt.annotationValidationMode}),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			assert.Len(t, endpoints, tt.expectedCount)
 		})
 	}
 }
@@ -513,7 +637,7 @@ func TestProcessEndpoint_Unstructured_RefObjectExist(t *testing.T) {
 		t.Context(),
 		dynamicClient,
 		kubeClient,
-		&Config{
+		&config.Config{
 			LabelFilter:           labels.Everything(),
 			UnstructuredResources: resources,
 		},
@@ -523,6 +647,48 @@ func TestProcessEndpoint_Unstructured_RefObjectExist(t *testing.T) {
 	endpoints, err := src.Endpoints(t.Context())
 	require.NoError(t, err)
 	testutils.AssertEndpointsHaveRefObject(t, endpoints, types.Unstructured, len(objects))
+}
+
+func TestUnstructuredSourceMultipleNamespaces(t *testing.T) {
+	t.Parallel()
+
+	resources := []string{"virtualmachineinstances.v1.kubevirt.io"}
+	var objects []*unstructured.Unstructured
+	for _, namespace := range []string{"team-a", "team-b", "team-c"} {
+		objects = append(objects, &unstructured.Unstructured{
+			Object: map[string]any{
+				"apiVersion": "kubevirt.io/v1",
+				"kind":       "VirtualMachineInstance",
+				"metadata": map[string]any{
+					"name":      "vm",
+					"namespace": namespace,
+					"annotations": map[string]any{
+						annotations.HostnameKey: namespace + ".example.org",
+						annotations.TargetKey:   "10.0.0.1",
+					},
+				},
+			},
+		})
+	}
+
+	kubeClient, dynamicClient := setupUnstructuredTestClients(t, resources, objects)
+
+	src, err := NewUnstructuredFQDNSource(t.Context(), dynamicClient, kubeClient, &config.Config{
+		Namespaces:            []string{"team-a", "team-b"},
+		LabelFilter:           labels.Everything(),
+		UnstructuredResources: resources,
+	})
+	require.NoError(t, err)
+
+	got, err := src.Endpoints(t.Context())
+	require.NoError(t, err)
+
+	testutils.ValidateEndpoints(t, got, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("team-a.example.org", endpoint.RecordTypeA, "10.0.0.1").
+			WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/team-a/vm"),
+		endpoint.NewEndpoint("team-b.example.org", endpoint.RecordTypeA, "10.0.0.1").
+			WithLabel(endpoint.ResourceLabelKey, "virtualmachineinstance/team-b/vm"),
+	})
 }
 
 // setupUnstructuredTestClients creates fake kube and dynamic clients with the given resources and objects.
@@ -644,7 +810,7 @@ func TestAddEventHandler_Unstructured(t *testing.T) {
 		t.Context(),
 		dynamicClient,
 		kubeClient,
-		&Config{
+		&config.Config{
 			LabelFilter:           labels.Everything(),
 			UnstructuredResources: resources,
 		},
@@ -704,7 +870,7 @@ func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
 			kubeClient := fake.NewClientset()
 			kubeClient.Discovery().(*discoveryfake.FakeDiscovery).Resources = tt.discovery
 
-			_, err := NewUnstructuredFQDNSource(tt.ctx(), tt.dynamicClient, kubeClient, &Config{
+			_, err := NewUnstructuredFQDNSource(tt.ctx(), tt.dynamicClient, kubeClient, &config.Config{
 				LabelFilter:           labels.Everything(),
 				UnstructuredResources: tt.resources,
 			})
@@ -712,12 +878,6 @@ func TestNewUnstructuredFQDNSource_Errors(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
-}
-
-// fakeTestIndexer is a minimal cache.Indexer that returns a wrong-type object,
-// causing ListIndexed[*unstructured.Unstructured]'s internal type assertion to fail.
-type fakeTestIndexer struct {
-	cache.Indexer // nil embed; only overridden methods are called in tests
 }
 
 func (f *fakeTestIndexer) ListIndexFuncValues(_ string) []string {
@@ -728,18 +888,7 @@ func (f *fakeTestIndexer) GetByKey(_ string) (any, bool, error) {
 	return "not-an-unstructured-object", true, nil
 }
 
-// fakeTestSharedIndexInformer wraps a cache.SharedIndexInformer with a custom indexer.
-type fakeTestSharedIndexInformer struct {
-	cache.SharedIndexInformer // nil embed
-	indexer                   cache.Indexer
-}
-
 func (f *fakeTestSharedIndexInformer) GetIndexer() cache.Indexer { return f.indexer }
-
-// fakeTestGenericInformer implements kubeinformers.GenericInformer with a custom shared informer.
-type fakeTestGenericInformer struct {
-	inf cache.SharedIndexInformer
-}
 
 func (f *fakeTestGenericInformer) Informer() cache.SharedIndexInformer { return f.inf }
 func (f *fakeTestGenericInformer) Lister() cache.GenericLister         { panic("not needed") }
@@ -751,8 +900,8 @@ func TestEndpointsFromInformer_GetByKeyError(t *testing.T) {
 	inf := &fakeTestSharedIndexInformer{indexer: idx}
 
 	src := &unstructuredSource{
-		informers: []kubeinformers.GenericInformer{
-			&fakeTestGenericInformer{inf: inf},
+		informers: []*informers.Informers[kubeinformers.GenericInformer]{
+			informers.Single[kubeinformers.GenericInformer](&fakeTestGenericInformer{inf: inf}),
 		},
 	}
 
@@ -806,7 +955,7 @@ func TestUnstructuredSource_TemplateErrors(t *testing.T) {
 				t.Context(),
 				dynamicClient,
 				kubeClient,
-				&Config{
+				&config.Config{
 					LabelFilter:           labels.Everything(),
 					UnstructuredResources: resources,
 					TemplateEngine:        templatetest.MustEngine(t, tt.fqdnTemplate, tt.targetTemplate, tt.fqdnTargetTemplate, false),

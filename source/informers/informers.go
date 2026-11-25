@@ -25,14 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const (
-	// defaultTimeout is the maximum time in seconds to wait for informer caches
-	// to complete initial sync. This is intentionally longer than the per-request
-	// timeout: a cache sync may require multiple sequential API calls
-	// (LIST + Watch handshake), so the total wait needs to exceed a single request duration.
-	defaultTimeout = 60
-)
-
 type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 }
@@ -40,6 +32,14 @@ type informerFactory interface {
 type dynamicInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
+
+const (
+	// defaultTimeout is the maximum time in seconds to wait for informer caches
+	// to complete initial sync. This is intentionally longer than the per-request
+	// timeout: a cache sync may require multiple sequential API calls
+	// (LIST + Watch handshake), so the total wait needs to exceed a single request duration.
+	defaultTimeout = 60
+)
 
 func WaitForCacheSync(ctx context.Context, factory informerFactory) error {
 	return waitForCacheSync(ctx, factory.WaitForCacheSync)

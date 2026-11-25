@@ -39,16 +39,9 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/informers"
 	"sigs.k8s.io/external-dns/source/template"
-)
-
-const (
-	gatewayGroup                               = "gateway.networking.k8s.io"
-	gatewayKind                                = "Gateway"
-	listenerSetKind                            = "ListenerSet"
-	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
-	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
 )
 
 type gatewayRoute interface {
@@ -73,20 +66,6 @@ type gatewayRouteInformer interface {
 	Informer() cache.SharedIndexInformer
 }
 
-func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
-	var opts []gwinformers.SharedInformerOption
-	if namespace != "" {
-		opts = append(opts, gwinformers.WithNamespace(namespace))
-	}
-	if labelSelector != nil && !labelSelector.Empty() {
-		lbls := labelSelector.String()
-		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
-			o.LabelSelector = lbls
-		}))
-	}
-	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
-}
-
 // gatewayRouteSource is an implementation of Source for Gateway API Route objects.
 //
 // +externaldns:source:name=gateway-httproute
@@ -96,6 +75,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-grpcroute
@@ -105,6 +85,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-tcproute
@@ -114,6 +95,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-tlsroute
@@ -123,6 +105,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 //
 // +externaldns:source:name=gateway-udproute
@@ -132,6 +115,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single
 // +externaldns:source:fqdn-template=true
+// +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type gatewayRouteSource struct {
 	gwName     string
@@ -145,188 +129,6 @@ type gatewayRouteSource struct {
 
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
-}
-
-func newGatewayRouteSource(
-	ctx context.Context,
-	clients ClientGenerator,
-	config *Config,
-	kind string,
-	newInformerFn newGatewayRouteInformerFunc) (Source, error) {
-	gwLabels, err := annotations.ParseFilter(config.GatewayLabelFilter)
-	if err != nil {
-		return nil, err
-	}
-	rtLabels := config.LabelFilter
-	if rtLabels == nil {
-		rtLabels = labels.Everything()
-	}
-	rtAnnotations := config.AnnotationFilter
-	if rtAnnotations == nil {
-		rtAnnotations = labels.Everything()
-	}
-
-	client, err := clients.GatewayClient()
-	if err != nil {
-		return nil, err
-	}
-
-	gwInformerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-
-	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
-		informers.TransformRemoveManagedFields(),
-		informers.TransformRemoveLastAppliedConfig(),
-		informers.TransformRemoveStatusConditions(),
-	))
-	informers.MustAddIndexers(gwInformer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
-		informers.IndexSelectorWithLabelSelector(gwLabels),
-		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
-	))
-
-	var lsInformer informers_v1.ListenerSetInformer
-	lsInformerFactory := gwInformerFactory
-	if config.GatewayListenerSets {
-		// Gateway filters should apply only to Gateways, not ListenerSets.
-		if config.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
-			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
-		}
-		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
-		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
-			informers.TransformRemoveManagedFields(),
-			informers.TransformRemoveLastAppliedConfig(),
-		))
-		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
-			informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
-			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
-		))
-	}
-
-	rtNamespace := config.Namespace()
-	rtInformerFactory := gwInformerFactory
-	if rtNamespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
-		rtInformerFactory = newGatewayInformerFactory(client, rtNamespace, rtLabels)
-	}
-	rtInformer := newInformerFn(rtInformerFactory)
-	informers.MustSetTransform(rtInformer.Informer(), informers.TransformerWithOptions[informers.Object](
-		informers.TransformRemoveManagedFields(),
-		informers.TransformRemoveLastAppliedConfig(),
-		informers.TransformRemoveStatusConditions(),
-	))
-	informers.MustAddIndexers(rtInformer.Informer(), informers.IndexerWithOptions[informers.Object](
-		informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
-		informers.IndexSelectorWithLabelSelector(rtLabels),
-		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[informers.Object]),
-	))
-
-	kubeClient, err := clients.KubeClient()
-	if err != nil {
-		return nil, err
-	}
-
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
-	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
-	informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
-		informers.TransformRemoveManagedFields(),
-		informers.TransformRemoveLastAppliedConfig(),
-		informers.TransformRemoveStatusConditions(),
-	))
-	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
-
-	gwInformerFactory.Start(ctx.Done())
-	if lsInformerFactory != gwInformerFactory {
-		lsInformerFactory.Start(ctx.Done())
-	}
-	kubeInformerFactory.Start(ctx.Done())
-	if rtInformerFactory != gwInformerFactory {
-		rtInformerFactory.Start(ctx.Done())
-	}
-	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
-		return nil, err
-	}
-	if lsInformer != nil && lsInformerFactory != gwInformerFactory {
-		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
-			return nil, err
-		}
-	}
-	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
-		return nil, err
-	}
-	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
-		return nil, err
-	}
-
-	src := &gatewayRouteSource{
-		gwName:     config.GatewayName,
-		gwInformer: gwInformer,
-		lsInformer: lsInformer,
-
-		rtKind:     kind,
-		rtInformer: rtInformer,
-
-		nsInformer: nsInformer,
-
-		templateEngine:           config.TemplateEngine,
-		ignoreHostnameAnnotation: config.IgnoreHostnameAnnotation,
-	}
-	return src, nil
-}
-
-func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
-	log.Debugf("Adding event handlers for %s", src.rtKind)
-	eventHandler := eventHandlerFunc(handler)
-	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandler)
-	if src.lsInformer != nil {
-		informers.MustAddEventHandler(src.lsInformer.Informer(), eventHandler)
-	}
-	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
-	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
-}
-
-func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
-	routes := src.rtInformer.List()
-	gateways := informers.ListIndexed[*v1.Gateway](src.gwInformer.Informer().GetIndexer())
-	var listenerSets []*v1.ListenerSet
-	if src.lsInformer != nil {
-		listenerSets = informers.ListIndexed[*v1.ListenerSet](src.lsInformer.Informer().GetIndexer())
-	}
-	namespaces := informers.ListIndexed[*corev1.Namespace](src.nsInformer.Informer().GetIndexer())
-	kind := strings.ToLower(src.rtKind)
-	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
-	var endpoints []*endpoint.Endpoint
-	for _, rt := range routes {
-		// Get Route hostnames and their targets.
-		meta := rt.Metadata()
-		annots := meta.Annotations
-		hostTargets, err := resolver.resolve(rt)
-		if err != nil {
-			return nil, err
-		}
-		// TODO: does not follow the pattern of other sources to log empty hostTargets
-		if len(hostTargets) == 0 {
-			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
-			continue
-		}
-
-		// Create endpoints from hostnames and targets.
-		var routeEndpoints []*endpoint.Endpoint
-		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
-		ttl := annotations.TTLFromAnnotations(annots, resource)
-		for host, targets := range hostTargets {
-			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
-		}
-		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
-
-		endpoint.AttachRefObject(routeEndpoints, events.NewObjectReference(rt.Object(), "gateway-"+kind))
-
-		endpoints = append(endpoints, routeEndpoints...)
-	}
-	return endpoint.MergeEndpoints(endpoints), nil
-}
-
-func namespacedName(namespace, name string) types.NamespacedName {
-	return types.NamespacedName{Namespace: namespace, Name: name}
 }
 
 type gatewayRouteResolver struct {
@@ -364,6 +166,221 @@ type resolvedParent struct {
 	obj       *listenerObject
 	section   v1.SectionName
 	listeners []listenerSection
+}
+
+const (
+	gatewayGroup                               = "gateway.networking.k8s.io"
+	gatewayKind                                = "Gateway"
+	listenerSetKind                            = "ListenerSet"
+	gatewayHostnameSourceAnnotationOnlyValue   = "annotation-only"
+	gatewayHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
+)
+
+func newGatewayInformerFactory(client gateway.Interface, namespace string, labelSelector labels.Selector) gwinformers.SharedInformerFactory {
+	var opts []gwinformers.SharedInformerOption
+	if namespace != "" {
+		opts = append(opts, gwinformers.WithNamespace(namespace))
+	}
+	if labelSelector != nil && !labelSelector.Empty() {
+		lbls := labelSelector.String()
+		opts = append(opts, gwinformers.WithTweakListOptions(func(o *metav1.ListOptions) {
+			o.LabelSelector = lbls
+		}))
+	}
+	return gwinformers.NewSharedInformerFactoryWithOptions(client, 0, opts...)
+}
+
+func newGatewayRouteSource(
+	ctx context.Context,
+	clients ClientGenerator,
+	cfg *config.Config,
+	kind string,
+	newInformerFn newGatewayRouteInformerFunc) (Source, error) {
+	gwLabels, err := annotations.ParseFilter(cfg.GatewayLabelFilter)
+	if err != nil {
+		return nil, err
+	}
+	rtLabels := cfg.LabelFilter
+	if rtLabels == nil {
+		rtLabels = labels.Everything()
+	}
+	rtAnnotations := cfg.AnnotationFilter
+	if rtAnnotations == nil {
+		rtAnnotations = labels.Everything()
+	}
+
+	client, err := clients.GatewayClient()
+	if err != nil {
+		return nil, err
+	}
+
+	gwInformerFactory := newGatewayInformerFactory(client, cfg.GatewayNamespace, gwLabels)
+	gwInformer := gwInformerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
+
+	informers.MustSetTransform(gwInformer.Informer(), informers.TransformerWithOptions[*v1.Gateway](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(gwInformer.Informer(), informers.IndexerWithOptions[*v1.Gateway](
+		informers.IndexSelectorWithLabelSelector(gwLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.Gateway]),
+	))
+
+	lsInformer, lsInformerFactory := newListenerSetInformer(client, gwInformerFactory, cfg, gwLabels)
+
+	rtNamespace := cfg.Namespace()
+	rtInformerFactory := gwInformerFactory
+	if rtNamespace != cfg.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
+		rtInformerFactory = newGatewayInformerFactory(client, rtNamespace, rtLabels)
+	}
+	rtInformer := newInformerFn(rtInformerFactory)
+	informers.MustSetTransform(rtInformer.Informer(), informers.TransformerWithOptions[informers.Object](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(rtInformer.Informer(), informers.IndexerWithOptions[informers.Object](
+		informers.IndexSelectorWithAnnotationFilter(rtAnnotations),
+		informers.IndexSelectorWithLabelSelector(rtLabels),
+		informers.IndexSelectorWithConditions(annotations.IsControllerMatch[informers.Object]),
+	))
+
+	kubeClient, err := clients.KubeClient()
+	if err != nil {
+		return nil, err
+	}
+
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
+	informers.MustSetTransform(nsInformer.Informer(), informers.TransformerWithOptions[*corev1.Namespace](
+		informers.TransformRemoveManagedFields(),
+		informers.TransformRemoveLastAppliedConfig(),
+		informers.TransformRemoveStatusConditions(),
+	))
+	informers.MustAddIndexers(nsInformer.Informer(), informers.IndexerWithOptions[*corev1.Namespace]())
+
+	if err := startAndSyncInformers(ctx, gwInformerFactory, lsInformerFactory, rtInformerFactory, kubeInformerFactory); err != nil {
+		return nil, err
+	}
+
+	src := &gatewayRouteSource{
+		gwName:     cfg.GatewayName,
+		gwInformer: gwInformer,
+		lsInformer: lsInformer,
+
+		rtKind:     kind,
+		rtInformer: rtInformer,
+
+		nsInformer: nsInformer,
+
+		templateEngine:           cfg.TemplateEngine,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+	}
+	return src, nil
+}
+
+func newListenerSetInformer(client gateway.Interface, gwInformerFactory gwinformers.SharedInformerFactory, cfg *config.Config, gwLabels labels.Selector) (informers_v1.ListenerSetInformer, gwinformers.SharedInformerFactory) {
+	var lsInformer informers_v1.ListenerSetInformer
+	lsInformerFactory := gwInformerFactory
+	if cfg.GatewayListenerSets {
+		// Gateway filters should apply only to Gateways, not ListenerSets.
+		// Route filters (--annotation-filter, --label-filter) select Routes and must not apply either.
+		if cfg.GatewayNamespace != "" || (gwLabels != nil && !gwLabels.Empty()) {
+			lsInformerFactory = newGatewayInformerFactory(client, "", nil)
+		}
+		lsInformer = lsInformerFactory.Gateway().V1().ListenerSets() // TODO: ListenerSet informer should be shared across gateway sources.
+		informers.MustSetTransform(lsInformer.Informer(), informers.TransformerWithOptions[*v1.ListenerSet](
+			informers.TransformRemoveManagedFields(),
+			informers.TransformRemoveLastAppliedConfig(),
+		))
+		informers.MustAddIndexers(lsInformer.Informer(), informers.IndexerWithOptions[*v1.ListenerSet](
+			informers.IndexSelectorWithConditions(annotations.IsControllerMatch[*v1.ListenerSet]),
+		))
+	}
+	return lsInformer, lsInformerFactory
+}
+
+func startAndSyncInformers(ctx context.Context, gwInformerFactory, lsInformerFactory, rtInformerFactory gwinformers.SharedInformerFactory, kubeInformerFactory kubeinformers.SharedInformerFactory) error {
+	gwInformerFactory.Start(ctx.Done())
+	if lsInformerFactory != gwInformerFactory {
+		lsInformerFactory.Start(ctx.Done())
+	}
+	kubeInformerFactory.Start(ctx.Done())
+	if rtInformerFactory != gwInformerFactory {
+		rtInformerFactory.Start(ctx.Done())
+	}
+	if err := informers.WaitForCacheSync(ctx, gwInformerFactory); err != nil {
+		return err
+	}
+	if lsInformerFactory != gwInformerFactory {
+		if err := informers.WaitForCacheSync(ctx, lsInformerFactory); err != nil {
+			return err
+		}
+	}
+	if err := informers.WaitForCacheSync(ctx, rtInformerFactory); err != nil {
+		return err
+	}
+	if err := informers.WaitForCacheSync(ctx, kubeInformerFactory); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (src *gatewayRouteSource) AddEventHandler(_ context.Context, handler func()) {
+	log.Debugf("Adding event handlers for %s", src.rtKind)
+	eventHandler := eventHandlerFunc(handler)
+	informers.MustAddEventHandler(src.gwInformer.Informer(), eventHandler)
+	if src.lsInformer != nil {
+		informers.MustAddEventHandler(src.lsInformer.Informer(), eventHandler)
+	}
+	informers.MustAddEventHandler(src.rtInformer.Informer(), eventHandler)
+	informers.MustAddEventHandler(src.nsInformer.Informer(), eventHandler)
+}
+
+func (src *gatewayRouteSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error) {
+	routes := src.rtInformer.List()
+	gateways := informers.ListIndexed[*v1.Gateway](src.gwInformer.Informer().GetIndexer())
+	var listenerSets []*v1.ListenerSet
+	if src.lsInformer != nil {
+		listenerSets = informers.ListIndexed[*v1.ListenerSet](src.lsInformer.Informer().GetIndexer())
+	}
+	namespaces := informers.ListIndexed[*corev1.Namespace](src.nsInformer.Informer().GetIndexer())
+	kind := strings.ToLower(src.rtKind)
+	resolver := newGatewayRouteResolver(src, gateways, listenerSets, namespaces)
+	var endpoints []*endpoint.Endpoint
+	for _, rt := range routes {
+		// Get Route hostnames and their targets.
+		meta := rt.Metadata()
+		annots := meta.Annotations
+		hostTargets, err := resolver.resolve(rt)
+		if err != nil {
+			return nil, err
+		}
+		if len(hostTargets) == 0 {
+			log.Debugf("No endpoints could be generated from %s %s/%s", src.rtKind, meta.Namespace, meta.Name)
+			continue
+		}
+
+		// Create endpoints from hostnames and targets.
+		var routeEndpoints []*endpoint.Endpoint
+		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
+		providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(annots)
+		ttl := annotations.TTLFromAnnotations(annots, resource)
+		for host, targets := range hostTargets {
+			routeEndpoints = append(routeEndpoints, endpoint.EndpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
+		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, routeEndpoints)
+
+		endpoint.AttachRefObject(routeEndpoints, events.NewObjectReference(rt.Object(), "gateway-"+kind))
+
+		endpoints = append(endpoints, routeEndpoints...)
+	}
+	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+func namespacedName(namespace, name string) types.NamespacedName {
+	return types.NamespacedName{Namespace: namespace, Name: name}
 }
 
 func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, listenerSets []*v1.ListenerSet, namespaces []*corev1.Namespace) *gatewayRouteResolver {
@@ -419,14 +436,12 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 func (c *gatewayRouteResolver) resolveParentRef(rt gatewayRoute, routeParentRefs []v1.ParentReference, rps v1.RouteParentStatus) (*resolvedParent, bool) {
 	meta := rt.Metadata()
 	ref := rps.ParentRef
-	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
+	group, kind, namespace := normParentRef(ref, meta.Namespace)
 	if !gwRouteHasParentRef(routeParentRefs, ref, meta) {
 		log.Debugf("Parent reference %s/%s not found in routeParentRefs for %s %s/%s", namespace, string(ref.Name), c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
 	}
 
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
 	if group != gatewayGroup || (kind != gatewayKind && kind != listenerSetKind) {
 		log.Debugf("Unsupported parent %s/%s for %s %s/%s", group, kind, c.src.rtKind, meta.Namespace, meta.Name)
 		return nil, false
@@ -522,6 +537,10 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 		hostTargets[host] = append(hostTargets[host], override...)
 		if len(override) == 0 {
 			for _, addr := range parent.obj.gateway.Status.Addresses {
+				if !gwAddressIsDNSTarget(addr) {
+					log.Debugf("Skipping Gateway %s/%s address %q of type %s", parent.obj.gateway.Namespace, parent.obj.gateway.Name, addr.Value, *addr.Type)
+					continue
+				}
 				hostTargets[host] = append(hostTargets[host], addr.Value)
 			}
 		}
@@ -530,7 +549,12 @@ func (c *gatewayRouteResolver) matchRouteToListener(rt gatewayRoute, rtHosts []s
 	return match
 }
 
-// appendFQDNTemplate appends template-generated hostnames unless another source already
+// An unset type defaults to IPAddress; other types are implementation-specific.
+func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
+	return addr.Type == nil || *addr.Type == v1.IPAddressType || *addr.Type == v1.HostnameAddressType
+}
+
+// appendFQDNTemplate appends the template-generated hostnames, unless another source already
 // supplied one and the template is not combining.
 // TODO: The combine-fqdn-annotation flag is similarly vague.
 func appendFQDNTemplate(engine template.Engine, hostnames []string, obj kubeObject) ([]string, error) {
@@ -561,6 +585,9 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 		switch strings.ToLower(hostNameAnnotation) {
 		case gatewayHostnameSourceAnnotationOnlyValue:
 			if c.src.ignoreHostnameAnnotation {
+				// The flag wins, which leaves the route with no hostnames at all, so make that visible.
+				log.Warnf("%q is %q on %s %s/%s, but --ignore-hostname-annotation is set, so the route has no hostnames.",
+					annotations.GatewayHostnameSourceKey, hostNameAnnotation, c.src.rtKind, rt.Metadata().Namespace, rt.Metadata().Name)
 				return []string{}, nil
 			}
 			return annotations.HostnamesFromAnnotations(rt.Metadata().Annotations), nil
@@ -575,12 +602,7 @@ func (c *gatewayRouteResolver) resolveHostnames(rt gatewayRoute) ([]string, erro
 	}
 
 	if !c.src.ignoreHostnameAnnotation {
-		// Skip empty values so an empty annotation does not gate the template below.
-		for _, hostname := range annotations.HostnamesFromAnnotations(rt.Metadata().Annotations) {
-			if hostname != "" {
-				hostnames = append(hostnames, hostname)
-			}
-		}
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(rt.Metadata().Annotations)...)
 	}
 	hostnames, err := c.appendFQDNTemplate(hostnames, rt)
 	if err != nil {
@@ -638,7 +660,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(ownerNamespace string, lis *v1.Lis
 	}
 	gvk := rt.Object().GetObjectKind().GroupVersionKind()
 	for _, gk := range allow.Kinds {
-		group := strVal((*string)(gk.Group), gatewayGroup)
+		group := gwGroupOrDefault(gk.Group)
 		if gvk.Group == group && gvk.Kind == string(gk.Kind) {
 			return true
 		}
@@ -773,19 +795,34 @@ func gatewayAllowsListenerSet(gw *v1.Gateway, ls *v1.ListenerSet, namespaces map
 	}
 }
 
+// gwGroupOrDefault defaults an omitted group to the Gateway API group. An explicit empty group is
+// the core group, so it is kept as is.
+func gwGroupOrDefault(group *v1.Group) string {
+	if group == nil {
+		return gatewayGroup
+	}
+	return string(*group)
+}
+
+// normParentRef returns the group, kind and namespace that identify a parent, with the API
+// defaults applied, so that membership and lookup cannot drift apart.
+func normParentRef(ref v1.ParentReference, defaultNamespace string) (string, string, string) {
+	kind := gatewayKind
+	if ref.Kind != nil {
+		kind = string(*ref.Kind)
+	}
+	return gwGroupOrDefault(ref.Group), kind, strVal((*string)(ref.Namespace), defaultNamespace)
+}
+
 func gwRouteHasParentRef(routeParentRefs []v1.ParentReference, ref v1.ParentReference, meta *metav1.ObjectMeta) bool {
 	// Ensure that the parent reference is in the routeParentRefs list
-	namespace := strVal((*string)(ref.Namespace), meta.Namespace)
-	group := strVal((*string)(ref.Group), gatewayGroup)
-	kind := strVal((*string)(ref.Kind), gatewayKind)
+	group, kind, namespace := normParentRef(ref, meta.Namespace)
 	for _, rpr := range routeParentRefs {
-		rprGroup := strVal((*string)(rpr.Group), gatewayGroup)
-		rprKind := strVal((*string)(rpr.Kind), gatewayKind)
-		if rprGroup != group || rprKind != kind {
+		rprGroup, rprKind, rprNamespace := normParentRef(rpr, meta.Namespace)
+		if rprGroup != group || rprKind != kind || rprNamespace != namespace {
 			continue
 		}
-		rprNamespace := strVal((*string)(rpr.Namespace), meta.Namespace)
-		if string(rpr.Name) != string(ref.Name) || rprNamespace != namespace {
+		if string(rpr.Name) != string(ref.Name) {
 			continue
 		}
 		return true

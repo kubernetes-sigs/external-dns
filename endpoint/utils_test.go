@@ -17,29 +17,17 @@ limitations under the License.
 package endpoint
 
 import (
+	"slices"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	logtest "sigs.k8s.io/external-dns/internal/testutils/log"
-	"sigs.k8s.io/external-dns/pkg/events"
 )
-
-type mockObjectMetaAccessor struct {
-	namespace string
-	name      string
-}
-
-func (m *mockObjectMetaAccessor) GetObjectMeta() metav1.Object {
-	return &metav1.ObjectMeta{
-		Namespace: m.namespace,
-		Name:      m.name,
-	}
-}
 
 func TestSuitableType(t *testing.T) {
 	tests := []struct {
@@ -68,58 +56,6 @@ func TestSuitableType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.target, func(t *testing.T) {
 			assert.Equal(t, tt.expected, SuitableType(tt.target))
-		})
-	}
-}
-
-func TestHasEmptyEndpoints(t *testing.T) {
-	tests := []struct {
-		name      string
-		endpoints []*Endpoint
-		rType     string
-		entity    metav1.ObjectMetaAccessor
-		expected  bool
-	}{
-		{
-			name:      "nil endpoints returns true",
-			endpoints: nil,
-			rType:     "Service",
-			entity:    &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected:  true,
-		},
-		{
-			name:      "empty slice returns true",
-			endpoints: []*Endpoint{},
-			rType:     "Ingress",
-			entity:    &mockObjectMetaAccessor{namespace: "kube-system", name: "my-ingress"},
-			expected:  true,
-		},
-		{
-			name: "single endpoint returns false",
-			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-			},
-			rType:    "Service",
-			entity:   &mockObjectMetaAccessor{namespace: "default", name: "my-service"},
-			expected: false,
-		},
-		{
-			name: "multiple endpoints returns false",
-			endpoints: []*Endpoint{
-				NewEndpoint("example.org", "A", "1.2.3.4"),
-				NewEndpoint("test.example.org", "CNAME", "example.org"),
-			},
-			rType:    "Ingress",
-			entity:   &mockObjectMetaAccessor{namespace: "production", name: "frontend"},
-			expected: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := HasNoEmptyEndpoints(tc.endpoints, tc.rType, tc.entity)
-			assert.Equal(t, tc.expected, result)
-			// TODO: Add log capture and verification
 		})
 	}
 }
@@ -229,7 +165,7 @@ func TestEndpointsForHostname(t *testing.T) {
 }
 
 func TestAttachRefObject(t *testing.T) {
-	ref := events.NewObjectReferenceFromParts("Service", "", "default", "svc", "", "")
+	ref := NewObjectRef("Service", "", "default", "svc", "", "")
 	eps := []*Endpoint{
 		NewEndpoint("a.example.com", RecordTypeA, "1.2.3.4"),
 		NewEndpoint("b.example.com", RecordTypeA, "5.6.7.8"),
@@ -465,9 +401,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("example.com", RecordTypeA, "1.2.3.4").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "foo", Namespace: "default", UID: "123",
-						}, "service")),
+						NewObjectRef("Service", "v1", "default", "foo", "123", "service")),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
@@ -484,13 +418,9 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "foo", Namespace: "default", UID: "123",
-						}, "service")),
+						NewObjectRef("Service", "v1", "default", "foo", "123", "service")),
 					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "bar", Namespace: "ns", UID: "345",
-						}, "service")),
+						NewObjectRef("Service", "v1", "ns", "bar", "345", "service")),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
@@ -504,9 +434,7 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 		{
 			name: "two endpoints merged with same ref — deduplication keeps one entry",
 			input: func() []*Endpoint {
-				ref := events.NewObjectReference(&v1.Service{
-					Name: "foo", Namespace: "default", UID: "123",
-				}, "service")
+				ref := NewObjectRef("Service", "v1", "default", "foo", "123", "service")
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(ref),
 					NewEndpoint("a.example.com", RecordTypeA, "2.2.2.2").WithRefObject(ref),
@@ -524,13 +452,9 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 			input: func() []*Endpoint {
 				return []*Endpoint{
 					NewEndpoint("a.example.com", RecordTypeA, "1.1.1.1").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "foo", Namespace: "default", UID: "123",
-						}, "service")),
+						NewObjectRef("Service", "v1", "default", "foo", "123", "service")),
 					NewEndpoint("b.example.com", RecordTypeA, "1.1.1.2").WithRefObject(
-						events.NewObjectReference(&v1.Service{
-							Name: "bar", Namespace: "ns", UID: "345",
-						}, "service")),
+						NewObjectRef("Service", "v1", "ns", "bar", "345", "service")),
 				}
 			},
 			expected: func(t *testing.T, ep []*Endpoint) {
@@ -551,6 +475,112 @@ func TestMergeEndpoints_RefObjects(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := MergeEndpoints(tt.input())
 			tt.expected(t, result)
+		})
+	}
+}
+
+func TestMergeEndpoints_KeepsLowestResource(t *testing.T) {
+	newEndpoint := func(resource, target, proxied string) *Endpoint {
+		ep := NewEndpoint("app.example.com", RecordTypeA, target).
+			WithProviderSpecific("proxied", proxied).
+			WithRefObject(NewObjectRef("Ingress", "networking.k8s.io/v1", "default", resource, types.UID("uid-"+resource), "ingress"))
+		if resource != "" {
+			ep.WithLabel(ResourceLabelKey, "ingress/default/"+resource)
+		}
+		return ep
+	}
+
+	tests := []struct {
+		name         string
+		input        []*Endpoint
+		wantResource string
+		wantProxied  string
+	}{
+		{
+			name:         "lowest resource listed first",
+			input:        []*Endpoint{newEndpoint("a", "192.0.2.1", "true"), newEndpoint("b", "192.0.2.2", "false")},
+			wantResource: "ingress/default/a",
+			wantProxied:  "true",
+		},
+		{
+			name:         "lowest resource listed last",
+			input:        []*Endpoint{newEndpoint("b", "192.0.2.2", "false"), newEndpoint("c", "192.0.2.3", "false"), newEndpoint("a", "192.0.2.1", "true")},
+			wantResource: "ingress/default/a",
+			wantProxied:  "true",
+		},
+		{
+			name:         "labelled kept over unlabelled listed last",
+			input:        []*Endpoint{newEndpoint("b", "192.0.2.2", "false"), newEndpoint("", "192.0.2.1", "true")},
+			wantResource: "ingress/default/b",
+			wantProxied:  "false",
+		},
+		{
+			name:         "labelled kept over unlabelled listed first",
+			input:        []*Endpoint{newEndpoint("", "192.0.2.1", "true"), newEndpoint("b", "192.0.2.2", "false")},
+			wantResource: "ingress/default/b",
+			wantProxied:  "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := slices.Clone(tt.input)
+			result := MergeEndpoints(tt.input)
+			for i := range input {
+				assert.Same(t, input[i], tt.input[i], "the caller's slice must keep its order")
+			}
+			require.Len(t, result, 1)
+			assert.Equal(t, tt.wantResource, result[0].Labels[ResourceLabelKey])
+			proxied, _ := result[0].GetProviderSpecificProperty("proxied")
+			assert.Equal(t, tt.wantProxied, proxied)
+			assert.Len(t, result[0].Targets, len(tt.input))
+			assert.Len(t, result[0].RefObjects(), len(tt.input))
+		})
+	}
+}
+
+func TestMergeEndpoints_OrdersByResource(t *testing.T) {
+	newEndpoint := func(resource string, ttl TTL) *Endpoint {
+		ep := NewEndpointWithTTL("app.example.com", RecordTypeA, ttl, "192.0.2.1")
+		if resource != "" {
+			ep.WithLabel(ResourceLabelKey, "httproute/default/"+resource)
+		}
+		return ep
+	}
+
+	tests := []struct {
+		name          string
+		input         []*Endpoint
+		wantResources []string
+	}{
+		{
+			name:          "lowest resource listed last",
+			input:         []*Endpoint{newEndpoint("c", 60), newEndpoint("b", 300), newEndpoint("a", 0)},
+			wantResources: []string{"httproute/default/a", "httproute/default/b", "httproute/default/c"},
+		},
+		{
+			name:          "unlabelled listed first",
+			input:         []*Endpoint{newEndpoint("", 60), newEndpoint("b", 300), newEndpoint("a", 0)},
+			wantResources: []string{"httproute/default/a", "httproute/default/b", ""},
+		},
+		{
+			name:          "merged endpoint keeps lowest position",
+			input:         []*Endpoint{newEndpoint("c", 300), newEndpoint("b", 60), newEndpoint("a", 300)},
+			wantResources: []string{"httproute/default/a", "httproute/default/b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Map iteration order is random, repeat to catch a result built from it.
+			for range 50 {
+				result := MergeEndpoints(tt.input)
+				resources := make([]string, len(result))
+				for i, ep := range result {
+					resources[i] = ep.Labels[ResourceLabelKey]
+				}
+				assert.Equal(t, tt.wantResources, resources)
+			}
 		})
 	}
 }
@@ -601,4 +631,40 @@ func TestMergeEndpointsLogging(t *testing.T) {
 		logtest.TestHelperLogContainsWithLogLevel("Skipping CNAME endpoint", log.DebugLevel, hook, t)
 		logtest.TestHelperLogContains("example.com", hook, t)
 	})
+}
+
+func TestIsEmptyEndpoints(t *testing.T) {
+	svc := &corev1.Service{Namespace: "default", Name: "my-service"}
+	tests := []struct {
+		name      string
+		endpoints []*Endpoint
+		expected  bool
+	}{
+		{name: "nil slice", expected: true},
+		{name: "empty slice", endpoints: []*Endpoint{}, expected: true},
+		{
+			name:      "single endpoint",
+			endpoints: []*Endpoint{NewEndpoint("example.org", "A", "1.2.3.4")},
+		},
+		{
+			name: "multiple endpoints",
+			endpoints: []*Endpoint{
+				NewEndpoint("example.org", "A", "1.2.3.4"),
+				NewEndpoint("test.example.org", "CNAME", "example.org"),
+			},
+		},
+	}
+
+	const wantLog = "No endpoints could be generated from 'Service/default/my-service'"
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			assert.Equal(t, tc.expected, IsEmptyEndpoints(tc.endpoints, "Service", svc))
+			if tc.expected {
+				logtest.TestHelperLogContainsWithLogLevel(wantLog, log.DebugLevel, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(wantLog, hook, t)
+			}
+		})
+	}
 }

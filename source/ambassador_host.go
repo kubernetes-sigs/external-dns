@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/types"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -43,6 +44,34 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
 )
+
+// ambassadorHostSource is an implementation of Source for Ambassador Host objects.
+// The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
+// Use annotations.TargetKey to explicitly set Endpoint.
+//
+// +externaldns:source:name=ambassador-host
+// +externaldns:source:category=Ingress Controllers
+// +externaldns:source:description=Creates DNS entries from Ambassador Host resources
+// +externaldns:source:resources=Host.getambassador.io
+// +externaldns:source:filters=annotation,label
+// +externaldns:source:namespace=all,single,multiple
+// +externaldns:source:fqdn-template=false
+// +externaldns:source:events=true
+// +externaldns:source:provider-specific=true
+type ambassadorHostSource struct {
+	dynamicKubeClient       dynamic.Interface
+	kubeClient              kubernetes.Interface
+	annotationFilter        labels.Selector
+	ambassadorHostInformers *informers.Informers[kubeinformers.GenericInformer]
+	unstructuredConverter   *unstructuredConverter
+	labelSelector           labels.Selector
+}
+
+// unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types
+type unstructuredConverter struct {
+	// scheme holds an initializer for converting Unstructured to a type
+	scheme *runtime.Scheme
+}
 
 const (
 	// ambHostAnnotation is the annotation in the Host that maps to a Service
@@ -56,54 +85,34 @@ var (
 	ambHostGVR         = schemeGroupVersion.WithResource("hosts")
 )
 
-// ambassadorHostSource is an implementation of Source for Ambassador Host objects.
-// The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
-// Use annotations.TargetKey to explicitly set Endpoint.
-//
-// +externaldns:source:name=ambassador-host
-// +externaldns:source:category=Ingress Controllers
-// +externaldns:source:description=Creates DNS entries from Ambassador Host resources
-// +externaldns:source:resources=Host.getambassador.io
-// +externaldns:source:filters=annotation,label
-// +externaldns:source:namespace=all,single
-// +externaldns:source:fqdn-template=false
-// +externaldns:source:events=false
-// +externaldns:source:provider-specific=true
-type ambassadorHostSource struct {
-	dynamicKubeClient      dynamic.Interface
-	kubeClient             kubernetes.Interface
-	namespace              string
-	annotationFilter       labels.Selector
-	ambassadorHostInformer kubeinformers.GenericInformer
-	unstructuredConverter  *unstructuredConverter
-	labelSelector          labels.Selector
-}
-
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
 func NewAmbassadorHostSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	cfg *Config,
+	cfg *config.Config,
 ) (Source, error) {
-	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
+	// Use shared informers to listen for add/update/delete of Host in the specified namespaces.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	namespace := cfg.Namespace()
-	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
-	ambassadorHostInformer := informerFactory.ForResource(ambHostGVR)
+	factories := informers.NewFactories(cfg.Namespaces, func(namespace string) dynamicinformer.DynamicSharedInformerFactory {
+		return dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
+	})
+	ambassadorHostInformers := informers.Map(factories, func(_ string, factory dynamicinformer.DynamicSharedInformerFactory) kubeinformers.GenericInformer {
+		return factory.ForResource(ambHostGVR)
+	})
 
-	informers.MustSetTransform(ambassadorHostInformer.Informer(), informers.TransformerWithOptions[*unstructured.Unstructured](
+	ambassadorHostInformers.MustSetTransform(informers.TransformerWithOptions[*unstructured.Unstructured](
 		informers.TransformRemoveManagedFields(),
 		informers.TransformRemoveLastAppliedConfig(),
 	))
 
 	// Add default resource event handlers to properly initialize informer.
-	informers.MustAddEventHandler(ambassadorHostInformer.Informer(), informers.DefaultEventHandler())
+	ambassadorHostInformers.MustAddEventHandler(informers.DefaultEventHandler())
 
-	informerFactory.Start(ctx.Done())
+	factories.Start(ctx.Done())
 
-	// wait for the local cache to be populated.
-	if err := informers.WaitForDynamicCacheSync(ctx, informerFactory); err != nil {
+	// wait for the local caches to be populated.
+	if err := informers.WaitForDynamicCacheSyncAll(ctx, factories); err != nil {
 		return nil, err
 	}
 
@@ -113,22 +122,25 @@ func NewAmbassadorHostSource(
 	}
 
 	return &ambassadorHostSource{
-		dynamicKubeClient:      dynamicKubeClient,
-		kubeClient:             kubeClient,
-		namespace:              namespace,
-		annotationFilter:       cfg.AnnotationFilter,
-		ambassadorHostInformer: ambassadorHostInformer,
-		unstructuredConverter:  uc,
-		labelSelector:          cfg.LabelFilter,
+		dynamicKubeClient:       dynamicKubeClient,
+		kubeClient:              kubeClient,
+		annotationFilter:        cfg.AnnotationFilter,
+		ambassadorHostInformers: ambassadorHostInformers,
+		unstructuredConverter:   uc,
+		labelSelector:           cfg.LabelFilter,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all Hosts in the source's namespace(s).
 func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	hosts, err := sc.ambassadorHostInformer.Lister().ByNamespace(sc.namespace).List(sc.labelSelector)
-	if err != nil {
-		return nil, err
+	var hosts []runtime.Object
+	for _, informer := range sc.ambassadorHostInformers.All() {
+		namespaced, err := informer.Lister().List(sc.labelSelector)
+		if err != nil {
+			return nil, err
+		}
+		hosts = append(hosts, namespaced...)
 	}
 
 	// Get a list of Ambassador Host resources
@@ -164,6 +176,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 		targets := annotations.TargetsFromTargetAnnotation(host.Annotations)
 		if len(targets) == 0 {
+			var err error
 			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 			if err != nil {
 				log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
@@ -172,7 +185,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		hostEndpoints := sc.endpointsFromHost(host, targets)
-		if endpoint.HasNoEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
+		if endpoint.IsEmptyEndpoints(hostEndpoints, types.AmbassadorHost, host) {
 			continue
 		}
 
@@ -183,6 +196,9 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	}
 
 	return endpoint.MergeEndpoints(endpoints), nil
+}
+
+func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
 }
 
 // endpointsFromHost extracts the endpoints from a Host object
@@ -201,22 +217,6 @@ func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets
 	}
 
 	return endpoints
-}
-
-func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
-	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
-	if err != nil {
-		return nil, err
-	}
-
-	svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	targets := extractLoadBalancerTargets(svc, false)
-
-	return targets, nil
 }
 
 // parseAmbLoadBalancerService returns a name/namespace tuple from the annotation in
@@ -265,13 +265,20 @@ func parseAmbLoadBalancerService(service string) (string, string, error) {
 	return "", "", fmt.Errorf("invalid external-dns service: %s", service)
 }
 
-func (sc *ambassadorHostSource) AddEventHandler(_ context.Context, _ func()) {
-}
+func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
+	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
+	if err != nil {
+		return nil, err
+	}
 
-// unstructuredConverter handles conversions between unstructured.Unstructured and Ambassador types
-type unstructuredConverter struct {
-	// scheme holds an initializer for converting Unstructured to a type
-	scheme *runtime.Scheme
+	svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	targets := extractLoadBalancerTargets(svc, nil)
+
+	return targets, nil
 }
 
 // newAmbassadorUnstructuredConverter returns a new unstructuredConverter initialized

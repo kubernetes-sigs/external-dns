@@ -19,6 +19,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -36,14 +37,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-)
-
-const (
-	defaultTTL = 300
-	// Azure-specific provider properties
-	providerSpecificAzureTags      = "azure/tags"
-	providerSpecificMetadataPrefix = "azure/metadata-"
-	providerSpecificMetadataKeys   = "azure/metadata-keys"
 )
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -73,6 +66,16 @@ type AzureProvider struct {
 	recordSetsClient             RecordSetsClient
 	maxRetriesCount              int
 }
+
+type azureChangeMap map[string][]*endpoint.Endpoint
+
+const (
+	defaultTTL = 300
+	// Azure-specific provider properties
+	providerSpecificAzureTags      = "azure/tags"
+	providerSpecificMetadataPrefix = "azure/metadata-"
+	providerSpecificMetadataKeys   = "azure/metadata-keys"
+)
 
 // New creates an Azure DNS provider from the given configuration.
 func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.DomainFilter) (provider.Provider, error) {
@@ -194,9 +197,35 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	}
 
 	deleted, updated := p.mapChanges(zones, changes)
-	p.deleteRecords(ctx, deleted)
-	p.updateRecords(ctx, updated)
+	if err := errors.Join(p.deleteRecords(ctx, deleted), p.updateRecords(ctx, updated)); err != nil {
+		return provider.NewSoftError(err)
+	}
 	return nil
+}
+
+func (p *AzureProvider) SupportedRecordType(recordType string) bool {
+	switch recordType {
+	case "MX":
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the Azure provider.
+// It parses the azure-tags annotation and converts it to individual metadata properties.
+func (p *AzureProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	for _, ep := range endpoints {
+		if val, ok := ep.GetProviderSpecificProperty(providerSpecificAzureTags); ok {
+			keys := parseAzureTagsAnnotation(ep, val)
+			if len(keys) > 0 {
+				ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
+			}
+			// Remove the original azure-tags property as it's now expanded
+			ep.DeleteProviderSpecificProperty(providerSpecificAzureTags)
+		}
+	}
+	return endpoints, nil
 }
 
 func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
@@ -225,17 +254,6 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 	p.zonesCache.Reset(zones)
 	return zones, nil
 }
-
-func (p *AzureProvider) SupportedRecordType(recordType string) bool {
-	switch recordType {
-	case "MX":
-		return true
-	default:
-		return provider.SupportedRecordType(recordType)
-	}
-}
-
-type azureChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azureChangeMap, azureChangeMap) {
 	ignored := sets.New[string]()
@@ -274,7 +292,8 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	return deleted, updated
 }
 
-func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) {
+func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) error {
+	var errs []error
 	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
@@ -288,20 +307,22 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), nil); err != nil {
-					log.Errorf(
-						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
+					errs = append(errs, fmt.Errorf(
+						"failed to delete %s record named '%s' for Azure DNS zone '%s': %w",
 						ep.RecordType,
 						name,
 						zone,
 						err,
-					)
+					))
 				}
 			}
 		}
 	}
+	return errors.Join(errs...)
 }
 
-func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) {
+func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) error {
+	var errs []error
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
@@ -341,17 +362,18 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 				)
 			}
 			if err != nil {
-				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
+				errs = append(errs, fmt.Errorf(
+					"failed to update %s record named '%s' to '%s' for DNS zone '%s': %w",
 					ep.RecordType,
 					name,
 					ep.Targets,
 					zone,
 					err,
-				)
+				))
 			}
 		}
 	}
+	return errors.Join(errs...)
 }
 
 func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {
@@ -365,100 +387,6 @@ func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.End
 		return "@"
 	}
 	return name
-}
-
-func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
-	var ttl int64 = defaultTTL
-	if endpoint.RecordTTL.IsConfigured() {
-		ttl = int64(endpoint.RecordTTL)
-	}
-	// Extract metadata from ProviderSpecific properties
-	metadata := extractMetadataFromEndpoint(endpoint)
-	switch dns.RecordType(endpoint.RecordType) {
-	case dns.RecordTypeA:
-		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
-		for i, target := range endpoint.Targets {
-			aRecords[i] = &dns.ARecord{
-				IPv4Address: new(target),
-			}
-		}
-		return dns.RecordSet{
-			Properties: &dns.RecordSetProperties{
-				TTL:      new(ttl),
-				ARecords: aRecords,
-				Metadata: metadata,
-			},
-		}, nil
-	case dns.RecordTypeAAAA:
-		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
-		for i, target := range endpoint.Targets {
-			aaaaRecords[i] = &dns.AaaaRecord{
-				IPv6Address: new(target),
-			}
-		}
-		return dns.RecordSet{
-			Properties: &dns.RecordSetProperties{
-				TTL:         new(ttl),
-				AaaaRecords: aaaaRecords,
-				Metadata:    metadata,
-			},
-		}, nil
-	case dns.RecordTypeCNAME:
-		return dns.RecordSet{
-			Properties: &dns.RecordSetProperties{
-				TTL: new(ttl),
-				CnameRecord: &dns.CnameRecord{
-					Cname: new(endpoint.Targets[0]),
-				},
-				Metadata: metadata,
-			},
-		}, nil
-	case dns.RecordTypeMX:
-		mxRecords := make([]*dns.MxRecord, len(endpoint.Targets))
-		for i, target := range endpoint.Targets {
-			mxRecord, err := parseMxTarget[dns.MxRecord](target)
-			if err != nil {
-				return dns.RecordSet{}, err
-			}
-			mxRecords[i] = &mxRecord
-		}
-		return dns.RecordSet{
-			Properties: &dns.RecordSetProperties{
-				TTL:       new(ttl),
-				MxRecords: mxRecords,
-				Metadata:  metadata,
-			},
-		}, nil
-	case dns.RecordTypeNS:
-		nsRecords := make([]*dns.NsRecord, len(endpoint.Targets))
-		for i, target := range endpoint.Targets {
-			nsRecords[i] = &dns.NsRecord{
-				Nsdname: new(target),
-			}
-		}
-		return dns.RecordSet{
-			Properties: &dns.RecordSetProperties{
-				TTL:       new(ttl),
-				NsRecords: nsRecords,
-				Metadata:  metadata,
-			},
-		}, nil
-	case dns.RecordTypeTXT:
-		return dns.RecordSet{
-			Properties: &dns.RecordSetProperties{
-				TTL: new(ttl),
-				TxtRecords: []*dns.TxtRecord{
-					{
-						Value: []*string{
-							&endpoint.Targets[0],
-						},
-					},
-				},
-				Metadata: metadata,
-			},
-		}, nil
-	}
-	return dns.RecordSet{}, fmt.Errorf("unsupported record type '%s'", endpoint.RecordType)
 }
 
 // Helper function (shared with test code)
@@ -592,18 +520,96 @@ func parseAzureTagsAnnotation(ep *endpoint.Endpoint, tagString string) []string 
 	return keys.List()
 }
 
-// AdjustEndpoints modifies the endpoints as needed by the Azure provider.
-// It parses the azure-tags annotation and converts it to individual metadata properties.
-func (p *AzureProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
-	for _, ep := range endpoints {
-		if val, ok := ep.GetProviderSpecificProperty(providerSpecificAzureTags); ok {
-			keys := parseAzureTagsAnnotation(ep, val)
-			if len(keys) > 0 {
-				ep.WithProviderSpecific(providerSpecificMetadataKeys, strings.Join(keys, ","))
-			}
-			// Remove the original azure-tags property as it's now expanded
-			ep.DeleteProviderSpecificProperty(providerSpecificAzureTags)
-		}
+func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
+	var ttl int64 = defaultTTL
+	if endpoint.RecordTTL.IsConfigured() {
+		ttl = int64(endpoint.RecordTTL)
 	}
-	return endpoints, nil
+	// Extract metadata from ProviderSpecific properties
+	metadata := extractMetadataFromEndpoint(endpoint)
+	switch dns.RecordType(endpoint.RecordType) {
+	case dns.RecordTypeA:
+		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			aRecords[i] = &dns.ARecord{
+				IPv4Address: new(target),
+			}
+		}
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL:      new(ttl),
+				ARecords: aRecords,
+				Metadata: metadata,
+			},
+		}, nil
+	case dns.RecordTypeAAAA:
+		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			aaaaRecords[i] = &dns.AaaaRecord{
+				IPv6Address: new(target),
+			}
+		}
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL:         new(ttl),
+				AaaaRecords: aaaaRecords,
+				Metadata:    metadata,
+			},
+		}, nil
+	case dns.RecordTypeCNAME:
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL: new(ttl),
+				CnameRecord: &dns.CnameRecord{
+					Cname: new(endpoint.Targets[0]),
+				},
+				Metadata: metadata,
+			},
+		}, nil
+	case dns.RecordTypeMX:
+		mxRecords := make([]*dns.MxRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			mxRecord, err := parseMxTarget[dns.MxRecord](target)
+			if err != nil {
+				return dns.RecordSet{}, err
+			}
+			mxRecords[i] = &mxRecord
+		}
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL:       new(ttl),
+				MxRecords: mxRecords,
+				Metadata:  metadata,
+			},
+		}, nil
+	case dns.RecordTypeNS:
+		nsRecords := make([]*dns.NsRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			nsRecords[i] = &dns.NsRecord{
+				Nsdname: new(target),
+			}
+		}
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL:       new(ttl),
+				NsRecords: nsRecords,
+				Metadata:  metadata,
+			},
+		}, nil
+	case dns.RecordTypeTXT:
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL: new(ttl),
+				TxtRecords: []*dns.TxtRecord{
+					{
+						Value: []*string{
+							&endpoint.Targets[0],
+						},
+					},
+				},
+				Metadata: metadata,
+			},
+		}, nil
+	}
+	return dns.RecordSet{}, fmt.Errorf("unsupported record type '%s'", endpoint.RecordType)
 }
