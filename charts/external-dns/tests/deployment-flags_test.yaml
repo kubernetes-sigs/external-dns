@@ -314,3 +314,25 @@ tests:
       - contains:
           path: spec.template.spec.containers[?(@.name == "external-dns")].args
           content: "--fqdn-template={{.Name}}.example.org"
+
+  - it: should configure single ingress class
+    set:
+      ingressClass:
+        - nginx
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: --ingress-class=nginx
+
+  - it: should configure multiple ingress classes
+    set:
+      ingressClass:
+        - nginx
+        - internal
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: --ingress-class=nginx
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: --ingress-class=internal

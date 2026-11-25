@@ -112,6 +112,9 @@ spec:
             {{- range .Values.sources }}
             - --source={{ . }}
             {{- end }}
+            {{- range .Values.ingressClass }}
+            - --ingress-class={{ . }}
+            {{- end }}
             - --policy={{ .Values.policy }}
             - --registry={{ .Values.registry }}
             {{- if .Values.txtOwnerId }}
