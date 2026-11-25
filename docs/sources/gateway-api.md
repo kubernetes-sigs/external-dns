@@ -22,8 +22,12 @@ than individual routes. This is useful when:
 
 1. ExternalDNS lists all `Gateway` objects in the configured namespace.
 2. For each Gateway with `external-dns.kubernetes.io/hostname`, it reads the value as one or more comma-separated hostnames.
-3. Targets are sourced from `gateway.status.addresses`. IP addresses produce A/AAAA records; hostnames produce CNAME records.
-4. The `external-dns.kubernetes.io/target` annotation overrides `status.addresses`.
+3. Targets are sourced from `gateway.status.addresses` with an **IP-first** preference:
+   - If any `IPAddress`-type address is present, only those are used (hostname addresses are dropped). This avoids mixing A and CNAME records for the same name.
+   - If no IP addresses are present, `HostnameAddress`-type addresses are used as CNAME targets.
+   - `NamedAddress` and other custom address types are always skipped.
+   - Route sources (`gateway-httproute`, etc.) publish **every** `status.addresses` value without this filtering, so the same Gateway can yield different targets depending on which source is used.
+4. The `external-dns.kubernetes.io/target` annotation overrides `status.addresses` entirely, bypassing the IP-first logic.
 
 ### Example
 
@@ -252,43 +256,18 @@ In this example, External DNS will create DNS records only for `company.private.
 For a complete list of supported annotations, see the
 [annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
 
-## Avoiding Dual Ownership Conflicts
+## Avoiding Hostname Overlap
 
-Using `--source=gateway` and a route source (e.g. `--source=gateway-httproute`) simultaneously
-for the **same hostname** causes a dual ownership conflict that results in DNS flapping.
+Running `--source=gateway` alongside a route source (e.g. `--source=gateway-httproute`) is
+supported, but if both emit the **same hostname**, one source's targets will be silently dropped.
+ExternalDNS ownership is per hostname, not per resource; the current owner wins and the
+competing source is ignored until the owner stops emitting that hostname.
 
-### What happens
+See [Two sources claim the same hostname and the record won't switch. Why?](../faq.md#two-sources-claim-the-same-hostname-and-the-record-wont-switch-why)
+for the full explanation and migration steps.
 
-Both sources independently emit the same A record but with different resource labels:
-
-| Source | Endpoint | TXT ownership record |
-|--------|----------|----------------------|
-| `gateway` | `app.example.com A 1.2.3.4` | `resource=gateway/default/my-gateway` |
-| `gateway-httproute` | `app.example.com A 1.2.3.4` | `resource=httproute/default/my-route` |
-
-The TXT registry tracks ownership separately for each resource. When one source stops
-producing the record (e.g. the hostname annotation is removed from the Gateway), ExternalDNS
-deletes the A record based on its stale TXT entry — even though the other source still wants
-the record. The next sync cycle re-creates it, causing the record to be deleted and re-created
-on every cycle.
-
-### Rule
-
-**Never configure two sources to produce the same hostname for the same Gateway.**
-Choose one approach and apply it consistently:
-
-- Use `--source=gateway` when managing DNS at the Gateway level (one hostname per Gateway,
-  no route-level hostnames).
-- Use `--source=gateway-httproute` (or other route sources) when managing DNS at the route
-  level (hostnames defined in route specs or annotations, no `external-dns.kubernetes.io/hostname`
-  annotation on the Gateway).
-
-If both sources must run together, ensure there is **zero hostname overlap** between Gateway
-annotations and route hostnames.
-
-ExternalDNS logs a `WARN` on startup when `gateway` and a route source are both enabled, as a
-reminder of this risk — it cannot detect actual hostname overlap ahead of time, since that
-depends on cluster state (annotations and route specs) evaluated at sync time.
+ExternalDNS logs a `WARN` on startup when `gateway` and a route source are both enabled as a
+reminder to ensure there is zero hostname overlap.
 
 ## Manifest with RBAC
 

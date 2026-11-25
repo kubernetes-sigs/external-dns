@@ -470,9 +470,27 @@ tests:
             - apiGroups: ["gateway.networking.k8s.io"]
               resources: ["gateways"]
               verbs: ["get","watch","list"]
-            - apiGroups: [""]
-              resources: ["namespaces"]
-              verbs: ["get","watch","list"]
+
+  - it: should not grant namespaces or listenersets RBAC for 'gateway' source even when enableGatewayListenerSets is true
+    set:
+      sources:
+        - gateway
+      enableGatewayListenerSets: true
+    asserts:
+      - notContains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: ["namespaces"]
+            verbs: ["get","watch","list"]
+        template: clusterrole.yaml
+      - notContains:
+          path: rules
+          content:
+            apiGroups: ["gateway.networking.k8s.io"]
+            resources: ["listenersets"]
+            verbs: ["get","watch","list"]
+        template: clusterrole.yaml
 
   - it: should create single namespaced Role with gateway permissions when namespaced=true and gatewayNamespace not set with 'gateway' source
     set:

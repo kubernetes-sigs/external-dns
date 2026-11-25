@@ -76,13 +76,13 @@ rules:
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
-{{- if .Values.enableGatewayListenerSets }}
+{{- end }}
+{{- if and (include "external-dns.hasGatewayRouteSources" .) .Values.enableGatewayListenerSets (or (not .Values.namespaced) (and .Values.namespaced (not .Values.gatewayNamespace))) }}
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["listenersets"]
     verbs: ["get","watch","list"]
 {{- end }}
-{{- end }}
-{{- if not .Values.namespaced }}
+{{- if and (include "external-dns.hasGatewayRouteSources" .) (not .Values.namespaced) }}
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["get","watch","list"]

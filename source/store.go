@@ -401,9 +401,8 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 }
 
 // warnOnDualGatewayOwnership logs a warning when both the gateway resource source and a
-// Gateway API route source are enabled together, since they can independently emit the
-// same hostname with different TXT ownership records, causing record flapping. See
-// docs/sources/gateway-api.md#avoiding-dual-ownership-conflicts.
+// Gateway API route source are enabled together. If both emit the same hostname, one source's
+// targets will be silently dropped. See docs/sources/gateway-api.md#avoiding-hostname-overlap.
 func warnOnDualGatewayOwnership(sources []string) {
 	hasGateway := false
 	var routeSources []string
@@ -416,7 +415,7 @@ func warnOnDualGatewayOwnership(sources []string) {
 		}
 	}
 	if hasGateway && len(routeSources) > 0 {
-		log.Warnf("sources %q enabled alongside %q: both can emit the same hostname for a Gateway with different TXT ownership records, causing DNS record flapping. Ensure there is zero hostname overlap, see docs/sources/gateway-api.md#avoiding-dual-ownership-conflicts", types.Gateway, routeSources)
+		log.Warnf("sources %q enabled alongside %q: both can emit the same hostname; when they do, only one resource's targets are published. Ensure there is zero hostname overlap, see docs/sources/gateway-api.md#avoiding-hostname-overlap", types.Gateway, routeSources)
 	}
 }
 
