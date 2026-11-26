@@ -364,6 +364,59 @@ func TestPerResource_ResolveRecordTypes_LogsWarning(t *testing.T) {
 	}
 }
 
+func TestPerResource_ResolveCNAMEConflicts(t *testing.T) {
+	endpointFor := func(target, resource string) *endpoint.Endpoint {
+		return endpoint.NewEndpoint("app.example.org", endpoint.RecordTypeCNAME, target).
+			WithLabel(endpoint.ResourceLabelKey, resource)
+	}
+
+	cnameA := endpointFor("a.example.net", "service/default/a")
+	cnameB := endpointFor("b.example.net", "service/default/b")
+	cnameC := endpointFor("c.example.net", "service/default/c")
+	cnameBAgain := endpointFor("b.example.net", "service/default/b")
+	cnameUpper := endpointFor("A.EXAMPLE.NET", "service/default/upper")
+
+	tests := []struct {
+		name        string
+		candidates  []*endpoint.Endpoint
+		want        *endpoint.Endpoint
+		wantWarning string
+	}{
+		{
+			name:        "create keeps the minimum CNAME target",
+			candidates:  []*endpoint.Endpoint{cnameC, cnameB, cnameA},
+			want:        cnameA,
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b), c.example.net (service/default/c)",
+		},
+		{
+			name:        "a repeated target and resource is listed once",
+			candidates:  []*endpoint.Endpoint{cnameC, cnameB, cnameBAgain, cnameA},
+			want:        cnameA,
+			wantWarning: "Domain app.example.org has conflicting CNAME targets; selected a.example.net (service/default/a), discarded b.example.net (service/default/b), c.example.net (service/default/c)",
+		},
+		{
+			name:       "target names differing only in case do not conflict",
+			candidates: []*endpoint.Endpoint{cnameUpper, cnameA},
+			want:       cnameUpper,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.WarnLevel, t)
+			got := PerResource{}.ResolveCreate(tt.candidates)
+			if got != tt.want {
+				t.Fatalf("ResolveCreate returned %v, want %v", got, tt.want)
+			}
+			if tt.wantWarning == "" {
+				logtest.TestHelperLogNotContains("has conflicting", hook, t)
+			} else {
+				logtest.TestHelperLogContainsWithLogLevel(tt.wantWarning, log.WarnLevel, hook, t)
+			}
+		})
+	}
+}
+
 func TestConflictResolver(t *testing.T) {
 	suite.Run(t, new(ResolverSuite))
 }

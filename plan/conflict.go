@@ -17,7 +17,9 @@ limitations under the License.
 package plan
 
 import (
+	"fmt"
 	"slices"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -38,7 +40,9 @@ type PerResource struct{}
 // ResolveCreate is invoked when dns name is not owned by any resource
 // ResolveCreate takes "minimal" (string comparison of Target) endpoint to acquire the DNS record
 func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint {
-	return slices.MinFunc(candidates, compareEndpoints)
+	selected := slices.MinFunc(candidates, compareEndpoints)
+	warnCNAMEConflict(candidates, selected)
+	return selected
 }
 
 // ResolveUpdate is invoked when dns name is already owned by "current" endpoint
@@ -49,10 +53,36 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 	slices.SortStableFunc(candidates, compareEndpoints)
 	for _, ep := range candidates {
 		if ep.Labels[endpoint.ResourceLabelKey] == currentResource {
+			warnCNAMEConflict(candidates, ep)
 			return ep
 		}
 	}
 	return s.ResolveCreate(candidates)
+}
+
+func warnCNAMEConflict(candidates []*endpoint.Endpoint, selected *endpoint.Endpoint) {
+	if selected.RecordType != endpoint.RecordTypeCNAME && selected.RecordType != endpoint.RecordTypeDNAME {
+		return
+	}
+	selectedTargets := slices.Clone(selected.Targets)
+	discarded := make([]string, 0, len(candidates)-1)
+	for _, candidate := range candidates {
+		if candidate == selected || slices.Clone(candidate.Targets).Same(selectedTargets) {
+			continue
+		}
+		discarded = append(discarded, fmt.Sprintf("%s (%s)",
+			candidate.Targets.String(), candidate.Labels[endpoint.ResourceLabelKey]))
+	}
+	if len(discarded) == 0 {
+		return
+	}
+	slices.Sort(discarded)
+	discarded = slices.Compact(discarded)
+
+	// This runs after the plan's domain/record filters; MergeEndpoints sees unfiltered, per-source endpoints.
+	// TODO: add metric for CNAME/DNAME conflicts
+	log.Warnf("Domain %s has conflicting %s targets; selected %s (%s), discarded %s",
+		selected.DNSName, selected.RecordType, selected.Targets.String(), selected.Labels[endpoint.ResourceLabelKey], strings.Join(discarded, ", "))
 }
 
 // ResolveRecordTypes attempts to detect and resolve record type conflicts in desired
