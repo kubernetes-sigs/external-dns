@@ -1082,21 +1082,21 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 	}
 
 	// Check filtered, residual zones when no domain filter specified
-	filteredZones, residualZones := partitionZones(zoneList, DomainFilterListEmpty)
+	filteredZones, residualZones := partitionZones(zoneList, DomainFilterListEmpty, false)
 	suite.Equal(partitionResultFilteredEmptyFilter, filteredZones)
 	suite.Equal(partitionResultResidualEmptyFilter, residualZones)
 
 	// Check filtered, residual zones when a single domain filter specified
-	filteredZones, residualZones = partitionZones(zoneList, DomainFilterListSingle)
+	filteredZones, residualZones = partitionZones(zoneList, DomainFilterListSingle, false)
 	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
 	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 
 	// Check filtered, residual zones when a multiple domain filter specified
-	filteredZones, residualZones = partitionZones(zoneList, DomainFilterListMultiple)
+	filteredZones, residualZones = partitionZones(zoneList, DomainFilterListMultiple, false)
 	suite.Equal(partitionResultFilteredMultipleFilter, filteredZones)
 	suite.Equal(partitionResultResidualMultipleFilter, residualZones)
 
-	filteredZones, residualZones = partitionZones(zoneList, RegexDomainFilter)
+	filteredZones, residualZones = partitionZones(zoneList, RegexDomainFilter, false)
 	suite.Equal(partitionResultFilteredSingleFilter, filteredZones)
 	suite.Equal(partitionResultResidualSingleFilter, residualZones)
 }
@@ -1370,7 +1370,7 @@ func TestPDNSPartitionZonesRegexBehavior(t *testing.T) {
 				exclusion = regexp.MustCompile(tt.regexExclude)
 			}
 			df := endpoint.NewRegexDomainFilter(regexp.MustCompile(tt.regex), exclusion)
-			filtered, residual := partitionZones(tt.zones, df)
+			filtered, residual := partitionZones(tt.zones, df, false)
 			tt.assertions(t, filtered, residual)
 		})
 	}
@@ -1533,5 +1533,124 @@ func TestPDNSApplyChangesDryRun(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestPDNSZoneMatchParent(t *testing.T) {
+	newZone := func(name string) pgo.Zone {
+		return pgo.Zone{ID: new(name), Name: new(name), RRsets: []pgo.RRset{}}
+	}
+	zoneNames := func(zz []pgo.Zone) []string {
+		names := make([]string, 0, len(zz))
+		for _, z := range zz {
+			names = append(names, pgo.StringValue(z.Name))
+		}
+		return names
+	}
+	endpoints := []*endpoint.Endpoint{endpoint.NewEndpoint("a.sc1.stg2.ionos", endpoint.RecordTypeA, "10.0.0.1")}
+
+	tests := []struct {
+		name            string
+		zones           []string
+		filter          *endpoint.DomainFilter
+		zoneMatchParent bool
+		wantFiltered    []string
+		wantResidual    []string
+		wantPatchZones  []string
+	}{
+		{
+			name:           "flag off: parent zone is residual, endpoint dropped",
+			zones:          []string{"stg2.ionos.", "other.ionos."},
+			filter:         endpoint.NewDomainFilter([]string{"sc1.stg2.ionos"}),
+			wantFiltered:   []string{},
+			wantResidual:   []string{"stg2.ionos.", "other.ionos."},
+			wantPatchZones: []string{},
+		},
+		{
+			name:            "flag on: parent zone is selected, unrelated zone is not",
+			zones:           []string{"stg2.ionos.", "other.ionos."},
+			filter:          endpoint.NewDomainFilter([]string{"sc1.stg2.ionos"}),
+			zoneMatchParent: true,
+			wantFiltered:    []string{"stg2.ionos."},
+			wantResidual:    []string{"other.ionos."},
+			wantPatchZones:  []string{"stg2.ionos."},
+		},
+		{
+			name:            "flag on: endpoint goes to the longest zone, the child",
+			zones:           []string{"stg2.ionos.", "sc1.stg2.ionos."},
+			filter:          endpoint.NewDomainFilter([]string{"sc1.stg2.ionos"}),
+			zoneMatchParent: true,
+			wantFiltered:    []string{"stg2.ionos.", "sc1.stg2.ionos."},
+			wantResidual:    []string{},
+			wantPatchZones:  []string{"sc1.stg2.ionos."},
+		},
+		{
+			name:            "flag on: excluded zone stays residual",
+			zones:           []string{"stg2.ionos.", "x.sc1.stg2.ionos."},
+			filter:          endpoint.NewDomainFilterWithExclusions([]string{"sc1.stg2.ionos"}, []string{"x.sc1.stg2.ionos"}),
+			zoneMatchParent: true,
+			wantFiltered:    []string{"stg2.ionos."},
+			wantResidual:    []string{"x.sc1.stg2.ionos."},
+			wantPatchZones:  []string{"stg2.ionos."},
+		},
+		{
+			name:            "flag on: excluding the parent zone drops it",
+			zones:           []string{"stg2.ionos."},
+			filter:          endpoint.NewDomainFilterWithExclusions([]string{"sc1.stg2.ionos"}, []string{"stg2.ionos"}),
+			zoneMatchParent: true,
+			wantFiltered:    []string{},
+			wantResidual:    []string{"stg2.ionos."},
+			wantPatchZones:  []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			zones := make([]pgo.Zone, 0, len(tt.zones))
+			for _, z := range tt.zones {
+				zones = append(zones, newZone(z))
+			}
+			filtered, residual := partitionZones(zones, tt.filter, tt.zoneMatchParent)
+			assert.ElementsMatch(t, tt.wantFiltered, zoneNames(filtered))
+			assert.ElementsMatch(t, tt.wantResidual, zoneNames(residual))
+
+			p := &PDNSProvider{
+				client:          &PDNSAPIClientStubConfigurable{zones: zones},
+				domainFilter:    tt.filter,
+				zoneMatchParent: tt.zoneMatchParent,
+			}
+			patches, err := p.ConvertEndpointsToZones(t.Context(), endpoints, PdnsReplace)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPatchZones, zoneNames(patches))
+		})
+	}
+}
+
+func TestPDNSZoneMatchParentRequiresPlainFilter(t *testing.T) {
+	tests := []struct {
+		name    string
+		filter  *endpoint.DomainFilter
+		wantErr bool
+	}{
+		{name: "plain filter", filter: endpoint.NewDomainFilter([]string{"sc1.stg2.ionos"})},
+		{name: "regex filter", filter: endpoint.NewRegexDomainFilter(regexp.MustCompile(`sc1\.stg2\.ionos$`), nil), wantErr: true},
+		{name: "no filter", filter: endpoint.NewDomainFilter(nil), wantErr: true},
+		{name: "nil filter", filter: nil, wantErr: true},
+		{name: "exclusions only", filter: endpoint.NewDomainFilterWithExclusions(nil, []string{"x.stg2.ionos"}), wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newProvider(t.Context(), PDNSConfig{
+				Server:          "http://localhost:8081",
+				APIKey:          "foo",
+				DomainFilter:    tt.filter,
+				ZoneMatchParent: true,
+			})
+			if tt.wantErr {
+				require.ErrorContains(t, err, "--pdns-zone-match-parent requires a plain --domain-filter")
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }

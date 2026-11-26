@@ -58,7 +58,15 @@ eg. ```--domain-filter=example.org``` will allow for zone `example.org` and any 
 
 eg. ```--domain-filter=.example.org``` will allow *only* zones that end in `.example.org`, ie. the subdomains of example.org but not the `example.org` zone itself.
 
-The filter can also match parent zones. For example `--domain-filter=a.example.com` will allow for zone `example.com`. If you want to match parent zones, you cannot prepend your filter with a ".", eg. `--domain-filter=.example.com` will not attempt to match parent zones.
+### Parent zone matching (`--pdns-zone-match-parent`)
+
+By default a zone must match `--domain-filter` itself: `--domain-filter=a.example.com` does not select zone `example.com`, and records under `a.example.com` are skipped when only `example.com` exists.
+
+Add `--pdns-zone-match-parent` to also select zones that are parents of a filter entry. With `--domain-filter=a.example.com --pdns-zone-match-parent`, external-dns writes `a.example.com` and its subdomains into zone `example.com`; other names in `example.com` stay out of scope. If a zone `a.example.com` exists too, records go to it, the longest matching zone.
+
+- A filter entry that starts with a "." (`--domain-filter=.a.example.com`) never matches a parent zone.
+- `--exclude-domains` still applies.
+- The flag needs a plain `--domain-filter`. external-dns refuses to start when it is combined with `--regex-domain-filter` or used without a filter, because parent matching would then select every zone.
 
 ### Regex Domain Filter (`--regex-domain-filter`)
 
