@@ -154,13 +154,7 @@ func (cs *crdSource) validateEndpoints(dnsEndpoint *apiv1alpha1.DNSEndpoint) ([]
 			continue
 		}
 
-		if ep.RecordType == endpoint.RecordTypeMX {
-			// normalized, else it diffs against the provider's rendering
-			for i, target := range ep.Targets {
-				ep.Targets[i] = endpoint.NormalizeMXTarget(target)
-			}
-		}
-
+		normalizeTargets(ep)
 		if reason := cs.rejectionReason(ep); reason != "" {
 			log.Warnf("Endpoint %s/%s with DNSName %s rejected: %s",
 				dnsEndpoint.Namespace, dnsEndpoint.Name, ep.DNSName, reason)
@@ -193,10 +187,25 @@ func (cs *crdSource) rejectionReason(ep *endpoint.Endpoint) string {
 	if cs.forceDefaultTargets {
 		return ""
 	}
+	return targetRejectionReason(ep)
+}
+
+// normalizeTargets rewrites targets into the form providers return, so the
+// plan does not diff an equivalent spelling against the live record.
+func normalizeTargets(ep *endpoint.Endpoint) {
+	if ep.RecordType == endpoint.RecordTypeMX {
+		for i, target := range ep.Targets {
+			ep.Targets[i] = endpoint.NormalizeMXTarget(target)
+		}
+	}
+}
+
+// targetRejectionReason explains why ep's targets cannot be planned, or returns
+// "". It covers what Endpoint.Validate would otherwise drop with only a log line.
+func targetRejectionReason(ep *endpoint.Endpoint) string {
 	if reason := illegalTargetReason(ep); reason != "" {
 		return reason
 	}
-
 	if err := ep.Validate(); err != nil {
 		return err.Error()
 	}

@@ -48,6 +48,7 @@ const (
 	F5VirtualServer     Type = "f5-virtualserver"
 	F5TransportServer   Type = "f5-transportserver"
 	Unstructured        Type = "unstructured"
+	Webhook             Type = "webhook"
 )
 
 // All lists every known source type.
@@ -57,7 +58,7 @@ var All = []Type{
 	IstioGateway, IstioVirtualService,
 	AmbassadorHost, ContourHTTPProxy, GlooProxy, TraefikProxy, OpenShiftRoute,
 	Fake, Empty, Connector, CRD, SkipperRouteGroup, KongTCPIngress,
-	F5VirtualServer, F5TransportServer, Unstructured,
+	F5VirtualServer, F5TransportServer, Unstructured, Webhook,
 }
 
 // IsKnown reports whether name matches one of the known source types, case-insensitively.

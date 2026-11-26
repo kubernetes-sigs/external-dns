@@ -50,6 +50,8 @@ curl https://localhost:7979/metrics
 | applychanges_requests_total             | Gauge       | webhook_provider |                                             | Requests with ApplyChanges method                                                                                                                  |
 | records_errors_total                    | Gauge       | webhook_provider |                                             | Errors with Records method                                                                                                                         |
 | records_requests_total                  | Gauge       | webhook_provider |                                             | Requests with Records method                                                                                                                       |
+| endpoints_errors_total                  | Counter     | webhook_source   | webhook                                     | Failed requests to the /endpoints route of a source webhook                                                                                        |
+| endpoints_requests_total                | Counter     | webhook_source   | webhook                                     | Requests to the /endpoints route of a source webhook                                                                                               |
 
 ## Available Go Runtime Metrics
 

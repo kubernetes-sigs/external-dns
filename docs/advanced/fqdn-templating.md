@@ -78,6 +78,7 @@ kubectl explain pod.spec.containers
 | `service`              | Queries Kubernetes Service resources for endpoints.             |      Yes       |     Yes      |
 | `skipper-routegroup`   | Queries Skipper RouteGroup resources for endpoints.             |      Yes       |     Yes      |
 | `traefik-proxy`        | Queries Traefik IngressRoute resources for endpoints.           |       No       |      No      |
+| `webhook`              | Fetches endpoints from a webhook sidecar over HTTP/JSON.        |       No       |      No      |
 
 ## Custom Functions
 
