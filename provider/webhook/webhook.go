@@ -259,7 +259,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	if err != nil {
 		recordsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to perform request: %s", err.Error())
-		return nil, err
+		return nil, provider.NewSoftError(err)
 	}
 	defer extdnshttp.DrainAndClose(resp.Body)
 
@@ -320,7 +320,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	if err != nil {
 		applyChangesErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed to perform request: %s", err.Error())
-		return err
+		return provider.NewSoftError(err)
 	}
 
 	defer extdnshttp.DrainAndClose(resp.Body)
@@ -381,7 +381,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	if err != nil {
 		adjustEndpointsErrorsGauge.Gauge.Inc()
 		log.Debugf("Failed executing http request, %s", err)
-		return nil, err
+		return nil, provider.NewSoftError(err)
 	}
 	// drainAndClose is deferred here and runs after json.Decode below consumes the
 	// success-path body, so the drain only sees any trailing bytes left unread.
