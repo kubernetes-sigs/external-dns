@@ -556,7 +556,6 @@ func gwAddressIsDNSTarget(addr v1.GatewayStatusAddress) bool {
 
 // appendFQDNTemplate appends the template-generated hostnames, unless another source already
 // supplied one and the template is not combining.
-// TODO: The combine-fqdn-annotation flag is similarly vague.
 func (c *gatewayRouteResolver) appendFQDNTemplate(hostnames []string, rt gatewayRoute) ([]string, error) {
 	if c.src.templateEngine.IsConfigured() && (len(hostnames) == 0 || c.src.templateEngine.Combining()) {
 		hosts, err := c.src.templateEngine.ExecFQDN(rt.Object())

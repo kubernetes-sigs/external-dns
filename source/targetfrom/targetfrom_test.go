@@ -290,6 +290,8 @@ func TestResolverInformer(t *testing.T) {
 	inf := r.informers[informerKey{gvr: serviceGVR, namespace: "apps"}]
 	require.NotNil(t, inf)
 	require.Eventually(t, inf.Informer().HasSynced, 5*time.Second, 10*time.Millisecond)
+	require.Eventually(t, func() bool { return calls.Load() >= 1 }, 5*time.Second, 10*time.Millisecond,
+		"initial add should trigger a sync")
 
 	updated := svc.DeepCopy()
 	updated.Object["status"] = map[string]any{"ip": "10.0.0.2"}
