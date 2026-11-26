@@ -43,6 +43,10 @@ Matching Gateways are discovered by iterating over the \*Route's `status.parents
 - Ignores parents with a `parentRef.group` other than
   `gateway.networking.k8s.io` or a `parentRef.kind` other than `Gateway`.
 
+- Ignores a `status.parents` entry whose `sectionName` or `port` is no longer in `spec.parentRefs`,
+  once every `parentRef` the spec lists for that parent is accepted for the current generation
+  and matches the Route's hostnames.
+
 - If the `--gateway-name` flag was specified, ignores parents with a `parentRef.name` other than the
   specified value.
 
