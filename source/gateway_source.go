@@ -36,10 +36,6 @@ import (
 	srctypes "sigs.k8s.io/external-dns/source/types"
 )
 
-func NewGatewaySource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
-	return newGatewaySource(ctx, clients, cfg, newGatewayInformerFactory)
-}
-
 // +externaldns:source:name=gateway
 // +externaldns:source:category=Gateway API
 // +externaldns:source:description=Creates DNS entries from Gateway API Gateway resources annotated with external-dns.kubernetes.io/hostname
@@ -57,6 +53,10 @@ type gatewaySource struct {
 
 	templateEngine           template.Engine
 	ignoreHostnameAnnotation bool
+}
+
+func NewGatewaySource(ctx context.Context, clients ClientGenerator, cfg *config.Config) (Source, error) {
+	return newGatewaySource(ctx, clients, cfg, newGatewayInformerFactory)
 }
 
 func newGatewaySource(
