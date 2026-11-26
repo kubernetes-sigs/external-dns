@@ -1,0 +1,9 @@
+---
+# Ruleset for the OpenAPI documents under api/, applied by `make openapi-lint`.
+# vacuum reads Spectral-style rulesets; "recommended" is its default rule set.
+extends:
+  - [spectral:oas, recommended]
+rules:
+  # Property names mirror the JSON tags of endpoint.Endpoint, and recordTTL is
+  # not camelCase. Renaming it would break every webhook in the wild.
+  camel-case-properties: off

@@ -24,3 +24,9 @@ dependency:
       license: MIT
     - name: github.com/segmentio/ksuid
       license: MIT
+    - name: github.com/evanw/esbuild
+      license: MIT
+    - name: github.com/pb33f/doctor
+      license: Apache-2.0
+    - name: github.com/pb33f/libopenapi-validator
+      license: MIT
