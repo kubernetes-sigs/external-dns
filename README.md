@@ -171,6 +171,7 @@ from the usage of any externally developed webhook.
 | Netbird               | https://codeberg.org/ccbash-oss/external-dns-netbird-webhook         |
 | Netcup                | https://github.com/mrueg/external-dns-netcup-webhook                 |
 | Netic                 | https://github.com/neticdk/external-dns-tidydns-webhook              |
+| NodeRings             | https://github.com/noderings/external-dns-noderings-webhook          |
 | OpenStack Designate   | https://github.com/inovex/external-dns-designate-webhook             |
 | OpenWRT               | https://github.com/renanqts/external-dns-openwrt-webhook             |
 | Porkbun               | https://github.com/mattgmoser/external-dns-porkbun-webhook           |
