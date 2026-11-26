@@ -18,6 +18,7 @@ package plan
 
 import (
 	"slices"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -335,7 +336,20 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 }
 
 func targetChanged(desired, current *endpoint.Endpoint) bool {
+	// Providers store CNAME/DNAME targets with or without the trailing dot, and
+	// the CRD source passes it through as written, so both forms must match.
+	if endpoint.RequiresTrailingDot(desired.RecordType) {
+		return !trimTrailingDots(desired.Targets).Same(trimTrailingDots(current.Targets))
+	}
 	return !desired.Targets.Same(current.Targets)
+}
+
+func trimTrailingDots(targets endpoint.Targets) endpoint.Targets {
+	trimmed := make(endpoint.Targets, len(targets))
+	for i, t := range targets {
+		trimmed[i] = strings.TrimSuffix(t, ".")
+	}
+	return trimmed
 }
 
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
