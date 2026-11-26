@@ -26,3 +26,23 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
+
+  - it: should expose the webhook source port when sources contains webhook
+    set:
+      sources:
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 2
+      - contains:
+          path: spec.ports
+          content:
+            name: http-source
+            port: 8081
+            targetPort: http-source
+            protocol: TCP

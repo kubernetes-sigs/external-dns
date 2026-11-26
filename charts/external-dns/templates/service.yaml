@@ -35,4 +35,12 @@ spec:
       protocol: TCP
     {{- end }}
     {{- end }}
+    {{- if has "webhook" .Values.sources }}
+    {{- with .Values.webhookSource.service }}
+    - name: http-source
+      port: {{ .port }}
+      targetPort: http-source
+      protocol: TCP
+    {{- end }}
+    {{- end }}
 {{- end }}

@@ -1,0 +1,149 @@
+suite: Deployment webhook source sidecar
+set:
+  policy: upsert-only
+templates:
+  - deployment.yaml
+release:
+  namespace: default
+tests:
+  - it: should not render the sidecar unless sources contains webhook
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")]
+
+  - it: should fail without an image when sources contains webhook
+    set:
+      sources:
+        - webhook
+    asserts:
+      - failedTemplate:
+          errorMessage: "ERROR: webhook source needs an image repository and a tag"
+
+  - it: should render the sidecar with expected defaults
+    set:
+      sources:
+        - crd
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "external-dns")].args
+          content: --source=webhook
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].image
+          value: example.com/source-webhook:v1.0.0
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].imagePullPolicy
+          value: IfNotPresent
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].ports
+          content:
+            name: http-source
+            protocol: TCP
+            containerPort: 8081
+      - isSubset:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")]
+          content:
+            livenessProbe:
+              failureThreshold: 2
+              httpGet:
+                path: /healthz
+                port: http-source
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+            readinessProbe:
+              failureThreshold: 6
+              httpGet:
+                path: /healthz
+                port: http-source
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+              privileged: false
+              readOnlyRootFilesystem: true
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].env
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].args
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].volumeMounts
+      - notExists:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].resources
+
+  - it: should pass through env, args, volume mounts, resources and security context overrides
+    set:
+      sources:
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+          pullPolicy: Always
+        env:
+          - name: REGISTRY_URL
+            value: https://registry.example.com
+        args:
+          - --listen=127.0.0.1:8889
+        extraVolumeMounts:
+          - name: cache
+            mountPath: /cache
+        resources:
+          limits:
+            memory: 64Mi
+        securityContext:
+          readOnlyRootFilesystem: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].imagePullPolicy
+          value: Always
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].env[0].name
+          value: REGISTRY_URL
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].args[0]
+          value: --listen=127.0.0.1:8889
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].volumeMounts[0].mountPath
+          value: /cache
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].resources.limits.memory
+          value: 64Mi
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].securityContext.readOnlyRootFilesystem
+          value: false
+
+  - it: should render both sidecars with the webhook provider and the webhook source
+    set:
+      sources:
+        - webhook
+      webhookSource:
+        image:
+          repository: example.com/source-webhook
+          tag: v1.0.0
+      provider:
+        name: webhook
+        webhook:
+          image:
+            repository: example.com/provider-webhook
+            tag: v2.0.0
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 3
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook")].image
+          value: example.com/provider-webhook:v2.0.0
+      - equal:
+          path: spec.template.spec.containers[?(@.name == "webhook-source")].image
+          value: example.com/source-webhook:v1.0.0
