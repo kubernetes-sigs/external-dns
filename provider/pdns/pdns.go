@@ -45,12 +45,13 @@ type pdnsChangeType string
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
-	DomainFilter *endpoint.DomainFilter
-	DryRun       bool
-	Server       string
-	ServerID     string
-	APIKey       string
-	TLSConfig    TLSConfig
+	DomainFilter    *endpoint.DomainFilter
+	ZoneMatchParent bool
+	DryRun          bool
+	Server          string
+	ServerID        string
+	APIKey          string
+	TLSConfig       TLSConfig
 }
 
 // TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
@@ -87,9 +88,10 @@ type PDNSAPIClient struct {
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
 	provider.BaseProvider
-	dryRun       bool
-	client       PDNSAPIProvider
-	domainFilter *endpoint.DomainFilter
+	dryRun          bool
+	client          PDNSAPIProvider
+	domainFilter    *endpoint.DomainFilter
+	zoneMatchParent bool
 }
 
 const (
@@ -183,14 +185,16 @@ func (c *PDNSAPIClient) ListZones(ctx context.Context) ([]pgo.Zone, error) {
 }
 
 // partitionZones returns a slice of zones that adhere to the domain filter and a slice of ones that do not adhere to the filter.
-func partitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter) ([]pgo.Zone, []pgo.Zone) {
+// With zoneMatchParent, a zone that is a parent of a domain filter entry adheres too.
+func partitionZones(zones []pgo.Zone, domainFilter *endpoint.DomainFilter, zoneMatchParent bool) ([]pgo.Zone, []pgo.Zone) {
 	if domainFilter == nil || !domainFilter.IsConfigured() {
 		return zones, nil
 	}
 
 	var filtered, residual []pgo.Zone
 	for _, zone := range zones {
-		if domainFilter.Match(pgo.StringValue(zone.Name)) {
+		name := pgo.StringValue(zone.Name)
+		if domainFilter.Match(name) || (zoneMatchParent && domainFilter.MatchParent(name)) {
 			filtered = append(filtered, zone)
 		} else {
 			residual = append(residual, zone)
@@ -254,11 +258,12 @@ func New(ctx context.Context, cfg *externaldns.Config, domainFilter *endpoint.Do
 	return newProvider(
 		ctx,
 		PDNSConfig{
-			DomainFilter: domainFilter,
-			DryRun:       cfg.DryRun,
-			Server:       cfg.PDNSServer,
-			ServerID:     cfg.PDNSServerID,
-			APIKey:       cfg.PDNSAPIKey,
+			DomainFilter:    domainFilter,
+			ZoneMatchParent: cfg.PDNSZoneMatchParent,
+			DryRun:          cfg.DryRun,
+			Server:          cfg.PDNSServer,
+			ServerID:        cfg.PDNSServerID,
+			APIKey:          cfg.PDNSAPIKey,
 			TLSConfig: TLSConfig{
 				SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
 				CAFilePath:            cfg.TLSCA,
@@ -275,6 +280,11 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 
 	if config.APIKey == "" {
 		return nil, errors.New("missing API Key for PDNS. Specify using --pdns-api-key=")
+	}
+
+	// MatchParent accepts every zone when there is no plain filter entry, e.g. with a regex filter.
+	if config.ZoneMatchParent && (config.DomainFilter == nil || len(config.DomainFilter.Filters) == 0) {
+		return nil, errors.New("--pdns-zone-match-parent requires a plain --domain-filter; it does not work with --regex-domain-filter or without a filter")
 	}
 
 	if config.Server == "localhost" {
@@ -300,7 +310,8 @@ func newProvider(_ context.Context, config PDNSConfig) (*PDNSProvider, error) {
 			dryRun: config.DryRun,
 			client: pgo.New(config.Server, config.ServerID, pgo.WithAPIKey(config.APIKey), pgo.WithHTTPClient(httpClient)),
 		},
-		domainFilter: config.DomainFilter,
+		domainFilter:    config.DomainFilter,
+		zoneMatchParent: config.ZoneMatchParent,
 	}
 	return provider, nil
 }
@@ -547,7 +558,7 @@ func (p *PDNSProvider) filteredZones(ctx context.Context) ([]pgo.Zone, []pgo.Zon
 	if err != nil {
 		return nil, nil, err
 	}
-	filtered, residual := partitionZones(zones, p.domainFilter)
+	filtered, residual := partitionZones(zones, p.domainFilter, p.zoneMatchParent)
 	return filtered, residual, nil
 }
 
