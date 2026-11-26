@@ -194,18 +194,17 @@ Each stage has one job:
 | `Registry.ApplyChanges`    | `registry/` | Wrap the diff with ownership bookkeeping, forward to the provider.                                   |
 | `Provider.ApplyChanges`    | `provider/` | Translate the diff to DNS backend calls (Route53, Cloud DNS, Cloudflare, ...).                       |
 
-### Layering (producer side)
+### Layering
 
 The pipeline above names every package. This section covers how the code
 around a Source splits. Within one `RunOnce`:
 
 | Layer  | Package                                           | Responsibility                                                                                                        |
 |--------|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| Domain | `endpoint/`                                       | Functions on `Endpoint`: validation, normalization, labels. No I/O or formatting; keep new code free of logging too.  |
+| Domain | `endpoint/`                                       | Functions on `Endpoint`: validation, normalization, labels. No I/O; keep new code free of logging.                     |
 | Source | `source/`                                         | Produces `[]*endpoint.Endpoint`. Thin coordinator: iterates spec, calls domain ops, returns results.                   |
 | Writer | `pkg/crd/status.go`, `pkg/events/`                | Post-apply: writes status conditions and events once `Registry.ApplyChanges` knows the outcome. Owns the K8s client calls on that path. |
 
-None of them belong inside a Source.
 
 ### Rules for new code
 
@@ -579,7 +578,7 @@ code inline, or introduce a type so the shared state is visible:
   otherwise don't extract.
 * Paired with another helper by a comment that says "must match X" or
   "inverse of Y". Shared invariants need a shared type, not prose.
-* One-line wrapper used from exactly one call site — the `if` was clearer.
+* One-line wrapper used from exactly one call site — inline it.
 
 ### Call-order and locality
 
