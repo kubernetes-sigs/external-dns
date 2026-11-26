@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -48,6 +49,9 @@ type ServerOptions struct {
 	WriteTimeout      time.Duration
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
+	// ShutdownTimeout bounds request draining; <= 0 defaults to 25 seconds.
+	// It is only used by StartHTTPApiWithContext.
+	ShutdownTimeout time.Duration
 	// MaxBodySize caps request body bytes; <= 0 disables the limit.
 	MaxBodySize int64
 }
@@ -58,6 +62,9 @@ const (
 	UrlAdjustEndpoints        = "/adjustendpoints"
 	UrlApplyChanges           = "/applychanges"
 	UrlRecords                = "/records"
+	// defaultShutdownTimeout is below the default Kubernetes termination grace
+	// period (30s), so draining finishes before the kubelet sends SIGKILL.
+	defaultShutdownTimeout = 25 * time.Second
 )
 
 func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
@@ -158,7 +165,40 @@ func (p *WebhookServer) limitRequestBody(w http.ResponseWriter, req *http.Reques
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
+//
+// StartHTTPApi is no longer the recommended way to start the server: it cannot
+// be stopped and it exits the process on errors. Use StartHTTPApiWithContext,
+// which shuts down gracefully and returns errors to the caller.
 func StartHTTPApi(opts ServerOptions) {
+	if err := StartHTTPApiWithContext(context.Background(), opts); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// StartHTTPApiWithContext starts a HTTP server given any provider and serves it
+// until ctx is canceled or the server fails. It is the recommended way to start
+// the server.
+// The function takes an optional channel as input which is used to signal that the server has started.
+// The server will listen on port `providerPort`.
+// The server will respond to the following endpoints:
+// - / (GET): initialization, negotiates headers and returns the domain filter
+// - /records (GET): returns the current records
+// - /records (POST): applies the changes
+// - /adjustendpoints (POST): executes the AdjustEndpoints method
+//
+// When ctx is canceled, the server stops accepting connections and waits up to
+// ShutdownTimeout for active requests to finish, then closes the remaining
+// connections. It returns nil after a graceful shutdown and an error if the
+// server cannot listen, fails while serving, or does not drain in time.
+func StartHTTPApiWithContext(ctx context.Context, opts ServerOptions) error {
+	l, err := net.Listen("tcp", opts.ProviderPort)
+	if err != nil {
+		return fmt.Errorf("listen for webhook HTTP API: %w", err)
+	}
+	return serveHTTPAPI(ctx, opts, l)
+}
+
+func serveHTTPAPI(ctx context.Context, opts ServerOptions, l net.Listener) error {
 	p := WebhookServer{
 		Provider:    opts.Provider,
 		MaxBodySize: opts.MaxBodySize,
@@ -180,16 +220,40 @@ func StartHTTPApi(opts ServerOptions) {
 		IdleTimeout:       opts.IdleTimeout,
 	}
 
-	l, err := net.Listen("tcp", opts.ProviderPort)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Also close active connections if graceful draining exceeds its deadline.
+	defer func() { _ = s.Close() }()
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- s.Serve(l) }()
 
-	if opts.StartedChan != nil {
-		opts.StartedChan <- struct{}{}
+	started := opts.StartedChan
+	for {
+		select {
+		// Signal readiness without blocking: the server must still stop on
+		// cancellation or a serve error if nobody receives from StartedChan.
+		case started <- struct{}{}:
+			started = nil
+		case err := <-serveErr:
+			return httpServeError(err)
+		case <-ctx.Done():
+			timeout := opts.ShutdownTimeout
+			if timeout <= 0 {
+				timeout = defaultShutdownTimeout
+			}
+			// The lifecycle context is already canceled; draining needs a fresh deadline.
+			shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
+			defer cancel()
+			if err := s.Shutdown(shutdownCtx); err != nil {
+				<-serveErr
+				return fmt.Errorf("shut down webhook HTTP API: %w", err)
+			}
+			return httpServeError(<-serveErr)
+		}
 	}
+}
 
-	if err := s.Serve(l); err != nil {
-		log.Fatal(err)
+func httpServeError(err error) error {
+	if err == nil || errors.Is(err, http.ErrServerClosed) {
+		return nil
 	}
+	return fmt.Errorf("serve webhook HTTP API: %w", err)
 }
