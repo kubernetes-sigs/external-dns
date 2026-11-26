@@ -67,9 +67,7 @@ type OVHProvider struct {
 	// your refresh rate/number of records is too big, which might cause issue with the
 	// provider.
 	// Default value: true
-	UseCache       bool
-	lastRunRecords []ovhRecord
-	lastRunZones   []string
+	UseCache bool
 
 	cacheInstance *cache.Cache
 	dnsClient     dnsClient
@@ -163,12 +161,10 @@ func newProvider(
 
 // Records returns the list of records in all relevant zones.
 func (p *OVHProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, records, err := p.zonesRecords(ctx)
+	_, records, err := p.zonesRecords(ctx)
 	if err != nil {
 		return nil, err
 	}
-	p.lastRunRecords = records
-	p.lastRunZones = zones
 	endpoints := ovhGroupByNameAndType(records)
 	log.Infof("OVH: %d endpoints have been found", len(endpoints))
 	return endpoints, nil
@@ -227,11 +223,10 @@ func planChangesByZoneName(zones []string, changes *plan.Changes) (map[string]*p
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	zones, records := p.lastRunZones, p.lastRunRecords
-	defer func() {
-		p.lastRunRecords = []ovhRecord{}
-		p.lastRunZones = []string{}
-	}()
+	zones, records, err := p.zonesRecords(ctx)
+	if err != nil {
+		return err
+	}
 
 	if log.IsLevelEnabled(log.DebugLevel) {
 		for _, change := range changes.Create {
