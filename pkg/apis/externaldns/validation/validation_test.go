@@ -633,16 +633,21 @@ func TestValidateTXTRegistryConfig(t *testing.T) {
 		name    string
 		prefix  string
 		suffix  string
+		ownerID string
+		oldID   string
 		wantErr bool
 	}{
-		{"neither set", "", "", false},
-		{"prefix only", "pre-", "", false},
-		{"suffix only", "", "-suf", false},
-		{"both set", "pre-", "-suf", true},
+		{"neither set", "", "", "", "", false},
+		{"prefix only", "pre-", "", "", "", false},
+		{"suffix only", "", "-suf", "", "", false},
+		{"both set", "pre-", "-suf", "", "", true},
+		{"migrate owner differs", "", "", "new", "old", false},
+		{"migrate owner unset", "", "", "new", "", false},
+		{"migrate owner equals owner id", "", "", "same", "same", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &externaldns.Config{TXTPrefix: tt.prefix, TXTSuffix: tt.suffix}
+			cfg := &externaldns.Config{TXTPrefix: tt.prefix, TXTSuffix: tt.suffix, TXTOwnerID: tt.ownerID, TXTOwnerOld: tt.oldID}
 			if tt.wantErr {
 				require.NotEmpty(t, validateTXTRegistryConfig(cfg))
 			} else {

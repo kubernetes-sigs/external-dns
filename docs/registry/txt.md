@@ -311,6 +311,8 @@ The owner ID of the TXT records managed by external-dns instance can be updated.
 When `--migrate-from-txt-owner` is set, it will enable the migration checks
 in the run loop using `--txt-owner-id=new-owner-id` and the value you defined for this flag.
 
+The value of `--migrate-from-txt-owner` must differ from `--txt-owner-id`. If both are equal, external-dns fails at startup with a validation error.
+
 If you want to test the outputs of a migration beforehand, you can use the `--dry-run` flag
 along with `--migrate-from-txt-owner`.
 
