@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	logrustest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -46,6 +49,10 @@ type MockNS1DryRunClient struct {
 	createCalls int
 	deleteCalls int
 	updateCalls int
+}
+
+type MockNS1CreateRecordExists struct {
+	MockNS1DomainClient
 }
 
 func (m *MockNS1DomainClient) CreateRecord(_ *dns.Record) (*http.Response, error) {
@@ -371,4 +378,63 @@ func TestNS1ApplyChangesDryRun(t *testing.T) {
 	assert.Zero(t, client.createCalls, "dry-run must not create records")
 	assert.Zero(t, client.updateCalls, "dry-run must not update records")
 	assert.Zero(t, client.deleteCalls, "dry-run must not delete records")
+}
+
+func TestNS1AdjustEndpoints(t *testing.T) {
+	p := &NS1Provider{}
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "_acme-challenge.foo.com", RecordType: "TXT", Targets: endpoint.Targets{"token"}, SetIdentifier: "challenge-1"},
+		{DNSName: "test.foo.com", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"}},
+	}
+
+	adjusted, err := p.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
+	require.Len(t, adjusted, 2)
+	for _, ep := range adjusted {
+		assert.Empty(t, ep.SetIdentifier)
+	}
+	assert.Equal(t, endpoint.Targets{"token"}, adjusted[0].Targets)
+}
+
+// Two endpoints that differ only in their set identifier collapse into one
+// plan row after the strip; the provider says so, since the plan does not.
+func TestNS1AdjustEndpointsWarnsOnCollision(t *testing.T) {
+	hook := logrustest.NewGlobal()
+	defer hook.Reset()
+
+	p := &NS1Provider{}
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "_acme-challenge.foo.com", RecordType: "TXT", Targets: endpoint.Targets{"apex-token"}, SetIdentifier: "apex"},
+		{DNSName: "_acme-challenge.foo.com", RecordType: "TXT", Targets: endpoint.Targets{"wildcard-token"}, SetIdentifier: "wildcard"},
+		{DNSName: "other.foo.com", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"}, SetIdentifier: "alone"},
+	}
+
+	adjusted, err := p.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
+	require.Len(t, adjusted, 3)
+
+	var collisions []string
+	for _, e := range hook.AllEntries() {
+		if e.Level == log.WarnLevel && strings.Contains(e.Message, "collide after dropping the set identifiers") {
+			collisions = append(collisions, e.Message)
+		}
+	}
+	require.Len(t, collisions, 1)
+	assert.Contains(t, collisions[0], "_acme-challenge.foo.com")
+	assert.Contains(t, collisions[0], "apex, wildcard")
+}
+
+func (m *MockNS1CreateRecordExists) CreateRecord(_ *dns.Record) (*http.Response, error) {
+	return nil, api.ErrRecordExists
+}
+
+func TestNS1ApplyChangesRecordExists(t *testing.T) {
+	p := &NS1Provider{client: &MockNS1CreateRecordExists{}}
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{{DNSName: "new.foo.com", RecordType: "A", Targets: endpoint.Targets{"2.2.2.2"}}},
+	}
+
+	err := p.ApplyChanges(t.Context(), changes)
+	require.ErrorIs(t, err, provider.SoftError)
+	require.ErrorIs(t, err, api.ErrRecordExists)
 }

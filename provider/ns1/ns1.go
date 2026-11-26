@@ -19,6 +19,7 @@ package ns1
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -210,6 +211,32 @@ func (p *NS1Provider) ApplyChanges(_ context.Context, changes *plan.Changes) err
 	return p.ns1SubmitChanges(combinedChanges)
 }
 
+// AdjustEndpoints drops set identifiers. NS1 cannot store one, so the desired
+// endpoint would never match the record that Records returns.
+func (p *NS1Provider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	type row struct{ dnsName, recordType string }
+	count := make(map[row]int)
+	stripped := make(map[row][]string)
+	for _, ep := range endpoints {
+		r := row{ep.DNSName, ep.RecordType}
+		count[r]++
+		if ep.SetIdentifier == "" {
+			continue
+		}
+		log.Warnf("Ignoring set identifier %q on %s record %s: NS1 does not support set identifiers", ep.SetIdentifier, ep.RecordType, ep.DNSName)
+		stripped[r] = append(stripped[r], ep.SetIdentifier)
+		ep.SetIdentifier = ""
+	}
+	// Without the identifiers these endpoints share one plan row, and the
+	// conflict resolver keeps one of them without a log line of its own.
+	for r, ids := range stripped {
+		if count[r] > 1 {
+			log.Warnf("%s record %s: %d endpoints collide after dropping the set identifiers (%s); only one of them will be applied", r.recordType, r.dnsName, count[r], strings.Join(ids, ", "))
+		}
+	}
+	return endpoints, nil
+}
+
 // ns1BuildRecord returns a dns.Record for a change set
 func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	record := dns.NewRecord(zoneName, change.Endpoint.DNSName, change.Endpoint.RecordType, map[string]string{}, []string{})
@@ -260,6 +287,10 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 			switch change.Action {
 			case ns1Create:
 				_, err := p.client.CreateRecord(record)
+				if errors.Is(err, api.ErrRecordExists) {
+					// The next Records call sees the record, so exiting gains nothing.
+					return provider.NewSoftErrorf("creating %s record %s: %w", record.Type, record.Domain, err)
+				}
 				if err != nil {
 					return err
 				}
