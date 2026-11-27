@@ -167,6 +167,78 @@ informers.MustAddEventHandler(myInformer.Informer(), ...)    // 3. who is notifi
 factory.Start(ctx.Done())                                    // 4. start — Must* helpers panic after this
 ```
 
+## Data Flow and Layering
+
+### The reconcile pipeline
+
+Each `controller.RunOnce` moves endpoints through a fixed pipeline:
+
+```text
+Source  ──▶  source wrappers  ──▶  Registry.AdjustEndpoints  ──┐
+(k8s objects)                                                  │
+                                                               ▼
+                                                             Plan  ──▶  Registry.ApplyChanges  ──▶  Provider.ApplyChanges  ──▶  DNS
+                                                               ▲
+Registry.Records (current DNS state) ──────────────────────────┘
+```
+
+Each stage has one job:
+
+| Stage                      | Package     | Does                                                                                                 |
+|----------------------------|-------------|------------------------------------------------------------------------------------------------------|
+| `Source.Endpoints`         | `source/`   | Kubernetes object → `[]*endpoint.Endpoint`.                                                          |
+| Source wrappers            | `source/wrappers/` | See [source-wrappers.md](source-wrappers.md).                                                         |
+| `Registry.Records`         | `registry/` | Current DNS state from the provider, annotated with ownership.                                       |
+| `Registry.AdjustEndpoints` | `registry/` | Pass-through to `Provider.AdjustEndpoints`: provider-specific canonicalization of the desired set.    |
+| `plan.Plan`                | `plan/`     | Diff current and desired → `Create`, `UpdateOld`, `UpdateNew`, `Delete`.                             |
+| `Registry.ApplyChanges`    | `registry/` | Wrap the diff with ownership bookkeeping, forward to the provider.                                   |
+| `Provider.ApplyChanges`    | `provider/` | Translate the diff to DNS backend calls (Route53, Cloud DNS, Cloudflare, ...).                       |
+
+### Layering
+
+The pipeline above names every package. This section covers how the code
+around a Source splits. Within one `RunOnce`:
+
+| Layer  | Package                                           | Responsibility                                                                                                        |
+|--------|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| Domain | `endpoint/`                                       | Functions on `Endpoint`: validation, normalization, labels. No I/O; keep new code free of logging.                     |
+| Source | `source/`                                         | Produces `[]*endpoint.Endpoint`. Thin coordinator: iterates spec, calls domain ops, returns results.                   |
+| Writer | `pkg/crd/status.go`, `pkg/events/`                | Post-apply: writes status conditions and events once `Registry.ApplyChanges` knows the outcome. Owns the K8s client calls on that path. |
+
+### Rules for new code
+
+These apply when you add or change code under `source/`. Existing Sources
+may not follow them yet (notably the crd source, which inlines validation
+helpers and writes status through a K8s client); don't rewrite them under
+this guide.
+
+1. **Validation lives on the domain type.** If a new Source needs an
+   invariant checked, add it to `Endpoint.Validate` rather than inline a
+   check in `source/<x>.go`; the dedup wrapper runs it for every Source.
+   Provider-specific canonicalization belongs in
+   `Provider.AdjustEndpoints`, which `Registry.AdjustEndpoints` delegates to.
+   Build endpoints with `endpoint.NewEndpoint*`, which normalizes per record
+   type (see `NormalizeMXTarget`).
+   Signal: a new `validateX` or `isValidX` function inside a `source/*.go`
+   file, or a new `switch ep.RecordType` in a Source doing per-record-type
+   normalization.
+2. **A Source does not write to Kubernetes.** A new Source's job ends at
+   returning `[]*endpoint.Endpoint`. Status and events belong to the
+   post-apply writers (`StatusReporter`, `EventEmitter`), see the Writer
+   row above.
+   Signal: a new Source that imports a Kubernetes client to update status,
+   record events or patch conditions on the objects it reads, or
+   status-formatting logic (building `metav1.Condition`, choosing reason
+   strings) added to a Source.
+
+### Mapping is not validation
+
+Sources interpret Kubernetes objects — reading annotations, labels, Service
+IPs, Ingress rules — and build endpoints from them. That is a mapping step,
+not duplication of `Validate`. The difference: mapping produces an endpoint;
+validation checks an endpoint. Mapping belongs in the Source; checks on the
+mapped result belong in `endpoint/`.
+
 ## Usage
 
 You can choose any combination of sources and providers on the command line.
@@ -484,3 +556,40 @@ value — callers must check `Expired()` first and decide whether to refresh.
 Add a `ZoneCacheDuration time.Duration` field to your provider config struct, wire it to
 this flag in `pkg/apis/externaldns/types.go`, and pass it to `NewZoneCache` in the
 constructor.
+
+## Refactoring
+
+No single metric is the goal — not cyclomatic complexity, not function length,
+not cognitive complexity, not parameter count, not nesting depth. The goal is
+*overall* complexity: coupling, cohesion, signature width, hidden state,
+call-order, locality. A refactor that lowers one axis while raising any of the
+others is a loss.
+
+### Signature smells
+
+If a proposed helper hits any of these, do not extract it; either leave the
+code inline, or introduce a type so the shared state is visible:
+
+* Takes one argument and returns three or more values. If the outputs travel
+  together, they are a struct.
+* Mutates a parameter *and* returns a value — pick one.
+* Mutates receiver state while reading as pure. If the write is load-bearing,
+  give it a verb that signals the mutation (`populate...`, `register...`);
+  otherwise don't extract.
+* Paired with another helper by a comment that says "must match X" or
+  "inverse of Y". Shared invariants need a shared type, not prose.
+* One-line wrapper used from exactly one call site — inline it.
+
+### Call-order and locality
+
+If a reviewer, seeing the proposed helper alone with no caller, could not tell
+what it does and when to call it, don't extract. A chain of helpers that must
+run in a fixed order and communicate through caller-held maps is an
+undocumented protocol between methods — inline it, or build a type whose
+methods make the sequence explicit.
+
+### Linter versus shape
+
+`cyclop` in `.golangci.yml` is enforced by `make go-lint` and CI. Justify
+any reshape by the practices in this section, not by the metric. If no
+design reason applies, use `//nolint:cyclop // <reason>` on that function.

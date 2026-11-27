@@ -89,6 +89,35 @@ Full details in `docs/contributing/sources-and-providers.md` ("Error Handling").
 When you learn something non-obvious about a source or provider, update that
 guide.
 
+## Data Flow and Layering
+
+Source wrappers live in `source/wrappers/` (see
+[source-wrappers.md](docs/contributing/source-wrappers.md)).
+
+Three layering concerns, kept separate:
+
+- **Domain** (`endpoint/`), functions on `Endpoint`: validation,
+  normalization, labels. No I/O in new code.
+- **Source** (`source/`), produces `[]*endpoint.Endpoint`. New Sources
+  should not write to the K8s API themselves.
+- **Writer** (`pkg/crd/status.go`, `pkg/events/`), writes status
+  conditions and events post-apply.
+
+Existing Sources (notably the crd source) do not yet follow these;
+don't rewrite them under this guide.
+
+Full rules in
+[`docs/contributing/sources-and-providers.md#data-flow-and-layering`](docs/contributing/sources-and-providers.md#data-flow-and-layering).
+
+## Refactoring
+
+No single metric is the goal, not cyclomatic complexity, function length,
+cognitive complexity, nesting depth, or parameter count. Overall complexity
+is: coupling, cohesion, signature width, hidden state, call-order, locality.
+A refactor that lowers one axis while raising any of the others is a loss.
+
+Full rules in `docs/contributing/sources-and-providers.md`, "Refactoring".
+
 ## Commit and PR Titles
 
 PR titles must follow Conventional Commits: `type(scope): imperative summary`
@@ -107,9 +136,10 @@ Use `internal/sets` for set semantics (`sets.New[string]()`, `Insert`, `Has`, `S
 
 Self-check the change against this guide before handing it back:
 
-- Comments explain *why*, not *what* — no prose mirroring an `if` condition.
+- Review each comment against [Comments](#comments).
 - Provider/source errors: hard only for unrecoverable startup conditions,
   otherwise `provider.NewSoftErrorf` or return `nil`.
+- Refactors follow [Refactoring](#refactoring).
 - Ran `make go-lint` locally, and `go test -race ./<pkg>/...` for every package
   you touched (`make test` for cross-cutting changes). Both green.
 - PR title follows Conventional Commits.
