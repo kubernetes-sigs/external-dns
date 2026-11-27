@@ -374,6 +374,22 @@ func New(_ context.Context, cfg *externaldns.Config, domainFilter *endpoint.Doma
 	)
 }
 
+// ZoneApexes returns the names of the zones this provider manages.
+// The planner uses them so apex CNAME flattening relaxes the RFC 1034
+// CNAME conflict only where Cloudflare actually flattens, which is the
+// zone apex.
+func (p *CloudFlareProvider) ZoneApexes(ctx context.Context) ([]string, error) {
+	hosted, err := p.Zones(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(hosted))
+	for _, zone := range hosted {
+		names = append(names, zone.Name)
+	}
+	return names, nil
+}
+
 // Zones returns the list of hosted zones.
 func (p *CloudFlareProvider) Zones(ctx context.Context) ([]zones.Zone, error) {
 	var result []zones.Zone

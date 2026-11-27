@@ -177,16 +177,23 @@ func preValidateConfig(cfg *externaldns.Config) field.ErrorList {
 }
 
 func validateConfigForProvider(cfg *externaldns.Config) field.ErrorList {
+	var errs field.ErrorList
+	if cfg.CloudflareApexCNAMEFlattening && cfg.Provider != externaldns.ProviderCloudflare {
+		errs = append(errs, field.Invalid(
+			field.NewPath("cloudflare-apex-cname-flattening"),
+			cfg.CloudflareApexCNAMEFlattening,
+			"--cloudflare-apex-cname-flattening is only valid with --provider=cloudflare",
+		))
+	}
 	switch cfg.Provider {
 	case externaldns.ProviderAzure:
-		return validateConfigForAzure(cfg)
+		errs = append(errs, validateConfigForAzure(cfg)...)
 	case externaldns.ProviderGoogle:
-		return validateConfigForGoogle(cfg)
+		errs = append(errs, validateConfigForGoogle(cfg)...)
 	case externaldns.ProviderRFC2136:
-		return validateConfigForRfc2136(cfg)
-	default:
-		return nil
+		errs = append(errs, validateConfigForRfc2136(cfg)...)
 	}
+	return errs
 }
 
 func validateConfigForGoogle(cfg *externaldns.Config) field.ErrorList {

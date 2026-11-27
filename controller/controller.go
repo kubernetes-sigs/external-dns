@@ -67,6 +67,13 @@ type Controller struct {
 	TXTOwnerOld string
 	// CRDSourceKind is the Kind reported for "crd/" deletes.
 	CRDSourceKind string
+	// ApexCNAMEFlattening allows a CNAME at a zone apex to coexist with
+	// non-address record types. Zone apex names are read from zoneApexes on
+	// each reconcile. The zero value keeps RFC 1034 CNAME conflicts.
+	ApexCNAMEFlattening bool
+	// zoneApexes reports zone apex names when ApexCNAMEFlattening is set.
+	// Nil unless the provider implements ZoneApexer.
+	zoneApexes func(context.Context) ([]string, error)
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -106,15 +113,22 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	}
 	registryFilter := c.Registry.GetDomainFilter()
 
+	zoneApexes, err := c.zoneApexNames(ctx)
+	if err != nil {
+		return err
+	}
+
 	plan := &plan.Plan{
-		Policies:       []plan.Policy{c.Policy},
-		Current:        regRecords,
-		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter},
-		ManagedRecords: c.ManagedRecordTypes,
-		ExcludeRecords: c.ExcludeRecordTypes,
-		OwnerID:        c.Registry.OwnerID(),
-		OldOwnerID:     c.TXTOwnerOld,
+		Policies:            []plan.Policy{c.Policy},
+		Current:             regRecords,
+		Desired:             endpoints,
+		DomainFilter:        endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter},
+		ManagedRecords:      c.ManagedRecordTypes,
+		ExcludeRecords:      c.ExcludeRecordTypes,
+		OwnerID:             c.Registry.OwnerID(),
+		OldOwnerID:          c.TXTOwnerOld,
+		ApexCNAMEFlattening: c.ApexCNAMEFlattening,
+		ZoneApexes:          zoneApexes,
 	}
 
 	plan = plan.Calculate()
@@ -213,4 +227,25 @@ func (c *Controller) Run(ctx context.Context) error {
 			return nil
 		}
 	}
+}
+
+// zoneApexNames returns the apex names the flattening exception applies to.
+// A provider error is returned as-is so a soft zone-list failure retries
+// without planning. Planning with no apex list would apply RFC 1034 and
+// delete an owned apex CNAME, which is the failure this option exists to avoid.
+func (c *Controller) zoneApexNames(ctx context.Context) ([]string, error) {
+	if !c.ApexCNAMEFlattening {
+		return nil, nil
+	}
+	if c.zoneApexes == nil {
+		return nil, provider.NewSoftErrorf("cloudflare apex CNAME flattening is enabled but zone apexes are unavailable")
+	}
+	names, err := c.zoneApexes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(names) == 0 {
+		log.Warn("Cloudflare apex CNAME flattening is enabled but the provider reported no zones; CNAME conflicts follow RFC 1034")
+	}
+	return names, nil
 }

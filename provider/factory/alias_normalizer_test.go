@@ -32,10 +32,21 @@ type stubProvider struct {
 	provider.BaseProvider
 }
 
+type apexStub struct {
+	provider.BaseProvider
+	names []string
+}
+
 func (s *stubProvider) Records(_ context.Context) ([]*endpoint.Endpoint, error) { return nil, nil }
 func (s *stubProvider) ApplyChanges(_ context.Context, _ *plan.Changes) error   { return nil }
 func (s *stubProvider) AdjustEndpoints(eps []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return eps, nil
+}
+
+func (s *apexStub) Records(context.Context) ([]*endpoint.Endpoint, error) { return nil, nil }
+func (s *apexStub) ApplyChanges(context.Context, *plan.Changes) error     { return nil }
+func (s *apexStub) ZoneApexes(context.Context) ([]string, error) {
+	return s.names, nil
 }
 
 func TestAliasNormalizingMiddleware(t *testing.T) {
@@ -104,4 +115,15 @@ func TestAliasNormalizingMiddleware(t *testing.T) {
 			assert.Equal(t, tt.aliasWanted, result[0].GetAliasProperty())
 		})
 	}
+}
+
+func TestZoneApexerOfWalksAliasAndCacheWrappers(t *testing.T) {
+	stub := &apexStub{names: []string{"example.com"}}
+	wrapped := newAliasNormalizingMiddleware(provider.NewCachedProvider(stub, 0))
+
+	apexer, ok := provider.ZoneApexerOf(wrapped)
+	require.True(t, ok)
+	names, err := apexer.ZoneApexes(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, []string{"example.com"}, names)
 }

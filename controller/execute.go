@@ -198,6 +198,18 @@ func buildController(
 		statusReporter = crd.NewStatusWriter(cc, cfg.DryRun)
 	}
 
+	var zoneApexes func(context.Context) ([]string, error)
+	if cfg.CloudflareApexCNAMEFlattening {
+		// Select wraps the provider. The capability lives on the inner
+		// Cloudflare provider, so resolve it once and fail startup rather
+		// than discover the miss on the first reconcile.
+		apexer, ok := provider.ZoneApexerOf(p)
+		if !ok {
+			return nil, fmt.Errorf("--cloudflare-apex-cname-flattening requires a provider that reports zone apexes")
+		}
+		zoneApexes = apexer.ZoneApexes
+	}
+
 	return &Controller{
 		Source:               src,
 		Registry:             reg,
@@ -211,6 +223,8 @@ func buildController(
 		EventEmitter:         eventEmitter,
 		CRDSourceKind:        cfg.CRDSourceKind,
 		StatusReporter:       statusReporter,
+		ApexCNAMEFlattening:  cfg.CloudflareApexCNAMEFlattening,
+		zoneApexes:           zoneApexes,
 	}, nil
 }
 

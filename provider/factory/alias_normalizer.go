@@ -34,6 +34,12 @@ func newAliasNormalizingMiddleware(p provider.Provider) *AliasNormalizingMiddlew
 	return &AliasNormalizingMiddleware{Provider: p}
 }
 
+// Unwrap returns the provider this middleware delegates to so ZoneApexerOf can
+// see capabilities that are not part of the Provider interface.
+func (p *AliasNormalizingMiddleware) Unwrap() provider.Provider {
+	return p.Provider
+}
+
 // AdjustEndpoints delegates to the inner provider then normalizes alias values
 // so they match what Records() returns.
 func (p *AliasNormalizingMiddleware) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {

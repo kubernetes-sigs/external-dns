@@ -85,6 +85,7 @@ var (
 		BatchChangeSize:                        200,
 		BatchChangeInterval:                    time.Second,
 		CloudflareProxied:                      false,
+		CloudflareApexCNAMEFlattening:          false,
 		CloudflareCustomHostnames:              false,
 		CloudflareCustomHostnamesMinTLSVersion: "1.0",
 		CloudflareCustomHostnamesCertificateAuthority: "none",
@@ -774,6 +775,16 @@ func TestParseFlagsCloudflare(t *testing.T) {
 	t.Parallel()
 	cfg := parseCfg(t, "--cloudflare-record-comment=managed-by-external-dns")
 	assert.Equal(t, "managed-by-external-dns", cfg.CloudflareDNSRecordsComment)
+	assert.False(t, cfg.CloudflareApexCNAMEFlattening)
+}
+
+func TestParseFlagsCloudflareApexCNAMEFlattening(t *testing.T) {
+	t.Parallel()
+	cfg := parseCfg(t, "--cloudflare-apex-cname-flattening")
+	assert.True(t, cfg.CloudflareApexCNAMEFlattening)
+
+	cfg = parseCfg(t, "--no-cloudflare-apex-cname-flattening")
+	assert.False(t, cfg.CloudflareApexCNAMEFlattening)
 }
 
 func TestParseFlagsNS1(t *testing.T) {

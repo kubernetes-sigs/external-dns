@@ -37,10 +37,27 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/crd"
+	"sigs.k8s.io/external-dns/plan"
+	dnsprovider "sigs.k8s.io/external-dns/provider"
 	provider "sigs.k8s.io/external-dns/provider/factory"
 	"sigs.k8s.io/external-dns/source/config"
 	"sigs.k8s.io/external-dns/source/wrappers"
 )
+
+type zoneApexProvider struct {
+	dnsprovider.BaseProvider
+	apexes []string
+}
+
+func (p *zoneApexProvider) Records(context.Context) ([]*endpoint.Endpoint, error) {
+	return nil, nil
+}
+
+func (p *zoneApexProvider) ApplyChanges(context.Context, *plan.Changes) error { return nil }
+
+func (p *zoneApexProvider) ZoneApexes(context.Context) ([]string, error) {
+	return p.apexes, nil
+}
 
 // Logger
 func TestConfigureLogger(t *testing.T) {
@@ -361,6 +378,55 @@ func TestBuildControllerStatusReporterNilWithoutCRDSource(t *testing.T) {
 	ctrl := buildTestController(t)
 
 	assert.Nil(t, ctrl.StatusReporter)
+}
+
+func TestBuildControllerWiresApexCNAMEFlattening(t *testing.T) {
+	cfg := &externaldns.Config{
+		Sources:                       []string{"fake"},
+		Provider:                      "inmemory",
+		LogLevel:                      "error",
+		LogFormat:                     "text",
+		Policy:                        "sync",
+		Registry:                      "txt",
+		TXTOwnerID:                    "test-owner",
+		CloudflareApexCNAMEFlattening: true,
+	}
+	sCfg, err := config.NewSourceConfig(cfg)
+	require.NoError(t, err)
+	ctx := t.Context()
+	src, err := wrappers.Build(ctx, sCfg)
+	require.NoError(t, err)
+
+	ctrl, err := buildController(ctx, cfg, sCfg, src, &zoneApexProvider{apexes: []string{"example.com"}}, endpoint.NewDomainFilterWithOptions())
+	require.NoError(t, err)
+	assert.True(t, ctrl.ApexCNAMEFlattening)
+	require.NotNil(t, ctrl.zoneApexes)
+	names, err := ctrl.zoneApexes(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"example.com"}, names)
+}
+
+func TestBuildControllerRejectsApexCNAMEFlatteningWithoutZoneApexer(t *testing.T) {
+	cfg := &externaldns.Config{
+		Sources:                       []string{"fake"},
+		Provider:                      "inmemory",
+		LogLevel:                      "error",
+		LogFormat:                     "text",
+		Policy:                        "sync",
+		Registry:                      "txt",
+		TXTOwnerID:                    "test-owner",
+		CloudflareApexCNAMEFlattening: true,
+	}
+	sCfg, err := config.NewSourceConfig(cfg)
+	require.NoError(t, err)
+	ctx := t.Context()
+	src, err := wrappers.Build(ctx, sCfg)
+	require.NoError(t, err)
+	p, err := provider.Select(ctx, cfg, endpoint.NewDomainFilterWithOptions())
+	require.NoError(t, err)
+
+	_, err = buildController(ctx, cfg, sCfg, src, p, endpoint.NewDomainFilterWithOptions())
+	require.ErrorContains(t, err, "--cloudflare-apex-cname-flattening requires a provider that reports zone apexes")
 }
 
 // TestContextWithSigtermHandlerHelper is a helper process that sets up the SIGTERM handler

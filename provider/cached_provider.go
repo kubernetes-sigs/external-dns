@@ -67,6 +67,12 @@ func NewCachedProvider(provider Provider, refreshDelay time.Duration) *CachedPro
 	}
 }
 
+// Unwrap returns the provider this cache delegates to so ZoneApexerOf can
+// see capabilities that are not part of the Provider interface.
+func (c *CachedProvider) Unwrap() Provider {
+	return c.Provider
+}
+
 func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	if c.needRefresh() {
 		log.Info("Records cache provider: refreshing records list cache")

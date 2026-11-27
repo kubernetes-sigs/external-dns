@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -27,7 +28,35 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
+
+type apexStub struct {
+	BaseProvider
+	names []string
+	err   error
+}
+
+type plainStub struct {
+	BaseProvider
+}
+
+type loopUnwrapper struct {
+	BaseProvider
+}
+
+func (s *apexStub) Records(context.Context) ([]*endpoint.Endpoint, error) { return nil, nil }
+func (s *apexStub) ApplyChanges(context.Context, *plan.Changes) error     { return nil }
+func (s *apexStub) ZoneApexes(context.Context) ([]string, error) {
+	return s.names, s.err
+}
+
+func (s *plainStub) Records(context.Context) ([]*endpoint.Endpoint, error) { return nil, nil }
+func (s *plainStub) ApplyChanges(context.Context, *plan.Changes) error     { return nil }
+
+func (w *loopUnwrapper) Records(context.Context) ([]*endpoint.Endpoint, error) { return nil, nil }
+func (w *loopUnwrapper) ApplyChanges(context.Context, *plan.Changes) error     { return nil }
+func (w *loopUnwrapper) Unwrap() Provider                                      { return w }
 
 func TestMain(m *testing.M) {
 	log.SetOutput(io.Discard)
@@ -76,6 +105,31 @@ func TestBaseProvider_GetDomainFilter(t *testing.T) {
 	f := b.GetDomainFilter()
 	require.NotNil(t, f)
 	assert.True(t, f.Match("example.com"))
+}
+
+func TestZoneApexerOf(t *testing.T) {
+	stub := &apexStub{names: []string{"example.com", "example.org"}}
+
+	apexer, ok := ZoneApexerOf(stub)
+	require.True(t, ok)
+	names, err := apexer.ZoneApexes(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, []string{"example.com", "example.org"}, names)
+
+	apexer, ok = ZoneApexerOf(NewCachedProvider(stub, 0))
+	require.True(t, ok)
+	names, err = apexer.ZoneApexes(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, stub.names, names)
+
+	_, ok = ZoneApexerOf(&plainStub{})
+	assert.False(t, ok)
+
+	_, ok = ZoneApexerOf(nil)
+	assert.False(t, ok)
+
+	_, ok = ZoneApexerOf(&loopUnwrapper{})
+	assert.False(t, ok)
 }
 
 func TestDifference(t *testing.T) {
