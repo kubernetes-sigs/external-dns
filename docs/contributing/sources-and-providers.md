@@ -205,7 +205,6 @@ around a Source splits. Within one `RunOnce`:
 | Source | `source/`                                         | Produces `[]*endpoint.Endpoint`. Thin coordinator: iterates spec, calls domain ops, returns results.                   |
 | Writer | `pkg/crd/status.go`, `pkg/events/`                | Post-apply: writes status conditions and events once `Registry.ApplyChanges` knows the outcome. Owns the K8s client calls on that path. |
 
-
 ### Rules for new code
 
 These apply when you add or change code under `source/`. Existing Sources
