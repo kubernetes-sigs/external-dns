@@ -42,6 +42,8 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+type gwParentRefOption func(*v1.ParentReference)
+
 func mustGetLabelSelector(s string) labels.Selector {
 	v, err := annotations.ParseFilter(s)
 	if err != nil {
@@ -111,8 +113,6 @@ func gwParentRef(namespace, name string, options ...gwParentRefOption) v1.Parent
 	}
 	return ref
 }
-
-type gwParentRefOption func(*v1.ParentReference)
 
 func withSectionName(name v1.SectionName) gwParentRefOption {
 	return func(ref *v1.ParentReference) { ref.SectionName = &name }

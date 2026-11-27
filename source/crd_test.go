@@ -54,6 +54,24 @@ var (
 	_ Source = &crdSource{}
 )
 
+// startSyncFakeCache is a minimal crcache.Cache stub for TestStartAndSync.
+// It embeds fakeCRDCache to satisfy the full interface; only Start and
+// WaitForCacheSync are overridden.
+type startSyncFakeCache struct {
+	fakeCRDCache
+	startErr   error
+	syncOK     bool
+	blockStart bool
+}
+
+// fakeCRDCache implements crCache.Cache for unit tests.
+// Reads are backed by a fake.Client so test fixtures are populated with
+// WithObjects; cache lifecycle methods are no-ops that return immediately.
+type fakeCRDCache struct {
+	client.Client // provides Get + List from fake.Client
+	informer      toolscache.SharedIndexInformer
+}
+
 // dnsEndpointByObj extracts the single ByObject entry for DNSEndpoint from
 // cache options. The map key is a pointer so we cannot look it up directly —
 // we iterate instead.
@@ -1057,31 +1075,14 @@ func TestNewCRDSource(t *testing.T) {
 	}
 }
 
-// startSyncFakeCache is a minimal crcache.Cache stub for TestStartAndSync.
-// It embeds fakeCRDCache to satisfy the full interface; only Start and
-// WaitForCacheSync are overridden.
-type startSyncFakeCache struct {
-	fakeCRDCache
-	startErr   error
-	syncOK     bool
-	blockStart bool
-}
-
 func (f *startSyncFakeCache) Start(ctx context.Context) error {
 	if f.blockStart {
 		<-ctx.Done()
 	}
 	return f.startErr
 }
-func (f *startSyncFakeCache) WaitForCacheSync(_ context.Context) bool { return f.syncOK }
 
-// fakeCRDCache implements crCache.Cache for unit tests.
-// Reads are backed by a fake.Client so test fixtures are populated with
-// WithObjects; cache lifecycle methods are no-ops that return immediately.
-type fakeCRDCache struct {
-	client.Client // provides Get + List from fake.Client
-	informer      toolscache.SharedIndexInformer
-}
+func (f *startSyncFakeCache) WaitForCacheSync(_ context.Context) bool { return f.syncOK }
 
 func (f *fakeCRDCache) GetInformer(_ context.Context, _ client.Object, _ ...crcache.InformerGetOption) (crcache.Informer, error) {
 	return f.informer, nil

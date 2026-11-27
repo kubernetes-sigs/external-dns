@@ -28,6 +28,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/metrics"
 )
 
+type CustomRoundTripper struct {
+	next http.RoundTripper
+}
+
 var (
 	RequestDurationMetric = metrics.NewSummaryVecWithOpts(
 		prometheus.SummaryOpts{
@@ -43,10 +47,6 @@ var (
 
 func init() {
 	metrics.RegisterMetric.MustRegister(RequestDurationMetric)
-}
-
-type CustomRoundTripper struct {
-	next http.RoundTripper
 }
 
 // CancelRequest is a no-op to satisfy interfaces that require it.

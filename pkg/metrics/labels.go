@@ -20,6 +20,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type Labels = prometheus.Labels
+
 const (
 	LabelScheme = "scheme"
 	LabelHost   = "host"
@@ -27,5 +29,3 @@ const (
 	LabelMethod = "method"
 	LabelStatus = "status"
 )
-
-type Labels = prometheus.Labels

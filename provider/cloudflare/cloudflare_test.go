@@ -47,21 +47,25 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-// newCloudflareError creates a cloudflare.Error suitable for testing.
-// The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
-// so this helper initializes them properly.
-func newCloudflareError(statusCode int) *cloudflare.Error {
-	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.com/client/v4/zones", nil)
-	resp := &http.Response{
-		StatusCode: statusCode,
-		Status:     http.StatusText(statusCode),
-		Request:    req,
-	}
-	return &cloudflare.Error{
-		StatusCode: statusCode,
-		Request:    req,
-		Response:   resp,
-	}
+type MockAction struct {
+	Name             string
+	ZoneId           string
+	RecordId         string
+	RecordData       dns.RecordResponse
+	RegionalHostname regionalHostname
+}
+
+type mockCloudFlareClient struct {
+	Zones                map[string]string
+	Records              map[string]map[string]dns.RecordResponse
+	Actions              []MockAction
+	BatchDNSRecordsCalls int
+	listZonesError       error // For v4 ListZones
+	getZoneError         error // For v4 GetZone
+	dnsRecordsError      error
+	customHostnames      map[string][]customHostname
+	regionalHostnames    map[string][]regionalHostname
+	dnsRecordsListParams dns.RecordListParams
 }
 
 var ExampleDomain = []dns.RecordResponse{
@@ -92,25 +96,21 @@ var ExampleDomain = []dns.RecordResponse{
 	},
 }
 
-type MockAction struct {
-	Name             string
-	ZoneId           string
-	RecordId         string
-	RecordData       dns.RecordResponse
-	RegionalHostname regionalHostname
-}
-
-type mockCloudFlareClient struct {
-	Zones                map[string]string
-	Records              map[string]map[string]dns.RecordResponse
-	Actions              []MockAction
-	BatchDNSRecordsCalls int
-	listZonesError       error // For v4 ListZones
-	getZoneError         error // For v4 GetZone
-	dnsRecordsError      error
-	customHostnames      map[string][]customHostname
-	regionalHostnames    map[string][]regionalHostname
-	dnsRecordsListParams dns.RecordListParams
+// newCloudflareError creates a cloudflare.Error suitable for testing.
+// The v5 SDK's Error type panics when .Error() is called with nil Request/Response fields,
+// so this helper initializes them properly.
+func newCloudflareError(statusCode int) *cloudflare.Error {
+	req := httptest.NewRequest(http.MethodGet, "https://api.cloudflare.com/client/v4/zones", nil)
+	resp := &http.Response{
+		StatusCode: statusCode,
+		Status:     http.StatusText(statusCode),
+		Request:    req,
+	}
+	return &cloudflare.Error{
+		StatusCode: statusCode,
+		Request:    req,
+		Response:   resp,
+	}
 }
 
 func NewMockCloudFlareClient() *mockCloudFlareClient {
@@ -1945,6 +1945,7 @@ func TestCloudFlareProvider_Region(t *testing.T) {
 	assert.True(t, provider.RegionalServicesConfig.Enabled, "expect regional services to be enabled")
 	assert.Equal(t, "us", provider.RegionalServicesConfig.RegionKey, "expected region key to be 'us'")
 }
+
 func TestCloudFlareProvider_newCloudFlareChange(t *testing.T) {
 	t.Parallel()
 
@@ -3026,6 +3027,7 @@ func TestConvertCloudflareErrorInContext(t *testing.T) {
 		})
 	}
 }
+
 func TestCloudFlareZonesDomainFilter(t *testing.T) {
 	// Create a domain filter that only matches "bar.com"
 	// This should filter out "foo.com" and trigger the debug log

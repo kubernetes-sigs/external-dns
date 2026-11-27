@@ -49,13 +49,6 @@ import (
 	"sigs.k8s.io/external-dns/source/template"
 )
 
-const (
-	// Each reset re-runs full discovery.
-	mapperResetInterval = 30 * time.Second
-	// Bounds a reconcile blocked on a reflector that cannot list.
-	informerSyncTimeout = 30 * time.Second
-)
-
 // ClientsFunc returns the Resolver's clients. Called once, on first reference.
 type ClientsFunc func() (dynamic.Interface, discovery.DiscoveryInterface, error)
 
@@ -79,6 +72,13 @@ type Resolver struct {
 	handlers  []func()
 	lastReset time.Time
 }
+
+const (
+	// Each reset re-runs full discovery.
+	mapperResetInterval = 30 * time.Second
+	// Bounds a reconcile blocked on a reflector that cannot list.
+	informerSyncTimeout = 30 * time.Second
+)
 
 // NewResolver returns a Resolver whose informers live until ctx is done.
 func NewResolver(ctx context.Context, clientsFn ClientsFunc) *Resolver {

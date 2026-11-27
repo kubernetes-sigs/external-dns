@@ -42,6 +42,8 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
+const testNamespace = "foo"
+
 func newStatusWriter(t *testing.T, funcs interceptor.Funcs, objs ...client.Object) *StatusWriter {
 	t.Helper()
 	scheme := runtime.NewScheme()
@@ -54,8 +56,6 @@ func newStatusWriter(t *testing.T, funcs interceptor.Funcs, objs ...client.Objec
 		Build()
 	return NewStatusWriter(NewCRDClients(c, c), false)
 }
-
-const testNamespace = "foo"
 
 func dnsEndpointRef(name string) *events.ObjectReference {
 	return endpoint.NewObjectRef("DNSEndpoint", "externaldns.k8s.io/v1alpha1", testNamespace, name, "", types.CRD)

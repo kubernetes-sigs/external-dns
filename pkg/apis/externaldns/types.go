@@ -39,16 +39,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	passwordMask  = "******"
-	LogFormatText = "text"
-	LogFormatJSON = "json"
-
-	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
-	// record, so ~60k records). Override with --webhook-provider-max-body-size.
-	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
-)
-
 // Config is a project-wide configuration
 type Config struct {
 	APIServerURL                                  string
@@ -235,6 +225,16 @@ type Config struct {
 	UnstructuredResources                         []string
 	PreferAlias                                   bool
 }
+
+const (
+	passwordMask  = "******"
+	LogFormatText = "text"
+	LogFormatJSON = "json"
+
+	// defaultWebhookProviderMaxBodySize caps decoded webhook bodies (~0.5 KiB per
+	// record, so ~60k records). Override with --webhook-provider-max-body-size.
+	defaultWebhookProviderMaxBodySize int64 = 32 << 20 // 32 MiB
+)
 
 var defaultConfig = &Config{
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
@@ -434,12 +434,6 @@ var ProviderNames = []string{
 // AllowedSources lists every value accepted by --source, alphabetically sorted.
 var AllowedSources = sortedAllowedSources()
 
-func sortedAllowedSources() []string {
-	s := slices.Clone(types.All)
-	slices.Sort(s)
-	return s
-}
-
 // multiNamespaceSources watch every --namespace value.
 // Others ignore the flag or aren't migrated yet, so watch at most one.
 var multiNamespaceSources = []string{
@@ -463,6 +457,12 @@ var multiNamespaceSources = []string{
 	"skipper-routegroup",
 	"traefik-proxy",
 	"unstructured",
+}
+
+func sortedAllowedSources() []string {
+	s := slices.Clone(types.All)
+	slices.Sort(s)
+	return s
 }
 
 // SourceSupportsMultipleNamespaces reports whether the source handles several --namespace values.
@@ -534,6 +534,11 @@ func uniqueCommaSeparated(values []string) []string {
 	return result
 }
 
+// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
+func (cfg *Config) IsPTRSupported() bool {
+	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
+}
+
 // resolveDeprecatedFlags reconciles deprecated flags with their replacements.
 // When --request-timeout is explicitly changed from its default and --kube-api-request-timeout
 // was not, the deprecated value is promoted and a warning is logged.
@@ -549,11 +554,6 @@ func (cfg *Config) resolveDeprecatedFlags() {
 		logrus.Warn("--rfc2136-tsig-axfr is deprecated, use --rfc2136-axfr instead")
 		cfg.RFC2136AXFR = true
 	}
-}
-
-// IsPTRSupported returns true if PTR is included in ManagedDNSRecordTypes.
-func (cfg *Config) IsPTRSupported() bool {
-	return slices.Contains(cfg.ManagedDNSRecordTypes, endpoint.RecordTypePTR)
 }
 
 func bindFlags(b flags.FlagBinder, cfg *Config) {
@@ -729,7 +729,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.StringVar("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)", defaultConfig.TXTWildcardReplacement, &cfg.TXTWildcardReplacement)
 	b.BoolVar("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)", defaultConfig.TXTEncryptEnabled, &cfg.TXTEncryptEnabled)
 	b.StringVar("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)", defaultConfig.TXTEncryptAESKey, &cfg.TXTEncryptAESKey)
-	b.StringVar("migrate-from-txt-owner", "Old txt-owner-id that needs to be overwritten (default: default)", defaultConfig.TXTOwnerOld, &cfg.TXTOwnerOld)
+	b.StringVar("migrate-from-txt-owner", "When using the TXT registry, old txt-owner-id to migrate records from (optional)", defaultConfig.TXTOwnerOld, &cfg.TXTOwnerOld)
 	b.StringVar("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)", cfg.AWSDynamoDBRegion, &cfg.AWSDynamoDBRegion)
 	b.StringVar("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")", defaultConfig.AWSDynamoDBTable, &cfg.AWSDynamoDBTable)
 

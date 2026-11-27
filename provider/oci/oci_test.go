@@ -50,24 +50,9 @@ type mockOCIServiceError struct {
 	code       string
 }
 
-func (e mockOCIServiceError) Error() string {
-	return e.code
-}
-
-func (e mockOCIServiceError) GetHTTPStatusCode() int {
-	return e.statusCode
-}
-
-func (e mockOCIServiceError) GetMessage() string {
-	return e.code
-}
-
-func (e mockOCIServiceError) GetCode() string {
-	return e.code
-}
-
-func (e mockOCIServiceError) GetOpcRequestID() string {
-	return ""
+type mutableMockOCIDNSClient struct {
+	zones   map[string]dns.ZoneSummary
+	records map[string]map[string]dns.Record
 }
 
 var (
@@ -93,6 +78,26 @@ var (
 		Name: new("bar.com"),
 	}
 )
+
+func (e mockOCIServiceError) Error() string {
+	return e.code
+}
+
+func (e mockOCIServiceError) GetHTTPStatusCode() int {
+	return e.statusCode
+}
+
+func (e mockOCIServiceError) GetMessage() string {
+	return e.code
+}
+
+func (e mockOCIServiceError) GetCode() string {
+	return e.code
+}
+
+func (e mockOCIServiceError) GetOpcRequestID() string {
+	return ""
+}
 
 func buildZoneResponseItems(scope dns.ListZonesScopeEnum, privateZones, globalZones []dns.ZoneSummary) []dns.ZoneSummary {
 	switch string(scope) {
@@ -791,11 +796,6 @@ func TestOperationsByZone(t *testing.T) {
 			require.Equal(t, tc.expected, result)
 		})
 	}
-}
-
-type mutableMockOCIDNSClient struct {
-	zones   map[string]dns.ZoneSummary
-	records map[string]map[string]dns.Record
 }
 
 func newMutableMockOCIDNSClient(zones []dns.ZoneSummary, recordsByZone map[string][]dns.Record) *mutableMockOCIDNSClient {

@@ -40,13 +40,13 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
+const addressesTmpl = "{{ range .status.addresses }}{{ .value }},{{ end }}"
+
 var (
 	gatewayGVR = schema.GroupVersionResource{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "gateways"}
 	serviceGVR = schema.GroupVersionResource{Version: "v1", Resource: "services"}
 	gaGVR      = schema.GroupVersionResource{Group: "aga.k8s.aws", Version: "v1beta1", Resource: "globalaccelerators"}
 )
-
-const addressesTmpl = "{{ range .status.addresses }}{{ .value }},{{ end }}"
 
 func newObject(gvr schema.GroupVersionResource, kind, namespace, name string, status map[string]any) *unstructured.Unstructured {
 	u := &unstructured.Unstructured{Object: map[string]any{"status": status}}

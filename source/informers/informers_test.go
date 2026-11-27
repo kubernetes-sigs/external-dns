@@ -29,12 +29,12 @@ type mockInformerFactory struct {
 	syncResults map[reflect.Type]bool
 }
 
-func (m *mockInformerFactory) WaitForCacheSync(_ <-chan struct{}) map[reflect.Type]bool {
-	return m.syncResults
-}
-
 type mockDynamicInformerFactory struct {
 	syncResults map[schema.GroupVersionResource]bool
+}
+
+func (m *mockInformerFactory) WaitForCacheSync(_ <-chan struct{}) map[reflect.Type]bool {
+	return m.syncResults
 }
 
 func (m *mockDynamicInformerFactory) WaitForCacheSync(_ <-chan struct{}) map[schema.GroupVersionResource]bool {

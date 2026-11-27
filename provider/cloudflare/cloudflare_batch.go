@@ -29,12 +29,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-const (
-	// defaultBatchChangeSize is the default maximum number of DNS record
-	// operations included in each Cloudflare batch request.
-	defaultBatchChangeSize = 200
-)
-
 // batchCollections groups the parallel slices that are assembled while
 // classifying per-zone changes. It is passed as a unit to
 // submitDNSRecordChanges and chunkBatchChanges, replacing the previous
@@ -69,6 +63,12 @@ type batchChunk struct {
 	createChanges []*cloudFlareChange
 	updateChanges []*cloudFlareChange
 }
+
+const (
+	// defaultBatchChangeSize is the default maximum number of DNS record
+	// operations included in each Cloudflare batch request.
+	defaultBatchChangeSize = 200
+)
 
 // BatchDNSRecords submits a batch of DNS record changes to the Cloudflare API.
 func (z zoneService) BatchDNSRecords(ctx context.Context, params dns.RecordBatchParams) (*dns.RecordBatchResponse, error) {

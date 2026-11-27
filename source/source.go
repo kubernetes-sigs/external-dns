@@ -27,11 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/source/annotations"
 )
 
-const (
-	EndpointsTypeNodeExternalIP = "NodeExternalIP"
-	EndpointsTypeHostIP         = "HostIP"
-)
-
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
@@ -44,6 +39,13 @@ type kubeObject interface {
 	metav1.Object
 }
 
+type eventHandlerFunc func()
+
+const (
+	EndpointsTypeNodeExternalIP = "NodeExternalIP"
+	EndpointsTypeHostIP         = "HostIP"
+)
+
 func getAccessFromAnnotations(input map[string]string) string {
 	return input[annotations.AccessKey]
 }
@@ -55,8 +57,6 @@ func getEndpointsTypeFromAnnotations(annots map[string]string) string {
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
 	return selector.Matches(labels.Set(srcAnnotations))
 }
-
-type eventHandlerFunc func()
 
 func (fn eventHandlerFunc) OnAdd(_ any, _ bool) { fn() }
 func (fn eventHandlerFunc) OnUpdate(_, _ any)   { fn() }

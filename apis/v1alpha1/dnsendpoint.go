@@ -22,25 +22,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-const (
-	// AcceptedCondition reports, before any provider call, whether at least one
-	// endpoint in spec passed validation, or spec is empty.
-	AcceptedCondition string = "Accepted"
-
-	// PartiallyInvalidCondition is True when some endpoints were dropped and the
-	// others are published, as in Gateway API. It is never False.
-	PartiallyInvalidCondition string = "PartiallyInvalid"
-
-	// InvalidReason marks endpoints external-dns refused.
-	InvalidReason string = "Invalid"
-
-	// FilteredReason is a ReadyCondition reason: filters or another owner excluded every endpoint.
-	FilteredReason string = "Filtered"
-
-	// DryRunReason is a ReadyCondition reason: --dry-run kept planned endpoints from the DNS provider.
-	DryRunReason string = "DryRun"
-)
-
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -95,3 +76,22 @@ type DNSEndpointStatus struct {
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+const (
+	// AcceptedCondition reports, before any provider call, whether at least one
+	// endpoint in spec passed validation, or spec is empty.
+	AcceptedCondition string = "Accepted"
+
+	// PartiallyInvalidCondition is True when some endpoints were dropped and the
+	// others are published, as in Gateway API. It is never False.
+	PartiallyInvalidCondition string = "PartiallyInvalid"
+
+	// InvalidReason marks endpoints external-dns refused.
+	InvalidReason string = "Invalid"
+
+	// FilteredReason is a ReadyCondition reason: filters or another owner excluded every endpoint.
+	FilteredReason string = "Filtered"
+
+	// DryRunReason is a ReadyCondition reason: --dry-run kept planned endpoints from the DNS provider.
+	DryRunReason string = "DryRun"
+)

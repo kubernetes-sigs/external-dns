@@ -34,26 +34,10 @@ import (
 	"sigs.k8s.io/external-dns/pkg/version"
 )
 
-const (
-	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
-
-	// DefaultTimeout api requests after
-	DefaultTimeout = 180 * time.Second
-)
-
-// Errors
-var (
-	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
-)
-
 // APIError error
 type APIError struct {
 	Code    string
 	Message string
-}
-
-func (err *APIError) Error() string {
-	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)
 }
 
 // Logger is the interface that should be implemented for loggers that wish to
@@ -102,6 +86,22 @@ type GDErrorResponse struct {
 	Code    string         `json:"code"`
 	Fields  []GDErrorField `json:"fields,omitempty"`
 	Message string         `json:"message,omitempty"`
+}
+
+const (
+	ErrCodeQuotaExceeded = "QUOTA_EXCEEDED"
+
+	// DefaultTimeout api requests after
+	DefaultTimeout = 180 * time.Second
+)
+
+// Errors
+var (
+	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
+)
+
+func (err *APIError) Error() string {
+	return fmt.Sprintf("Error %s: %q", err.Code, err.Message)
 }
 
 func (r GDErrorResponse) String() string {

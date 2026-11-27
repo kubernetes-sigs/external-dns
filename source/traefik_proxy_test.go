@@ -46,10 +46,21 @@ import (
 	"sigs.k8s.io/external-dns/source/types"
 )
 
-// This is a compile-time validation that traefikSource is a Source.
-var _ Source = &traefikSource{}
+type FakeInformer struct {
+	mock.Mock
+	lister cache.GenericLister
+}
+
+type testInformer struct {
+	cache.SharedIndexInformer
+
+	times int
+}
 
 const defaultTraefikNamespace = "traefik"
+
+// This is a compile-time validation that traefikSource is a Source.
+var _ Source = &traefikSource{}
 
 func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 	t.Parallel()
@@ -931,11 +942,6 @@ func TestAddEventHandler(t *testing.T) {
 	fakeInformer.AssertCalled(t, "Informer")
 }
 
-type FakeInformer struct {
-	mock.Mock
-	lister cache.GenericLister
-}
-
 func (f *FakeInformer) Informer() cache.SharedIndexInformer {
 	args := f.Called()
 	return args.Get(0).(cache.SharedIndexInformer)
@@ -943,12 +949,6 @@ func (f *FakeInformer) Informer() cache.SharedIndexInformer {
 
 func (f *FakeInformer) Lister() cache.GenericLister {
 	return f.lister
-}
-
-type testInformer struct {
-	cache.SharedIndexInformer
-
-	times int
 }
 
 func (t *testInformer) AddEventHandler(_ cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {

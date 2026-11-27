@@ -73,12 +73,18 @@ or the `--publish-host-ip` flag was specified, uses the Pod's `status.hostIP` fi
 
 5. Otherwise uses the `ip` field of the address from the Endpoints.
 
+NB: The Service's `spec.externalIPs` are ignored, because kube-proxy does not route traffic for headless Services.
+
 ### ClusterIP (not headless)
 
 1. If the hostname came from an `external-dns.kubernetes.io/internal-hostname` annotation
 or the `--publish-internal-services` flag was specified, uses the `spec.ClusterIP`.
+   This takes precedence over `spec.externalIPs`.
 
-2. Otherwise, does not create any targets.
+2. Otherwise, if the Service has one or more `spec.externalIPs`, uses the values in that field.
+This also applies to names from `--fqdn-template`, so every matching Service with `spec.externalIPs` gets records.
+
+3. Otherwise, does not create any targets.
 
 ### NodePort
 
