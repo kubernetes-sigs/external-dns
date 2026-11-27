@@ -590,7 +590,6 @@ methods make the sequence explicit.
 
 ### Linter versus shape
 
-`cyclop` in `.golangci.yml` is enforced by `make go-lint` and
-CI, so a tripped rule has to be addressed. Any reshape must be justified
-by the practices in this section, not by the metric: find a design
-reason, or raise the threshold.
+`cyclop` in `.golangci.yml` is enforced by `make go-lint` and CI. Justify
+any reshape by the practices in this section, not by the metric. If no
+design reason applies, use `//nolint:cyclop // <reason>` on that function.
