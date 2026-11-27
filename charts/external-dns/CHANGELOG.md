@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Grant `get`/`watch`/`list` RBAC on `gateways` when the `gateway` source is enabled with `namespaced=true` and `gatewayNamespace` set, and scope the extra namespace-listing `ClusterRole` to route sources only (the `gateway` resource source does not require cross-namespace namespace traversal).
+
 ## [v1.24.0] - 2026-11-09
 
 ### Added

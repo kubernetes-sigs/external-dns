@@ -27,6 +27,7 @@ const (
 	Service             Type = "service"
 	Ingress             Type = "ingress"
 	Pod                 Type = "pod"
+	Gateway             Type = "gateway"
 	GatewayHttpRoute    Type = "gateway-httproute"
 	GatewayGrpcRoute    Type = "gateway-grpcroute"
 	GatewayTlsRoute     Type = "gateway-tlsroute"
@@ -53,7 +54,7 @@ const (
 // All lists every known source type.
 var All = []Type{
 	Node, Service, Ingress, Pod,
-	GatewayHttpRoute, GatewayGrpcRoute, GatewayTlsRoute, GatewayTcpRoute, GatewayUdpRoute,
+	Gateway, GatewayHttpRoute, GatewayGrpcRoute, GatewayTlsRoute, GatewayTcpRoute, GatewayUdpRoute,
 	IstioGateway, IstioVirtualService,
 	AmbassadorHost, ContourHTTPProxy, GlooProxy, TraefikProxy, OpenShiftRoute,
 	Fake, Empty, Connector, CRD, SkipperRouteGroup, KongTCPIngress,

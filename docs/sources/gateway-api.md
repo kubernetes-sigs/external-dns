@@ -1,7 +1,74 @@
-# Gateway API Route Sources
+# Gateway API Sources
 
-This describes how to configure ExternalDNS to use Gateway API Route sources.
+This describes how to configure ExternalDNS to use Gateway API sources.
 It is meant to supplement the other provider-specific setup tutorials.
+
+## Gateway Source (`--source=gateway`)
+
+The `gateway` source watches `Gateway` resources directly and creates DNS records
+for each Gateway that has the `external-dns.kubernetes.io/hostname` annotation.
+Targets are taken from `gateway.status.addresses` (or overridden via the
+`external-dns.kubernetes.io/target` annotation).
+
+### When to use
+
+Use `--source=gateway` when you want DNS records tied to the Gateway itself rather
+than individual routes. This is useful when:
+
+- All routes share the same DNS name as the Gateway's external address.
+- You manage hostnames at the Gateway level rather than per-route.
+
+### How it works
+
+1. ExternalDNS lists all `Gateway` objects in the configured namespace.
+2. For each Gateway with `external-dns.kubernetes.io/hostname`, it reads the value as one or more comma-separated hostnames.
+3. Targets are sourced from `gateway.status.addresses` with an **IP-first** preference:
+   - If any `IPAddress`-type address is present, only those are used (hostname addresses are dropped). This avoids mixing A and CNAME records for the same name.
+   - If no IP addresses are present, `HostnameAddress`-type addresses are used as CNAME targets.
+   - `NamedAddress` and other custom address types are always skipped.
+   - Route sources (`gateway-httproute`, etc.) publish **every** `status.addresses` value without this filtering, so the same Gateway can yield different targets depending on which source is used.
+4. The `external-dns.kubernetes.io/target` annotation overrides `status.addresses` entirely, bypassing the IP-first logic.
+
+### Example
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: my-gateway
+  namespace: default
+  annotations:
+    external-dns.kubernetes.io/hostname: app.example.com
+    external-dns.kubernetes.io/ttl: "300"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+status:
+  addresses:
+    - type: IPAddress
+      value: 203.0.113.1
+```
+
+This produces an A record: `app.example.com → 203.0.113.1`.
+
+### Supported flags
+
+| Flag | Effect on `gateway` source |
+|------|---------------------------|
+| `--namespace` | Limit to Gateways in a specific namespace |
+| `--label-filter` | Filter Gateways by label selector |
+| `--gateway-name` | Limit to a single Gateway by name |
+| `--annotation-filter` | Filter Gateways by annotation selector |
+| `--ignore-hostname-annotation` | Skip the hostname annotation (useful with `--fqdn-template`) |
+| `--fqdn-template` | Generate hostnames from a Go template applied to the Gateway object |
+
+Note: `--gateway-namespace` and `--gateway-label-filter` apply only to the `gateway-*route` sources,
+where they scope the referenced Gateway independently of the Route's own `--namespace`/`--label-filter`.
+The `gateway` source has no such distinction — it watches Gateways directly — so it uses the generic
+`--namespace`/`--label-filter` flags instead.
 
 ## Supported API Versions
 
@@ -184,6 +251,19 @@ In this example, External DNS will create DNS records only for `company.private.
 
 For a complete list of supported annotations, see the
 [annotations documentation](../annotations/annotations.md#gateway-api-annotation-placement).
+
+## Avoiding Hostname Overlap
+
+Running `--source=gateway` alongside a route source (e.g. `--source=gateway-httproute`) is
+supported, but if both emit the **same hostname**, one source's targets will be silently dropped.
+ExternalDNS ownership is per hostname, not per resource; the current owner wins and the
+competing source is ignored until the owner stops emitting that hostname.
+
+See [Two sources claim the same hostname and the record won't switch. Why?](../faq.md#two-sources-claim-the-same-hostname-and-the-record-wont-switch-why)
+for the full explanation and migration steps.
+
+ExternalDNS logs a `WARN` on startup when `gateway` and a route source are both enabled as a
+reminder to ensure there is zero hostname overlap.
 
 ## Manifest with RBAC
 
