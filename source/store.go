@@ -236,28 +236,8 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 	return p.openshiftClient, p.openshiftClientErr
 }
 
-// warnOnDualGatewayOwnership logs a warning when both the gateway resource source and a
-// Gateway API route source are enabled together. If both emit the same hostname, one source's
-// targets will be silently dropped. See docs/sources/gateway-api.md#avoiding-hostname-overlap.
-func warnOnDualGatewayOwnership(sources []string) {
-	hasGateway := false
-	var routeSources []string
-	for _, name := range sources {
-		switch name {
-		case types.Gateway:
-			hasGateway = true
-		case types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute:
-			routeSources = append(routeSources, name)
-		}
-	}
-	if hasGateway && len(routeSources) > 0 {
-		log.Warnf("sources %q enabled alongside %q: both can emit the same hostname; when they do, only one resource's targets are published. Ensure there is zero hostname overlap, see docs/sources/gateway-api.md#avoiding-hostname-overlap", types.Gateway, routeSources)
-	}
-}
-
 // ByNames returns multiple Sources given multiple names.
 func ByNames(ctx context.Context, cfg *config.Config, p ClientGenerator) ([]Source, error) {
-	warnOnDualGatewayOwnership(cfg.Sources)
 	sources := make([]Source, 0, len(cfg.Sources))
 	for _, name := range cfg.Sources {
 		source, err := BuildWithConfig(ctx, name, p, cfg)

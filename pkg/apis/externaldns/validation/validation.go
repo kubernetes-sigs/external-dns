@@ -20,6 +20,7 @@ import (
 	"slices"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -27,6 +28,7 @@ import (
 	"sigs.k8s.io/external-dns/apis/v1alpha1"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/types"
 )
 
 // Validator validates a Config, returning any problems as a field.ErrorList.
@@ -43,6 +45,8 @@ func (f validatorFunc) Validate(cfg *externaldns.Config) field.ErrorList {
 
 // ValidateConfig performs validation on the Config object
 func ValidateConfig(cfg *externaldns.Config) error {
+	warnOnDualGatewayOwnership(cfg.Sources)
+
 	validators := []Validator{
 		validatorFunc(preValidateConfig),
 		validatorFunc(validateConfigForProvider),
@@ -61,6 +65,25 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		errs = append(errs, v.Validate(cfg)...)
 	}
 	return errs.ToAggregate()
+}
+
+// warnOnDualGatewayOwnership logs a warning when both the gateway resource source and a
+// Gateway API route source are enabled together. If both emit the same hostname, one source's
+// targets will be silently dropped. See docs/sources/gateway-api.md#avoiding-hostname-overlap.
+func warnOnDualGatewayOwnership(sources []string) {
+	hasGateway := false
+	var routeSources []string
+	for _, name := range sources {
+		switch name {
+		case types.Gateway:
+			hasGateway = true
+		case types.GatewayHttpRoute, types.GatewayGrpcRoute, types.GatewayTlsRoute, types.GatewayTcpRoute, types.GatewayUdpRoute:
+			routeSources = append(routeSources, name)
+		}
+	}
+	if hasGateway && len(routeSources) > 0 {
+		log.Warnf("sources %q enabled alongside %q: both can emit the same hostname; when they do, only one resource's targets are published. Ensure there is zero hostname overlap, see docs/sources/gateway-api.md#avoiding-hostname-overlap", types.Gateway, routeSources)
+	}
 }
 
 // validateHostnameConfig ensures an FQDN template is set when hostname annotations are ignored.

@@ -422,7 +422,7 @@ tests:
           value: rbac-external-dns-namespaces
         template: clusterrole.yaml
 
-  - it: must grant gateways permission with namespaced=true, gatewayNamespace and 'gateway' source
+  - it: should ignore gatewayNamespace for plain 'gateway' source (only route sources use gatewayNamespace)
     set:
       namespaced: true
       gatewayNamespace: gateway-ns
@@ -437,6 +437,10 @@ tests:
         template: clusterrolebinding.yaml
       - isKind:
           of: Role
+        template: clusterrole.yaml
+      - notEqual:
+          path: metadata.namespace
+          value: gateway-ns
         template: clusterrole.yaml
       - contains:
           path: rules

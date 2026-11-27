@@ -17,268 +17,406 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/source/annotations"
+	"sigs.k8s.io/external-dns/source/config"
+	templatetest "sigs.k8s.io/external-dns/source/template/testutil"
 )
 
-func TestGatewayMatchingHost(t *testing.T) {
-	tests := []struct {
-		desc string
-		a, b string
-		host string
-		ok   bool
-	}{
-		{
-			desc: "ipv4-rejected",
-			a:    "1.2.3.4",
-			ok:   false,
-		},
-		{
-			desc: "ipv6-rejected",
-			a:    "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-			ok:   false,
-		},
-		{
-			desc: "empty-matches-empty",
-			ok:   true,
-		},
-		{
-			desc: "empty-matches-nonempty",
-			a:    "example.net",
-			host: "example.net",
-			ok:   true,
-		},
-		{
-			desc: "simple-match",
-			a:    "example.net",
-			b:    "example.net",
-			host: "example.net",
-			ok:   true,
-		},
-		{
-			desc: "wildcard-matches-longer",
-			a:    "*.example.net",
-			b:    "test.example.net",
-			host: "test.example.net",
-			ok:   true,
-		},
-		{
-			desc: "wildcard-matches-equal-length",
-			a:    "*.example.net",
-			b:    "a.example.net",
-			host: "a.example.net",
-			ok:   true,
-		},
-		{
-			desc: "wildcard-matches-multiple-subdomains",
-			a:    "*.example.net",
-			b:    "foo.bar.test.example.net",
-			host: "foo.bar.test.example.net",
-			ok:   true,
-		},
-		{
-			desc: "wildcard-doesnt-match-parent",
-			a:    "*.example.net",
-			b:    "example.net",
-			ok:   false,
-		},
-		{
-			desc: "wildcard-must-be-complete-label",
-			a:    "*example.net",
-			b:    "test.example.net",
-			ok:   false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			for range 2 {
-				if host, ok := gwMatchingHost(tt.a, tt.b); host != tt.host || ok != tt.ok {
-					t.Errorf(
-						"gwMatchingHost(%q, %q); got: %q, %v; want: %q, %v",
-						tt.a, tt.b, host, ok, tt.host, tt.ok,
-					)
-				}
-				tt.a, tt.b = tt.b, tt.a
-			}
-		})
+var _ Source = &gatewaySource{}
 
+func gatewayStatusHostname(hostnames ...string) v1.GatewayStatus {
+	typ := v1.HostnameAddressType
+	addrs := make([]v1.GatewayStatusAddress, len(hostnames))
+	for i, h := range hostnames {
+		addrs[i] = v1.GatewayStatusAddress{Type: &typ, Value: h}
+	}
+	return v1.GatewayStatus{Addresses: addrs}
+}
+
+func makeGateway(namespace, name string, annots map[string]string, status v1.GatewayStatus, labels map[string]string) *v1.Gateway {
+	return &v1.Gateway{
+		Name:        name,
+		Namespace:   namespace,
+		Annotations: annots,
+		Labels:      labels,
+		Status:      status,
 	}
 }
 
-func TestGatewayMatchingProtocol(t *testing.T) {
+func TestGatewaySourceEndpoints(t *testing.T) {
+	t.Parallel()
+
+	hostnameAnnotation := func(hostnames ...string) map[string]string {
+		return map[string]string{annotations.HostnameKey: strings.Join(hostnames, ",")}
+	}
+
 	tests := []struct {
-		route, lis string
-		desc       string
-		ok         bool
+		title     string
+		config    *config.Config
+		gateways  []*v1.Gateway
+		endpoints []*endpoint.Endpoint
 	}{
 		{
-			desc:  "protocol-matches-lis-https-route-http",
-			route: "HTTP",
-			lis:   "HTTPS",
-			ok:    true,
+			title:  "IP address in status produces A record",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+			},
 		},
 		{
-			desc:  "protocol-match-invalid-list-https-route-tcp",
-			route: "TCP",
-			lis:   "HTTPS",
-			ok:    false,
+			title:  "hostname address in status produces CNAME record",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatusHostname("lb.example.com"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("foo.example.com", endpoint.RecordTypeCNAME, 0, "lb.example.com"),
+			},
 		},
 		{
-			desc:  "protocol-match-valid-lis-tls-route-tls",
-			route: "TLS",
-			lis:   "TLS",
-			ok:    true,
+			title:  "IPv6 address in status produces AAAA record",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("2001:db8::1"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, 0, "2001:db8::1"),
+			},
 		},
 		{
-			desc:  "protocol-match-valid-lis-TLS-route-TCP",
-			route: "TCP",
-			lis:   "TLS",
-			ok:    true,
+			title:  "multiple hostnames in annotation produce multiple endpoints",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("a.example.com", "b.example.com"), gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("a.example.com", "1.2.3.4"),
+				newTestEndpoint("b.example.com", "1.2.3.4"),
+			},
 		},
 		{
-			desc:  "protocol-match-valid-lis-TLS-route-TCP",
-			route: "TLS",
-			lis:   "TCP",
-			ok:    false,
+			title:  "multiple gateways produce multiple endpoints",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
+				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("a.example.com", "1.2.3.4"),
+				newTestEndpoint("b.example.com", "5.6.7.8"),
+			},
+		},
+		{
+			title:  "GatewayName filter skips non-matching gateways",
+			config: &config.Config{GatewayName: "gw1"},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
+				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("a.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "Namespace filter limits to configured namespace",
+			config: &config.Config{Namespaces: []string{"ns1"}},
+			gateways: []*v1.Gateway{
+				makeGateway("ns1", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), nil),
+				makeGateway("ns2", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("a.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "LabelFilter skips gateways without matching label",
+			config: &config.Config{LabelFilter: mustGetLabelSelector("env=prod")},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw1", hostnameAnnotation("a.example.com"), gatewayStatus("1.2.3.4"), map[string]string{"env": "prod"}),
+				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), map[string]string{"env": "staging"}),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("a.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "AnnotationFilter skips gateways without matching annotation",
+			config: &config.Config{AnnotationFilter: parseAnnotationFilterOrNil("custom=yes")},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw1", map[string]string{
+					annotations.HostnameKey: "a.example.com",
+					"custom":                "yes",
+				}, gatewayStatus("1.2.3.4"), nil),
+				makeGateway("default", "gw2", hostnameAnnotation("b.example.com"), gatewayStatus("5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("a.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "IgnoreHostnameAnnotation produces no endpoints",
+			config: &config.Config{IgnoreHostnameAnnotation: true},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: nil,
+		},
+		{
+			title:  "no hostname annotation produces no endpoints",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", nil, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: nil,
+		},
+		{
+			title:  "no status addresses produces no endpoints",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), v1.GatewayStatus{}, nil),
+			},
+			endpoints: nil,
+		},
+		{
+			title:  "target override annotation replaces status addresses",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TargetKey:   "override.example.com",
+				}, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("foo.example.com", endpoint.RecordTypeCNAME, 0, "override.example.com"),
+			},
+		},
+		{
+			title:  "TTL annotation is applied to endpoints",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", map[string]string{
+					annotations.HostnameKey: "foo.example.com",
+					annotations.TtlKey:      "300",
+				}, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, 300, "1.2.3.4"),
+			},
+		},
+		{
+			title:  "controller annotation mismatch skips gateway",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", map[string]string{
+					annotations.HostnameKey:   "foo.example.com",
+					annotations.ControllerKey: "other-controller",
+				}, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: nil,
+		},
+		{
+			title:  "same hostname from two gateways merges targets",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw1", hostnameAnnotation("shared.example.com"), gatewayStatus("1.2.3.4"), nil),
+				makeGateway("default", "gw2", hostnameAnnotation("shared.example.com"), gatewayStatus("5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("shared.example.com", "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			title:  "multiple IP addresses produce multi-value A record",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), gatewayStatus("1.2.3.4", "5.6.7.8"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4", "5.6.7.8"),
+			},
+		},
+		{
+			title:  "mixed IP and hostname addresses uses only IPs",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
+					ipTyp := v1.IPAddressType
+					hnTyp := v1.HostnameAddressType
+					return v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+						{Type: &ipTyp, Value: "1.2.3.4"},
+						{Type: &hnTyp, Value: "lb.example.com"},
+					}}
+				}(), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "nil address type treated as IPAddress",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), v1.GatewayStatus{
+					Addresses: []v1.GatewayStatusAddress{
+						{Type: nil, Value: "1.2.3.4"},
+					},
+				}, nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "NamedAddress type is skipped",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
+					namedTyp := v1.NamedAddressType
+					return v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+						{Type: &namedTyp, Value: "my-named-address"},
+					}}
+				}(), nil),
+			},
+			endpoints: nil,
+		},
+		{
+			title:  "empty address value is skipped",
+			config: &config.Config{},
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", hostnameAnnotation("foo.example.com"), func() v1.GatewayStatus {
+					ipTyp := v1.IPAddressType
+					return v1.GatewayStatus{Addresses: []v1.GatewayStatusAddress{
+						{Type: &ipTyp, Value: ""},
+					}}
+				}(), nil),
+			},
+			endpoints: nil,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			for range 2 {
-				if ok := gwProtocolMatches(v1.ProtocolType(tt.route), v1.ProtocolType(tt.lis)); ok != tt.ok {
-					t.Errorf(
-						"gwProtocolMatches(%q, %q); got: %v; want: %v",
-						tt.route, tt.lis, ok, tt.ok,
-					)
-				}
-				// tt.a, tt.b = tt.b, tt.a
-			}
-		})
+		t.Run(tt.title, func(t *testing.T) {
+			t.Parallel()
 
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			gwClient := gatewayfake.NewSimpleClientset()
+			for _, gw := range tt.gateways {
+				_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+				require.NoError(t, err, "failed to create Gateway")
+			}
+
+			clients := new(testutils.MockClientGenerator)
+			clients.On("GatewayClient").Return(gwClient, nil)
+
+			src, err := NewGatewaySource(ctx, clients, tt.config)
+			require.NoError(t, err, "failed to create Gateway source")
+
+			endpoints, err := src.Endpoints(ctx)
+			require.NoError(t, err, "failed to get endpoints")
+
+			testutils.ValidateEndpoints(t, endpoints, tt.endpoints)
+		})
 	}
 }
 
-func TestIsDNS1123Domain(t *testing.T) {
-	tests := []struct {
-		desc string
-		in   string
-		ok   bool
-	}{
-		{
-			desc: "empty",
-			ok:   false,
-		},
-		{
-			desc: "label-too-long",
-			in:   strings.Repeat("x", 64) + ".example.net",
-			ok:   false,
-		},
-		{
-			desc: "domain-too-long",
-			in:   strings.Repeat("testing.", 256/(len("testing."))) + "example.net",
-			ok:   false,
-		},
-		{
-			desc: "hostname",
-			in:   "example",
-			ok:   true,
-		},
-		{
-			desc: "domain",
-			in:   "example.net",
-			ok:   true,
-		},
-		{
-			desc: "subdomain",
-			in:   "test.example.net",
-			ok:   true,
-		},
-		{
-			desc: "dashes",
-			in:   "test-with-dash.example.net",
-			ok:   true,
-		},
-		{
-			desc: "dash-prefix",
-			in:   "-dash-prefix.example.net",
-			ok:   false,
-		},
-		{
-			desc: "dash-suffix",
-			in:   "dash-suffix-.example.net",
-			ok:   false,
-		},
-		{
-			desc: "underscore",
-			in:   "under_score.example.net",
-			ok:   false,
-		},
-		{
-			desc: "plus",
-			in:   "pl+us.example.net",
-			ok:   false,
-		},
-		{
-			desc: "brackets",
-			in:   "bra[k]ets.example.net",
-			ok:   false,
-		},
-		{
-			desc: "parens",
-			in:   "pa[re]ns.example.net",
-			ok:   false,
-		},
-		{
-			desc: "wild",
-			in:   "*.example.net",
-			ok:   false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			if ok := isDNS1123Domain(tt.in); ok != tt.ok {
-				t.Errorf("isDNS1123Domain(%q); got: %v; want: %v", tt.in, ok, tt.ok)
-			}
-		})
-	}
-}
-
-func TestGatewayRouteHasParentRefDefaulting(t *testing.T) {
-	meta := &metav1.ObjectMeta{Namespace: "default"}
-	coreGroup := v1.Group("")
-	gatewayAPIGroup := v1.Group(gatewayGroup)
-	gatewayKindVal := v1.Kind(gatewayKind)
-	serviceKind := v1.Kind("Service")
-
-	omitted := v1.ParentReference{Name: "gw"}
-	explicitGateway := v1.ParentReference{Name: "gw", Group: &gatewayAPIGroup}
-	explicitCore := v1.ParentReference{Name: "gw", Group: &coreGroup}
-	explicitGatewayKind := v1.ParentReference{Name: "gw", Kind: &gatewayKindVal}
-	explicitServiceKind := v1.ParentReference{Name: "gw", Kind: &serviceKind}
+func TestGatewaySourceFqdnTemplating(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
-		desc string
-		spec v1.ParentReference
-		ref  v1.ParentReference
-		want bool
+		title        string
+		fqdnTemplate string
+		combine      bool
+		gateways     []*v1.Gateway
+		endpoints    []*endpoint.Endpoint
 	}{
-		{"an omitted group matches an omitted group", omitted, omitted, true},
-		{"an omitted group matches the spelled out Gateway API group", omitted, explicitGateway, true},
-		{"an omitted group does not match an explicit core group", omitted, explicitCore, false},
-		{"an explicit core group matches itself", explicitCore, explicitCore, true},
-		{"an omitted kind matches the spelled out Gateway kind", omitted, explicitGatewayKind, true},
-		{"an omitted kind does not match a Service kind", omitted, explicitServiceKind, false},
+		{
+			title:        "fqdn template generates hostname when no annotation present",
+			fqdnTemplate: "{{.Name}}.template.example.com",
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", nil, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("gw.template.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:        "fqdn template skipped when hostname annotation present and not combining",
+			fqdnTemplate: "{{.Name}}.template.example.com",
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", map[string]string{annotations.HostnameKey: "foo.example.com"}, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:        "fqdn template combined with hostname annotation",
+			fqdnTemplate: "{{.Name}}.template.example.com",
+			combine:      true,
+			gateways: []*v1.Gateway{
+				makeGateway("default", "gw", map[string]string{annotations.HostnameKey: "foo.example.com"}, gatewayStatus("1.2.3.4"), nil),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.com", "1.2.3.4"),
+				newTestEndpoint("gw.template.example.com", "1.2.3.4"),
+			},
+		},
+		{
+			title:        "fqdn template using namespace and labels",
+			fqdnTemplate: "{{.Name}}.{{.Namespace}}.{{.Labels.env}}.example.com",
+			gateways: []*v1.Gateway{
+				makeGateway("prod-ns", "gw", nil, gatewayStatus("1.2.3.4"), map[string]string{"env": "prod"}),
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("gw.prod-ns.prod.example.com", "1.2.3.4"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			if got := gwRouteHasParentRef([]v1.ParentReference{tt.spec}, tt.ref, meta); got != tt.want {
-				t.Errorf("gwRouteHasParentRef = %v, want %v", got, tt.want)
+		t.Run(tt.title, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			gwClient := gatewayfake.NewSimpleClientset()
+			for _, gw := range tt.gateways {
+				_, err := gwClient.GatewayV1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+				require.NoError(t, err, "failed to create Gateway")
 			}
+
+			clients := new(testutils.MockClientGenerator)
+			clients.On("GatewayClient").Return(gwClient, nil)
+
+			cfg := &config.Config{
+				TemplateEngine: templatetest.MustEngine(t, tt.fqdnTemplate, "", "", tt.combine),
+			}
+
+			src, err := NewGatewaySource(ctx, clients, cfg)
+			require.NoError(t, err, "failed to create Gateway source")
+
+			endpoints, err := src.Endpoints(ctx)
+			require.NoError(t, err, "failed to get endpoints")
+
+			testutils.ValidateEndpoints(t, endpoints, tt.endpoints)
 		})
 	}
 }
