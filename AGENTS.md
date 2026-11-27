@@ -91,8 +91,7 @@ guide.
 
 ## Data Flow and Layering
 
-The reconcile pipeline is in [Architecture](#architecture) above. Source
-wrappers live in `source/wrappers/` (see
+Source wrappers live in `source/wrappers/` (see
 [source-wrappers.md](docs/contributing/source-wrappers.md)).
 
 Three layering concerns, kept separate:
