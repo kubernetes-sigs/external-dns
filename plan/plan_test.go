@@ -1180,6 +1180,149 @@ func TestOwnerMismatchLogsDebug(t *testing.T) {
 	logtest.TestHelperLogContainsWithLogLevel(wantMsg, log.DebugLevel, hook, t)
 }
 
+// TestSyncPolicyApexCNAMEFlattening is the Cloudflare apex case: an owned
+// apex CNAME is desired together with TXT and MX. Sync policy deletes the
+// CNAME under RFC 1034 and keeps it when apex flattening is enabled.
+func TestSyncPolicyApexCNAMEFlattening(t *testing.T) {
+	const owner = "ext-dns"
+	managed := []string{
+		endpoint.RecordTypeA,
+		endpoint.RecordTypeAAAA,
+		endpoint.RecordTypeCNAME,
+		endpoint.RecordTypeTXT,
+		endpoint.RecordTypeMX,
+		endpoint.RecordTypeNS,
+	}
+	ep := func(name, recordType, target string) *endpoint.Endpoint {
+		return &endpoint.Endpoint{
+			DNSName:    name,
+			RecordType: recordType,
+			Targets:    endpoint.Targets{target},
+			Labels:     map[string]string{endpoint.OwnerLabelKey: owner},
+		}
+	}
+
+	cname := ep("example.com", endpoint.RecordTypeCNAME, "origin.example.net")
+	txt := ep("example.com", endpoint.RecordTypeTXT, "google-site-verification=abc")
+	mx := ep("example.com", endpoint.RecordTypeMX, "10 mail.example.com")
+	addr := ep("example.com", endpoint.RecordTypeA, "192.0.2.1")
+	aaaa := ep("example.com", endpoint.RecordTypeAAAA, "2001:db8::1")
+	ns := ep("example.com", endpoint.RecordTypeNS, "ns.example.net")
+	wwwCNAME := ep("www.example.com", endpoint.RecordTypeCNAME, "origin.example.net")
+	wwwTXT := ep("www.example.com", endpoint.RecordTypeTXT, "v=spf1")
+	mixedCaseCNAME := ep("Example.COM", endpoint.RecordTypeCNAME, "origin.example.net")
+	mixedCaseTXT := ep("Example.COM", endpoint.RecordTypeTXT, "v=spf1")
+
+	tests := []struct {
+		name       string
+		flattening bool
+		apexes     []string
+		current    []*endpoint.Endpoint
+		desired    []*endpoint.Endpoint
+		wantCreate []*endpoint.Endpoint
+		wantDelete []*endpoint.Endpoint
+	}{
+		{
+			name:       "default sync deletes the owned apex CNAME",
+			current:    []*endpoint.Endpoint{cname},
+			desired:    []*endpoint.Endpoint{cname, txt, mx},
+			wantCreate: []*endpoint.Endpoint{txt, mx},
+			wantDelete: []*endpoint.Endpoint{cname},
+		},
+		{
+			name:       "flattening keeps the apex CNAME and creates TXT and MX",
+			flattening: true,
+			apexes:     []string{"example.com"},
+			current:    []*endpoint.Endpoint{cname},
+			desired:    []*endpoint.Endpoint{cname, txt, mx},
+			wantCreate: []*endpoint.Endpoint{txt, mx},
+		},
+		{
+			name:       "flattening creates the apex CNAME together with TXT and MX",
+			flattening: true,
+			apexes:     []string{"example.com"},
+			desired:    []*endpoint.Endpoint{cname, txt, mx},
+			wantCreate: []*endpoint.Endpoint{cname, txt, mx},
+		},
+		{
+			name:       "default does not create a CNAME beside TXT",
+			desired:    []*endpoint.Endpoint{cname, txt},
+			wantCreate: []*endpoint.Endpoint{txt},
+		},
+		{
+			name:       "flattening still deletes the CNAME beside an A record",
+			flattening: true,
+			apexes:     []string{"example.com"},
+			current:    []*endpoint.Endpoint{cname},
+			desired:    []*endpoint.Endpoint{cname, txt, addr},
+			wantCreate: []*endpoint.Endpoint{txt, addr},
+			wantDelete: []*endpoint.Endpoint{cname},
+		},
+		{
+			name:       "flattening still deletes the CNAME beside an AAAA record",
+			flattening: true,
+			apexes:     []string{"example.com"},
+			current:    []*endpoint.Endpoint{cname},
+			desired:    []*endpoint.Endpoint{cname, aaaa},
+			wantCreate: []*endpoint.Endpoint{aaaa},
+			wantDelete: []*endpoint.Endpoint{cname},
+		},
+		{
+			name:       "flattening still deletes the CNAME beside an NS record",
+			flattening: true,
+			apexes:     []string{"example.com"},
+			current:    []*endpoint.Endpoint{cname},
+			desired:    []*endpoint.Endpoint{cname, ns},
+			wantCreate: []*endpoint.Endpoint{ns},
+			wantDelete: []*endpoint.Endpoint{cname},
+		},
+		{
+			name:       "flattening does not apply to a name below the apex",
+			flattening: true,
+			apexes:     []string{"example.com"},
+			current:    []*endpoint.Endpoint{wwwCNAME},
+			desired:    []*endpoint.Endpoint{wwwCNAME, wwwTXT},
+			wantCreate: []*endpoint.Endpoint{wwwTXT},
+			wantDelete: []*endpoint.Endpoint{wwwCNAME},
+		},
+		{
+			name:       "flattening without apex names keeps the default delete",
+			flattening: true,
+			current:    []*endpoint.Endpoint{cname},
+			desired:    []*endpoint.Endpoint{cname, txt},
+			wantCreate: []*endpoint.Endpoint{txt},
+			wantDelete: []*endpoint.Endpoint{cname},
+		},
+		{
+			name:       "flattening matches the apex ignoring case and a trailing dot",
+			flattening: true,
+			apexes:     []string{"example.com."},
+			current:    []*endpoint.Endpoint{mixedCaseCNAME},
+			desired:    []*endpoint.Endpoint{mixedCaseCNAME, mixedCaseTXT},
+			wantCreate: []*endpoint.Endpoint{mixedCaseTXT},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &Plan{
+				Policies:            []Policy{&SyncPolicy{}},
+				Current:             tt.current,
+				Desired:             tt.desired,
+				ManagedRecords:      managed,
+				OwnerID:             owner,
+				ApexCNAMEFlattening: tt.flattening,
+				ZoneApexes:          tt.apexes,
+			}
+			changes := p.Calculate().Changes
+			validateEntries(t, changes.Create, tt.wantCreate)
+			validateEntries(t, changes.Delete, tt.wantDelete)
+			validateEntries(t, changes.UpdateOld, nil)
+			validateEntries(t, changes.UpdateNew, nil)
+		})
+	}
+}
+
 func (suite *PlanTestSuite) TestHasChangesIgnoresRefObjects() {
 	old := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4")
 	updated := endpoint.NewEndpoint("foo.example.org", endpoint.RecordTypeA, "1.2.3.4").

@@ -214,6 +214,111 @@ func getTestProvider() provider.Provider {
 	)
 }
 
+func TestRunOnceApexCNAMEFlattening(t *testing.T) {
+	cname := &endpoint.Endpoint{
+		DNSName:    "example.com",
+		RecordType: endpoint.RecordTypeCNAME,
+		Targets:    endpoint.Targets{"origin.example.net"},
+	}
+	txt := &endpoint.Endpoint{
+		DNSName:    "example.com",
+		RecordType: endpoint.RecordTypeTXT,
+		Targets:    endpoint.Targets{"google-site-verification=abc"},
+	}
+	mx := &endpoint.Endpoint{
+		DNSName:    "example.com",
+		RecordType: endpoint.RecordTypeMX,
+		Targets:    endpoint.Targets{"10 mail.example.com"},
+	}
+	managed := []string{
+		endpoint.RecordTypeA,
+		endpoint.RecordTypeAAAA,
+		endpoint.RecordTypeCNAME,
+		endpoint.RecordTypeTXT,
+		endpoint.RecordTypeMX,
+	}
+
+	run := func(t *testing.T, flattening bool) *plan.Changes {
+		t.Helper()
+		dnsProvider := &filteredMockProvider{RecordsStore: []*endpoint.Endpoint{cname}}
+		cfg := getTestConfig()
+		cfg.ManagedDNSRecordTypes = managed
+		reg, err := registryfactory.Select(cfg, dnsProvider)
+		require.NoError(t, err)
+
+		source := new(testutils.MockSource)
+		source.On("Endpoints").Return([]*endpoint.Endpoint{cname, txt, mx}, nil)
+
+		ctrl := &Controller{
+			Source:              source,
+			Registry:            reg,
+			Policy:              &plan.SyncPolicy{},
+			ManagedRecordTypes:  managed,
+			ApexCNAMEFlattening: flattening,
+		}
+		if flattening {
+			ctrl.zoneApexes = func(context.Context) ([]string, error) {
+				return []string{"example.com"}, nil
+			}
+		}
+		require.NoError(t, ctrl.RunOnce(t.Context()))
+		require.Len(t, dnsProvider.ApplyChangesCalls, 1)
+		source.AssertExpectations(t)
+		return dnsProvider.ApplyChangesCalls[0]
+	}
+
+	t.Run("default deletes the apex CNAME", func(t *testing.T) {
+		changes := run(t, false)
+		assert.True(t, testutils.SameEndpoints(changes.Create, []*endpoint.Endpoint{txt, mx}))
+		assert.True(t, testutils.SameEndpoints(changes.Delete, []*endpoint.Endpoint{cname}))
+	})
+
+	t.Run("flattening keeps the apex CNAME", func(t *testing.T) {
+		changes := run(t, true)
+		assert.True(t, testutils.SameEndpoints(changes.Create, []*endpoint.Endpoint{txt, mx}))
+		assert.Empty(t, changes.Delete)
+	})
+}
+
+func TestRunOnceApexCNAMEFlatteningZoneErrorsSkipApply(t *testing.T) {
+	dnsProvider := &filteredMockProvider{}
+	cfg := getTestConfig()
+	reg, err := registryfactory.Select(cfg, dnsProvider)
+	require.NoError(t, err)
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return([]*endpoint.Endpoint{}, nil)
+
+	t.Run("missing zone apex source", func(t *testing.T) {
+		ctrl := &Controller{
+			Source:              source,
+			Registry:            reg,
+			Policy:              &plan.SyncPolicy{},
+			ManagedRecordTypes:  cfg.ManagedDNSRecordTypes,
+			ApexCNAMEFlattening: true,
+		}
+		err := ctrl.RunOnce(t.Context())
+		require.ErrorIs(t, err, provider.SoftError)
+		assert.Empty(t, dnsProvider.ApplyChangesCalls)
+	})
+
+	t.Run("zone list failure", func(t *testing.T) {
+		ctrl := &Controller{
+			Source:              source,
+			Registry:            reg,
+			Policy:              &plan.SyncPolicy{},
+			ManagedRecordTypes:  cfg.ManagedDNSRecordTypes,
+			ApexCNAMEFlattening: true,
+			zoneApexes: func(context.Context) ([]string, error) {
+				return nil, provider.NewSoftErrorf("list zones: boom")
+			},
+		}
+		err := ctrl.RunOnce(t.Context())
+		require.ErrorIs(t, err, provider.SoftError)
+		require.ErrorContains(t, err, "list zones: boom")
+		assert.Empty(t, dnsProvider.ApplyChangesCalls)
+	})
+}
+
 // TestRunOnce tests that RunOnce correctly orchestrates the different components.
 func TestRunOnce(t *testing.T) {
 	source := getTestSource()

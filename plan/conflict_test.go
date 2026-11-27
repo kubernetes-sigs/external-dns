@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	"maps"
 	"reflect"
 	"testing"
 
@@ -366,4 +367,225 @@ func TestPerResource_ResolveRecordTypes_LogsWarning(t *testing.T) {
 
 func TestConflictResolver(t *testing.T) {
 	suite.Run(t, new(ResolverSuite))
+}
+
+func TestPerResourceResolveRecordTypesApexCNAMEFlattening(t *testing.T) {
+	cname := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"origin.example.net"}}
+	txt := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"google-site-verification=abc"}}
+	mx := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeMX, Targets: endpoint.Targets{"10 mail.example.com"}}
+	a := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.0.2.1"}}
+	aaaa := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}}
+	ns := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeNS, Targets: endpoint.Targets{"ns.example.net"}}
+	srv := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeSRV, Targets: endpoint.Targets{"0 0 443 origin.example.net"}}
+	wwwCNAME := &endpoint.Endpoint{DNSName: "www.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"origin.example.net"}}
+	wwwTXT := &endpoint.Endpoint{DNSName: "www.example.com", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1"}}
+
+	row := func(candidates []*endpoint.Endpoint, current map[string]*endpoint.Endpoint) *planTableRow {
+		records := map[string]*domainEndpoints{}
+		for _, ep := range candidates {
+			recs := records[ep.RecordType]
+			if recs == nil {
+				recs = &domainEndpoints{}
+				records[ep.RecordType] = recs
+			}
+			recs.candidates = append(recs.candidates, ep)
+		}
+		for recordType, ep := range current {
+			recs := records[recordType]
+			if recs == nil {
+				recs = &domainEndpoints{}
+				records[recordType] = recs
+			}
+			recs.current = ep
+		}
+		return &planTableRow{candidates: candidates, records: records}
+	}
+
+	discardedCNAME := func(current *endpoint.Endpoint, kept map[string]*domainEndpoints) map[string]*domainEndpoints {
+		out := map[string]*domainEndpoints{
+			endpoint.RecordTypeCNAME: {current: current, candidates: []*endpoint.Endpoint{}},
+		}
+		maps.Copy(out, kept)
+		return out
+	}
+
+	tests := []struct {
+		name     string
+		resolver PerResource
+		key      planKey
+		row      *planTableRow
+		want     map[string]*domainEndpoints
+	}{
+		{
+			name:     "default drops CNAME beside TXT",
+			resolver: PerResource{},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, txt}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: cname}),
+			want: discardedCNAME(cname, map[string]*domainEndpoints{
+				endpoint.RecordTypeTXT: {candidates: []*endpoint.Endpoint{txt}},
+			}),
+		},
+		{
+			name:     "default drops CNAME beside MX",
+			resolver: PerResource{},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, mx}, nil),
+			want: discardedCNAME(nil, map[string]*domainEndpoints{
+				endpoint.RecordTypeMX: {candidates: []*endpoint.Endpoint{mx}},
+			}),
+		},
+		{
+			name:     "flattening keeps CNAME beside TXT and MX at the apex",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, txt, mx}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: cname}),
+			want:     row([]*endpoint.Endpoint{cname, txt, mx}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: cname}).records,
+		},
+		{
+			name:     "flattening matches apex case and trailing dot",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"Example.COM."}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, txt}, nil),
+			want:     row([]*endpoint.Endpoint{cname, txt}, nil).records,
+		},
+		{
+			name:     "flattening keeps SRV beside the apex CNAME",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, srv}, nil),
+			want:     row([]*endpoint.Endpoint{cname, srv}, nil).records,
+		},
+		{
+			name:     "flattening still drops CNAME beside A",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, a}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: cname}),
+			want: discardedCNAME(cname, map[string]*domainEndpoints{
+				endpoint.RecordTypeA: {candidates: []*endpoint.Endpoint{a}},
+			}),
+		},
+		{
+			name:     "flattening still drops CNAME beside AAAA",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, aaaa}, nil),
+			want: discardedCNAME(nil, map[string]*domainEndpoints{
+				endpoint.RecordTypeAAAA: {candidates: []*endpoint.Endpoint{aaaa}},
+			}),
+		},
+		{
+			name:     "flattening drops CNAME when TXT shares the name with A",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, txt, a}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: cname}),
+			want: discardedCNAME(cname, map[string]*domainEndpoints{
+				endpoint.RecordTypeTXT: {candidates: []*endpoint.Endpoint{txt}},
+				endpoint.RecordTypeA:   {candidates: []*endpoint.Endpoint{a}},
+			}),
+		},
+		{
+			name:     "flattening still drops CNAME beside NS",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, ns}, nil),
+			want: discardedCNAME(nil, map[string]*domainEndpoints{
+				endpoint.RecordTypeNS: {candidates: []*endpoint.Endpoint{ns}},
+			}),
+		},
+		{
+			name:     "flattening does not apply off the apex",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			key:      planKey{dnsName: "www.example.com"},
+			row:      row([]*endpoint.Endpoint{wwwCNAME, wwwTXT}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: wwwCNAME}),
+			want: discardedCNAME(wwwCNAME, map[string]*domainEndpoints{
+				endpoint.RecordTypeTXT: {candidates: []*endpoint.Endpoint{wwwTXT}},
+			}),
+		},
+		{
+			name:     "flattening without apex names keeps RFC 1034",
+			resolver: PerResource{ApexCNAMEFlattening: true},
+			key:      planKey{dnsName: "example.com"},
+			row:      row([]*endpoint.Endpoint{cname, txt}, map[string]*endpoint.Endpoint{endpoint.RecordTypeCNAME: cname}),
+			want: discardedCNAME(cname, map[string]*domainEndpoints{
+				endpoint.RecordTypeTXT: {candidates: []*endpoint.Endpoint{txt}},
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.resolver.ResolveRecordTypes(tt.key, tt.row)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ResolveRecordTypes() = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPerResourceResolveRecordTypesApexCNAMEFlatteningLogs(t *testing.T) {
+	const warnMsg = "contains conflicting record type candidates; discarding CNAME record"
+	const keepMsg = "keeps CNAME alongside other record types at a flattened zone apex"
+
+	cname := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"origin.example.net"}}
+	txt := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeTXT, Targets: endpoint.Targets{"v=spf1"}}
+	a := &endpoint.Endpoint{DNSName: "example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"192.0.2.1"}}
+
+	tests := []struct {
+		name         string
+		resolver     PerResource
+		row          *planTableRow
+		expectsWarn  bool
+		expectsDebug bool
+	}{
+		{
+			name:     "default warns for CNAME and TXT",
+			resolver: PerResource{},
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{cname, txt},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeCNAME: {candidates: []*endpoint.Endpoint{cname}},
+					endpoint.RecordTypeTXT:   {candidates: []*endpoint.Endpoint{txt}},
+				},
+			},
+			expectsWarn: true,
+		},
+		{
+			name:     "flattening does not warn when the apex CNAME is kept",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{cname, txt},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeCNAME: {candidates: []*endpoint.Endpoint{cname}},
+					endpoint.RecordTypeTXT:   {candidates: []*endpoint.Endpoint{txt}},
+				},
+			},
+			expectsDebug: true,
+		},
+		{
+			name:     "flattening still warns for CNAME and A",
+			resolver: PerResource{ApexCNAMEFlattening: true, ZoneApexes: []string{"example.com"}},
+			row: &planTableRow{
+				candidates: []*endpoint.Endpoint{cname, a},
+				records: map[string]*domainEndpoints{
+					endpoint.RecordTypeCNAME: {candidates: []*endpoint.Endpoint{cname}},
+					endpoint.RecordTypeA:     {candidates: []*endpoint.Endpoint{a}},
+				},
+			},
+			expectsWarn: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hook := logtest.LogsUnderTestWithLogLevel(log.DebugLevel, t)
+			tt.resolver.ResolveRecordTypes(planKey{dnsName: "example.com"}, tt.row)
+			if tt.expectsWarn {
+				logtest.TestHelperLogContainsWithLogLevel(warnMsg, log.WarnLevel, hook, t)
+			} else {
+				logtest.TestHelperLogNotContains(warnMsg, hook, t)
+			}
+			if tt.expectsDebug {
+				logtest.TestHelperLogContainsWithLogLevel(keepMsg, log.DebugLevel, hook, t)
+			}
+		})
+	}
 }

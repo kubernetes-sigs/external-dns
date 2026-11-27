@@ -22,6 +22,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/idna"
+	"sigs.k8s.io/external-dns/internal/sets"
 )
 
 // ConflictResolver is used to make a decision in case of two or more different kubernetes resources
@@ -32,8 +34,19 @@ type ConflictResolver interface {
 	ResolveRecordTypes(key planKey, row *planTableRow) map[string]*domainEndpoints
 }
 
-// PerResource allows only one resource to own a given dns name
-type PerResource struct{}
+// PerResource allows only one resource to own a given dns name.
+//
+// ApexCNAMEFlattening is the opt-in exception for a provider that flattens a
+// CNAME at the zone apex (Cloudflare). The zero value keeps RFC 1034 3.6.2
+// for every name: a CNAME conflicts with every other type. When set, a CNAME
+// is kept beside other types only for names listed in ZoneApexes, and still
+// yields to A, AAAA, and NS. Flattening answers the apex with address records,
+// so an explicit A or AAAA would be a second address for the same name, and
+// Cloudflare rejects an NS next to any other type.
+type PerResource struct {
+	ApexCNAMEFlattening bool
+	ZoneApexes          []string
+}
 
 // ResolveCreate is invoked when dns name is not owned by any resource
 // ResolveCreate takes "minimal" (string comparison of Target) endpoint to acquire the DNS record
@@ -61,6 +74,10 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 // other record types. The default policy will prefer A and AAAA record types when a conflict is
 // detected (consistent with [endpoint.Targets.Less]).
 //
+// With ApexCNAMEFlattening, a CNAME at a configured zone apex is kept when every other
+// desired type is one flattening does not itself publish. A, AAAA, and NS still discard
+// the CNAME.
+//
 // [RFC 1034 3.6.2]: https://datatracker.ietf.org/doc/html/rfc1034#autoid-15
 func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[string]*domainEndpoints {
 	// no conflicts if only a single desired record type for the domain
@@ -68,19 +85,26 @@ func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[stri
 		return row.records
 	}
 
-	cname, other := false, false
+	apexes := s.zoneApexSet()
+	cname, hadOther, conflicting := false, false, false
 	for _, c := range row.candidates {
 		if c.RecordType == endpoint.RecordTypeCNAME {
 			cname = true
 		} else {
-			other = true
+			hadOther = true
+			if !s.cnameMayCoexist(apexes, key.dnsName, c.RecordType) {
+				conflicting = true
+			}
 		}
-		if cname && other {
+		if cname && conflicting {
 			break
 		}
 	}
 
-	if !cname || !other {
+	if !cname || !conflicting {
+		if cname && hadOther && s.ApexCNAMEFlattening {
+			log.Debugf("Domain %s keeps CNAME alongside other record types at a flattened zone apex", key.dnsName)
+		}
 		return row.records
 	}
 
@@ -97,6 +121,34 @@ func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[stri
 		records[recordType] = recs
 	}
 	return records
+}
+
+// zoneApexSet is empty unless flattening is enabled, so a zero PerResource
+// keeps the RFC 1034 rule without consulting ZoneApexes.
+func (s PerResource) zoneApexSet() sets.Set[string] {
+	if !s.ApexCNAMEFlattening {
+		return nil
+	}
+	apexes := sets.New[string]()
+	for _, name := range s.ZoneApexes {
+		apexes.Insert(idna.NormalizeDNSName(name))
+	}
+	return apexes
+}
+
+// cnameMayCoexist reports whether recordType may share dnsName with a CNAME.
+// A and AAAA stay incompatible because apex flattening publishes address
+// records for the CNAME. NS cannot share a name with any other type.
+func (s PerResource) cnameMayCoexist(apexes sets.Set[string], dnsName, recordType string) bool {
+	if !s.ApexCNAMEFlattening || len(apexes) == 0 {
+		return false
+	}
+	switch recordType {
+	case endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeNS:
+		return false
+	default:
+		return apexes.Has(idna.NormalizeDNSName(dnsName))
+	}
 }
 
 // compareEndpoints compares two endpoints by their targets for use in sort/min operations.

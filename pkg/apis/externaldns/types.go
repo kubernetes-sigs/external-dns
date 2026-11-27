@@ -130,6 +130,7 @@ type Config struct {
 	CloudflareCustomHostnamesCertificateAuthority string
 	CloudflareRegionalServices                    bool
 	CloudflareRegionKey                           string
+	CloudflareApexCNAMEFlattening                 bool
 	CoreDNSPrefix                                 string
 	CoreDNSStrictlyOwned                          bool
 	OCIConfigFile                                 string
@@ -273,6 +274,7 @@ var defaultConfig = &Config{
 	CloudflareProxied:                             false,
 	CloudflareRegionalServices:                    false,
 	CloudflareRegionKey:                           "earth",
+	CloudflareApexCNAMEFlattening:                 false,
 
 	CombineFQDNAndAnnotation:         false,
 	Compatibility:                    "",
@@ -653,6 +655,7 @@ func bindFlags(b flags.FlagBinder, cfg *Config) {
 	b.BoolVar("cloudflare-regional-services", "When using the Cloudflare provider, specify if Regional Services feature will be used (default: disabled)", defaultConfig.CloudflareRegionalServices, &cfg.CloudflareRegionalServices)
 	b.StringVar("cloudflare-region-key", "When using the Cloudflare provider, specify the default region for Regional Services. Any value other than an empty string will enable the Regional Services feature (optional)", "", &cfg.CloudflareRegionKey)
 	b.StringVar("cloudflare-record-comment", "When using the Cloudflare provider, specify the comment for the DNS records (default: '')", "", &cfg.CloudflareDNSRecordsComment)
+	b.BoolVar("cloudflare-apex-cname-flattening", "When using the Cloudflare provider, allow a CNAME at a zone apex to coexist with TXT, MX, and other non-address record types. Cloudflare flattens apex CNAMEs. A, AAAA, and NS records still conflict with the CNAME. Applies only to zone apex names reported by the provider (default: disabled)", defaultConfig.CloudflareApexCNAMEFlattening, &cfg.CloudflareApexCNAMEFlattening)
 
 	b.StringVar("coredns-prefix", "When using the CoreDNS provider, specify the prefix name", defaultConfig.CoreDNSPrefix, &cfg.CoreDNSPrefix)
 	b.BoolVar("coredns-strictly-owned", "When using the CoreDNS provider, store and filter strictly by txt-owner-id using an extra field inside of the etcd service (default: false)", defaultConfig.CoreDNSStrictlyOwned, &cfg.CoreDNSStrictlyOwned)

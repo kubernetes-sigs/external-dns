@@ -186,6 +186,19 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	return cfg
 }
 
+func TestValidateCloudflareApexCNAMEFlattening(t *testing.T) {
+	cfg := newValidConfig(t)
+	cfg.Provider = externaldns.ProviderCloudflare
+	cfg.CloudflareApexCNAMEFlattening = true
+	require.NoError(t, ValidateConfig(cfg))
+
+	cfg.Provider = externaldns.ProviderAWS
+	require.ErrorContains(t, ValidateConfig(cfg), "--cloudflare-apex-cname-flattening is only valid with --provider=cloudflare")
+
+	cfg.CloudflareApexCNAMEFlattening = false
+	require.NoError(t, ValidateConfig(cfg))
+}
+
 func TestValidateGoogleProviderConfig(t *testing.T) {
 	cfg := newValidConfig(t)
 	cfg.Provider = externaldns.ProviderGoogle

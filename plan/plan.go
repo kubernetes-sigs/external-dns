@@ -53,6 +53,14 @@ type Plan struct {
 	OwnerID string
 	// Old owner ID we migrate from
 	OldOwnerID string
+	// ApexCNAMEFlattening permits a CNAME at a zone apex listed in ZoneApexes
+	// to coexist with record types other than A, AAAA, and NS. The zero value
+	// keeps RFC 1034 3.6.2 for every provider.
+	ApexCNAMEFlattening bool
+	// ZoneApexes are zone apex names the flattening exception applies to.
+	// Ignored when ApexCNAMEFlattening is false. An empty list does not
+	// relax any name: the caller supplies the apexes it actually manages.
+	ZoneApexes []string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -119,10 +127,6 @@ type domainEndpoints struct {
 	candidates []*endpoint.Endpoint
 }
 
-func newPlanTable() planTable { // TODO: make resolver configurable
-	return planTable{map[planKey]*planTableRow{}, PerResource{}}
-}
-
 func (t *planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].current = append(t.rows[key].current, e)
@@ -166,7 +170,7 @@ func (c *Changes) HasChanges() bool {
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
-	t := newPlanTable()
+	t := p.newPlanTable()
 
 	if p.DomainFilter == nil {
 		p.DomainFilter = endpoint.MatchAllDomainFilters(nil)
@@ -199,6 +203,16 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func (p *Plan) newPlanTable() planTable {
+	return planTable{
+		rows: map[planKey]*planTableRow{},
+		resolver: PerResource{
+			ApexCNAMEFlattening: p.ApexCNAMEFlattening,
+			ZoneApexes:          p.ZoneApexes,
+		},
+	}
 }
 
 // calculateChanges also returns the desired records that already match the provider.

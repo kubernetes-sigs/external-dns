@@ -45,6 +45,19 @@ type Provider interface {
 
 type BaseProvider struct{}
 
+// ZoneApexer is implemented by providers that can name the apex of each zone
+// they manage. The planner uses those names for record-type exceptions that
+// are valid only at the zone apex, such as Cloudflare CNAME flattening.
+type ZoneApexer interface {
+	ZoneApexes(ctx context.Context) ([]string, error)
+}
+
+// ProviderUnwrapper is implemented by provider decorators. ZoneApexerOf walks
+// it so a capability on the inner provider stays reachable after wrapping.
+type ProviderUnwrapper interface {
+	Unwrap() Provider
+}
+
 // SoftError is an error, that provider will only log as error instead
 // of fatal. It is meant for error propagation from providers to tell
 // that this is a transient error.
@@ -70,6 +83,31 @@ func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 // domain filtering should override this method.
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return &endpoint.DomainFilter{}
+}
+
+// ZoneApexerOf returns a ZoneApexer implemented by p or by a provider p wraps.
+// Wrappers that are not ProviderUnwrappers hide the inner capability.
+func ZoneApexerOf(p Provider) (ZoneApexer, bool) {
+	// Cache and alias normalization are the wrappers Select applies. A small
+	// bound also stops a decorator that unwraps to itself.
+	for range 8 {
+		if p == nil {
+			return nil, false
+		}
+		if apexer, ok := p.(ZoneApexer); ok {
+			return apexer, true
+		}
+		unwrapper, ok := p.(ProviderUnwrapper)
+		if !ok {
+			return nil, false
+		}
+		next := unwrapper.Unwrap()
+		if next == p {
+			return nil, false
+		}
+		p = next
+	}
+	return nil, false
 }
 
 // EnsureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.

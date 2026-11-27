@@ -410,6 +410,24 @@ Two caveats:
 - Cloudflare cannot proxy NAPTR records, so proxying is always disabled for them regardless of `--cloudflare-proxied`.
 - NAPTR `regexp` fields with literal double-quote characters are not supported.
 
+## Apex CNAME flattening
+
+Cloudflare flattens a CNAME at the zone apex (`example.com`, the record name `@`) and answers that name with the target's address records. The apex can therefore also hold TXT and MX records — SPF, a `google-site-verification` TXT, or mail — next to the CNAME. Providers that follow [RFC 1034 section 3.6.2](https://datatracker.ietf.org/doc/html/rfc1034#autoid-15) cannot do that, and ExternalDNS follows the RFC unless asked not to: when a TXT or MX is desired at the same name, the planner drops the CNAME candidate. With `--policy=sync` that deletes an existing owned apex CNAME.
+
+`--cloudflare-apex-cname-flattening` keeps the apex CNAME. The exception applies only to zone apex names reported by the Cloudflare provider, so a name such as `www.example.com` still follows RFC 1034. A and AAAA records still conflict with the CNAME, because flattening already publishes address records for it. NS records still conflict too: Cloudflare rejects an NS next to any other type. TXT, MX, and other non-address types are kept.
+
+```sh
+--provider=cloudflare
+--cloudflare-apex-cname-flattening
+--managed-record-types=A
+--managed-record-types=AAAA
+--managed-record-types=CNAME
+--managed-record-types=TXT
+--managed-record-types=MX
+```
+
+The flag is rejected at startup when `--provider` is not `cloudflare`.
+
 ## Cleanup
 
 Now that we have verified that ExternalDNS will automatically manage Cloudflare DNS records, we can delete the tutorial's example:

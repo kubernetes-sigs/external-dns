@@ -846,6 +846,42 @@ func TestCloudflareZones(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
+func TestCloudflareZoneApexes(t *testing.T) {
+	p := &CloudFlareProvider{
+		Client:       NewMockCloudFlareClient(),
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com", "foo.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	names, err := p.ZoneApexes(t.Context())
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"bar.com", "foo.com"}, names)
+}
+
+func TestCloudflareZoneApexesUsesDomainFilter(t *testing.T) {
+	p := &CloudFlareProvider{
+		Client:       NewMockCloudFlareClient(),
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+	}
+
+	names, err := p.ZoneApexes(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, []string{"bar.com"}, names)
+}
+
+func TestCloudflareZoneApexesReturnsZoneListError(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	client.listZonesError = newCloudflareError(http.StatusTooManyRequests)
+	p := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+	}
+
+	_, err := p.ZoneApexes(t.Context())
+	require.ErrorIs(t, err, provider.SoftError)
+}
+
 // test failures on zone lookup
 func TestCloudflareZonesFailed(t *testing.T) {
 
