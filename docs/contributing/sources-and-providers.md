@@ -217,10 +217,11 @@ this guide.
    check in `source/<x>.go`; the dedup wrapper runs it for every Source.
    Provider-specific canonicalization belongs in
    `Provider.AdjustEndpoints`, which `Registry.AdjustEndpoints` delegates to.
+   Build endpoints with `endpoint.NewEndpoint*`, which normalizes per record
+   type (see `NormalizeMXTarget`).
    Signal: a new `validateX` or `isValidX` function inside a `source/*.go`
    file, or a new `switch ep.RecordType` in a Source doing per-record-type
-   normalization. Build endpoints with `endpoint.NewEndpoint*`, which
-   normalizes per record type (see `NormalizeMXTarget`).
+   normalization.
 2. **A Source does not write to Kubernetes.** A new Source's job ends at
    returning `[]*endpoint.Endpoint`. Status and events belong to the
    post-apply writers (`StatusReporter`, `EventEmitter`), see the Writer
