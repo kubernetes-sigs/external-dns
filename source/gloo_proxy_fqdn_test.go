@@ -191,6 +191,22 @@ func TestGlooProxyFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
+			title: "target annotation wins over target-template unless combining",
+			customProxy: &proxy{
+				APIVersion:  proxyGVR.GroupVersion().String(),
+				Kind:        "Proxy",
+				Name:        "annotated-proxy",
+				Namespace:   ns,
+				Annotations: map[string]string{"external-dns.kubernetes.io/target": "annotation-lb.example.com"},
+			},
+			svc:            makeEmptySvc("annotated-proxy"),
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "template-lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("annotated-proxy.example.com", endpoint.RecordTypeCNAME, "annotation-lb.example.com"),
+			},
+		},
+		{
 			title:          "fqdn-template can reference .Kind",
 			proxyName:      "my-proxy",
 			svc:            makeEmptySvc("my-proxy"),

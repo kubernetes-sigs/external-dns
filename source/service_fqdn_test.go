@@ -67,14 +67,14 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template generates A record when no annotation-derived endpoints",
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(svcName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
 			title:              "fqdn-target-template generates CNAME for hostname target",
 			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(svcName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
 			},
 		},
 		{
@@ -104,7 +104,7 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template can reference .Kind",
 			fqdnTargetTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("service."+svcName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				{DNSName: "service." + svcName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
@@ -122,7 +122,27 @@ func TestServiceFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template can reference .APIVersion",
 			fqdnTargetTemplate: "{{.Name}}.{{.APIVersion}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(svcName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				{DNSName: svcName + ".v1.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		// ── target-template cases ─────────────────────────────────────────────
+		{
+			title:          "target-template replaces service targets for fqdn-template hostnames",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title: "target annotation wins over target-template when --combine-fqdn-annotation is off",
+			services: []*v1.Service{makeSvc(map[string]string{
+				annotations.TargetKey: "9.9.9.9",
+			})},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: svcName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"9.9.9.9"}},
 			},
 		},
 		// ── fqdn-template cases ───────────────────────────────────────────────

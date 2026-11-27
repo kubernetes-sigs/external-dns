@@ -968,6 +968,34 @@ func TestUnstructuredFqdnTemplatingExamples(t *testing.T) {
 					WithLabel(endpoint.ResourceLabelKey, "proxyservice/default/reviews"),
 			},
 		},
+		{
+			title: "target annotation wins over target-template unless combining",
+			cfg: cfg{
+				resources:      []string{"configmaps.v1"},
+				fqdnTemplate:   "{{.Name}}.example.com",
+				targetTemplate: "template-lb.example.com",
+			},
+			objects: []*unstructured.Unstructured{
+				{
+					Object: map[string]any{
+						"apiVersion": "v1",
+						"kind":       "ConfigMap",
+						"metadata": map[string]any{
+							"name":      "annotated-cm",
+							"namespace": "default",
+							"annotations": map[string]any{
+								annotations.ControllerKey: annotations.ControllerValue,
+								annotations.TargetKey:     "annotation-lb.example.com",
+							},
+						},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("annotated-cm.example.com", endpoint.RecordTypeCNAME, "annotation-lb.example.com").
+					WithLabel(endpoint.ResourceLabelKey, "configmap/default/annotated-cm"),
+			},
+		},
 	} {
 		t.Run(tt.title, func(t *testing.T) {
 			kubeClient, dynamicClient := setupUnstructuredTestClients(t, tt.cfg.resources, tt.objects)

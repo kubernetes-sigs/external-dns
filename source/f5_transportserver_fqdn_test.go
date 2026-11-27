@@ -243,6 +243,51 @@ func TestF5TransportServerFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
+			title: "fqdn-template without target-template uses spec VirtualServerAddress when no valid IP",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ts",
+					Namespace: defaultF5TransportServerNamespace,
+				},
+				Spec: f5.TransportServerSpec{
+					Host:                 "tcp.example.com",
+					VirtualServerAddress: "192.168.1.100",
+				},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate: "{{.Name}}.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-ts.example.com", endpoint.RecordTypeA, "192.168.1.100"),
+			},
+		},
+		{
+			title: "target annotation wins over target-template unless combining",
+			transportServer: f5.TransportServer{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: f5TransportServerGVR.GroupVersion().String(),
+					Kind:       "TransportServer",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-ts",
+					Namespace: defaultF5TransportServerNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "annotation-lb.example.com",
+					},
+				},
+				Spec:   f5.TransportServerSpec{Host: "tcp.example.com"},
+				Status: f5.CustomResourceStatus{VSAddress: ""},
+			},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "template-lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-ts.example.com", endpoint.RecordTypeCNAME, "annotation-lb.example.com"),
+			},
+		},
+		{
 			title: "fqdn-template can reference .Kind",
 			transportServer: f5.TransportServer{
 				TypeMeta: metav1.TypeMeta{

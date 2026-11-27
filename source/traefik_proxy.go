@@ -322,7 +322,7 @@ func (ts *traefikSource) ingressRouteUDPEndpoints(ctx context.Context) ([]*endpo
 }
 
 // endpointsFromIngressRoute extracts the endpoints from a IngressRoute object
-func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets, annotationTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("ingressroute/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
@@ -351,11 +351,14 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 		}
 	}
 
-	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
+	return ts.templateEngine.Apply(endpoints, ingressRoute,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotationTargets),
+	)
 }
 
 // endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
-func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets, annotationTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("ingressroutetcp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
@@ -384,11 +387,14 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 		}
 	}
 
-	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
+	return ts.templateEngine.Apply(endpoints, ingressRoute,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotationTargets),
+	)
 }
 
 // endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
-func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets, annotationTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("ingressrouteudp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
@@ -404,7 +410,10 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 		}
 	}
 
-	return ts.templateEngine.ApplyTemplates(endpoints, ingressRoute)
+	return ts.templateEngine.Apply(endpoints, ingressRoute,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotationTargets),
+	)
 }
 
 // newTraefikUnstructuredConverter returns a new unstructuredConverter initialized
@@ -700,7 +709,7 @@ func extractEndpoints[T interface {
 	targetFrom *targetfrom.Resolver,
 	indexers []cache.Indexer,
 	convertFunc func(*unstructured.Unstructured) (T, error),
-	generateEndpoints func(T, endpoint.Targets) ([]*endpoint.Endpoint, error),
+	generateEndpoints func(T, endpoint.Targets, endpoint.Targets) ([]*endpoint.Endpoint, error),
 ) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -711,7 +720,8 @@ func extractEndpoints[T interface {
 		}
 		typed.GetObjectKind().SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 
-		targets := annotations.TargetsFromTargetAnnotation(typed.GetAnnotations())
+		annotationTargets := annotations.TargetsFromTargetAnnotation(typed.GetAnnotations())
+		targets := annotationTargets
 		if len(targets) == 0 {
 			if resolved, ok := targetFrom.TargetsFromAnnotations(ctx, types.TraefikProxy, typed); ok {
 				targets = resolved
@@ -719,7 +729,7 @@ func extractEndpoints[T interface {
 		}
 		name := getObjectFullName(typed)
 
-		ingressEndpoints, err := generateEndpoints(typed, targets)
+		ingressEndpoints, err := generateEndpoints(typed, targets, annotationTargets)
 		if err != nil {
 			return nil, err
 		}

@@ -259,7 +259,8 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		}
 		log.Debugf("Gloo: Find %s proxy", proxy.Name)
 
-		proxyTargets := annotations.TargetsFromTargetAnnotation(proxy.Annotations)
+		annotationTargets := annotations.TargetsFromTargetAnnotation(proxy.Annotations)
+		proxyTargets := annotationTargets
 		if len(proxyTargets) == 0 {
 			proxyTargets, err = gs.targetsFromGatewayIngress(&proxy)
 			if err != nil {
@@ -275,7 +276,7 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 		}
 		log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Name, len(proxyTargets), proxyTargets)
 
-		proxyEndpoints, err := gs.generateEndpointsFromProxy(&proxy, proxyTargets)
+		proxyEndpoints, err := gs.generateEndpointsFromProxy(&proxy, proxyTargets, annotationTargets)
 		if err != nil {
 			return nil, err
 		}
@@ -288,7 +289,7 @@ func (gs *glooSource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, error)
 	return endpoint.MergeEndpoints(endpoints), nil
 }
 
-func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets, annotationTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	resource := fmt.Sprintf("proxy/%s/%s", p.Namespace, p.Name)
@@ -315,7 +316,10 @@ func (gs *glooSource) generateEndpointsFromProxy(p *proxy, targets endpoint.Targ
 		}
 	}
 
-	return gs.templateEngine.ApplyTemplates(endpoints, p)
+	return gs.templateEngine.Apply(endpoints, p,
+		template.WithResourceTargets(targets),
+		template.WithAnnotationTargets(annotationTargets),
+	)
 }
 
 func (gs *glooSource) annotationsFromProxySource(virtualHost proxyVirtualHost) (map[string]string, error) {

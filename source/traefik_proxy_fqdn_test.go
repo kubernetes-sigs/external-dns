@@ -161,6 +161,28 @@ func TestTraefikFQDNTemplateIngressRoute(t *testing.T) {
 			},
 		},
 		{
+			title: "target annotation wins over target-template unless combining",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressRouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "my-app",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.kubernetes.io/target": "annotation-lb.example.com",
+						"kubernetes.io/ingress.class":       "traefik",
+					},
+				},
+			},
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "template-lb.example.com",
+			expected: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("my-app.example.com", endpoint.RecordTypeCNAME, "annotation-lb.example.com"),
+			},
+		},
+		{
 			title: "fqdn-template can reference .Kind",
 			ingressRoute: IngressRoute{
 				TypeMeta: metav1.TypeMeta{

@@ -62,14 +62,14 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template generates A record when no other endpoints",
 			fqdnTargetTemplate: "{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(nodeName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				{DNSName: nodeName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
 			title:              "fqdn-target-template generates CNAME for hostname target",
 			fqdnTargetTemplate: "{{.Name}}.example.com:lb.example.com",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(nodeName+".example.com", endpoint.RecordTypeCNAME, "lb.example.com"),
+				{DNSName: nodeName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
 			},
 		},
 		{
@@ -93,14 +93,14 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			title:              "fqdn-target-template can reference .Kind",
 			fqdnTargetTemplate: "{{.Kind | toLower}}.{{.Name}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint("node."+nodeName+".example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				{DNSName: "node." + nodeName + ".example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
 			title:              "fqdn-target-template can reference .APIVersion",
 			fqdnTargetTemplate: "{{.Name}}.{{.APIVersion}}.example.com:1.2.3.4",
 			expected: []*endpoint.Endpoint{
-				endpoint.NewEndpoint(nodeName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+				{DNSName: nodeName + ".v1.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 		},
 		{
@@ -115,6 +115,14 @@ func TestNodeFQDNTemplate(t *testing.T) {
 			targetTemplate: "lb.example.com",
 			expected: []*endpoint.Endpoint{
 				{DNSName: nodeName, RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{nodeExtIP}},
+			},
+		},
+		{
+			title:          "target-template replaces node addresses for fqdn-template hostnames",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: nodeName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
 			},
 		},
 		{
@@ -364,6 +372,64 @@ func TestNodeFQDNTemplate(t *testing.T) {
 				ExcludeUnschedulable: true,
 				ExposeInternalIPv6:   true,
 				LabelFilter:          labels.Everything(),
+			})
+			require.NoError(t, err)
+
+			endpoints, err := src.Endpoints(t.Context())
+			require.NoError(t, err)
+			testutils.ValidateEndpoints(t, endpoints, tt.expected)
+		})
+	}
+}
+
+// A node without addresses still yields records when the template supplies the target.
+func TestNodeFQDNTemplateSkipsAddressLookupWhenTargetsSupplied(t *testing.T) {
+	for _, tt := range []struct {
+		title              string
+		targetTemplate     string
+		fqdnTargetTemplate string
+		combine            bool
+		expected           []*endpoint.Endpoint
+	}{
+		{
+			title:          "with target-template",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:              "with fqdn-target-template pairs",
+			fqdnTargetTemplate: "{{.Name}}.pair.example.com:1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.pair.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:          "with target-template and combine",
+			targetTemplate: "lb.example.com",
+			combine:        true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:              "with fqdn-target-template pairs and combine",
+			fqdnTargetTemplate: "{{.Name}}.pair.example.com:1.2.3.4",
+			combine:            true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "no-address.pair.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+	} {
+		t.Run(tt.title, func(t *testing.T) {
+			kubeClient := fake.NewClientset()
+			_, err := kubeClient.CoreV1().Nodes().Create(t.Context(), &v1.Node{Name: "no-address"}, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			src, err := NewNodeSource(t.Context(), kubeClient, &config.Config{
+				TemplateEngine: templatetest.MustEngine(t, "{{.Name}}.example.com", tt.targetTemplate, tt.fqdnTargetTemplate, tt.combine),
+				LabelFilter:    labels.Everything(),
 			})
 			require.NoError(t, err)
 

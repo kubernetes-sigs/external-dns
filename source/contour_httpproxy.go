@@ -124,10 +124,16 @@ func (sc *httpProxySource) Endpoints(_ context.Context) ([]*endpoint.Endpoint, e
 	var endpoints []*endpoint.Endpoint
 
 	for _, hp := range httpProxies {
+		targets := targetsFromHTTPProxy(hp)
 		// apply template if fqdn is missing on HTTPProxy
-		hpEndpoints, err := sc.templateEngine.CombineWithEndpoints(
-			sc.endpointsFromHTTPProxy(hp),
-			func() ([]*endpoint.Endpoint, error) { return sc.endpointsFromTemplate(hp) },
+		hpEndpoints, err := sc.templateEngine.Apply(
+			sc.endpointsFromHTTPProxy(hp, targets),
+			hp,
+			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(hp.Annotations)),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return sc.endpointsFromTemplate(hp, hostnames, targets), nil
+			}),
 		)
 		if err != nil {
 			return nil, err
@@ -154,27 +160,10 @@ func (sc *httpProxySource) AddEventHandler(_ context.Context, handler func()) {
 	sc.httpProxyInformers.MustAddEventHandler(eventHandlerFunc(handler))
 }
 
-func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	hostnames, err := sc.templateEngine.ExecFQDN(httpProxy)
-	if err != nil {
-		return nil, err
-	}
-
+func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
-	if len(targets) == 0 {
-		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
-			}
-		}
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(httpProxy.Annotations)
 
@@ -182,27 +171,30 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-	return endpoints, nil
+	return endpoints
+}
+
+func targetsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) endpoint.Targets {
+	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
+	if len(targets) > 0 {
+		return targets
+	}
+	for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			targets = append(targets, lb.IP)
+		}
+		if lb.Hostname != "" {
+			targets = append(targets, lb.Hostname)
+		}
+	}
+	return targets
 }
 
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object
-func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) []*endpoint.Endpoint {
+func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := annotations.TTLFromAnnotations(httpProxy.Annotations, resource)
-
-	targets := annotations.TargetsFromTargetAnnotation(httpProxy.Annotations)
-
-	if len(targets) == 0 {
-		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
-			}
-		}
-	}
 
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(httpProxy.Annotations)
 

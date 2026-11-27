@@ -2022,8 +2022,7 @@ func TestIngressSource_Errors(t *testing.T) {
 	t.Run("endpointsFromTemplate ExecFQDN error propagates", func(t *testing.T) {
 		t.Parallel()
 		// {{index . 0}} parses fine but fails at runtime for *networkv1.Ingress.
-		// An ingress with no rule hosts yields empty ingEndpoints, so CombineWithEndpoints
-		// calls endpointsFromTemplate which calls ExecFQDN.
+		// An ingress with no rule hosts yields empty ingEndpoints, so Apply runs ExecFQDN.
 		ing := &networkv1.Ingress{
 			Name: "foo", Namespace: "default",
 		}

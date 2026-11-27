@@ -128,6 +128,28 @@ func TestPodFQDNTemplate(t *testing.T) {
 				endpoint.NewEndpoint(podName+".v1.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			},
 		},
+		// ── target-template cases ─────────────────────────────────────────────
+		{
+			title:          "target-template replaces pod IPs for fqdn-template hostnames",
+			fqdnTemplate:   "{{.Name}}.example.com",
+			targetTemplate: "lb.example.com",
+			expected: []*endpoint.Endpoint{
+				{DNSName: podName + ".example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title: "target-template with combine leaves annotation hostnames on pod IPs",
+			pods: []*v1.Pod{defaultPod(map[string]string{
+				annotations.InternalHostnameKey: "annotated.example.com",
+			})},
+			fqdnTemplate:   "{{.Name}}.tmpl.example.com",
+			targetTemplate: "lb.example.com",
+			combine:        true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "annotated.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{podIP}},
+				{DNSName: podName + ".tmpl.example.com", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
 		// ── fqdn-template cases ───────────────────────────────────────────────
 		{
 			title:        "fqdn-template expansion with multiple domains",
@@ -199,7 +221,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 			},
 		},
 		{
-			title:        "fqdn-template target annotation does not override pod IPs",
+			title:        "fqdn-template target annotation wins over pod IPs",
 			fqdnTemplate: "{{ .Name }}.example.org",
 			pods: []*v1.Pod{
 				{
@@ -209,7 +231,7 @@ func TestPodFQDNTemplate(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "pod-1.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"100.67.94.101"}},
+				{DNSName: "pod-1.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"203.2.45.22"}},
 			},
 		},
 		{

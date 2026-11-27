@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/events"
 	"sigs.k8s.io/external-dns/source/annotations"
 	"sigs.k8s.io/external-dns/source/informers"
+	"sigs.k8s.io/external-dns/source/template"
 )
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
@@ -49,7 +50,7 @@ import (
 // +externaldns:source:resources=TCPIngress.configuration.konghq.com
 // +externaldns:source:filters=annotation,label
 // +externaldns:source:namespace=all,single,multiple
-// +externaldns:source:fqdn-template=false
+// +externaldns:source:fqdn-template=true
 // +externaldns:source:events=true
 // +externaldns:source:provider-specific=true
 type kongTCPIngressSource struct {
@@ -58,6 +59,7 @@ type kongTCPIngressSource struct {
 	kongTCPIngressInformers  *informers.Informers[kubeinformers.GenericInformer]
 	kubeClient               kubernetes.Interface
 	unstructuredConverter    *unstructuredConverter
+	templateEngine           template.Engine
 }
 
 // Kong types based on https://github.com/Kong/kubernetes-ingress-controller/blob/v1.2.0/pkg/apis/configuration/v1beta1/types.go to facilitate testing
@@ -156,6 +158,7 @@ func NewKongTCPIngressSource(
 		kongTCPIngressInformers:  kongTCPIngressInformers,
 		kubeClient:               kubeClient,
 		unstructuredConverter:    uc,
+		templateEngine:           cfg.TemplateEngine,
 	}, nil
 }
 
@@ -189,7 +192,16 @@ func (sc *kongTCPIngressSource) Endpoints(_ context.Context) ([]*endpoint.Endpoi
 
 		fullname := fmt.Sprintf("%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-		ingressEndpoints := sc.endpointsFromTCPIngress(tcpIngress, targets)
+		ingressEndpoints, err := sc.templateEngine.Apply(sc.endpointsFromTCPIngress(tcpIngress, targets), tcpIngress,
+			template.WithResourceTargets(targets),
+			template.WithAnnotationTargets(annotations.TargetsFromTargetAnnotation(tcpIngress.Annotations)),
+			template.WithEndpointBuilder(func(hostnames, targets []string) ([]*endpoint.Endpoint, error) {
+				return endpointsForTCPIngressHostnames(tcpIngress, hostnames, targets), nil
+			}),
+		)
+		if err != nil {
+			return nil, err
+		}
 		if endpoint.IsEmptyEndpoints(ingressEndpoints, types.KongTCPIngress, tcpIngress) {
 			continue
 		}
@@ -213,29 +225,27 @@ func (sc *kongTCPIngressSource) AddEventHandler(_ context.Context, handler func(
 
 // endpointsFromTCPIngress extracts the endpoints from a TCPIngress object
 func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
+	var hostnames []string
+	if !sc.ignoreHostnameAnnotation {
+		hostnames = append(hostnames, annotations.HostnamesFromAnnotations(tcpIngress.Annotations)...)
+	}
+	for _, rule := range tcpIngress.Spec.Rules {
+		if rule.Host != "" {
+			hostnames = append(hostnames, rule.Host)
+		}
+	}
+	return endpointsForTCPIngressHostnames(tcpIngress, hostnames, targets)
+}
 
+func endpointsForTCPIngressHostnames(tcpIngress *TCPIngress, hostnames []string, targets endpoint.Targets) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
-
 	ttl := annotations.TTLFromAnnotations(tcpIngress.Annotations, resource)
-
 	providerSpecific, setIdentifier := annotations.ProviderSpecificAnnotations(tcpIngress.Annotations)
 
-	if !sc.ignoreHostnameAnnotation {
-		hostnameList := annotations.HostnamesFromAnnotations(tcpIngress.Annotations)
-		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
-		}
+	var endpoints []*endpoint.Endpoint
+	for _, hostname := range hostnames {
+		endpoints = append(endpoints, endpoint.EndpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
-
-	if tcpIngress.Spec.Rules != nil {
-		for _, rule := range tcpIngress.Spec.Rules {
-			if rule.Host != "" {
-				endpoints = append(endpoints, endpoint.EndpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
-			}
-		}
-	}
-
 	return endpoints
 }
 

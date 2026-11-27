@@ -81,7 +81,6 @@ func testNodeSourceEndpoints(t *testing.T) {
 		taints               []v1.Taint
 		deletionTimestamp    *metav1.Time
 		expected             []*endpoint.Endpoint
-		expectError          bool
 		expectedLogs         []string
 		expectedAbsentLogs   []string
 	}{
@@ -202,11 +201,14 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:              "node with neither external nor internal IP returns no endpoints",
+			title:              "node with neither external nor internal IP is skipped",
 			nodeName:           "node1",
 			exposeInternalIPv6: true,
 			nodeAddresses:      []v1.NodeAddress{},
-			expectError:        true,
+			expected:           nil,
+			expectedLogs: []string{
+				"Skipping node node1",
+			},
 		},
 		{
 			title:              "node name with a label over 63 characters is skipped instead of panicking",
@@ -479,11 +481,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(t.Context())
-			if tc.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
+			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
 			testutils.ValidateEndpoints(t, endpoints, tc.expected)
@@ -512,7 +510,6 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		exposeInternalIPv6   bool // default to true for this version. Change later when the next minor version is released.
 		unschedulable        bool // default to false
 		expected             []*endpoint.Endpoint
-		expectError          bool
 	}{
 		{
 			title:              "node with only internal IPs should return internal IPvs irrespective of exposeInternalIPv6",
@@ -591,11 +588,7 @@ func testNodeEndpointsWithIPv6(t *testing.T) {
 		require.NoError(t, err)
 
 		endpoints, err := client.Endpoints(t.Context())
-		if tc.expectError {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-		}
+		require.NoError(t, err)
 
 		// Validate returned endpoints against desired endpoints.
 		testutils.ValidateEndpoints(t, endpoints, tc.expected)
