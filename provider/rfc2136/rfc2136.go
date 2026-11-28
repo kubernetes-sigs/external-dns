@@ -754,13 +754,12 @@ func (r *rfc2136Provider) getNextNameserverFor(op nameserverOp) string {
 	var nameserver string
 	switch r.loadBalancingStrategy {
 	case "random":
-		for {
-			nameserver = r.nameservers[r.randGen.Intn(len(r.nameservers))]
-			// Ensure that we don't get the same nameserver as the last one
-			if nameserver != r.nameservers[*counter] {
-				break
-			}
-		}
+		// Skip the previous pick so a retry after a failure moves to another
+		// host. The counter must follow the pick, or the first host is excluded
+		// on every call and never used.
+		next := (*counter + 1 + r.randGen.Intn(len(r.nameservers)-1)) % len(r.nameservers)
+		*counter = next
+		nameserver = r.nameservers[next]
 	case "round-robin":
 		nameserver = r.nameservers[*counter]
 		*counter = (*counter + 1) % len(r.nameservers)
