@@ -47,8 +47,8 @@ significantly reducing the total number of requests made.
 
 The batch API is transactional — if a chunk fails, the entire chunk is rolled back by Cloudflare.
 In that case, ExternalDNS automatically retries each record change in the chunk individually.
-Record types that are not supported by the batch PUT operation (e.g. CAA) are always submitted individually rather than through the batch API.
-SRV records are submitted with Cloudflare's structured SRV data fields for both batch and individual operations.
+Record types that are not supported by the batch PUT operation are always submitted individually rather than through the batch API.
+CAA, NAPTR, SRV and TLSA records are submitted with Cloudflare's structured data fields for both batch and individual operations.
 
 | Flag | Default | Description |
 | :--- | :------ | :---------- |
@@ -88,6 +88,39 @@ Two caveats:
 - Cloudflare cannot proxy TLSA records, so proxying is always disabled for them regardless of `--cloudflare-proxied`.
 - DANE requires DNSSEC on the zone. Enable it in Cloudflare and add the DS record at your registrar; ExternalDNS does
   not check this.
+
+## CAA records
+
+CAA records ([RFC 8659](https://datatracker.ietf.org/doc/html/rfc8659)) are supported. Add `CAA` to
+`--managed-record-types`, since the default managed set is `A`, `AAAA` and `CNAME` only:
+
+```sh
+--managed-record-types=A --managed-record-types=AAAA --managed-record-types=CNAME --managed-record-types=CAA
+```
+
+Targets use `<flags> <tag> "<value>"`:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: example-caa
+spec:
+  endpoints:
+    - dnsName: example.com
+      recordType: CAA
+      recordTTL: 300
+      targets:
+        - 0 issue "letsencrypt.org"
+        - 0 iodef "mailto:security@example.com"
+```
+
+Quote values that contain spaces or `;`, such as `0 issue "letsencrypt.org; validationmethods=dns-01"`. The value must
+not contain `"` or `\`. Cloudflare cannot proxy CAA records, so proxying is always disabled for them.
+
+CAA records usually sit at the zone apex. With the TXT registry, set `--txt-prefix` to a value that contains
+`%{record_type}` and ends with a dot, such as `--txt-prefix=_extdns-%{record_type}.`, so the ownership record stays inside
+the zone. See the [TXT registry documentation](../registry/txt.md) for details.
 
 ## Deploy ExternalDNS
 

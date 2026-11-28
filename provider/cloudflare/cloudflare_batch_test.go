@@ -115,6 +115,15 @@ func (m *mockCloudFlareClient) BatchDNSRecords(_ context.Context, params dns.Rec
 				Content: naptrContentFromParam(post.Data.Value),
 				Data:    naptrDataFromParam(post.Data.Value),
 			}
+		case dns.CAARecordParam:
+			record = dns.RecordResponse{
+				ID:      generateDNSRecordID(string(post.Type.Value), post.Name.Value, caaContentFromParam(post.Data.Value)),
+				Name:    post.Name.Value,
+				TTL:     post.TTL.Value,
+				Type:    dns.RecordResponseType(post.Type.Value),
+				Content: caaContentFromParam(post.Data.Value),
+				Data:    caaDataFromParam(post.Data.Value),
+			}
 		case dns.RecordBatchParamsPost:
 			typeStr := string(post.Type.Value)
 			record = dns.RecordResponse{
@@ -233,6 +242,15 @@ func extractBatchPutData(put dns.BatchPutUnionParam) (string, dns.RecordResponse
 			Type:    dns.RecordResponseTypeNAPTR,
 			Content: naptrContentFromParam(p.Data.Value),
 			Data:    naptrDataFromParam(p.Data.Value),
+		}
+	case dns.BatchPutCAARecordParam:
+		return p.ID.Value, dns.RecordResponse{
+			ID:      p.ID.Value,
+			Name:    p.Name.Value,
+			TTL:     p.TTL.Value,
+			Type:    dns.RecordResponseTypeCAA,
+			Content: caaContentFromParam(p.Data.Value),
+			Data:    caaDataFromParam(p.Data.Value),
 		}
 	default:
 		panic(fmt.Sprintf("extractBatchPutData: unexpected BatchPutUnionParam type %T", put))
@@ -612,11 +630,11 @@ func TestBuildBatchPutParam(t *testing.T) {
 		assert.InDelta(t, 443, float64(p.Data.Value.Port.Value), 0)
 	})
 
-	t.Run("CAA record falls back (returns nil, false)", func(t *testing.T) {
+	t.Run("PTR record falls back (returns nil, false)", func(t *testing.T) {
 		r := base
-		r.Type = dns.RecordResponseTypeCAA
-		r.Content = "0 issue letsencrypt.org"
-		param, ok := buildBatchPutParam("id-caa", r)
+		r.Type = dns.RecordResponseTypePTR
+		r.Content = "host.bar.com"
+		param, ok := buildBatchPutParam("id-ptr", r)
 		assert.False(t, ok)
 		require.Nil(t, param)
 	})

@@ -110,6 +110,13 @@ func TestAffixNameMapper_ToEndpointName(t *testing.T) {
 			wantRecordType:   endpoint.RecordTypeTLSA,
 		},
 		{
+			name:             "prefix with CAA record type in affix",
+			mapper:           NewAffixNameMapper("%{record_type}-", "", ""),
+			input:            "caa-example.com",
+			wantEndpointName: "example.com",
+			wantRecordType:   endpoint.RecordTypeCAA,
+		},
+		{
 			name:             "suffix with A record type in affix",
 			mapper:           NewAffixNameMapper("", "-%{record_type}", ""),
 			input:            "foo-a.example.com",
@@ -314,6 +321,13 @@ func TestAffixNameMapper_ToTXTName(t *testing.T) {
 			dns:         "_443._tcp.example.com",
 			recordType:  endpoint.RecordTypeTLSA,
 			wantTXTName: "tlsa-_443._tcp.example.com",
+		},
+		{
+			name:        "prefix with CAA record type in affix",
+			mapper:      NewAffixNameMapper("%{record_type}-", "", ""),
+			dns:         "example.com",
+			recordType:  endpoint.RecordTypeCAA,
+			wantTXTName: "caa-example.com",
 		},
 		{
 			name:        "prefix with TXT record type in affix",
@@ -718,6 +732,7 @@ func TestOwnershipRoundTripWithPlainPrefix(t *testing.T) {
 		{endpoint.RecordTypeCNAME, "foo.example.com", "owned-by-cname-foo.example.com"},
 		{endpoint.RecordTypeTXT, "foo.example.com", "owned-by-txt-foo.example.com"},
 		{endpoint.RecordTypeTLSA, "_443._tcp.example.com", "owned-by-tlsa-_443._tcp.example.com"},
+		{endpoint.RecordTypeCAA, "example.com", "owned-by-caa-example.com"},
 	}
 
 	for _, tc := range tests {
