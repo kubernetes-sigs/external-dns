@@ -24,6 +24,7 @@ import (
 )
 
 // CAATarget is a parsed CAA target (RFC 8659): <flags> <tag> "<value>".
+// The tag is stored in lower case because RFC 8659 tags match case-insensitively.
 type CAATarget struct {
 	flags uint8
 	tag   string
@@ -59,16 +60,19 @@ func NewCAARecord(target string) (*CAATarget, error) {
 		return nil, fmt.Errorf(`invalid CAA target %q: value must not contain '"' or '\'`, target)
 	}
 
-	return &CAATarget{flags: uint8(flags), tag: tag, value: value}, nil
+	return &CAATarget{flags: uint8(flags), tag: strings.ToLower(tag), value: value}, nil
 }
 
 // NewCAATargetFromFields builds a CAATarget for providers that return CAA as structured fields.
 func NewCAATargetFromFields(flags uint8, tag, value string) *CAATarget {
-	return &CAATarget{flags: flags, tag: tag, value: value}
+	return &CAATarget{flags: flags, tag: strings.ToLower(tag), value: value}
 }
 
 func cutCAAField(s string) (string, string) {
 	i := strings.IndexFunc(s, unicode.IsSpace)
+	if i < 0 {
+		return s, ""
+	}
 	return s[:i], strings.TrimLeftFunc(s[i:], unicode.IsSpace)
 }
 

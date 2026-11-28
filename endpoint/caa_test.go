@@ -42,6 +42,7 @@ func TestNewCAARecord(t *testing.T) {
 		{"empty value forbids all issuers", `0 issue ""`, 0, "issue", "", `0 issue ""`},
 		{"semicolon value", `0 issuewild ";"`, 0, "issuewild", ";", `0 issuewild ";"`},
 		{"extra whitespace", "  0 \t issue \t \"letsencrypt.org\"  ", 0, "issue", "letsencrypt.org", `0 issue "letsencrypt.org"`},
+		{"tag lower-cased", `0 IssueWild "ca.example.net"`, 0, "issuewild", "ca.example.net", `0 issuewild "ca.example.net"`},
 		{"trailing dot kept", "0 issue letsencrypt.org.", 0, "issue", "letsencrypt.org.", `0 issue "letsencrypt.org."`},
 		{"longest tag", `0 ` + strings.Repeat("a", 255) + ` "ca.example.net"`, 0, strings.Repeat("a", 255), "ca.example.net", `0 ` + strings.Repeat("a", 255) + ` "ca.example.net"`},
 		{"value over 255 octets", `0 issue "` + strings.Repeat("a", 300) + `"`, 0, "issue", strings.Repeat("a", 300), `0 issue "` + strings.Repeat("a", 300) + `"`},
@@ -85,6 +86,12 @@ func TestNewCAARecordInvalid(t *testing.T) {
 			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
+}
+
+func TestCutCAAFieldWithoutWhitespace(t *testing.T) {
+	field, rest := cutCAAField("issue")
+	assert.Equal(t, "issue", field)
+	assert.Empty(t, rest)
 }
 
 func TestValidateCAAEndpoint(t *testing.T) {

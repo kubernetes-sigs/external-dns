@@ -591,7 +591,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 			for i, target := range e.Targets {
 				caa, err := endpoint.NewCAARecord(target)
 				if err != nil {
-					log.Debugf("leaving CAA target %q unchanged: %v", target, err)
+					log.Warnf("leaving CAA target unchanged: %v", err)
 					continue
 				}
 				e.Targets[i] = caa.String()

@@ -169,6 +169,14 @@ func TestEndpointTargetFromCloudflareRecordNormalisesCAA(t *testing.T) {
 			want: `128 iodef "mailto:security@example.com"`,
 		},
 		{
+			name: "structured data with an uppercase tag",
+			record: dns.RecordResponse{
+				Type: dns.RecordResponseTypeCAA,
+				Data: dns.CAARecordData{Flags: 0, Tag: "ISSUE", Value: "letsencrypt.org"},
+			},
+			want: `0 issue "letsencrypt.org"`,
+		},
+		{
 			name:   "content only, unquoted",
 			record: dns.RecordResponse{Type: dns.RecordResponseTypeCAA, Content: "0 issue letsencrypt.org"},
 			want:   `0 issue "letsencrypt.org"`,
