@@ -1262,6 +1262,60 @@ func TestRandomLoadBalancing(t *testing.T) {
 	assert.Greater(t, len(nameserverCounts), 1, "Expected multiple nameservers to be used in random strategy")
 }
 
+// TestGetNextNameserverRandomUsesEveryHost checks that the random strategy
+// can pick any configured host, including the first one, for both rotations.
+func TestGetNextNameserverRandomUsesEveryHost(t *testing.T) {
+	for _, op := range []nameserverOp{nameserverOpList, nameserverOpSend} {
+		r := &rfc2136Provider{
+			nameservers:           []string{"ns1:53", "ns2:53", "ns3:53"},
+			loadBalancingStrategy: "random",
+			randGen:               rand.New(rand.NewSource(1)),
+		}
+
+		seen := map[string]int{}
+		for range 300 {
+			seen[r.getNextNameserverFor(op)]++
+		}
+
+		assert.Len(t, seen, 3, "every nameserver should be picked at least once: %v", seen)
+		assert.Positive(t, seen["ns1:53"], "the first nameserver was never picked")
+	}
+}
+
+// TestGetNextNameserverRandomSkipsPreviousPick checks that two consecutive
+// calls never return the same host, so a retry after a failure moves on.
+func TestGetNextNameserverRandomSkipsPreviousPick(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers:           []string{"ns1:53", "ns2:53", "ns3:53"},
+		loadBalancingStrategy: "random",
+		randGen:               rand.New(rand.NewSource(2)),
+	}
+
+	previous := r.getNextNameserverFor(nameserverOpSend)
+	for range 300 {
+		next := r.getNextNameserverFor(nameserverOpSend)
+		require.NotEqual(t, previous, next)
+		previous = next
+	}
+}
+
+// TestGetNextNameserverRandomTwoHosts checks that with two hosts the random
+// strategy alternates between them instead of sticking to the second one.
+func TestGetNextNameserverRandomTwoHosts(t *testing.T) {
+	r := &rfc2136Provider{
+		nameservers:           []string{"ns1:53", "ns2:53"},
+		loadBalancingStrategy: "random",
+		randGen:               rand.New(rand.NewSource(3)),
+	}
+
+	first := r.getNextNameserverFor(nameserverOpSend)
+	second := r.getNextNameserverFor(nameserverOpSend)
+	third := r.getNextNameserverFor(nameserverOpSend)
+
+	assert.NotEqual(t, first, second)
+	assert.Equal(t, first, third)
+}
+
 // TestGetNextNameserverListAndSendCountersAreIndependent guards against the
 // regression described in https://github.com/kubernetes-sigs/external-dns/issues/6562:
 // AXFR/list and update/send nameserver rotation shared a single counter, so a
